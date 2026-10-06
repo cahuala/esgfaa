@@ -1,0 +1,159 @@
+
+.footer {
+  width: 100%;
+  background-color: #0a0705;
+  color: #d8d8d8;
+  padding: 70px 5% 0;
+}
+
+.topo {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 50px;
+}
+
+.bloco h4 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: white;
+  margin: 0 0 20px;
+}
+
+.bloco ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bloco a {
+  color: #b8b8b8;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.bloco a:hover {
+  color: #E53917;
+}
+
+.logo {
+  height: 56px;
+  width: auto;
+  margin-bottom: 18px;
+}
+
+.descricao {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #999;
+  max-width: 260px;
+  margin: 0 0 22px;
+}
+
+.redes {
+  display: flex;
+  gap: 10px;
+}
+
+.redeIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.redeIcone:hover {
+  background: #E53917;
+  color: white;
+}
+
+.linha {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.base {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.base p {
+  font-size: 12.5px;
+  color: #777;
+  margin: 0;
+}
+
+.baseLinks {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.baseLinks a {
+  color: #999;
+  text-decoration: none;
+}
+
+.baseLinks a:hover {
+  color: #E53917;
+}
+
+.baseLinks span {
+  color: #555;
+}
+
+@media (max-width: 900px) {
+  .topo {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 40px;
+  }
+
+  .bloco:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .descricao {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .footer {
+    padding: 50px 6% 0;
+  }
+
+  .topo {
+    grid-template-columns: 1fr;
+  }
+
+  .base {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

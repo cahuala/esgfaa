@@ -1,0 +1,41 @@
+
+
+* {
+  
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #333333;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  letter-spacing: -0.02em; /* Deixa os títulos mais compactos e elegantes */
+}
+body {
+  margin: 0;
+  font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+body {
+
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  overflow-x: hidden; /* Evita barras de rolagem horizontais */
+  background-color: black;
+}
+
+

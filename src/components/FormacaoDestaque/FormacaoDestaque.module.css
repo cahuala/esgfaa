@@ -1,0 +1,264 @@
+
+.secao {
+  width: 100%;
+  padding: 90px 5%;
+  background-color: #14100e;
+  color: white;
+}
+
+.cabecalho {
+  max-width: 640px;
+  margin: 0 auto 50px;
+  text-align: center;
+}
+
+.etiqueta {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #E53917;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cabecalho h2 {
+  font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 14px;
+}
+
+.cabecalho p {
+  font-size: 16px;
+  color: #b8b8b8;
+  margin: 0;
+}
+
+.corpo {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.listaAbas {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aba {
+  text-align: left;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 16px 18px;
+  color: #b8b8b8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aba:hover {
+  border-color: rgba(255,255,255,0.25);
+  color: white;
+}
+
+.abaAtiva {
+  background: rgba(229, 57, 23, 0.12);
+  border-color: #E53917;
+  color: white;
+}
+
+.painel {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 36px;
+  min-height: 360px;
+}
+
+.painelInfo {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.tagInfo {
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  color: #d0d0d0;
+}
+
+.painel h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.resumo {
+  font-size: 15px;
+  color: #c4c4c4;
+  line-height: 1.5;
+  margin: 0 0 28px;
+}
+
+.subtitulo {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #E53917;
+  margin-bottom: 14px;
+}
+
+.plano {
+  list-style: none;
+  margin: 0 0 30px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.plano li {
+  font-size: 14px;
+  color: #e0e0e0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.plano li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: #E53917;
+}
+
+.cta {
+  background-color: #E53917;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 13px 26px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.cta:hover {
+  filter: brightness(1.1);
+}
+
+@media (max-width: 800px) {
+  .corpo {
+    flex-direction: column;
+  }
+  .listaAbas {
+    flex: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .aba {
+    flex: 1 1 200px;
+    text-align: center;
+    padding: 12px 14px;
+  }
+  .cabecalho h2 {
+    font-size: 26px;
+  }
+}
+.painel {
+  flex: 1;
+  position: relative;      /* NOVO: necessário para a média de fundo se posicionar */
+  border-radius: 14px;
+  padding: 0;              /* NOVO: o padding passa para .painelConteudo */
+  min-height: 420px;
+  overflow: hidden;        /* NOVO: corta a imagem/vídeo nos cantos arredondados */
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.painelMidia {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.midiaFundo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: fadeIn 0.6s ease;
+}
+
+.painelOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 5, 3, 0.95) 0%,
+    rgba(10, 5, 3, 0.75) 45%,
+    rgba(10, 5, 3, 0.4) 100%
+  );
+}
+
+.painelConteudo {
+  position: relative;
+  z-index: 1;
+  padding: 36px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Barra de progresso dentro de cada aba, mostrando a contagem até à troca automática */
+.aba {
+  position: relative;
+  overflow: hidden;
+}
+
+.progresso {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+}
+
+.progressoBarra {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: #E53917;
+  animation: preencher 4s linear forwards;
+}
+
+@keyframes preencher {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@media (max-width: 800px) {
+  .painel {
+    width: 100%;
+    min-height: 0;
+  }
+  .painelConteudo {
+    padding: 24px 20px;
+  }
+}
