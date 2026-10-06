@@ -80,7 +80,20 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
   display: block;
+}
+
+.iniciais {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 57, 23, 0.12);
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .cartao h3 {
