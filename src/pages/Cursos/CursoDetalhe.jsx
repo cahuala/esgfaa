@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
-import cursos, { calendarioAdmissao, cursoPorId, processoAdmissao, totalHoras } from '../../data/cursos'
-import { pessoaPorId } from '../../data/pessoas'
+import { totalHoras } from '../../data/cursos'
+import { useConteudo } from '../../conteudo/contexto'
 import { iniciais } from '../../utils/texto'
 import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import ed from '../../styles/editorial.module.css'
@@ -21,6 +21,11 @@ const seccoes = [
 const ids = seccoes.map((s) => s.id)
 
 function CursoDetalhe() {
+  const { cursos, paginas, cursoPorId, pessoaPorId } = useConteudo()
+  const pagina = paginas.cursos
+  const calendarioAdmissao = pagina.calendario || []
+  const processoAdmissao = pagina.processo || []
+  const prazo = pagina.prazo || calendarioAdmissao[1]?.periodo
   const { id } = useParams()
   const curso = cursoPorId(id)
   const ativa = useSeccaoAtiva(ids)
@@ -37,7 +42,6 @@ function CursoDetalhe() {
     <main className={ed.pagina}>
       <CabecalhoEditorial
         migalhas={[{ label: 'Cursos', to: '/Cursos' }, { label: curso.sigla }]}
-        topo={['Ano académico 2027']}
         sobretitulo={`${curso.sigla} · ${curso.duracao}`}
         titulo={curso.nome}
         entrada={curso.resumo}
@@ -77,7 +81,7 @@ function CursoDetalhe() {
 
           <div className={ed.caixaLateral}>
             <span className={ed.rotulo}>Candidaturas</span>
-            <p>Abertas até {calendarioAdmissao[1].periodo}.</p>
+            <p>{pagina.candidaturasAbertas && prazo ? `Abertas até ${prazo}.` : 'Consulte o calendário de admissão.'}</p>
             <Link to="/#candidatura" className={ed.botao}>Pré-candidatura</Link>
           </div>
         </aside>
@@ -149,7 +153,7 @@ function CursoDetalhe() {
             </ol>
           </Seccao>
 
-          <Seccao id="calendario" numero={numero('calendario')} rotulo="Calendário" titulo="Datas da admissão 2027.">
+          <Seccao id="calendario" numero={numero('calendario')} rotulo="Calendário" titulo={`Datas da admissão ${pagina.anoAcademico}.`}>
             <table className={ed.tabela}>
               <thead>
                 <tr><th scope="col">Fase</th><th scope="col">Data</th></tr>

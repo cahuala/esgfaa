@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaArrowRight } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
-import pessoas from '../../data/pessoas'
-import contactos from '../../data/contactos'
+import { useConteudo } from '../../conteudo/contexto'
+import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import { iniciais } from '../../utils/texto'
-import ImagemSede from '../../assets/Escola De Guerra.png'
-import ImagemHistoria from '../../assets/Escola2.jpeg'
 import Brasao from '../../assets/Logo.png'
 import styles from './Institucional.module.css'
 
@@ -18,96 +15,32 @@ const seccoes = [
   { id: 'comando', numero: 'IV', label: 'Direção / Comando' },
 ]
 
-const numeros = [
-  { valor: '+10', legenda: 'Anos de existência' },
-  { valor: '+500', legenda: 'Oficiais formados' },
-  { valor: '03', legenda: 'Cursos de formação superior' },
-  { valor: '+20', legenda: 'Acordos de cooperação' },
-]
-
-// ATENÇÃO: conteúdo provisório — substituir pelos marcos oficiais da história da Escola.
-const marcos = [
-  { ano: '2014', titulo: 'Criação da Escola', texto: 'Instituída como estabelecimento de ensino superior militar das Forças Armadas Angolanas.' },
-  { ano: '2015', titulo: 'Primeiro Curso de Estado-Maior', texto: 'Arranque da formação de oficiais para funções de estado-maior.' },
-  { ano: '2018', titulo: 'Abertura internacional', texto: 'Assinatura dos primeiros protocolos de cooperação com escolas militares parceiras.' },
-  { ano: '2021', titulo: 'Novo ciclo de comando', texto: 'Início de um programa de modernização curricular e pedagógica.' },
-  { ano: '2026', titulo: 'Reforço da investigação', texto: 'Seminários de investigação obrigatórios em todos os cursos e nova revista científica.' },
-]
-
-const valores = [
-  { nome: 'Disciplina', texto: 'Cumprimento rigoroso do dever, das normas e da palavra dada.' },
-  { nome: 'Integridade', texto: 'Coerência entre o que se pensa, o que se diz e o que se faz.' },
-  { nome: 'Lealdade', texto: 'Para com a Nação, as Forças Armadas, os superiores e os subordinados.' },
-  { nome: 'Espírito de serviço', texto: 'Colocar o interesse nacional acima do interesse pessoal.' },
-]
-
-const ramos = [
-  {
-    titulo: 'Ensino',
-    orgaos: [
-      { nome: 'Direção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },
-      { nome: 'Corpo Docente', texto: 'Docentes militares e civis responsáveis pela formação.' },
-      { nome: 'Secretaria Académica', texto: 'Candidaturas, matrículas, certificados e calendário.' },
-    ],
-  },
-  {
-    titulo: 'Investigação e Cooperação',
-    orgaos: [
-      { nome: 'Departamento de Investigação', texto: 'Investigação científica em estratégia, segurança e defesa.' },
-      { nome: 'Cooperação Internacional', texto: 'Protocolos e intercâmbio com instituições parceiras.' },
-    ],
-  },
-  {
-    titulo: 'Apoio',
-    orgaos: [
-      { nome: 'Gabinete de Comunicação', texto: 'Imprensa, eventos, publicações e redes sociais.' },
-      { nome: 'Serviços de Apoio', texto: 'Logística, instalações e recursos administrativos.' },
-    ],
-  },
-]
+const idsSeccoes = seccoes.map((s) => s.id)
 
 function Institucional() {
-  const [ativa, setAtiva] = useState(seccoes[0].id)
-  const comandante = pessoas[0]
-  const subdiretora = pessoas.find((p) => p.cargo.startsWith('Subdiretora'))
+  const { pessoas, paginas } = useConteudo()
+  const pagina = paginas.institucional
+  const contactos = paginas.contactos
+  const { numeros, valores } = pagina
+  const { marcos } = pagina.historia
+  const { ramos } = pagina.estrutura
+  const ativa = useSeccaoAtiva(idsSeccoes)
+  const comandante = pessoas[0] || { nome: '', cargo: '' }
+  const subdiretora = pessoas.find((p) => p.cargo?.startsWith('Subdiretora'))
   const direcao = pessoas.slice(1)
-
-  // marca no índice a última secção cujo topo já passou o meio do ecrã
-  useEffect(() => {
-    let pedido = null
-    function atualizar() {
-      pedido = null
-      const meio = window.innerHeight / 2
-      const atual = seccoes.reduce((escolhida, s) => {
-        const el = document.getElementById(s.id)
-        return el && el.getBoundingClientRect().top <= meio ? s.id : escolhida
-      }, seccoes[0].id)
-      setAtiva(atual)
-    }
-    function aoFazerScroll() {
-      if (!pedido) pedido = requestAnimationFrame(atualizar)
-    }
-    atualizar()
-    window.addEventListener('scroll', aoFazerScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', aoFazerScroll)
-      if (pedido) cancelAnimationFrame(pedido)
-    }
-  }, [])
 
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
-        topo={['Forças Armadas Angolanas', 'Estabelecimento de Ensino Superior Militar']}
         sobretitulo="Institucional"
         titulo="A Escola"
-        entrada="A Escola Superior de Guerra forma os oficiais que planeiam, comandam e dirigem as Forças Armadas Angolanas — e produz o pensamento estratégico que os acompanha."
+        entrada={pagina.entrada}
       />
 
       <figure className={styles.sede}>
-        <img src={ImagemSede} alt="Fachada da Escola Superior de Guerra" />
+        <img src={pagina.imagemSede} alt="Fachada da Escola Superior de Guerra" />
         <figcaption>
-          <span>Sede</span> Escola Superior de Guerra das Forças Armadas Angolanas, Luanda.
+          <span>Sede</span> {pagina.legendaSede}
         </figcaption>
       </figure>
 
@@ -151,29 +84,18 @@ function Institucional() {
         <div className={styles.conteudo}>
           {/* I. História */}
           <section id="historia" className={styles.seccao}>
-            <TituloSeccao numero="I" rotulo="História">Mais de uma década a formar quem comanda.</TituloSeccao>
+            <TituloSeccao numero="I" rotulo="História">{pagina.historia.titulo}</TituloSeccao>
 
             <div className={styles.textoColunas}>
-              <figure className={styles.figuraTexto}>
-                <img src={ImagemHistoria} alt="Oficiais numa sessão no auditório da Escola" />
-                <figcaption><span>Figura 1</span> Sessão solene no auditório principal.</figcaption>
-              </figure>
-              <p className={styles.capitular}>
-                A Escola Superior de Guerra das Forças Armadas Angolanas nasceu da necessidade de formar, em Angola,
-                os oficiais destinados às mais altas funções de comando, direção e estado-maior, reduzindo a
-                dependência da formação no estrangeiro e adaptando o ensino à realidade nacional.
-              </p>
-              <p>
-                Desde então, a Escola consolidou-se como o principal estabelecimento de ensino superior militar do
-                país. O seu modelo combina a formação doutrinária com a investigação científica e a cooperação com
-                instituições congéneres, num ambiente em que oficiais dos três ramos aprendem a planear e a decidir
-                em conjunto.
-              </p>
-              <p>
-                Ao longo dos anos, os cursos foram sendo revistos para acompanhar a evolução das ameaças, da
-                tecnologia e das missões das Forças Armadas, mantendo como referência os valores que definem a
-                condição militar.
-              </p>
+              {pagina.historia.imagem && (
+                <figure className={styles.figuraTexto}>
+                  <img src={pagina.historia.imagem} alt={pagina.historia.legenda || ''} />
+                  {pagina.historia.legenda && <figcaption><span>Figura 1</span> {pagina.historia.legenda}</figcaption>}
+                </figure>
+              )}
+              {pagina.historia.paragrafos.map((t, i) => (
+                <p key={i} className={i === 0 ? styles.capitular : undefined}>{t}</p>
+              ))}
             </div>
 
             <table className={styles.cronologia}>
@@ -197,15 +119,11 @@ function Institucional() {
             <div className={styles.declaracoes}>
               <article>
                 <span className={styles.rotulo}>Missão</span>
-                <p>
-                  Formar oficiais com competência técnica, ética e capacidade de comando ao serviço da defesa de Angola.
-                </p>
+                <p>{pagina.missao}</p>
               </article>
               <article>
                 <span className={styles.rotulo}>Visão</span>
-                <p>
-                  Ser referência regional na formação de quadros militares e na investigação em estratégia e defesa.
-                </p>
+                <p>{pagina.visao}</p>
               </article>
             </div>
 
@@ -226,10 +144,7 @@ function Institucional() {
           {/* III. Organização e Estrutura */}
           <section id="estrutura" className={styles.seccao}>
             <TituloSeccao numero="III" rotulo="Organização e Estrutura">Como a Escola está organizada.</TituloSeccao>
-            <p className={styles.introducao}>
-              Sob a direção do Comando, a Escola organiza-se em três áreas — ensino, investigação e cooperação, e
-              apoio — cada uma com órgãos de missão própria.
-            </p>
+            <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
             <div className={styles.organograma}>
               <div className={styles.topo}>
@@ -271,15 +186,8 @@ function Institucional() {
                 {comandante.foto ? <img src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
               </figure>
               <div>
-                <blockquote className={styles.citacao}>
-                  Formar quem comanda é formar quem decide. Cada oficial que passa por esta Escola leva consigo a
-                  responsabilidade de servir Angola com competência e integridade.
-                </blockquote>
-                <p className={styles.mensagemTexto}>
-                  Na Escola Superior de Guerra, acreditamos que a qualidade das nossas Forças Armadas começa na
-                  qualidade dos seus quadros. É esse o compromisso que renovamos em cada ano académico: exigência no
-                  ensino, rigor na investigação e abertura ao mundo.
-                </p>
+                <blockquote className={styles.citacao}>{pagina.mensagem.citacao}</blockquote>
+                <p className={styles.mensagemTexto}>{pagina.mensagem.texto}</p>
                 <div className={styles.assinatura}>
                   <strong>{comandante.nome}</strong>
                   <span>{comandante.cargo}</span>

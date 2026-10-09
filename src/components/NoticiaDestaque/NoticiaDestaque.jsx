@@ -1,18 +1,20 @@
 
 import { Link } from 'react-router-dom'
 import styles from './NoticiaDestaque.module.css'
-import noticias from '../../data/noticias'
+import { useConteudo } from '../../conteudo/contexto'
 import { formatarData } from '../../utils/datas'
 
 function NoticiaDestaque() {
+  const { noticias, paginas } = useConteudo()
+  const textos = paginas.home.noticias
   const recentes = noticias.slice(0, 6)
   const noticiasDuplicadas = [...recentes, ...recentes]
 
   return (
     <section className={styles.secao}>
       <div className={styles.cabecalho}>
-        <span className={styles.etiqueta}>Notícias</span>
-        <h2>O que está a acontecer na Escola.</h2>
+        <span className={styles.etiqueta}>{textos.etiqueta}</span>
+        <h2>{textos.titulo}</h2>
       </div>
 
       <div className={styles.pista}>

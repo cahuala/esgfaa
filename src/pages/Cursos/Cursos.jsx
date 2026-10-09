@@ -1,30 +1,37 @@
 import { Link } from 'react-router-dom'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
-import cursos, { calendarioAdmissao, processoAdmissao, totalHoras } from '../../data/cursos'
-import { pessoaPorId } from '../../data/pessoas'
+import { totalHoras } from '../../data/cursos'
+import { useConteudo } from '../../conteudo/contexto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Cursos.module.css'
 
 function Cursos() {
+  const { cursos, paginas, pessoaPorId } = useConteudo()
+  const pagina = paginas.cursos
+  const calendarioAdmissao = pagina.calendario || []
+  const processoAdmissao = pagina.processo || []
+  const prazo = pagina.prazo || calendarioAdmissao[1]?.periodo
+
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        topo={['Formação superior militar', 'Ano académico 2027']}
         sobretitulo="Formação"
         titulo="Cursos"
-        entrada="Três programas de formação superior para cada etapa da carreira de oficial — do estado-maior ao comando ao mais alto nível."
+        entrada={pagina.entrada}
       />
 
       {/* Faixa de candidaturas */}
+      {pagina.candidaturasAbertas && (
       <div className={styles.faixa}>
         <div className={styles.faixaInterior}>
           <span className={styles.faixaSelo}>Candidaturas abertas</span>
           <p>
-            Ano académico 2027 · prazo até <strong>{calendarioAdmissao[1].periodo}</strong>
+            Ano académico {pagina.anoAcademico}{prazo && <> · prazo até <strong>{prazo}</strong></>}
           </p>
           <a href="#calendario" className={styles.faixaLigacao}>Ver calendário</a>
         </div>
       </div>
+      )}
 
       {/* Os cursos */}
       <section className={ed.largura} aria-label="Cursos disponíveis">
@@ -59,7 +66,7 @@ function Cursos() {
           <span className={ed.numeroSeccao} aria-hidden="true">A</span>
           <div>
             <span className={ed.rotulo}>Comparar</span>
-            <h2>Os três cursos lado a lado.</h2>
+            <h2>Os cursos lado a lado.</h2>
           </div>
         </div>
 
@@ -117,7 +124,7 @@ function Cursos() {
           <span className={ed.numeroSeccao} aria-hidden="true">C</span>
           <div>
             <span className={ed.rotulo}>Calendário académico</span>
-            <h2>Datas da admissão 2027.</h2>
+            <h2>Datas da admissão {pagina.anoAcademico}.</h2>
           </div>
         </div>
         <div className={styles.calendario}>

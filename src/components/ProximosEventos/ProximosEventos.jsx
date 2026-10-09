@@ -1,10 +1,12 @@
 
 import { Link } from 'react-router-dom'
-import eventos from '../../data/eventos'
+import { useConteudo } from '../../conteudo/contexto'
 import { paraData, hoje as inicioDoDia, diaDoMes, mesCurto } from '../../utils/datas'
 import styles from './ProximosEventos.module.css'
 
 function ProximosEventos() {
+  const { eventos, paginas } = useConteudo()
+  const textos = paginas.home.eventos
   const hoje = inicioDoDia()
 
   const proximos = eventos
@@ -18,8 +20,8 @@ function ProximosEventos() {
       <div className={styles.container}>
         <div className={styles.cabecalho}>
           <div>
-            <span className={styles.etiqueta}>Eventos</span>
-            <h2>Próximos eventos</h2>
+            <span className={styles.etiqueta}>{textos.etiqueta}</span>
+            <h2>{textos.titulo}</h2>
           </div>
           <Link to="/Eventos" className={styles.verTodos}>Ver todos os eventos →</Link>
         </div>

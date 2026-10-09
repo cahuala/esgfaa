@@ -570,6 +570,10 @@
   color: #9a9a9a;
 }
 
+.linhaLocal > span {
+  margin-left: 12px;
+}
+
 .linhaLocal svg {
   color: var(--vermelho);
 }

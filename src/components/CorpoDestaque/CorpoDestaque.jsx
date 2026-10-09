@@ -1,17 +1,19 @@
 
 import styles from './CorpoDestaque.module.css'
-import pessoas from '../../data/pessoas'
+import { useConteudo } from '../../conteudo/contexto'
 import { iniciais } from '../../utils/texto'
 
 function CorpoDestaque() {
+  const { pessoas, paginas } = useConteudo()
+  const textos = paginas.home.corpo
   // duplica a lista para o loop do carrossel ficar contínuo, sem salto visível
   const pessoasDuplicadas = [...pessoas, ...pessoas]
 
   return (
     <section className={styles.secao}>
       <div className={styles.cabecalho}>
-        <span className={styles.etiqueta}>Comando e Corpo Docente</span>
-        <h2>Quem forma, também lidera.</h2>
+        <span className={styles.etiqueta}>{textos.etiqueta}</span>
+        <h2>{textos.titulo}</h2>
       </div>
 
       <div className={styles.pista}>

@@ -1,4 +1,3 @@
-import styles from './Home.module.css'
 import HeroSection from '../../components/HeroSection/HeroSection'
 import FormacaoDestaque from '../../components/FormacaoDestaque/FormacaoDestaque'
 import NoticiaDestaque from '../../components/NoticiaDestaque/NoticiaDestaque'

@@ -3,25 +3,20 @@ import { Link } from 'react-router-dom'
 import { FaSearch, FaSlidersH, FaTimes, FaPlay, FaImages, FaEnvelope } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
-import noticias, { temGaleria, temVideo } from '../../data/noticias'
-import contactos from '../../data/contactos'
-import { dataPorExtenso, formatarData, formatarDataLonga, formatarMesAno } from '../../utils/datas'
+import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
+import { temGaleria, temVideo } from '../../data/noticias'
+import { useConteudo } from '../../conteudo/contexto'
+import { formatarData, formatarDataLonga, formatarMesAno } from '../../utils/datas'
 import { normalizar, tempoLeitura } from '../../utils/texto'
 import styles from './Noticias.module.css'
 
 const POR_PAGINA = 6
 const TODAS = 'Todas'
 
-// contagens para a coluna de pesquisa
-const contar = (chave) =>
-  noticias.reduce((acc, n) => {
-    const k = chave(n)
-    acc.set(k, (acc.get(k) || 0) + 1)
-    return acc
-  }, new Map())
-const categorias = [...contar((n) => n.categoria)]
-const meses = [...contar((n) => n.data.slice(0, 7))]
-const emComunicacao = contactos.departamentos.find((d) => d.nome === 'Gabinete de Comunicação')
+// contagens para a coluna de pesquisa: [[valor, total], ...]
+const contar = (lista, chave) => [
+  ...lista.reduce((acc, n) => acc.set(chave(n), (acc.get(chave(n)) || 0) + 1), new Map()),
+]
 
 // agrupa uma lista já ordenada em [{ mes: 'Agosto de 2026', noticias: [...] }]
 function agruparPorMes(lista) {
@@ -35,6 +30,10 @@ function agruparPorMes(lista) {
 }
 
 function Noticias() {
+  const { noticias, paginas } = useConteudo()
+  const categorias = contar(noticias, (n) => n.categoria)
+  const meses = contar(noticias, (n) => n.data.slice(0, 7))
+  const emComunicacao = paginas.contactos.departamentos.find((d) => d.nome === 'Gabinete de Comunicação')
   const [pesquisa, setPesquisa] = useState('')
   const [categoria, setCategoria] = useState(TODAS)
   const [mes, setMes] = useState(null)
@@ -86,7 +85,6 @@ function Noticias() {
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
-        topo={['Escola Superior de Guerra · Forças Armadas Angolanas', dataPorExtenso()]}
         sobretitulo="Boletim informativo"
         titulo="Notícias"
       >
@@ -240,6 +238,7 @@ function Noticias() {
                     <span>{principal.categoria}</span>
                     <time dateTime={principal.data}>{formatarDataLonga(principal.data)}</time>
                     <span>{tempoLeitura(principal.conteudo)} min de leitura</span>
+                    <ResumoInteracoes colecao="noticias" id={principal.slug} />
                   </p>
                   <h2><Link to={`/Noticias/${principal.slug}`}>{principal.titulo}</Link></h2>
                   <p className={styles.mancheteResumo}>{principal.resumo}</p>
@@ -260,6 +259,7 @@ function Noticias() {
                         <span className={styles.chapeu}>
                           <span>{n.categoria}</span>
                           <time dateTime={n.data}>{formatarData(n.data)}</time>
+                          <ResumoInteracoes colecao="noticias" id={n.slug} />
                         </span>
                         <span className={styles.itemTitulo}>{n.titulo}</span>
                         <span className={styles.itemResumo}>{n.resumo}</span>

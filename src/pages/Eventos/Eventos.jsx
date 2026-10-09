@@ -6,9 +6,9 @@ import Contagem from './Contagem'
 import Calendario from './Calendario'
 import LinhaAgenda from './LinhaAgenda'
 import MiniaturaEvento from './MiniaturaEvento'
-import eventos from '../../data/eventos'
+import { useConteudo } from '../../conteudo/contexto'
 import {
-  dataPorExtenso, diaDaSemana, diaDoMes, formatarDataLonga, formatarMesAno, hoje, mesLongo, paraData,
+  diaDaSemana, diaDoMes, formatarDataLonga, formatarMesAno, hoje, mesLongo, paraData,
 } from '../../utils/datas'
 import { descarregarAgenda, descarregarCalendario } from '../../utils/calendario'
 import ed from '../../styles/editorial.module.css'
@@ -28,6 +28,7 @@ function agruparPorMes(lista) {
 }
 
 function Eventos() {
+  const { eventos } = useConteudo()
   const inicioDoDia = hoje()
   const hojeIso = `${inicioDoDia.getFullYear()}-${String(inicioDoDia.getMonth() + 1).padStart(2, '0')}-${String(inicioDoDia.getDate()).padStart(2, '0')}`
   const proximos = eventos.filter((e) => paraData(e.data) >= inicioDoDia)
@@ -51,7 +52,6 @@ function Eventos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        topo={['Agenda institucional', dataPorExtenso()]}
         sobretitulo="Agenda"
         titulo="Eventos"
       >

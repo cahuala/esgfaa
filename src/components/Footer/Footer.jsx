@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa'
 import Logo from '../../assets/Logo.png'
+import { useConteudo } from '../../conteudo/contexto'
 import styles from './Footer.module.css'
 
 const colunas = [
@@ -43,6 +44,7 @@ const colunas = [
 
 function Footer() {
   const ano = new Date().getFullYear()
+  const { email } = useConteudo().paginas.contactos
 
   return (
     <footer className={styles.footer}>
@@ -90,7 +92,9 @@ function Footer() {
         <div className={styles.baseLinks}>
           <Link to="/Contactos">Localização</Link>
           <span>·</span>
-          <a href="mailto:geral@esgfaa.gov.ao">geral@esgfaa.gov.ao</a>
+          <a href={`mailto:${email}`}>{email}</a>
+          <span>·</span>
+          <a href={`${import.meta.env.BASE_URL}admin/`} rel="nofollow">Área reservada</a>
         </div>
       </div>
     </footer>

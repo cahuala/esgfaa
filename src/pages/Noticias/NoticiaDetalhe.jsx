@@ -4,7 +4,8 @@ import Partilhar from '../../components/Partilhar/Partilhar'
 import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Miniatura from './Miniatura'
-import noticias, { noticiaPorSlug } from '../../data/noticias'
+import Interacoes from '../../components/Interacoes/Interacoes'
+import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
 import { ancora, tempoLeitura } from '../../utils/texto'
 import lista from './Noticias.module.css'
@@ -12,6 +13,7 @@ import styles from './NoticiaDetalhe.module.css'
 
 function NoticiaDetalhe() {
   const { slug } = useParams()
+  const { noticias, noticiaPorSlug } = useConteudo()
   const noticia = noticiaPorSlug(slug)
 
   if (!noticia) {
@@ -82,6 +84,8 @@ function NoticiaDetalhe() {
         {/* Centro: texto com imagens paginadas */}
         <article className={styles.texto}>
           <ConteudoRico blocos={noticia.conteudo} capitular />
+
+          <Interacoes colecao="noticias" id={noticia.slug} titulo={noticia.titulo} />
 
           <footer className={styles.fim}>
             <span className={styles.fimMarca} aria-hidden="true">■</span>

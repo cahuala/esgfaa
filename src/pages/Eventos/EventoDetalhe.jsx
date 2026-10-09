@@ -6,7 +6,8 @@ import Partilhar from '../../components/Partilhar/Partilhar'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Contagem from './Contagem'
 import LinhaAgenda from './LinhaAgenda'
-import eventos, { eventoPorId } from '../../data/eventos'
+import Interacoes from '../../components/Interacoes/Interacoes'
+import { useConteudo } from '../../conteudo/contexto'
 import { diaDaSemana, diaDoMes, hoje, mesLongo, paraData } from '../../utils/datas'
 import { descarregarCalendario } from '../../utils/calendario'
 import ed from '../../styles/editorial.module.css'
@@ -14,6 +15,7 @@ import styles from './Eventos.module.css'
 
 function EventoDetalhe() {
   const { id } = useParams()
+  const { eventos, eventoPorId } = useConteudo()
   const evento = eventoPorId(id)
 
   if (!evento) {
@@ -28,7 +30,6 @@ function EventoDetalhe() {
     <main className={ed.pagina}>
       <CabecalhoEditorial
         migalhas={[{ label: 'Eventos', to: '/Eventos' }, { label: evento.categoria }]}
-        topo={[realizado ? 'Evento realizado' : 'Próximo evento']}
         sobretitulo={evento.categoria}
         titulo={evento.titulo}
         entrada={evento.resumo}
@@ -100,6 +101,8 @@ function EventoDetalhe() {
               </ol>
             </section>
           )}
+
+          <Interacoes colecao="eventos" id={evento.id} titulo={evento.titulo} />
         </div>
       </div>
 

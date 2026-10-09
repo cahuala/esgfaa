@@ -2,19 +2,26 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './FormacaoDestaque.module.css'
 import { Link } from 'react-router-dom'
-import cursos from '../../data/cursos'
+import { useConteudo } from '../../conteudo/contexto'
 
 const INTERVALO_MS = 7000
 
 function FormacaoDestaque() {
+  const { cursos, paginas } = useConteudo()
+  const textos = paginas.home.formacao
   const [indiceAtivo, setIndiceAtivo] = useState(0)
   const timerRef = useRef(null)
-  const curso = cursos[indiceAtivo]
+  // o intervalo lê o total por referência (a lista pode mudar quando a API responde)
+  const totalRef = useRef(cursos.length)
+  useEffect(() => {
+    totalRef.current = cursos.length
+  }, [cursos.length])
+  const curso = cursos[indiceAtivo % Math.max(1, cursos.length)]
 
   function iniciarAutoRotacao() {
     clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
-      setIndiceAtivo((atual) => (atual + 1) % cursos.length)
+      setIndiceAtivo((atual) => (atual + 1) % Math.max(1, totalRef.current))
     }, INTERVALO_MS)
   }
 
@@ -28,12 +35,14 @@ function FormacaoDestaque() {
     iniciarAutoRotacao() // reinicia a contagem para não trocar logo a seguir ao clique manual
   }
 
+  if (!curso) return null
+
   return (
     <section className={styles.secao}>
       <div className={styles.cabecalho}>
-        <span className={styles.etiqueta}>Formação e Cursos</span>
-        <h2>Da admissão à graduação, formamos quem vai comandar.</h2>
-        <p>Programas académicos estruturados para cada etapa da carreira militar — do planeamento estratégico à liderança institucional.</p>
+        <span className={styles.etiqueta}>{textos.etiqueta}</span>
+        <h2>{textos.titulo}</h2>
+        <p>{textos.texto}</p>
       </div>
 
       <div className={styles.corpo}>

@@ -7,8 +7,8 @@ import Partilhar from '../../components/Partilhar/Partilhar'
 import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import EntradaArtigo from './EntradaArtigo'
-import artigos, { artigoPorSlug } from '../../data/artigos'
-import { pessoaPorId } from '../../data/pessoas'
+import Interacoes from '../../components/Interacoes/Interacoes'
+import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga, paraData } from '../../utils/datas'
 import { ancora, iniciais, tempoLeitura } from '../../utils/texto'
 import ed from '../../styles/editorial.module.css'
@@ -16,6 +16,7 @@ import styles from './Artigos.module.css'
 
 function ArtigoDetalhe() {
   const { slug } = useParams()
+  const { artigos, artigoPorSlug, pessoaPorId } = useConteudo()
   const artigo = artigoPorSlug(slug)
   const [citacaoCopiada, setCitacaoCopiada] = useState(false)
 
@@ -53,7 +54,6 @@ function ArtigoDetalhe() {
 
       <CabecalhoEditorial
         migalhas={[{ label: 'Artigos', to: '/Artigos' }, { label: artigo.tipo }]}
-        topo={[`${artigo.area} · ${ano}`]}
         sobretitulo={artigo.tipo}
         titulo={artigo.titulo}
       >
@@ -100,6 +100,8 @@ function ArtigoDetalhe() {
           </section>
 
           <ConteudoRico blocos={artigo.conteudo} capitular />
+
+          <Interacoes colecao="artigos" id={artigo.slug} titulo={artigo.titulo} />
 
           {autor && (
             <div className={styles.sobreAutor}>

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# modelo Color Admin (licença comercial, ~1 GB) — não publicar
+color_admin_v5.5.2/

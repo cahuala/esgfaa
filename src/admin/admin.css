@@ -1,0 +1,323 @@
+/* Ajustes do painel ESGFAA sobre o tema Color Admin */
+
+/* cor de destaque do tema: vermelho da Escola em vez do verde-água por omissão */
+:root {
+  --bs-app-theme: #e53917;
+  --bs-app-theme-rgb: 229, 57, 23;
+  --bs-app-theme-hover: #c22f11;
+  --bs-app-theme-hover-border-color: #c22f11;
+  --bs-app-theme-active: #c22f11;
+  --bs-app-theme-active-border-color: #c22f11;
+  --bs-app-theme-disabled: #ef8a75;
+  --bs-app-theme-disabled-border-color: #ef8a75;
+}
+
+.admin-brasao {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  margin-right: 8px;
+}
+
+.admin-brasao-login {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  margin-right: 12px;
+}
+
+.admin-avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e53917;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.admin-avatar-grande {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.navbar-user .dropdown-toggle {
+  color: var(--bs-app-header-color);
+}
+
+.admin-sidebar-rolavel {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.lista-pesquisa {
+  max-width: 360px;
+}
+
+.miniatura-tabela {
+  width: 48px;
+  height: 34px;
+  object-fit: cover;
+  display: inline-flex;
+}
+
+.rounded-circle.miniatura-tabela {
+  width: 34px;
+}
+
+.miniatura-vazia {
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-gray-200);
+  color: var(--bs-gray-500);
+  border-radius: 4px;
+}
+
+.col-imagem {
+  width: 1%;
+}
+
+.texto-comentario {
+  max-width: 420px;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Barra fixa com o botão de guardar */
+.barra-guardar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 -30px -20px;
+  padding: 12px 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--bs-border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Campo de ficheiro (imagem, vídeo, PDF) */
+.campo-ficheiro {
+  border: 2px dashed var(--bs-gray-300);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--bs-gray-100);
+}
+
+.campo-ficheiro.tem-ficheiro {
+  border-style: solid;
+  background: #fff;
+}
+
+.campo-ficheiro-previa {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.campo-ficheiro-ligacao {
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.campo-ficheiro-acoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Listas de objetos (sub-formulários) */
+.lista-objetos-item {
+  border: 1px solid var(--bs-border-color);
+  border-left: 3px solid var(--bs-app-theme);
+  border-radius: 4px;
+  padding: 12px 14px 14px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.lista-objetos-item .lista-objetos-item {
+  background: var(--bs-gray-100);
+  border-left-color: var(--bs-gray-400);
+}
+
+.lista-objetos-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Editor de blocos */
+.editor-blocos {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  padding: 6px 14px;
+  background: var(--bs-gray-100);
+}
+
+.bloco {
+  background: #fff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+  padding: 12px 16px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.bloco-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bloco-tipo {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--bs-gray-600);
+}
+
+.bloco-subtitulo input {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.bloco-citacao {
+  border-left: 3px solid var(--bs-app-theme);
+}
+
+.blocos-inserir {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.blocos-mais {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px dashed var(--bs-gray-400);
+  background: #fff;
+  color: var(--bs-gray-600);
+  font-size: 11px;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.blocos-mais:hover,
+.blocos-mais:focus-visible {
+  opacity: 1;
+  border-style: solid;
+  border-color: var(--bs-app-theme);
+  color: var(--bs-app-theme);
+}
+
+.blocos-menu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+}
+
+/* Gráfico de barras do painel */
+.grafico-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 220px;
+}
+
+.grafico-coluna {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.grafico-pilha {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.grafico-barra {
+  width: 40%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s ease;
+}
+
+.grafico-rotulo {
+  font-size: 10px;
+  color: var(--bs-gray-600);
+}
+
+/* Avisos flutuantes */
+.aviso-flutuante {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2000;
+  max-width: 420px;
+  animation: aviso-entrar 0.25s ease;
+}
+
+@keyframes aviso-entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 767px) {
+  .barra-guardar {
+    margin: 0 -15px -15px;
+    padding: 10px 15px;
+  }
+
+  .grafico-rotulo {
+    display: none;
+  }
+}
+
+/* linhas de alerta no registo (tentativas de entrada falhadas) */
+.table > tbody > tr.linha-alerta > * {
+  --bs-table-bg-type: #fde8e7;
+  --bs-table-color-type: #9b1c13;
+}
+
+/* espaço para a barra fixa de guardar não tapar o último campo */
+form:has(> .barra-guardar) {
+  padding-bottom: 8px;
+}
+
+.barra-guardar {
+  margin-top: 20px;
+}

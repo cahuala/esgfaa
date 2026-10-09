@@ -71,3 +71,17 @@ export function diaDaSemana(iso) {
 export function mesLongo(iso) {
   return MESES_LONGOS[paraData(iso).getMonth()]
 }
+
+// "2026-10-09 09:21:50" (UTC, vindo da API) -> "há 5 min", "há 3 h", "há 2 dias" ou "12 Set 2026"
+export function tempoRelativo(dataUtc) {
+  const d = new Date(`${String(dataUtc).replace(' ', 'T')}Z`)
+  const seg = Math.max(0, Math.round((Date.now() - d) / 1000))
+  if (seg < 60) return 'agora mesmo'
+  if (seg < 3600) return `há ${Math.floor(seg / 60)} min`
+  if (seg < 86400) return `há ${Math.floor(seg / 3600)} h`
+  if (seg < 7 * 86400) {
+    const dias = Math.floor(seg / 86400)
+    return `há ${dias} ${dias === 1 ? 'dia' : 'dias'}`
+  }
+  return `${String(d.getDate()).padStart(2, '0')} ${MESES_CURTOS[d.getMonth()]} ${d.getFullYear()}`
+}

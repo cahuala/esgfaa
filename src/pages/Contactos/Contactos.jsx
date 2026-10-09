@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaCheck, FaMapMarkerAlt } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import FAQ from '../../components/FAQ/Faq'
-import contactos from '../../data/contactos'
+import { useConteudo } from '../../conteudo/contexto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Contactos.module.css'
 
 const VAZIO = { nome: '', email: '', telefone: '', assunto: '', mensagem: '', consentimento: false }
 
 function Contactos() {
+  const contactos = useConteudo().paginas.contactos
   const [form, setForm] = useState(VAZIO)
   const [enviado, setEnviado] = useState(false)
 
@@ -32,7 +33,6 @@ function Contactos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        topo={['Escola Superior de Guerra', 'Atendimento institucional']}
         sobretitulo="Contactos"
         titulo="Fale connosco"
         entrada="Candidaturas, pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis."

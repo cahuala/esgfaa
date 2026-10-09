@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FaMapMarkerAlt } from 'react-icons/fa'
+import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { diaDaSemana, diaDoMes, mesCurto } from '../../utils/datas'
 import styles from './Eventos.module.css'
 
@@ -22,7 +23,10 @@ function LinhaAgenda({ evento, realizado = false }) {
           {evento.inscricoes && !realizado && <em>Inscrições abertas</em>}
         </span>
         <span className={styles.linhaTitulo}>{evento.titulo}</span>
-        <span className={styles.linhaLocal}><FaMapMarkerAlt aria-hidden="true" /> {evento.local}</span>
+        <span className={styles.linhaLocal}>
+          <FaMapMarkerAlt aria-hidden="true" /> {evento.local}
+          <ResumoInteracoes colecao="eventos" id={evento.id} />
+        </span>
       </span>
       <span className={styles.linhaFoto}>
         <img src={evento.capa} alt="" loading="lazy" />

@@ -3,30 +3,31 @@ import styles from './CabecalhoEditorial.module.css'
 
 /*
   Cabeçalho das páginas interiores, ao estilo de um boletim oficial:
-  linha superior com filetes, sobretítulo vermelho, título grande e,
+  linha institucional com filetes, migalhas opcionais, sobretítulo vermelho, título e,
   à direita, um texto de entrada ou um bloco de números.
   `migalhas`: [{ label, to }] — o último item é a página atual.
 */
-function CabecalhoEditorial({ topo = [], migalhas, sobretitulo, titulo, entrada, children }) {
+function CabecalhoEditorial({ migalhas, sobretitulo, titulo, entrada, children }) {
   return (
     <header className={styles.cabecalho}>
       <div className={styles.interior}>
+        {/* linha institucional, igual em todas as páginas */}
         <div className={styles.linhaTopo}>
-          {migalhas ? (
-            <nav aria-label="Localização" className={styles.migalhas}>
-              <Link to="/">Início</Link>
-              {migalhas.map((m) => (
-                <span key={m.label}>
-                  <span aria-hidden="true">/</span>
-                  {m.to ? <Link to={m.to}>{m.label}</Link> : <span aria-current="page">{m.label}</span>}
-                </span>
-              ))}
-            </nav>
-          ) : (
-            topo.map((t) => <span key={t}>{t}</span>)
-          )}
-          {migalhas && topo[0] && <span>{topo[0]}</span>}
+          <span>Forças Armadas Angolanas</span>
+          <span>Estabelecimento de Ensino Superior Militar</span>
         </div>
+
+        {migalhas && (
+          <nav aria-label="Localização" className={styles.migalhas}>
+            <Link to="/">Início</Link>
+            {migalhas.map((m) => (
+              <span key={m.label}>
+                <span aria-hidden="true">/</span>
+                {m.to ? <Link to={m.to}>{m.label}</Link> : <span aria-current="page">{m.label}</span>}
+              </span>
+            ))}
+          </nav>
+        )}
 
         <div className={styles.titulo}>
           <div>

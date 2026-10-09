@@ -513,6 +513,10 @@
   color: #9a9a9a;
 }
 
+.chapeu > :empty {
+  display: none;
+}
+
 .chapeu > * + * {
   padding-left: 12px;
   margin-left: 12px;

@@ -1,11 +1,14 @@
 
 import styles from './HeroSection.module.css'
 import { useState } from 'react'
+import { useConteudo } from '../../conteudo/contexto'
 
 
 
 
 function HeroSection(){
+    const { cursos, paginas } = useConteudo()
+    const hero = paginas.home.hero
     const [form, setForm] = useState({
     nome: '', email: '', telefone: '', curso: ''
   })
@@ -22,28 +25,29 @@ function HeroSection(){
    
      return (
       
-         <section className={styles.heroSection}>
+         <section
+           className={styles.heroSection}
+           style={hero.imagem ? { backgroundImage: `linear-gradient(to top, rgba(10, 5, 3, 0.97) 0%, rgba(10, 5, 3, 0.8) 45%, rgba(10, 5, 3, 0.55) 100%), url("${hero.imagem}")` } : undefined}
+         >
       <div className={styles.container}>
 
         <div className={styles.conteudoTexto}>
-          <h1>Formar quem defende Angola, desde o primeiro dia.</h1>
-          <p>Conheça os cursos e programas da Escola Superior de Guerra e candidate-se ao próximo ano letivo.</p>
+          <h1>{hero.titulo}</h1>
+          <p>{hero.texto}</p>
           <a href="#candidatura" className={styles.ctaMobile}>Candidatar-me agora</a>
           <div className={styles.metricas}>
-            <div className={styles.item}>
-              <span>+10 anos</span>
-              <small>De existência</small>
-            </div>
-            <div className={styles.item}>
-              <span>+500</span>
-              <small>Oficiais formados</small>
-            </div>
+            {hero.metricas.map((m) => (
+              <div className={styles.item} key={m.legenda}>
+                <span>{m.valor}</span>
+                <small>{m.legenda}</small>
+              </div>
+            ))}
           </div>
         </div>
 
         <div className={styles.candidaturaCard} id="candidatura">
-          <h3>Candidate-se a um curso</h3>
-          <p>Preencha os seus dados e entraremos em contacto.</p>
+          <h3>{hero.formularioTitulo}</h3>
+          <p>{hero.formularioTexto}</p>
 
           <form onSubmit={handleSubmit}>
             <input type="text" name="nome" placeholder="Nome completo" value={form.nome} onChange={handleChange} required />
@@ -51,9 +55,7 @@ function HeroSection(){
             <input type="tel" name="telefone" placeholder="Telefone / contacto" value={form.telefone} onChange={handleChange} required />
             <select name="curso" value={form.curso} onChange={handleChange} required>
               <option value="" disabled>Curso pretendido</option>
-              <option value="curso-1">Curso de Estado-Maior</option>
-              <option value="curso-2">Curso de Promoção a Oficial General</option>
-              <option value="curso-3">Curso de Altos Estudos Militares</option>
+              {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
             <button type="submit">Enviar candidatura</button>
           </form>

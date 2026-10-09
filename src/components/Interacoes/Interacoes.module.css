@@ -1,0 +1,346 @@
+.interacoes {
+  max-width: 820px;
+  margin: 56px auto 0;
+  color: white;
+}
+
+/* Barra de reações */
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0;
+  border-top: 3px solid var(--filete-forte);
+  border-bottom: 1px solid var(--filete);
+}
+
+.gosto,
+.botaoBarra {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 18px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.gosto:hover,
+.botaoBarra:hover {
+  border-color: var(--vermelho);
+}
+
+.gosto:active {
+  transform: scale(0.96);
+}
+
+.gosto svg {
+  color: var(--vermelho);
+  font-size: 16px;
+}
+
+.gosto strong {
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  font-variant-numeric: tabular-nums;
+}
+
+.gostoAtivo {
+  background: var(--vermelho);
+  border-color: var(--vermelho);
+}
+
+.gostoAtivo svg {
+  color: white;
+  animation: pulsar 0.35s ease;
+}
+
+.gostoAtivo strong {
+  border-left-color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pulsar {
+  50% { transform: scale(1.35); }
+}
+
+.botaoBarra svg {
+  color: var(--vermelho);
+}
+
+.redes {
+  display: flex;
+  gap: 6px;
+}
+
+.redes a {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: white;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.redes a:hover {
+  background: var(--vermelho);
+  border-color: var(--vermelho);
+}
+
+.vistas {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+.aviso {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+/* Comentários */
+.comentarios {
+  padding-top: 44px;
+  scroll-margin-top: 140px;
+}
+
+.comentarios h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 24px;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.comentarios h2 span {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--vermelho);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 26px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--filete);
+}
+
+.formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formulario label > span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #b8b8b8;
+}
+
+.formulario input,
+.formulario textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: border-color 0.2s ease;
+}
+
+.formulario textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.formulario input:focus,
+.formulario textarea:focus {
+  outline: none;
+  border-color: var(--vermelho);
+}
+
+.linha {
+  max-width: 360px;
+}
+
+.armadilha {
+  position: absolute !important;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.enviar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.enviar small {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #8f8f8f;
+}
+
+.enviar button {
+  flex: 0 0 auto;
+  padding: 13px 24px;
+  background: var(--vermelho);
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.enviar button:hover {
+  filter: brightness(1.1);
+}
+
+.enviar button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.erro {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--vermelho);
+  background: rgba(229, 57, 23, 0.1);
+  font-size: 14px;
+}
+
+.semComentarios {
+  margin: 28px 0 0;
+  font-size: 15px;
+  color: #9a9a9a;
+}
+
+.lista {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+}
+
+.lista li {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 16px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--filete);
+  animation: entrar 0.35s ease;
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--vermelho);
+  background: rgba(229, 57, 23, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.autor {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 6px;
+}
+
+.autor strong {
+  font-size: 15px;
+}
+
+.autor time {
+  font-size: 12.5px;
+  color: #8f8f8f;
+}
+
+.texto {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: #d6d6d6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* contagens nas listagens */
+.resumo {
+  display: inline-flex;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b8b8b8;
+}
+
+.resumo span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.resumo svg {
+  color: var(--vermelho);
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .barra {
+    gap: 8px;
+  }
+
+  .gosto,
+  .botaoBarra {
+    padding: 0 14px;
+  }
+
+  .redes {
+    display: none;
+  }
+
+  .vistas {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .formulario {
+    padding: 20px;
+  }
+
+  .enviar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

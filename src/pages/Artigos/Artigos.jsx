@@ -3,20 +3,15 @@ import { Link } from 'react-router-dom'
 import { FaSearch } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import EntradaArtigo from './EntradaArtigo'
-import artigos from '../../data/artigos'
-import { pessoaPorId } from '../../data/pessoas'
+import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
 import { iniciais, normalizar } from '../../utils/texto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
 
-const contar = (chave) =>
-  [...artigos.reduce((m, a) => m.set(chave(a), (m.get(chave(a)) || 0) + 1), new Map())]
-
-const tipos = contar((a) => a.tipo)
-const areas = contar((a) => a.area)
-const anos = contar((a) => a.data.slice(0, 4))
-const autores = contar((a) => a.autor).map(([id, total]) => ({ ...pessoaPorId(id), total }))
+// [[valor, total], ...]
+const contar = (lista, chave) =>
+  [...lista.reduce((m, a) => m.set(chave(a), (m.get(chave(a)) || 0) + 1), new Map())]
 
 const normas = [
   'Texto original, não publicado noutra revista.',
@@ -49,6 +44,13 @@ function Filtro({ titulo, numero, opcoes, valor, definir }) {
 }
 
 function Artigos() {
+  const { artigos, pessoaPorId } = useConteudo()
+  const tipos = contar(artigos, (a) => a.tipo)
+  const areas = contar(artigos, (a) => a.area)
+  const anos = contar(artigos, (a) => a.data.slice(0, 4))
+  const autores = contar(artigos, (a) => a.autor)
+    .map(([id, total]) => ({ ...pessoaPorId(id), id, total }))
+    .filter((p) => p.nome)
   const [pesquisa, setPesquisa] = useState('')
   const [tipo, setTipo] = useState(null)
   const [area, setArea] = useState(null)
@@ -79,7 +81,6 @@ function Artigos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        topo={['Departamento de Investigação', 'Publicações científicas']}
         sobretitulo="Investigação"
         titulo="Artigos"
       >
