@@ -26,7 +26,7 @@ const artigos = [
       { tipo: 'paragrafo', texto: 'Este artigo examina três mecanismos através dos quais o ensino militar superior contribui para a defesa cooperativa: o intercâmbio de alunos, a investigação conjunta e a harmonização doutrinária.' },
       { tipo: 'subtitulo', texto: 'Intercâmbio de alunos e docentes' },
       { tipo: 'paragrafo', texto: 'A presença de oficiais estrangeiros nos cursos de Estado-Maior cria redes pessoais e profissionais que perduram ao longo das carreiras. Estas redes facilitam a coordenação em operações multinacionais e em situações de crise.' },
-      { tipo: 'imagem', src: Auditorio, legenda: 'Figura 1 — Sessão de abertura com oficiais nacionais e estrangeiros.' },
+      { tipo: 'imagem', src: Auditorio, legenda: 'Sessão de abertura com oficiais nacionais e estrangeiros.', posicao: 'direita' },
       { tipo: 'citacao', texto: 'A interoperabilidade começa na sala de aula, muito antes de começar no terreno.' },
       { tipo: 'subtitulo', texto: 'Investigação conjunta' },
       { tipo: 'paragrafo', texto: 'Projetos de investigação partilhados permitem construir uma leitura comum dos riscos regionais e identificar áreas prioritárias de cooperação, da segurança marítima à resposta a catástrofes.' },

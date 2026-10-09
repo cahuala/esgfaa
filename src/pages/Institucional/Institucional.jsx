@@ -1,55 +1,77 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FaChalkboardTeacher, FaFlask, FaGlobeAfrica, FaUserGraduate, FaBook, FaCogs } from 'react-icons/fa'
-import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina'
-import MissaoVisaoValores from '../../components/MissaoVisaoValores/MissaoVisaoValores'
+import { FaArrowRight } from 'react-icons/fa'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import pessoas from '../../data/pessoas'
+import contactos from '../../data/contactos'
 import { iniciais } from '../../utils/texto'
-import ImagemCabecalho from '../../assets/Escola De Guerra.png'
+import ImagemSede from '../../assets/Escola De Guerra.png'
 import ImagemHistoria from '../../assets/Escola2.jpeg'
-import pagina from '../../styles/pagina.module.css'
+import Brasao from '../../assets/Logo.png'
 import styles from './Institucional.module.css'
 
 const seccoes = [
-  { id: 'historia', label: 'História' },
-  { id: 'missao', label: 'Missão, Visão e Valores' },
-  { id: 'estrutura', label: 'Organização e Estrutura' },
-  { id: 'comando', label: 'Direção / Comando' },
+  { id: 'historia', numero: 'I', label: 'História' },
+  { id: 'missao', numero: 'II', label: 'Missão, Visão e Valores' },
+  { id: 'estrutura', numero: 'III', label: 'Organização e Estrutura' },
+  { id: 'comando', numero: 'IV', label: 'Direção / Comando' },
 ]
 
 const numeros = [
-  { valor: '+10', legenda: 'anos de existência' },
-  { valor: '+500', legenda: 'oficiais formados' },
-  { valor: '3', legenda: 'cursos de formação superior' },
-  { valor: '+20', legenda: 'acordos de cooperação' },
+  { valor: '+10', legenda: 'Anos de existência' },
+  { valor: '+500', legenda: 'Oficiais formados' },
+  { valor: '03', legenda: 'Cursos de formação superior' },
+  { valor: '+20', legenda: 'Acordos de cooperação' },
 ]
 
 // ATENÇÃO: conteúdo provisório — substituir pelos marcos oficiais da história da Escola.
 const marcos = [
-  { ano: '2014', titulo: 'Criação da Escola', texto: 'Instituída como estabelecimento de ensino superior militar das FAA.' },
-  { ano: '2015', titulo: 'Primeiro curso', texto: 'Arranque do primeiro Curso de Estado-Maior.' },
-  { ano: '2018', titulo: 'Cooperação internacional', texto: 'Assinatura dos primeiros protocolos com escolas parceiras.' },
-  { ano: '2021', titulo: 'Novo comando', texto: 'Início de um novo ciclo de modernização curricular.' },
-  { ano: '2026', titulo: 'Investigação', texto: 'Reforço do Departamento de Investigação e das publicações.' },
+  { ano: '2014', titulo: 'Criação da Escola', texto: 'Instituída como estabelecimento de ensino superior militar das Forças Armadas Angolanas.' },
+  { ano: '2015', titulo: 'Primeiro Curso de Estado-Maior', texto: 'Arranque da formação de oficiais para funções de estado-maior.' },
+  { ano: '2018', titulo: 'Abertura internacional', texto: 'Assinatura dos primeiros protocolos de cooperação com escolas militares parceiras.' },
+  { ano: '2021', titulo: 'Novo ciclo de comando', texto: 'Início de um programa de modernização curricular e pedagógica.' },
+  { ano: '2026', titulo: 'Reforço da investigação', texto: 'Seminários de investigação obrigatórios em todos os cursos e nova revista científica.' },
 ]
 
-const orgaos = [
-  { icone: <FaUserGraduate />, nome: 'Direção de Ensino', texto: 'Planeia e coordena os cursos, os planos curriculares e a avaliação dos alunos.' },
-  { icone: <FaFlask />, nome: 'Departamento de Investigação', texto: 'Promove a investigação científica em estratégia, segurança e defesa.' },
-  { icone: <FaChalkboardTeacher />, nome: 'Corpo Docente', texto: 'Reúne os docentes militares e civis responsáveis pela formação.' },
-  { icone: <FaGlobeAfrica />, nome: 'Cooperação Internacional', texto: 'Gere os protocolos e o intercâmbio com instituições parceiras.' },
-  { icone: <FaBook />, nome: 'Secretaria Académica', texto: 'Trata das candidaturas, matrículas, certificados e calendário académico.' },
-  { icone: <FaCogs />, nome: 'Serviços de Apoio', texto: 'Asseguram a logística, as instalações e os recursos administrativos.' },
+const valores = [
+  { nome: 'Disciplina', texto: 'Cumprimento rigoroso do dever, das normas e da palavra dada.' },
+  { nome: 'Integridade', texto: 'Coerência entre o que se pensa, o que se diz e o que se faz.' },
+  { nome: 'Lealdade', texto: 'Para com a Nação, as Forças Armadas, os superiores e os subordinados.' },
+  { nome: 'Espírito de serviço', texto: 'Colocar o interesse nacional acima do interesse pessoal.' },
+]
+
+const ramos = [
+  {
+    titulo: 'Ensino',
+    orgaos: [
+      { nome: 'Direção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },
+      { nome: 'Corpo Docente', texto: 'Docentes militares e civis responsáveis pela formação.' },
+      { nome: 'Secretaria Académica', texto: 'Candidaturas, matrículas, certificados e calendário.' },
+    ],
+  },
+  {
+    titulo: 'Investigação e Cooperação',
+    orgaos: [
+      { nome: 'Departamento de Investigação', texto: 'Investigação científica em estratégia, segurança e defesa.' },
+      { nome: 'Cooperação Internacional', texto: 'Protocolos e intercâmbio com instituições parceiras.' },
+    ],
+  },
+  {
+    titulo: 'Apoio',
+    orgaos: [
+      { nome: 'Gabinete de Comunicação', texto: 'Imprensa, eventos, publicações e redes sociais.' },
+      { nome: 'Serviços de Apoio', texto: 'Logística, instalações e recursos administrativos.' },
+    ],
+  },
 ]
 
 function Institucional() {
   const [ativa, setAtiva] = useState(seccoes[0].id)
-  const menuRef = useRef(null)
   const comandante = pessoas[0]
+  const subdiretora = pessoas.find((p) => p.cargo.startsWith('Subdiretora'))
   const direcao = pessoas.slice(1)
 
-  // destaca no menu a última secção cujo topo já passou o meio do ecrã
+  // marca no índice a última secção cujo topo já passou o meio do ecrã
   useEffect(() => {
     let pedido = null
     function atualizar() {
@@ -72,157 +94,247 @@ function Institucional() {
     }
   }, [])
 
-  // no telemóvel o menu desliza na horizontal: mantém o separador ativo à vista
-  useEffect(() => {
-    const menu = menuRef.current
-    const link = menu?.querySelector('[aria-current]')
-    if (!menu || !link) return
-    const destino = link.offsetLeft - (menu.clientWidth - link.offsetWidth) / 2
-    menu.scrollTo({ left: destino, behavior: 'smooth' })
-  }, [ativa])
-
   return (
-    <main>
-      <CabecalhoPagina
-        etiqueta="Institucional"
-        titulo="Uma Escola ao serviço da defesa nacional."
-        descricao="A Escola Superior de Guerra forma os oficiais que planeiam, comandam e dirigem as Forças Armadas Angolanas."
-        imagem={ImagemCabecalho}
-        migalhas={[{ label: 'Institucional' }]}
-      />
-
-      <nav className={styles.subnav} aria-label="Secções da página">
-        <div className={styles.subnavInterior} ref={menuRef}>
-          {seccoes.map((s) => (
-            <Link
-              key={s.id}
-              to={{ hash: `#${s.id}` }}
-              className={`${styles.subnavLink} ${ativa === s.id ? styles.subnavAtivo : ''}`}
-              aria-current={ativa === s.id ? 'true' : undefined}
-            >
-              {s.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-
-      {/* História */}
-      <section id="historia" className={pagina.secao}>
-        <div className={pagina.container}>
-          <div className={styles.historia}>
-            <div>
-              <span className={pagina.etiqueta}>História</span>
-              <h2 className={pagina.tituloSecao}>Mais de uma década a formar quem comanda.</h2>
-              <p className={styles.texto}>
-                A Escola Superior de Guerra das Forças Armadas Angolanas nasceu da necessidade de formar, em Angola,
-                os oficiais destinados às mais altas funções de comando, direção e estado-maior.
-              </p>
-              <p className={styles.texto}>
-                Desde então, a Escola consolidou-se como o principal estabelecimento de ensino superior militar do
-                país, combinando formação doutrinária, investigação científica e cooperação com instituições congéneres.
-              </p>
-            </div>
-            <figure className={styles.historiaFoto}>
-              <img src={ImagemHistoria} alt="Oficiais numa sessão no auditório da Escola" />
-            </figure>
+    <main className={styles.pagina}>
+      {/* Cabeçalho */}
+      <header className={styles.cabecalho}>
+        <div className={styles.interior}>
+          <div className={styles.linhaTopo}>
+            <span>Forças Armadas Angolanas</span>
+            <span>Estabelecimento de Ensino Superior Militar</span>
           </div>
 
-          <ul className={styles.numeros}>
-            {numeros.map((n) => (
-              <li key={n.legenda}>
-                <strong>{n.valor}</strong>
-                <span>{n.legenda}</span>
-              </li>
-            ))}
-          </ul>
-
-          <ol className={styles.marcos}>
-            {marcos.map((m) => (
-              <li key={m.ano}>
-                <span className={styles.ano}>{m.ano}</span>
-                <h3>{m.titulo}</h3>
-                <p>{m.texto}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Missão, Visão e Valores — mesma secção da página inicial */}
-      <div id="missao" className={styles.missao}>
-        <MissaoVisaoValores />
-      </div>
-
-      {/* Estrutura */}
-      <section id="estrutura" className={`${pagina.secao} ${pagina.secaoAlt}`}>
-        <div className={pagina.container}>
-          <span className={pagina.etiqueta}>Organização e Estrutura</span>
-          <h2 className={pagina.tituloSecao}>Como a Escola está organizada.</h2>
-          <p className={pagina.introSecao}>
-            Sob a direção do Comando da Escola, cada órgão tem uma missão própria na formação, na investigação e no apoio à atividade académica.
-          </p>
-
-          <div className={styles.organograma}>
-            <div className={styles.topoOrganograma}>
-              <span className={pagina.etiqueta}>Órgão de direção</span>
-              <h3>Comando da Escola</h3>
-              <p>Dirige a Escola e define as orientações estratégicas de ensino, investigação e cooperação.</p>
+          <div className={styles.titulo}>
+            <div>
+              <span className={styles.sobretitulo}>Institucional</span>
+              <h1>A Escola</h1>
             </div>
-            <div className={styles.orgaos}>
-              {orgaos.map((o) => (
-                <div key={o.nome} className={styles.orgao}>
-                  <span className={styles.orgaoIcone} aria-hidden="true">{o.icone}</span>
-                  <h3>{o.nome}</h3>
-                  <p>{o.texto}</p>
-                </div>
+            <p className={styles.entrada}>
+              A Escola Superior de Guerra forma os oficiais que planeiam, comandam e dirigem as Forças Armadas
+              Angolanas — e produz o pensamento estratégico que os acompanha.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <figure className={styles.sede}>
+        <img src={ImagemSede} alt="Fachada da Escola Superior de Guerra" />
+        <figcaption>
+          <span>Sede</span> Escola Superior de Guerra das Forças Armadas Angolanas, Luanda.
+        </figcaption>
+      </figure>
+
+      <dl className={styles.numeros}>
+        {numeros.map((n) => (
+          <div key={n.legenda}>
+            <dd>{n.valor}</dd>
+            <dt>{n.legenda}</dt>
+          </div>
+        ))}
+      </dl>
+
+      <div className={styles.grelha}>
+        {/* Índice */}
+        <aside className={styles.indice}>
+          <span className={styles.rotulo}>Índice</span>
+          <nav aria-label="Secções da página">
+            <ol>
+              {seccoes.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    to={{ hash: `#${s.id}` }}
+                    className={ativa === s.id ? styles.indiceAtivo : ''}
+                    aria-current={ativa === s.id ? 'true' : undefined}
+                  >
+                    <span className={styles.indiceNumero}>{s.numero}</span>
+                    {s.label}
+                  </Link>
+                </li>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
+            </ol>
+          </nav>
 
-      {/* Comando */}
-      <section id="comando" className={pagina.secao}>
-        <div className={pagina.container}>
-          <div className={styles.mensagem}>
-            <figure className={styles.mensagemFoto}>
-              {comandante.foto ? <img src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
-            </figure>
-            <div>
-              <span className={pagina.etiqueta}>Mensagem do Comandante</span>
-              <blockquote className={styles.citacao}>
-                “Formar quem comanda é formar quem decide. Cada oficial que passa por esta Escola leva consigo a
-                responsabilidade de servir Angola com competência e integridade.”
-              </blockquote>
-              <p className={styles.texto}>
-                Na Escola Superior de Guerra, acreditamos que a qualidade das nossas Forças Armadas começa na
-                qualidade dos seus quadros. É esse o compromisso que renovamos em cada ano académico.
+          <div className={styles.contactoInstitucional}>
+            <span className={styles.rotulo}>Contacto institucional</span>
+            <p>{contactos.morada.join(', ')}</p>
+            <a href={`mailto:${contactos.email}`}>{contactos.email}</a>
+          </div>
+        </aside>
+
+        <div className={styles.conteudo}>
+          {/* I. História */}
+          <section id="historia" className={styles.seccao}>
+            <TituloSeccao numero="I" rotulo="História">Mais de uma década a formar quem comanda.</TituloSeccao>
+
+            <div className={styles.textoColunas}>
+              <figure className={styles.figuraTexto}>
+                <img src={ImagemHistoria} alt="Oficiais numa sessão no auditório da Escola" />
+                <figcaption><span>Figura 1</span> Sessão solene no auditório principal.</figcaption>
+              </figure>
+              <p className={styles.capitular}>
+                A Escola Superior de Guerra das Forças Armadas Angolanas nasceu da necessidade de formar, em Angola,
+                os oficiais destinados às mais altas funções de comando, direção e estado-maior, reduzindo a
+                dependência da formação no estrangeiro e adaptando o ensino à realidade nacional.
               </p>
-              <div className={styles.assinatura}>
-                <strong>{comandante.nome}</strong>
-                <span>{comandante.cargo}</span>
+              <p>
+                Desde então, a Escola consolidou-se como o principal estabelecimento de ensino superior militar do
+                país. O seu modelo combina a formação doutrinária com a investigação científica e a cooperação com
+                instituições congéneres, num ambiente em que oficiais dos três ramos aprendem a planear e a decidir
+                em conjunto.
+              </p>
+              <p>
+                Ao longo dos anos, os cursos foram sendo revistos para acompanhar a evolução das ameaças, da
+                tecnologia e das missões das Forças Armadas, mantendo como referência os valores que definem a
+                condição militar.
+              </p>
+            </div>
+
+            <table className={styles.cronologia}>
+              <caption>Cronologia</caption>
+              <tbody>
+                {marcos.map((m) => (
+                  <tr key={m.ano}>
+                    <th scope="row">{m.ano}</th>
+                    <td className={styles.cronologiaTitulo}>{m.titulo}</td>
+                    <td>{m.texto}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {/* II. Missão, Visão e Valores */}
+          <section id="missao" className={styles.seccao}>
+            <TituloSeccao numero="II" rotulo="Missão, Visão e Valores">O que nos orienta.</TituloSeccao>
+
+            <div className={styles.declaracoes}>
+              <article>
+                <span className={styles.rotulo}>Missão</span>
+                <p>
+                  Formar oficiais com competência técnica, ética e capacidade de comando ao serviço da defesa de Angola.
+                </p>
+              </article>
+              <article>
+                <span className={styles.rotulo}>Visão</span>
+                <p>
+                  Ser referência regional na formação de quadros militares e na investigação em estratégia e defesa.
+                </p>
+              </article>
+            </div>
+
+            <div className={styles.valores}>
+              <span className={styles.rotulo}>Valores</span>
+              <ol>
+                {valores.map((v, i) => (
+                  <li key={v.nome}>
+                    <span className={styles.valorNumero}>{String(i + 1).padStart(2, '0')}</span>
+                    <h3>{v.nome}</h3>
+                    <p>{v.texto}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          {/* III. Organização e Estrutura */}
+          <section id="estrutura" className={styles.seccao}>
+            <TituloSeccao numero="III" rotulo="Organização e Estrutura">Como a Escola está organizada.</TituloSeccao>
+            <p className={styles.introducao}>
+              Sob a direção do Comando, a Escola organiza-se em três áreas — ensino, investigação e cooperação, e
+              apoio — cada uma com órgãos de missão própria.
+            </p>
+
+            <div className={styles.organograma}>
+              <div className={styles.topo}>
+                <img src={Brasao} alt="" className={styles.topoBrasao} />
+                <div>
+                  <span className={styles.rotulo}>Órgão de direção</span>
+                  <h3>Comando da Escola</h3>
+                  <p>
+                    {comandante.nome} · {comandante.cargo}
+                    {subdiretora && <><br />{subdiretora.nome} · {subdiretora.cargo}</>}
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.ramos}>
+                {ramos.map((r) => (
+                  <div key={r.titulo} className={styles.ramo}>
+                    <h4>{r.titulo}</h4>
+                    <ul>
+                      {r.orgaos.map((o) => (
+                        <li key={o.nome}>
+                          <strong>{o.nome}</strong>
+                          <span>{o.texto}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          </section>
 
-          <h3 className={styles.direcaoTitulo}>Equipa de direção</h3>
-          <div className={styles.direcao}>
-            {direcao.map((p) => (
-              <div key={p.id} className={styles.pessoa}>
-                <span className={`${pagina.avatar} ${styles.avatarPessoa}`}>
-                  {p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}
-                </span>
-                <h4>{p.nome}</h4>
-                <span className={styles.cargo}>{p.cargo}</span>
-                <p>{p.destaque}</p>
+          {/* IV. Direção / Comando */}
+          <section id="comando" className={styles.seccao}>
+            <TituloSeccao numero="IV" rotulo="Direção / Comando">Mensagem do Comandante.</TituloSeccao>
+
+            <div className={styles.mensagem}>
+              <figure className={styles.retrato}>
+                {comandante.foto ? <img src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
+              </figure>
+              <div>
+                <blockquote className={styles.citacao}>
+                  Formar quem comanda é formar quem decide. Cada oficial que passa por esta Escola leva consigo a
+                  responsabilidade de servir Angola com competência e integridade.
+                </blockquote>
+                <p className={styles.mensagemTexto}>
+                  Na Escola Superior de Guerra, acreditamos que a qualidade das nossas Forças Armadas começa na
+                  qualidade dos seus quadros. É esse o compromisso que renovamos em cada ano académico: exigência no
+                  ensino, rigor na investigação e abertura ao mundo.
+                </p>
+                <div className={styles.assinatura}>
+                  <strong>{comandante.nome}</strong>
+                  <span>{comandante.cargo}</span>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+
+            <div className={styles.diretorio}>
+              <span className={styles.rotulo}>Equipa de direção</span>
+              <ul>
+                {direcao.map((p) => (
+                  <li key={p.id}>
+                    <span className={styles.avatar}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>
+                    <strong>{p.nome}</strong>
+                    <span className={styles.cargo}>{p.cargo}</span>
+                    <span className={styles.descricao}>{p.destaque}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <Link to="/Contactos#formulario" className={styles.ligacao}>
+              Contactar a Escola <FaArrowRight aria-hidden="true" />
+            </Link>
+          </section>
         </div>
-      </section>
+      </div>
 
       <CtaBanner />
     </main>
+  )
+}
+
+function TituloSeccao({ numero, rotulo, children }) {
+  return (
+    <div className={styles.tituloSeccao}>
+      <span className={styles.numeroSeccao} aria-hidden="true">{numero}</span>
+      <div>
+        <span className={styles.rotulo}>{rotulo}</span>
+        <h2>{children}</h2>
+      </div>
+    </div>
   )
 }
 

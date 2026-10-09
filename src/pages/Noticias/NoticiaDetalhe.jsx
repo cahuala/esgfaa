@@ -1,15 +1,14 @@
 import { Link, useParams } from 'react-router-dom'
-import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina'
 import ConteudoRico from '../../components/ConteudoRico/ConteudoRico'
 import Partilhar from '../../components/Partilhar/Partilhar'
 import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
-import CartaoNoticia from './CartaoNoticia'
+import Miniatura from './Miniatura'
 import noticias, { noticiaPorSlug } from '../../data/noticias'
 import { formatarDataLonga } from '../../utils/datas'
-import { tempoLeitura } from '../../utils/texto'
-import pagina from '../../styles/pagina.module.css'
-import styles from './Noticias.module.css'
+import { ancora, tempoLeitura } from '../../utils/texto'
+import lista from './Noticias.module.css'
+import styles from './NoticiaDetalhe.module.css'
 
 function NoticiaDetalhe() {
   const { slug } = useParams()
@@ -19,52 +18,100 @@ function NoticiaDetalhe() {
     return <NaoEncontrado titulo="Notícia não encontrada" voltarPara="/Noticias" voltarTexto="Ver todas as notícias" />
   }
 
-  // primeiro as da mesma categoria, depois as mais recentes
-  const relacionadas = noticias
-    .filter((n) => n.slug !== noticia.slug)
-    .sort((a, b) => (b.categoria === noticia.categoria) - (a.categoria === noticia.categoria))
-    .slice(0, 3)
+  const subtitulos = noticia.conteudo.filter((b) => b.tipo === 'subtitulo')
+  const mesmaSeccao = noticias.filter((n) => n.slug !== noticia.slug && n.categoria === noticia.categoria).slice(0, 3)
+  const anteriores = noticias
+    .filter((n) => n.data < noticia.data && !mesmaSeccao.includes(n))
+    .slice(0, 4)
+  const minutos = tempoLeitura(noticia.conteudo)
 
   return (
-    <main>
+    <main className={`${lista.pagina} ${styles.pagina}`}>
       <BarraLeitura />
 
-      <CabecalhoPagina
-        etiqueta={noticia.categoria}
-        titulo={noticia.titulo}
-        descricao={noticia.resumo}
-        imagem={noticia.capa}
-        migalhas={[{ label: 'Notícias', to: '/Noticias' }, { label: noticia.categoria }]}
-      >
-        <div className={styles.metaCabecalho}>
-          <span>{noticia.autor}</span>
-          <span aria-hidden="true">·</span>
-          <time dateTime={noticia.data}>{formatarDataLonga(noticia.data)}</time>
-          <span aria-hidden="true">·</span>
-          <span>{tempoLeitura(noticia.conteudo)} min de leitura</span>
-        </div>
-      </CabecalhoPagina>
+      <header className={styles.cabecalho}>
+        <div className={styles.cabecalhoInterior}>
+          <nav className={styles.migalhas} aria-label="Localização">
+            <Link to="/">Início</Link>
+            <span aria-hidden="true">/</span>
+            <Link to="/Noticias">Notícias</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{noticia.categoria}</span>
+          </nav>
 
-      <article className={pagina.secao}>
-        <ConteudoRico blocos={noticia.conteudo} centrado />
-
-        <footer className={styles.rodapeArtigo}>
-          <Partilhar titulo={noticia.titulo} />
-          <Link to="/Noticias" className={styles.voltar}>← Todas as notícias</Link>
-        </footer>
-      </article>
-
-      {relacionadas.length > 0 && (
-        <section className={`${pagina.secao} ${pagina.secaoAlt}`}>
-          <div className={pagina.container}>
-            <span className={pagina.etiqueta}>Continue a ler</span>
-            <h2 className={pagina.tituloSecao}>Outras notícias</h2>
-            <div className={`${styles.grelha} ${styles.grelhaRelacionadas}`}>
-              {relacionadas.map((n) => <CartaoNoticia key={n.slug} noticia={n} />)}
+          <div className={styles.titulo}>
+            <h1>{noticia.titulo}</h1>
+            <div className={styles.entrada}>
+              <span className={styles.seccao}>{noticia.categoria}</span>
+              <p>{noticia.resumo}</p>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </header>
+
+      <figure className={styles.capa}>
+        <img src={noticia.capa} alt="" />
+      </figure>
+
+      <div className={styles.grelha}>
+        {/* Coluna esquerda: ficha da notícia */}
+        <aside className={styles.ficha}>
+          <dl>
+            <div><dt>Publicado</dt><dd><time dateTime={noticia.data}>{formatarDataLonga(noticia.data)}</time></dd></div>
+            <div><dt>Autoria</dt><dd>{noticia.autor}</dd></div>
+            <div><dt>Leitura</dt><dd>{minutos} {minutos === 1 ? 'minuto' : 'minutos'}</dd></div>
+            <div><dt>Secção</dt><dd><Link to="/Noticias">{noticia.categoria}</Link></dd></div>
+          </dl>
+
+          {subtitulos.length > 0 && (
+            <nav className={styles.indice} aria-label="Nesta notícia">
+              <span className={lista.rotuloColuna}>Nesta notícia</span>
+              <ol>
+                {subtitulos.map((s) => (
+                  <li key={s.texto}><a href={`#${ancora(s.texto)}`}>{s.texto}</a></li>
+                ))}
+              </ol>
+            </nav>
+          )}
+
+          <div className={styles.partilha}>
+            <Partilhar titulo={noticia.titulo} />
+          </div>
+        </aside>
+
+        {/* Centro: texto com imagens paginadas */}
+        <article className={styles.texto}>
+          <ConteudoRico blocos={noticia.conteudo} capitular />
+
+          <footer className={styles.fim}>
+            <span className={styles.fimMarca} aria-hidden="true">■</span>
+            <Link to="/Noticias" className={lista.lerMais}>Voltar ao boletim de notícias</Link>
+          </footer>
+        </article>
+
+        {/* Direita: outras notícias em miniatura */}
+        <aside className={lista.arquivo}>
+          {mesmaSeccao.length > 0 && (
+            <>
+              <span className={lista.rotuloColuna}>Mesma secção</span>
+              <h2 className={lista.arquivoTitulo}>{noticia.categoria}</h2>
+              <div className={lista.arquivoGrupo}>
+                {mesmaSeccao.map((n) => <Miniatura key={n.slug} noticia={n} />)}
+              </div>
+            </>
+          )}
+
+          {anteriores.length > 0 && (
+            <div className={styles.anteriores}>
+              <span className={lista.rotuloColuna}>Arquivo</span>
+              <h2 className={lista.arquivoTitulo}>Notícias anteriores</h2>
+              <div className={lista.arquivoGrupo}>
+                {anteriores.map((n) => <Miniatura key={n.slug} noticia={n} />)}
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
     </main>
   )
 }

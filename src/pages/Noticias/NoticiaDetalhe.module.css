@@ -1,0 +1,300 @@
+/* Página de uma notícia — a toda a largura, três colunas como no boletim */
+
+.cabecalho {
+  margin-top: -130px;
+  padding: 170px var(--margem) 48px;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(229, 57, 23, 0.2), transparent 55%),
+    #0f0705;
+}
+
+.cabecalhoInterior {
+  max-width: 1760px;
+  margin: 0 auto;
+}
+
+.migalhas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 4px solid var(--filete-forte);
+  border-bottom: 1px solid var(--filete-forte);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8f8f8f;
+}
+
+.migalhas a {
+  color: #d8d8d8;
+  text-decoration: none;
+}
+
+.migalhas a:hover {
+  color: var(--vermelho);
+}
+
+.migalhas [aria-current] {
+  color: var(--vermelho);
+}
+
+.titulo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 56px;
+  align-items: end;
+  padding-top: 40px;
+}
+
+.titulo h1 {
+  font-size: clamp(40px, 5.2vw, 92px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+
+.entrada {
+  padding-left: 28px;
+  border-left: 3px solid var(--vermelho);
+}
+
+.seccao {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+  margin-bottom: 12px;
+}
+
+.entrada p {
+  font-size: 20px;
+  line-height: 1.5;
+  color: #d6d6d6;
+  margin: 0;
+}
+
+.capa {
+  margin: 0 auto;
+  max-width: calc(1760px + 2 * var(--margem));
+  padding: 0 var(--margem);
+}
+
+.capa img {
+  display: block;
+  width: 100%;
+  height: min(68vh, 720px);
+  object-fit: cover;
+  object-position: center 25%;
+}
+
+.grelha {
+  max-width: calc(1760px + 2 * var(--margem));
+  margin: 0 auto;
+  padding: 0 var(--margem) 110px;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 320px;
+}
+
+/* Ficha à esquerda */
+.ficha {
+  position: sticky;
+  top: 120px;
+  align-self: start;
+  padding: 44px 36px 0 0;
+}
+
+.ficha dl {
+  margin: 0;
+  border-top: 3px solid var(--filete-forte);
+}
+
+.ficha dl > div {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--filete);
+}
+
+.ficha dt {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8f8f8f;
+  margin-bottom: 4px;
+}
+
+.ficha dd {
+  margin: 0;
+  font-size: 14.5px;
+  color: white;
+}
+
+.ficha dd a {
+  color: white;
+  text-decoration-color: var(--vermelho);
+  text-underline-offset: 3px;
+}
+
+.indice {
+  margin-top: 32px;
+}
+
+.indice ol {
+  list-style: none;
+  counter-reset: indice;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.indice li {
+  counter-increment: indice;
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.indice li::before {
+  content: counter(indice, decimal-leading-zero);
+  font-family: 'DM Serif Display', serif;
+  color: var(--vermelho);
+}
+
+.indice a {
+  color: #c4c4c4;
+  text-decoration: none;
+}
+
+.indice a:hover {
+  color: white;
+}
+
+.partilha {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--filete);
+}
+
+/* Texto ao centro */
+.texto {
+  min-width: 0;
+  padding: 44px clamp(28px, 4vw, 72px) 0;
+  border-left: 1px solid var(--filete);
+  border-right: 1px solid var(--filete);
+}
+
+.texto > :first-child {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.fim {
+  max-width: 820px;
+  margin: 56px auto 0;
+  padding-top: 24px;
+  border-top: 3px solid var(--filete-forte);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fimMarca {
+  color: var(--vermelho);
+  font-size: 14px;
+}
+
+.anteriores {
+  margin-top: 44px;
+}
+
+@media (max-width: 1280px) {
+  .grelha {
+    grid-template-columns: 210px minmax(0, 1fr) 280px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .titulo {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .grelha {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  /* a ficha passa para cima do texto, em linha */
+  .ficha {
+    grid-column: 1 / -1;
+    position: static;
+    padding: 28px 0 0;
+  }
+
+  .ficha dl {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ficha dl > div {
+    padding-right: 16px;
+  }
+
+  .indice {
+    display: none;
+  }
+
+  .partilha {
+    margin-top: 16px;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .texto {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .grelha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .texto {
+    padding: 36px 0 0;
+    border-right: none;
+  }
+
+  .ficha dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .cabecalho {
+    margin-top: -80px;
+    padding-top: 110px;
+    padding-bottom: 32px;
+  }
+
+  .entrada {
+    padding-left: 18px;
+  }
+
+  .entrada p {
+    font-size: 17px;
+  }
+
+  .capa {
+    padding: 0;
+  }
+
+  .capa img {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+}

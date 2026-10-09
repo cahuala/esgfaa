@@ -1,454 +1,1016 @@
-/* Menu de secções fixo por baixo da navbar */
-.subnav {
-  position: sticky;
-  top: 120px;
-  z-index: 900;
-  padding: 0 5%;
-  background: transparent;
-  pointer-events: none;
+/* =====================================================================
+   Institucional — apresentação oficial da Escola
+   Mesma linguagem do boletim de notícias: filetes, secções numeradas
+   em romano, tipografia serifada em grande escala, largura total.
+   ===================================================================== */
+
+.pagina {
+  --filete: rgba(255, 255, 255, 0.1);
+  --filete-forte: rgba(255, 255, 255, 0.85);
+  --vermelho: #E53917;
+  --margem: clamp(16px, 3vw, 56px);
+  background: #0f0b09;
+  color: white;
 }
 
-.subnavInterior {
-  position: relative;
-  max-width: 1100px;
-  margin: -28px auto 0;
+.rotulo {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.cabecalho {
+  margin-top: -130px;
+  padding: 160px var(--margem) 44px;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(229, 57, 23, 0.22), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 120px),
+    #0f0705;
+}
+
+.interior {
+  max-width: 1760px;
+  margin: 0 auto;
+}
+
+.linhaTopo {
   display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: rgba(20, 16, 14, 0.92);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  pointer-events: auto;
-  overflow-x: auto;
-  scrollbar-width: none;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 14px 0;
+  border-top: 4px solid var(--filete-forte);
+  border-bottom: 1px solid var(--filete-forte);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #d8d8d8;
 }
 
-.subnavInterior::-webkit-scrollbar {
-  display: none;
-}
-
-.subnavLink {
-  flex: 1 0 auto;
-  text-align: center;
-  padding: 11px 16px;
-  border-radius: 8px;
-  color: #b8b8b8;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.subnavLink:hover {
-  color: white;
-}
-
-.subnavAtivo {
-  background: #E53917;
-  color: white;
-}
-
-/* História */
-.historia {
+.titulo {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
   gap: 56px;
-  align-items: center;
+  align-items: end;
+  padding-top: 22px;
 }
 
-.texto {
-  font-size: 16.5px;
-  line-height: 1.75;
-  color: #c9c9c9;
-  margin: 0 0 16px;
-}
-
-.historiaFoto {
-  margin: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  aspect-ratio: 4 / 3;
-}
-
-.historiaFoto img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.sobretitulo {
   display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+  margin-bottom: 6px;
+}
+
+.titulo h1 {
+  font-size: clamp(72px, 12vw, 200px);
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.entrada {
+  margin: 0 0 12px;
+  padding-left: 28px;
+  border-left: 3px solid var(--vermelho);
+  font-size: 20px;
+  line-height: 1.5;
+  color: #d6d6d6;
+}
+
+/* ---------- Fotografia da sede e números ---------- */
+
+.sede {
+  position: relative;
+  max-width: calc(1760px + 2 * var(--margem));
+  margin: 0 auto;
+  padding: 0 var(--margem);
+}
+
+.sede img {
+  display: block;
+  width: 100%;
+  height: min(62vh, 640px);
+  object-fit: cover;
+  object-position: center 40%;
+}
+
+.sede figcaption {
+  position: absolute;
+  right: calc(var(--margem) + 20px);
+  bottom: 20px;
+  padding: 10px 16px;
+  background: rgba(10, 5, 3, 0.85);
+  backdrop-filter: blur(4px);
+  font-size: 13px;
+  font-style: italic;
+  color: #d0d0d0;
+}
+
+.sede figcaption span {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+  margin-right: 8px;
 }
 
 .numeros {
-  list-style: none;
-  margin: 64px 0;
+  max-width: 1760px;
+  margin: 0 auto;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--filete-forte);
+  box-sizing: content-box;
+  padding-inline: var(--margem);
 }
 
-.numeros li {
-  padding: 30px 20px;
+.numeros > div {
+  padding: 30px 28px 30px 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: column-reverse;
+  gap: 8px;
 }
 
-.numeros li + li {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+.numeros > div + div {
+  padding-left: 28px;
+  border-left: 1px solid var(--filete);
 }
 
-.numeros strong {
+.numeros dd {
+  margin: 0;
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(44px, 4.5vw, 72px);
+  line-height: 0.9;
+  color: white;
+}
+
+.numeros dt {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9a9a9a;
+}
+
+/* ---------- Grelha: índice + conteúdo ---------- */
+
+.grelha {
+  max-width: calc(1760px + 2 * var(--margem));
+  margin: 0 auto;
+  padding: 0 var(--margem) 120px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
+.indice {
+  position: sticky;
+  top: 120px;
+  align-self: start;
+  padding: 56px 40px 0 0;
+}
+
+.indice ol {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  border-top: 3px solid var(--filete-forte);
+}
+
+.indice li {
+  border-bottom: 1px solid var(--filete);
+}
+
+.indice a {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 0 14px 12px;
+  border-left: 2px solid transparent;
+  color: #a8a8a8;
+  font-size: 14.5px;
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.indice a:hover {
+  color: white;
+}
+
+.indiceNumero {
+  flex: 0 0 26px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: #6f6f6f;
+  transition: color 0.2s ease;
+}
+
+.indice .indiceAtivo {
+  color: white;
+  font-weight: 700;
+  border-left-color: var(--vermelho);
+  background: linear-gradient(to right, rgba(229, 57, 23, 0.14), transparent);
+}
+
+.indiceAtivo .indiceNumero {
+  color: var(--vermelho);
+}
+
+.contactoInstitucional {
+  margin-top: 36px;
+  padding: 20px;
+  border: 1px solid var(--filete);
+}
+
+.contactoInstitucional p {
+  margin: 10px 0 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #a8a8a8;
+}
+
+.contactoInstitucional a {
+  display: block;
+  font-size: 13px;
+  color: white;
+  text-decoration-color: var(--vermelho);
+  text-underline-offset: 3px;
+  word-break: break-all;
+}
+
+.conteudo {
+  min-width: 0;
+  border-left: 1px solid var(--filete);
+  padding-left: clamp(28px, 4.5vw, 88px);
+}
+
+.seccao {
+  padding: 64px 0 80px;
+  border-bottom: 1px solid var(--filete);
+}
+
+.seccao:last-child {
+  border-bottom: none;
+}
+
+/* Título de secção: numeral romano em grande + rótulo + título */
+.tituloSeccao {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 28px;
+  align-items: end;
+  padding-bottom: 22px;
+  margin-bottom: 40px;
+  border-bottom: 3px solid var(--filete-forte);
+}
+
+.numeroSeccao {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(80px, 8vw, 140px);
+  line-height: 0.75;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--vermelho);
+}
+
+.tituloSeccao h2 {
+  font-size: clamp(32px, 3.4vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 8px 0 0;
+}
+
+.introducao {
+  max-width: 70ch;
+  font-size: 18px;
+  line-height: 1.65;
+  color: #c9c9c9;
+  margin: 0 0 40px;
+}
+
+/* ---------- I. História ---------- */
+
+/* texto em duas colunas, como numa publicação impressa */
+.textoColunas {
+  column-count: 2;
+  column-gap: 56px;
+  column-rule: 1px solid var(--filete);
+  font-size: 17px;
+  line-height: 1.8;
+  color: #cfcfcf;
+}
+
+.textoColunas p {
+  margin: 0 0 1.1em;
+}
+
+.capitular::first-letter {
+  float: left;
+  font-family: 'DM Serif Display', serif;
+  font-size: 4.6em;
+  line-height: 0.8;
+  padding: 0.06em 0.12em 0 0;
+  color: var(--vermelho);
+}
+
+.figuraTexto {
+  margin: 0 0 1.4em;
+  break-inside: avoid;
+}
+
+.figuraTexto img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.figuraTexto figcaption,
+.retrato figcaption {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--filete);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #9a9a9a;
+}
+
+.figuraTexto figcaption span {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+  margin-right: 8px;
+}
+
+/* cronologia em forma de tabela */
+.cronologia {
+  width: 100%;
+  margin-top: 56px;
+  border-collapse: collapse;
+}
+
+.cronologia caption {
+  text-align: left;
+  padding-bottom: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+}
+
+.cronologia tr {
+  border-top: 1px solid var(--filete);
+  transition: background 0.2s ease;
+}
+
+.cronologia tr:last-child {
+  border-bottom: 1px solid var(--filete);
+}
+
+.cronologia tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.cronologia th,
+.cronologia td {
+  padding: 20px 24px 20px 0;
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.cronologia th {
+  width: 140px;
   font-family: 'DM Serif Display', serif;
   font-weight: 400;
-  font-size: 44px;
+  font-size: 40px;
   line-height: 1;
-  color: #E53917;
+  color: white;
 }
 
-.numeros span {
+.cronologiaTitulo {
+  width: 32%;
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+}
+
+.cronologia td:last-child {
+  font-size: 15px;
+  line-height: 1.55;
+  color: #a8a8a8;
+}
+
+/* ---------- II. Missão, Visão e Valores ---------- */
+
+.declaracoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--filete);
+  border-bottom: 1px solid var(--filete);
+}
+
+.declaracoes article {
+  padding: 36px 48px 40px 0;
+}
+
+.declaracoes article + article {
+  padding-left: 48px;
+  border-left: 1px solid var(--filete);
+}
+
+.declaracoes p {
+  margin: 16px 0 0;
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(24px, 2.2vw, 36px);
+  line-height: 1.22;
+  color: white;
+}
+
+.valores {
+  margin-top: 48px;
+}
+
+.valores ol {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 3px solid var(--filete-forte);
+}
+
+.valores li {
+  padding: 26px 26px 10px 0;
+}
+
+.valores li + li {
+  padding-left: 26px;
+  border-left: 1px solid var(--filete);
+}
+
+.valorNumero {
+  display: block;
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px;
+  color: var(--vermelho);
+  margin-bottom: 14px;
+}
+
+.valores h3 {
+  font-size: 24px;
+  margin: 0 0 10px;
+}
+
+.valores li p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #a8a8a8;
+}
+
+/* ---------- III. Organograma ---------- */
+
+.organograma {
+  --linha: rgba(229, 57, 23, 0.6);
+}
+
+.topo {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 26px 30px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid var(--vermelho);
+  background: linear-gradient(135deg, rgba(229, 57, 23, 0.14), rgba(229, 57, 23, 0.03));
+}
+
+/* linha vertical que desce do Comando */
+.topo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -41px;
+  width: 1px;
+  height: 40px;
+  background: var(--linha);
+}
+
+.topoBrasao {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.topo h3 {
+  font-size: 28px;
+  margin: 6px 0 6px;
+}
+
+.topo p {
+  margin: 0;
   font-size: 14px;
-  color: #b8b8b8;
+  line-height: 1.6;
+  color: #c4c4c4;
 }
 
-/* Linha temporal */
-.marcos {
+.ramos {
+  position: relative;
+  margin-top: 40px;
+  padding-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+/* linha horizontal que liga os três ramos */
+.ramos::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(100% / 6);
+  right: calc(100% / 6);
+  height: 1px;
+  background: var(--linha);
+}
+
+.ramo {
+  position: relative;
+}
+
+/* linha vertical de cada ramo */
+.ramo::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 1px;
+  height: 40px;
+  background: var(--linha);
+}
+
+.ramo h4 {
+  margin: 0;
+  padding: 14px 18px;
+  background: #1c1512;
+  border: 1px solid var(--filete);
+  border-top: 3px solid var(--vermelho);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ramo ul {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 24px;
-  position: relative;
+  border: 1px solid var(--filete);
+  border-top: none;
 }
 
-.marcos::before {
-  content: "";
-  position: absolute;
-  top: 9px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(to right, #E53917, rgba(229, 57, 23, 0.15));
-}
-
-.marcos li {
-  position: relative;
-  padding-top: 36px;
-}
-
-.marcos li::before {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #14100e;
-  border: 3px solid #E53917;
-}
-
-.ano {
-  font-size: 13px;
-  font-weight: 700;
-  color: #E53917;
-}
-
-.marcos h3 {
-  font-size: 19px;
-  margin: 6px 0 8px;
-}
-
-.marcos p {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #b0b0b0;
-  margin: 0;
-}
-
-/* a secção reutilizada da página inicial não tem cor de fundo própria por baixo dos cartões */
-.missao {
-  background: #0f0705;
-}
-
-/* Estrutura */
-.organograma {
-  margin-top: 44px;
-}
-
-.topoOrganograma {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: 28px 32px;
-  text-align: center;
-  background: rgba(229, 57, 23, 0.08);
-  border: 1px solid #E53917;
-  border-radius: 14px;
-  position: relative;
-}
-
-/* linha que liga o Comando aos órgãos */
-.topoOrganograma::after {
-  content: "";
-  position: absolute;
-  bottom: -33px;
-  left: 50%;
-  width: 2px;
-  height: 32px;
-  background: rgba(229, 57, 23, 0.5);
-}
-
-.topoOrganograma h3 {
-  font-size: 26px;
-  margin: 0 0 8px;
-}
-
-.topoOrganograma p {
-  font-size: 14.5px;
-  color: #c4c4c4;
-  line-height: 1.55;
-  margin: 0;
-}
-
-.orgaos {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 2px solid rgba(229, 57, 23, 0.5);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.orgao {
-  padding: 26px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  transition: border-color 0.2s ease;
-}
-
-.orgao:hover {
-  border-color: rgba(229, 57, 23, 0.5);
-}
-
-.orgaoIcone {
+.ramo li {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(229, 57, 23, 0.12);
-  color: #E53917;
-  font-size: 18px;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
 }
 
-.orgao h3 {
-  font-size: 19px;
-  margin: 0 0 8px;
+.ramo li + li {
+  border-top: 1px solid var(--filete);
 }
 
-.orgao p {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #b8b8b8;
-  margin: 0;
+.ramo strong {
+  font-size: 15.5px;
+  color: white;
 }
 
-/* Comando */
+.ramo li span {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #9a9a9a;
+}
+
+/* ---------- IV. Direção ---------- */
+
 .mensagem {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: minmax(240px, 380px) minmax(0, 1fr);
   gap: 56px;
   align-items: center;
 }
 
-.mensagemFoto {
+.retrato {
   margin: 0;
   aspect-ratio: 4 / 5;
-  border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(to top, #2a1510, #f2efe9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
+  border-bottom: 4px solid var(--vermelho);
 }
 
-.mensagemFoto img {
+.retrato img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: top;
 }
 
-.mensagemFoto span {
+.retrato span {
   font-size: 64px;
   font-weight: 700;
 }
 
 .citacao {
-  margin: 4px 0 22px;
+  position: relative;
+  margin: 0 0 26px;
+  padding-top: 40px;
   font-family: 'DM Serif Display', serif;
-  font-size: 30px;
-  line-height: 1.3;
+  font-size: clamp(26px, 2.6vw, 42px);
+  line-height: 1.2;
   color: white;
 }
 
+.citacao::before {
+  content: "“";
+  position: absolute;
+  top: -24px;
+  left: -6px;
+  font-size: 120px;
+  line-height: 1;
+  color: var(--vermelho);
+}
+
+.mensagemTexto {
+  max-width: 62ch;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+  color: #c4c4c4;
+}
+
 .assinatura {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--filete);
 }
 
 .assinatura strong {
   display: block;
-  font-size: 17px;
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: 24px;
 }
 
 .assinatura span {
-  font-size: 14px;
-  color: #E53917;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--vermelho);
 }
 
-.direcaoTitulo {
-  font-size: 26px;
-  margin: 80px 0 28px;
+/* diretório da equipa de direção, em linhas */
+.diretorio {
+  margin-top: 64px;
 }
 
-.direcao {
+.diretorio ul {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  border-top: 3px solid var(--filete-forte);
+}
+
+.diretorio li {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: 52px minmax(180px, 1fr) minmax(200px, 1.1fr) minmax(0, 1.6fr);
+  gap: 24px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--filete);
 }
 
-.pessoa {
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-}
-
-.avatarPessoa {
-  width: 64px;
-  height: 64px;
-  font-size: 18px;
-  margin-bottom: 16px;
-}
-
-.pessoa h4 {
-  font-size: 16px;
+.avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--vermelho);
+  background: rgba(229, 57, 23, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
   font-weight: 700;
-  margin: 0 0 4px;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.diretorio strong {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: 20px;
 }
 
 .cargo {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #E53917;
-  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--vermelho);
 }
 
-.pessoa p {
-  font-size: 13.5px;
+.descricao {
+  font-size: 14px;
   line-height: 1.5;
-  color: #b8b8b8;
-  margin: 0;
+  color: #9a9a9a;
 }
 
-@media (max-width: 900px) {
-  .subnav {
-    top: 88px;
+.ligacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 40px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--vermelho);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ligacao svg {
+  color: var(--vermelho);
+  transition: transform 0.2s ease;
+}
+
+.ligacao:hover svg {
+  transform: translateX(4px);
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 1200px) {
+  .valores ol {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .historia,
+  .valores li:nth-child(3) {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .valores li:nth-child(n + 3) {
+    border-top: 1px solid var(--filete);
+  }
+
+  .diretorio li {
+    grid-template-columns: 52px minmax(0, 1fr);
+    row-gap: 4px;
+  }
+
+  .diretorio li > :not(.avatar) {
+    grid-column: 2;
+  }
+
+  .diretorio li .avatar {
+    grid-row: span 3;
+    align-self: start;
+  }
+}
+
+@media (max-width: 1000px) {
+  .titulo {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .grelha {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* o índice passa a uma barra fixa e deslizante */
+  .indice {
+    top: 88px;
+    z-index: 900;
+    margin: 0 calc(-1 * var(--margem));
+    padding: 0;
+    background: rgba(15, 11, 9, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--filete);
+  }
+
+  .indice > .rotulo,
+  .contactoInstitucional {
+    display: none;
+  }
+
+  .indice ol {
+    margin: 0;
+    display: flex;
+    overflow-x: auto;
+    border-top: none;
+    padding: 0 var(--margem);
+    scrollbar-width: none;
+  }
+
+  .indice ol::-webkit-scrollbar {
+    display: none;
+  }
+
+  .indice li {
+    flex: 0 0 auto;
+    border-bottom: none;
+  }
+
+  .indice a {
+    padding: 14px 16px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    font-size: 13.5px;
+  }
+
+  .indice .indiceAtivo {
+    background: none;
+    border-bottom-color: var(--vermelho);
+  }
+
+  .conteudo {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .numeros {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .numeros > div:nth-child(3) {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .numeros > div:nth-child(n + 3) {
+    border-top: 1px solid var(--filete);
+  }
+
   .mensagem {
     grid-template-columns: 1fr;
     gap: 36px;
   }
 
-  .mensagemFoto {
-    max-width: 320px;
-  }
-
-  .numeros {
-    grid-template-columns: repeat(2, 1fr);
-    margin: 48px 0;
-  }
-
-  .numeros li:nth-child(3) {
-    border-left: none;
-  }
-
-  .numeros li:nth-child(n + 3) {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  /* linha temporal na vertical */
-  .marcos {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    padding-left: 32px;
-  }
-
-  .marcos::before {
-    top: 0;
-    bottom: 0;
-    left: 7px;
-    right: auto;
-    width: 2px;
-    height: auto;
-    background: linear-gradient(to bottom, #E53917, rgba(229, 57, 23, 0.15));
-  }
-
-  .marcos li {
-    padding-top: 0;
-  }
-
-  .marcos li::before {
-    left: -32px;
-  }
-
-  .orgaos {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .citacao {
-    font-size: 24px;
-  }
-
-  .direcaoTitulo {
-    margin-top: 56px;
+  .retrato {
+    max-width: 340px;
   }
 }
 
-@media (max-width: 600px) {
-  .subnavInterior {
-    margin-top: -22px;
+@media (max-width: 760px) {
+  .cabecalho {
+    margin-top: -80px;
+    padding-top: 110px;
   }
 
-  .subnavLink {
-    flex: 0 0 auto;
-    padding: 10px 14px;
-    font-size: 13px;
+  .linhaTopo span:last-child {
+    display: none;
   }
 
-  .orgaos {
+  .entrada {
+    padding-left: 18px;
+    font-size: 17px;
+  }
+
+  .sede {
+    padding: 0;
+  }
+
+  .sede img {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .sede figcaption {
+    position: static;
+    background: none;
+    padding: 10px var(--margem) 0;
+  }
+
+  .seccao {
+    padding: 48px 0 56px;
+  }
+
+  .tituloSeccao {
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .textoColunas {
+    column-count: 1;
+    font-size: 16.5px;
+  }
+
+  .cronologia,
+  .cronologia tbody,
+  .cronologia tr,
+  .cronologia th,
+  .cronologia td {
+    display: block;
+    width: auto;
+  }
+
+  .cronologia tr {
+    padding: 18px 0;
+  }
+
+  .cronologia th,
+  .cronologia td {
+    padding: 0;
+  }
+
+  .cronologia th {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .cronologiaTitulo {
+    margin-bottom: 4px;
+  }
+
+  .declaracoes {
     grid-template-columns: 1fr;
   }
 
-  .numeros strong {
-    font-size: 36px;
+  .declaracoes article {
+    padding: 28px 0;
   }
 
-  .topoOrganograma {
-    padding: 22px;
+  .declaracoes article + article {
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--filete);
+  }
+
+  .valores ol {
+    grid-template-columns: 1fr;
+  }
+
+  .valores li,
+  .valores li + li {
+    padding: 22px 0 14px;
+    border-left: none;
+  }
+
+  .valores li + li {
+    border-top: 1px solid var(--filete);
+  }
+
+  /* organograma em coluna, ligado por uma linha à esquerda */
+  .topo::after,
+  .ramos::before,
+  .ramo::before {
+    display: none;
+  }
+
+  .topo {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .topoBrasao {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ramos {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 18px;
+    padding: 0 0 0 18px;
+    border-left: 1px solid var(--linha);
   }
 }

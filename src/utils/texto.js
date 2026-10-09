@@ -17,3 +17,8 @@ export function tempoLeitura(blocos = []) {
 export function normalizar(texto) {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
+
+// "Um ano centrado na liderança" -> "um-ano-centrado-na-lideranca" (âncoras de subtítulos)
+export function ancora(texto) {
+  return normalizar(texto).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}

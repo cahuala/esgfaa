@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa'
+import { ancora } from '../../utils/texto'
 import styles from './ConteudoRico.module.css'
 
 /*
@@ -7,8 +8,15 @@ import styles from './ConteudoRico.module.css'
   Os tipos de bloco estão descritos em data/noticias.js.
   Todas as imagens do conteúdo podem ser abertas em ecrã inteiro.
   `centrado`: coluna de texto centrada; as figuras "largas" saem da coluna.
+  `capitular`: primeira letra do texto em grande, como numa publicação impressa.
+
+  Imagens soltas aceitam `posicao`, como no Word:
+    'esquerda' / 'direita' — a imagem fica de lado e o texto contorna-a
+    'centro' (predefinição) — a imagem ocupa a coluna de texto
+    'larga'  — a imagem sai da coluna (só com `centrado`)
+  As legendas das imagens soltas são numeradas: "Figura 1", "Figura 2"…
 */
-function ConteudoRico({ blocos = [], centrado = false }) {
+function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
   // todas as imagens (soltas e de galerias) numa só sequência para o visualizador
   const imagens = blocos.flatMap((b) => {
     if (b.tipo === 'imagem') return [{ src: b.src, legenda: b.legenda }]
@@ -20,26 +28,36 @@ function ConteudoRico({ blocos = [], centrado = false }) {
     const anteriores = i === 0 ? 0 : acc[i - 1] + contarImagens(blocos[i - 1])
     return [...acc, anteriores]
   }, [])
+  // número de figura de cada imagem solta
+  const numeroFigura = blocos.reduce((acc, b, i) => {
+    const anterior = i === 0 ? 0 : Math.max(0, ...acc.slice(0, i).filter(Boolean))
+    return [...acc, b.tipo === 'imagem' ? anterior + 1 : null]
+  }, [])
   const [aberta, setAberta] = useState(null)
 
   return (
-    <div className={`${styles.corpo} ${centrado ? styles.centrado : ''}`}>
+    <div className={`${styles.corpo} ${centrado ? styles.centrado : ''} ${capitular ? styles.capitular : ''}`}>
       {blocos.map((bloco, i) => {
         switch (bloco.tipo) {
           case 'paragrafo':
             return <p key={i}>{bloco.texto}</p>
 
           case 'subtitulo':
-            return <h2 key={i}>{bloco.texto}</h2>
+            return <h2 key={i} id={ancora(bloco.texto)}>{bloco.texto}</h2>
 
           case 'imagem': {
             const indice = inicioImagens[i]
+            const posicao = bloco.posicao || (bloco.larga ? 'larga' : 'centro')
             return (
-              <figure key={i} className={`${styles.figura} ${bloco.larga ? styles.larga : ''}`}>
+              <figure key={i} className={`${styles.figura} ${styles[posicao] || ''}`}>
                 <button className={styles.ampliar} onClick={() => setAberta(indice)} aria-label="Ampliar imagem">
                   <img src={bloco.src} alt={bloco.legenda || ''} loading="lazy" />
                 </button>
-                {bloco.legenda && <figcaption>{bloco.legenda}</figcaption>}
+                {bloco.legenda && (
+                  <figcaption className={styles.legendaNumerada}>
+                    <span>Figura {numeroFigura[i]}</span>{bloco.legenda}
+                  </figcaption>
+                )}
               </figure>
             )
           }

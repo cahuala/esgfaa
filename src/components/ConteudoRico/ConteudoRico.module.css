@@ -368,3 +368,85 @@ ol.lista li::before {
     right: calc(50% - 56px);
   }
 }
+
+/* ===== Paginação "como no Word": imagens com o texto a contornar ===== */
+
+.centro {
+  width: 100%;
+}
+
+.esquerda,
+.direita {
+  width: 44%;
+  margin-bottom: 1em;
+}
+
+.corpo > .esquerda {
+  float: left;
+  margin: 0.35em 34px 1.1em 0;
+}
+
+.corpo > .direita {
+  float: right;
+  margin: 0.35em 0 1.1em 34px;
+}
+
+/* os blocos de largura total começam sempre abaixo das imagens laterais */
+.corpo h2,
+.corpo > .centro,
+.corpo > .larga,
+.citacao,
+.destaque,
+.referencias {
+  clear: both;
+}
+
+.corpo::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* legenda numerada, ao estilo de um documento: "Figura 1  Texto da legenda" */
+.figura .legendaNumerada {
+  border-left: none;
+  padding-left: 0;
+  font-style: italic;
+  color: #9a9a9a;
+}
+
+.legendaNumerada span {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #E53917;
+  margin-right: 10px;
+}
+
+.esquerda .legendaNumerada,
+.direita .legendaNumerada {
+  font-size: 13px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* letra capitular no primeiro parágrafo */
+.capitular > p:first-child::first-letter {
+  float: left;
+  font-family: 'DM Serif Display', serif;
+  font-size: 4.4em;
+  line-height: 0.82;
+  padding: 0.06em 0.12em 0 0;
+  color: #E53917;
+}
+
+@media (max-width: 700px) {
+  .corpo > .esquerda,
+  .corpo > .direita {
+    float: none;
+    width: 100%;
+    margin: 1.8em 0;
+  }
+}

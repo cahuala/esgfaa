@@ -54,3 +54,10 @@ export function contagem(iso) {
   if (dias === 1) return 'Amanhã'
   return `Faltam ${dias} dias`
 }
+
+const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+
+// "Sexta-feira, 9 de outubro de 2026"
+export function dataPorExtenso(data = new Date()) {
+  return `${DIAS_SEMANA[data.getDay()]}, ${data.getDate()} de ${MESES_LONGOS[data.getMonth()]} de ${data.getFullYear()}`
+}
