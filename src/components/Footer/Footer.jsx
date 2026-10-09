@@ -18,8 +18,8 @@ const colunas = [
     titulo: 'Formação',
     links: [
       { label: 'Cursos e Programas', to: '/Cursos' },
-      { label: 'Calendário Académico', to: '/Cursos' },
-      { label: 'Requisitos de Admissão', to: '/Cursos' },
+      { label: 'Calendário Académico', to: '/Cursos#calendario' },
+      { label: 'Requisitos de Admissão', to: '/Cursos#admissao' },
     ],
   },
   {

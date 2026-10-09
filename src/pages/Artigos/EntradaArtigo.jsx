@@ -1,41 +1,29 @@
 import { Link } from 'react-router-dom'
 import { pessoaPorId } from '../../data/pessoas'
 import { formatarData } from '../../utils/datas'
-import { iniciais, tempoLeitura } from '../../utils/texto'
-import pagina from '../../styles/pagina.module.css'
+import { tempoLeitura } from '../../utils/texto'
 import styles from './Artigos.module.css'
 
-// Uma linha do índice de artigos
-function EntradaArtigo({ artigo }) {
+// Uma entrada do índice de publicações, ao estilo de uma revista científica
+function EntradaArtigo({ artigo, numero }) {
   const autor = pessoaPorId(artigo.autor)
 
   return (
     <Link to={`/Artigos/${artigo.slug}`} className={styles.entrada}>
-      <div className={styles.entradaLado}>
-        <span className={styles.tipo}>{artigo.tipo}</span>
-        <time dateTime={artigo.data}>{formatarData(artigo.data)}</time>
-      </div>
-
-      <div className={styles.entradaCorpo}>
-        <h3>{artigo.titulo}</h3>
-        <p>{artigo.resumo}</p>
-        <div className={styles.entradaRodape}>
-          {autor && (
-            <span className={styles.autorMini}>
-              <span className={`${pagina.avatar} ${styles.avatarMini}`}>
-                {autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}
-              </span>
-              {autor.nome}
-            </span>
-          )}
-          <span className={styles.ponto} aria-hidden="true">·</span>
-          <span>{artigo.area}</span>
-          <span className={styles.ponto} aria-hidden="true">·</span>
-          <span>{tempoLeitura(artigo.conteudo)} min</span>
-        </div>
-      </div>
-
-      <span className={styles.seta} aria-hidden="true">→</span>
+      {numero && <span className={styles.entradaNumero} aria-hidden="true">{numero}</span>}
+      <span className={styles.entradaCorpo}>
+        <span className={styles.entradaTipo}>
+          {artigo.tipo}<span>{artigo.area}</span>
+        </span>
+        <span className={styles.entradaTitulo}>{artigo.titulo}</span>
+        {autor && <span className={styles.entradaAutor}>{autor.nome}</span>}
+        <span className={styles.entradaResumo}>{artigo.resumo}</span>
+        <span className={styles.entradaRodape}>
+          <time dateTime={artigo.data}>{formatarData(artigo.data)}</time>
+          <span>{tempoLeitura(artigo.conteudo)} min de leitura</span>
+          {artigo.palavrasChave.slice(0, 3).map((p) => <span key={p} className={styles.palavra}>{p}</span>)}
+        </span>
+      </span>
     </Link>
   )
 }

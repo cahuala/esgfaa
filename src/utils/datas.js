@@ -61,3 +61,13 @@ const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
 export function dataPorExtenso(data = new Date()) {
   return `${DIAS_SEMANA[data.getDay()]}, ${data.getDate()} de ${MESES_LONGOS[data.getMonth()]} de ${data.getFullYear()}`
 }
+
+// "Quinta-feira"
+export function diaDaSemana(iso) {
+  return DIAS_SEMANA[paraData(iso).getDay()]
+}
+
+// "outubro" (nome do mês por extenso, minúsculas)
+export function mesLongo(iso) {
+  return MESES_LONGOS[paraData(iso).getMonth()]
+}

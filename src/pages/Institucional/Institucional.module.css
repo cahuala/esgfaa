@@ -24,68 +24,12 @@
 
 /* ---------- Cabeçalho ---------- */
 
-.cabecalho {
-  margin-top: -130px;
-  padding: 160px var(--margem) 44px;
-  background:
-    radial-gradient(ellipse at 85% 0%, rgba(229, 57, 23, 0.22), transparent 55%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 120px),
-    #0f0705;
-}
 
-.interior {
-  max-width: 1760px;
-  margin: 0 auto;
-}
 
-.linhaTopo {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  padding: 14px 0;
-  border-top: 4px solid var(--filete-forte);
-  border-bottom: 1px solid var(--filete-forte);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #d8d8d8;
-}
 
-.titulo {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
-  gap: 56px;
-  align-items: end;
-  padding-top: 22px;
-}
 
-.sobretitulo {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--vermelho);
-  margin-bottom: 6px;
-}
 
-.titulo h1 {
-  font-size: clamp(72px, 12vw, 200px);
-  line-height: 0.82;
-  letter-spacing: -0.04em;
-  margin: 0;
-}
 
-.entrada {
-  margin: 0 0 12px;
-  padding-left: 28px;
-  border-left: 3px solid var(--vermelho);
-  font-size: 20px;
-  line-height: 1.5;
-  color: #d6d6d6;
-}
 
 /* ---------- Fotografia da sede e números ---------- */
 
@@ -151,8 +95,9 @@
 
 .numeros dd {
   margin: 0;
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(44px, 4.5vw, 72px);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(36px, 3.4vw, 56px);
   line-height: 0.9;
   color: white;
 }
@@ -211,7 +156,8 @@
 
 .indiceNumero {
   flex: 0 0 26px;
-  font-family: 'DM Serif Display', serif;
+  font-family: inherit;
+  font-weight: 700;
   font-size: 18px;
   color: #6f6f6f;
   transition: color 0.2s ease;
@@ -277,15 +223,15 @@
 }
 
 .numeroSeccao {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(80px, 8vw, 140px);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(56px, 5.5vw, 96px);
   line-height: 0.75;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--vermelho);
+  color: var(--vermelho);
 }
 
 .tituloSeccao h2 {
-  font-size: clamp(32px, 3.4vw, 56px);
+  font-size: clamp(26px, 2.6vw, 42px);
   line-height: 1.05;
   letter-spacing: -0.02em;
   margin: 8px 0 0;
@@ -317,7 +263,8 @@
 
 .capitular::first-letter {
   float: left;
-  font-family: 'DM Serif Display', serif;
+  font-family: inherit;
+  font-weight: 700;
   font-size: 4.6em;
   line-height: 0.8;
   padding: 0.06em 0.12em 0 0;
@@ -396,9 +343,9 @@
 
 .cronologia th {
   width: 140px;
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
-  font-size: 40px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 32px;
   line-height: 1;
   color: white;
 }
@@ -436,8 +383,9 @@
 
 .declaracoes p {
   margin: 16px 0 0;
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(24px, 2.2vw, 36px);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(20px, 1.7vw, 28px);
   line-height: 1.22;
   color: white;
 }
@@ -466,14 +414,15 @@
 
 .valorNumero {
   display: block;
-  font-family: 'DM Serif Display', serif;
+  font-family: inherit;
+  font-weight: 700;
   font-size: 15px;
   color: var(--vermelho);
   margin-bottom: 14px;
 }
 
 .valores h3 {
-  font-size: 24px;
+  font-size: 20px;
   margin: 0 0 10px;
 }
 
@@ -521,7 +470,7 @@
 }
 
 .topo h3 {
-  font-size: 28px;
+  font-size: 24px;
   margin: 6px 0 6px;
 }
 
@@ -646,8 +595,9 @@
   position: relative;
   margin: 0 0 26px;
   padding-top: 40px;
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(26px, 2.6vw, 42px);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: clamp(22px, 2vw, 32px);
   line-height: 1.2;
   color: white;
 }
@@ -678,9 +628,9 @@
 
 .assinatura strong {
   display: block;
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
-  font-size: 24px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 20px;
 }
 
 .assinatura span {
@@ -733,9 +683,9 @@
 }
 
 .diretorio strong {
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
-  font-size: 20px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 17px;
 }
 
 .cargo {
@@ -806,10 +756,6 @@
 }
 
 @media (max-width: 1000px) {
-  .titulo {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
 
   .grelha {
     grid-template-columns: minmax(0, 1fr);
@@ -891,19 +837,8 @@
 }
 
 @media (max-width: 760px) {
-  .cabecalho {
-    margin-top: -80px;
-    padding-top: 110px;
-  }
 
-  .linhaTopo span:last-child {
-    display: none;
-  }
 
-  .entrada {
-    padding-left: 18px;
-    font-size: 17px;
-  }
 
   .sede {
     padding: 0;

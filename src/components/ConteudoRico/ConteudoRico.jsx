@@ -129,7 +129,7 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
 
           case 'referencias':
             return (
-              <section key={i} className={styles.referencias}>
+              <section key={i} id="referencias" className={styles.referencias}>
                 <h3>Referências</h3>
                 <ol>
                   {bloco.itens.map((item) => <li key={item}>{item}</li>)}

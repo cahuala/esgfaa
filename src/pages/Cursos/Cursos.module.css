@@ -1,0 +1,296 @@
+/* Faixa de candidaturas */
+.faixa {
+  background: var(--vermelho);
+}
+
+.faixaInterior {
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 14px var(--margem);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.faixaSelo {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.faixaInterior p {
+  margin: 0;
+  flex: 1;
+  font-size: 14.5px;
+}
+
+.faixaLigacao {
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-underline-offset: 4px;
+}
+
+/* Cada curso: foto de um lado, ficha do outro */
+.curso {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  border-bottom: 1px solid var(--filete);
+}
+
+.curso:first-child {
+  margin-top: 56px;
+  border-top: 3px solid var(--filete-forte);
+}
+
+.cursoInvertido .cursoFoto {
+  order: 2;
+}
+
+.cursoFoto {
+  position: relative;
+  display: block;
+  min-height: 460px;
+  overflow: hidden;
+}
+
+.cursoFoto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.2);
+  transition: transform 0.8s ease, filter 0.4s ease;
+}
+
+.curso:hover .cursoFoto img {
+  transform: scale(1.04);
+  filter: none;
+}
+
+/* sigla gigante sobre a foto */
+.cursoSigla {
+  position: absolute;
+  left: 24px;
+  bottom: 12px;
+  font-size: clamp(64px, 8vw, 132px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.cursoTexto {
+  padding: 48px clamp(28px, 4vw, 72px) 52px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cursoNumero {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--vermelho);
+  letter-spacing: 1px;
+}
+
+.cursoTexto h2 {
+  font-size: clamp(24px, 2.4vw, 38px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 10px 0 14px;
+}
+
+.cursoTexto h2 a {
+  color: white;
+  text-decoration: none;
+}
+
+.cursoTexto h2 a:hover {
+  color: #ff8a5c;
+}
+
+.cursoResumo {
+  margin: 0 0 28px;
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #c4c4c4;
+}
+
+.ficha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 32px;
+  border-top: 1px solid var(--filete);
+}
+
+.ficha > div {
+  padding: 14px 16px 14px 0;
+  border-bottom: 1px solid var(--filete);
+}
+
+.ficha dt {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8f8f8f;
+  margin-bottom: 4px;
+}
+
+.ficha dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.cursoTexto > a:last-child {
+  align-self: flex-start;
+}
+
+/* Blocos seguintes */
+.bloco {
+  padding-top: 88px;
+}
+
+.bloco:last-child {
+  padding-bottom: 110px;
+}
+
+.tabelaRolavel {
+  overflow-x: auto;
+}
+
+.comparacao {
+  min-width: 720px;
+}
+
+.comparacao thead th {
+  vertical-align: bottom;
+  width: 26%;
+}
+
+.comparacao thead th:first-child {
+  width: 22%;
+}
+
+.comparacao thead a {
+  display: block;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: white;
+  text-decoration: none;
+  text-transform: none;
+}
+
+.comparacao thead a:hover {
+  color: var(--vermelho);
+}
+
+.comparacao thead span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: #9a9a9a;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.nota {
+  margin: 22px 0 0;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+.calendario {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+
+.candidatar {
+  padding: 32px;
+  border: 1px solid var(--vermelho);
+  background: linear-gradient(135deg, rgba(229, 57, 23, 0.16), rgba(229, 57, 23, 0.03));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidatar h3 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.candidatar p {
+  margin: 0 0 8px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #d0d0d0;
+}
+
+@media (max-width: 1000px) {
+  .curso {
+    grid-template-columns: 1fr;
+  }
+
+  .cursoInvertido .cursoFoto {
+    order: 0;
+  }
+
+  .cursoFoto {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .cursoTexto {
+    padding: 32px 0 44px;
+  }
+
+  .calendario {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .faixaInterior {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .curso:first-child {
+    margin-top: 32px;
+  }
+
+  .cursoFoto {
+    margin: 0 calc(-1 * var(--margem));
+  }
+
+  .ficha {
+    grid-template-columns: 1fr;
+  }
+
+  .bloco {
+    padding-top: 64px;
+  }
+
+  .candidatar {
+    padding: 24px;
+  }
+}

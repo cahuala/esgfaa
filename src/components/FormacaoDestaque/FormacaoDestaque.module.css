@@ -23,7 +23,7 @@
 }
 
 .cabecalho h2 {
-  font-family: -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-family: inherit;
   font-size: 34px;
   font-weight: 800;
   line-height: 1.2;
@@ -145,6 +145,8 @@
 }
 
 .cta {
+  display: inline-block;
+  text-decoration: none;
   background-color: #E53917;
   color: white;
   border: none;

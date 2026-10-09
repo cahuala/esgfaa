@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaSearch, FaSlidersH, FaTimes, FaPlay, FaImages, FaEnvelope } from 'react-icons/fa'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
 import noticias, { temGaleria, temVideo } from '../../data/noticias'
 import contactos from '../../data/contactos'
@@ -84,27 +85,17 @@ function Noticias() {
 
   return (
     <main className={styles.pagina}>
-      {/* Cabeçalho tipo boletim oficial */}
-      <header className={styles.cabecalho}>
-        <div className={styles.cabecalhoInterior}>
-          <div className={styles.linhaTopo}>
-            <span>Escola Superior de Guerra · Forças Armadas Angolanas</span>
-            <span>{dataPorExtenso()}</span>
-          </div>
-
-          <div className={styles.titulo}>
-            <div>
-              <span className={styles.sobretitulo}>Boletim informativo</span>
-              <h1>Notícias</h1>
-            </div>
-            <dl className={styles.numeros}>
-              <div><dt>Publicadas</dt><dd>{noticias.length}</dd></div>
-              <div><dt>Secções</dt><dd>{categorias.length}</dd></div>
-              <div><dt>Última edição</dt><dd className={styles.numeroData}>{formatarData(noticias[0].data)}</dd></div>
-            </dl>
-          </div>
-        </div>
-      </header>
+      <CabecalhoEditorial
+        topo={['Escola Superior de Guerra · Forças Armadas Angolanas', dataPorExtenso()]}
+        sobretitulo="Boletim informativo"
+        titulo="Notícias"
+      >
+        <dl className={styles.numeros}>
+          <div><dt>Publicadas</dt><dd>{noticias.length}</dd></div>
+          <div><dt>Secções</dt><dd>{categorias.length}</dd></div>
+          <div><dt>Última edição</dt><dd className={styles.numeroData}>{formatarData(noticias[0].data)}</dd></div>
+        </dl>
+      </CabecalhoEditorial>
 
       {/* Faixa "Última hora" */}
       <div className={styles.faixa}>

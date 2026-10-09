@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { FaFilePdf, FaRegCopy, FaCheck } from 'react-icons/fa'
-import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import ConteudoRico from '../../components/ConteudoRico/ConteudoRico'
 import Partilhar from '../../components/Partilhar/Partilhar'
 import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
@@ -10,8 +10,8 @@ import EntradaArtigo from './EntradaArtigo'
 import artigos, { artigoPorSlug } from '../../data/artigos'
 import { pessoaPorId } from '../../data/pessoas'
 import { formatarDataLonga, paraData } from '../../utils/datas'
-import { iniciais, tempoLeitura } from '../../utils/texto'
-import pagina from '../../styles/pagina.module.css'
+import { ancora, iniciais, tempoLeitura } from '../../utils/texto'
+import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
 
 function ArtigoDetalhe() {
@@ -30,6 +30,8 @@ function ArtigoDetalhe() {
   const nomes = autor ? autor.nome.split(' ').filter((p) => !p.endsWith('.')) : []
   const autorCitacao = nomes.length ? `${nomes[nomes.length - 1]}, ${nomes[0][0]}. ` : ''
   const citacao = `${autorCitacao}(${ano}). ${artigo.titulo}. Escola Superior de Guerra das Forças Armadas Angolanas.`
+  const seccoes = artigo.conteudo.filter((b) => b.tipo === 'subtitulo')
+  const temReferencias = artigo.conteudo.some((b) => b.tipo === 'referencias')
   const relacionados = artigos
     .filter((a) => a.slug !== artigo.slug)
     .sort((a, b) => (b.area === artigo.area) - (a.area === artigo.area))
@@ -46,100 +48,94 @@ function ArtigoDetalhe() {
   }
 
   return (
-    <main>
+    <main className={ed.pagina}>
       <BarraLeitura />
 
-      <CabecalhoPagina
-        etiqueta={`${artigo.tipo} · ${artigo.area}`}
-        titulo={artigo.titulo}
-        imagem={artigo.capa}
+      <CabecalhoEditorial
         migalhas={[{ label: 'Artigos', to: '/Artigos' }, { label: artigo.tipo }]}
+        topo={[`${artigo.area} · ${ano}`]}
+        sobretitulo={artigo.tipo}
+        titulo={artigo.titulo}
       >
         {autor && (
-          <div className={`${styles.autor} ${styles.autorCabecalho}`}>
-            <span className={pagina.avatar}>
-              {autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}
-            </span>
+          <div className={`${ed.pessoa} ${styles.autorCabecalho}`}>
+            <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
             <div>
               <strong>{autor.nome}</strong>
-              <span>
-                {autor.cargo} · <time dateTime={artigo.data}>{formatarDataLonga(artigo.data)}</time> · {tempoLeitura(artigo.conteudo)} min de leitura
-              </span>
+              <span>{autor.cargo}</span>
             </div>
           </div>
         )}
-      </CabecalhoPagina>
+      </CabecalhoEditorial>
 
-      <section className={pagina.secao}>
-        <div className={pagina.layoutDetalhe}>
-          <article>
-            <div className={styles.resumoCaixa}>
-              <h2>Resumo</h2>
-              <p>{artigo.resumo}</p>
-              <div className={styles.palavras}>
-                <span>Palavras-chave:</span>
-                {artigo.palavrasChave.map((p) => <span key={p} className={styles.palavra}>{p}</span>)}
+      {/* Ficha da publicação */}
+      <dl className={ed.factos}>
+        <div><dt>Publicado</dt><dd>{formatarDataLonga(artigo.data)}</dd></div>
+        <div><dt>Tipo</dt><dd>{artigo.tipo}</dd></div>
+        <div><dt>Área</dt><dd>{artigo.area}</dd></div>
+        <div><dt>Leitura</dt><dd>{minutos} {minutos === 1 ? 'minuto' : 'minutos'}</dd></div>
+      </dl>
+
+      <div className={styles.grelhaDetalhe}>
+        {/* Esquerda: índice e partilha */}
+        <aside className={styles.fichaLateral}>
+          <span className={ed.rotulo}>Neste artigo</span>
+          <ol className={styles.indiceArtigo}>
+            <li><a href="#resumo">Resumo</a></li>
+            {seccoes.map((s) => <li key={s.texto}><a href={`#${ancora(s.texto)}`}>{s.texto}</a></li>)}
+            {temReferencias && <li><a href="#referencias">Referências</a></li>}
+          </ol>
+          <div className={styles.partilha}><Partilhar titulo={artigo.titulo} /></div>
+        </aside>
+
+        {/* Centro: o artigo */}
+        <article className={styles.texto}>
+          <section id="resumo" className={styles.resumo}>
+            <h2>Resumo</h2>
+            <p>{artigo.resumo}</p>
+            <div className={styles.palavras}>
+              <span>Palavras-chave</span>
+              {artigo.palavrasChave.map((p) => <span key={p} className={styles.palavra}>{p}</span>)}
+            </div>
+          </section>
+
+          <ConteudoRico blocos={artigo.conteudo} capitular />
+
+          {autor && (
+            <div className={styles.sobreAutor}>
+              <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
+              <div>
+                <span className={ed.rotulo}>Sobre o autor</span>
+                <h3>{autor.nome}</h3>
+                <p>{autor.cargo}. {autor.destaque}.</p>
               </div>
             </div>
+          )}
+        </article>
 
-            <ConteudoRico blocos={artigo.conteudo} />
-
-            {autor && (
-              <div className={styles.sobreAutor}>
-                <span className={`${pagina.avatar} ${styles.avatarGrande}`}>
-                  {autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}
-                </span>
-                <div>
-                  <span className={pagina.etiqueta}>Sobre o autor</span>
-                  <h3>{autor.nome}</h3>
-                  <p>{autor.cargo}. {autor.destaque}.</p>
-                </div>
-              </div>
-            )}
-          </article>
-
-          <aside className={pagina.lateral}>
-            <div className={pagina.cartaoLateral}>
-              <h4>Sobre esta publicação</h4>
-              <dl className={styles.ficha}>
-                <dt>Tipo</dt><dd>{artigo.tipo}</dd>
-                <dt>Área</dt><dd>{artigo.area}</dd>
-                <dt>Publicado</dt><dd>{formatarDataLonga(artigo.data)}</dd>
-                <dt>Leitura</dt><dd>{minutos} {minutos === 1 ? 'minuto' : 'minutos'}</dd>
-              </dl>
-              {artigo.pdf && (
-                <a href={artigo.pdf} className={`${pagina.botao} ${styles.botaoPdf}`} download>
-                  <FaFilePdf aria-hidden="true" /> Descarregar PDF
-                </a>
-              )}
-            </div>
-
-            <div className={pagina.cartaoLateral}>
-              <h4>Como citar</h4>
-              <p className={styles.citacao}>{citacao}</p>
-              <button className={styles.copiarCitacao} onClick={copiarCitacao}>
-                {citacaoCopiada ? <><FaCheck aria-hidden="true" /> Copiado</> : <><FaRegCopy aria-hidden="true" /> Copiar citação</>}
-              </button>
-            </div>
-
-            <div className={pagina.cartaoLateral}>
-              <Partilhar titulo={artigo.titulo} />
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      {relacionados.length > 0 && (
-        <section className={`${pagina.secao} ${pagina.secaoAlt}`}>
-          <div className={pagina.container}>
-            <span className={pagina.etiqueta}>Continue a ler</span>
-            <h2 className={pagina.tituloSecao}>Outras publicações</h2>
-            <div className={`${styles.indice} ${styles.indiceRelacionados}`}>
-              {relacionados.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)}
-            </div>
+        {/* Direita: citar, PDF, relacionados */}
+        <aside className={styles.direitaDetalhe}>
+          <div className={styles.caixa}>
+            <span className={ed.rotulo}>Como citar</span>
+            <p className={styles.citacao}>{citacao}</p>
+            <button className={styles.copiar} onClick={copiarCitacao}>
+              {citacaoCopiada ? <><FaCheck aria-hidden="true" /> Citação copiada</> : <><FaRegCopy aria-hidden="true" /> Copiar citação</>}
+            </button>
           </div>
-        </section>
-      )}
+
+          {artigo.pdf && (
+            <a href={artigo.pdf} className={`${ed.botao} ${styles.pdf}`} download>
+              <FaFilePdf aria-hidden="true" /> Descarregar PDF
+            </a>
+          )}
+
+          <span className={ed.rotulo}>Continue a ler</span>
+          <h2 className={styles.direitaTitulo}>Publicações relacionadas</h2>
+          <div className={styles.relacionados}>
+            {relacionados.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)}
+          </div>
+        </aside>
+      </div>
     </main>
   )
 }

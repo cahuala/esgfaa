@@ -8,20 +8,16 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   background-color: #ffffff;
   color: #333333;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, .font-display {
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
+h1, h2, h3, h4, .font-display {
+  font-family: inherit;
+  font-weight: 700;
   letter-spacing: -0.02em; /* Deixa os títulos mais compactos e elegantes */
-}
-body {
-  margin: 0;
-  font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
 button, input, select, textarea {
@@ -42,4 +38,25 @@ body {
 /* âncoras (#historia, #formulario…) não ficam escondidas por baixo da navbar fixa */
 [id] {
   scroll-margin-top: 140px;
+}
+
+/* Linguagem institucional comum às páginas interiores */
+:root {
+  --filete: rgba(255, 255, 255, 0.1);
+  --filete-forte: rgba(255, 255, 255, 0.85);
+  --vermelho: #E53917;
+  --margem: clamp(16px, 3vw, 56px);
+}
+
+/* texto só para leitores de ecrã */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

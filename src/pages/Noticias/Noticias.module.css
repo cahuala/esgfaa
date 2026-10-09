@@ -15,64 +15,14 @@
 
 /* ---------- Cabeçalho ---------- */
 
-.cabecalho {
-  margin-top: -130px;
-  padding: 160px var(--margem) 0;
-  background:
-    radial-gradient(ellipse at 85% 0%, rgba(229, 57, 23, 0.22), transparent 55%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 120px),
-    #0f0705;
-}
 
-.cabecalhoInterior {
-  max-width: 1760px;
-  margin: 0 auto;
-}
 
-.linhaTopo {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  padding: 14px 0;
-  border-top: 4px solid var(--filete-forte);
-  border-bottom: 1px solid var(--filete-forte);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #d8d8d8;
-}
 
-.titulo {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 40px;
-  padding: 18px 0 22px;
-  border-bottom: 1px solid var(--filete-forte);
-  /* filete duplo, como nos jornais */
-  box-shadow: 0 4px 0 -1px #0f0705, 0 5px 0 -1px var(--filete-forte);
-}
 
-.sobretitulo {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--vermelho);
-  margin-bottom: 6px;
-}
 
-.titulo h1 {
-  font-size: clamp(72px, 13vw, 210px);
-  line-height: 0.82;
-  letter-spacing: -0.04em;
-  margin: 0;
-}
 
 .numeros {
+  justify-self: end;
   display: flex;
   margin: 0 0 10px;
 }
@@ -93,13 +43,14 @@
 
 .numeros dd {
   margin: 0;
-  font-family: 'DM Serif Display', serif;
-  font-size: 46px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 34px;
   line-height: 1;
 }
 
 .numeros .numeroData {
-  font-size: 24px;
+  font-size: 18px;
   padding-top: 14px;
 }
 
@@ -251,8 +202,8 @@
 }
 
 .blocoTitulo span {
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
+  font-family: inherit;
+  font-weight: 700;
   font-size: 18px;
   color: var(--vermelho);
 }
@@ -280,8 +231,10 @@
   background: none;
   border: none;
   color: white;
-  font-family: 'DM Serif Display', serif;
-  font-size: 20px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .campoPesquisa input::placeholder {
@@ -472,9 +425,9 @@
 }
 
 .resultados strong {
-  font-family: 'DM Serif Display', serif;
-  font-weight: 400;
-  font-size: 30px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 24px;
   color: white;
 }
 
@@ -574,7 +527,7 @@
 }
 
 .manchete h2 {
-  font-size: clamp(32px, 3.4vw, 58px);
+  font-size: clamp(26px, 2.4vw, 40px);
   line-height: 1.04;
   letter-spacing: -0.025em;
   margin: 0 0 18px;
@@ -649,17 +602,16 @@
 
 /* algarismos vazados, à escala de um cartaz */
 .itemNumero {
-  font-family: 'DM Serif Display', serif;
-  font-size: 84px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 64px;
   line-height: 0.8;
-  color: transparent;
-  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.35);
-  transition: -webkit-text-stroke-color 0.25s ease, color 0.25s ease;
+  color: rgba(255, 255, 255, 0.16);
+  transition: color 0.25s ease;
 }
 
 .item:hover .itemNumero {
-  -webkit-text-stroke-color: var(--vermelho);
-  color: rgba(229, 57, 23, 0.12);
+  color: var(--vermelho);
 }
 
 .itemFoto {
@@ -704,8 +656,9 @@
 }
 
 .itemTitulo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 27px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 21px;
   line-height: 1.15;
   color: white;
   margin-bottom: 12px;
@@ -749,11 +702,11 @@
 
 .vazioNumero {
   display: block;
-  font-family: 'DM Serif Display', serif;
-  font-size: 140px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 110px;
   line-height: 1;
-  color: transparent;
-  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.16);
 }
 
 .vazio strong {
@@ -780,7 +733,7 @@
 }
 
 .arquivoTitulo {
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.1;
   margin: 6px 0 0;
   padding-bottom: 14px;
@@ -859,8 +812,9 @@
 }
 
 .miniaturaTitulo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 16.5px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
   line-height: 1.22;
   color: #e8e8e8;
   display: -webkit-box;
@@ -973,11 +927,6 @@
 }
 
 @media (max-width: 860px) {
-  .titulo {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-  }
 
   .numeros > div:first-child {
     padding-left: 0;
@@ -1009,14 +958,7 @@
 }
 
 @media (max-width: 640px) {
-  .cabecalho {
-    margin-top: -80px;
-    padding-top: 110px;
-  }
 
-  .linhaTopo span:first-child {
-    display: none;
-  }
 
   .numeros > div {
     padding: 0 16px;

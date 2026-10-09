@@ -1,160 +1,183 @@
-/* Cartões de contacto direto */
-.cartoes {
-  list-style: none;
-  margin: 0 0 64px;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
+/* =====================================================================
+   Contactos
+   ===================================================================== */
 
-.cartao {
-  padding: 26px 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  transition: border-color 0.2s ease;
-}
-
-.cartao:hover {
-  border-color: rgba(229, 57, 23, 0.5);
-}
-
-.icone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(229, 57, 23, 0.12);
-  color: #E53917;
-  font-size: 17px;
-  margin-bottom: 18px;
-}
-
-.cartao h3 {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #999;
-  margin: 0 0 10px;
-}
-
-.cartao p {
-  font-size: 15px;
-  line-height: 1.55;
-  color: white;
-  margin: 0;
-  word-break: break-word;
-}
-
-.cartao p + p {
-  margin-top: 4px;
-}
-
-.cartao a {
+.factoLigacao {
+  display: block;
   color: white;
   text-decoration: none;
-  transition: color 0.2s ease;
 }
 
-.cartao a:hover {
-  color: #E53917;
+.factoLigacao:hover {
+  color: var(--vermelho);
 }
 
-.cartao strong {
-  font-weight: 600;
-  color: #e0e0e0;
+.factoLinha {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
 }
 
-/* Formulário + coluna lateral */
+.factoLinha small {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a8a8a8;
+  margin-bottom: 6px;
+}
+
 .grelha {
+  max-width: calc(1760px + 2 * var(--margem));
+  margin: 0 auto;
+  padding: 0 var(--margem);
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 40px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
 }
 
 .formularioCaixa {
-  padding: 40px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  padding: 60px clamp(28px, 4vw, 72px) 80px 0;
+  border-right: 1px solid var(--filete);
 }
+
+.diretorio {
+  padding: 60px 0 80px clamp(28px, 4vw, 72px);
+}
+
+/* ---------- Formulário ---------- */
 
 .formulario {
-  margin-top: 28px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 36px;
 }
 
-.linhaCampos {
+.assuntos {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.assuntos legend,
+.campo > span {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #d0d0d0;
+}
+
+.assuntos legend span,
+.campo b {
+  font-weight: 900;
+  color: var(--vermelho);
+}
+
+.campo em {
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #8f8f8f;
+}
+
+.assuntos > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assuntos label {
+  position: relative;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c4c4c4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.assuntos label:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: white;
+}
+
+.assuntos input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.assuntos label:focus-within {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.assuntos .assuntoAtivo {
+  background: var(--vermelho);
+  border-color: var(--vermelho);
+  color: white;
+}
+
+.campos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
 }
 
 .campo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.campo > span {
-  font-size: 13px;
-  font-weight: 600;
-  color: #d0d0d0;
-}
-
-.campo em {
-  font-style: normal;
-  font-weight: 400;
-  color: #888;
 }
 
 .campo input,
-.campo select,
 .campo textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  padding: 12px 14px;
+  padding: 8px 0 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
-  font-size: 15px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  font-size: 18px;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
 }
 
 .campo textarea {
+  min-height: 150px;
   resize: vertical;
-  min-height: 140px;
-  line-height: 1.5;
-}
-
-.campo select {
-  color: #d0d0d0;
-}
-
-.campo select option {
-  background: #14100e;
+  line-height: 1.6;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .campo input:focus,
-.campo select:focus,
 .campo textarea:focus {
   outline: none;
-  border-color: #E53917;
-  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--vermelho);
+}
+
+.enviarLinha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding-top: 24px;
+  border-top: 3px solid var(--filete-forte);
 }
 
 .consentimento {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  max-width: 48ch;
   font-size: 13.5px;
   line-height: 1.5;
   color: #b8b8b8;
@@ -162,141 +185,165 @@
 }
 
 .consentimento input {
-  margin-top: 3px;
-  accent-color: #E53917;
+  flex: 0 0 auto;
   width: 16px;
   height: 16px;
-  flex: 0 0 auto;
-}
-
-.enviar {
-  align-self: flex-start;
-  padding: 14px 32px;
-  font-size: 15px;
+  margin-top: 2px;
+  accent-color: var(--vermelho);
 }
 
 .sucesso {
-  margin-top: 28px;
-  padding: 36px 28px;
-  text-align: center;
-  border: 1px solid rgba(127, 217, 154, 0.35);
-  background: rgba(127, 217, 154, 0.06);
-  border-radius: 14px;
+  padding: 44px 36px;
+  border: 1px solid rgba(127, 217, 154, 0.4);
+  background: rgba(127, 217, 154, 0.05);
 }
 
 .sucessoIcone {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: #2f9e5a;
-  color: white;
   font-size: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .sucesso h3 {
-  font-size: 24px;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 800;
 }
 
 .sucesso p {
-  font-size: 15px;
-  line-height: 1.6;
-  color: #c4c4c4;
-  margin: 0 0 24px;
+  margin: 0 0 26px;
+  max-width: 56ch;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: #d0d0d0;
 }
 
-.lateral {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+/* ---------- Diretório ---------- */
 
-.mapa {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #1d1714;
-}
-
-.mapa iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  /* mapa escurecido para acompanhar o tema do site */
-  filter: grayscale(0.4) invert(0.9) hue-rotate(180deg) contrast(0.9);
-}
-
-.departamentos {
+.areas {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.departamentos li {
+.areas li {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  gap: 4px;
+  padding: 18px 0 18px 16px;
+  border-bottom: 1px solid var(--filete);
+  border-left: 2px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.departamentos li:first-child {
-  padding-top: 0;
+.areas li:hover {
+  border-left-color: var(--vermelho);
+  background: linear-gradient(to right, rgba(229, 57, 23, 0.08), transparent);
 }
 
-.departamentos li:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.areas strong {
+  font-size: 17px;
+  font-weight: 800;
 }
 
-.departamentos strong {
-  font-size: 15px;
-  color: white;
-}
-
-.departamentos span {
-  font-size: 13px;
-  color: #999;
-}
-
-.departamentos a {
+.areas span {
   font-size: 13.5px;
-  color: #E53917;
-  text-decoration: none;
-  margin-top: 2px;
+  color: #9a9a9a;
 }
 
-.departamentos a:hover {
+.areas a {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vermelho);
+  text-decoration: none;
+}
+
+.areas a:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .redes {
+  margin-top: 40px;
+}
+
+.redes > div {
   display: flex;
   gap: 10px;
+  margin-top: 14px;
 }
 
 .redes a {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .redes a:hover {
-  background: #E53917;
+  background: var(--vermelho);
+  border-color: var(--vermelho);
+}
+
+/* ---------- Mapa ---------- */
+
+.mapa {
+  position: relative;
+  height: min(70vh, 560px);
+  border-top: 1px solid var(--filete-forte);
+  border-bottom: 1px solid var(--filete-forte);
+  background: #1d1714;
+}
+
+.mapa iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  /* mapa escurecido para acompanhar o tema do site */
+  filter: grayscale(0.4) invert(0.9) hue-rotate(180deg) contrast(0.9);
+}
+
+.mapaCartao {
+  position: absolute;
+  left: var(--margem);
+  bottom: 32px;
+  width: min(360px, calc(100% - 2 * var(--margem)));
+  padding: 26px;
+  background: rgba(15, 11, 9, 0.94);
+  backdrop-filter: blur(6px);
+  border-top: 3px solid var(--vermelho);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.mapaCartao .rotulo,
+.mapaCartao > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mapaCartao p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.mapaCartao a {
+  margin-top: 18px;
 }
 
 /* a secção de perguntas frequentes traz margem própria da página inicial */
@@ -304,44 +351,57 @@
   margin-top: 0;
 }
 
-@media (max-width: 1000px) {
-  .cartoes {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* ---------- Responsivo ---------- */
 
+@media (max-width: 1100px) {
   .grelha {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 600px) {
-  .cartoes {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    margin-bottom: 44px;
-  }
-
-  .cartao {
-    display: grid;
-    grid-template-columns: 44px 1fr;
-    column-gap: 16px;
-    padding: 20px;
-  }
-
-  .icone {
-    grid-row: span 3;
-    margin-bottom: 0;
-  }
 
   .formularioCaixa {
-    padding: 26px 20px;
+    padding-right: 0;
+    border-right: none;
   }
 
-  .linhaCampos {
+  .diretorio {
+    padding: 0 0 72px;
+  }
+
+  .campos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .formularioCaixa {
+    padding: 44px 0 56px;
+  }
+
+  .campos {
     grid-template-columns: 1fr;
   }
 
-  .enviar {
-    align-self: stretch;
+  .enviarLinha {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mapa {
+    height: auto;
+  }
+
+  .mapa iframe {
+    height: 320px;
+  }
+
+  .mapaCartao {
+    position: static;
+    width: auto;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .sucesso {
+    padding: 32px 22px;
   }
 }

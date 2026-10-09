@@ -1,0 +1,85 @@
+.ecra {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(229, 57, 23, 0.18), transparent 60%),
+    #0f0705;
+  animation: sair 0.35s ease 0.75s forwards;
+}
+
+.centro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  animation: entrar 0.3s ease both;
+}
+
+.brasao {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
+.nome {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #d8d8d8;
+}
+
+.barra {
+  display: block;
+  width: 180px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  background: var(--vermelho, #E53917);
+  transform-origin: left;
+  animation: encher 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes encher {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes pulsar {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* desaparece e deixa de bloquear cliques */
+@keyframes sair {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecra {
+    animation-delay: 0.3s;
+  }
+
+  .brasao {
+    animation: none;
+  }
+
+  .barra span {
+    animation-duration: 0.3s;
+  }
+}

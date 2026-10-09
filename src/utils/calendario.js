@@ -1,17 +1,12 @@
-// Gera um ficheiro .ics para o evento ser adicionado ao Google Calendar, Outlook ou iPhone.
+// Gera ficheiros .ics para adicionar eventos ao Google Calendar, Outlook ou iPhone.
 function escapar(texto = '') {
   return texto.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
 }
 
-export function descarregarCalendario(evento) {
+function vevento(evento, agora) {
   const dia = evento.data.replace(/-/g, '')
   const hora = (h) => `${h.replace(':', '')}00`
-  const agora = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//ESGFAA//Eventos//PT',
+  return [
     'BEGIN:VEVENT',
     `UID:${evento.id}@esgfaa`,
     `DTSTAMP:${agora}`,
@@ -21,13 +16,28 @@ export function descarregarCalendario(evento) {
     `LOCATION:${escapar(evento.local)}`,
     `DESCRIPTION:${escapar(evento.resumo)}`,
     'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
+  ]
+}
 
+function descarregar(nome, linhas) {
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ESGFAA//Eventos//PT', ...linhas, 'END:VCALENDAR'].join('\r\n')
   const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = `${evento.id}.ics`
+  a.download = `${nome}.ics`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+const agoraUTC = () => new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+// um evento
+export function descarregarCalendario(evento) {
+  descarregar(evento.id, vevento(evento, agoraUTC()))
+}
+
+// vários eventos num só ficheiro (subscrever a agenda)
+export function descarregarAgenda(eventos, nome = 'agenda-esgfaa') {
+  const agora = agoraUTC()
+  descarregar(nome, eventos.flatMap((e) => vevento(e, agora)))
 }

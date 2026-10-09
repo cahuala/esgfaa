@@ -16,7 +16,7 @@
 }
 
 .corpo h2 {
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.25;
   color: white;
   margin-top: 2em;
@@ -134,8 +134,9 @@
 }
 
 .citacao p {
-  font-family: 'DM Serif Display', serif;
-  font-size: 26px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 23px;
   line-height: 1.35;
   color: white;
 }
@@ -435,7 +436,8 @@ ol.lista li::before {
 /* letra capitular no primeiro parágrafo */
 .capitular > p:first-child::first-letter {
   float: left;
-  font-family: 'DM Serif Display', serif;
+  font-family: inherit;
+  font-weight: 700;
   font-size: 4.4em;
   line-height: 0.82;
   padding: 0.06em 0.12em 0 0;

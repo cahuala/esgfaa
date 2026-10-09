@@ -1,149 +1,196 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaSearch } from 'react-icons/fa'
-import CabecalhoPagina from '../../components/CabecalhoPagina/CabecalhoPagina'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import EntradaArtigo from './EntradaArtigo'
 import artigos from '../../data/artigos'
 import { pessoaPorId } from '../../data/pessoas'
 import { formatarDataLonga } from '../../utils/datas'
-import { iniciais, normalizar, tempoLeitura } from '../../utils/texto'
-import pagina from '../../styles/pagina.module.css'
+import { iniciais, normalizar } from '../../utils/texto'
+import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
 
-const TODOS = 'Todos'
-const tipos = [TODOS, ...new Set(artigos.map((a) => a.tipo))]
+const contar = (chave) =>
+  [...artigos.reduce((m, a) => m.set(chave(a), (m.get(chave(a)) || 0) + 1), new Map())]
 
-// { 'Estratégia': 2, ... } para a coluna lateral
-const areas = artigos.reduce((acc, a) => ({ ...acc, [a.area]: (acc[a.area] || 0) + 1 }), {})
+const tipos = contar((a) => a.tipo)
+const areas = contar((a) => a.area)
+const anos = contar((a) => a.data.slice(0, 4))
+const autores = contar((a) => a.autor).map(([id, total]) => ({ ...pessoaPorId(id), total }))
+
+const normas = [
+  'Texto original, não publicado noutra revista.',
+  'Entre 4 000 e 8 000 palavras, com resumo e palavras-chave.',
+  'Referências segundo a norma indicada pelo Departamento.',
+  'Envio em formato editável para o Departamento de Investigação.',
+]
+
+// Lista de opções com contagem, para a coluna de filtros
+function Filtro({ titulo, numero, opcoes, valor, definir }) {
+  return (
+    <div className={styles.bloco}>
+      <h2 className={styles.blocoTitulo}><span>{numero}</span> {titulo}</h2>
+      <ul className={styles.opcoes}>
+        {opcoes.map(([nome, total]) => (
+          <li key={nome}>
+            <button
+              className={valor === nome ? styles.opcaoAtiva : ''}
+              onClick={() => definir(valor === nome ? null : nome)}
+              aria-pressed={valor === nome}
+            >
+              <span>{nome}</span>
+              <span className={styles.total}>{String(total).padStart(2, '0')}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 function Artigos() {
-  const [tipo, setTipo] = useState(TODOS)
-  const [area, setArea] = useState(null)
   const [pesquisa, setPesquisa] = useState('')
+  const [tipo, setTipo] = useState(null)
+  const [area, setArea] = useState(null)
+  const [ano, setAno] = useState(null)
+  const [autor, setAutor] = useState(null)
 
   const termo = normalizar(pesquisa.trim())
-  const aFiltrar = tipo !== TODOS || area || termo
+  const aFiltrar = Boolean(termo || tipo || area || ano || autor)
   const filtrados = artigos.filter((a) => {
-    const autor = pessoaPorId(a.autor)?.nome || ''
-    const texto = normalizar(`${a.titulo} ${a.resumo} ${autor} ${a.palavrasChave.join(' ')}`)
-    return (tipo === TODOS || a.tipo === tipo) && (!area || a.area === area) && (!termo || texto.includes(termo))
+    const nomeAutor = pessoaPorId(a.autor)?.nome || ''
+    const texto = normalizar(`${a.titulo} ${a.resumo} ${nomeAutor} ${a.palavrasChave.join(' ')}`)
+    return (!tipo || a.tipo === tipo) && (!area || a.area === area) && (!ano || a.data.startsWith(ano))
+      && (!autor || a.autor === autor) && (!termo || texto.includes(termo))
   })
 
-  const principal = aFiltrar ? null : artigos[0]
-  const lista = filtrados.filter((a) => a !== principal)
-  const autorPrincipal = principal && pessoaPorId(principal.autor)
+  const destaque = aFiltrar ? null : artigos[0]
+  const lista = filtrados.filter((a) => a !== destaque)
+  const autorDestaque = destaque && pessoaPorId(destaque.autor)
+
+  function limpar() {
+    setPesquisa('')
+    setTipo(null)
+    setArea(null)
+    setAno(null)
+    setAutor(null)
+  }
 
   return (
-    <main>
-      <CabecalhoPagina
-        etiqueta="Artigos e publicações"
-        titulo="Pensamento estratégico, produzido na Escola."
-        descricao="Artigos científicos, ensaios e textos de opinião do corpo docente e dos investigadores da Escola Superior de Guerra."
-        migalhas={[{ label: 'Artigos' }]}
-      />
+    <main className={ed.pagina}>
+      <CabecalhoEditorial
+        topo={['Departamento de Investigação', 'Publicações científicas']}
+        sobretitulo="Investigação"
+        titulo="Artigos"
+      >
+        <dl className={styles.numeros}>
+          <div><dt>Publicações</dt><dd>{String(artigos.length).padStart(2, '0')}</dd></div>
+          <div><dt>Autores</dt><dd>{String(autores.length).padStart(2, '0')}</dd></div>
+          <div><dt>Áreas</dt><dd>{String(areas.length).padStart(2, '0')}</dd></div>
+        </dl>
+      </CabecalhoEditorial>
 
-      <section className={pagina.secao}>
-        <div className={pagina.container}>
-          {principal && (
-            <Link to={`/Artigos/${principal.slug}`} className={styles.principal}>
-              {principal.capa && (
-                <div className={styles.principalFoto}>
-                  <img src={principal.capa} alt="" />
-                </div>
-              )}
-              <div className={styles.principalTexto}>
-                <span className={pagina.etiqueta}>Publicação mais recente · {principal.tipo}</span>
-                <h2>{principal.titulo}</h2>
-                <p>{principal.resumo}</p>
-                {autorPrincipal && (
-                  <div className={styles.autor}>
-                    <span className={pagina.avatar}>
-                      {autorPrincipal.foto ? <img src={autorPrincipal.foto} alt="" /> : iniciais(autorPrincipal.nome)}
-                    </span>
-                    <div>
-                      <strong>{autorPrincipal.nome}</strong>
-                      <span>{formatarDataLonga(principal.data)} · {tempoLeitura(principal.conteudo)} min de leitura</span>
-                    </div>
+      {destaque && (
+        <section className={styles.destaque} aria-label="Publicação em destaque">
+          <div className={styles.destaqueInterior}>
+            <div className={styles.destaqueTexto}>
+              <span className={ed.rotulo}>Publicação mais recente · {destaque.tipo}</span>
+              <h2><Link to={`/Artigos/${destaque.slug}`}>{destaque.titulo}</Link></h2>
+              {autorDestaque && (
+                <div className={ed.pessoa}>
+                  <span className={ed.avatar}>{autorDestaque.foto ? <img src={autorDestaque.foto} alt="" /> : iniciais(autorDestaque.nome)}</span>
+                  <div>
+                    <strong>{autorDestaque.nome}</strong>
+                    <span>{formatarDataLonga(destaque.data)}</span>
                   </div>
-                )}
-              </div>
-            </Link>
-          )}
-
-          <div className={styles.layout}>
-            <div>
-              <div className={pagina.barraFiltros}>
-                <div className={pagina.chips} role="group" aria-label="Filtrar por tipo de publicação">
-                  {tipos.map((t) => (
-                    <button
-                      key={t}
-                      className={`${pagina.chip} ${tipo === t ? pagina.chipAtivo : ''}`}
-                      onClick={() => setTipo(t)}
-                      aria-pressed={tipo === t}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                <label className={pagina.pesquisa}>
-                  <FaSearch aria-hidden="true" />
-                  <input
-                    type="search"
-                    placeholder="Título, autor ou palavra-chave"
-                    value={pesquisa}
-                    onChange={(e) => setPesquisa(e.target.value)}
-                    aria-label="Pesquisar artigos"
-                  />
-                </label>
-              </div>
-
-              {area && (
-                <p className={styles.filtroArea}>
-                  Área: <strong>{area}</strong>
-                  <button onClick={() => setArea(null)}>Limpar</button>
-                </p>
-              )}
-
-              {lista.length === 0 ? (
-                <div className={pagina.vazio}>
-                  <strong>Nenhum artigo encontrado</strong>
-                  Experimente outro tipo, área ou termo de pesquisa.
-                </div>
-              ) : (
-                <div className={styles.indice}>
-                  {lista.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)}
                 </div>
               )}
+              <div className={styles.destaqueResumo}>
+                <span className={ed.rotulo}>Resumo</span>
+                <p>{destaque.resumo}</p>
+              </div>
+              <Link to={`/Artigos/${destaque.slug}`} className={ed.ligacao}>Ler o artigo</Link>
             </div>
-
-            <aside className={styles.lateralArtigos}>
-              <div className={pagina.cartaoLateral}>
-                <h4>Áreas de investigação</h4>
-                <ul className={styles.areas}>
-                  {Object.entries(areas).map(([nome, total]) => (
-                    <li key={nome}>
-                      <button
-                        className={area === nome ? styles.areaAtiva : ''}
-                        onClick={() => setArea(area === nome ? null : nome)}
-                        aria-pressed={area === nome}
-                      >
-                        <span>{nome}</span>
-                        <span className={styles.total}>{total}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className={`${pagina.cartaoLateral} ${styles.submeter}`}>
-                <h4>Publicar na Escola</h4>
-                <p>Docentes, investigadores e alunos podem propor artigos ao Departamento de Investigação.</p>
-                <Link to="/Contactos#formulario" className={pagina.botao}>Propor um artigo</Link>
-              </div>
-            </aside>
+            {destaque.capa && (
+              <Link to={`/Artigos/${destaque.slug}`} className={styles.destaqueFoto} tabIndex={-1} aria-hidden="true">
+                <img src={destaque.capa} alt="" />
+              </Link>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      <div className={styles.grelha}>
+        {/* Esquerda: pesquisa e filtros */}
+        <aside className={styles.filtros} aria-label="Pesquisa e filtros">
+          <span className={ed.rotulo}>Pesquisa</span>
+          <div className={styles.bloco}>
+            <h2 className={styles.blocoTitulo}><span>01</span> Palavra-chave</h2>
+            <label className={styles.campoPesquisa}>
+              <FaSearch aria-hidden="true" />
+              <input
+                type="search"
+                placeholder="Título, autor ou tema"
+                value={pesquisa}
+                onChange={(e) => setPesquisa(e.target.value)}
+                aria-label="Pesquisar artigos"
+              />
+            </label>
+          </div>
+          <Filtro titulo="Tipo de publicação" numero="02" opcoes={tipos} valor={tipo} definir={setTipo} />
+          <Filtro titulo="Área de investigação" numero="03" opcoes={areas} valor={area} definir={setArea} />
+          <Filtro titulo="Ano" numero="04" opcoes={anos} valor={ano} definir={setAno} />
+          {aFiltrar && <button className={styles.limpar} onClick={limpar}>Limpar todos os filtros</button>}
+        </aside>
+
+        {/* Centro: índice */}
+        <section className={styles.centro} aria-label="Índice de publicações">
+          <div className={styles.centroTopo}>
+            <h2>Índice de publicações</h2>
+            <span>{filtrados.length} {filtrados.length === 1 ? 'resultado' : 'resultados'}</span>
+          </div>
+          {lista.length === 0 && !destaque ? (
+            <div className={styles.vazio}>
+              <strong>Nenhuma publicação corresponde à pesquisa.</strong>
+              <button onClick={limpar}>Limpar filtros</button>
+            </div>
+          ) : (
+            lista.map((a, i) => <EntradaArtigo key={a.slug} artigo={a} numero={String(i + (destaque ? 2 : 1)).padStart(2, '0')} />)
+          )}
+        </section>
+
+        {/* Direita: autores e submissão */}
+        <aside className={styles.direita}>
+          <span className={ed.rotulo}>Autores</span>
+          <h2 className={styles.direitaTitulo}>Investigadores</h2>
+          <ul className={styles.autores}>
+            {autores.map((p) => (
+              <li key={p.id}>
+                <button
+                  className={autor === p.id ? styles.autorAtivo : ''}
+                  onClick={() => setAutor(autor === p.id ? null : p.id)}
+                  aria-pressed={autor === p.id}
+                >
+                  <span className={styles.autorAvatar}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>
+                  <span>
+                    <strong>{p.nome}</strong>
+                    <small>{p.total} {p.total === 1 ? 'publicação' : 'publicações'}</small>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className={styles.submeter}>
+            <span className={ed.rotulo}>Submeter um artigo</span>
+            <h3>Normas de publicação</h3>
+            <ol className={ed.listaNumerada}>
+              {normas.map((n) => <li key={n}>{n}</li>)}
+            </ol>
+            <Link to="/Contactos#formulario" className={ed.botao}>Propor um artigo</Link>
+          </div>
+        </aside>
+      </div>
     </main>
   )
 }

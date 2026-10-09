@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaArrowRight } from 'react-icons/fa'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import pessoas from '../../data/pessoas'
 import contactos from '../../data/contactos'
@@ -96,26 +97,12 @@ function Institucional() {
 
   return (
     <main className={styles.pagina}>
-      {/* Cabeçalho */}
-      <header className={styles.cabecalho}>
-        <div className={styles.interior}>
-          <div className={styles.linhaTopo}>
-            <span>Forças Armadas Angolanas</span>
-            <span>Estabelecimento de Ensino Superior Militar</span>
-          </div>
-
-          <div className={styles.titulo}>
-            <div>
-              <span className={styles.sobretitulo}>Institucional</span>
-              <h1>A Escola</h1>
-            </div>
-            <p className={styles.entrada}>
-              A Escola Superior de Guerra forma os oficiais que planeiam, comandam e dirigem as Forças Armadas
-              Angolanas — e produz o pensamento estratégico que os acompanha.
-            </p>
-          </div>
-        </div>
-      </header>
+      <CabecalhoEditorial
+        topo={['Forças Armadas Angolanas', 'Estabelecimento de Ensino Superior Militar']}
+        sobretitulo="Institucional"
+        titulo="A Escola"
+        entrada="A Escola Superior de Guerra forma os oficiais que planeiam, comandam e dirigem as Forças Armadas Angolanas — e produz o pensamento estratégico que os acompanha."
+      />
 
       <figure className={styles.sede}>
         <img src={ImagemSede} alt="Fachada da Escola Superior de Guerra" />
