@@ -8,10 +8,10 @@ const colunas = [
   {
     titulo: 'Institucional',
     links: [
-      { label: 'História', to: '/Institucional' },
-      { label: 'Missão, Visão e Valores', to: '/Institucional' },
-      { label: 'Organização e Estrutura', to: '/Institucional' },
-      { label: 'Direção / Comando', to: '/Institucional' },
+      { label: 'História', to: '/Institucional#historia' },
+      { label: 'Missão, Visão e Valores', to: '/Institucional#missao' },
+      { label: 'Organização e Estrutura', to: '/Institucional#estrutura' },
+      { label: 'Direção / Comando', to: '/Institucional#comando' },
     ],
   },
   {
@@ -34,8 +34,8 @@ const colunas = [
   {
     titulo: 'Ajuda e Contactos',
     links: [
-      { label: 'Contactos', to: '/Contactos' },
-      { label: 'Perguntas Frequentes', to: '/#faq' },
+      { label: 'Contactos', to: '/Contactos#formulario' },
+      { label: 'Perguntas Frequentes', to: '/Contactos#faq' },
       { label: 'Portal Académico', to: '/Contactos' },
     ],
   },

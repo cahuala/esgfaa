@@ -1,0 +1,454 @@
+/* Menu de secções fixo por baixo da navbar */
+.subnav {
+  position: sticky;
+  top: 120px;
+  z-index: 900;
+  padding: 0 5%;
+  background: transparent;
+  pointer-events: none;
+}
+
+.subnavInterior {
+  position: relative;
+  max-width: 1100px;
+  margin: -28px auto 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(20, 16, 14, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.subnavInterior::-webkit-scrollbar {
+  display: none;
+}
+
+.subnavLink {
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 11px 16px;
+  border-radius: 8px;
+  color: #b8b8b8;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.subnavLink:hover {
+  color: white;
+}
+
+.subnavAtivo {
+  background: #E53917;
+  color: white;
+}
+
+/* História */
+.historia {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.texto {
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: #c9c9c9;
+  margin: 0 0 16px;
+}
+
+.historiaFoto {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 4 / 3;
+}
+
+.historiaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.numeros {
+  list-style: none;
+  margin: 64px 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.numeros li {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.numeros li + li {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.numeros strong {
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+  color: #E53917;
+}
+
+.numeros span {
+  font-size: 14px;
+  color: #b8b8b8;
+}
+
+/* Linha temporal */
+.marcos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
+  position: relative;
+}
+
+.marcos::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, #E53917, rgba(229, 57, 23, 0.15));
+}
+
+.marcos li {
+  position: relative;
+  padding-top: 36px;
+}
+
+.marcos li::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #14100e;
+  border: 3px solid #E53917;
+}
+
+.ano {
+  font-size: 13px;
+  font-weight: 700;
+  color: #E53917;
+}
+
+.marcos h3 {
+  font-size: 19px;
+  margin: 6px 0 8px;
+}
+
+.marcos p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #b0b0b0;
+  margin: 0;
+}
+
+/* a secção reutilizada da página inicial não tem cor de fundo própria por baixo dos cartões */
+.missao {
+  background: #0f0705;
+}
+
+/* Estrutura */
+.organograma {
+  margin-top: 44px;
+}
+
+.topoOrganograma {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 28px 32px;
+  text-align: center;
+  background: rgba(229, 57, 23, 0.08);
+  border: 1px solid #E53917;
+  border-radius: 14px;
+  position: relative;
+}
+
+/* linha que liga o Comando aos órgãos */
+.topoOrganograma::after {
+  content: "";
+  position: absolute;
+  bottom: -33px;
+  left: 50%;
+  width: 2px;
+  height: 32px;
+  background: rgba(229, 57, 23, 0.5);
+}
+
+.topoOrganograma h3 {
+  font-size: 26px;
+  margin: 0 0 8px;
+}
+
+.topoOrganograma p {
+  font-size: 14.5px;
+  color: #c4c4c4;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.orgaos {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 2px solid rgba(229, 57, 23, 0.5);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.orgao {
+  padding: 26px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.orgao:hover {
+  border-color: rgba(229, 57, 23, 0.5);
+}
+
+.orgaoIcone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(229, 57, 23, 0.12);
+  color: #E53917;
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.orgao h3 {
+  font-size: 19px;
+  margin: 0 0 8px;
+}
+
+.orgao p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #b8b8b8;
+  margin: 0;
+}
+
+/* Comando */
+.mensagem {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.mensagemFoto {
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(to top, #2a1510, #f2efe9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mensagemFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.mensagemFoto span {
+  font-size: 64px;
+  font-weight: 700;
+}
+
+.citacao {
+  margin: 4px 0 22px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 30px;
+  line-height: 1.3;
+  color: white;
+}
+
+.assinatura {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.assinatura strong {
+  display: block;
+  font-size: 17px;
+}
+
+.assinatura span {
+  font-size: 14px;
+  color: #E53917;
+}
+
+.direcaoTitulo {
+  font-size: 26px;
+  margin: 80px 0 28px;
+}
+
+.direcao {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.pessoa {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+}
+
+.avatarPessoa {
+  width: 64px;
+  height: 64px;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.pessoa h4 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.cargo {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #E53917;
+  margin-bottom: 12px;
+}
+
+.pessoa p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #b8b8b8;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .subnav {
+    top: 88px;
+  }
+
+  .historia,
+  .mensagem {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .mensagemFoto {
+    max-width: 320px;
+  }
+
+  .numeros {
+    grid-template-columns: repeat(2, 1fr);
+    margin: 48px 0;
+  }
+
+  .numeros li:nth-child(3) {
+    border-left: none;
+  }
+
+  .numeros li:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* linha temporal na vertical */
+  .marcos {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-left: 32px;
+  }
+
+  .marcos::before {
+    top: 0;
+    bottom: 0;
+    left: 7px;
+    right: auto;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(to bottom, #E53917, rgba(229, 57, 23, 0.15));
+  }
+
+  .marcos li {
+    padding-top: 0;
+  }
+
+  .marcos li::before {
+    left: -32px;
+  }
+
+  .orgaos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .citacao {
+    font-size: 24px;
+  }
+
+  .direcaoTitulo {
+    margin-top: 56px;
+  }
+}
+
+@media (max-width: 600px) {
+  .subnavInterior {
+    margin-top: -22px;
+  }
+
+  .subnavLink {
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .orgaos {
+    grid-template-columns: 1fr;
+  }
+
+  .numeros strong {
+    font-size: 36px;
+  }
+
+  .topoOrganograma {
+    padding: 22px;
+  }
+}

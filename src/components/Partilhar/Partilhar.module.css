@@ -1,0 +1,48 @@
+.partilhar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.rotulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #888;
+}
+
+.botoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.botao {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.botao:hover,
+.copiado {
+  background: #E53917;
+  border-color: #E53917;
+}
+
+.aviso {
+  font-size: 12px;
+  color: #b8b8b8;
+  margin-left: 4px;
+}

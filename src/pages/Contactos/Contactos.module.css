@@ -1,0 +1,347 @@
+/* Cartões de contacto direto */
+.cartoes {
+  list-style: none;
+  margin: 0 0 64px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.cartao {
+  padding: 26px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.cartao:hover {
+  border-color: rgba(229, 57, 23, 0.5);
+}
+
+.icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(229, 57, 23, 0.12);
+  color: #E53917;
+  font-size: 17px;
+  margin-bottom: 18px;
+}
+
+.cartao h3 {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #999;
+  margin: 0 0 10px;
+}
+
+.cartao p {
+  font-size: 15px;
+  line-height: 1.55;
+  color: white;
+  margin: 0;
+  word-break: break-word;
+}
+
+.cartao p + p {
+  margin-top: 4px;
+}
+
+.cartao a {
+  color: white;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.cartao a:hover {
+  color: #E53917;
+}
+
+.cartao strong {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+/* Formulário + coluna lateral */
+.grelha {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.formularioCaixa {
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.formulario {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.linhaCampos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campo > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d0d0d0;
+}
+
+.campo em {
+  font-style: normal;
+  font-weight: 400;
+  color: #888;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: white;
+  font-size: 15px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.5;
+}
+
+.campo select {
+  color: #d0d0d0;
+}
+
+.campo select option {
+  background: #14100e;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: #E53917;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.consentimento {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #b8b8b8;
+  cursor: pointer;
+}
+
+.consentimento input {
+  margin-top: 3px;
+  accent-color: #E53917;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.enviar {
+  align-self: flex-start;
+  padding: 14px 32px;
+  font-size: 15px;
+}
+
+.sucesso {
+  margin-top: 28px;
+  padding: 36px 28px;
+  text-align: center;
+  border: 1px solid rgba(127, 217, 154, 0.35);
+  background: rgba(127, 217, 154, 0.06);
+  border-radius: 14px;
+}
+
+.sucessoIcone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #2f9e5a;
+  color: white;
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.sucesso h3 {
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+.sucesso p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #c4c4c4;
+  margin: 0 0 24px;
+}
+
+.lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mapa {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1d1714;
+}
+
+.mapa iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* mapa escurecido para acompanhar o tema do site */
+  filter: grayscale(0.4) invert(0.9) hue-rotate(180deg) contrast(0.9);
+}
+
+.departamentos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.departamentos li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.departamentos li:first-child {
+  padding-top: 0;
+}
+
+.departamentos li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.departamentos strong {
+  font-size: 15px;
+  color: white;
+}
+
+.departamentos span {
+  font-size: 13px;
+  color: #999;
+}
+
+.departamentos a {
+  font-size: 13.5px;
+  color: #E53917;
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.departamentos a:hover {
+  text-decoration: underline;
+}
+
+.redes {
+  display: flex;
+  gap: 10px;
+}
+
+.redes a {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.redes a:hover {
+  background: #E53917;
+}
+
+/* a secção de perguntas frequentes traz margem própria da página inicial */
+.faq > section {
+  margin-top: 0;
+}
+
+@media (max-width: 1000px) {
+  .cartoes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grelha {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .cartoes {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 44px;
+  }
+
+  .cartao {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    column-gap: 16px;
+    padding: 20px;
+  }
+
+  .icone {
+    grid-row: span 3;
+    margin-bottom: 0;
+  }
+
+  .formularioCaixa {
+    padding: 26px 20px;
+  }
+
+  .linhaCampos {
+    grid-template-columns: 1fr;
+  }
+
+  .enviar {
+    align-self: stretch;
+  }
+}

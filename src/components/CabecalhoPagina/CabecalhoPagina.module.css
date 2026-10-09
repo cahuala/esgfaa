@@ -1,0 +1,88 @@
+.cabecalho {
+  width: 100%;
+  margin-top: -130px;
+  padding: 220px 5% 80px;
+  background-color: #0f0705;
+  background-image: radial-gradient(ellipse at top right, rgba(229, 57, 23, 0.18), transparent 60%);
+  background-size: cover;
+  background-position: center;
+  color: white;
+  position: relative;
+}
+
+.compacto {
+  padding-bottom: 56px;
+}
+
+.conteudo {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.migalhas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 13px;
+  color: #b8b8b8;
+  margin-bottom: 28px;
+}
+
+.migalhas a {
+  color: #b8b8b8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.migalhas a:hover {
+  color: white;
+}
+
+.migalhas [aria-current] {
+  color: white;
+}
+
+.separador {
+  margin: 0 10px;
+  color: #666;
+}
+
+.etiqueta {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #E53917;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.cabecalho h1 {
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.1;
+  max-width: 820px;
+  margin: 0 0 18px;
+}
+
+.descricao {
+  font-size: 18px;
+  line-height: 1.55;
+  color: #e0e0e0;
+  max-width: 640px;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cabecalho {
+    margin-top: -80px;
+    padding: 130px 5% 48px;
+  }
+
+  .migalhas {
+    margin-bottom: 20px;
+  }
+
+  .descricao {
+    font-size: 16px;
+  }
+}

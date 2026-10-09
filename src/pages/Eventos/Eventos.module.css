@@ -1,0 +1,405 @@
+/* Próximo evento em destaque */
+.seguinte {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  margin-bottom: 64px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.seguinteFoto {
+  position: relative;
+  min-height: 360px;
+}
+
+.seguinteFoto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contagem,
+.contagemCabecalho {
+  display: inline-block;
+  background: #E53917;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 20px;
+}
+
+.contagem {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  box-shadow: 0 4px 16px rgba(229, 57, 23, 0.4);
+}
+
+.contagemCabecalho {
+  margin-top: 26px;
+}
+
+.seguinteTexto {
+  padding: 40px;
+}
+
+.seguinteTexto h2 {
+  font-size: 30px;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.seguinteTexto p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #c4c4c4;
+  margin: 0 0 22px;
+}
+
+.factos {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.factos li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.factos svg {
+  color: #E53917;
+  flex: 0 0 auto;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Separadores Próximos / Realizados */
+.separadores {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+.separador {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  padding: 0 0 14px;
+  color: #999;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s ease;
+}
+
+.separador span {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.separador:hover {
+  color: white;
+}
+
+.separadorAtivo {
+  color: white;
+  border-bottom-color: #E53917;
+}
+
+.separadorAtivo span {
+  background: #E53917;
+}
+
+/* Lista agrupada por mês */
+.grupo + .grupo {
+  margin-top: 44px;
+}
+
+.mesTitulo {
+  font-size: 22px;
+  margin: 0 0 16px;
+  color: white;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.listaOutros {
+  margin-top: 28px;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 18px 18px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.linha:hover {
+  border-color: rgba(229, 57, 23, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
+.linhaRealizada .dataBloco {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.linhaRealizada .mes {
+  color: #999;
+}
+
+.dataBloco {
+  flex: 0 0 72px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 57, 23, 0.12);
+  border: 1px solid #E53917;
+  border-radius: 10px;
+}
+
+.dia {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mes {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ff7a45;
+  margin-top: 4px;
+}
+
+.corpoLinha {
+  flex: 1;
+  min-width: 0;
+}
+
+.topoLinha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.categoria {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #b8b8b8;
+}
+
+.selo {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #7fd99a;
+  border: 1px solid rgba(127, 217, 154, 0.4);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.corpoLinha h3 {
+  font-size: 19px;
+  line-height: 1.3;
+  margin: 0 0 10px;
+}
+
+.metaLinha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 13px;
+  color: #b8b8b8;
+}
+
+.metaLinha span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaLinha svg {
+  color: #E53917;
+}
+
+.miniatura {
+  flex: 0 0 150px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Detalhe */
+.programa {
+  margin-top: 56px;
+}
+
+.cronologia {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.cronologia li {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  padding: 0 0 22px 28px;
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+.cronologia li::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #14100e;
+  border: 2px solid #E53917;
+}
+
+.hora {
+  flex: 0 0 52px;
+  font-weight: 700;
+  color: #E53917;
+}
+
+.informacoes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.informacoes li {
+  display: flex;
+  gap: 14px;
+  font-size: 14.5px;
+  color: white;
+}
+
+.informacoes svg {
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: #E53917;
+}
+
+.informacoes small {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.acoesLateral {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  .seguinte {
+    grid-template-columns: 1fr;
+    margin-bottom: 44px;
+  }
+
+  .seguinteFoto {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .seguinteTexto {
+    padding: 26px 22px 30px;
+  }
+
+  .seguinteTexto h2 {
+    font-size: 24px;
+  }
+
+  .miniatura {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .linha {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .dataBloco {
+    flex-basis: 58px;
+    height: 58px;
+  }
+
+  .dia {
+    font-size: 21px;
+  }
+
+  .corpoLinha h3 {
+    font-size: 16px;
+  }
+
+  .acoes > * {
+    flex: 1 1 auto;
+  }
+}

@@ -1,4 +1,5 @@
 
+import { Link } from 'react-router-dom'
 import styles from './CtaBanner.module.css'
 
 function CTABanner() {
@@ -7,7 +8,7 @@ function CTABanner() {
       <div className={styles.container}>
         <h2>Pronto para dar o próximo passo na sua carreira militar?</h2>
         <p>Candidate-se aos cursos da Escola Superior de Guerra e prepare-se para funções de comando e liderança.</p>
-        <a href="#candidatura" className={styles.botao}>Candidatar-me agora</a>
+        <Link to="/#candidatura" className={styles.botao}>Candidatar-me agora</Link>
       </div>
     </section>
   )

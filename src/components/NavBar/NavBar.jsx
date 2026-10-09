@@ -8,7 +8,7 @@ function NavBar() {
   const fecharMenu = () => setMenuAberto(false)
 
   return (
-    <nav>
+    <nav className={style.nav}>
       <div className={style.topo}>
         <img src={Logo} alt="ESGFAA" className={style.Logo} />
 

@@ -39,3 +39,7 @@ body {
 }
 
 
+/* âncoras (#historia, #formulario…) não ficam escondidas por baixo da navbar fixa */
+[id] {
+  scroll-margin-top: 140px;
+}
