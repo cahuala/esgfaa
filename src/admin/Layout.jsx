@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessaoContexto'
 import { COLECOES, PAGINAS } from './esquemas'
@@ -31,6 +31,20 @@ function Layout({ children }) {
   const setMenuMovel = (aberto) => setMenuMovelEm(aberto ? pathname : null)
   const setMenuUtilizador = (aberto) => setMenuUtilizadorEm(aberto ? pathname : null)
   const [minimizado, setMinimizado] = useState(false)
+  const menuRef = useRef(null)
+
+  // fecha o menu do utilizador ao clicar fora ou com Esc
+  useEffect(() => {
+    if (!menuUtilizador) return
+    const fora = (e) => { if (!menuRef.current?.contains(e.target)) setMenuUtilizadorEm(null) }
+    const esc = (e) => { if (e.key === 'Escape') setMenuUtilizadorEm(null) }
+    document.addEventListener('mousedown', fora)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', fora)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [menuUtilizador])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -62,20 +76,31 @@ function Layout({ children }) {
               <i className="fa fa-external-link-alt" />
             </a>
           </div>
-          <div className={`navbar-item navbar-user dropdown ${menuUtilizador ? 'show' : ''}`}>
-            <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center btn btn-link text-decoration-none" onClick={() => setMenuUtilizador(!menuUtilizador)}>
+          <div ref={menuRef} className={`navbar-item navbar-user dropdown esg-menu-utilizador ${menuUtilizador ? 'show' : ''}`}>
+            <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center" aria-expanded={menuUtilizador} onClick={() => setMenuUtilizador(!menuUtilizador)}>
               <span className="admin-avatar">{iniciais}</span>
               <span>
                 <span className="d-none d-md-inline fw-bold">{utilizador.nome}</span>
                 <b className="caret" />
               </span>
             </button>
-            <div className={`dropdown-menu dropdown-menu-end me-1 ${menuUtilizador ? 'show' : ''}`}>
-              <div className="dropdown-header">{utilizador.email}</div>
-              <Link to="/perfil" className="dropdown-item">O meu perfil</Link>
-              <div className="dropdown-divider" />
-              <button type="button" className="dropdown-item" onClick={sair}>Sair</button>
-            </div>
+            {menuUtilizador && (
+              <div className="dropdown-menu dropdown-menu-end show esg-menu-lista" data-bs-popper="static">
+                <div className="esg-menu-cabecalho">
+                  <span className="admin-avatar admin-avatar-grande">{iniciais}</span>
+                  <div>
+                    <strong>{utilizador.nome}</strong>
+                    <small>{utilizador.email}</small>
+                    <span className="esg-menu-papel">{utilizador.nomePapel}</span>
+                  </div>
+                </div>
+                <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />O meu perfil</Link>
+                <Link to="/perfil" className="dropdown-item"><i className="fa fa-key fa-fw me-2" />Alterar palavra-passe</Link>
+                <a href={SITE} target="_blank" rel="noreferrer" className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />Ver o site</a>
+                <div className="dropdown-divider" />
+                <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />Sair</button>
+              </div>
+            )}
           </div>
         </div>
       </div>

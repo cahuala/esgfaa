@@ -163,7 +163,7 @@ function EditarItem() {
               <fieldset disabled={soLeitura}>
                 {doc ? (
                   <>
-                    <Documento item={item} setItem={setItem} doc={doc} aoErro={(texto) => setAviso({ tipo: 'erro', texto })} />
+                    <Documento item={item} setItem={setItem} doc={doc} editavel={!soLeitura} aoErro={(texto) => setAviso({ tipo: 'erro', texto })} />
                     {camposListas.map((c) => (
                       <Painel key={c.nome} titulo={c.rotulo}>
                         <Formulario campos={[{ ...c, rotulo: '' }]} valor={item} onChange={setItem} contexto={contexto} />

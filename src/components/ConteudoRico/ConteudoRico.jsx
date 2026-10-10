@@ -17,11 +17,38 @@ import styles from './ConteudoRico.module.css'
     'larga'  — a imagem sai da coluna (só com `centrado`)
   As legendas das imagens soltas são numeradas: "Figura 1", "Figura 2"…
 */
+// vídeos incorporados: só do YouTube (o resto é retirado ao limpar o HTML)
+DOMPurify.addHook('uponSanitizeElement', (no, dados) => {
+  if (dados.tagName === 'iframe' && !/^https:\/\/www\.youtube(-nocookie)?\.com\/embed\//.test(no.getAttribute('src') || '')) {
+    no.parentNode?.removeChild(no)
+  }
+})
+
+// HTML do editor do painel, limpo e com âncoras nos títulos
+function limparHtml(html = '') {
+  const limpo = DOMPurify.sanitize(html.replace(/&nbsp;/g, ' '), {
+    ADD_TAGS: ['iframe'],
+    ADD_ATTR: ['target', 'allowfullscreen', 'loading'],
+  })
+  return comAncoras(limpo)
+}
+
+// imagens (com legenda) contidas no HTML de um bloco de texto, pela ordem em que aparecem
+function imagensDoHtml(html = '') {
+  if (typeof DOMParser === 'undefined') return []
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return [...doc.querySelectorAll('img')].map((img) => ({
+    src: img.getAttribute('src'),
+    legenda: img.closest('figure')?.querySelector('figcaption')?.textContent || img.getAttribute('alt') || '',
+  }))
+}
+
 function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
-  // todas as imagens (soltas e de galerias) numa só sequência para o visualizador
+  // todas as imagens (soltas, de galerias e dentro do texto) numa só sequência para o visualizador
   const imagens = blocos.flatMap((b) => {
     if (b.tipo === 'imagem') return [{ src: b.src, legenda: b.legenda }]
     if (b.tipo === 'galeria') return b.imagens
+    if (b.tipo === 'texto') return imagensDoHtml(b.html)
     return []
   })
   // posição, na sequência acima, da primeira imagem de cada bloco
@@ -49,7 +76,13 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
               <div
                 key={i}
                 className={styles.textoRico}
-                dangerouslySetInnerHTML={{ __html: comAncoras(DOMPurify.sanitize((bloco.html || '').replace(/&nbsp;/g, ' '), { ADD_ATTR: ['target'] })) }}
+                // clicar numa imagem do texto abre o visualizador em ecrã inteiro
+                onClick={(e) => {
+                  if (e.target.tagName !== 'IMG') return
+                  const todas = [...e.currentTarget.querySelectorAll('img')]
+                  setAberta(inicioImagens[i] + todas.indexOf(e.target))
+                }}
+                dangerouslySetInnerHTML={{ __html: limparHtml(bloco.html) }}
               />
             )
 
@@ -177,6 +210,7 @@ function comAncoras(html) {
 function contarImagens(bloco) {
   if (bloco.tipo === 'imagem') return 1
   if (bloco.tipo === 'galeria') return bloco.imagens.length
+  if (bloco.tipo === 'texto') return imagensDoHtml(bloco.html).length
   return 0
 }
 

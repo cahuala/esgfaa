@@ -349,3 +349,82 @@ body {
 .grafico-horas span {
   background: var(--esg-vermelho);
 }
+
+/* ---------- menu do utilizador (cabeçalho) ---------- */
+
+.esg-menu-utilizador {
+  position: relative;
+}
+
+.esg-menu-utilizador .navbar-link {
+  border: 0;
+  background: none;
+  height: 100%;
+  white-space: nowrap;
+}
+
+/* posicionado por baixo do botão: não ocupa espaço no cabeçalho */
+.app-header .navbar-nav .navbar-item.dropdown.esg-menu-utilizador .dropdown-menu.esg-menu-lista {
+  position: absolute !important;
+  top: 56px !important;
+  right: 8px !important;
+  left: auto !important;
+  transform: none !important;
+  width: 260px;
+  margin: 0;
+  padding: 6px;
+  border: 0;
+  border-top: 3px solid var(--esg-vermelho);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(20, 16, 14, 0.18);
+  animation: esg-menu-entrar 0.15s ease;
+}
+
+@keyframes esg-menu-entrar {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.esg-menu-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.esg-menu-cabecalho strong,
+.esg-menu-cabecalho small {
+  display: block;
+  line-height: 1.3;
+}
+
+.esg-menu-cabecalho small {
+  color: var(--bs-gray-600);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.esg-menu-papel {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(229, 57, 23, 0.1);
+  color: var(--esg-vermelho);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.esg-menu-lista .dropdown-item {
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.esg-menu-lista .dropdown-item:active {
+  background: var(--esg-vermelho);
+  color: #fff;
+}

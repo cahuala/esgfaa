@@ -520,3 +520,239 @@ ol.lista li::before {
 .textoRico .ql-align-justify {
   text-align: justify;
 }
+
+/* ===== elementos do editor do painel dentro do texto formatado ===== */
+
+.textoRico {
+  counter-reset: figura;
+}
+
+.textoRico::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.textoRico figure {
+  margin: 1.8em 0;
+}
+
+.textoRico img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  cursor: zoom-in;
+}
+
+.textoRico figure[data-tipo="imagem"] {
+  clear: both;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.textoRico figure[data-tipo="imagem"] img {
+  width: 100%;
+}
+
+.textoRico figure[data-posicao="esquerda"] {
+  clear: none;
+  float: left;
+  margin: 0.35em 32px 1em 0;
+}
+
+.textoRico figure[data-posicao="direita"] {
+  clear: none;
+  float: right;
+  margin: 0.35em 0 1em 32px;
+}
+
+.centrado .textoRico figure[data-posicao="larga"] {
+  width: calc(100% + 240px);
+  margin-left: -120px;
+}
+
+.textoRico figcaption {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13.5px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #9a9a9a;
+}
+
+/* legendas numeradas: "FIGURA 1" */
+.textoRico figure[data-tipo="imagem"] figcaption::before {
+  counter-increment: figura;
+  content: "Figura " counter(figura);
+  margin-right: 10px;
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--vermelho, #E53917);
+}
+
+.textoRico div[data-tipo="galeria"] {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 1.8em 0;
+}
+
+.textoRico div[data-tipo="galeria"][data-colunas="2"] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.textoRico div[data-tipo="galeria"] figure {
+  margin: 0;
+}
+
+.textoRico div[data-tipo="galeria"] img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.textoRico div[data-tipo="galeria"] figcaption {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.textoRico figure[data-tipo="video"] {
+  clear: both;
+}
+
+.textoRico .video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+}
+
+.textoRico .video iframe,
+.textoRico .video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.textoRico aside[data-tipo="destaque"] {
+  clear: both;
+  margin: 1.8em 0;
+  padding: 20px 24px;
+  background: rgba(229, 57, 23, 0.07);
+  border: 1px solid rgba(229, 57, 23, 0.3);
+  border-left: 4px solid var(--vermelho, #E53917);
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.textoRico aside[data-tipo="destaque"] > * + * {
+  margin-top: 0.6em;
+}
+
+.textoRico table {
+  clear: both;
+  width: 100%;
+  margin: 1.8em 0;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.textoRico th,
+.textoRico td {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  text-align: left;
+  vertical-align: top;
+}
+
+.textoRico th {
+  background: rgba(229, 57, 23, 0.18);
+  color: white;
+  font-weight: 700;
+}
+
+.textoRico th p,
+.textoRico td p {
+  margin: 0;
+}
+
+.textoRico hr {
+  clear: both;
+  margin: 2.4em 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.textoRico h4 {
+  font-size: 15px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: white;
+}
+
+.textoRico mark {
+  padding: 0 3px;
+  border-radius: 2px;
+  color: #14100e;
+}
+
+.textoRico blockquote p + p {
+  margin-top: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #b8b8b8;
+}
+
+@media (max-width: 1100px) {
+  .centrado .textoRico figure[data-posicao="larga"] {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .textoRico figure[data-posicao="esquerda"],
+  .textoRico figure[data-posicao="direita"] {
+    float: none;
+    width: auto !important;
+    margin: 1.8em 0;
+  }
+
+  .textoRico div[data-tipo="galeria"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* legenda da galeria (guardada no atributo data-legenda) */
+.textoRico div[data-tipo="galeria"][data-legenda]::after {
+  content: attr(data-legenda);
+  grid-column: 1 / -1;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13.5px;
+  font-style: italic;
+  color: #9a9a9a;
+}
+
+/* espaço entre parágrafos e listas do texto formatado */
+.textoRico > p + p,
+.textoRico > * + p,
+.textoRico > * + ul,
+.textoRico > * + ol,
+.textoRico > * + h2,
+.textoRico > * + h3,
+.textoRico > * + h4,
+.textoRico > * + blockquote {
+  margin-top: 1.1em;
+}
