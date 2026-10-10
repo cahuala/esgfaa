@@ -93,8 +93,6 @@ function Footer() {
           <Link to="/Contactos">Localização</Link>
           <span>·</span>
           <a href={`mailto:${email}`}>{email}</a>
-          <span>·</span>
-          <a href={`${import.meta.env.BASE_URL}admin/`} rel="nofollow">Área reservada</a>
         </div>
       </div>
     </footer>

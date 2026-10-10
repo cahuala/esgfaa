@@ -5,7 +5,7 @@ Três partes no mesmo repositório:
 | Parte | Pasta | Endereço |
 |---|---|---|
 | Site público (React + Vite) | `src/` | `https://cahuala.github.io/esgfaa/` |
-| Painel de administração (tema Color Admin) | `src/admin/`, `admin/index.html` | `…/esgfaa/admin/` |
+| Painel de administração (tema Color Admin) | `src/admin/`, `admin/index.html` | endereço secreto (ver abaixo); no computador: `localhost:5173/admin/` |
 | API (Node.js + SQLite) | `api/` | onde a alojar (ver abaixo) |
 
 O site funciona sem a API: usa os conteúdos de `src/data/`. Com a API ligada, passa a mostrar o que se edita no painel, e ativa gostos, comentários e contagem de visualizações.
@@ -68,6 +68,12 @@ docker run -p 3001:3001 -v esgfaa-dados:/app/api/dados --env-file api/.env esgfa
 ```
 
 Depois, no GitHub: **Settings → Secrets and variables → Actions → Variables → New variable**, nome `API_URL`, valor o endereço da API. Na publicação seguinte, o site e o painel passam a usá-la.
+
+### Endereço secreto do painel
+
+O painel **não** é publicado em `/admin`. Em **Settings → Secrets and variables → Actions → Secrets → New repository secret**, crie `ADMIN_PATH` com um nome difícil de adivinhar (só letras minúsculas, números e hífenes, 8 a 64 caracteres, ex.: `gestao-x7k4q9`). O painel fica em `https://cahuala.github.io/esgfaa/<ADMIN_PATH>/`. Sem esse secret, o painel não é publicado. Para mudar o endereço, altere o secret e volte a publicar.
+
+O endereço secreto é só uma camada extra: a proteção real é a palavra-passe, o limite de tentativas e o registo de entradas.
 
 Faça cópias de segurança regulares da pasta `api/dados/`.
 

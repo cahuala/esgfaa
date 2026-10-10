@@ -33,6 +33,19 @@ jobs:
           VITE_API_URL: ${{ vars.API_URL }}
       # o GitHub Pages serve 404.html em rotas desconhecidas; assim o React Router trata delas
       - run: cp dist/index.html dist/404.html
+      # O painel só é publicado num endereço secreto (secret ADMIN_PATH, ex.: gestao-x7k4q9).
+      # Sem o secret, o painel não é publicado.
+      - name: Endereço do painel
+        env:
+          ADMIN_PATH: ${{ secrets.ADMIN_PATH }}
+        run: |
+          if [[ "$ADMIN_PATH" =~ ^[a-z0-9-]{8,64}$ ]]; then
+            mv dist/admin "dist/$ADMIN_PATH"
+            echo "Painel publicado no endereço secreto."
+          else
+            rm -rf dist/admin
+            echo "ADMIN_PATH não definido (ou inválido): painel não publicado."
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
