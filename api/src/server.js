@@ -3,6 +3,7 @@ import cors from 'cors'
 import config from './config.js'
 import db from './db.js'
 import { cifrarSenha } from './auth.js'
+import { PAPEIS_PADRAO, TODAS } from './rbac.js'
 import rotasPublicas from './rotas/publico.js'
 import rotasAdmin from './rotas/admin.js'
 import { semear } from '../scripts/semear.js'
@@ -50,6 +51,13 @@ app.use((erro, req, res, next) => {
 })
 
 // ---------- arranque ----------
+
+// papéis por omissão (os editados no painel mantêm-se); o administrador tem sempre todas as permissões
+for (const p of PAPEIS_PADRAO) {
+  db.prepare('INSERT OR IGNORE INTO papeis (id, nome, descricao, permissoes, sistema) VALUES (?, ?, ?, ?, ?)')
+    .run(p.id, p.nome, p.descricao, JSON.stringify(p.permissoes), p.sistema)
+}
+db.prepare("UPDATE papeis SET permissoes = ?, sistema = 1 WHERE id = 'administrador'").run(JSON.stringify(TODAS))
 
 // 1.º arranque: carrega os conteúdos atuais do site para a base de dados
 if (db.prepare('SELECT COUNT(*) n FROM itens').get().n === 0) {

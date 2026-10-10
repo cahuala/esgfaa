@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { useSessao } from '../sessaoContexto'
 import { COLECOES } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
@@ -8,6 +9,7 @@ const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 const ROTULOS = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo' }
 
 function Comentarios() {
+  const { pode } = useSessao()
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [filtro, setFiltro] = useState('')
@@ -82,7 +84,7 @@ function Comentarios() {
                       <a href={`${SITE}${COLECOES[c.colecao].rotaSite({ slug: c.item_id, id: c.item_id })}#comentarios`} target="_blank" rel="noreferrer">{c.tituloItem}</a>
                     </td>
                     <td className="text-nowrap">{dataHora(c.data)}</td>
-                    <td className="text-end"><button className="btn btn-sm btn-danger" onClick={() => pedirApagar(c)} title="Apagar"><i className="fa fa-trash-alt" /></button></td>
+                    <td className="text-end">{pode('comentarios.apagar') && <button className="btn btn-sm btn-danger" onClick={() => pedirApagar(c)} title="Apagar"><i className="fa fa-trash-alt" /></button>}</td>
                   </tr>
                 ))}
               </tbody>

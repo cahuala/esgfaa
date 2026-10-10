@@ -32,6 +32,7 @@ export async function semear({ forcar = false } = {}) {
     eventos: await importar('eventos'),
     cursos: await importar('cursos'),
     pessoas: await importar('pessoas'),
+    publicidade: await importar('publicidade'),
   }
   const paginas = await importar('paginas')
 

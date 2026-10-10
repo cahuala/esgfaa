@@ -1,0 +1,131 @@
+.banner {
+  max-width: calc(1760px + 2 * var(--margem));
+  margin: 0 auto;
+  padding: 28px var(--margem);
+  background: #0f0b09;
+}
+
+.rotulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #7a7a7a;
+}
+
+.ligacao {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.soImagem {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--filete);
+}
+
+/* banner composto: imagem de fundo + texto + botão */
+.composto {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  min-height: 150px;
+  padding: 28px 40px;
+  overflow: hidden;
+  color: white;
+  background:
+    linear-gradient(90deg, rgba(15, 7, 5, 0.96) 0%, rgba(15, 7, 5, 0.85) 45%, rgba(229, 57, 23, 0.55) 100%),
+    var(--fundo, none) center / cover,
+    #1a100c;
+  border: 1px solid rgba(229, 57, 23, 0.4);
+  transition: border-color 0.2s ease;
+}
+
+.ligacao:hover .composto {
+  border-color: var(--vermelho);
+}
+
+.texto {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 760px;
+}
+
+.anunciante {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--vermelho);
+}
+
+.texto strong {
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.descricao {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #d6d6d6;
+}
+
+.botao {
+  flex: 0 0 auto;
+  padding: 13px 22px;
+  background: var(--vermelho);
+  font-size: 14px;
+  font-weight: 700;
+  transition: filter 0.2s ease;
+}
+
+.ligacao:hover .botao {
+  filter: brightness(1.1);
+}
+
+/* variante para colunas estreitas (lateral das notícias) */
+.lateral {
+  padding: 32px 0 0;
+  background: none;
+}
+
+.lateral .composto {
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 0;
+  padding: 24px 22px;
+  background:
+    linear-gradient(to top, rgba(15, 7, 5, 0.97) 20%, rgba(15, 7, 5, 0.6) 100%),
+    var(--fundo, none) center / cover,
+    #1a100c;
+}
+
+.lateral .texto strong {
+  font-size: 19px;
+}
+
+.lateral .descricao {
+  font-size: 13.5px;
+}
+
+.embutido {
+  padding: 32px 0 0;
+  background: none;
+}
+
+@media (max-width: 700px) {
+  .composto {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 22px;
+  }
+}

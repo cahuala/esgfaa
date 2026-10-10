@@ -6,10 +6,10 @@ import { COLECOES, NOMES_ACOES } from '../esquemas'
 import { CabecalhoPagina, Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 
-const NOMES_COLECOES = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo' }
+const NOMES_COLECOES = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo', cursos: 'Curso', pessoas: 'Pessoa', publicidade: 'Banner' }
 
 // últimos 14 dias, com zero nos dias sem registos
-function serie14(linhas) {
+function serie14(linhas = []) {
   const porDia = Object.fromEntries(linhas.map((l) => [l.dia, l.n]))
   return Array.from({ length: 14 }, (_, i) => {
     const d = new Date()
@@ -52,7 +52,7 @@ function Grafico({ series }) {
 }
 
 function Painel() {
-  const { utilizador, eAdministrador } = useSessao()
+  const { utilizador, pode } = useSessao()
   const [dados, setDados] = useState(null)
   const [erro, setErro] = useState('')
 
@@ -61,18 +61,25 @@ function Painel() {
   }, [])
   useEffect(carregar, [carregar])
 
+  const v = dados?.visitas
   const widgets = dados && [
-    { cor: 'bg-teal', icone: 'fa-newspaper', titulo: 'NOTÍCIAS', valor: dados.totais.noticias, para: '/colecao/noticias' },
-    { cor: 'bg-blue', icone: 'fa-calendar-alt', titulo: 'EVENTOS', valor: dados.totais.eventos, para: '/colecao/eventos' },
-    { cor: 'bg-indigo', icone: 'fa-eye', titulo: 'VISUALIZAÇÕES', valor: dados.interacoes.visualizacoes, para: null },
-    { cor: 'bg-red', icone: 'fa-comments', titulo: 'COMENTÁRIOS', valor: dados.interacoes.comentarios, extra: `${dados.interacoes.comentariosHoje} hoje`, para: '/comentarios' },
-  ]
+    v && { cor: 'bg-red', icone: 'fa-users', titulo: 'VISITANTES HOJE', valor: v.hoje.visitantes, extra: `${v.online} online agora`, para: '/estatisticas' },
+    v && { cor: 'bg-orange', icone: 'fa-chart-line', titulo: 'VISITANTES (30 DIAS)', valor: v.mes.visitantes, extra: `${v.mes.paginas.toLocaleString('pt-PT')} páginas vistas`, para: '/estatisticas' },
+    dados.totais.noticias !== undefined && { cor: 'bg-teal', icone: 'fa-newspaper', titulo: 'NOTÍCIAS PUBLICADAS', valor: dados.totais.noticias, extra: `${dados.rascunhos.noticias} em rascunho`, para: '/colecao/noticias' },
+    pode('comentarios.ver') && { cor: 'bg-blue', icone: 'fa-comments', titulo: 'COMENTÁRIOS', valor: dados.interacoes.comentarios, extra: `${dados.interacoes.comentariosHoje} hoje · ${dados.interacoes.gostos} gostos`, para: '/comentarios' },
+    !v && dados.totais.eventos !== undefined && { cor: 'bg-indigo', icone: 'fa-calendar-alt', titulo: 'EVENTOS', valor: dados.totais.eventos, extra: `${dados.rascunhos.eventos} em rascunho`, para: '/colecao/eventos' },
+  ].filter(Boolean).slice(0, 4)
+
+  const series = dados && [
+    v && { nome: 'Visitantes', cor: '#e53917', dados: serie14(dados.visitasDias) },
+    dados.comentariosDias && { nome: 'Comentários', cor: '#00acac', dados: serie14(dados.comentariosDias) },
+  ].filter(Boolean)
 
   return (
     <>
-      <CabecalhoPagina titulo={`Olá, ${utilizador.nome.split(' ')[0]}`} subtitulo="resumo do site" />
+      <CabecalhoPagina titulo={`Olá, ${utilizador.nome.split(' ')[0]}`} subtitulo={utilizador.nomePapel} />
 
-      {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
+      {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!dados && !erro && <Carregando />}
 
       {dados && (
@@ -87,7 +94,7 @@ function Painel() {
                     <p>{w.valor.toLocaleString('pt-PT')}</p>
                   </div>
                   <div className="stats-link">
-                    {w.para ? <Link to={w.para}>{w.extra || 'Ver detalhes'} <i className="fa fa-arrow-alt-circle-right" /></Link> : <span className="px-3">{dados.interacoes.gostos} gostos no total</span>}
+                    <Link to={w.para}>{w.extra} <i className="fa fa-arrow-alt-circle-right" /></Link>
                   </div>
                 </div>
               </div>
@@ -96,69 +103,86 @@ function Painel() {
 
           <div className="row">
             <div className="col-xl-8">
-              <Caixa titulo="Atividade dos últimos 14 dias">
-                <Grafico
-                  series={[
-                    { nome: 'Ações no painel', cor: '#00acac', dados: serie14(dados.atividadeDias) },
-                    { nome: 'Comentários', cor: '#ff5b57', dados: serie14(dados.comentariosDias) },
-                  ]}
-                />
-              </Caixa>
+              {dados.porPublicar.length > 0 && (
+                <Caixa titulo={`Rascunhos à espera de publicação (${dados.porPublicar.length})`} corpo={false}>
+                  <div className="list-group list-group-flush rounded-bottom">
+                    {dados.porPublicar.map((r) => (
+                      <Link key={`${r.colecao}/${r.id}`} to={`/colecao/${r.colecao}/${r.id}`} className="list-group-item list-group-item-action d-flex align-items-center gap-2">
+                        <span className="badge bg-warning text-dark">{NOMES_COLECOES[r.colecao]}</span>
+                        <span className="flex-grow-1 text-truncate fw-bold">{r.titulo}</span>
+                        <small className="text-muted text-nowrap">{r.por ? `${r.por} · ` : ''}{dataHora(r.atualizado)}</small>
+                        <i className="fa fa-chevron-right text-muted" />
+                      </Link>
+                    ))}
+                  </div>
+                </Caixa>
+              )}
 
-              <Caixa titulo="Conteúdos mais vistos" corpo={false}>
-                <div className="table-responsive">
-                  <table className="table table-panel align-middle mb-0">
-                    <thead>
-                      <tr><th>Conteúdo</th><th className="text-end">Visualizações</th><th className="text-end">Gostos</th><th className="text-end">Comentários</th></tr>
-                    </thead>
-                    <tbody>
-                      {dados.maisVistos.length === 0 && <tr><td colSpan={4} className="text-muted">Ainda sem visualizações registadas.</td></tr>}
-                      {dados.maisVistos.map((m) => (
-                        <tr key={m.chave}>
-                          <td>
-                            <span className="badge bg-gray-300 text-gray-800 me-2">{NOMES_COLECOES[m.colecao]}</span>
-                            <Link to={`/colecao/${m.colecao}/${m.chave.split('/')[1]}`}>{m.titulo}</Link>
-                          </td>
-                          <td className="text-end">{m.visualizacoes}</td>
-                          <td className="text-end">{m.gostos}</td>
-                          <td className="text-end">{m.comentarios}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Caixa>
+              {series.length > 0 && (
+                <Caixa titulo="Últimos 14 dias" acoes={v && <Link to="/estatisticas" className="btn btn-xs btn-default">Estatísticas</Link>}>
+                  <Grafico series={series} />
+                </Caixa>
+              )}
+
+              {dados.maisVistos && (
+                <Caixa titulo="Conteúdos mais vistos" corpo={false}>
+                  <div className="table-responsive">
+                    <table className="table table-panel align-middle mb-0">
+                      <thead>
+                        <tr><th>Conteúdo</th><th className="text-end">Visualizações</th><th className="text-end">Gostos</th><th className="text-end">Comentários</th></tr>
+                      </thead>
+                      <tbody>
+                        {dados.maisVistos.length === 0 && <tr><td colSpan={4} className="text-muted">Ainda sem visualizações registadas.</td></tr>}
+                        {dados.maisVistos.map((m) => (
+                          <tr key={m.chave}>
+                            <td>
+                              <span className="badge bg-gray-300 text-gray-800 me-2">{NOMES_COLECOES[m.colecao]}</span>
+                              <Link to={`/colecao/${m.colecao}/${m.chave.split('/')[1]}`}>{m.titulo}</Link>
+                            </td>
+                            <td className="text-end">{m.visualizacoes}</td>
+                            <td className="text-end">{m.gostos}</td>
+                            <td className="text-end">{m.comentarios}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Caixa>
+              )}
             </div>
 
             <div className="col-xl-4">
-              <Caixa titulo="Conteúdos publicados" corpo={false}>
+              <Caixa titulo="Conteúdos" corpo={false}>
                 <div className="list-group list-group-flush rounded-bottom">
-                  {Object.entries(COLECOES).map(([chave, c]) => (
+                  {Object.entries(COLECOES).filter(([c]) => dados.totais[c] !== undefined).map(([chave, c]) => (
                     <Link key={chave} to={`/colecao/${chave}`} className="list-group-item list-group-item-action d-flex align-items-center">
                       <i className={`fa ${c.icone} fa-fw text-gray-500 me-2`} /> {c.titulo}
-                      <span className="badge bg-teal rounded-pill ms-auto">{dados.totais[chave]}</span>
+                      {dados.rascunhos[chave] > 0 && <span className="badge bg-warning text-dark rounded-pill ms-auto me-1" title="Rascunhos">{dados.rascunhos[chave]}</span>}
+                      <span className={`badge bg-teal rounded-pill ${dados.rascunhos[chave] > 0 ? '' : 'ms-auto'}`} title="Publicados">{dados.totais[chave]}</span>
                     </Link>
                   ))}
                 </div>
               </Caixa>
 
-              <Caixa titulo="Últimos comentários" acoes={<Link to="/comentarios" className="btn btn-xs btn-default">Todos</Link>}>
-                {dados.ultimosComentarios.length === 0 && <p className="text-muted mb-0">Ainda não há comentários.</p>}
-                {dados.ultimosComentarios.map((c) => (
-                  <div key={c.id} className="d-flex mb-3">
-                    <span className="admin-avatar me-2 flex-shrink-0">{c.nome.slice(0, 2).toUpperCase()}</span>
-                    <div className="min-w-0">
-                      <div className="fw-bold">{c.nome} <span className="text-muted fw-normal small">· {dataHora(c.data)}</span></div>
-                      <div className="text-muted small text-truncate">em {c.tituloItem}</div>
-                      <div className="text-break">{c.texto.length > 140 ? `${c.texto.slice(0, 140)}…` : c.texto}</div>
+              {dados.ultimosComentarios && (
+                <Caixa titulo="Últimos comentários" acoes={<Link to="/comentarios" className="btn btn-xs btn-default">Todos</Link>}>
+                  {dados.ultimosComentarios.length === 0 && <p className="text-muted mb-0">Ainda não há comentários.</p>}
+                  {dados.ultimosComentarios.map((c) => (
+                    <div key={c.id} className="d-flex mb-3">
+                      <span className="admin-avatar me-2 flex-shrink-0">{c.nome.slice(0, 2).toUpperCase()}</span>
+                      <div className="min-w-0">
+                        <div className="fw-bold">{c.nome} <span className="text-muted fw-normal small">· {dataHora(c.data)}</span></div>
+                        <div className="text-muted small text-truncate">em {c.tituloItem}</div>
+                        <div className="text-break">{c.texto.length > 140 ? `${c.texto.slice(0, 140)}…` : c.texto}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </Caixa>
+                  ))}
+                </Caixa>
+              )}
 
               <Caixa
-                titulo={eAdministrador ? 'Atividade recente' : 'A minha atividade'}
-                acoes={eAdministrador && <Link to="/atividades" className="btn btn-xs btn-default">Registo</Link>}
+                titulo={pode('atividades.ver') ? 'Atividade recente' : 'A minha atividade'}
+                acoes={pode('atividades.ver') && <Link to="/atividades" className="btn btn-xs btn-default">Registo</Link>}
               >
                 {dados.ultimasAtividades.map((a) => (
                   <div key={a.id} className="d-flex mb-2 small">

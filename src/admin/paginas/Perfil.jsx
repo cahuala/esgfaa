@@ -5,7 +5,7 @@ import { Aviso, CabecalhoPagina, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 
 function Perfil() {
-  const { utilizador, eAdministrador } = useSessao()
+  const { utilizador } = useSessao()
   const [form, setForm] = useState({ atual: '', nova: '', repetir: '' })
   const [aviso, setAviso] = useState(null)
 
@@ -33,7 +33,7 @@ function Perfil() {
             <dl className="row mb-0">
               <dt className="col-4">Nome</dt><dd className="col-8">{utilizador.nome}</dd>
               <dt className="col-4">E-mail</dt><dd className="col-8">{utilizador.email}</dd>
-              <dt className="col-4">Papel</dt><dd className="col-8">{eAdministrador ? 'Administrador' : 'Editor'}</dd>
+              <dt className="col-4">Papel</dt><dd className="col-8">{utilizador.nomePapel}</dd>
               <dt className="col-4">Criada em</dt><dd className="col-8 mb-0">{dataHora(utilizador.criadoEm)}</dd>
             </dl>
           </Painel>

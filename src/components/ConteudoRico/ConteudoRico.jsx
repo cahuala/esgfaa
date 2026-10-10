@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DOMPurify from 'dompurify'
 import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa'
 import { ancora } from '../../utils/texto'
 import styles from './ConteudoRico.module.css'
@@ -41,6 +42,16 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
         switch (bloco.tipo) {
           case 'paragrafo':
             return <p key={i}>{bloco.texto}</p>
+
+          // texto rico escrito no editor do painel (HTML limpo antes de mostrar)
+          case 'texto':
+            return (
+              <div
+                key={i}
+                className={styles.textoRico}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bloco.html || '', { ADD_ATTR: ['target'] }) }}
+              />
+            )
 
           case 'subtitulo':
             return <h2 key={i} id={ancora(bloco.texto)}>{bloco.texto}</h2>

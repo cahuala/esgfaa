@@ -24,10 +24,12 @@ export function SessaoProvider({ children }) {
     utilizador,
     aVerificar,
     eAdministrador: utilizador?.papel === 'administrador',
+    // pode('noticias.publicar') — o painel só mostra o que o papel permite (a API volta a verificar)
+    pode: (permissao) => Boolean(utilizador?.permissoes?.includes(permissao)),
     async entrar(email, senha) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
       guardarToken(r.token)
-      setUtilizador(r.utilizador)
+      setUtilizador(await api('/eu'))
     },
     async sair() {
       await api('/sair', { metodo: 'POST' }).catch(() => {})

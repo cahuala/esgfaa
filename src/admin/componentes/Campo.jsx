@@ -1,12 +1,43 @@
 import { useId, useRef, useState } from 'react'
 import { api } from '../api'
-import { TIPOS_BLOCO } from '../esquemas'
+import ReactQuill from 'react-quill-new'
+import 'react-quill-new/dist/quill.snow.css'
+import { POSICOES_BANNER, TIPOS_BLOCO } from '../esquemas'
 import { escrever, ler } from '../caminhos'
 
 const LARGURAS = { metade: 'col-md-6', terco: 'col-md-4', doisTercos: 'col-md-8' }
 
-// Grelha de campos (Bootstrap) para um objeto
-export function Formulario({ campos, valor, onChange, contexto }) {
+// barra do editor de texto rico (Quill, o editor usado pelo Color Admin)
+const BARRA_TEXTO = [
+  [{ header: [2, 3, false] }],
+  ['bold', 'italic', 'underline', 'strike'],
+  [{ list: 'ordered' }, { list: 'bullet' }, 'blockquote'],
+  [{ align: [] }],
+  ['link', 'clean'],
+]
+
+/*
+  Formulário de um objeto.
+  horizontal: disposição do Color Admin (rótulo à esquerda col-md-3, campo à direita col-md-9).
+  Sem horizontal: grelha compacta com o rótulo por cima (usada dentro de blocos e listas).
+*/
+export function Formulario({ campos, valor, onChange, contexto, horizontal = false }) {
+  if (horizontal) {
+    return (
+      <div className="form-horizontal">
+        {campos.map((c) => (
+          <Campo
+            key={c.nome}
+            campo={c}
+            valor={ler(valor, c.nome)}
+            onChange={(v) => onChange(escrever(valor, c.nome, v))}
+            contexto={contexto}
+            horizontal
+          />
+        ))}
+      </div>
+    )
+  }
   return (
     <div className="row g-3">
       {campos.map((c) => (
@@ -23,61 +54,82 @@ export function Formulario({ campos, valor, onChange, contexto }) {
   )
 }
 
-// ---------- um campo ----------
+// ---------- um campo (rótulo + controlo + ajuda) ----------
 
-export function Campo({ campo, valor, onChange, contexto }) {
+export function Campo({ campo, valor, onChange, contexto, horizontal = false }) {
   const id = useId()
-  const rotulo = (
-    <label htmlFor={id} className="form-label fw-bold">
-      {campo.rotulo}{campo.obrigatorio && <span className="text-danger"> *</span>}
-    </label>
-  )
-  const ajuda = campo.ajuda && <div className="form-text">{campo.ajuda}</div>
+  const obrigatorio = campo.obrigatorio && <span className="text-danger"> *</span>
+  const ajuda = campo.ajuda && <small className="d-block fs-12px text-gray-500 mt-1">{campo.ajuda}</small>
+  const controlo = <Controlo id={id} campo={campo} valor={valor} onChange={onChange} contexto={contexto} />
 
+  if (campo.tipo === 'booleano') {
+    const interruptor = (
+      <div className="form-check form-switch">
+        <input id={id} className="form-check-input" type="checkbox" checked={Boolean(valor)} onChange={(e) => onChange(e.target.checked)} />
+        <label htmlFor={id} className="form-check-label">{horizontal ? 'Sim' : campo.rotulo}</label>
+      </div>
+    )
+    if (!horizontal) return <div className="pt-md-4 mt-md-2">{interruptor}{ajuda}</div>
+    return (
+      <div className="row mb-15px">
+        <label htmlFor={id} className="form-label col-form-label col-md-3">{campo.rotulo}</label>
+        <div className="col-md-9 pt-2">{interruptor}{ajuda}</div>
+      </div>
+    )
+  }
+
+  if (horizontal) {
+    return (
+      <div className="row mb-15px">
+        <label htmlFor={id} className="form-label col-form-label col-md-3">{campo.rotulo}{obrigatorio}</label>
+        <div className="col-md-9">{controlo}{ajuda}</div>
+      </div>
+    )
+  }
+  return (
+    <>
+      <label htmlFor={id} className="form-label fw-bold">{campo.rotulo}{obrigatorio}</label>
+      {controlo}
+      {ajuda}
+    </>
+  )
+}
+
+function Controlo({ id, campo, valor, onChange, contexto }) {
   switch (campo.tipo) {
     case 'textarea':
-      return <>{rotulo}<textarea id={id} className="form-control" rows={campo.linhas || 3} value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio} />{ajuda}</>
+      return <textarea id={id} className="form-control" rows={campo.linhas || 3} value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio} />
+
+    case 'textoRico':
+      return (
+        <div className="editor-texto">
+          <ReactQuill id={id} theme="snow" value={valor || ''} onChange={onChange} modules={{ toolbar: BARRA_TEXTO }} placeholder="Escreva aqui o texto…" />
+        </div>
+      )
 
     case 'data':
     case 'hora':
     case 'numero':
       return (
-        <>
-          {rotulo}
-          <input
-            id={id}
-            type={{ data: 'date', hora: 'time', numero: 'number' }[campo.tipo]}
-            className="form-control"
-            value={valor ?? ''}
-            onChange={(e) => onChange(campo.tipo === 'numero' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)}
-            required={campo.obrigatorio}
-          />
-          {ajuda}
-        </>
-      )
-
-    case 'booleano':
-      return (
-        <div className="form-check form-switch mt-md-4 pt-md-2">
-          <input id={id} className="form-check-input" type="checkbox" checked={Boolean(valor)} onChange={(e) => onChange(e.target.checked)} />
-          <label htmlFor={id} className="form-check-label">{campo.rotulo}</label>
-          {ajuda}
-        </div>
+        <input
+          id={id}
+          type={{ data: 'date', hora: 'time', numero: 'number' }[campo.tipo]}
+          className="form-control"
+          value={valor ?? ''}
+          onChange={(e) => onChange(campo.tipo === 'numero' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)}
+          required={campo.obrigatorio}
+        />
       )
 
     case 'selecao': {
       const opcoes = campo.opcoes === 'pessoas'
         ? (contexto?.pessoas || []).map((p) => ({ valor: p.id, rotulo: `${p.nome}${p.cargo ? ` — ${p.cargo}` : ''}` }))
-        : campo.opcoes
+        : campo.opcoes === 'posicoesBanner' ? POSICOES_BANNER : campo.opcoes
       return (
-        <>
-          {rotulo}
-          <select id={id} className="form-select" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio}>
-            <option value="">— escolher —</option>
-            {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.rotulo}</option>)}
-          </select>
-          {ajuda}
-        </>
+        <select id={id} className="form-select" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio}>
+          <option value="">— escolher —</option>
+          {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.rotulo}</option>)}
+        </select>
       )
     }
 
@@ -86,10 +138,8 @@ export function Campo({ campo, valor, onChange, contexto }) {
       const sugestoes = [...new Set([...(campo.valores || []), ...(contexto?.sugestoes?.[campo.nome] || [])])].filter(Boolean)
       return (
         <>
-          {rotulo}
           <input id={id} className="form-control" list={`${id}-lista`} value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio} />
           <datalist id={`${id}-lista`}>{sugestoes.map((s) => <option key={s} value={s} />)}</datalist>
-          {ajuda}
         </>
       )
     }
@@ -97,12 +147,11 @@ export function Campo({ campo, valor, onChange, contexto }) {
     case 'imagem':
     case 'video':
     case 'ficheiro':
-      return <>{rotulo}<CampoFicheiro id={id} tipo={campo.tipo} valor={valor} onChange={onChange} />{ajuda}</>
+      return <CampoFicheiro id={id} tipo={campo.tipo} valor={valor} onChange={onChange} />
 
     case 'youtube':
       return (
         <>
-          {rotulo}
           <input
             id={id}
             className="form-control"
@@ -110,22 +159,21 @@ export function Campo({ campo, valor, onChange, contexto }) {
             value={valor ?? ''}
             onChange={(e) => onChange(idYoutube(e.target.value))}
           />
-          {valor && <div className="form-text text-success"><i className="fa fa-check me-1" />Vídeo identificado: {valor}</div>}
-          {ajuda}
+          {valor && <small className="d-block fs-12px text-success mt-1"><i className="fa fa-check me-1" />Vídeo identificado: {valor}</small>}
         </>
       )
 
     case 'listaTexto':
-      return <>{rotulo}<ListaTexto valor={valor || []} onChange={onChange} multilinha={campo.multilinha} />{ajuda}</>
+      return <ListaTexto valor={valor || []} onChange={onChange} multilinha={campo.multilinha} />
 
     case 'objetos':
-      return <>{rotulo}<ListaObjetos campo={campo} valor={valor || []} onChange={onChange} contexto={contexto} />{ajuda}</>
+      return <ListaObjetos campo={campo} valor={valor || []} onChange={onChange} contexto={contexto} />
 
     case 'blocos':
-      return <>{rotulo}<EditorBlocos valor={valor || []} onChange={onChange} contexto={contexto} />{ajuda}</>
+      return <EditorBlocos valor={valor || []} onChange={onChange} contexto={contexto} />
 
     default:
-      return <>{rotulo}<input id={id} className="form-control" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio} />{ajuda}</>
+      return <input id={id} className="form-control" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio} />
   }
 }
 

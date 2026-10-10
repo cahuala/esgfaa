@@ -452,3 +452,71 @@ ol.lista li::before {
     margin: 1.8em 0;
   }
 }
+
+/* bloco de texto rico (HTML do editor do painel) */
+.textoRico > * + * {
+  margin-top: 1.1em;
+}
+
+.textoRico p {
+  margin: 0;
+}
+
+.textoRico h2,
+.textoRico h3 {
+  color: white;
+  line-height: 1.25;
+  margin-top: 1.8em;
+}
+
+.textoRico h2 {
+  font-size: 26px;
+}
+
+.textoRico h3 {
+  font-size: 21px;
+}
+
+.textoRico a {
+  color: #ff8a5c;
+  text-underline-offset: 3px;
+}
+
+.textoRico strong {
+  color: white;
+}
+
+.textoRico ul,
+.textoRico ol {
+  padding-left: 1.4em;
+}
+
+.textoRico li + li {
+  margin-top: 6px;
+}
+
+.textoRico li::marker {
+  color: var(--vermelho, #E53917);
+}
+
+.textoRico blockquote {
+  margin: 1.8em 0;
+  padding: 4px 0 4px 24px;
+  border-left: 3px solid var(--vermelho, #E53917);
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 22px;
+  line-height: 1.4;
+  color: white;
+}
+
+.textoRico .ql-align-center {
+  text-align: center;
+}
+
+.textoRico .ql-align-right {
+  text-align: right;
+}
+
+.textoRico .ql-align-justify {
+  text-align: justify;
+}

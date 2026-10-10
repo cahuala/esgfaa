@@ -1,19 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { useSessao } from '../sessaoContexto'
 import { COLECOES } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataCurta } from '../formatar'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 const POR_PAGINA = 15
+const INTERATIVAS = ['noticias', 'eventos', 'artigos']
 
 function ListaColecao() {
   const { colecao } = useParams()
   const def = COLECOES[colecao]
+  const { pode } = useSessao()
   const [itens, setItens] = useState(null)
   const [erro, setErro] = useState('')
   const [pesquisa, setPesquisa] = useState('')
+  const [estado, setEstado] = useState('')
   const [pagina, setPagina] = useState(1)
   const [confirmar, setConfirmar] = useState(null)
   const [aviso, setAviso] = useState(null)
@@ -26,16 +30,25 @@ function ListaColecao() {
   }, [carregar, def])
 
   if (!def) return <Navigate to="/" replace />
+  if (!pode(`${colecao}.ver`)) return <Navigate to="/" replace />
+
+  const podeCriar = pode(`${colecao}.criar`)
+  const podeApagar = pode(`${colecao}.apagar`)
+  const podeOrdenar = pode(`${colecao}.editar`)
+  const publicidade = colecao === 'publicidade'
 
   const termo = pesquisa.trim().toLowerCase()
-  const filtrados = (itens || []).filter((i) => !termo || def.colunas.some((c) => String(c.valor(i) ?? '').toLowerCase().includes(termo)))
+  const filtrados = (itens || []).filter((i) =>
+    (!estado || i._estado === estado)
+    && (!termo || def.colunas.some((c) => String(c.valor(i) ?? '').toLowerCase().includes(termo))))
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA))
   const visiveis = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA)
+  const contagem = (e) => (itens || []).filter((i) => !e || i._estado === e).length
 
   function pedirApagar(item) {
     setConfirmar({
       titulo: `Apagar ${def.singular}`,
-      texto: <>Vai apagar <b>“{item[def.campoTitulo]}”</b> e todos os seus gostos e comentários. Esta ação não pode ser anulada.</>,
+      texto: <>Vai apagar <b>“{item[def.campoTitulo]}”</b>{INTERATIVAS.includes(colecao) && ' e todos os seus gostos e comentários'}. Esta ação não pode ser anulada.</>,
       botao: 'Apagar',
       perigo: true,
       confirmar: async () => {
@@ -65,22 +78,28 @@ function ListaColecao() {
     }
   }
 
-  const ordenavelAgora = def.ordenavel && !termo
+  const ordenavelAgora = def.ordenavel && podeOrdenar && !termo && !estado
 
   return (
     <>
       <CabecalhoPagina titulo={def.titulo} subtitulo={itens ? `${itens.length} no total` : ''} migalhas={[{ rotulo: def.titulo }]}>
-        <Link to={`/colecao/${colecao}/novo`} className="btn btn-theme"><i className="fa fa-plus me-1" /> {def.botaoNovo}</Link>
+        {podeCriar && <Link to={`/colecao/${colecao}/novo`} className="btn btn-theme"><i className="fa fa-plus me-1" /> {def.botaoNovo}</Link>}
       </CabecalhoPagina>
 
       {def.ajudaLista && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{def.ajudaLista}</div>}
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
 
-      <Painel
-        titulo={`Lista de ${def.titulo.toLowerCase()}`}
-        corpo={false}
-        acoes={<button className="btn btn-xs btn-icon btn-success" onClick={carregar} title="Recarregar"><i className="fa fa-redo" /></button>}
-      >
+      <ul className="nav nav-tabs nav-tabs-inverse">
+        {[['', 'Todos'], ['publicado', 'Publicados'], ['rascunho', 'Rascunhos']].map(([v, r]) => (
+          <li key={v} className="nav-item">
+            <button type="button" className={`nav-link ${estado === v ? 'active' : ''}`} onClick={() => { setEstado(v); setPagina(1) }}>
+              {r} <span className={`badge ms-1 ${v === 'rascunho' && contagem('rascunho') ? 'bg-warning text-dark' : 'bg-gray-500'}`}>{contagem(v)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Painel corpo={false} className="rounded-top-0">
         <div className="panel-body pb-0">
           <div className="input-group mb-3 lista-pesquisa">
             <span className="input-group-text"><i className="fa fa-search" /></span>
@@ -95,17 +114,20 @@ function ListaColecao() {
                 <tr>
                   {ordenavelAgora && <th style={{ width: 1 }}>Ordem</th>}
                   {def.colunas.map((c, i) => <th key={i} className={c.tipo ? 'col-imagem' : ''}>{c.rotulo}</th>)}
-                  {colecao !== 'cursos' && colecao !== 'pessoas' && <th className="text-nowrap text-center" title="Visualizações · Gostos · Comentários"><i className="fa fa-eye" /> · <i className="fa fa-heart" /> · <i className="fa fa-comment" /></th>}
+                  <th>Estado</th>
+                  {INTERATIVAS.includes(colecao) && <th className="text-nowrap text-center" title="Visualizações · Gostos · Comentários"><i className="fa fa-eye" /> · <i className="fa fa-heart" /> · <i className="fa fa-comment" /></th>}
+                  {publicidade && <><th className="text-end">Impressões</th><th className="text-end">Cliques</th><th className="text-end" title="Taxa de cliques">CTR</th></>}
                   <th className="text-end" style={{ width: 1 }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {visiveis.length === 0 && (
-                  <tr><td colSpan={10} className="text-center text-muted py-4">{termo ? 'Nenhum resultado para a pesquisa.' : `Ainda não há ${def.titulo.toLowerCase()}.`}</td></tr>
+                  <tr><td colSpan={12} className="text-center text-muted py-4">{termo || estado ? 'Nada corresponde aos filtros.' : `Ainda não há ${def.titulo.toLowerCase()}.`}</td></tr>
                 )}
                 {visiveis.map((item) => {
                   const indice = itens.indexOf(item)
                   const est = item._estatisticas
+                  const m = item._metricas
                   return (
                     <tr key={item[def.chave]}>
                       {ordenavelAgora && (
@@ -131,15 +153,28 @@ function ListaColecao() {
                           </td>
                         )
                       })}
-                      {colecao !== 'cursos' && colecao !== 'pessoas' && (
+                      <td>
+                        {item._estado === 'publicado'
+                          ? <span className="badge bg-success">{publicidade && item.ativo === false ? 'Publicado · inativo' : 'Publicado'}</span>
+                          : <span className="badge bg-warning text-dark">Rascunho</span>}
+                        {item._editadoPor && <div className="small text-muted text-nowrap">{item._editadoPor}</div>}
+                      </td>
+                      {INTERATIVAS.includes(colecao) && (
                         <td className="text-center text-nowrap text-muted">{est ? `${est.visualizacoes} · ${est.gostos} · ${est.comentarios}` : '0 · 0 · 0'}</td>
                       )}
+                      {publicidade && (
+                        <>
+                          <td className="text-end">{m.impressoes.toLocaleString('pt-PT')}</td>
+                          <td className="text-end">{m.cliques.toLocaleString('pt-PT')}</td>
+                          <td className="text-end">{m.impressoes ? `${((m.cliques / m.impressoes) * 100).toFixed(1)}%` : '—'}</td>
+                        </>
+                      )}
                       <td className="text-end text-nowrap">
-                        {def.rotaSite && (
+                        {def.rotaSite && item._estado === 'publicado' && (
                           <a href={`${SITE}${def.rotaSite(item)}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-white me-1" title="Ver no site"><i className="fa fa-external-link-alt" /></a>
                         )}
-                        <Link to={`/colecao/${colecao}/${item[def.chave]}`} className="btn btn-sm btn-primary me-1" title="Editar"><i className="fa fa-pencil-alt" /></Link>
-                        <button className="btn btn-sm btn-danger" onClick={() => pedirApagar(item)} title="Apagar"><i className="fa fa-trash-alt" /></button>
+                        <Link to={`/colecao/${colecao}/${item[def.chave]}`} className="btn btn-sm btn-primary me-1" title="Abrir"><i className="fa fa-pencil-alt" /></Link>
+                        {podeApagar && <button className="btn btn-sm btn-danger" onClick={() => pedirApagar(item)} title="Apagar"><i className="fa fa-trash-alt" /></button>}
                       </td>
                     </tr>
                   )

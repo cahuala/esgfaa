@@ -5,11 +5,8 @@ import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 
-const VAZIO = { nome: '', email: '', papel: 'editor', senha: '' }
-const PAPEIS = {
-  administrador: { rotulo: 'Administrador', cor: 'bg-danger', descricao: 'Tudo, incluindo utilizadores e registo de atividades.' },
-  editor: { rotulo: 'Editor', cor: 'bg-teal', descricao: 'Conteúdos, páginas e comentários.' },
-}
+const VAZIO = { nome: '', email: '', papel: 'redator', senha: '' }
+const CORES_PAPEIS = { administrador: 'bg-danger', editor_chefe: 'bg-primary', redator: 'bg-teal', moderador: 'bg-warning text-dark', analista: 'bg-indigo' }
 
 // palavra-passe aleatória e forte para novos utilizadores
 function gerarSenha() {
@@ -21,8 +18,9 @@ function gerarSenha() {
 }
 
 function Utilizadores() {
-  const { utilizador: eu } = useSessao()
+  const { utilizador: eu, pode } = useSessao()
   const [lista, setLista] = useState(null)
+  const [papeis, setPapeis] = useState([])
   const [erro, setErro] = useState('')
   const [form, setForm] = useState(null) // { ...dados, id? }
   const [aGuardar, setAGuardar] = useState(false)
@@ -34,6 +32,11 @@ function Utilizadores() {
     api('/utilizadores').then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message))
   }, [])
   useEffect(carregar, [carregar])
+  useEffect(() => { api('/papeis').then((r) => setPapeis(r.papeis)).catch(() => {}) }, [])
+
+  const papel = (id) => papeis.find((p) => p.id === id)
+  // só quem gere papéis pode dar o papel de Administrador
+  const papeisAtribuiveis = papeis.filter((p) => p.id !== 'administrador' || pode('papeis.gerir'))
 
   async function guardar(e) {
     e.preventDefault()
@@ -78,9 +81,11 @@ function Utilizadores() {
   return (
     <>
       <CabecalhoPagina titulo="Utilizadores" subtitulo="quem pode entrar no painel" migalhas={[{ rotulo: 'Utilizadores' }]}>
-        <button className="btn btn-theme" onClick={() => { setErroForm(''); setForm({ ...VAZIO, senha: gerarSenha() }) }}>
-          <i className="fa fa-user-plus me-1" /> Novo utilizador
-        </button>
+        {pode('utilizadores.criar') && (
+          <button className="btn btn-theme" onClick={() => { setErroForm(''); setForm({ ...VAZIO, senha: gerarSenha() }) }}>
+            <i className="fa fa-user-plus me-1" /> Novo utilizador
+          </button>
+        )}
       </CabecalhoPagina>
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
 
@@ -105,13 +110,15 @@ function Utilizadores() {
                             </div>
                           </div>
                         </td>
-                        <td><span className={`badge ${PAPEIS[u.papel].cor}`}>{PAPEIS[u.papel].rotulo}</span></td>
+                        <td><span className={`badge ${CORES_PAPEIS[u.papel] || 'bg-secondary'}`}>{papel(u.papel)?.nome || u.papel}</span></td>
                         <td>{u.ativo ? <span className="text-success"><i className="fa fa-circle fs-8px me-1" />Ativo</span> : <span><i className="fa fa-circle fs-8px me-1" />Desativado</span>}</td>
                         <td className="text-nowrap">{u.ultimoAcesso ? dataHora(u.ultimoAcesso) : 'Nunca entrou'}</td>
                         <td className="text-center"><Link to={`/atividades?utilizador=${u.id}`}>{u.atividades}</Link></td>
                         <td className="text-end text-nowrap">
-                          <button className="btn btn-sm btn-primary me-1" onClick={() => { setErroForm(''); setForm({ ...u, senha: '' }) }} title="Editar"><i className="fa fa-pencil-alt" /></button>
-                          {u.id !== eu.id && (
+                          {pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
+                            <button className="btn btn-sm btn-primary me-1" onClick={() => { setErroForm(''); setForm({ ...u, senha: '' }) }} title="Editar"><i className="fa fa-pencil-alt" /></button>
+                          )}
+                          {u.id !== eu.id && pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className={`btn btn-sm ${u.ativo ? 'btn-warning' : 'btn-success'}`} onClick={() => alternarAtivo(u)} title={u.ativo ? 'Desativar' : 'Reativar'}>
                               <i className={`fa ${u.ativo ? 'fa-user-slash' : 'fa-user-check'}`} />
                             </button>
@@ -141,12 +148,13 @@ function Utilizadores() {
                 </div>
                 <div className="mb-3">
                   <label className="form-label fw-bold">Papel</label>
-                  {Object.entries(PAPEIS).map(([chave, p]) => (
-                    <div key={chave} className="form-check mb-1">
-                      <input id={`u-papel-${chave}`} type="radio" className="form-check-input" name="papel" checked={form.papel === chave} onChange={() => setForm({ ...form, papel: chave })} />
-                      <label htmlFor={`u-papel-${chave}`} className="form-check-label"><b>{p.rotulo}</b> — <span className="text-muted">{p.descricao}</span></label>
+                  {papeisAtribuiveis.map((p) => (
+                    <div key={p.id} className="form-check mb-1">
+                      <input id={`u-papel-${p.id}`} type="radio" className="form-check-input" name="papel" checked={form.papel === p.id} disabled={form.id === eu.id} onChange={() => setForm({ ...form, papel: p.id })} />
+                      <label htmlFor={`u-papel-${p.id}`} className="form-check-label"><b>{p.nome}</b> — <span className="text-muted">{p.descricao}</span></label>
                     </div>
                   ))}
+                  {form.id === eu.id && <div className="form-text">Não pode mudar o seu próprio papel.</div>}
                 </div>
                 <div className="mb-3">
                   <label className="form-label fw-bold" htmlFor="u-senha">{form.id ? 'Nova palavra-passe (opcional)' : 'Palavra-passe inicial'}</label>

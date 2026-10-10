@@ -8,7 +8,7 @@ const rotas = Router()
 // Todo o conteúdo do site num só pedido (o site é pequeno e assim abre mais depressa)
 rotas.get('/conteudo', (req, res) => {
   const conteudo = { paginas: {}, estatisticas: estatisticas() }
-  for (const c of Object.keys(COLECOES)) conteudo[c] = listarColecao(c, req)
+  for (const c of Object.keys(COLECOES)) conteudo[c] = listarColecao(c, req, { publico: true })
   for (const p of PAGINAS) conteudo.paginas[p] = lerPagina(p, req)
   res.set('Cache-Control', 'no-cache')
   res.json(conteudo)
@@ -18,7 +18,7 @@ rotas.get('/conteudo', (req, res) => {
 function itemInterativo(req, res, next) {
   const { colecao, id } = req.params
   if (!INTERATIVAS.includes(colecao)) return res.status(404).json({ erro: 'Coleção inválida.' })
-  if (!lerItem(colecao, id, req)) return res.status(404).json({ erro: 'Conteúdo não encontrado.' })
+  if (!lerItem(colecao, id, req, { publico: true })) return res.status(404).json({ erro: 'Conteúdo não encontrado.' })
   next()
 }
 
@@ -91,5 +91,58 @@ rotas.post(
     res.status(201).json(resumoInteracoes(colecao, id, visitante))
   },
 )
+
+// ---------- estatísticas de visitas ----------
+
+function dispositivo(agente) {
+  if (/ipad|tablet/i.test(agente)) return 'Tablet'
+  if (/mobi|android|iphone/i.test(agente)) return 'Telemóvel'
+  return 'Computador'
+}
+
+function navegador(agente) {
+  if (/edg\//i.test(agente)) return 'Edge'
+  if (/opr\/|opera/i.test(agente)) return 'Opera'
+  if (/firefox/i.test(agente)) return 'Firefox'
+  if (/chrome|crios/i.test(agente)) return 'Chrome'
+  if (/safari/i.test(agente)) return 'Safari'
+  return 'Outro'
+}
+
+const ROBOS = /bot|crawl|spider|slurp|headless|lighthouse|preview/i
+
+// regista uma página vista (o visitante é um identificador aleatório do navegador, não o IP)
+rotas.post('/visita', limitador({ janelaMs: 60_000, maximo: 60 }), (req, res) => {
+  const { visitante, caminho, origem } = req.body || {}
+  const agente = req.get('user-agent') || ''
+  if (!visitanteValido(visitante) || typeof caminho !== 'string' || ROBOS.test(agente)) return res.status(204).end()
+
+  let host = null
+  try {
+    if (origem) {
+      host = new URL(origem).hostname.replace(/^www\./, '')
+      if (req.get('origin') && new URL(req.get('origin')).hostname === new URL(origem).hostname) host = null // navegação interna
+    }
+  } catch { host = null }
+
+  db.prepare('INSERT INTO visitas (visitante, caminho, origem, dispositivo, navegador) VALUES (?, ?, ?, ?, ?)')
+    .run(visitante, caminho.slice(0, 200), host, dispositivo(agente), navegador(agente))
+  res.status(204).end()
+})
+
+// ---------- publicidade ----------
+
+function contarBanner(campo) {
+  return (req, res) => {
+    const l = db.prepare("SELECT 1 FROM itens WHERE colecao = 'publicidade' AND id = ? AND estado = 'publicado'").get(req.params.id)
+    if (l) {
+      db.prepare(`INSERT INTO publicidade_metricas (banner_id, dia, ${campo}) VALUES (?, date('now'), 1)
+        ON CONFLICT (banner_id, dia) DO UPDATE SET ${campo} = ${campo} + 1`).run(req.params.id)
+    }
+    res.status(204).end()
+  }
+}
+rotas.post('/publicidade/:id/impressao', limitador({ janelaMs: 60_000, maximo: 120 }), contarBanner('impressoes'))
+rotas.post('/publicidade/:id/clique', limitador({ janelaMs: 60_000, maximo: 30 }), contarBanner('cliques'))
 
 export default rotas

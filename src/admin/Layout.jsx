@@ -20,7 +20,7 @@ function ItemMenu({ para, icone, texto, fim }) {
 }
 
 function Layout({ children }) {
-  const { utilizador, eAdministrador, sair } = useSessao()
+  const { utilizador, pode, sair } = useSessao()
   const { pathname } = useLocation()
   // os menus guardam o endereço em que foram abertos: ao mudar de página ficam fechados
   const [menuMovelEm, setMenuMovelEm] = useState(null)
@@ -84,19 +84,21 @@ function Layout({ children }) {
                 <div className="menu-profile-image"><span className="admin-avatar admin-avatar-grande">{iniciais}</span></div>
                 <div className="menu-profile-info">
                   {utilizador.nome}
-                  <small>{eAdministrador ? 'Administrador' : 'Editor'}</small>
+                  <small>{utilizador.nomePapel}</small>
                 </div>
               </div>
             </div>
 
             <div className="menu-header">Geral</div>
             <ItemMenu para="/" fim icone="fa-th-large" texto="Painel" />
+            {pode('estatisticas.ver') && <ItemMenu para="/estatisticas" icone="fa-chart-line" texto="Estatísticas" />}
 
             <div className="menu-header">Conteúdos</div>
-            {Object.entries(COLECOES).map(([chave, c]) => (
+            {Object.entries(COLECOES).filter(([chave]) => chave !== 'publicidade' && pode(`${chave}.ver`)).map(([chave, c]) => (
               <ItemMenu key={chave} para={`/colecao/${chave}`} icone={c.icone} texto={c.titulo} />
             ))}
 
+            {pode('paginas.ver') && (
             <div className={`menu-item has-sub ${paginasAberto ? 'expand' : ''} ${pathname.startsWith('/paginas') ? 'active' : ''}`}>
               <button type="button" className="menu-link w-100 border-0 bg-transparent text-start" onClick={() => setPaginasAberto(!paginasAberto)}>
                 <div className="menu-icon"><i className="fa fa-file-alt" /></div>
@@ -113,17 +115,16 @@ function Layout({ children }) {
                 ))}
               </div>
             </div>
-
-            <div className="menu-header">Interação</div>
-            <ItemMenu para="/comentarios" icone="fa-comments" texto="Comentários" />
-
-            {eAdministrador && (
-              <>
-                <div className="menu-header">Segurança</div>
-                <ItemMenu para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />
-                <ItemMenu para="/atividades" icone="fa-shield-alt" texto="Registo de atividades" />
-              </>
             )}
+
+            {(pode('comentarios.ver') || pode('publicidade.ver')) && <div className="menu-header">Interação e publicidade</div>}
+            {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto="Comentários" />}
+            {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto="Publicidade" />}
+
+            {(pode('utilizadores.ver') || pode('papeis.ver') || pode('atividades.ver')) && <div className="menu-header">Segurança</div>}
+            {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
+            {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto="Papéis e permissões" />}
+            {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto="Registo de atividades" />}
 
             <div className="menu-divider" />
             <div className="menu-item d-flex">

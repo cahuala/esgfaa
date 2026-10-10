@@ -33,7 +33,7 @@ db.exec(`
     nome TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE COLLATE NOCASE,
     senha TEXT NOT NULL,
-    papel TEXT NOT NULL CHECK (papel IN ('administrador', 'editor')),
+    papel TEXT NOT NULL,
     ativo INTEGER NOT NULL DEFAULT 1,
     criado_em TEXT NOT NULL DEFAULT (datetime('now')),
     ultimo_acesso TEXT
@@ -81,6 +81,74 @@ db.exec(`
     PRIMARY KEY (colecao, item_id)
   );
 `)
+
+// ---------- migrações (bases criadas por versões anteriores) ----------
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS papeis (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    descricao TEXT,
+    permissoes TEXT NOT NULL DEFAULT '[]',
+    sistema INTEGER NOT NULL DEFAULT 0,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- uma linha por página vista no site (sem guardar o IP do visitante)
+  CREATE TABLE IF NOT EXISTS visitas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data TEXT NOT NULL DEFAULT (datetime('now')),
+    visitante TEXT NOT NULL,
+    caminho TEXT NOT NULL,
+    origem TEXT,
+    dispositivo TEXT,
+    navegador TEXT
+  );
+  CREATE INDEX IF NOT EXISTS visitas_data ON visitas (data);
+
+  CREATE TABLE IF NOT EXISTS publicidade_metricas (
+    banner_id TEXT NOT NULL,
+    dia TEXT NOT NULL,
+    impressoes INTEGER NOT NULL DEFAULT 0,
+    cliques INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (banner_id, dia)
+  );
+`)
+
+const colunas = (tabela) => db.prepare(`PRAGMA table_info(${tabela})`).all().map((c) => c.name)
+
+// rascunho / publicado
+if (!colunas('itens').includes('estado')) {
+  db.exec("ALTER TABLE itens ADD COLUMN estado TEXT NOT NULL DEFAULT 'publicado'")
+}
+if (!colunas('itens').includes('criado_por')) {
+  db.exec('ALTER TABLE itens ADD COLUMN criado_por INTEGER')
+}
+
+// a 1.ª versão só aceitava 'administrador' e 'editor' (CHECK): recria a tabela sem essa restrição
+const sqlUtilizadores = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'utilizadores'").get()?.sql || ''
+if (sqlUtilizadores.includes('CHECK')) {
+  db.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN;
+    CREATE TABLE utilizadores_novo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      senha TEXT NOT NULL,
+      papel TEXT NOT NULL,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now')),
+      ultimo_acesso TEXT
+    );
+    INSERT INTO utilizadores_novo SELECT id, nome, email, senha,
+      CASE papel WHEN 'editor' THEN 'editor_chefe' ELSE papel END, ativo, criado_em, ultimo_acesso FROM utilizadores;
+    DROP TABLE utilizadores;
+    ALTER TABLE utilizadores_novo RENAME TO utilizadores;
+    COMMIT;
+    PRAGMA foreign_keys = ON;
+  `)
+}
 
 // transação simples (node:sqlite não tem helper próprio)
 export function transacao(fn) {

@@ -7,6 +7,7 @@ import CorpoDestaque from '../../components/CorpoDestaque/CorpoDestaque'
 import MissaoVisaoValores from '../../components/MissaoVisaoValores/MissaoVisaoValores'
 import FAQ from '../../components/FAQ/Faq'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
+import Publicidade from '../../components/Publicidade/Publicidade'
 
 
 
@@ -16,9 +17,11 @@ function Home() {
     return(
       <div>
          <HeroSection/>
+         <Publicidade posicao="home-topo" />
          <FormacaoDestaque />
          <NoticiaDestaque />
          <ProximosEventos />
+         <Publicidade posicao="home-meio" />
          <AvisosComunicados />
          <CorpoDestaque />
          <MissaoVisaoValores />

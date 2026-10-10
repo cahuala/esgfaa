@@ -4,6 +4,7 @@ import Partilhar from '../../components/Partilhar/Partilhar'
 import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Miniatura from './Miniatura'
+import Publicidade from '../../components/Publicidade/Publicidade'
 import Interacoes from '../../components/Interacoes/Interacoes'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
@@ -84,6 +85,8 @@ function NoticiaDetalhe() {
         {/* Centro: texto com imagens paginadas */}
         <article className={styles.texto}>
           <ConteudoRico blocos={noticia.conteudo} capitular />
+
+          <Publicidade posicao="noticia-fim" variante="embutido" />
 
           <Interacoes colecao="noticias" id={noticia.slug} titulo={noticia.titulo} />
 

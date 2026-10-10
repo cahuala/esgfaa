@@ -551,3 +551,120 @@ form:has(> .barra-guardar) {
     padding: 36px 24px 24px;
   }
 }
+
+/* ===== Formulários horizontais (Color Admin) ===== */
+.form-horizontal .col-form-label {
+  font-weight: 600;
+}
+
+fieldset:disabled .campo-ficheiro-acoes,
+fieldset:disabled .blocos-inserir,
+fieldset:disabled .bloco-topo .btn-group {
+  display: none;
+}
+
+/* editor de texto rico (Quill) */
+.editor-texto .ql-toolbar.ql-snow {
+  border-color: var(--bs-border-color);
+  border-radius: 4px 4px 0 0;
+  background: var(--bs-gray-100);
+  font-family: inherit;
+}
+
+.editor-texto .ql-container.ql-snow {
+  border-color: var(--bs-border-color);
+  border-radius: 0 0 4px 4px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.editor-texto .ql-editor {
+  min-height: 220px;
+  line-height: 1.7;
+}
+
+.editor-texto .ql-editor.ql-blank::before {
+  font-style: normal;
+  color: var(--bs-gray-500);
+}
+
+/* painel lateral de publicação */
+.publicacao-lateral {
+  position: sticky;
+  top: 80px;
+}
+
+.ficha-publicacao {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.ficha-publicacao dt {
+  font-weight: 600;
+  color: var(--bs-gray-600);
+}
+
+.ficha-publicacao dd {
+  margin: 0;
+}
+
+.rounded-top-0 {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* grelha de permissões */
+.tabela-permissoes th,
+.tabela-permissoes td {
+  white-space: nowrap;
+}
+
+.tabela-permissoes .form-check-input {
+  width: 1.2em;
+  height: 1.2em;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* estatísticas */
+.grafico-linha {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.grafico-grelha {
+  stroke: var(--bs-gray-200);
+  stroke-dasharray: 4 4;
+}
+
+.grafico-texto {
+  font-size: 13px;
+  fill: var(--bs-gray-600);
+}
+
+.grafico-horas {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+}
+
+.grafico-horas span {
+  flex: 1;
+  min-height: 4px;
+  background: var(--bs-teal);
+  border-radius: 2px 2px 0 0;
+}
+
+.h-5px {
+  height: 5px;
+}
+
+@media (max-width: 1199.98px) {
+  .publicacao-lateral {
+    position: static;
+  }
+}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useBlocker, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { useSessao } from '../sessaoContexto'
 import { PAGINAS } from '../esquemas'
 import { Formulario } from '../componentes/Campo'
 import { Aviso, CabecalhoPagina, Carregando, Erro } from '../componentes/Ui'
@@ -10,6 +11,8 @@ const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 function EditarPagina() {
   const { chave } = useParams()
   const def = PAGINAS[chave]
+  const { pode } = useSessao()
+  const podeEditar = pode('paginas.editar')
   const [dados, setDados] = useState(null)
   const [original, setOriginal] = useState(null)
   const [pessoas, setPessoas] = useState([])
@@ -71,14 +74,16 @@ function EditarPagina() {
             ))}
           </ul>
           <div className="tab-content panel rounded-0 rounded-bottom p-3 mb-3">
-            <Formulario campos={def.grupos[separador].campos} valor={dados} onChange={setDados} contexto={{ pessoas }} />
+            <fieldset disabled={!podeEditar}>
+              <Formulario campos={def.grupos[separador].campos} valor={dados} onChange={setDados} contexto={{ pessoas }} horizontal />
+            </fieldset>
           </div>
 
           <div className="barra-guardar">
             <span className="text-muted">
               {alterado ? <><i className="fa fa-circle text-warning fs-8px me-2" />Alterações por guardar</> : <><i className="fa fa-check text-success me-2" />Tudo guardado</>}
             </span>
-            <button type="submit" className="btn btn-theme" disabled={aGuardar || !alterado}>
+            <button type="submit" className="btn btn-theme" disabled={aGuardar || !alterado || !podeEditar}>
               {aGuardar ? <><span className="spinner-border spinner-border-sm me-1" /> A guardar…</> : <><i className="fa fa-save me-1" /> Guardar e publicar</>}
             </button>
           </div>

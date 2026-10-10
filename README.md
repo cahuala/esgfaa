@@ -42,7 +42,11 @@ Para voltar aos conteúdos originais (mantém utilizadores e registo): `cd api &
 - **Utilizadores** (só administradores): criar contas, mudar o papel, desativar.
 - **Registo de atividades** (só administradores): entradas, tentativas falhadas, criações, edições (com os campos alterados), remoções e envios de ficheiros, com data, utilizador e IP.
 
-Papéis: **administrador** (tudo) e **editor** (conteúdos, páginas e comentários).
+- **Publicidade:** banners com posição no site, datas, e contagem de impressões e cliques.
+- **Estatísticas:** visitantes, páginas vistas, online agora, páginas mais vistas, origens, dispositivos e horas (sem cookies nem IP).
+- **Papéis e permissões (RBAC):** cada papel tem uma grelha de permissões (ver, criar, editar, apagar, publicar) por área, editável no painel. A API verifica todas as permissões.
+
+Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
 
 ## Pôr a API online
 

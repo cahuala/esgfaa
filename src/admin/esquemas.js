@@ -10,7 +10,8 @@
 // ---------- blocos do conteúdo (corpo das notícias, artigos e eventos) ----------
 
 export const TIPOS_BLOCO = {
-  paragrafo: { rotulo: 'Parágrafo', icone: 'fa-align-left', campos: [{ nome: 'texto', rotulo: 'Texto', tipo: 'textarea', linhas: 5 }] },
+  texto: { rotulo: 'Texto formatado', icone: 'fa-file-alt', campos: [{ nome: 'html', rotulo: 'Texto', tipo: 'textoRico' }] },
+  paragrafo: { rotulo: 'Parágrafo simples', icone: 'fa-align-left', campos: [{ nome: 'texto', rotulo: 'Texto', tipo: 'textarea', linhas: 5 }] },
   subtitulo: { rotulo: 'Subtítulo', icone: 'fa-heading', campos: [{ nome: 'texto', rotulo: 'Subtítulo', tipo: 'texto' }] },
   imagem: {
     rotulo: 'Imagem', icone: 'fa-image',
@@ -86,7 +87,7 @@ export const COLECOES = {
       { rotulo: 'Secção', valor: (i) => i.categoria },
       { rotulo: 'Data', valor: (i) => i.data, data: true },
     ],
-    novo: () => ({ titulo: '', categoria: '', data: new Date().toISOString().slice(0, 10), autor: 'Gabinete de Comunicação', resumo: '', capa: '', destaque: false, conteudo: [{ tipo: 'paragrafo', texto: '' }] }),
+    novo: () => ({ titulo: '', categoria: '', data: new Date().toISOString().slice(0, 10), autor: 'Gabinete de Comunicação', resumo: '', capa: '', destaque: false, conteudo: [{ tipo: 'texto', html: '' }] }),
     campos: [
       { nome: 'titulo', rotulo: 'Título', tipo: 'texto', obrigatorio: true },
       { nome: 'categoria', rotulo: 'Secção', tipo: 'sugestoes', largura: 'terco', obrigatorio: true },
@@ -107,7 +108,7 @@ export const COLECOES = {
       { rotulo: 'Área', valor: (i) => i.area },
       { rotulo: 'Data', valor: (i) => i.data, data: true },
     ],
-    novo: () => ({ titulo: '', tipo: 'Artigo científico', area: '', autor: '', data: new Date().toISOString().slice(0, 10), resumo: '', palavrasChave: [], capa: '', pdf: '', conteudo: [{ tipo: 'paragrafo', texto: '' }] }),
+    novo: () => ({ titulo: '', tipo: 'Artigo científico', area: '', autor: '', data: new Date().toISOString().slice(0, 10), resumo: '', palavrasChave: [], capa: '', pdf: '', conteudo: [{ tipo: 'texto', html: '' }] }),
     campos: [
       { nome: 'titulo', rotulo: 'Título', tipo: 'texto', obrigatorio: true },
       { nome: 'tipo', rotulo: 'Tipo de publicação', tipo: 'sugestoes', largura: 'terco', valores: ['Artigo científico', 'Ensaio', 'Opinião', 'Recensão'] },
@@ -131,7 +132,7 @@ export const COLECOES = {
       { rotulo: 'Data', valor: (i) => i.data, data: true },
       { rotulo: 'Hora', valor: (i) => i.horaInicio },
     ],
-    novo: () => ({ titulo: '', categoria: '', data: '', horaInicio: '09:00', horaFim: '', local: '', resumo: '', capa: '', inscricoes: false, programa: [], conteudo: [{ tipo: 'paragrafo', texto: '' }] }),
+    novo: () => ({ titulo: '', categoria: '', data: '', horaInicio: '09:00', horaFim: '', local: '', resumo: '', capa: '', inscricoes: false, programa: [], conteudo: [{ tipo: 'texto', html: '' }] }),
     campos: [
       { nome: 'titulo', rotulo: 'Título do evento', tipo: 'texto', obrigatorio: true },
       { nome: 'categoria', rotulo: 'Tipo de evento', tipo: 'sugestoes', largura: 'metade', obrigatorio: true },
@@ -197,6 +198,37 @@ export const COLECOES = {
       { nome: 'cargo', rotulo: 'Cargo', tipo: 'texto' },
       { nome: 'destaque', rotulo: 'Nota biográfica curta', tipo: 'textarea', linhas: 2 },
       { nome: 'foto', rotulo: 'Fotografia', tipo: 'imagem', ajuda: 'Sem fotografia, o site mostra as iniciais.' },
+    ],
+  },
+  publicidade: {
+    titulo: 'Publicidade', singular: 'banner', botaoNovo: 'Novo banner', icone: 'fa-bullhorn', chave: 'id', campoTitulo: 'titulo', ordenavel: true,
+    ajudaLista: 'Em cada posição do site aparece o primeiro banner ativo da lista (use as setas para escolher a ordem).',
+    colunas: [
+      { rotulo: '', tipo: 'imagem', valor: (i) => i.imagem },
+      { rotulo: 'Banner', valor: (i) => i.titulo, principal: true },
+      { rotulo: 'Anunciante', valor: (i) => i.anunciante },
+      { rotulo: 'Posição', valor: (i) => POSICOES_BANNER.find((p) => p.valor === i.posicao)?.rotulo || i.posicao },
+      { rotulo: 'Período', valor: (i) => (i.inicio || i.fim ? `${i.inicio || '…'} → ${i.fim || '…'}` : 'Sem limite') },
+    ],
+    novo: () => ({ titulo: '', anunciante: '', tipo: 'composto', texto: '', botao: 'Saber mais', imagem: '', ligacao: '', posicao: 'home-meio', inicio: '', fim: '', ativo: true }),
+    campos: [
+      { nome: 'titulo', rotulo: 'Título do banner', tipo: 'texto', obrigatorio: true },
+      { nome: 'anunciante', rotulo: 'Anunciante', tipo: 'texto', largura: 'metade' },
+      {
+        nome: 'tipo', rotulo: 'Formato', tipo: 'selecao', largura: 'metade',
+        opcoes: [
+          { valor: 'composto', rotulo: 'Composto — imagem de fundo + título, texto e botão' },
+          { valor: 'imagem', rotulo: 'Só imagem — arte final do anunciante' },
+        ],
+      },
+      { nome: 'imagem', rotulo: 'Imagem', tipo: 'imagem', ajuda: 'Formato "só imagem": use 1600×300 px (horizontal) ou 600×500 px (lateral).' },
+      { nome: 'texto', rotulo: 'Texto (formato composto)', tipo: 'textarea', linhas: 2 },
+      { nome: 'botao', rotulo: 'Texto do botão', tipo: 'texto', largura: 'metade' },
+      { nome: 'ligacao', rotulo: 'Ligação', tipo: 'texto', largura: 'metade', ajuda: 'Endereço completo (https://…) ou página do site (ex.: /Cursos).' },
+      { nome: 'posicao', rotulo: 'Posição no site', tipo: 'selecao', opcoes: 'posicoesBanner', largura: 'metade' },
+      { nome: 'ativo', rotulo: 'Ativo', tipo: 'booleano', largura: 'metade' },
+      { nome: 'inicio', rotulo: 'Mostrar a partir de', tipo: 'data', largura: 'metade' },
+      { nome: 'fim', rotulo: 'Mostrar até', tipo: 'data', largura: 'metade' },
     ],
   },
 }
@@ -358,6 +390,22 @@ export const PAGINAS = {
   },
 }
 
+export const POSICOES_BANNER = [
+  { valor: 'home-topo', rotulo: 'Página inicial — logo abaixo do topo' },
+  { valor: 'home-meio', rotulo: 'Página inicial — entre os eventos e os avisos' },
+  { valor: 'noticias-lateral', rotulo: 'Notícias — coluna da direita' },
+  { valor: 'noticia-fim', rotulo: 'Notícia — no fim do texto' },
+  { valor: 'rodape', rotulo: 'Todas as páginas — acima do rodapé' },
+]
+
+// nomes legíveis para a grelha de permissões
+export const NOMES_RECURSOS = {
+  noticias: 'Notícias', artigos: 'Artigos', eventos: 'Eventos', cursos: 'Cursos', pessoas: 'Corpo docente',
+  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', estatisticas: 'Estatísticas',
+  utilizadores: 'Utilizadores', papeis: 'Papéis e permissões', atividades: 'Registo de atividades',
+}
+export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir' }
+
 export const NOMES_ACOES = {
   entrar: 'Entrou no painel',
   sair: 'Saiu do painel',
@@ -372,4 +420,9 @@ export const NOMES_ACOES = {
   criar_utilizador: 'Criou utilizador',
   editar_utilizador: 'Editou utilizador',
   alterar_senha: 'Alterou a palavra-passe',
+  publicar: 'Publicou',
+  despublicar: 'Passou a rascunho',
+  criar_papel: 'Criou papel',
+  editar_papel: 'Editou papel',
+  apagar_papel: 'Apagou papel',
 }

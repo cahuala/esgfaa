@@ -3,6 +3,8 @@ import NavBar from './components/NavBar/NavBar'
 import Footer from './components/Footer/Footer'
 import GestorScroll from './components/GestorScroll/GestorScroll'
 import Carregamento from './components/Carregamento/Carregamento'
+import Rastreio from './components/Rastreio/Rastreio'
+import Publicidade from './components/Publicidade/Publicidade'
 import Home from './pages/Home/Home'
 import Institucional from './pages/Institucional/Institucional'
 import Noticias from './pages/Noticias/Noticias'
@@ -21,6 +23,7 @@ function App() {
     <div>
       <GestorScroll />
       <Carregamento />
+      <Rastreio />
       <NavBar/>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -36,6 +39,7 @@ function App() {
         <Route path="/Contactos" element={<Contactos />} />
         <Route path="*" element={<NaoEncontrado />} />
       </Routes>
+      <Publicidade posicao="rodape" />
        <Footer/>
     </div>
   )

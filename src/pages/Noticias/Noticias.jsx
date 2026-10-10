@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FaSearch, FaSlidersH, FaTimes, FaPlay, FaImages, FaEnvelope } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
+import Publicidade from '../../components/Publicidade/Publicidade'
 import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { temGaleria, temVideo } from '../../data/noticias'
 import { useConteudo } from '../../conteudo/contexto'
@@ -293,6 +294,7 @@ function Noticias() {
               </div>
             ))
           )}
+          <Publicidade posicao="noticias-lateral" variante="lateral" />
         </aside>
       </div>
     </main>

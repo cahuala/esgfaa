@@ -7,9 +7,10 @@ import eventos from '../data/eventos'
 import cursos from '../data/cursos'
 import pessoas from '../data/pessoas'
 import paginas from '../data/paginas'
+import publicidade from '../data/publicidade'
 
 // conteúdos que vêm com o site: usados até a API responder, ou se ela estiver indisponível
-const LOCAL = { noticias, artigos, eventos, cursos, pessoas, paginas, estatisticas: {} }
+const LOCAL = { noticias, artigos, eventos, cursos, pessoas, paginas, publicidade, estatisticas: {} }
 
 function ConteudoProvider({ children }) {
   const [dados, setDados] = useState(LOCAL)

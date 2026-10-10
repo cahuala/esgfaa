@@ -8,6 +8,7 @@ export const COLECOES = {
   eventos: { chave: 'id', titulo: 'titulo', ordenar: (a, b) => (a.data || '').localeCompare(b.data || '') },
   cursos: { chave: 'id', titulo: 'nome', ordenar: null },
   pessoas: { chave: 'id', titulo: 'nome', ordenar: null },
+  publicidade: { chave: 'id', titulo: 'titulo', ordenar: null },
 }
 
 // páginas com conteúdo editável
@@ -50,17 +51,39 @@ export function baseUrl(req) {
   return config.urlPublico || `${req.protocol}://${req.get('host')}`
 }
 
-export function listarColecao(colecao, req) {
+const hojeIso = () => new Date().toISOString().slice(0, 10)
+
+// banner visível hoje: ativo e dentro das datas (se definidas)
+export function bannerVisivel(b) {
+  const hoje = hojeIso()
+  return b.ativo !== false && (!b.inicio || b.inicio <= hoje) && (!b.fim || b.fim >= hoje)
+}
+
+/*
+  publico: true  -> só itens publicados (e banners em vigor), sem campos internos
+  publico: false -> tudo, com _estado, _ordem e datas (para o painel)
+*/
+export function listarColecao(colecao, req, { publico = false } = {}) {
   const def = COLECOES[colecao]
-  const linhas = db.prepare('SELECT id, dados, ordem, atualizado_em FROM itens WHERE colecao = ? ORDER BY ordem, criado_em').all(colecao)
-  const itens = linhas.map((l) => ({ ...JSON.parse(l.dados), _ordem: l.ordem, _atualizado: l.atualizado_em }))
+  const linhas = db.prepare(`
+    SELECT i.id, i.dados, i.ordem, i.estado, i.criado_em, i.atualizado_em, u.nome autor_edicao
+    FROM itens i LEFT JOIN utilizadores u ON u.id = i.atualizado_por
+    WHERE i.colecao = ? ${publico ? "AND i.estado = 'publicado'" : ''}
+    ORDER BY i.ordem, i.criado_em`).all(colecao)
+  let itens = linhas.map((l) => publico
+    ? JSON.parse(l.dados)
+    : { ...JSON.parse(l.dados), _estado: l.estado, _ordem: l.ordem, _criado: l.criado_em, _atualizado: l.atualizado_em, _editadoPor: l.autor_edicao })
+  if (publico && colecao === 'publicidade') itens = itens.filter(bannerVisivel)
   if (def.ordenar) itens.sort(def.ordenar)
   return absolutizar(itens, baseUrl(req))
 }
 
-export function lerItem(colecao, id, req) {
-  const l = db.prepare('SELECT dados FROM itens WHERE colecao = ? AND id = ?').get(colecao, id)
-  return l ? absolutizar(JSON.parse(l.dados), baseUrl(req)) : null
+export function lerItem(colecao, id, req, { publico = false } = {}) {
+  const l = db.prepare(`SELECT i.dados, i.estado, i.atualizado_em, u.nome autor_edicao
+    FROM itens i LEFT JOIN utilizadores u ON u.id = i.atualizado_por WHERE i.colecao = ? AND i.id = ?`).get(colecao, id)
+  if (!l || (publico && l.estado !== 'publicado')) return null
+  const internos = publico ? {} : { _estado: l.estado, _atualizado: l.atualizado_em, _editadoPor: l.autor_edicao }
+  return absolutizar({ ...JSON.parse(l.dados), ...internos }, baseUrl(req))
 }
 
 export function lerPagina(chave, req) {

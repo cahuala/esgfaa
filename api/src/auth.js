@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import jwt from 'jsonwebtoken'
 import config from './config.js'
 import db from './db.js'
+import { TODAS } from './rbac.js'
 
 // ---------- palavras-passe (scrypt, sem dependências externas) ----------
 
@@ -41,6 +42,8 @@ export function autenticar(req, res, next) {
     if (!utilizador || !utilizador.ativo) {
       return res.status(401).json({ erro: 'Conta inexistente ou desativada.' })
     }
+    // as permissões leem-se sempre da base: mudar um papel tem efeito imediato
+    utilizador.permissoes = permissoesDoPapel(utilizador.papel)
     req.utilizador = utilizador
     next()
   } catch {
@@ -48,9 +51,19 @@ export function autenticar(req, res, next) {
   }
 }
 
-export function exigirPapel(...papeis) {
+export function permissoesDoPapel(papel) {
+  if (papel === 'administrador') return TODAS
+  const linha = db.prepare('SELECT permissoes FROM papeis WHERE id = ?').get(papel)
+  return linha ? JSON.parse(linha.permissoes) : []
+}
+
+export const pode = (utilizador, permissao) => Boolean(utilizador?.permissoes?.includes(permissao))
+
+// exige uma permissão (ou uma de várias); "{colecao}" é substituído pelo parâmetro da rota
+export function exigir(...permissoes) {
   return (req, res, next) => {
-    if (!papeis.includes(req.utilizador?.papel)) {
+    const concretas = permissoes.map((p) => p.replace('{colecao}', req.params.colecao))
+    if (!concretas.some((p) => pode(req.utilizador, p))) {
       return res.status(403).json({ erro: 'Não tem permissão para esta ação.' })
     }
     next()
