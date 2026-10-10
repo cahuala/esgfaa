@@ -1,226 +1,140 @@
-
-.heroSection {
-  width: 100%;
-  min-height: 100vh;
-  margin-top: -130px;
-  padding-top: 150px;
-  display: flex;
+.hero {
+  position: relative;
+  background: #1c2024 center / cover no-repeat;
+  color: #fff;
+  padding: clamp(56px, 9vw, 110px) 0;
+}
+.sombra {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(20, 23, 26, 0.92) 0%, rgba(20, 23, 26, 0.75) 50%, rgba(20, 23, 26, 0.45) 100%);
+}
+.grelha {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 380px);
+  gap: clamp(32px, 6vw, 80px);
   align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
-  color: white;
-  font-family: inherit;
-
-   background-image:
-    linear-gradient(to top, rgba(10, 5, 3, 0.97) 0%, rgba(10, 5, 3, 0.8) 45%, rgba(10, 5, 3, 0.55) 100%),
-    url('../../assets/Auditorio.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
 }
-
-.container {
-  width: 92%;
-  max-width: 1200px;
-  display: flex;
-  align-items: flex-end;   /* MUDANÇA: antes "center" — deixa a imagem tocar o fundo */
-  justify-content: space-between;
-  position: relative;
-  padding-bottom: 0;
+.texto h1 {
+  color: #fff;
+  font-size: clamp(30px, 3.6vw, 42px);
+  font-weight: 600;
+  line-height: 1.2;
+  max-width: 600px;
 }
-
-.conteudoTexto {
-  flex: 1;
-  max-width: 500px;
-  align-self: center;      /* mantém o texto centrado verticalmente, independente da imagem */
+.texto p {
+  margin-top: 16px;
+  max-width: 560px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.82);
 }
-
-.conteudoTexto h1 {
-  font-size: 44px;
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.5px;
-  margin-bottom: 20px;
-}
-
-.heroSection span {
-  color: #E53917;          /* CORRIGIDO: agora só afeta spans dentro do hero, não o site inteiro */
-}
-
-.conteudoTexto p {
-  font-size: 20px;          /* 27px estava desproporcional ao h1 de 52px — ajustado */
-  color: #e0e0e0;
-  margin-bottom: 40px;
-}
-
-
 .metricas {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  gap: 40px;
+  margin-top: 32px;
+  flex-wrap: wrap;
 }
-
-.metricas .item {
+.metrica {
   display: flex;
   flex-direction: column;
+  padding-left: 14px;
+  border-left: 2px solid rgba(255, 255, 255, 0.35);
+}
+.metrica strong {
+  font-size: 22px;
+  font-weight: 600;
+}
+.metrica span {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 40px;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.mais span {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.mais:hover span {
+  background: var(--marca);
+  border-color: var(--marca);
 }
 
-.metricas span {
-  font-size: 28px;
-  font-weight: 800;
+.formulario {
+  background: #fff;
+  color: var(--texto);
+  border-radius: var(--raio);
+  padding: 26px 26px 28px;
+  box-shadow: var(--sombra-forte);
 }
-
-.metricas small {
-  color: #e0e0e0;
-  font-size: 14px;
-}
-
-.candidaturaCard {
-  align-self: center;
-  width: 320px;              /* MUDANÇA: 300px → 320px */
-  background: rgba(10, 5, 3, 0.82);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 28px;              /* MUDANÇA: 24px → 28px */
-  color: white;
-  z-index: 2;
-}
-.ctaMobile{
-  display: none;
-}
-
-.candidaturaCard h3 {
+.formulario h2 {
   font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 6px;
 }
-
-.candidaturaCard p {
-  font-size: 13px;
-  color: #cfcfcf;
-  margin: 0 0 18px;
+.formulario > p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--texto-suave);
 }
-
-.candidaturaCard form {
+.formulario form {
+  margin-top: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
-
-.candidaturaCard input,
-.candidaturaCard select {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  padding: 11px 12px;
-  color: white;
-  font-size: 14px;
-}
-
-.candidaturaCard input::placeholder {
-  color: #999;
-}
-
-.candidaturaCard select {
-  color: #ccc;
-}
-
-.candidaturaCard button {
-  background-color: #E53917;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px;
+.formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
   font-weight: 600;
+}
+.formulario input,
+.formulario select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d5dbe0;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--texto);
   font-size: 14px;
-  cursor: pointer;
+  font-weight: 400;
+}
+.formulario input:focus,
+.formulario select:focus {
+  outline: none;
+  border-color: var(--marca);
+  box-shadow: 0 0 0 3px rgba(200, 52, 27, 0.15);
+}
+.formulario button {
   margin-top: 6px;
-  transition: filter 0.2s ease;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marca);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-
-.candidaturaCard button:hover {
-  filter: brightness(1.1);
-}
-
-@media (max-width: 1100px) {
-  .container {
-    gap: 32px;
-  }
-
-  .conteudoTexto h1 {
-    font-size: 42px;
-  }
-
-  .candidaturaCard {
-    flex: 0 0 320px;
-  }
+.formulario button:hover {
+  background: var(--marca-escura);
 }
 
 @media (max-width: 900px) {
-  .heroSection {
-    margin-top: -80px;
-    padding-top: 116px;
-    padding-bottom: 40px;
-    min-height: auto;
-    align-items: flex-start;
-      background-image:
-    linear-gradient(to top, rgba(10, 5, 3, 0.97) 0%, rgba(10, 5, 3, 0.8) 45%, rgba(10, 5, 3, 0.55) 100%),
-    url('../../assets/Auditorio.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  }
-
-  .container {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 0 5%;
-  }
-
-  .conteudoTexto {
-    max-width: 100%;
-  }
-
-  .conteudoTexto h1 {
-    font-size: clamp(28px, 6vw, 40px);
-  }
-
-  .conteudoTexto p {
-    font-size: 16px;
-    margin-bottom: 22px;
-  }
-
-  .ctaMobile {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    background-color: #E53917;
-    color: white;
-    font-weight: 700;
-    font-size: 16px;
-    padding: 16px;
-    border-radius: 8px;
-    text-decoration: none;
-    margin-bottom: 28px;
-  }
-
-  .metricas {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-
-  .candidaturaCard {
-    flex: none;
-    width: 100%;
-    align-self: center;
-    margin: 36px 0 20px;
-    scroll-margin-top: 90px;
+  .grelha {
+    grid-template-columns: 1fr;
   }
 }

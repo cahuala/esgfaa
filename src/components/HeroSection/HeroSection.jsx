@@ -1,17 +1,13 @@
-
-import styles from './HeroSection.module.css'
 import { useState } from 'react'
+import { FaArrowRight } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
+import styles from './HeroSection.module.css'
 
-
-
-
-function HeroSection(){
-    const { cursos, paginas } = useConteudo()
-    const hero = paginas.home.hero
-    const [form, setForm] = useState({
-    nome: '', email: '', telefone: '', curso: ''
-  })
+// Abertura da página inicial: fotografia escura, título, números e pedido de informação
+function HeroSection() {
+  const { cursos, paginas } = useConteudo()
+  const hero = paginas.home.hero
+  const [form, setForm] = useState({ nome: '', email: '', telefone: '', curso: '' })
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -19,52 +15,60 @@ function HeroSection(){
 
   function handleSubmit(e) {
     e.preventDefault()
-    console.log(form)
   }
 
-   
-     return (
-      
-         <section
-           className={styles.heroSection}
-           style={hero.imagem ? { backgroundImage: `linear-gradient(to top, rgba(10, 5, 3, 0.97) 0%, rgba(10, 5, 3, 0.8) 45%, rgba(10, 5, 3, 0.55) 100%), url("${hero.imagem}")` } : undefined}
-         >
-      <div className={styles.container}>
-
-        <div className={styles.conteudoTexto}>
+  return (
+    <section className={styles.hero} style={hero.imagem ? { backgroundImage: `url("${hero.imagem}")` } : undefined}>
+      <div className={styles.sombra} />
+      <div className={`contentor ${styles.grelha}`}>
+        <div className={styles.texto}>
           <h1>{hero.titulo}</h1>
           <p>{hero.texto}</p>
-          <a href="#candidatura" className={styles.ctaMobile}>Candidatar-me agora</a>
+
           <div className={styles.metricas}>
             {hero.metricas.map((m) => (
-              <div className={styles.item} key={m.legenda}>
-                <span>{m.valor}</span>
-                <small>{m.legenda}</small>
+              <div className={styles.metrica} key={m.legenda}>
+                <strong>{m.valor}</strong>
+                <span>{m.legenda}</span>
               </div>
             ))}
           </div>
+
+          <a href="#candidatura" className={styles.mais}>
+            <span><FaArrowRight size={12} aria-hidden="true" /></span>
+            Candidatar-me a um curso
+          </a>
         </div>
 
-        <div className={styles.candidaturaCard} id="candidatura">
-          <h3>{hero.formularioTitulo}</h3>
+        <div className={styles.formulario} id="candidatura">
+          <h2>{hero.formularioTitulo}</h2>
           <p>{hero.formularioTexto}</p>
-
           <form onSubmit={handleSubmit}>
-            <input type="text" name="nome" placeholder="Nome completo" value={form.nome} onChange={handleChange} required />
-            <input type="email" name="email" placeholder="Seu e-mail" value={form.email} onChange={handleChange} required />
-            <input type="tel" name="telefone" placeholder="Telefone / contacto" value={form.telefone} onChange={handleChange} required />
-            <select name="curso" value={form.curso} onChange={handleChange} required>
-              <option value="" disabled>Curso pretendido</option>
-              {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-            <button type="submit">Enviar candidatura</button>
+            <label>
+              <span>Nome completo</span>
+              <input type="text" name="nome" value={form.nome} onChange={handleChange} autoComplete="name" required />
+            </label>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" required />
+            </label>
+            <label>
+              <span>Telefone</span>
+              <input type="tel" name="telefone" value={form.telefone} onChange={handleChange} autoComplete="tel" required />
+            </label>
+            <label>
+              <span>Curso pretendido</span>
+              <select name="curso" value={form.curso} onChange={handleChange} required>
+                <option value="" disabled>Escolha um curso</option>
+                {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </label>
+            <button type="submit">Enviar pedido</button>
           </form>
         </div>
-
       </div>
     </section>
-     
-     )
+  )
 }
 
 export default HeroSection

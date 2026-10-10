@@ -1,6 +1,25 @@
+.pagina {
+  padding-top: clamp(64px, 10vw, 120px);
+  padding-bottom: clamp(64px, 10vw, 120px);
+  text-align: center;
+}
+.codigo {
+  display: block;
+  font-size: 14px;
+  color: var(--texto-fraco);
+}
+.pagina h1 {
+  margin-top: 6px;
+  font-size: clamp(26px, 3vw, 34px);
+}
+.pagina p {
+  margin-top: 10px;
+  color: var(--texto-suave);
+}
 .acoes {
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 32px;
+  gap: 10px;
+  margin-top: 28px;
 }

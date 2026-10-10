@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import { totalHoras } from '../../data/cursos'
 import { useConteudo } from '../../conteudo/contexto'
+import { TituloSeccao } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Cursos.module.css'
 
@@ -15,6 +16,7 @@ function Cursos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Cursos' }]}
         sobretitulo="Formação"
         titulo="Cursos"
         entrada={pagina.entrada}
@@ -22,7 +24,7 @@ function Cursos() {
 
       {/* Faixa de candidaturas */}
       {pagina.candidaturasAbertas && (
-      <div className={styles.faixa}>
+      <div className={`contentor ${styles.faixa}`}>
         <div className={styles.faixaInterior}>
           <span className={styles.faixaSelo}>Candidaturas abertas</span>
           <p>
@@ -34,7 +36,7 @@ function Cursos() {
       )}
 
       {/* Os cursos */}
-      <section className={ed.largura} aria-label="Cursos disponíveis">
+      <section className={`contentor ${styles.lista}`} aria-label="Cursos disponíveis">
         {cursos.map((c, i) => (
           <article key={c.id} className={`${styles.curso} ${i % 2 ? styles.cursoInvertido : ''}`}>
             <Link to={`/Cursos/${c.id}`} className={styles.cursoFoto} tabIndex={-1} aria-hidden="true">
@@ -43,7 +45,6 @@ function Cursos() {
             </Link>
 
             <div className={styles.cursoTexto}>
-              <span className={styles.cursoNumero}>{String(i + 1).padStart(2, '0')}</span>
               <h2><Link to={`/Cursos/${c.id}`}>{c.nome}</Link></h2>
               <p className={styles.cursoResumo}>{c.resumo}</p>
 
@@ -61,14 +62,8 @@ function Cursos() {
       </section>
 
       {/* Comparação */}
-      <section className={`${ed.largura} ${styles.bloco}`}>
-        <div className={ed.tituloSeccao}>
-          <span className={ed.numeroSeccao} aria-hidden="true">A</span>
-          <div>
-            <span className={ed.rotulo}>Comparar</span>
-            <h2>Os cursos lado a lado.</h2>
-          </div>
-        </div>
+      <section className={`contentor ${styles.bloco}`}>
+        <TituloSeccao rotulo="Comparar" titulo="Os cursos lado a lado" />
 
         <div className={styles.tabelaRolavel}>
           <table className={`${ed.tabela} ${styles.comparacao}`}>
@@ -96,18 +91,12 @@ function Cursos() {
       </section>
 
       {/* Admissão */}
-      <section id="admissao" className={`${ed.largura} ${styles.bloco}`}>
-        <div className={ed.tituloSeccao}>
-          <span className={ed.numeroSeccao} aria-hidden="true">B</span>
-          <div>
-            <span className={ed.rotulo}>Admissão</span>
-            <h2>Como se candidatar.</h2>
-          </div>
-        </div>
+      <section id="admissao" className={`contentor ${styles.bloco}`}>
+        <TituloSeccao rotulo="Admissão" titulo="Como se candidatar" />
         <ol className={ed.passos} style={{ '--colunas': processoAdmissao.length }}>
           {processoAdmissao.map((p, i) => (
             <li key={p.titulo}>
-              <span className={ed.passoNumero}>{String(i + 1).padStart(2, '0')}</span>
+              <span className={ed.passoNumero}>{i + 1}</span>
               <h3>{p.titulo}</h3>
               <p>{p.texto}</p>
             </li>
@@ -119,14 +108,8 @@ function Cursos() {
       </section>
 
       {/* Calendário */}
-      <section id="calendario" className={`${ed.largura} ${styles.bloco}`}>
-        <div className={ed.tituloSeccao}>
-          <span className={ed.numeroSeccao} aria-hidden="true">C</span>
-          <div>
-            <span className={ed.rotulo}>Calendário académico</span>
-            <h2>Datas da admissão {pagina.anoAcademico}.</h2>
-          </div>
-        </div>
+      <section id="calendario" className={`contentor ${styles.bloco}`}>
+        <TituloSeccao rotulo="Calendário académico" titulo={`Datas da admissão ${pagina.anoAcademico}`} />
         <div className={styles.calendario}>
           <table className={ed.tabela}>
             <thead>
@@ -139,8 +122,7 @@ function Cursos() {
             </tbody>
           </table>
           <aside className={styles.candidatar}>
-            <span className={ed.rotulo}>Pronto para avançar?</span>
-            <h3>Faça já a sua pré-candidatura.</h3>
+            <h3>Faça já a sua pré-candidatura</h3>
             <p>Preencha o formulário e a Secretaria Académica entra em contacto com os próximos passos.</p>
             <Link to="/#candidatura" className={ed.botao}>Pré-candidatura</Link>
             <Link to="/Contactos#formulario" className={`${ed.botao} ${ed.botaoContorno}`}>Pedir informações</Link>

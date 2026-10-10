@@ -1,36 +1,30 @@
-
-import styles from './CorpoDestaque.module.css'
 import { useConteudo } from '../../conteudo/contexto'
 import { iniciais } from '../../utils/texto'
+import { TituloSeccao } from '../Corporativo/Corporativo'
+import styles from './CorpoDestaque.module.css'
 
+// Comando e corpo docente
 function CorpoDestaque() {
   const { pessoas, paginas } = useConteudo()
   const textos = paginas.home.corpo
-  // duplica a lista para o loop do carrossel ficar contínuo, sem salto visível
-  const pessoasDuplicadas = [...pessoas, ...pessoas]
+  if (!pessoas.length) return null
 
   return (
-    <section className={styles.secao}>
-      <div className={styles.cabecalho}>
-        <span className={styles.etiqueta}>{textos.etiqueta}</span>
-        <h2>{textos.titulo}</h2>
-      </div>
-
-      <div className={styles.pista}>
-        <div className={styles.trilho}>
-          {pessoasDuplicadas.map((p, index) => (
-            <div className={styles.cartao} key={`${p.id}-${index}`}>
-              <div className={styles.fotoWrapper}>
-                {p.foto ? (
-                  <img src={p.foto} alt={p.nome} className={styles.foto} />
-                ) : (
-                  <span className={styles.iniciais} aria-hidden="true">{iniciais(p.nome)}</span>
-                )}
+    <section className="seccao seccao-cinza">
+      <div className="contentor">
+        <TituloSeccao rotulo={textos.etiqueta || 'Corpo docente'} titulo={textos.titulo} />
+        <div className={styles.grelha}>
+          {pessoas.map((p) => (
+            <article className={styles.cartao} key={p.id}>
+              <div className={styles.foto}>
+                {p.foto ? <img src={p.foto} alt="" loading="lazy" /> : <span aria-hidden="true">{iniciais(p.nome)}</span>}
               </div>
-              <h3>{p.nome}</h3>
-              <span className={styles.cargo}>{p.cargo}</span>
-              <p>{p.destaque}</p>
-            </div>
+              <div className={styles.corpo}>
+                <h3>{p.nome}</h3>
+                <span className={styles.cargo}>{p.cargo}</span>
+                {p.destaque && <p>{p.destaque}</p>}
+              </div>
+            </article>
           ))}
         </div>
       </div>

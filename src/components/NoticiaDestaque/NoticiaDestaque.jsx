@@ -1,37 +1,40 @@
-
-import { Link } from 'react-router-dom'
-import styles from './NoticiaDestaque.module.css'
 import { useConteudo } from '../../conteudo/contexto'
-import { formatarData } from '../../utils/datas'
+import { Cartao, LigacaoMais, TituloSeccao } from '../Corporativo/Corporativo'
+import styles from './NoticiaDestaque.module.css'
 
+// "Top Stories": duas notícias pequenas à esquerda e a principal em grande; depois as recentes em linha
 function NoticiaDestaque() {
   const { noticias, paginas } = useConteudo()
   const textos = paginas.home.noticias
-  const recentes = noticias.slice(0, 6)
-  const noticiasDuplicadas = [...recentes, ...recentes]
+  const [principal, ...resto] = noticias
+  if (!principal) return null
+  const lado = resto.slice(0, 2)
+  const recentes = resto.slice(2, 6)
+  const props = (n) => ({ para: `/Noticias/${n.slug}`, imagem: n.capa, etiqueta: n.categoria, titulo: n.titulo, data: n.data })
 
   return (
-    <section className={styles.secao}>
-      <div className={styles.cabecalho}>
-        <span className={styles.etiqueta}>{textos.etiqueta}</span>
-        <h2>{textos.titulo}</h2>
-      </div>
+    <section className="seccao">
+      <div className="contentor">
+        <TituloSeccao rotulo={textos.etiqueta || 'Notícias'} titulo={textos.titulo} />
 
-      <div className={styles.pista}>
-        <div className={styles.trilho}>
-          {noticiasDuplicadas.map((n, index) => (
-            <Link to={`/Noticias/${n.slug}`} className={styles.cartao} key={`${n.slug}-${index}`}>
-              <div className={styles.fotoWrapper}>
-                <img src={n.capa} alt={n.titulo} className={styles.foto} />
-                <span className={styles.tagCategoria}>{n.categoria}</span>
-              </div>
-              <div className={styles.info}>
-                <span className={styles.data}>{formatarData(n.data)}</span>
-                <h3>{n.titulo}</h3>
-                <p>{n.resumo}</p>
-              </div>
-            </Link>
-          ))}
+        <div className={styles.destaques}>
+          <div className={styles.coluna}>
+            {lado.map((n) => <Cartao key={n.slug} {...props(n)} />)}
+          </div>
+          <Cartao {...props(principal)} resumo={principal.resumo} className={styles.principal} />
+        </div>
+
+        {recentes.length > 0 && (
+          <>
+            <span className={styles.rotulo}>Mais recentes</span>
+            <div className={styles.recentes}>
+              {recentes.map((n) => <Cartao key={n.slug} {...props(n)} />)}
+            </div>
+          </>
+        )}
+
+        <div className={styles.rodape}>
+          <LigacaoMais para="/Noticias">Ver todas as notícias</LigacaoMais>
         </div>
       </div>
     </section>

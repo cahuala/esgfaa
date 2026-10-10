@@ -1,8 +1,8 @@
 /* Tipografia de leitura longa: coluna de ~70 caracteres, entrelinha generosa */
 .corpo {
-  max-width: 720px;
-  color: #d6d6d6;
-  font-size: 18px;
+  max-width: 760px;
+  color: var(--texto);
+  font-size: 16px;
   line-height: 1.75;
 }
 
@@ -11,14 +11,14 @@
 }
 
 .corpo > p:first-child {
-  font-size: 20px;
-  color: #f0f0f0;
+  font-size: 17px;
+  color: var(--texto);
 }
 
 .corpo h2 {
   font-size: 26px;
   line-height: 1.25;
-  color: white;
+  color: var(--texto);
   margin-top: 2em;
 }
 
@@ -52,16 +52,16 @@
   width: 100%;
   height: auto;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--linha);
 }
 
 .figura figcaption {
   margin-top: 12px;
   font-size: 13.5px;
   line-height: 1.5;
-  color: #8f8f8f;
+  color: var(--texto-suave);
   padding-left: 12px;
-  border-left: 2px solid #E53917;
+  border-left: 2px solid var(--marca);
 }
 
 .ampliar {
@@ -113,7 +113,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--linha);
 }
 
 .video iframe,
@@ -130,15 +130,15 @@
 .citacao {
   margin: 2.2em 0;
   padding: 4px 0 4px 28px;
-  border-left: 3px solid #E53917;
+  border-left: 3px solid var(--marca);
 }
 
 .citacao p {
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 23px;
   line-height: 1.35;
-  color: white;
+  color: var(--texto);
 }
 
 .citacao cite {
@@ -146,7 +146,7 @@
   margin-top: 14px;
   font-style: normal;
   font-size: 14px;
-  color: #b8b8b8;
+  color: var(--texto-suave);
 }
 
 /* Listas */
@@ -172,7 +172,7 @@ ul.lista li::before {
   top: 0.72em;
   width: 10px;
   height: 2px;
-  background: #E53917;
+  background: var(--marca);
 }
 
 ol.lista li::before {
@@ -182,14 +182,14 @@ ol.lista li::before {
   left: 0;
   top: 0.2em;
   font-size: 13px;
-  font-weight: 700;
-  color: #E53917;
+  font-weight: 600;
+  color: var(--marca);
 }
 
 /* Caixa de destaque */
 .destaque {
-  background: rgba(229, 57, 23, 0.07);
-  border: 1px solid rgba(229, 57, 23, 0.3);
+  background: #fdf4f2;
+  border: 1px solid #f1d2ca;
   border-radius: 12px;
   padding: 22px 26px;
   font-size: 16px;
@@ -197,7 +197,7 @@ ol.lista li::before {
 
 .destaque strong {
   display: block;
-  color: white;
+  color: var(--texto);
   font-size: 15px;
   margin-bottom: 6px;
 }
@@ -206,16 +206,16 @@ ol.lista li::before {
 .referencias {
   margin-top: 3em;
   padding-top: 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--linha);
 }
 
 .referencias h3 {
   font-size: 13px;
   font-family: inherit;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #E53917;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--marca);
   margin: 0 0 14px;
 }
 
@@ -224,7 +224,7 @@ ol.lista li::before {
   padding-left: 20px;
   font-size: 14.5px;
   line-height: 1.6;
-  color: #a8a8a8;
+  color: var(--texto-suave);
 }
 
 .referencias li + li {
@@ -413,16 +413,16 @@ ol.lista li::before {
   border-left: none;
   padding-left: 0;
   font-style: italic;
-  color: #9a9a9a;
+  color: var(--texto-suave);
 }
 
 .legendaNumerada span {
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #E53917;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--marca);
   margin-right: 10px;
 }
 
@@ -430,18 +430,18 @@ ol.lista li::before {
 .direita .legendaNumerada {
   font-size: 13px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--linha);
 }
 
 /* letra capitular no primeiro parágrafo */
 .capitular > p:first-child::first-letter {
   float: left;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 4.4em;
   line-height: 0.82;
   padding: 0.06em 0.12em 0 0;
-  color: #E53917;
+  color: var(--marca);
 }
 
 @media (max-width: 700px) {
@@ -464,7 +464,7 @@ ol.lista li::before {
 
 .textoRico h2,
 .textoRico h3 {
-  color: white;
+  color: var(--texto);
   line-height: 1.25;
   margin-top: 1.8em;
 }
@@ -478,12 +478,12 @@ ol.lista li::before {
 }
 
 .textoRico a {
-  color: #ff8a5c;
+  color: var(--marca);
   text-underline-offset: 3px;
 }
 
 .textoRico strong {
-  color: white;
+  color: var(--texto);
 }
 
 .textoRico ul,
@@ -496,17 +496,17 @@ ol.lista li::before {
 }
 
 .textoRico li::marker {
-  color: var(--vermelho, #E53917);
+  color: var(--marca);
 }
 
 .textoRico blockquote {
   margin: 1.8em 0;
   padding: 4px 0 4px 24px;
-  border-left: 3px solid var(--vermelho, #E53917);
-  font-family: 'Inter Tight', 'Inter', sans-serif;
+  border-left: 3px solid var(--marca);
+  font-family: inherit;
   font-size: 22px;
   line-height: 1.4;
-  color: white;
+  color: var(--texto);
 }
 
 .textoRico .ql-align-center {
@@ -575,11 +575,11 @@ ol.lista li::before {
 .textoRico figcaption {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--linha);
   font-size: 13.5px;
   font-style: italic;
   line-height: 1.5;
-  color: #9a9a9a;
+  color: var(--texto-suave);
 }
 
 /* legendas numeradas: "FIGURA 1" */
@@ -589,10 +589,10 @@ ol.lista li::before {
   margin-right: 10px;
   font-style: normal;
   font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--vermelho, #E53917);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--marca);
 }
 
 .textoRico div[data-tipo="galeria"] {
@@ -649,9 +649,9 @@ ol.lista li::before {
   clear: both;
   margin: 1.8em 0;
   padding: 20px 24px;
-  background: rgba(229, 57, 23, 0.07);
-  border: 1px solid rgba(229, 57, 23, 0.3);
-  border-left: 4px solid var(--vermelho, #E53917);
+  background: #fdf4f2;
+  border: 1px solid #f1d2ca;
+  border-left: 4px solid var(--marca);
   border-radius: 6px;
   font-size: 16px;
 }
@@ -671,15 +671,15 @@ ol.lista li::before {
 .textoRico th,
 .textoRico td {
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--linha);
   text-align: left;
   vertical-align: top;
 }
 
 .textoRico th {
-  background: rgba(229, 57, 23, 0.18);
-  color: white;
-  font-weight: 700;
+  background: var(--fundo-cinza);
+  color: var(--texto);
+  font-weight: 600;
 }
 
 .textoRico th p,
@@ -691,14 +691,14 @@ ol.lista li::before {
   clear: both;
   margin: 2.4em 0;
   border: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 1px solid var(--linha);
 }
 
 .textoRico h4 {
   font-size: 15px;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: white;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texto);
 }
 
 .textoRico mark {
@@ -709,9 +709,9 @@ ol.lista li::before {
 
 .textoRico blockquote p + p {
   margin-top: 10px;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   font-size: 14px;
-  color: #b8b8b8;
+  color: var(--texto-suave);
 }
 
 @media (max-width: 1100px) {
@@ -739,10 +739,10 @@ ol.lista li::before {
   content: attr(data-legenda);
   grid-column: 1 / -1;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--linha);
   font-size: 13.5px;
   font-style: italic;
-  color: #9a9a9a;
+  color: var(--texto-suave);
 }
 
 /* espaço entre parágrafos e listas do texto formatado */

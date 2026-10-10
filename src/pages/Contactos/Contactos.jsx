@@ -33,6 +33,7 @@ function Contactos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Contactos' }]}
         sobretitulo="Contactos"
         titulo="Fale connosco"
         entrada="Candidaturas, pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis."
@@ -57,15 +58,12 @@ function Contactos() {
         </div>
       </dl>
 
-      <div className={styles.grelha}>
+      <div className={`contentor ${styles.grelha}`}>
         {/* Formulário */}
         <section id="formulario" className={styles.formularioCaixa}>
           <div className={ed.tituloSeccao}>
-            <span className={ed.numeroSeccao} aria-hidden="true">01</span>
-            <div>
-              <span className={ed.rotulo}>Formulário de contacto</span>
-              <h2>Envie-nos uma mensagem.</h2>
-            </div>
+            <span className={ed.rotulo}>Formulário de contacto</span>
+            <h2>Envie-nos uma mensagem</h2>
           </div>
 
           {enviado ? (
@@ -81,7 +79,7 @@ function Contactos() {
           ) : (
             <form className={styles.formulario} onSubmit={handleSubmit}>
               <fieldset className={styles.assuntos}>
-                <legend><span>A</span> Assunto</legend>
+                <legend>Assunto</legend>
                 <div>
                   {contactos.assuntos.map((a) => (
                     <label key={a} className={form.assunto === a ? styles.assuntoAtivo : ''}>
@@ -94,21 +92,21 @@ function Contactos() {
 
               <div className={styles.campos}>
                 <label className={styles.campo}>
-                  <span><b>B</b> Nome completo</span>
+                  <span>Nome completo</span>
                   <input type="text" name="nome" value={form.nome} onChange={handleChange} autoComplete="name" required />
                 </label>
                 <label className={styles.campo}>
-                  <span><b>C</b> E-mail</span>
+                  <span>E-mail</span>
                   <input type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" required />
                 </label>
                 <label className={styles.campo}>
-                  <span><b>D</b> Telefone <em>(opcional)</em></span>
+                  <span>Telefone <em>(opcional)</em></span>
                   <input type="tel" name="telefone" value={form.telefone} onChange={handleChange} autoComplete="tel" />
                 </label>
               </div>
 
               <label className={`${styles.campo} ${styles.campoMensagem}`}>
-                <span><b>E</b> Mensagem</span>
+                <span>Mensagem</span>
                 <textarea name="mensagem" rows={6} value={form.mensagem} onChange={handleChange} required />
               </label>
 
@@ -126,11 +124,8 @@ function Contactos() {
         {/* Diretório */}
         <section className={styles.diretorio}>
           <div className={ed.tituloSeccao}>
-            <span className={ed.numeroSeccao} aria-hidden="true">02</span>
-            <div>
-              <span className={ed.rotulo}>Diretório</span>
-              <h2>Contactos por área.</h2>
-            </div>
+            <span className={ed.rotulo}>Diretório</span>
+            <h2>Contactos por área</h2>
           </div>
 
           <ul className={styles.areas}>
@@ -144,7 +139,7 @@ function Contactos() {
           </ul>
 
           <div className={styles.redes}>
-            <span className={ed.rotulo}>Redes sociais</span>
+            <h3>Redes sociais</h3>
             <div>
               <a href="#" aria-label="Facebook"><FaFacebookF /></a>
               <a href="#" aria-label="Instagram"><FaInstagram /></a>
@@ -156,7 +151,7 @@ function Contactos() {
       </div>
 
       {/* Mapa */}
-      <section className={styles.mapa} aria-label="Localização">
+      <section className={`contentor ${styles.mapa}`} aria-label="Localização">
         <iframe
           title="Localização da Escola Superior de Guerra"
           src={`https://maps.google.com/maps?q=${encodeURIComponent(contactos.mapa)}&z=15&output=embed`}
@@ -164,7 +159,7 @@ function Contactos() {
           referrerPolicy="no-referrer-when-downgrade"
         />
         <div className={styles.mapaCartao}>
-          <span className={ed.rotulo}><FaMapMarkerAlt aria-hidden="true" /> Como chegar</span>
+          <h3><FaMapMarkerAlt aria-hidden="true" /> Como chegar</h3>
           {contactos.morada.map((l) => <p key={l}>{l}</p>)}
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactos.mapa)}`}

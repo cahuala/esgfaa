@@ -1,296 +1,185 @@
-/* Faixa de candidaturas */
-.faixa {
-  background: var(--vermelho);
-}
+/* Cursos, no estilo do modelo Corporate */
 
+/* aviso de candidaturas abertas */
+.faixa {
+  margin-top: 32px;
+}
 .faixaInterior {
-  max-width: 1760px;
-  margin: 0 auto;
-  padding: 14px var(--margem);
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
   flex-wrap: wrap;
-}
-
-.faixaSelo {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-}
-
-.faixaInterior p {
-  margin: 0;
-  flex: 1;
+  padding: 14px 20px;
+  border-radius: var(--raio);
+  background: #eaf6ee;
+  color: #1d4f31;
   font-size: 14.5px;
 }
-
+.faixaSelo {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #1d6b3d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.faixaInterior p {
+  flex: 1;
+}
 .faixaLigacao {
-  color: white;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  text-underline-offset: 4px;
+  color: #1d6b3d;
+  font-weight: 600;
+  text-decoration: none;
+}
+.faixaLigacao:hover {
+  text-decoration: underline;
 }
 
-/* Cada curso: foto de um lado, ficha do outro */
+/* cada curso: cartão branco com a fotografia de um lado (alterna) */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-top: 40px;
+}
 .curso {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  border-bottom: 1px solid var(--filete);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  background: #fff;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
 }
-
-.curso:first-child {
-  margin-top: 56px;
-  border-top: 3px solid var(--filete-forte);
-}
-
 .cursoInvertido .cursoFoto {
   order: 2;
 }
-
 .cursoFoto {
   position: relative;
   display: block;
-  min-height: 460px;
-  overflow: hidden;
+  min-height: 300px;
+  background: var(--fundo-cinza);
 }
-
 .cursoFoto img {
-  position: absolute;
-  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(0.2);
-  transition: transform 0.8s ease, filter 0.4s ease;
+  display: block;
+  position: absolute;
+  inset: 0;
 }
-
-.curso:hover .cursoFoto img {
-  transform: scale(1.04);
-  filter: none;
-}
-
-/* sigla gigante sobre a foto */
 .cursoSigla {
   position: absolute;
-  left: 24px;
-  bottom: 12px;
-  font-size: clamp(64px, 8vw, 132px);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.05em;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  top: 16px;
+  left: 16px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 12px;
+  font-weight: 600;
 }
-
 .cursoTexto {
-  padding: 48px clamp(28px, 4vw, 72px) 52px;
+  padding: clamp(24px, 3vw, 36px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 14px;
 }
-
-.cursoNumero {
-  font-size: 13px;
-  font-weight: 900;
-  color: var(--vermelho);
-  letter-spacing: 1px;
-}
-
 .cursoTexto h2 {
-  font-size: clamp(24px, 2.4vw, 38px);
-  font-weight: 800;
-  line-height: 1.1;
-  margin: 10px 0 14px;
+  font-size: clamp(20px, 2vw, 24px);
 }
-
 .cursoTexto h2 a {
-  color: white;
+  color: var(--texto);
   text-decoration: none;
 }
-
 .cursoTexto h2 a:hover {
-  color: #ff8a5c;
+  color: var(--marca);
 }
-
 .cursoResumo {
-  margin: 0 0 28px;
-  max-width: 52ch;
-  font-size: 16px;
-  line-height: 1.65;
-  color: #c4c4c4;
+  color: var(--texto-suave);
+  font-size: 15px;
 }
-
 .ficha {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 0 32px;
-  border-top: 1px solid var(--filete);
+  gap: 12px 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--linha);
+  border-bottom: 1px solid var(--linha);
 }
-
-.ficha > div {
-  padding: 14px 16px 14px 0;
-  border-bottom: 1px solid var(--filete);
+.ficha div {
+  display: flex;
+  flex-direction: column;
 }
-
 .ficha dt {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #8f8f8f;
-  margin-bottom: 4px;
+  font-size: 12.5px;
+  color: var(--texto-fraco);
 }
-
 .ficha dd {
-  margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: white;
 }
 
-.cursoTexto > a:last-child {
-  align-self: flex-start;
-}
-
-/* Blocos seguintes */
+/* blocos seguintes (comparação, admissão, calendário) */
 .bloco {
-  padding-top: 88px;
+  padding-top: 64px;
 }
-
 .bloco:last-child {
-  padding-bottom: 110px;
+  padding-bottom: 72px;
 }
-
 .tabelaRolavel {
   overflow-x: auto;
 }
-
 .comparacao {
-  min-width: 720px;
+  min-width: 640px;
 }
-
-.comparacao thead th {
-  vertical-align: bottom;
-  width: 26%;
-}
-
-.comparacao thead th:first-child {
-  width: 22%;
-}
-
-.comparacao thead a {
+.comparacao thead th a {
   display: block;
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.012em;
-  color: white;
-  text-decoration: none;
-  text-transform: none;
-}
-
-.comparacao thead a:hover {
-  color: var(--vermelho);
-}
-
-.comparacao thead span {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  color: #9a9a9a;
-  text-transform: none;
-  font-weight: 600;
-}
-
-.nota {
-  margin: 22px 0 0;
+  color: var(--marca);
   font-size: 14px;
-  color: #9a9a9a;
+  text-decoration: none;
 }
-
+.comparacao thead th span {
+  display: block;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+.nota {
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--texto-suave);
+}
 .calendario {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
-  gap: 56px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
+  gap: 40px;
   align-items: start;
 }
-
 .candidatar {
-  padding: 32px;
-  border: 1px solid var(--vermelho);
-  background: linear-gradient(135deg, rgba(229, 57, 23, 0.16), rgba(229, 57, 23, 0.03));
+  padding: 24px;
+  background: var(--fundo-cinza);
+  border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: flex-start;
 }
-
 .candidatar h3 {
-  font-size: 24px;
-  font-weight: 800;
-  margin: 0;
+  font-size: 17px;
 }
-
 .candidatar p {
-  margin: 0 0 8px;
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: #d0d0d0;
+  font-size: 14px;
+  color: var(--texto-suave);
 }
 
-@media (max-width: 1000px) {
-  .curso {
+@media (max-width: 860px) {
+  .curso,
+  .calendario {
     grid-template-columns: 1fr;
   }
-
   .cursoInvertido .cursoFoto {
     order: 0;
   }
-
   .cursoFoto {
-    min-height: 0;
-    aspect-ratio: 16 / 9;
-  }
-
-  .cursoTexto {
-    padding: 32px 0 44px;
-  }
-
-  .calendario {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-}
-
-@media (max-width: 640px) {
-  .faixaInterior {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .curso:first-child {
-    margin-top: 32px;
-  }
-
-  .cursoFoto {
-    margin: 0 calc(-1 * var(--margem));
-  }
-
-  .ficha {
-    grid-template-columns: 1fr;
-  }
-
-  .bloco {
-    padding-top: 64px;
-  }
-
-  .candidatar {
-    padding: 24px;
+    min-height: 220px;
   }
 }

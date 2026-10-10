@@ -131,7 +131,7 @@ function Interacoes({ colecao, id, titulo }) {
       ) : (
         <div id="comentarios" className={styles.comentarios}>
           <h2>
-            Comentários <span>{String(total).padStart(2, '0')}</span>
+            Comentários <span>{total}</span>
           </h2>
 
           <form className={styles.formulario} onSubmit={comentar}>

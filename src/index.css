@@ -1,53 +1,80 @@
+/*
+  Linguagem visual do site — inspirada no modelo "Corporate" do Color Admin:
+  Open Sans, fundo claro, secções alternadas em cinzento, cartões brancos com sombra suave,
+  etiquetas em tons pastel e títulos em semi-negrito. O vermelho da Escola só como acento.
+*/
+:root {
+  --fonte: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 
+  --marca: #c8341b;            /* vermelho da Escola (botões, ligações, acentos) */
+  --marca-escura: #a3291a;
+  --dourado: #b8860b;
+
+  --texto: #2d353c;            /* texto principal */
+  --texto-suave: #6c757d;      /* resumos, legendas */
+  --texto-fraco: #a0a8b0;      /* datas, metadados */
+  --fundo: #ffffff;
+  --fundo-cinza: #f2f3f4;      /* secções alternadas */
+  --fundo-escuro: #1c2024;     /* rodapé de topo, faixa institucional */
+  --linha: #e4e7ea;
+
+  --sombra: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+  --sombra-forte: 0 1rem 2rem rgba(0, 0, 0, 0.12);
+  --raio: 6px;
+  --conteudo: 1170px;          /* largura do conteúdo, como no modelo */
+  --margem: clamp(16px, 3vw, 32px);
+
+  /* compatibilidade com estilos antigos */
+  --vermelho: var(--marca);
+  --filete: var(--linha);
+  --filete-forte: var(--texto);
+}
 
 * {
-  
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-  font-feature-settings: 'cv11', 'ss01'; /* a e l de desenho mais limpo */
-  background-color: #ffffff;
-  color: #333333;
+  width: 100%;
+  overflow-x: hidden;
+  font-family: var(--fonte);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--texto);
+  background: var(--fundo);
   -webkit-font-smoothing: antialiased;
 }
 
-/* títulos em Inter Tight: mais compacta, ideal para corpos grandes */
-h1, h2, h3, h4, .font-display {
-  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.012em; /* Deixa os títulos mais compactos e elegantes */
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--fonte);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--texto);
+  letter-spacing: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
 }
 
 button, input, select, textarea {
   font-family: inherit;
+  font-size: inherit;
 }
 
-body {
-
-  margin: 0;
-  padding: 0;
-
-  width: 100%;
-  overflow-x: hidden; /* Evita barras de rolagem horizontais */
-  background-color: black;
-}
-
-
-/* âncoras (#historia, #formulario…) não ficam escondidas por baixo da navbar fixa */
+/* âncoras (#historia, #formulario…) não ficam escondidas por baixo do menu fixo */
 [id] {
-  scroll-margin-top: 140px;
-}
-
-/* Linguagem institucional comum às páginas interiores */
-:root {
-  --filete: rgba(255, 255, 255, 0.1);
-  --filete-forte: rgba(255, 255, 255, 0.85);
-  --vermelho: #E53917;
-  --margem: clamp(16px, 3vw, 56px);
+  scroll-margin-top: 110px;
 }
 
 /* texto só para leitores de ecrã */
@@ -61,4 +88,25 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+
+/* ---------- estrutura comum das páginas ---------- */
+.contentor {
+  max-width: var(--conteudo);
+  margin-inline: auto;
+  padding-inline: var(--margem);
+}
+.seccao {
+  padding: clamp(48px, 7vw, 80px) 0;
+}
+.seccao-cinza {
+  background: var(--fundo-cinza);
+}
+.centro {
+  text-align: center;
 }

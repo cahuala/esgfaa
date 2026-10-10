@@ -76,10 +76,10 @@ function ArtigoDetalhe() {
         <div><dt>Leitura</dt><dd>{minutos} {minutos === 1 ? 'minuto' : 'minutos'}</dd></div>
       </dl>
 
-      <div className={styles.grelhaDetalhe}>
+      <div className={`contentor ${styles.grelhaDetalhe}`}>
         {/* Esquerda: índice e partilha */}
         <aside className={styles.fichaLateral}>
-          <span className={ed.rotulo}>Neste artigo</span>
+          <h2 className={styles.fichaTitulo}>Neste artigo</h2>
           <ol className={styles.indiceArtigo}>
             <li><a href="#resumo">Resumo</a></li>
             {seccoes.map((s) => <li key={s}><a href={`#${ancora(s)}`}>{s}</a></li>)}
@@ -99,7 +99,7 @@ function ArtigoDetalhe() {
             </div>
           </section>
 
-          <ConteudoRico blocos={artigo.conteudo} capitular />
+          <ConteudoRico blocos={artigo.conteudo} />
 
           <Interacoes colecao="artigos" id={artigo.slug} titulo={artigo.titulo} />
 
@@ -107,7 +107,7 @@ function ArtigoDetalhe() {
             <div className={styles.sobreAutor}>
               <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
               <div>
-                <span className={ed.rotulo}>Sobre o autor</span>
+                <span className={styles.sobreRotulo}>Sobre o autor</span>
                 <h3>{autor.nome}</h3>
                 <p>{autor.cargo}. {autor.destaque}.</p>
               </div>
@@ -118,7 +118,7 @@ function ArtigoDetalhe() {
         {/* Direita: citar, PDF, relacionados */}
         <aside className={styles.direitaDetalhe}>
           <div className={styles.caixa}>
-            <span className={ed.rotulo}>Como citar</span>
+            <h2 className={styles.fichaTitulo}>Como citar</h2>
             <p className={styles.citacao}>{citacao}</p>
             <button className={styles.copiar} onClick={copiarCitacao}>
               {citacaoCopiada ? <><FaCheck aria-hidden="true" /> Citação copiada</> : <><FaRegCopy aria-hidden="true" /> Copiar citação</>}
@@ -131,7 +131,6 @@ function ArtigoDetalhe() {
             </a>
           )}
 
-          <span className={ed.rotulo}>Continue a ler</span>
           <h2 className={styles.direitaTitulo}>Publicações relacionadas</h2>
           <div className={styles.relacionados}>
             {relacionados.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)}

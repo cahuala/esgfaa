@@ -10,10 +10,8 @@ function Miniatura({ noticia }) {
         <img src={noticia.capa} alt="" loading="lazy" />
       </span>
       <span className={styles.miniaturaTexto}>
-        <span className={styles.miniaturaMeta}>
-          {noticia.categoria} · <time dateTime={noticia.data}>{formatarData(noticia.data)}</time>
-        </span>
         <span className={styles.miniaturaTitulo}>{noticia.titulo}</span>
+        <time className={styles.miniaturaData} dateTime={noticia.data}>{formatarData(noticia.data)}</time>
       </span>
     </Link>
   )

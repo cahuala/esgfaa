@@ -7,10 +7,10 @@
 
 .rotulo {
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #888;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--texto-suave);
 }
 
 .botoes {
@@ -23,9 +23,9 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: white;
+  border: 1px solid var(--linha);
+  background: var(--linha);
+  color: var(--texto);
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -37,12 +37,12 @@
 
 .botao:hover,
 .copiado {
-  background: #E53917;
-  border-color: #E53917;
+  background: var(--marca);
+  border-color: var(--marca);
 }
 
 .aviso {
   font-size: 12px;
-  color: #b8b8b8;
+  color: var(--texto-suave);
   margin-left: 4px;
 }

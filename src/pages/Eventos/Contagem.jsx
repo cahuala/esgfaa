@@ -28,7 +28,7 @@ function Contagem({ data, hora = '00:00', compacta = false }) {
     <div className={`${styles.contagem} ${compacta ? styles.contagemCompacta : ''}`} role="timer" aria-label="Tempo até ao início">
       {partes.map((p) => (
         <span key={p.rotulo}>
-          <strong>{String(p.valor).padStart(2, '0')}</strong>
+          <strong>{p.valor}</strong>
           <small>{p.rotulo}</small>
         </span>
       ))}

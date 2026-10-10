@@ -1,131 +1,97 @@
+/* Banner publicitário discreto, no estilo dos cartões do site */
 .banner {
-  max-width: calc(1760px + 2 * var(--margem));
+  max-width: var(--conteudo);
   margin: 0 auto;
-  padding: 28px var(--margem);
-  background: #0f0b09;
+  padding: 24px var(--margem);
 }
-
 .rotulo {
   display: block;
-  margin-bottom: 8px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #7a7a7a;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--texto-fraco);
 }
-
 .ligacao {
   display: block;
   color: inherit;
   text-decoration: none;
 }
-
 .soImagem {
   display: block;
   width: 100%;
   height: auto;
-  border: 1px solid var(--filete);
+  border-radius: var(--raio);
 }
 
-/* banner composto: imagem de fundo + texto + botão */
+/* banner composto: imagem de fundo escurecida + texto + botão */
 .composto {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  min-height: 150px;
-  padding: 28px 40px;
+  gap: 24px;
+  min-height: 130px;
+  padding: 24px 32px;
+  border-radius: var(--raio);
   overflow: hidden;
-  color: white;
-  background:
-    linear-gradient(90deg, rgba(15, 7, 5, 0.96) 0%, rgba(15, 7, 5, 0.85) 45%, rgba(229, 57, 23, 0.55) 100%),
-    var(--fundo, none) center / cover,
-    #1a100c;
-  border: 1px solid rgba(229, 57, 23, 0.4);
-  transition: border-color 0.2s ease;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(28, 32, 36, 0.92), rgba(28, 32, 36, 0.6)), var(--fundo, none) center / cover, var(--fundo-escuro);
 }
-
-.ligacao:hover .composto {
-  border-color: var(--vermelho);
-}
-
 .texto {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 760px;
+  gap: 4px;
+  max-width: 640px;
 }
-
 .anunciante {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--vermelho);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
 }
-
 .texto strong {
-  font-family: 'Inter Tight', 'Inter', sans-serif;
-  font-size: clamp(20px, 2vw, 28px);
-  font-weight: 800;
-  line-height: 1.15;
+  font-size: 18px;
+  font-weight: 600;
 }
-
 .descricao {
-  font-size: 15px;
-  line-height: 1.5;
-  color: #d6d6d6;
-}
-
-.botao {
-  flex: 0 0 auto;
-  padding: 13px 22px;
-  background: var(--vermelho);
   font-size: 14px;
-  font-weight: 700;
-  transition: filter 0.2s ease;
+  color: rgba(255, 255, 255, 0.8);
 }
-
+.botao {
+  flex-shrink: 0;
+  padding: 9px 20px;
+  border-radius: 999px;
+  background: var(--marca);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .ligacao:hover .botao {
-  filter: brightness(1.1);
+  background: var(--marca-escura);
 }
 
-/* variante para colunas estreitas (lateral das notícias) */
+/* coluna lateral das notícias */
 .lateral {
-  padding: 32px 0 0;
-  background: none;
+  padding: 0;
+  margin: 0;
 }
-
 .lateral .composto {
   flex-direction: column;
   align-items: flex-start;
+  padding: 20px;
   min-height: 0;
-  padding: 24px 22px;
-  background:
-    linear-gradient(to top, rgba(15, 7, 5, 0.97) 20%, rgba(15, 7, 5, 0.6) 100%),
-    var(--fundo, none) center / cover,
-    #1a100c;
 }
-
 .lateral .texto strong {
-  font-size: 19px;
+  font-size: 16px;
 }
 
-.lateral .descricao {
-  font-size: 13.5px;
-}
-
+/* dentro do texto de uma notícia */
 .embutido {
-  padding: 32px 0 0;
-  background: none;
+  padding: 0;
+  margin: 32px 0;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .composto {
     flex-direction: column;
     align-items: flex-start;
-    padding: 24px 22px;
+    padding: 20px;
   }
 }

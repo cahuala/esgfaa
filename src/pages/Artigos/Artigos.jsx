@@ -6,6 +6,7 @@ import EntradaArtigo from './EntradaArtigo'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
 import { iniciais, normalizar } from '../../utils/texto'
+import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
 
@@ -21,10 +22,10 @@ const normas = [
 ]
 
 // Lista de opções com contagem, para a coluna de filtros
-function Filtro({ titulo, numero, opcoes, valor, definir }) {
+function Filtro({ titulo, opcoes, valor, definir }) {
   return (
     <div className={styles.bloco}>
-      <h2 className={styles.blocoTitulo}><span>{numero}</span> {titulo}</h2>
+      <h2 className={styles.blocoTitulo}>{titulo}</h2>
       <ul className={styles.opcoes}>
         {opcoes.map(([nome, total]) => (
           <li key={nome}>
@@ -34,7 +35,7 @@ function Filtro({ titulo, numero, opcoes, valor, definir }) {
               aria-pressed={valor === nome}
             >
               <span>{nome}</span>
-              <span className={styles.total}>{String(total).padStart(2, '0')}</span>
+              <span className={styles.total}>{total}</span>
             </button>
           </li>
         ))}
@@ -81,21 +82,23 @@ function Artigos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Artigos' }]}
         sobretitulo="Investigação"
-        titulo="Artigos"
+        titulo="Artigos científicos"
+        entrada="Artigos, ensaios e notas de investigação do corpo docente e dos oficiais alunos."
       >
         <dl className={styles.numeros}>
-          <div><dt>Publicações</dt><dd>{String(artigos.length).padStart(2, '0')}</dd></div>
-          <div><dt>Autores</dt><dd>{String(autores.length).padStart(2, '0')}</dd></div>
-          <div><dt>Áreas</dt><dd>{String(areas.length).padStart(2, '0')}</dd></div>
+          <div><dt>Publicações</dt><dd>{artigos.length}</dd></div>
+          <div><dt>Autores</dt><dd>{autores.length}</dd></div>
+          <div><dt>Áreas</dt><dd>{areas.length}</dd></div>
         </dl>
       </CabecalhoEditorial>
 
       {destaque && (
-        <section className={styles.destaque} aria-label="Publicação em destaque">
+        <section className={`contentor ${styles.destaque}`} aria-label="Publicação em destaque">
           <div className={styles.destaqueInterior}>
             <div className={styles.destaqueTexto}>
-              <span className={ed.rotulo}>Publicação mais recente · {destaque.tipo}</span>
+              <div className={styles.destaqueRotulo}><span>Publicação mais recente</span><Etiqueta>{destaque.tipo}</Etiqueta></div>
               <h2><Link to={`/Artigos/${destaque.slug}`}>{destaque.titulo}</Link></h2>
               {autorDestaque && (
                 <div className={ed.pessoa}>
@@ -106,10 +109,7 @@ function Artigos() {
                   </div>
                 </div>
               )}
-              <div className={styles.destaqueResumo}>
-                <span className={ed.rotulo}>Resumo</span>
-                <p>{destaque.resumo}</p>
-              </div>
+              <p className={styles.destaqueResumo}>{destaque.resumo}</p>
               <Link to={`/Artigos/${destaque.slug}`} className={ed.ligacao}>Ler o artigo</Link>
             </div>
             {destaque.capa && (
@@ -121,12 +121,10 @@ function Artigos() {
         </section>
       )}
 
-      <div className={styles.grelha}>
+      <div className={`contentor ${styles.grelha}`}>
         {/* Esquerda: pesquisa e filtros */}
         <aside className={styles.filtros} aria-label="Pesquisa e filtros">
-          <span className={ed.rotulo}>Pesquisa</span>
           <div className={styles.bloco}>
-            <h2 className={styles.blocoTitulo}><span>01</span> Palavra-chave</h2>
             <label className={styles.campoPesquisa}>
               <FaSearch aria-hidden="true" />
               <input
@@ -138,9 +136,9 @@ function Artigos() {
               />
             </label>
           </div>
-          <Filtro titulo="Tipo de publicação" numero="02" opcoes={tipos} valor={tipo} definir={setTipo} />
-          <Filtro titulo="Área de investigação" numero="03" opcoes={areas} valor={area} definir={setArea} />
-          <Filtro titulo="Ano" numero="04" opcoes={anos} valor={ano} definir={setAno} />
+          <Filtro titulo="Tipo de publicação" opcoes={tipos} valor={tipo} definir={setTipo} />
+          <Filtro titulo="Área de investigação" opcoes={areas} valor={area} definir={setArea} />
+          <Filtro titulo="Ano" opcoes={anos} valor={ano} definir={setAno} />
           {aFiltrar && <button className={styles.limpar} onClick={limpar}>Limpar todos os filtros</button>}
         </aside>
 
@@ -156,13 +154,12 @@ function Artigos() {
               <button onClick={limpar}>Limpar filtros</button>
             </div>
           ) : (
-            lista.map((a, i) => <EntradaArtigo key={a.slug} artigo={a} numero={String(i + (destaque ? 2 : 1)).padStart(2, '0')} />)
+            lista.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)
           )}
         </section>
 
         {/* Direita: autores e submissão */}
         <aside className={styles.direita}>
-          <span className={ed.rotulo}>Autores</span>
           <h2 className={styles.direitaTitulo}>Investigadores</h2>
           <ul className={styles.autores}>
             {autores.map((p) => (
@@ -183,8 +180,8 @@ function Artigos() {
           </ul>
 
           <div className={styles.submeter}>
-            <span className={ed.rotulo}>Submeter um artigo</span>
-            <h3>Normas de publicação</h3>
+            <h3>Submeter um artigo</h3>
+            <span className={styles.submeterSub}>Normas de publicação</span>
             <ol className={ed.listaNumerada}>
               {normas.map((n) => <li key={n}>{n}</li>)}
             </ol>

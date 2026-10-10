@@ -1,7 +1,8 @@
-
 import { Link } from 'react-router-dom'
+import { FaMapMarkerAlt, FaRegClock } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import { paraData, hoje as inicioDoDia, diaDoMes, mesCurto } from '../../utils/datas'
+import { Etiqueta, LigacaoMais, TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './ProximosEventos.module.css'
 
 function ProximosEventos() {
@@ -16,15 +17,9 @@ function ProximosEventos() {
     .slice(0, 4)
 
   return (
-    <section className={styles.secao}>
-      <div className={styles.container}>
-        <div className={styles.cabecalho}>
-          <div>
-            <span className={styles.etiqueta}>{textos.etiqueta}</span>
-            <h2>{textos.titulo}</h2>
-          </div>
-          <Link to="/Eventos" className={styles.verTodos}>Ver todos os eventos →</Link>
-        </div>
+    <section className="seccao seccao-cinza">
+      <div className="contentor">
+        <TituloSeccao rotulo={textos.etiqueta || 'Agenda'} titulo={textos.titulo} />
 
         {proximos.length === 0 ? (
           <p className={styles.vazio}>Não há eventos agendados neste momento.</p>
@@ -33,26 +28,27 @@ function ProximosEventos() {
             {proximos.map((e) => (
               <li key={e.id}>
                 <Link to={`/Eventos/${e.id}`} className={styles.cartao}>
-                  <div className={styles.dataBloco}>
-                    <span className={styles.dia}>{diaDoMes(e.data)}</span>
-                    <span className={styles.mes}>{mesCurto(e.data)}</span>
+                  <div className={styles.data}>
+                    <strong>{diaDoMes(e.data)}</strong>
+                    <span>{mesCurto(e.data)}</span>
                   </div>
-
                   <div className={styles.corpo}>
-                    <span className={styles.categoria}>{e.categoria}</span>
+                    <div><Etiqueta>{e.categoria}</Etiqueta></div>
                     <h3>{e.titulo}</h3>
                     <div className={styles.meta}>
-                      <span>🕒 {e.horaInicio}</span>
-                      <span>📍 {e.local}</span>
+                      {e.horaInicio && <span><FaRegClock aria-hidden="true" /> {e.horaInicio}</span>}
+                      {e.local && <span><FaMapMarkerAlt aria-hidden="true" /> {e.local}</span>}
                     </div>
                   </div>
-
-                  <span className={styles.seta} aria-hidden="true">→</span>
                 </Link>
               </li>
             ))}
           </ul>
         )}
+
+        <div className={styles.rodape}>
+          <LigacaoMais para="/Eventos">Ver todos os eventos</LigacaoMais>
+        </div>
       </div>
     </section>
   )

@@ -1,0 +1,206 @@
+/* ---------- etiqueta (categoria) ---------- */
+.etiqueta {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.vermelho { background: #fde4df; color: #a3291a; }
+.dourado { background: #fdf0cf; color: #7a5a00; }
+.azul { background: #dce9fb; color: #1f4f9a; }
+.verde { background: #d8f1e1; color: #1d6b3d; }
+.roxo { background: #ece3fb; color: #5a36b0; }
+.cinzento { background: #eceef0; color: #495057; }
+
+/* ---------- título de secção ---------- */
+.seccaoCabeca {
+  margin-bottom: 28px;
+}
+.seccaoCabeca.centrada {
+  text-align: center;
+  max-width: 640px;
+  margin-inline: auto;
+  margin-bottom: 40px;
+}
+.rotulo {
+  display: block;
+  font-size: 14px;
+  color: var(--texto-fraco);
+  margin-bottom: 6px;
+}
+.seccaoCabeca h2 {
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 600;
+}
+.seccaoCabeca p {
+  margin-top: 10px;
+  color: var(--texto-suave);
+  font-size: 15px;
+}
+
+/* ---------- cartão vertical (imagem em cima) ---------- */
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.cartaoImagem {
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--fundo-cinza);
+}
+.cartaoImagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.cartao:hover .cartaoImagem img {
+  transform: scale(1.03);
+}
+.cartaoTitulo {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--texto);
+}
+.cartao:hover .cartaoTitulo {
+  color: var(--marca);
+}
+.cartaoResumo {
+  font-size: 14px;
+  color: var(--texto-suave);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cartaoData {
+  font-size: 12px;
+  color: var(--texto-fraco);
+}
+
+/* cartão com fundo branco e sombra (sobre secções cinzentas) */
+.elevado {
+  background: #fff;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+  gap: 0;
+}
+.elevado .corpo {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---------- cartão de lista (imagem à esquerda, como no "Newsroom") ---------- */
+.lista {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  text-decoration: none;
+  color: inherit;
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--linha);
+}
+.lista:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.lista .cartaoImagem {
+  aspect-ratio: 4 / 3;
+}
+.lista .texto {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+.lista .cartaoTitulo {
+  font-size: 19px;
+}
+.lista:hover .cartaoTitulo {
+  color: var(--marca);
+}
+
+@media (max-width: 640px) {
+  .lista {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .lista .cartaoImagem {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* ---------- ligação com círculo e seta ("Learn more") ---------- */
+.mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto);
+  text-decoration: none;
+}
+.mais span {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--texto);
+  display: grid;
+  place-items: center;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.mais:hover span {
+  background: var(--marca);
+  border-color: var(--marca);
+  color: #fff;
+}
+.mais.claro {
+  color: #fff;
+}
+.mais.claro span {
+  border-color: #fff;
+}
+
+/* ---------- botões ---------- */
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--marca);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.botao:hover {
+  background: var(--marca-escura);
+}
+.botaoContorno {
+  composes: botao;
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid var(--linha);
+}
+.botaoContorno:hover {
+  background: var(--fundo-cinza);
+}

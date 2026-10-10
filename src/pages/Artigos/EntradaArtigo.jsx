@@ -3,19 +3,19 @@ import { useConteudo } from '../../conteudo/contexto'
 import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { formatarData } from '../../utils/datas'
 import { tempoLeitura } from '../../utils/texto'
+import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import styles from './Artigos.module.css'
 
-// Uma entrada do índice de publicações, ao estilo de uma revista científica
-function EntradaArtigo({ artigo, numero }) {
+// Uma entrada do índice de publicações
+function EntradaArtigo({ artigo }) {
   const { pessoaPorId } = useConteudo()
   const autor = pessoaPorId(artigo.autor)
 
   return (
     <Link to={`/Artigos/${artigo.slug}`} className={styles.entrada}>
-      {numero && <span className={styles.entradaNumero} aria-hidden="true">{numero}</span>}
       <span className={styles.entradaCorpo}>
         <span className={styles.entradaTipo}>
-          {artigo.tipo}<span>{artigo.area}</span>
+          <Etiqueta>{artigo.tipo}</Etiqueta><span>{artigo.area}</span>
         </span>
         <span className={styles.entradaTitulo}>{artigo.titulo}</span>
         {autor && <span className={styles.entradaAutor}>{autor.nome}</span>}

@@ -50,11 +50,15 @@ function Footer() {
     <footer className={styles.footer}>
       <div className={styles.topo}>
         <div className={styles.bloco}>
-          <img src={Logo} alt="ESGFAA" className={styles.logo} />
+          <div className={styles.marca}>
+            <img src={Logo} alt="" className={styles.logo} />
+            <strong>Escola Superior de Guerra</strong>
+          </div>
           <p className={styles.descricao}>
             Escola Superior de Guerra das Forças Armadas Angolanas — formação, investigação
             e cooperação ao serviço da defesa nacional.
           </p>
+          <span className={styles.redesTitulo}>Siga-nos</span>
           <div className={styles.redes}>
             <a href="#" aria-label="Facebook" className={styles.redeIcone}>
                  <FaFacebookF />
@@ -85,13 +89,10 @@ function Footer() {
         ))}
       </div>
 
-      <div className={styles.linha} />
-
       <div className={styles.base}>
         <p>© {ano} Escola Superior de Guerra das Forças Armadas Angolanas. Todos os direitos reservados.</p>
         <div className={styles.baseLinks}>
           <Link to="/Contactos">Localização</Link>
-          <span>·</span>
           <a href={`mailto:${email}`}>{email}</a>
         </div>
       </div>

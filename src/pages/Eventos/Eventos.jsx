@@ -11,6 +11,7 @@ import {
   diaDaSemana, diaDoMes, formatarDataLonga, formatarMesAno, hoje, mesLongo, paraData,
 } from '../../utils/datas'
 import { descarregarAgenda, descarregarCalendario } from '../../utils/calendario'
+import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Eventos.module.css'
 
@@ -52,32 +53,34 @@ function Eventos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Eventos' }]}
         sobretitulo="Agenda"
         titulo="Eventos"
+        entrada="Cerimónias, conferências, seminários e visitas oficiais da Escola."
       >
         <dl className={styles.numeros}>
-          <div><dt>Próximos</dt><dd>{String(proximos.length).padStart(2, '0')}</dd></div>
-          <div><dt>Este mês</dt><dd>{String(esteMes).padStart(2, '0')}</dd></div>
-          <div><dt>Realizados</dt><dd>{String(realizados.length).padStart(2, '0')}</dd></div>
+          <div><dt>Próximos</dt><dd>{proximos.length}</dd></div>
+          <div><dt>Este mês</dt><dd>{esteMes}</dd></div>
+          <div><dt>Realizados</dt><dd>{realizados.length}</dd></div>
         </dl>
       </CabecalhoEditorial>
 
-      {/* Próximo evento em destaque */}
+      {/* Próximo evento em destaque: cartão branco com a fotografia ao lado */}
       {seguinte && (
-        <section className={styles.destaque} aria-label="Próximo evento">
+        <section className={`contentor ${styles.destaque}`} aria-label="Próximo evento">
           <div className={styles.destaqueInterior}>
-            <div className={styles.destaqueData}>
-              <span className={styles.destaqueRotulo}>Próximo evento</span>
-              <strong>{diaDoMes(seguinte.data)}</strong>
-              <span className={styles.destaqueMes}>{mesLongo(seguinte.data)}</span>
-              <span className={styles.destaqueSemana}>{diaDaSemana(seguinte.data)}</span>
-            </div>
-
+            <Link to={`/Eventos/${seguinte.id}`} className={styles.destaqueFoto} tabIndex={-1} aria-hidden="true">
+              <img src={seguinte.capa} alt="" />
+            </Link>
             <div className={styles.destaqueTexto}>
-              <span className={ed.rotulo}>{seguinte.categoria}</span>
+              <div className={styles.destaqueRotulo}>
+                <span>Próximo evento</span>
+                <Etiqueta>{seguinte.categoria}</Etiqueta>
+              </div>
               <h2><Link to={`/Eventos/${seguinte.id}`}>{seguinte.titulo}</Link></h2>
               <ul className={styles.destaqueFactos}>
-                <li><FaRegClock aria-hidden="true" /> {seguinte.horaInicio} – {seguinte.horaFim}</li>
+                <li><FaRegCalendarPlus aria-hidden="true" /> {diaDaSemana(seguinte.data)}, {diaDoMes(seguinte.data)} de {mesLongo(seguinte.data)}</li>
+                <li><FaRegClock aria-hidden="true" /> {seguinte.horaInicio}{seguinte.horaFim ? ` – ${seguinte.horaFim}` : ''}</li>
                 <li><FaMapMarkerAlt aria-hidden="true" /> {seguinte.local}</li>
               </ul>
               <Contagem data={seguinte.data} hora={seguinte.horaInicio} />
@@ -88,18 +91,14 @@ function Eventos() {
                 </button>
               </div>
             </div>
-
-            <Link to={`/Eventos/${seguinte.id}`} className={styles.destaqueFoto} tabIndex={-1} aria-hidden="true">
-              <img src={seguinte.capa} alt="" />
-            </Link>
           </div>
         </section>
       )}
 
-      <div className={styles.grelha}>
+      <div className={`contentor ${styles.grelha}`}>
         {/* Esquerda: calendário e filtros */}
         <aside className={styles.lateral} aria-label="Calendário e filtros">
-          <span className={ed.rotulo}>Calendário</span>
+          <h2 className={styles.lateralTitulo}>Calendário</h2>
           <Calendario
             mes={mes}
             onMudarMes={setMes}
@@ -110,7 +109,7 @@ function Eventos() {
           />
 
           <div className={styles.filtro}>
-            <span className={ed.rotulo}>Tipo de evento</span>
+            <h2 className={styles.lateralTitulo}>Tipo de evento</h2>
             <ul>
               {[TODOS, ...tipos].map((t) => {
                 const total = t === TODOS ? proximos.length : proximos.filter((e) => e.categoria === t).length
@@ -118,7 +117,7 @@ function Eventos() {
                   <li key={t}>
                     <button className={tipo === t ? styles.filtroAtivo : ''} onClick={() => setTipo(t)} aria-pressed={tipo === t}>
                       <span>{t}</span>
-                      <span className={styles.total}>{String(total).padStart(2, '0')}</span>
+                      <span className={styles.total}>{total}</span>
                     </button>
                   </li>
                 )
@@ -128,7 +127,7 @@ function Eventos() {
 
           {proximos.length > 0 && (
             <div className={ed.caixaLateral}>
-              <span className={ed.rotulo}>Subscrever</span>
+              <h2 className={styles.lateralTitulo}>Subscrever</h2>
               <p>Descarregue todos os próximos eventos para o seu calendário (Google, Outlook ou iPhone).</p>
               <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={() => descarregarAgenda(proximos)}>
                 <FaRegCalendarPlus aria-hidden="true" /> Agenda completa
@@ -167,7 +166,6 @@ function Eventos() {
 
         {/* Direita: realizados */}
         <aside className={styles.arquivo} aria-label="Eventos realizados">
-          <span className={ed.rotulo}>Arquivo</span>
           <h2 className={styles.arquivoTitulo}>Eventos realizados</h2>
           {realizados.length === 0 ? (
             <p className={styles.arquivoVazio}>Ainda não há eventos realizados.</p>

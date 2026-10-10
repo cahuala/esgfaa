@@ -1,544 +1,410 @@
 /* =====================================================================
-   Peças editoriais partilhadas (Cursos, Eventos, Artigos, Contactos)
-   Mesma linguagem do boletim de notícias e da página Institucional.
+   Peças partilhadas das páginas interiores (Cursos, Eventos, Artigos, Contactos)
+   no estilo do modelo "Corporate": fundo claro, Open Sans, cartões e filetes finos.
    ===================================================================== */
 
 .pagina {
-  background: #0f0b09;
-  color: white;
+  background: #fff;
+  color: var(--texto);
 }
 
+/* rótulo pequeno acima de títulos ("Top Stories" no modelo) */
 .rotulo {
   display: inline-block;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--vermelho);
+  font-size: 13.5px;
+  color: var(--texto-fraco);
 }
 
 .largura {
-  max-width: calc(1760px + 2 * var(--margem));
+  max-width: var(--conteudo);
   margin: 0 auto;
   padding: 0 var(--margem);
 }
 
 /* Faixa de números / factos */
 .factos {
-  max-width: 1760px;
-  margin: 0 auto;
-  padding-inline: var(--margem);
-  box-sizing: content-box;
+  max-width: var(--conteudo);
+  margin: 32px auto 0;
+  padding: 0 var(--margem);
   display: grid;
   grid-template-columns: repeat(var(--colunas, 4), minmax(0, 1fr));
-  border-bottom: 1px solid var(--filete-forte);
+  gap: 16px;
 }
-
 .factos > div {
-  padding: 26px 24px 26px 0;
+  padding: 18px 20px;
+  background: var(--fundo-cinza);
+  border-radius: var(--raio);
   display: flex;
   flex-direction: column-reverse;
-  gap: 8px;
+  gap: 2px;
 }
-
-.factos > div + div {
-  padding-left: 24px;
-  border-left: 1px solid var(--filete);
-}
-
 .factos dt {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #9a9a9a;
+  font-size: 12.5px;
+  color: var(--texto-suave);
 }
-
 .factos dd {
   margin: 0;
-  font-size: clamp(18px, 1.6vw, 26px);
-  font-weight: 800;
-  line-height: 1.15;
-  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--texto);
 }
 
 /* Grelha índice + conteúdo */
 .grelha {
-  max-width: calc(1760px + 2 * var(--margem));
+  max-width: var(--conteudo);
   margin: 0 auto;
-  padding: 0 var(--margem) 110px;
+  padding: 0 var(--margem) 72px;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 48px;
 }
 
 .indice {
   position: sticky;
-  top: 120px;
+  top: 110px;
   align-self: start;
-  padding: 52px 36px 0 0;
+  padding-top: 48px;
 }
-
 .indice ol {
   list-style: none;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   padding: 0;
-  border-top: 3px solid var(--filete-forte);
 }
-
-.indice li {
-  border-bottom: 1px solid var(--filete);
-}
-
 .indice nav a {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  padding: 13px 0 13px 12px;
-  border-left: 2px solid transparent;
-  color: #a8a8a8;
+  display: block;
+  padding: 6px 0 6px 12px;
+  border-left: 2px solid var(--linha);
+  color: var(--texto-suave);
   font-size: 14px;
   text-decoration: none;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: color 0.15s, border-color 0.15s;
 }
-
 .indice nav a:hover {
-  color: white;
+  color: var(--texto);
 }
-
 .indiceNumero {
-  flex: 0 0 24px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #6f6f6f;
+  display: none;
 }
-
 .indice nav .indiceAtivo {
-  color: white;
-  font-weight: 700;
-  border-left-color: var(--vermelho);
-  background: linear-gradient(to right, rgba(229, 57, 23, 0.14), transparent);
-}
-
-.indiceAtivo .indiceNumero {
-  color: var(--vermelho);
+  color: var(--marca);
+  font-weight: 600;
+  border-left-color: var(--marca);
 }
 
 .caixaLateral {
-  margin-top: 32px;
-  padding: 22px;
-  border: 1px solid var(--filete);
-  background: rgba(255, 255, 255, 0.02);
+  margin-top: 28px;
+  padding: 18px 20px;
+  background: var(--fundo-cinza);
+  border-radius: var(--raio);
 }
-
 .caixaLateral p {
-  margin: 10px 0 16px;
+  margin: 6px 0 14px;
   font-size: 13.5px;
   line-height: 1.55;
-  color: #a8a8a8;
+  color: var(--texto-suave);
 }
 
 .conteudo {
   min-width: 0;
-  border-left: 1px solid var(--filete);
-  padding-left: clamp(28px, 4.5vw, 88px);
 }
 
 .seccao {
-  padding: 60px 0 72px;
-  border-bottom: 1px solid var(--filete);
+  padding: 48px 0;
+  border-bottom: 1px solid var(--linha);
 }
-
 .seccao:last-child {
   border-bottom: none;
 }
 
 .tituloSeccao {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 24px;
-  align-items: end;
-  padding-bottom: 20px;
-  margin-bottom: 36px;
-  border-bottom: 3px solid var(--filete-forte);
+  margin-bottom: 24px;
 }
-
+/* os números grandes das secções deixam de aparecer */
 .numeroSeccao {
-  font-size: clamp(48px, 4.6vw, 80px);
-  font-weight: 900;
-  line-height: 0.8;
-  letter-spacing: -0.012em;
-  color: var(--vermelho);
+  display: none;
 }
-
 .tituloSeccao h2 {
-  font-size: clamp(24px, 2.4vw, 38px);
-  font-weight: 800;
-  line-height: 1.1;
-  margin: 8px 0 0;
+  font-size: clamp(21px, 2.2vw, 26px);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 4px 0 0;
 }
 
 .texto {
-  max-width: 72ch;
-  font-size: 16.5px;
+  max-width: 75ch;
+  font-size: 15.5px;
   line-height: 1.75;
-  color: #cfcfcf;
+  color: var(--texto);
 }
-
 .texto p {
   margin: 0 0 1.1em;
 }
 
-/* Tabela com filetes */
+/* Tabela simples */
 .tabela {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14.5px;
 }
-
 .tabela caption {
   text-align: left;
-  padding-bottom: 12px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--vermelho);
+  padding-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
 }
-
 .tabela thead th {
-  padding: 0 20px 12px 0;
-  border-bottom: 3px solid var(--filete-forte);
+  padding: 10px 16px 10px 0;
+  border-bottom: 2px solid var(--linha);
   text-align: left;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #9a9a9a;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-suave);
 }
-
 .tabela tbody tr {
-  border-bottom: 1px solid var(--filete);
-  transition: background 0.2s ease;
+  border-bottom: 1px solid var(--linha);
 }
-
 .tabela tbody tr:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: #fafbfb;
 }
-
 .tabela tbody th,
 .tabela td {
-  padding: 16px 20px 16px 0;
+  padding: 13px 16px 13px 0;
   text-align: left;
   vertical-align: top;
   line-height: 1.5;
 }
-
 .tabela tbody th {
-  font-weight: 700;
-  color: white;
+  font-weight: 600;
+  color: var(--texto);
 }
-
 .tabela td {
-  color: #b8b8b8;
+  color: var(--texto-suave);
 }
-
 .tabela tfoot td,
 .tabela tfoot th {
-  padding: 14px 20px 0 0;
+  padding: 12px 16px 0 0;
   text-align: left;
-  font-weight: 800;
-  color: white;
+  font-weight: 600;
+  color: var(--texto);
 }
-
 .numero {
   text-align: right !important;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-/* Lista numerada com filetes */
+/* Lista numerada */
 .listaNumerada {
   list-style: none;
   counter-reset: item;
   margin: 0;
   padding: 0;
-  border-top: 1px solid var(--filete);
 }
-
 .listaNumerada li {
   counter-increment: item;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 12px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--filete);
-  font-size: 15.5px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 15px;
   line-height: 1.55;
-  color: #d0d0d0;
+  color: var(--texto);
 }
-
 .listaNumerada li::before {
-  content: counter(item, decimal-leading-zero);
-  font-weight: 800;
-  color: var(--vermelho);
+  content: counter(item) ".";
+  font-weight: 600;
+  color: var(--texto-fraco);
 }
 
-/* Passos de um processo */
+/* Passos de um processo: cartões com número pequeno */
 .passos {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(var(--colunas, 4), minmax(0, 1fr));
-  border-top: 3px solid var(--filete-forte);
+  gap: 20px;
 }
-
 .passos li {
-  position: relative;
-  padding: 26px 24px 8px 0;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
 }
-
-.passos li + li {
-  padding-left: 24px;
-  border-left: 1px solid var(--filete);
-}
-
 .passoNumero {
-  display: block;
-  font-size: 44px;
-  font-weight: 900;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.16);
-  margin-bottom: 16px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--fundo-cinza);
+  color: var(--marca);
+  font-size: 13px;
+  font-weight: 600;
 }
-
 .passos h3 {
-  font-size: 17px;
-  font-weight: 800;
-  margin: 0 0 8px;
+  font-size: 15.5px;
+  font-weight: 600;
+  margin: 0 0 6px;
 }
-
 .passos p {
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: #a8a8a8;
+  color: var(--texto-suave);
 }
 
 /* Ligações e botões */
 .ligacao {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 4px;
-  border-bottom: 2px solid var(--vermelho);
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
+  gap: 6px;
+  padding: 0;
+  border: 0;
   background: none;
-  border-top: none;
-  border-left: none;
-  border-right: none;
+  color: var(--marca);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
 }
-
 .ligacao::after {
   content: "→";
-  color: var(--vermelho);
   transition: transform 0.2s ease;
 }
-
 .ligacao:hover::after {
-  transform: translateX(4px);
+  transform: translateX(3px);
 }
 
 .botao {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 15px 26px;
-  background: var(--vermelho);
-  border: 1px solid var(--vermelho);
-  color: white;
+  gap: 8px;
+  padding: 9px 20px;
+  background: var(--marca);
+  border: 1px solid var(--marca);
+  border-radius: 999px;
+  color: #fff;
   font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: filter 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease;
 }
-
 .botao:hover {
-  filter: brightness(1.1);
+  background: var(--marca-escura);
 }
-
 .botaoContorno {
-  background: none;
-  border-color: var(--filete-forte);
+  background: #fff;
+  border-color: #d5dbe0;
+  color: var(--texto);
 }
-
 .botaoContorno:hover {
-  background: var(--vermelho);
-  border-color: var(--vermelho);
-  filter: none;
+  background: var(--fundo-cinza);
 }
 
 /* Pessoa (coordenação, autoria) */
 .pessoa {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
 }
-
 .avatar {
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 1px solid var(--vermelho);
-  background: rgba(229, 57, 23, 0.1);
+  background: var(--fundo-cinza);
+  color: var(--texto-suave);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 600;
   overflow: hidden;
 }
-
 .avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: top;
 }
-
 .pessoa strong {
   display: block;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 15.5px;
+  font-weight: 600;
 }
-
 .pessoa span:not(.avatar) {
   display: block;
-  margin-top: 3px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--vermelho);
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--texto-suave);
 }
 
 @media (max-width: 1000px) {
   .grelha {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
 
   /* o índice passa a barra fixa e deslizante */
   .indice {
-    top: 88px;
-    z-index: 900;
+    top: 64px;
+    z-index: 90;
     margin: 0 calc(-1 * var(--margem));
     padding: 0;
-    background: rgba(15, 11, 9, 0.95);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--filete);
+    background: #fff;
+    border-bottom: 1px solid var(--linha);
   }
-
   .indice > :not(nav),
   .caixaLateral {
     display: none;
   }
-
   .indice ol {
     margin: 0;
     display: flex;
     overflow-x: auto;
-    border-top: none;
     padding: 0 var(--margem);
     scrollbar-width: none;
   }
-
   .indice ol::-webkit-scrollbar {
     display: none;
   }
-
   .indice li {
     flex: 0 0 auto;
-    border-bottom: none;
   }
-
   .indice nav a {
-    padding: 14px 14px;
+    padding: 12px 12px;
     border-left: none;
     border-bottom: 2px solid transparent;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 13.5px;
   }
-
   .indice nav .indiceAtivo {
-    background: none;
-    border-bottom-color: var(--vermelho);
-  }
-
-  .conteudo {
-    border-left: none;
-    padding-left: 0;
+    border-bottom-color: var(--marca);
   }
 
   .factos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .factos > div:nth-child(odd) {
-    padding-left: 0;
-    border-left: none;
-  }
-
-  .factos > div:nth-child(n + 3) {
-    border-top: 1px solid var(--filete);
-  }
-
   .passos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .passos li:nth-child(odd) {
-    padding-left: 0;
-    border-left: none;
-  }
-
-  .passos li:nth-child(n + 3) {
-    border-top: 1px solid var(--filete);
   }
 }
 
 @media (max-width: 640px) {
   .seccao {
-    padding: 44px 0 52px;
+    padding: 36px 0;
   }
-
-  .tituloSeccao {
-    gap: 14px;
-    margin-bottom: 26px;
-  }
-
   .passos {
     grid-template-columns: 1fr;
   }
-
-  .passos li,
-  .passos li + li {
-    padding: 22px 0 14px;
-    border-left: none;
-  }
-
-  .passos li + li {
-    border-top: 1px solid var(--filete);
-  }
-
   .tabela {
-    font-size: 14px;
+    font-size: 13.5px;
   }
 }

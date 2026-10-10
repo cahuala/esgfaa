@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaSearch, FaSlidersH, FaTimes, FaPlay, FaImages, FaEnvelope } from 'react-icons/fa'
+import { CartaoLista, Etiqueta } from '../../components/Corporativo/Corporativo'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
 import Publicidade from '../../components/Publicidade/Publicidade'
 import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { temGaleria, temVideo } from '../../data/noticias'
 import { useConteudo } from '../../conteudo/contexto'
-import { formatarData, formatarDataLonga, formatarMesAno } from '../../utils/datas'
+import { formatarDataLonga, formatarMesAno } from '../../utils/datas'
 import { normalizar, tempoLeitura } from '../../utils/texto'
 import styles from './Noticias.module.css'
 
@@ -81,71 +82,41 @@ function Noticias() {
     setVisiveis(POR_PAGINA)
   }
 
-  const ultimas = noticias.slice(0, 5)
-
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Notícias' }]}
         sobretitulo="Boletim informativo"
         titulo="Notícias"
-      >
-        <dl className={styles.numeros}>
-          <div><dt>Publicadas</dt><dd>{noticias.length}</dd></div>
-          <div><dt>Secções</dt><dd>{categorias.length}</dd></div>
-          <div><dt>Última edição</dt><dd className={styles.numeroData}>{formatarData(noticias[0].data)}</dd></div>
-        </dl>
-      </CabecalhoEditorial>
+        entrada="Atividade da Escola: cerimónias, cooperação, formação e investigação."
+      />
 
-      {/* Faixa "Última hora" */}
-      <div className={styles.faixa}>
-        <span className={styles.faixaRotulo}>Última hora</span>
-        <div className={styles.faixaPista}>
-          <div className={styles.faixaTrilho}>
-            {[...ultimas, ...ultimas].map((n, i) => (
-              <Link key={`${n.slug}-${i}`} to={`/Noticias/${n.slug}`} tabIndex={i >= ultimas.length ? -1 : undefined}>
-                <span>{n.categoria}</span>{n.titulo}
-              </Link>
-            ))}
+      <div className={`contentor ${styles.grelha}`}>
+        {/* Coluna esquerda — pesquisa e filtros */}
+        <aside className={`${styles.lateral} ${filtrosAbertos ? styles.lateralAberta : ''}`} aria-label="Pesquisa e filtros">
+          <div className={styles.lateralTopo}>
+            <strong>Pesquisa e filtros</strong>
+            <button className={styles.fechar} onClick={() => setFiltrosAbertos(false)} aria-label="Fechar filtros"><FaTimes /></button>
           </div>
-        </div>
-      </div>
 
-      <div className={styles.grelha}>
-        {/* Coluna esquerda — formas de pesquisa */}
-        <aside className={`${styles.pesquisaColuna} ${filtrosAbertos ? styles.pesquisaAberta : ''}`} aria-label="Pesquisa e filtros">
-          <div className={styles.pesquisaTopo}>
-            <span className={styles.rotuloColuna}>Pesquisa</span>
-            <button className={styles.fecharFiltros} onClick={() => setFiltrosAbertos(false)} aria-label="Fechar filtros">
-              <FaTimes />
-            </button>
-          </div>
+          <label className={styles.campoPesquisa}>
+            <FaSearch aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="Pesquisar notícias"
+              value={pesquisa}
+              onChange={(e) => filtro(setPesquisa)(e.target.value)}
+              aria-label="Pesquisar notícias"
+            />
+          </label>
 
           <div className={styles.bloco}>
-            <h2 className={styles.blocoTitulo}><span>01</span> Palavra-chave</h2>
-            <label className={styles.campoPesquisa}>
-              <FaSearch aria-hidden="true" />
-              <input
-                type="search"
-                placeholder="Título, tema ou secção"
-                value={pesquisa}
-                onChange={(e) => filtro(setPesquisa)(e.target.value)}
-                aria-label="Pesquisar notícias"
-              />
-            </label>
-          </div>
-
-          <div className={styles.bloco}>
-            <h2 className={styles.blocoTitulo}><span>02</span> Secções</h2>
-            <ul className={styles.opcoes}>
+            <h2>Secções</h2>
+            <ul>
               {[[TODAS, noticias.length], ...categorias].map(([nome, total]) => (
                 <li key={nome}>
-                  <button
-                    className={categoria === nome ? styles.opcaoAtiva : ''}
-                    onClick={() => filtro(setCategoria)(nome)}
-                    aria-pressed={categoria === nome}
-                  >
-                    <span>{nome}</span>
-                    <span className={styles.total}>{String(total).padStart(2, '0')}</span>
+                  <button className={categoria === nome ? styles.opcaoAtiva : ''} onClick={() => filtro(setCategoria)(nome)} aria-pressed={categoria === nome}>
+                    {nome} <span>{total}</span>
                   </button>
                 </li>
               ))}
@@ -153,17 +124,12 @@ function Noticias() {
           </div>
 
           <div className={styles.bloco}>
-            <h2 className={styles.blocoTitulo}><span>03</span> Arquivo mensal</h2>
-            <ul className={`${styles.opcoes} ${styles.opcoesCompactas}`}>
+            <h2>Arquivo</h2>
+            <ul>
               {meses.map(([chave, total]) => (
                 <li key={chave}>
-                  <button
-                    className={mes === chave ? styles.opcaoAtiva : ''}
-                    onClick={() => filtro(setMes)(mes === chave ? null : chave)}
-                    aria-pressed={mes === chave}
-                  >
-                    <span>{formatarMesAno(`${chave}-01`)}</span>
-                    <span className={styles.total}>{String(total).padStart(2, '0')}</span>
+                  <button className={mes === chave ? styles.opcaoAtiva : ''} onClick={() => filtro(setMes)(mes === chave ? null : chave)} aria-pressed={mes === chave}>
+                    {formatarMesAno(`${chave}-01`)} <span>{total}</span>
                   </button>
                 </li>
               ))}
@@ -171,28 +137,24 @@ function Noticias() {
           </div>
 
           <div className={styles.bloco}>
-            <h2 className={styles.blocoTitulo}><span>04</span> Conteúdo multimédia</h2>
-            <label className={styles.interruptor}>
+            <h2>Multimédia</h2>
+            <label className={styles.caixa}>
               <input type="checkbox" checked={soVideo} onChange={(e) => filtro(setSoVideo)(e.target.checked)} />
-              <span className={styles.interruptorPista} aria-hidden="true" />
               <FaPlay aria-hidden="true" /> Com vídeo
             </label>
-            <label className={styles.interruptor}>
+            <label className={styles.caixa}>
               <input type="checkbox" checked={soGaleria} onChange={(e) => filtro(setSoGaleria)(e.target.checked)} />
-              <span className={styles.interruptorPista} aria-hidden="true" />
               <FaImages aria-hidden="true" /> Com galeria de fotos
             </label>
           </div>
 
-          {ativos.length > 0 && (
-            <button className={styles.limpar} onClick={limparTudo}>Limpar todos os filtros</button>
-          )}
+          {ativos.length > 0 && <button className={styles.limpar} onClick={limparTudo}>Limpar todos os filtros</button>}
 
           {emComunicacao && (
-            <div className={styles.imprensa}>
-              <span className={styles.rotuloColuna}>Imprensa</span>
-              <p>Pedidos de informação, entrevistas e acreditação para eventos.</p>
-              <a href={`mailto:${emComunicacao.email}`}><FaEnvelope aria-hidden="true" /> {emComunicacao.email}</a>
+            <div className={styles.bloco}>
+              <h2>Imprensa</h2>
+              <p className={styles.imprensa}>Pedidos de informação, entrevistas e acreditação para eventos.</p>
+              <a className={styles.email} href={`mailto:${emComunicacao.email}`}><FaEnvelope aria-hidden="true" /> {emComunicacao.email}</a>
             </div>
           )}
         </aside>
@@ -201,89 +163,75 @@ function Noticias() {
         {/* Coluna central — notícias */}
         <section className={styles.centro} aria-label="Notícias">
           <div className={styles.resultados}>
-            <p>
-              <strong>{String(filtradas.length).padStart(2, '0')}</strong>
-              {filtradas.length === 1 ? 'notícia' : 'notícias'}
-              {ativos.length > 0 ? ' encontradas' : ' publicadas'}
-            </p>
+            <p>{filtradas.length} {filtradas.length === 1 ? 'notícia' : 'notícias'}{ativos.length > 0 ? ' encontradas' : ''}</p>
             <button className={styles.abrirFiltros} onClick={() => setFiltrosAbertos(true)}>
-              <FaSlidersH aria-hidden="true" /> Pesquisa e filtros {ativos.length > 0 && <span>{ativos.length}</span>}
+              <FaSlidersH aria-hidden="true" /> Filtros {ativos.length > 0 && <span>{ativos.length}</span>}
             </button>
           </div>
 
           {ativos.length > 0 && (
             <div className={styles.ativos}>
               {ativos.map((a) => (
-                <button key={a.label} onClick={a.limpar} className={styles.ativo}>
-                  {a.label} <FaTimes aria-hidden="true" />
-                </button>
+                <button key={a.label} onClick={a.limpar}>{a.label} <FaTimes aria-hidden="true" /></button>
               ))}
             </div>
           )}
 
           {!principal ? (
             <div className={styles.vazio}>
-              <span className={styles.vazioNumero}>00</span>
               <strong>Nenhuma notícia corresponde à pesquisa.</strong>
               <button onClick={limparTudo}>Limpar filtros</button>
             </div>
           ) : (
             <>
-              <article className={styles.manchete}>
-                <Link to={`/Noticias/${principal.slug}`} className={styles.mancheteFoto}>
+              <article className={styles.destaque}>
+                <Link to={`/Noticias/${principal.slug}`} className={styles.destaqueFoto}>
                   <img src={principal.capa} alt="" />
-                  <span className={styles.mancheteSelo}>{principal.destaque && !ativos.length ? 'Manchete' : principal.categoria}</span>
                 </Link>
-                <div className={styles.mancheteTexto}>
-                  <p className={styles.chapeu}>
-                    <span>{principal.categoria}</span>
-                    <time dateTime={principal.data}>{formatarDataLonga(principal.data)}</time>
+                <div className={styles.destaqueTexto}>
+                  <div className={styles.meta}>
+                    <Etiqueta>{principal.categoria}</Etiqueta>
                     <span>{tempoLeitura(principal.conteudo)} min de leitura</span>
                     <ResumoInteracoes colecao="noticias" id={principal.slug} />
-                  </p>
+                  </div>
                   <h2><Link to={`/Noticias/${principal.slug}`}>{principal.titulo}</Link></h2>
-                  <p className={styles.mancheteResumo}>{principal.resumo}</p>
-                  <Link to={`/Noticias/${principal.slug}`} className={styles.lerMais}>Ler notícia completa</Link>
+                  <p>{principal.resumo}</p>
+                  <time dateTime={principal.data}>{formatarDataLonga(principal.data)}</time>
                 </div>
               </article>
 
-              <ol className={styles.lista}>
-                {seguintes.map((n, i) => (
-                  <li key={n.slug}>
-                    <Link to={`/Noticias/${n.slug}`} className={styles.item}>
-                      <span className={styles.itemNumero} aria-hidden="true">{String(i + 2).padStart(2, '0')}</span>
-                      <span className={styles.itemFoto}>
-                        <img src={n.capa} alt="" loading="lazy" />
-                        {temVideo(n) && <span className={styles.icone} title="Inclui vídeo"><FaPlay /></span>}
+              <div className={styles.lista}>
+                {seguintes.map((n) => (
+                  <CartaoLista
+                    key={n.slug}
+                    para={`/Noticias/${n.slug}`}
+                    imagem={n.capa}
+                    etiqueta={n.categoria}
+                    titulo={n.titulo}
+                    resumo={n.resumo}
+                    data={n.data}
+                    extra={(temVideo(n) || temGaleria(n)) && (
+                      <span className={styles.midia}>
+                        {temVideo(n) && <span><FaPlay aria-hidden="true" /> Vídeo</span>}
+                        {temGaleria(n) && <span><FaImages aria-hidden="true" /> Galeria</span>}
                       </span>
-                      <span className={styles.itemTexto}>
-                        <span className={styles.chapeu}>
-                          <span>{n.categoria}</span>
-                          <time dateTime={n.data}>{formatarData(n.data)}</time>
-                          <ResumoInteracoes colecao="noticias" id={n.slug} />
-                        </span>
-                        <span className={styles.itemTitulo}>{n.titulo}</span>
-                        <span className={styles.itemResumo}>{n.resumo}</span>
-                      </span>
-                    </Link>
-                  </li>
+                    )}
+                  />
                 ))}
-              </ol>
+              </div>
 
               {totalArquivo > 0 && (
                 <button className={styles.verMais} onClick={() => setVisiveis((v) => v + POR_PAGINA)}>
-                  Trazer mais {Math.min(POR_PAGINA, totalArquivo)} notícias do arquivo
+                  Mostrar mais {Math.min(POR_PAGINA, totalArquivo)} notícias
                 </button>
               )}
             </>
           )}
         </section>
 
-        {/* Coluna direita — arquivo em miniatura */}
+        {/* Coluna direita — notícias anteriores em miniatura */}
         <aside className={styles.arquivo} aria-label="Notícias anteriores">
-          <span className={styles.rotuloColuna}>Arquivo</span>
-          <h2 className={styles.arquivoTitulo}>Notícias anteriores</h2>
-
+          <h2>Notícias anteriores</h2>
           {arquivo.length === 0 ? (
             <p className={styles.arquivoVazio}>Todas as notícias desta seleção estão na coluna principal.</p>
           ) : (

@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { useConteudo } from '../../conteudo/contexto'
+import { TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './Faq.module.css'
 
 function Faq() {
@@ -14,12 +15,9 @@ function Faq() {
   }
 
   return (
-    <section className={styles.secao}>
-      <div className={styles.container}>
-        <div className={styles.cabecalho}>
-          <span className={styles.etiqueta}>{etiqueta}</span>
-          <h2>{titulo}</h2>
-        </div>
+    <section className="seccao seccao-cinza">
+      <div className="contentor">
+        <TituloSeccao rotulo={etiqueta || 'Ajuda'} titulo={titulo} centrada />
 
         <div className={styles.lista}>
           {perguntas.map((p) => {

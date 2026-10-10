@@ -5,9 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(ellipse at 50% 40%, rgba(229, 57, 23, 0.18), transparent 60%),
-    #0f0705;
+  background: #fff;
   animation: sair 0.35s ease 0.75s forwards;
 }
 
@@ -27,25 +25,23 @@
 }
 
 .nome {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: #d8d8d8;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto);
 }
 
 .barra {
   display: block;
   width: 180px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--linha);
   overflow: hidden;
 }
 
 .barra span {
   display: block;
   height: 100%;
-  background: var(--vermelho, #E53917);
+  background: var(--vermelho, var(--marca));
   transform-origin: left;
   animation: encher 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }

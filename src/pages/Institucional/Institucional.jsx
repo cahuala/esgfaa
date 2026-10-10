@@ -9,10 +9,10 @@ import Brasao from '../../assets/Logo.png'
 import styles from './Institucional.module.css'
 
 const seccoes = [
-  { id: 'historia', numero: 'I', label: 'História' },
-  { id: 'missao', numero: 'II', label: 'Missão, Visão e Valores' },
-  { id: 'estrutura', numero: 'III', label: 'Organização e Estrutura' },
-  { id: 'comando', numero: 'IV', label: 'Direção / Comando' },
+  { id: 'historia', label: 'História' },
+  { id: 'missao', label: 'Missão, Visão e Valores' },
+  { id: 'estrutura', label: 'Organização e Estrutura' },
+  { id: 'comando', label: 'Direção / Comando' },
 ]
 
 const idsSeccoes = seccoes.map((s) => s.id)
@@ -32,19 +32,20 @@ function Institucional() {
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
+        migalhas={[{ label: 'Institucional' }]}
         sobretitulo="Institucional"
         titulo="A Escola"
         entrada={pagina.entrada}
       />
 
-      <figure className={styles.sede}>
+      <figure className={`contentor ${styles.sede}`}>
         <img src={pagina.imagemSede} alt="Fachada da Escola Superior de Guerra" />
         <figcaption>
           <span>Sede</span> {pagina.legendaSede}
         </figcaption>
       </figure>
 
-      <dl className={styles.numeros}>
+      <dl className={`contentor ${styles.numeros}`}>
         {numeros.map((n) => (
           <div key={n.legenda}>
             <dd>{n.valor}</dd>
@@ -53,10 +54,10 @@ function Institucional() {
         ))}
       </dl>
 
-      <div className={styles.grelha}>
+      <div className={`contentor ${styles.grelha}`}>
         {/* Índice */}
         <aside className={styles.indice}>
-          <span className={styles.rotulo}>Índice</span>
+          <h2 className={styles.indiceTitulo}>Nesta página</h2>
           <nav aria-label="Secções da página">
             <ol>
               {seccoes.map((s) => (
@@ -66,7 +67,6 @@ function Institucional() {
                     className={ativa === s.id ? styles.indiceAtivo : ''}
                     aria-current={ativa === s.id ? 'true' : undefined}
                   >
-                    <span className={styles.indiceNumero}>{s.numero}</span>
                     {s.label}
                   </Link>
                 </li>
@@ -75,7 +75,7 @@ function Institucional() {
           </nav>
 
           <div className={styles.contactoInstitucional}>
-            <span className={styles.rotulo}>Contacto institucional</span>
+            <h3>Contacto institucional</h3>
             <p>{contactos.morada.join(', ')}</p>
             <a href={`mailto:${contactos.email}`}>{contactos.email}</a>
           </div>
@@ -84,7 +84,7 @@ function Institucional() {
         <div className={styles.conteudo}>
           {/* I. História */}
           <section id="historia" className={styles.seccao}>
-            <TituloSeccao numero="I" rotulo="História">{pagina.historia.titulo}</TituloSeccao>
+            <TituloSeccao rotulo="História">{pagina.historia.titulo}</TituloSeccao>
 
             <div className={styles.textoColunas}>
               {pagina.historia.imagem && (
@@ -94,7 +94,7 @@ function Institucional() {
                 </figure>
               )}
               {pagina.historia.paragrafos.map((t, i) => (
-                <p key={i} className={i === 0 ? styles.capitular : undefined}>{t}</p>
+                <p key={i}>{t}</p>
               ))}
             </div>
 
@@ -114,7 +114,7 @@ function Institucional() {
 
           {/* II. Missão, Visão e Valores */}
           <section id="missao" className={styles.seccao}>
-            <TituloSeccao numero="II" rotulo="Missão, Visão e Valores">O que nos orienta.</TituloSeccao>
+            <TituloSeccao rotulo="Missão, Visão e Valores">O que nos orienta</TituloSeccao>
 
             <div className={styles.declaracoes}>
               <article>
@@ -128,11 +128,10 @@ function Institucional() {
             </div>
 
             <div className={styles.valores}>
-              <span className={styles.rotulo}>Valores</span>
+              <h3 className={styles.subtitulo}>Valores</h3>
               <ol>
-                {valores.map((v, i) => (
+                {valores.map((v) => (
                   <li key={v.nome}>
-                    <span className={styles.valorNumero}>{String(i + 1).padStart(2, '0')}</span>
                     <h3>{v.nome}</h3>
                     <p>{v.texto}</p>
                   </li>
@@ -143,7 +142,7 @@ function Institucional() {
 
           {/* III. Organização e Estrutura */}
           <section id="estrutura" className={styles.seccao}>
-            <TituloSeccao numero="III" rotulo="Organização e Estrutura">Como a Escola está organizada.</TituloSeccao>
+            <TituloSeccao rotulo="Organização e Estrutura">Como a Escola está organizada</TituloSeccao>
             <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
             <div className={styles.organograma}>
@@ -179,7 +178,7 @@ function Institucional() {
 
           {/* IV. Direção / Comando */}
           <section id="comando" className={styles.seccao}>
-            <TituloSeccao numero="IV" rotulo="Direção / Comando">Mensagem do Comandante.</TituloSeccao>
+            <TituloSeccao rotulo="Direção / Comando">Mensagem do Comandante</TituloSeccao>
 
             <div className={styles.mensagem}>
               <figure className={styles.retrato}>
@@ -196,7 +195,7 @@ function Institucional() {
             </div>
 
             <div className={styles.diretorio}>
-              <span className={styles.rotulo}>Equipa de direção</span>
+              <h3 className={styles.subtitulo}>Equipa de direção</h3>
               <ul>
                 {direcao.map((p) => (
                   <li key={p.id}>
@@ -221,14 +220,11 @@ function Institucional() {
   )
 }
 
-function TituloSeccao({ numero, rotulo, children }) {
+function TituloSeccao({ rotulo, children }) {
   return (
     <div className={styles.tituloSeccao}>
-      <span className={styles.numeroSeccao} aria-hidden="true">{numero}</span>
-      <div>
-        <span className={styles.rotulo}>{rotulo}</span>
-        <h2>{children}</h2>
-      </div>
+      <span className={styles.rotulo}>{rotulo}</span>
+      <h2>{children}</h2>
     </div>
   )
 }
