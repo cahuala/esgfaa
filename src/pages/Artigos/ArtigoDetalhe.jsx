@@ -10,7 +10,7 @@ import EntradaArtigo from './EntradaArtigo'
 import Interacoes from '../../components/Interacoes/Interacoes'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga, paraData } from '../../utils/datas'
-import { ancora, iniciais, tempoLeitura } from '../../utils/texto'
+import { ancora, subtitulosDe, iniciais, tempoLeitura } from '../../utils/texto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
 
@@ -31,7 +31,7 @@ function ArtigoDetalhe() {
   const nomes = autor ? autor.nome.split(' ').filter((p) => !p.endsWith('.')) : []
   const autorCitacao = nomes.length ? `${nomes[nomes.length - 1]}, ${nomes[0][0]}. ` : ''
   const citacao = `${autorCitacao}(${ano}). ${artigo.titulo}. Escola Superior de Guerra das Forças Armadas Angolanas.`
-  const seccoes = artigo.conteudo.filter((b) => b.tipo === 'subtitulo')
+  const seccoes = subtitulosDe(artigo.conteudo)
   const temReferencias = artigo.conteudo.some((b) => b.tipo === 'referencias')
   const relacionados = artigos
     .filter((a) => a.slug !== artigo.slug)
@@ -82,7 +82,7 @@ function ArtigoDetalhe() {
           <span className={ed.rotulo}>Neste artigo</span>
           <ol className={styles.indiceArtigo}>
             <li><a href="#resumo">Resumo</a></li>
-            {seccoes.map((s) => <li key={s.texto}><a href={`#${ancora(s.texto)}`}>{s.texto}</a></li>)}
+            {seccoes.map((s) => <li key={s}><a href={`#${ancora(s)}`}>{s}</a></li>)}
             {temReferencias && <li><a href="#referencias">Referências</a></li>}
           </ol>
           <div className={styles.partilha}><Partilhar titulo={artigo.titulo} /></div>

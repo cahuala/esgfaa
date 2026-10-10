@@ -49,7 +49,7 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
               <div
                 key={i}
                 className={styles.textoRico}
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bloco.html || '', { ADD_ATTR: ['target'] }) }}
+                dangerouslySetInnerHTML={{ __html: comAncoras(DOMPurify.sanitize((bloco.html || '').replace(/&nbsp;/g, ' '), { ADD_ATTR: ['target'] })) }}
               />
             )
 
@@ -164,6 +164,14 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
 function colunasGaleria(total) {
   if (total <= 2) return 2
   return (total - 1) % 3 === 0 ? 3 : 2
+}
+
+// dá um id a cada <h2> do texto formatado, para o índice "Nesta notícia" poder saltar para lá
+function comAncoras(html) {
+  return html.replace(/<h2>([\s\S]*?)<\/h2>/g, (_, interior) => {
+    const texto = interior.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
+    return `<h2 id="${ancora(texto)}">${interior}</h2>`
+  })
 }
 
 function contarImagens(bloco) {

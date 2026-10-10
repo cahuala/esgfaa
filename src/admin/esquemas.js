@@ -79,7 +79,9 @@ export const TIPOS_BLOCO = {
 
 export const COLECOES = {
   noticias: {
-    titulo: 'Notícias', singular: 'notícia', botaoNovo: 'Nova notícia', feminino: true, icone: 'fa-newspaper', chave: 'slug', campoTitulo: 'titulo',
+    titulo: 'Notícias', singular: 'notícia', botaoNovo: 'Nova notícia', feminino: true,
+    // edição em modo documento: estes campos vão para a folha; os restantes para a coluna lateral
+    documento: { etiqueta: 'categoria', titulo: 'titulo', entrada: 'resumo', capa: 'capa', corpo: 'conteudo', placeholderTitulo: 'Título da notícia', endereco: 'Noticias' }, icone: 'fa-newspaper', chave: 'slug', campoTitulo: 'titulo',
     rotaSite: (i) => `/Noticias/${i.slug}`,
     colunas: [
       { rotulo: '', tipo: 'imagem', valor: (i) => i.capa },
@@ -100,7 +102,8 @@ export const COLECOES = {
     ],
   },
   artigos: {
-    titulo: 'Artigos', singular: 'artigo', botaoNovo: 'Novo artigo', icone: 'fa-book-open', chave: 'slug', campoTitulo: 'titulo',
+    titulo: 'Artigos', singular: 'artigo', botaoNovo: 'Novo artigo',
+    documento: { etiqueta: 'tipo', titulo: 'titulo', entrada: 'resumo', capa: 'capa', corpo: 'conteudo', placeholderTitulo: 'Título do artigo', endereco: 'Artigos' }, icone: 'fa-book-open', chave: 'slug', campoTitulo: 'titulo',
     rotaSite: (i) => `/Artigos/${i.slug}`,
     colunas: [
       { rotulo: 'Título', valor: (i) => i.titulo, principal: true },
@@ -123,7 +126,8 @@ export const COLECOES = {
     ],
   },
   eventos: {
-    titulo: 'Eventos', singular: 'evento', botaoNovo: 'Novo evento', icone: 'fa-calendar-alt', chave: 'id', campoTitulo: 'titulo',
+    titulo: 'Eventos', singular: 'evento', botaoNovo: 'Novo evento',
+    documento: { etiqueta: 'categoria', titulo: 'titulo', entrada: 'resumo', capa: 'capa', corpo: 'conteudo', placeholderTitulo: 'Nome do evento', endereco: 'Eventos' }, icone: 'fa-calendar-alt', chave: 'id', campoTitulo: 'titulo',
     rotaSite: (i) => `/Eventos/${i.id}`,
     colunas: [
       { rotulo: '', tipo: 'imagem', valor: (i) => i.capa },

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { COLECOES, NOMES_ACOES } from '../esquemas'
-import { CabecalhoPagina, Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
+import { Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 
 const NOMES_COLECOES = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo', cursos: 'Curso', pessoas: 'Pessoa', publicidade: 'Banner' }
@@ -51,6 +51,28 @@ function Grafico({ series }) {
   )
 }
 
+const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+
+function saudacao() {
+  const h = new Date().getHours()
+  return h < 12 ? 'Bom dia' : h < 19 ? 'Boa tarde' : 'Boa noite'
+}
+
+function hojePorExtenso() {
+  const d = new Date()
+  return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`
+}
+
+// atalhos do topo, conforme as permissões
+const ATALHOS = [
+  { perm: 'noticias.criar', para: '/colecao/noticias/novo', icone: 'fa-pen-nib', texto: 'Nova notícia', principal: true },
+  { perm: 'eventos.criar', para: '/colecao/eventos/novo', icone: 'fa-calendar-plus', texto: 'Novo evento' },
+  { perm: 'artigos.criar', para: '/colecao/artigos/novo', icone: 'fa-book-open', texto: 'Novo artigo' },
+  { perm: 'publicidade.criar', para: '/colecao/publicidade/novo', icone: 'fa-bullhorn', texto: 'Novo banner' },
+  { perm: 'estatisticas.ver', para: '/estatisticas', icone: 'fa-chart-line', texto: 'Estatísticas' },
+]
+
 function Painel() {
   const { utilizador, pode } = useSessao()
   const [dados, setDados] = useState(null)
@@ -63,21 +85,34 @@ function Painel() {
 
   const v = dados?.visitas
   const widgets = dados && [
-    v && { cor: 'bg-red', icone: 'fa-users', titulo: 'VISITANTES HOJE', valor: v.hoje.visitantes, extra: `${v.online} online agora`, para: '/estatisticas' },
-    v && { cor: 'bg-orange', icone: 'fa-chart-line', titulo: 'VISITANTES (30 DIAS)', valor: v.mes.visitantes, extra: `${v.mes.paginas.toLocaleString('pt-PT')} páginas vistas`, para: '/estatisticas' },
-    dados.totais.noticias !== undefined && { cor: 'bg-teal', icone: 'fa-newspaper', titulo: 'NOTÍCIAS PUBLICADAS', valor: dados.totais.noticias, extra: `${dados.rascunhos.noticias} em rascunho`, para: '/colecao/noticias' },
-    pode('comentarios.ver') && { cor: 'bg-blue', icone: 'fa-comments', titulo: 'COMENTÁRIOS', valor: dados.interacoes.comentarios, extra: `${dados.interacoes.comentariosHoje} hoje · ${dados.interacoes.gostos} gostos`, para: '/comentarios' },
-    !v && dados.totais.eventos !== undefined && { cor: 'bg-indigo', icone: 'fa-calendar-alt', titulo: 'EVENTOS', valor: dados.totais.eventos, extra: `${dados.rascunhos.eventos} em rascunho`, para: '/colecao/eventos' },
+    v && { cor: 'esg-w-vermelho', icone: 'fa-users', titulo: 'VISITANTES HOJE', valor: v.hoje.visitantes, extra: `${v.online} online agora`, para: '/estatisticas' },
+    v && { cor: 'esg-w-preto', icone: 'fa-chart-line', titulo: 'VISITANTES (30 DIAS)', valor: v.mes.visitantes, extra: `${v.mes.paginas.toLocaleString('pt-PT')} páginas vistas`, para: '/estatisticas' },
+    dados.totais.noticias !== undefined && { cor: 'esg-w-dourado', icone: 'fa-newspaper', titulo: 'NOTÍCIAS PUBLICADAS', valor: dados.totais.noticias, extra: `${dados.rascunhos.noticias} em rascunho`, para: '/colecao/noticias' },
+    pode('comentarios.ver') && { cor: 'esg-w-cinza', icone: 'fa-comments', titulo: 'COMENTÁRIOS', valor: dados.interacoes.comentarios, extra: `${dados.interacoes.comentariosHoje} hoje · ${dados.interacoes.gostos} gostos`, para: '/comentarios' },
+    !v && dados.totais.eventos !== undefined && { cor: 'esg-w-preto', icone: 'fa-calendar-alt', titulo: 'EVENTOS', valor: dados.totais.eventos, extra: `${dados.rascunhos.eventos} em rascunho`, para: '/colecao/eventos' },
   ].filter(Boolean).slice(0, 4)
 
   const series = dados && [
     v && { nome: 'Visitantes', cor: '#e53917', dados: serie14(dados.visitasDias) },
-    dados.comentariosDias && { nome: 'Comentários', cor: '#00acac', dados: serie14(dados.comentariosDias) },
+    dados.comentariosDias && { nome: 'Comentários', cor: '#c9a227', dados: serie14(dados.comentariosDias) },
   ].filter(Boolean)
 
   return (
     <>
-      <CabecalhoPagina titulo={`Olá, ${utilizador.nome.split(' ')[0]}`} subtitulo={utilizador.nomePapel} />
+      <div className="esg-boas-vindas">
+        <div>
+          <div className="esg-boas-vindas-data">{hojePorExtenso()}</div>
+          <h1>{saudacao()}, {utilizador.nome.split(' ')[0]}.</h1>
+          <p>Painel de gestão do site da Escola Superior de Guerra · {utilizador.nomePapel}</p>
+        </div>
+        <div className="esg-atalhos">
+          {ATALHOS.filter((a) => pode(a.perm)).slice(0, 4).map((a) => (
+            <Link key={a.para} to={a.para} className={`btn ${a.principal ? 'btn-theme' : 'btn-outline'}`}>
+              <i className={`fa ${a.icone} me-2`} />{a.texto}
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!dados && !erro && <Carregando />}

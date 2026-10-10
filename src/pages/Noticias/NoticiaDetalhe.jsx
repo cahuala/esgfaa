@@ -8,7 +8,7 @@ import Publicidade from '../../components/Publicidade/Publicidade'
 import Interacoes from '../../components/Interacoes/Interacoes'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
-import { ancora, tempoLeitura } from '../../utils/texto'
+import { ancora, subtitulosDe, tempoLeitura } from '../../utils/texto'
 import lista from './Noticias.module.css'
 import styles from './NoticiaDetalhe.module.css'
 
@@ -21,7 +21,7 @@ function NoticiaDetalhe() {
     return <NaoEncontrado titulo="Notícia não encontrada" voltarPara="/Noticias" voltarTexto="Ver todas as notícias" />
   }
 
-  const subtitulos = noticia.conteudo.filter((b) => b.tipo === 'subtitulo')
+  const subtitulos = subtitulosDe(noticia.conteudo)
   const mesmaSeccao = noticias.filter((n) => n.slug !== noticia.slug && n.categoria === noticia.categoria).slice(0, 3)
   const anteriores = noticias
     .filter((n) => n.data < noticia.data && !mesmaSeccao.includes(n))
@@ -71,7 +71,7 @@ function NoticiaDetalhe() {
               <span className={lista.rotuloColuna}>Nesta notícia</span>
               <ol>
                 {subtitulos.map((s) => (
-                  <li key={s.texto}><a href={`#${ancora(s.texto)}`}>{s.texto}</a></li>
+                  <li key={s}><a href={`#${ancora(s)}`}>{s}</a></li>
                 ))}
               </ol>
             </nav>

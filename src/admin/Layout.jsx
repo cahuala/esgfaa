@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessaoContexto'
 import { COLECOES, PAGINAS } from './esquemas'
 import Brasao from '../assets/Logo.png'
+import Sede from '../assets/Escola De Guerra.png'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -37,13 +38,18 @@ function Layout({ children }) {
   return (
     <div
       id="app"
+      style={{ '--esg-sede': `url("${Sede}")` }}
       className={`app app-header-fixed app-sidebar-fixed ${menuMovel ? 'app-sidebar-mobile-toggled' : ''} ${minimizado ? 'app-sidebar-minified' : ''}`}
     >
       {/* Cabeçalho */}
       <div id="header" className="app-header">
         <div className="navbar-header">
           <Link to="/" className="navbar-brand">
-            <img src={Brasao} alt="" className="admin-brasao" /> <b className="me-1">ESGFAA</b> Painel
+            <img src={Brasao} alt="" className="admin-brasao" />
+            <span className="esg-cabecalho-titulo">
+              <b>Painel de gestão</b>
+              <small>Escola Superior de Guerra</small>
+            </span>
           </Link>
           <button type="button" className="navbar-mobile-toggler" onClick={() => setMenuMovel(!menuMovel)} aria-label="Abrir menu">
             <span className="icon-bar" /><span className="icon-bar" /><span className="icon-bar" />
@@ -78,15 +84,17 @@ function Layout({ children }) {
       <div id="sidebar" className="app-sidebar" data-bs-theme="dark">
         <div className="app-sidebar-content admin-sidebar-rolavel">
           <div className="menu">
-            <div className="menu-profile">
-              <div className="menu-profile-link">
-                <div className="menu-profile-cover with-shadow" />
-                <div className="menu-profile-image"><span className="admin-avatar admin-avatar-grande">{iniciais}</span></div>
-                <div className="menu-profile-info">
-                  {utilizador.nome}
+            <div className="esg-marca">
+              <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="esg-marca-brasao" />
+              <div className="esg-marca-nome">Escola Superior de Guerra</div>
+              <div className="esg-marca-sub">Forças Armadas Angolanas</div>
+              <Link to="/perfil" className="esg-marca-utilizador">
+                <span className="admin-avatar admin-avatar-grande">{iniciais}</span>
+                <span>
+                  <strong>{utilizador.nome}</strong>
                   <small>{utilizador.nomePapel}</small>
-                </div>
-              </div>
+                </span>
+              </Link>
             </div>
 
             <div className="menu-header">Geral</div>

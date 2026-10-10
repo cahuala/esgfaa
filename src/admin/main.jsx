@@ -4,6 +4,8 @@ import { RouterProvider, createHashRouter } from 'react-router-dom'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import './tema/color-admin.min.css'
 import './admin.css'
+import './identidade.css'
+import './editor/editor.css'
 import { SessaoProvider } from './sessao'
 import App from './App'
 
