@@ -7,9 +7,9 @@ export class ServicoAuditoria {
     this.atividades = atividades
   }
 
-  registar(ctx, { acao, colecao = null, alvoId = null, alvoTitulo = null, detalhes = null, utilizador = undefined }) {
+  async registar(ctx, { acao, colecao = null, alvoId = null, alvoTitulo = null, detalhes = null, utilizador = undefined }) {
     const u = utilizador === undefined ? ctx.actor : utilizador
-    this.atividades.registar({
+    await this.atividades.registar({
       utilizadorId: u?.id ?? null, utilizadorNome: u?.nome ?? null,
       acao, colecao, alvoId, alvoTitulo, detalhes, ip: ctx.ip, agente: ctx.agente,
     })

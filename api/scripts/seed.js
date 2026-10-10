@@ -6,4 +6,4 @@ import { semear } from './semear.js'
 
 const contentor = criarContentor(criarConfig())
 await semear(contentor, { forcar: process.argv.includes('--forcar') })
-contentor.fechar()
+await contentor.fechar()

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { iniciais, tempoLeitura, normalizar, ancora, subtitulosDe } from '../../src/utils/texto'
-import { formatarData, formatarDataLonga, formatarMesAno, paraData } from '../../src/utils/datas'
+import { formatarData, formatarDataLonga, formatarMesAno, paraData, tempoRelativo } from '../../src/utils/datas'
 import { dataHora, dataCurta } from '../../src/admin/formatar'
 
 describe('texto', () => {
@@ -35,6 +35,13 @@ describe('datas', () => {
     expect(formatarData('2026-09-05')).toBe('05 Set 2026')
     expect(formatarDataLonga('2026-12-25')).toBe('25 de dezembro de 2026')
     expect(formatarMesAno('2026-10-03')).toBe('Outubro de 2026')
+  })
+
+  it('tempoRelativo aceita o formato antigo e o ISO do PostgreSQL', () => {
+    const agora = new Date(Date.now() - 5 * 60_000)
+    expect(tempoRelativo(agora.toISOString())).toBe('há 5 min')
+    expect(tempoRelativo(agora.toISOString().slice(0, 19).replace('T', ' '))).toBe('há 5 min')
+    expect(tempoRelativo('lixo')).toBe('')
   })
 
   it('dataHora aceita o formato da base de dados e ISO', () => {

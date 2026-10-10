@@ -10,7 +10,7 @@ import { nomeSemente } from './nomes.js'
 
 const pastaSite = path.resolve(RAIZ_API, '..', 'src')
 
-export async function semear({ config, repositorios, transacao }, { forcar = false } = {}) {
+export async function semear({ config, repositorios }, { forcar = false } = {}) {
   if (!fs.existsSync(path.join(pastaSite, 'data'))) {
     console.warn('[semente] Pasta src/data do site não encontrada — a base de dados começa vazia.')
     return
@@ -32,16 +32,11 @@ export async function semear({ config, repositorios, transacao }, { forcar = fal
   for (const c of Object.keys(COLECOES)) fontes[c] = await importar(c)
   const paginas = await importar('paginas')
 
-  transacao(() => {
-    if (forcar) repositorios.conteudos.apagarTodos()
-    for (const [colecao, lista] of Object.entries(fontes)) {
-      const chave = COLECOES[colecao].chave
-      lista.forEach((item, i) => repositorios.conteudos.semear({
-        colecao, id: String(item[chave]), dados: relativizar(item), ordem: i + 1, estado: 'publicado',
-      }))
-    }
-    for (const [chave, dados] of Object.entries(paginas)) repositorios.paginas.semear(chave, relativizar(dados))
-  })
+  if (forcar) await repositorios.conteudos.apagarTodos()
+  await repositorios.conteudos.semear(Object.entries(fontes).flatMap(([colecao, lista]) => lista.map((item, i) => ({
+    colecao, id: String(item[COLECOES[colecao].chave]), dados: relativizar(item), ordem: i + 1, estado: 'publicado',
+  }))))
+  for (const [chave, dados] of Object.entries(paginas)) await repositorios.paginas.semear(chave, relativizar(dados))
 
   const total = Object.values(fontes).reduce((t, l) => t + l.length, 0)
   console.log(`[semente] ${total} itens e ${Object.keys(paginas).length} páginas carregados.`)

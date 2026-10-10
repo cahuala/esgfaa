@@ -68,7 +68,7 @@ describe('envio de ficheiros', () => {
       assert.match(r.body.erro, /demasiado grande \(máximo 1 MB\)/)
       assert.equal(ficheirosNoDisco(pequeno.pastaUploads).length, 0)
     } finally {
-      pequeno.fechar()
+      await pequeno.fechar()
     }
   })
 

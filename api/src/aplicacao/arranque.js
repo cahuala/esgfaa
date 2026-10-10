@@ -23,8 +23,8 @@ export function gerarSenha(tamanho = 16) {
   Devolve { administradorCriado: { email, senha, gerada } } para a mensagem de arranque.
 */
 export async function prepararSistema({ servicos, repositorios, cifra, config }) {
-  servicos.papeis.garantirPadrao()
-  if (repositorios.utilizadores.contar() > 0) return {}
+  await servicos.papeis.garantirPadrao()
+  if ((await repositorios.utilizadores.contar()) > 0) return {}
 
   const { nome, email } = config.administrador
   let senha = config.administrador.senha
@@ -34,6 +34,6 @@ export async function prepararSistema({ servicos, repositorios, cifra, config })
   if (motivo && config.producao) throw new Error(`ADMIN_PASSWORD fraca: ${motivo}`)
 
   const admin = Utilizador.novo({ nome, email, papel: ADMINISTRADOR, senhaCifrada: await cifra.cifrar(senha), deveMudarSenha: gerada || Boolean(motivo) })
-  repositorios.utilizadores.criar(admin)
+  await repositorios.utilizadores.criar(admin)
   return { administradorCriado: { email: admin.email, senha: gerada ? senha : null, gerada } }
 }

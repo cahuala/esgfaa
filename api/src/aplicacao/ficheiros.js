@@ -13,17 +13,19 @@ export class ServicoFicheiros {
   }
 
   // confirma o tipo real de cada ficheiro já gravado; se algum falhar, apagam-se todos
-  registar(ctx, ficheiros) {
+  async registar(ctx, ficheiros) {
     this.garantirPodeEnviar(ctx)
     const falso = ficheiros.find((f) => !this.armazenamento.confirmarTipo(f.caminho, f.tipo))
     if (falso) {
       ficheiros.forEach((f) => this.armazenamento.apagar(f.caminho))
       throw new ErroValidacao(`O ficheiro "${falso.nome}" não corresponde ao tipo indicado.`)
     }
-    return ficheiros.map((f) => {
+    const resultado = []
+    for (const f of ficheiros) {
       const url = this.armazenamento.urlRelativa(f.caminho)
-      this.auditoria.registar(ctx, { acao: 'carregar_ficheiro', alvoTitulo: f.nome, detalhes: { url, tamanho: f.tamanho } })
-      return { url, nome: f.nome, tipo: f.tipo, tamanho: f.tamanho }
-    })
+      await this.auditoria.registar(ctx, { acao: 'carregar_ficheiro', alvoTitulo: f.nome, detalhes: { url, tamanho: f.tamanho } })
+      resultado.push({ url, nome: f.nome, tipo: f.tipo, tamanho: f.tamanho })
+    }
+    return resultado
   }
 }

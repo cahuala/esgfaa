@@ -12,6 +12,23 @@ jobs:
   testes:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: esgfaa
+          POSTGRES_PASSWORD: esgfaa_ci
+          POSTGRES_DB: esgfaa_teste
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U esgfaa"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      DATABASE_URL_TESTE: postgresql://esgfaa:esgfaa_ci@localhost:5432/esgfaa_teste
+      DATABASE_URL_E2E: postgresql://esgfaa:esgfaa_ci@localhost:5432/esgfaa_e2e
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +41,9 @@ jobs:
       - run: npm ci
       - run: npm ci
         working-directory: api
+
+      - name: Base de dados dos testes ponta-a-ponta
+        run: PGPASSWORD=esgfaa_ci psql -h localhost -U esgfaa -d esgfaa_teste -c 'CREATE DATABASE esgfaa_e2e'
 
       - name: Lint
         run: npm run lint

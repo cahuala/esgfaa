@@ -1,0 +1,154 @@
+// Modelo de dados da API (PostgreSQL). Alterações: npx prisma migrate dev --name <descricao>
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// notícias, artigos, eventos, cursos, pessoas e banners
+model Item {
+  colecao       String
+  id            String
+  dados         Json
+  ordem         Int      @default(0)
+  estado        String   @default("publicado")
+  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm  DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
+  criadoPor     Int?     @map("criado_por")
+  atualizadoPor Int?     @map("atualizado_por")
+  autorEdicao   Utilizador? @relation("edicoes", fields: [atualizadoPor], references: [id], onDelete: SetNull)
+
+  @@id([colecao, id])
+  @@index([colecao, estado])
+  @@map("itens")
+}
+
+// conteúdo editável das páginas (início, instituição, contactos, cursos)
+model Pagina {
+  chave         String   @id
+  dados         Json
+  atualizadoEm  DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
+  atualizadoPor Int?     @map("atualizado_por")
+
+  @@map("paginas")
+}
+
+model Utilizador {
+  id                 Int       @id @default(autoincrement())
+  nome               String
+  email              String    @unique
+  senha              String
+  papel              String
+  ativo              Boolean   @default(true)
+  criadoEm           DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  ultimoAcesso       DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
+  tentativasFalhadas Int       @default(0) @map("tentativas_falhadas")
+  bloqueadoAte       DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
+  versaoToken        Int       @default(0) @map("versao_token")
+  deveMudarSenha     Boolean   @default(false) @map("deve_mudar_senha")
+  edicoes            Item[]    @relation("edicoes")
+
+  @@index([papel])
+  @@map("utilizadores")
+}
+
+model Papel {
+  id         String   @id
+  nome       String
+  descricao  String   @default("")
+  permissoes Json     @default("[]")
+  sistema    Boolean  @default(false)
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@map("papeis")
+}
+
+// registo de auditoria
+model Atividade {
+  id             Int      @id @default(autoincrement())
+  utilizadorId   Int?     @map("utilizador_id")
+  utilizadorNome String?  @map("utilizador_nome")
+  acao           String
+  colecao        String?
+  alvoId         String?  @map("alvo_id")
+  alvoTitulo     String?  @map("alvo_titulo")
+  detalhes       String?
+  ip             String?
+  agente         String?
+  data           DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([data(sort: Desc)])
+  @@index([utilizadorId])
+  @@index([acao])
+  @@map("atividades")
+}
+
+model Gosto {
+  colecao   String
+  itemId    String   @map("item_id")
+  visitante String
+  data      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([colecao, itemId, visitante])
+  @@map("gostos")
+}
+
+model Comentario {
+  id      Int      @id @default(autoincrement())
+  colecao String
+  itemId  String   @map("item_id")
+  nome    String
+  texto   String
+  ip      String?
+  data    DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([colecao, itemId])
+  @@index([data(sort: Desc)])
+  @@map("comentarios")
+}
+
+model Visualizacao {
+  colecao String
+  itemId  String @map("item_id")
+  total   Int    @default(0)
+
+  @@id([colecao, itemId])
+  @@map("visualizacoes")
+}
+
+// páginas vistas no site (sem IP nem agente completo)
+model Visita {
+  id          Int      @id @default(autoincrement())
+  data        DateTime @default(now()) @db.Timestamptz(3)
+  visitante   String
+  caminho     String
+  origem      String?
+  dispositivo String?
+  navegador   String?
+
+  @@index([data])
+  @@index([visitante])
+  @@map("visitas")
+}
+
+model PublicidadeMetrica {
+  bannerId   String   @map("banner_id")
+  dia        DateTime @db.Date
+  impressoes Int      @default(0)
+  cliques    Int      @default(0)
+
+  @@id([bannerId, dia])
+  @@map("publicidade_metricas")
+}
+
+// sessões terminadas antes de expirarem
+model SessaoRevogada {
+  jti    String   @id
+  expira DateTime @db.Timestamptz(3)
+
+  @@index([expira])
+  @@map("sessoes_revogadas")
+}

@@ -1,6 +1,6 @@
 # API da Escola Superior de Guerra
 
-Express 5 + SQLite (incluído no Node 24), organizada por camadas segundo o **Domain-Driven Design**. Serve o site público (conteúdos, gostos, comentários, visitas) e o painel de administração.
+Express 5 + PostgreSQL (com o ORM Prisma 7), organizada por camadas segundo o **Domain-Driven Design**. Serve o site público (conteúdos, gostos, comentários, visitas) e o painel de administração.
 
 ## Arquitetura
 
@@ -16,8 +16,8 @@ src/
 ├── aplicacao/          casos de uso: verificam permissões e registam a auditoria
 │   └── sessao, utilizadores, papeis, conteudos, paginas, interacoes, estatisticas, ficheiros, auditoria, arranque
 ├── infraestrutura/     tudo o que toca no exterior
-│   ├── bd/             ligação SQLite, transações (aninháveis) e migrações versionadas
-│   ├── repositorios/   o único sítio com SQL (sempre com parâmetros)
+│   ├── bd/             cliente Prisma ligado ao PostgreSQL (adaptador pg)
+│   ├── repositorios/   o único sítio que fala com a base (Prisma; SQL direto só com parâmetros)
 │   ├── seguranca/      cifra scrypt, tokens JWT, cache limitada
 │   ├── ficheiros/      armazenamento em disco e verificação do tipo real
 │   ├── html/           filtro do HTML escrito no editor
@@ -67,6 +67,19 @@ As respostas de erro são sempre `{ "erro": "mensagem", "codigo": "…" }`. Os e
 **Cabeçalhos e pedidos**
 - Cabeçalhos de segurança (helmet), CORS só para as origens autorizadas e `Cache-Control: no-store` no painel.
 - Corpo JSON limitado a 2 MB. Cada pedido gera uma linha de registo em JSON, sem corpo nem tokens.
+
+## Base de dados
+
+O modelo está em [prisma/schema.prisma](prisma/schema.prisma) e as migrações em `prisma/migrations/`.
+
+```bash
+docker compose up -d                       # PostgreSQL de desenvolvimento (na raiz; porta 5434)
+npm run migrar                             # aplica as migrações (prisma migrate deploy)
+npx prisma migrate dev --name <descricao>  # depois de mudar o schema.prisma
+npm run importar-sqlite                    # copia uma base SQLite antiga para o PostgreSQL vazio
+```
+
+Operações que podem correr em simultâneo são atómicas na própria base: tentativas de entrada, contagem de visualizações, métricas de publicidade e gostos.
 
 ## Configuração
 

@@ -11,7 +11,7 @@ if (config.producao && !config.urlPublico) console.warn('[aviso] PUBLIC_URL não
 const contentor = criarContentor(config)
 
 // 1.º arranque: carrega os conteúdos atuais do site para a base de dados
-if (contentor.repositorios.conteudos.contarTodos() === 0) await semear(contentor)
+if ((await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)
 
 const { administradorCriado: admin } = await prepararSistema(contentor)
 if (admin) {
@@ -32,8 +32,8 @@ function desligar(sinal) {
   if (aDesligar) return
   aDesligar = true
   console.log(`\n${sinal} recebido — a desligar…`)
-  servidor.close(() => {
-    contentor.fechar()
+  servidor.close(async () => {
+    await contentor.fechar()
     process.exit(0)
   })
   setTimeout(() => process.exit(1), 10_000).unref()

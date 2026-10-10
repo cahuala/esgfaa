@@ -6,11 +6,13 @@ WORKDIR /app
 COPY package.json ./
 COPY src/data ./src/data
 COPY src/assets ./src/assets
-COPY api/package.json api/package-lock.json ./api/
+COPY api/package.json api/package-lock.json api/prisma.config.js ./api/
+COPY api/prisma ./api/prisma
 RUN cd api && npm ci --omit=dev
 COPY api ./api
 WORKDIR /app/api
 ENV NODE_ENV=production
 EXPOSE 3001
 VOLUME /app/api/dados
-CMD ["node", "src/server.js"]
+# aplica as migrações pendentes e arranca
+CMD ["npm", "start"]

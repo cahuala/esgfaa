@@ -1,47 +1,50 @@
+const linha = (a) => ({
+  id: a.id, utilizador_id: a.utilizadorId, utilizador_nome: a.utilizadorNome, acao: a.acao, colecao: a.colecao,
+  alvo_id: a.alvoId, alvo_titulo: a.alvoTitulo, detalhes: a.detalhes, ip: a.ip, agente: a.agente, data: a.data.toISOString(),
+})
+
 // registo de auditoria: tudo o que os utilizadores do painel fazem
 export class RepositorioAtividades {
-  constructor({ bd }) {
-    this.bd = bd
+  constructor({ prisma }) {
+    this.prisma = prisma
   }
 
-  registar({ utilizadorId, utilizadorNome, acao, colecao, alvoId, alvoTitulo, detalhes, ip, agente }) {
-    this.bd.prepare(`INSERT INTO atividades (utilizador_id, utilizador_nome, acao, colecao, alvo_id, alvo_titulo, detalhes, ip, agente)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      utilizadorId ?? null, utilizadorNome ?? null, acao, colecao ?? null, alvoId == null ? null : String(alvoId),
-      alvoTitulo ?? null, detalhes == null ? null : (typeof detalhes === 'string' ? detalhes : JSON.stringify(detalhes)),
-      ip ?? null, agente ? String(agente).slice(0, 300) : null,
-    )
+  async registar({ utilizadorId, utilizadorNome, acao, colecao, alvoId, alvoTitulo, detalhes, ip, agente }) {
+    await this.prisma.atividade.create({
+      data: {
+        utilizadorId: utilizadorId ?? null, utilizadorNome: utilizadorNome ?? null, acao, colecao: colecao ?? null,
+        alvoId: alvoId == null ? null : String(alvoId), alvoTitulo: alvoTitulo ?? null,
+        detalhes: detalhes == null ? null : (typeof detalhes === 'string' ? detalhes : JSON.stringify(detalhes)),
+        ip: ip ?? null, agente: agente ? String(agente).slice(0, 300) : null,
+      },
+    })
   }
 
-  listar({ utilizador, acao, colecao, desde, ate, q, pagina = 1, porPagina = 25 }) {
-    const condicoes = []
-    const params = []
-    if (utilizador) { condicoes.push('utilizador_id = ?'); params.push(Number(utilizador)) }
-    if (acao) { condicoes.push('acao = ?'); params.push(acao) }
-    if (colecao) { condicoes.push('colecao = ?'); params.push(colecao) }
-    if (desde) { condicoes.push('date(data) >= date(?)'); params.push(desde) }
-    if (ate) { condicoes.push('date(data) <= date(?)'); params.push(ate) }
-    if (q) {
-      const termo = `%${q.replace(/[%_]/g, (c) => `\\${c}`)}%`
-      condicoes.push("(alvo_titulo LIKE ? ESCAPE '\\' OR detalhes LIKE ? ESCAPE '\\' OR ip LIKE ? ESCAPE '\\')")
-      params.push(termo, termo, termo)
+  async listar({ utilizador, acao, colecao, desde, ate, q, pagina = 1, porPagina = 25 }) {
+    // o "contains" do Prisma NÃO escapa % e _: escapam-se aqui para a pesquisa ser sempre literal
+    const termo = q ? { contains: q.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } : undefined
+    const where = {
+      ...(utilizador ? { utilizadorId: Number(utilizador) } : {}),
+      ...(acao ? { acao } : {}),
+      ...(colecao ? { colecao } : {}),
+      ...(desde || ate ? { data: { ...(desde ? { gte: new Date(`${desde}T00:00:00Z`) } : {}), ...(ate ? { lt: new Date(new Date(`${ate}T00:00:00Z`).getTime() + 86_400_000) } : {}) } } : {}),
+      ...(termo ? { OR: [{ alvoTitulo: termo }, { detalhes: termo }, { ip: termo }] } : {}),
     }
-    const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : ''
-    const total = this.bd.prepare(`SELECT COUNT(*) n FROM atividades ${where}`).get(...params).n
-    const linhas = this.bd.prepare(`SELECT * FROM atividades ${where} ORDER BY id DESC LIMIT ? OFFSET ?`)
-      .all(...params, porPagina, (pagina - 1) * porPagina).map((l) => ({ ...l }))
-    const acoes = this.bd.prepare('SELECT DISTINCT acao FROM atividades ORDER BY acao').all().map((a) => a.acao)
-    return { total, pagina, porPagina, linhas, acoes }
+    const [total, linhas, acoes] = await Promise.all([
+      this.prisma.atividade.count({ where }),
+      this.prisma.atividade.findMany({ where, orderBy: { id: 'desc' }, take: porPagina, skip: (pagina - 1) * porPagina }),
+      this.prisma.atividade.findMany({ distinct: ['acao'], select: { acao: true }, orderBy: { acao: 'asc' } }),
+    ])
+    return { total, pagina, porPagina, linhas: linhas.map(linha), acoes: acoes.map((a) => a.acao) }
   }
 
-  ultimas({ utilizadorId = null, limite = 8 } = {}) {
-    const linhas = utilizadorId == null
-      ? this.bd.prepare('SELECT * FROM atividades ORDER BY id DESC LIMIT ?').all(limite)
-      : this.bd.prepare('SELECT * FROM atividades WHERE utilizador_id = ? ORDER BY id DESC LIMIT ?').all(utilizadorId, limite)
-    return linhas.map((l) => ({ ...l }))
+  async ultimas({ utilizadorId = null, limite = 8 } = {}) {
+    const linhas = await this.prisma.atividade.findMany({ where: utilizadorId == null ? {} : { utilizadorId }, orderBy: { id: 'desc' }, take: limite })
+    return linhas.map(linha)
   }
 
-  contarPorUtilizador() {
-    return Object.fromEntries(this.bd.prepare('SELECT utilizador_id, COUNT(*) n FROM atividades GROUP BY utilizador_id').all().map((l) => [l.utilizador_id, l.n]))
+  async contarPorUtilizador() {
+    const grupos = await this.prisma.atividade.groupBy({ by: ['utilizadorId'], _count: { _all: true } })
+    return Object.fromEntries(grupos.map((g) => [g.utilizadorId, g._count._all]))
   }
 }

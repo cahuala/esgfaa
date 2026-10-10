@@ -1,84 +1,100 @@
 import { Conteudo } from '../../dominio/conteudos/conteudo.js'
+import { Conflito } from '../../dominio/comum/erros.js'
+import { eDuplicado } from '../bd/prisma.js'
 
 const paraEntidade = (l) => l && new Conteudo({
-  colecao: l.colecao, id: l.id, dados: JSON.parse(l.dados), estado: l.estado, ordem: l.ordem,
-  criadoEm: l.criado_em, atualizadoEm: l.atualizado_em, editadoPor: l.autor_edicao ?? null,
+  colecao: l.colecao, id: l.id, dados: l.dados, estado: l.estado, ordem: l.ordem,
+  criadoEm: l.criadoEm.toISOString(), atualizadoEm: l.atualizadoEm.toISOString(), editadoPor: l.autorEdicao?.nome ?? null,
 })
 
-const SELECAO = `SELECT i.*, u.nome autor_edicao FROM itens i LEFT JOIN utilizadores u ON u.id = i.atualizado_por`
+const COM_AUTOR = { autorEdicao: { select: { nome: true } } }
+const chave = (colecao, id) => ({ colecao_id: { colecao, id: String(id) } })
 
 export class RepositorioConteudos {
-  constructor({ bd, transacao }) {
-    this.bd = bd
-    this.transacao = transacao
+  constructor({ prisma }) {
+    this.prisma = prisma
   }
 
-  listar(colecao, { soPublicados = false } = {}) {
-    return this.bd.prepare(`${SELECAO} WHERE i.colecao = ? ${soPublicados ? "AND i.estado = 'publicado'" : ''} ORDER BY i.ordem, i.criado_em`)
-      .all(colecao).map(paraEntidade)
+  async listar(colecao, { soPublicados = false } = {}) {
+    const linhas = await this.prisma.item.findMany({
+      where: { colecao, ...(soPublicados ? { estado: 'publicado' } : {}) },
+      include: COM_AUTOR,
+      orderBy: [{ ordem: 'asc' }, { criadoEm: 'asc' }],
+    })
+    return linhas.map(paraEntidade)
   }
 
-  ler(colecao, id) {
-    return paraEntidade(this.bd.prepare(`${SELECAO} WHERE i.colecao = ? AND i.id = ?`).get(colecao, String(id)))
+  async ler(colecao, id) {
+    return paraEntidade(await this.prisma.item.findUnique({ where: chave(colecao, id), include: COM_AUTOR }))
   }
 
-  existe(colecao, id) {
-    return Boolean(this.bd.prepare('SELECT 1 FROM itens WHERE colecao = ? AND id = ?').get(colecao, String(id)))
+  async existe(colecao, id) {
+    return Boolean(await this.prisma.item.findUnique({ where: chave(colecao, id), select: { id: true } }))
   }
 
-  publicadoExiste(colecao, id) {
-    return Boolean(this.bd.prepare("SELECT 1 FROM itens WHERE colecao = ? AND id = ? AND estado = 'publicado'").get(colecao, String(id)))
+  async publicadoExiste(colecao, id) {
+    return Boolean(await this.prisma.item.findFirst({ where: { colecao, id: String(id), estado: 'publicado' }, select: { id: true } }))
   }
 
   contar(colecao, estado) {
-    return this.bd.prepare('SELECT COUNT(*) n FROM itens WHERE colecao = ? AND estado = ?').get(colecao, estado).n
+    return this.prisma.item.count({ where: { colecao, estado } })
   }
 
   contarTodos() {
-    return this.bd.prepare('SELECT COUNT(*) n FROM itens').get().n
+    return this.prisma.item.count()
   }
 
-  proximaOrdem(colecao) {
-    return this.bd.prepare('SELECT COALESCE(MAX(ordem), 0) + 1 n FROM itens WHERE colecao = ?').get(colecao).n
+  async proximaOrdem(colecao) {
+    const r = await this.prisma.item.aggregate({ where: { colecao }, _max: { ordem: true } })
+    return (r._max.ordem ?? 0) + 1
   }
 
-  criar(c, autorId) {
-    this.bd.prepare(`INSERT INTO itens (colecao, id, dados, ordem, estado, atualizado_por, criado_por) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .run(c.colecao, c.id, JSON.stringify(c.dados), c.ordem, c.estado, autorId, autorId)
+  // Conflito se outro pedido criou o mesmo identificador entretanto (o serviço tenta outro)
+  async criar(c, autorId) {
+    try {
+      await this.prisma.item.create({
+        data: { colecao: c.colecao, id: c.id, dados: c.dados, ordem: c.ordem, estado: c.estado, atualizadoPor: autorId, criadoPor: autorId },
+      })
+    } catch (erro) {
+      if (eDuplicado(erro)) throw new Conflito('Já existe um conteúdo com este identificador.')
+      throw erro
+    }
     return this.ler(c.colecao, c.id)
   }
 
-  // inserção da carga inicial (não substitui o que já existe)
-  semear(c) {
-    this.bd.prepare('INSERT OR IGNORE INTO itens (colecao, id, dados, ordem, estado) VALUES (?, ?, ?, ?, ?)')
-      .run(c.colecao, c.id, JSON.stringify(c.dados), c.ordem, c.estado)
+  // carga inicial (não substitui o que já existe)
+  async semear(lista) {
+    await this.prisma.item.createMany({
+      data: lista.map((c) => ({ colecao: c.colecao, id: c.id, dados: c.dados, ordem: c.ordem, estado: c.estado })),
+      skipDuplicates: true,
+    })
   }
 
-  guardar(c, autorId) {
-    this.bd.prepare(`UPDATE itens SET dados = ?, estado = ?, atualizado_em = datetime('now'), atualizado_por = ? WHERE colecao = ? AND id = ?`)
-      .run(JSON.stringify(c.dados), c.estado, autorId, c.colecao, c.id)
+  async guardar(c, autorId) {
+    await this.prisma.item.update({
+      where: chave(c.colecao, c.id),
+      data: { dados: c.dados, estado: c.estado, atualizadoEm: new Date(), atualizadoPor: autorId },
+    })
     return this.ler(c.colecao, c.id)
   }
 
-  // apaga o item e tudo o que lhe está associado
-  apagar(colecao, id) {
-    this.transacao(() => {
-      this.bd.prepare('DELETE FROM itens WHERE colecao = ? AND id = ?').run(colecao, id)
-      this.bd.prepare('DELETE FROM gostos WHERE colecao = ? AND item_id = ?').run(colecao, id)
-      this.bd.prepare('DELETE FROM comentarios WHERE colecao = ? AND item_id = ?').run(colecao, id)
-      this.bd.prepare('DELETE FROM visualizacoes WHERE colecao = ? AND item_id = ?').run(colecao, id)
-      if (colecao === 'publicidade') this.bd.prepare('DELETE FROM publicidade_metricas WHERE banner_id = ?').run(id)
-    })
+  // apaga o item e tudo o que lhe está associado, numa só transação
+  async apagar(colecao, id) {
+    const p = this.prisma
+    await p.$transaction([
+      p.item.deleteMany({ where: { colecao, id } }),
+      p.gosto.deleteMany({ where: { colecao, itemId: id } }),
+      p.comentario.deleteMany({ where: { colecao, itemId: id } }),
+      p.visualizacao.deleteMany({ where: { colecao, itemId: id } }),
+      ...(colecao === 'publicidade' ? [p.publicidadeMetrica.deleteMany({ where: { bannerId: id } })] : []),
+    ])
   }
 
-  reordenar(colecao, ids) {
-    this.transacao(() => {
-      const st = this.bd.prepare('UPDATE itens SET ordem = ? WHERE colecao = ? AND id = ?')
-      ids.forEach((id, i) => st.run(i + 1, colecao, id))
-    })
+  async reordenar(colecao, ids) {
+    await this.prisma.$transaction(ids.map((id, i) => this.prisma.item.updateMany({ where: { colecao, id }, data: { ordem: i + 1 } })))
   }
 
-  apagarTodos() {
-    this.bd.exec('DELETE FROM itens; DELETE FROM paginas;')
+  async apagarTodos() {
+    await this.prisma.$transaction([this.prisma.item.deleteMany(), this.prisma.pagina.deleteMany()])
   }
 }

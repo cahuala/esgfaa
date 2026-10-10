@@ -7,6 +7,7 @@ import { criarContentor } from '../../src/contentor.js'
 import { criarApp } from '../../src/interfaces/http/app.js'
 import { prepararSistema } from '../../src/aplicacao/arranque.js'
 import { Utilizador } from '../../src/dominio/identidade/utilizador.js'
+import { URL_TESTE, criarEsquema, apagarEsquema } from './esquema.js'
 
 export const ADMIN = { email: 'admin@teste.ao', senha: 'Comando2026seguro' }
 export const SENHA = 'Teste2026valida'
@@ -21,19 +22,20 @@ export function relogioFalso(inicio = '2026-10-10T12:00:00Z') {
 }
 
 /*
-  API completa com base de dados em memória e pasta de uploads temporária.
+  API completa com um esquema PostgreSQL próprio e uma pasta de uploads temporária.
   Cada teste cria o seu ambiente: nada é partilhado entre testes.
 */
 export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
   const pastaUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-teste-'))
   const config = criarConfig({
-    NODE_ENV: 'test', DATA_DIR: ':memory:', JWT_SECRET: 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres',
+    NODE_ENV: 'test', DATABASE_URL: URL_TESTE, JWT_SECRET: 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres',
     ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.senha, ADMIN_NAME: 'Administrador Teste', ...env,
   }, { pastaUploads })
   // limites altos por omissão; os testes de limites baixam-nos
   for (const k of Object.keys(config.limites)) config.limites[k] = { janelaMs: 60_000, maximo: 10_000, ...limites[k] }
 
-  const contentor = criarContentor(config, relogio ? { relogio } : {})
+  const esquema = await criarEsquema()
+  const contentor = criarContentor(config, { esquema, ...(relogio ? { relogio } : {}) })
   await prepararSistema(contentor)
   const erros = []
   const app = criarApp(contentor, { registarErro: (e) => erros.push(e) })
@@ -49,7 +51,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
   async function criarUtilizador(papel, { email = `${papel}.${Math.random().toString(36).slice(2, 8)}@teste.ao`, senha = SENHA, ativo = true } = {}) {
     const u = Utilizador.novo({ nome: `Utilizador ${papel}`, email, papel, senhaCifrada: await contentor.cifra.cifrar(senha) })
     u.ativo = ativo
-    const criado = contentor.repositorios.utilizadores.criar(u)
+    const criado = await contentor.repositorios.utilizadores.criar(u)
     return { ...criado, senha, token: ativo ? await entrar(email, senha) : null }
   }
 
@@ -60,12 +62,13 @@ export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
     return ag
   }
 
-  function fechar() {
-    contentor.fechar()
+  async function fechar() {
+    await contentor.fechar()
+    await apagarEsquema(esquema)
     fs.rmSync(pastaUploads, { recursive: true, force: true })
   }
 
-  return { app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads }
+  return { app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, esquema }
 }
 
 export const noticia = (extra = {}) => ({

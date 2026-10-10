@@ -77,7 +77,7 @@ describe('site público', () => {
       assert.equal(r.status, 429)
       assert.match(r.body.erro, /demasiado depressa/)
     } finally {
-      lim.fechar()
+      await lim.fechar()
     }
   })
 

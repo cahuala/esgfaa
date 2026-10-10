@@ -1,4 +1,4 @@
-import { abrirBaseDados } from './infraestrutura/bd/ligacao.js'
+import { criarPrisma } from './infraestrutura/bd/prisma.js'
 import { RepositorioUtilizadores } from './infraestrutura/repositorios/utilizadores.js'
 import { RepositorioPapeis } from './infraestrutura/repositorios/papeis.js'
 import { RepositorioConteudos } from './infraestrutura/repositorios/conteudos.js'
@@ -26,21 +26,22 @@ import { ServicoFicheiros } from './aplicacao/ficheiros.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
-  base de dados em memória e uma pasta de uploads temporária.
+  esquema próprio no PostgreSQL e uma pasta de uploads temporária.
 */
-export function criarContentor(config, { relogio = relogioSistema } = {}) {
-  const { bd, transacao, fechar } = abrirBaseDados(config.ficheiroBase)
+export function criarContentor(config, { relogio = relogioSistema, esquema = null } = {}) {
+  const prisma = criarPrisma(config.urlBaseDados, { esquema })
+  const fuso = config.fuso
 
   const repositorios = {
-    utilizadores: new RepositorioUtilizadores({ bd }),
-    papeis: new RepositorioPapeis({ bd }),
-    conteudos: new RepositorioConteudos({ bd, transacao }),
-    paginas: new RepositorioPaginas({ bd }),
-    interacoes: new RepositorioInteracoes({ bd }),
-    visitas: new RepositorioVisitas({ bd }),
-    publicidade: new RepositorioPublicidade({ bd }),
-    atividades: new RepositorioAtividades({ bd }),
-    sessoes: new RepositorioSessoes({ bd }),
+    utilizadores: new RepositorioUtilizadores({ prisma }),
+    papeis: new RepositorioPapeis({ prisma }),
+    conteudos: new RepositorioConteudos({ prisma }),
+    paginas: new RepositorioPaginas({ prisma }),
+    interacoes: new RepositorioInteracoes({ prisma, fuso }),
+    visitas: new RepositorioVisitas({ prisma, fuso }),
+    publicidade: new RepositorioPublicidade({ prisma, fuso }),
+    atividades: new RepositorioAtividades({ prisma }),
+    sessoes: new RepositorioSessoes({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -58,7 +59,7 @@ export function criarContentor(config, { relogio = relogioSistema } = {}) {
     auditoria,
     conteudos,
     sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio }),
-    utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria, transacao }),
+    utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }),
     interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
@@ -68,5 +69,6 @@ export function criarContentor(config, { relogio = relogioSistema } = {}) {
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
   }
 
-  return { config, bd, transacao, fechar, relogio, repositorios, servicos, cifra, tokens, armazenamento }
+  const fechar = () => prisma.$disconnect()
+  return { config, prisma, fechar, relogio, repositorios, servicos, cifra, tokens, armazenamento }
 }

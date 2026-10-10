@@ -6,8 +6,6 @@ import { assinaturaValida } from '../../src/infraestrutura/ficheiros/armazenamen
 import { CacheLimitada } from '../../src/infraestrutura/seguranca/cacheLimitada.js'
 import { CifraSenhas } from '../../src/infraestrutura/seguranca/cifra.js'
 import { Tokens } from '../../src/infraestrutura/seguranca/tokens.js'
-import { abrirBaseDados } from '../../src/infraestrutura/bd/ligacao.js'
-import { MIGRACOES } from '../../src/infraestrutura/bd/migracoes.js'
 import { criarConfig } from '../../src/infraestrutura/config.js'
 import { gerarSenha } from '../../src/aplicacao/arranque.js'
 import { motivoSenhaFraca } from '../../src/dominio/identidade/politicaSenha.js'
@@ -130,33 +128,14 @@ describe('tokens de sessão', () => {
   })
 })
 
-describe('base de dados', () => {
-  it('aplica todas as migrações uma única vez', () => {
-    const { bd, fechar } = abrirBaseDados(':memory:')
-    const aplicadas = bd.prepare('SELECT versao FROM migracoes ORDER BY versao').all().map((l) => l.versao)
-    assert.deepEqual(aplicadas, MIGRACOES.map((m) => m.versao))
-    fechar()
-  })
-
-  it('transações aninhadas desfazem só a parte que falhou', () => {
-    const { bd, transacao, fechar } = abrirBaseDados(':memory:')
-    transacao(() => {
-      bd.prepare("INSERT INTO paginas (chave, dados) VALUES ('a', '{}')").run()
-      assert.throws(() => transacao(() => {
-        bd.prepare("INSERT INTO paginas (chave, dados) VALUES ('b', '{}')").run()
-        throw new Error('falha')
-      }))
-    })
-    assert.deepEqual(bd.prepare('SELECT chave FROM paginas').all().map((l) => l.chave), ['a'])
-    fechar()
-  })
-})
-
 describe('configuração', () => {
-  it('exige JWT_SECRET forte em produção', () => {
-    assert.throws(() => criarConfig({ NODE_ENV: 'production' }), /JWT_SECRET/)
-    assert.throws(() => criarConfig({ NODE_ENV: 'production', JWT_SECRET: 'curto' }), /curto/)
-    assert.doesNotThrow(() => criarConfig({ NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(32) }))
+  it('exige JWT_SECRET forte e DATABASE_URL em produção', () => {
+    const bd = 'postgresql://u:p@bd:5432/esgfaa'
+    assert.throws(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd }), /JWT_SECRET/)
+    assert.throws(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'curto' }), /curto/)
+    assert.throws(() => criarConfig({ NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(32) }), /DATABASE_URL/)
+    assert.throws(() => criarConfig({ DATABASE_URL: 'mysql://x' }), /DATABASE_URL/)
+    assert.doesNotThrow(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'x'.repeat(32) }))
   })
 
   it('valida valores e lê listas', () => {

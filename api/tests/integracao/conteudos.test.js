@@ -27,7 +27,7 @@ describe('conteúdos e páginas (painel)', () => {
     assert.equal(r.status, 200)
     assert.equal(r.body.id, c.body.id)
     assert.equal(r.body.titulo, 'Seminário Final')
-    const log = amb.contentor.repositorios.atividades.listar({ acao: 'editar', colecao: 'eventos' })
+    const log = await amb.contentor.repositorios.atividades.listar({ acao: 'editar', colecao: 'eventos' })
     assert.deepEqual(JSON.parse(log.linhas[0].detalhes).campos.sort(), ['titulo'])
   })
 
@@ -43,14 +43,14 @@ describe('conteúdos e páginas (painel)', () => {
     const html = '<p>Olá<script>alert(1)</script><img src="/uploads/a.jpg" onerror="alert(2)"></p><iframe src="https://mal.com"></iframe>'
     const r = await api().post('/api/admin/colecoes/artigos').send({ titulo: 'Artigo', conteudo: [{ tipo: 'texto', html }] })
     assert.equal(r.status, 201)
-    const guardado = amb.contentor.repositorios.conteudos.ler('artigos', r.body.slug).dados.conteudo[0].html
+    const guardado = (await amb.contentor.repositorios.conteudos.ler('artigos', r.body.slug)).dados.conteudo[0].html
     assert.doesNotMatch(guardado, /script|onerror|mal\.com/)
     assert.match(guardado, /<img src="\/uploads\/a.jpg" \/>/)
   })
 
   it('guarda endereços de uploads relativos e devolve-os completos', async () => {
     const r = await api().post('/api/admin/colecoes/pessoas').send({ nome: 'Coronel Teste', foto: 'http://127.0.0.1/uploads/2026-10/f.jpg' })
-    assert.equal(amb.contentor.repositorios.conteudos.ler('pessoas', r.body.id).dados.foto, '/uploads/2026-10/f.jpg')
+    assert.equal((await amb.contentor.repositorios.conteudos.ler('pessoas', r.body.id)).dados.foto, '/uploads/2026-10/f.jpg')
     assert.match(r.body.foto, /^http:\/\/127\.0\.0\.1:\d+\/uploads\/2026-10\/f\.jpg$/)
   })
 
@@ -78,7 +78,7 @@ describe('conteúdos e páginas (painel)', () => {
     const n = (await api().post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Para apagar' }))).body.slug
     await amb.http().post(`/api/publico/interacoes/noticias/${n}/comentarios`).send({ nome: 'Ana', texto: 'Comentário' })
     assert.equal((await api().delete(`/api/admin/colecoes/noticias/${n}`)).status, 204)
-    assert.equal(amb.contentor.repositorios.interacoes.listarComentarios().filter((c) => c.item_id === n).length, 0)
+    assert.equal((await amb.contentor.repositorios.interacoes.listarComentarios()).filter((c) => c.item_id === n).length, 0)
     assert.equal((await api().delete(`/api/admin/colecoes/noticias/${n}`)).status, 404)
   })
 

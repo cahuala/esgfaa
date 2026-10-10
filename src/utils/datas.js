@@ -73,8 +73,15 @@ export function mesLongo(iso) {
 }
 
 // "2026-10-09 09:21:50" (UTC, vindo da API) -> "há 5 min", "há 3 h", "há 2 dias" ou "12 Set 2026"
-export function tempoRelativo(dataUtc) {
-  const d = new Date(`${String(dataUtc).replace(' ', 'T')}Z`)
+// aceita "2026-10-09 09:21:50" (UTC) e ISO com fuso ("2026-10-09T09:21:50.000Z")
+export function dataUtc(valor) {
+  const iso = String(valor).replace(' ', 'T')
+  return new Date(/(Z|[+-]\d{2}:\d{2})$/.test(iso) ? iso : `${iso}Z`)
+}
+
+export function tempoRelativo(valor) {
+  const d = dataUtc(valor)
+  if (Number.isNaN(d.getTime())) return ''
   const seg = Math.max(0, Math.round((Date.now() - d) / 1000))
   if (seg < 60) return 'agora mesmo'
   if (seg < 3600) return `há ${Math.floor(seg / 60)} min`

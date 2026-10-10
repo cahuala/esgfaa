@@ -1,20 +1,21 @@
 export class RepositorioPaginas {
-  constructor({ bd }) {
-    this.bd = bd
+  constructor({ prisma }) {
+    this.prisma = prisma
   }
 
-  ler(chave) {
-    const l = this.bd.prepare('SELECT dados FROM paginas WHERE chave = ?').get(chave)
-    return l ? JSON.parse(l.dados) : null
+  async ler(chave) {
+    return (await this.prisma.pagina.findUnique({ where: { chave } }))?.dados ?? null
   }
 
-  guardar(chave, dados, autorId) {
-    this.bd.prepare(`INSERT INTO paginas (chave, dados, atualizado_por) VALUES (?, ?, ?)
-      ON CONFLICT (chave) DO UPDATE SET dados = excluded.dados, atualizado_em = datetime('now'), atualizado_por = excluded.atualizado_por`)
-      .run(chave, JSON.stringify(dados), autorId)
+  async guardar(chave, dados, autorId) {
+    await this.prisma.pagina.upsert({
+      where: { chave },
+      create: { chave, dados, atualizadoPor: autorId },
+      update: { dados, atualizadoEm: new Date(), atualizadoPor: autorId },
+    })
   }
 
-  semear(chave, dados) {
-    this.bd.prepare('INSERT OR IGNORE INTO paginas (chave, dados) VALUES (?, ?)').run(chave, JSON.stringify(dados))
+  async semear(chave, dados) {
+    await this.prisma.pagina.createMany({ data: [{ chave, dados }], skipDuplicates: true })
   }
 }

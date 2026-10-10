@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ErroValidacao } from '../comum/erros.js'
 import { validarUrls } from '../comum/urls.js'
+import { verificarEstrutura } from '../comum/estrutura.js'
 
 const porDataDesc = (a, b) => (b.data || '').localeCompare(a.data || '')
 const porDataAsc = (a, b) => (a.data || '').localeCompare(b.data || '')
@@ -68,6 +69,7 @@ export function definicao(colecao) {
 export function validarDados(colecao, dados) {
   const def = definicao(colecao)
   if (!dados || typeof dados !== 'object' || Array.isArray(dados)) throw new ErroValidacao('Dados inválidos.')
+  verificarEstrutura(dados)
   const limpos = Object.fromEntries(Object.entries(dados).filter(([k]) => !k.startsWith('_')))
   const titulo = limpos[def.titulo]
   if (typeof titulo !== 'string' || !titulo.trim()) throw new ErroValidacao('O título é obrigatório.')

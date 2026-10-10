@@ -1,69 +1,91 @@
+import { eDuplicado } from '../bd/prisma.js'
+
+const iso = (d) => new Date(d).toISOString()
+
 export class RepositorioInteracoes {
-  constructor({ bd }) {
-    this.bd = bd
+  constructor({ prisma, fuso }) {
+    this.prisma = prisma
+    this.fuso = fuso
   }
 
-  resumo(colecao, id, visitante) {
-    const gostos = this.bd.prepare('SELECT COUNT(*) n FROM gostos WHERE colecao = ? AND item_id = ?').get(colecao, id).n
-    const gostei = visitante ? Boolean(this.bd.prepare('SELECT 1 FROM gostos WHERE colecao = ? AND item_id = ? AND visitante = ?').get(colecao, id, visitante)) : false
-    const comentarios = this.bd.prepare('SELECT id, nome, texto, data FROM comentarios WHERE colecao = ? AND item_id = ? ORDER BY data DESC, id DESC').all(colecao, id)
-    const visualizacoes = this.bd.prepare('SELECT total FROM visualizacoes WHERE colecao = ? AND item_id = ?').get(colecao, id)?.total || 0
-    return { gostos, gostei, comentarios: comentarios.map((c) => ({ ...c })), visualizacoes }
+  async resumo(colecao, id, visitante) {
+    const p = this.prisma
+    const [gostos, meu, comentarios, vistas] = await Promise.all([
+      p.gosto.count({ where: { colecao, itemId: id } }),
+      visitante ? p.gosto.findUnique({ where: { colecao_itemId_visitante: { colecao, itemId: id, visitante } }, select: { visitante: true } }) : null,
+      p.comentario.findMany({ where: { colecao, itemId: id }, select: { id: true, nome: true, texto: true, data: true }, orderBy: [{ data: 'desc' }, { id: 'desc' }] }),
+      p.visualizacao.findUnique({ where: { colecao_itemId: { colecao, itemId: id } } }),
+    ])
+    return { gostos, gostei: Boolean(meu), comentarios: comentarios.map((c) => ({ ...c, data: iso(c.data) })), visualizacoes: vistas?.total || 0 }
   }
 
-  alternarGosto(colecao, id, visitante) {
-    const existe = this.bd.prepare('SELECT 1 FROM gostos WHERE colecao = ? AND item_id = ? AND visitante = ?').get(colecao, id, visitante)
-    if (existe) this.bd.prepare('DELETE FROM gostos WHERE colecao = ? AND item_id = ? AND visitante = ?').run(colecao, id, visitante)
-    else this.bd.prepare('INSERT INTO gostos (colecao, item_id, visitante) VALUES (?, ?, ?)').run(colecao, id, visitante)
-  }
-
-  comentar(colecao, id, { nome, texto }, ip) {
-    this.bd.prepare('INSERT INTO comentarios (colecao, item_id, nome, texto, ip) VALUES (?, ?, ?, ?, ?)').run(colecao, id, nome, texto, ip)
-  }
-
-  contarVisualizacao(colecao, id) {
-    this.bd.prepare(`INSERT INTO visualizacoes (colecao, item_id, total) VALUES (?, ?, 1)
-      ON CONFLICT (colecao, item_id) DO UPDATE SET total = total + 1`).run(colecao, id)
-  }
-
-  comentario(id) {
-    const c = this.bd.prepare('SELECT * FROM comentarios WHERE id = ?').get(Number(id))
-    return c ? { ...c } : null
-  }
-
-  listarComentarios({ limite = 500 } = {}) {
-    return this.bd.prepare('SELECT * FROM comentarios ORDER BY data DESC, id DESC LIMIT ?').all(limite).map((c) => ({ ...c }))
-  }
-
-  apagarComentario(id) {
-    this.bd.prepare('DELETE FROM comentarios WHERE id = ?').run(Number(id))
-  }
-
-  // { 'noticias/slug': { gostos, comentarios, visualizacoes } }
-  porItem() {
-    const mapa = {}
-    const juntar = (linhas, campo) => linhas.forEach((l) => {
-      const k = `${l.colecao}/${l.item_id}`
-      mapa[k] = { gostos: 0, comentarios: 0, visualizacoes: 0, ...mapa[k], [campo]: l.total }
-    })
-    juntar(this.bd.prepare('SELECT colecao, item_id, COUNT(*) total FROM gostos GROUP BY colecao, item_id').all(), 'gostos')
-    juntar(this.bd.prepare('SELECT colecao, item_id, COUNT(*) total FROM comentarios GROUP BY colecao, item_id').all(), 'comentarios')
-    juntar(this.bd.prepare('SELECT colecao, item_id, total FROM visualizacoes').all(), 'visualizacoes')
-    return mapa
-  }
-
-  totais() {
-    const n = (sql) => this.bd.prepare(sql).get().n
-    return {
-      gostos: n('SELECT COUNT(*) n FROM gostos'),
-      comentarios: n('SELECT COUNT(*) n FROM comentarios'),
-      visualizacoes: n('SELECT COALESCE(SUM(total), 0) n FROM visualizacoes'),
-      comentariosHoje: n("SELECT COUNT(*) n FROM comentarios WHERE date(data) = date('now')"),
+  // dá ou retira o gosto; dois pedidos simultâneos do mesmo visitante não dão erro
+  async alternarGosto(colecao, id, visitante) {
+    const { count } = await this.prisma.gosto.deleteMany({ where: { colecao, itemId: id, visitante } })
+    if (count) return
+    try {
+      await this.prisma.gosto.create({ data: { colecao, itemId: id, visitante } })
+    } catch (erro) {
+      if (!eDuplicado(erro)) throw erro
     }
   }
 
+  async comentar(colecao, id, { nome, texto }, ip) {
+    await this.prisma.comentario.create({ data: { colecao, itemId: id, nome, texto, ip } })
+  }
+
+  // incremento atómico (sem perder contagens com pedidos simultâneos)
+  async contarVisualizacao(colecao, id) {
+    await this.prisma.$executeRaw`
+      INSERT INTO visualizacoes (colecao, item_id, total) VALUES (${colecao}, ${id}, 1)
+      ON CONFLICT (colecao, item_id) DO UPDATE SET total = visualizacoes.total + 1`
+  }
+
+  async comentario(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    const c = await this.prisma.comentario.findUnique({ where: { id: n } })
+    return c && { id: c.id, colecao: c.colecao, item_id: c.itemId, nome: c.nome, texto: c.texto, ip: c.ip, data: iso(c.data) }
+  }
+
+  async listarComentarios({ limite = 500 } = {}) {
+    const linhas = await this.prisma.comentario.findMany({ orderBy: [{ data: 'desc' }, { id: 'desc' }], take: limite })
+    return linhas.map((c) => ({ id: c.id, colecao: c.colecao, item_id: c.itemId, nome: c.nome, texto: c.texto, ip: c.ip, data: iso(c.data) }))
+  }
+
+  async apagarComentario(id) {
+    await this.prisma.comentario.deleteMany({ where: { id: Number(id) } })
+  }
+
+  // { 'noticias/slug': { gostos, comentarios, visualizacoes } }
+  async porItem() {
+    const p = this.prisma
+    const [gostos, comentarios, vistas] = await Promise.all([
+      p.gosto.groupBy({ by: ['colecao', 'itemId'], _count: { _all: true } }),
+      p.comentario.groupBy({ by: ['colecao', 'itemId'], _count: { _all: true } }),
+      p.visualizacao.findMany(),
+    ])
+    const mapa = {}
+    const juntar = (k, campo, total) => { mapa[k] = { gostos: 0, comentarios: 0, visualizacoes: 0, ...mapa[k], [campo]: total } }
+    gostos.forEach((g) => juntar(`${g.colecao}/${g.itemId}`, 'gostos', g._count._all))
+    comentarios.forEach((g) => juntar(`${g.colecao}/${g.itemId}`, 'comentarios', g._count._all))
+    vistas.forEach((v) => juntar(`${v.colecao}/${v.itemId}`, 'visualizacoes', v.total))
+    return mapa
+  }
+
+  async totais() {
+    const [gostos, comentarios, vistas, [hoje]] = await Promise.all([
+      this.prisma.gosto.count(),
+      this.prisma.comentario.count(),
+      this.prisma.visualizacao.aggregate({ _sum: { total: true } }),
+      this.prisma.$queryRaw`SELECT COUNT(*)::int n FROM comentarios WHERE (data AT TIME ZONE ${this.fuso})::date = (now() AT TIME ZONE ${this.fuso})::date`,
+    ])
+    return { gostos, comentarios, visualizacoes: vistas._sum.total || 0, comentariosHoje: hoje.n }
+  }
+
   comentariosPorDia(dias = 14) {
-    return this.bd.prepare(`SELECT date(data) dia, COUNT(*) n FROM comentarios WHERE data >= datetime('now', ?) GROUP BY dia ORDER BY dia`)
-      .all(`-${dias - 1} days`).map((l) => ({ ...l }))
+    return this.prisma.$queryRaw`
+      SELECT to_char((data AT TIME ZONE ${this.fuso})::date, 'YYYY-MM-DD') dia, COUNT(*)::int n FROM comentarios
+      WHERE data >= now() - make_interval(days => ${dias - 1}) GROUP BY dia ORDER BY dia`
   }
 }

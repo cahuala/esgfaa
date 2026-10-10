@@ -33,7 +33,7 @@ describe('permissões (RBAC) e utilizadores', () => {
     const r = await amb.com(chefe.token).put(`/api/admin/colecoes/noticias/${rasc.body.slug}`).send({ ...rasc.body, _estado: 'publicado' })
     assert.equal(r.status, 200)
     assert.equal(r.body._estado, 'publicado')
-    const log = amb.contentor.repositorios.atividades.listar({ acao: 'publicar' })
+    const log = await amb.contentor.repositorios.atividades.listar({ acao: 'publicar' })
     assert.equal(log.linhas[0].alvo_id, rasc.body.slug)
   })
 

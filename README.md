@@ -6,19 +6,23 @@ Três partes no mesmo repositório:
 |---|---|---|
 | Site público (React + Vite) | `src/` | `https://cahuala.github.io/esgfaa/` |
 | Painel de administração (tema Color Admin) | `src/admin/`, `admin/index.html` | endereço secreto (ver abaixo); no computador: `localhost:5173/admin/` |
-| API (Express + SQLite, arquitetura DDD) | `api/` | onde a alojar (ver abaixo); detalhes em [api/README.md](api/README.md) |
+| API (Express + PostgreSQL com Prisma, arquitetura DDD) | `api/` | onde a alojar (ver abaixo); detalhes em [api/README.md](api/README.md) |
 
 O site funciona sem a API: usa os conteúdos de `src/data/`. Com a API ligada, passa a mostrar o que se edita no painel, e ativa gostos, comentários e contagem de visualizações.
 
 ## Correr no computador
 
-Precisa do Node.js 24 ou mais recente (a API usa o SQLite incluído no Node).
+Precisa do Node.js 24 ou mais recente e do Docker (para o PostgreSQL).
 
 ```bash
+# 0. PostgreSQL (uma vez; fica a correr em segundo plano, porta 5434)
+docker compose up -d
+
 # 1. API (terminal 1)
 cd api
 npm install
 cp .env.example .env      # opcional em desenvolvimento
+npm run migrar            # cria/atualiza as tabelas (migrações do Prisma)
 npm run dev               # http://localhost:3001
 
 # 2. Site e painel (terminal 2, na raiz)
@@ -28,22 +32,23 @@ npm run dev               # site: http://localhost:5173  ·  painel: http://loca
 ```
 
 No primeiro arranque a API:
-- cria a base de dados em `api/dados/esgfaa.sqlite`;
 - copia para a base de dados os conteúdos atuais de `src/data/` e as imagens de `src/assets/`;
 - cria o administrador `admin@esgfaa.gov.ao` (ou `ADMIN_EMAIL`) com a palavra-passe de `ADMIN_PASSWORD`; sem ela, gera uma palavra-passe aleatória e mostra-a **uma única vez** no terminal. O painel pede que a mude ao entrar.
 
 Para voltar aos conteúdos originais (mantém utilizadores e registo): `cd api && npm run seed -- --forcar`.
 
+Quem ainda tem a base antiga em SQLite (`api/dados/esgfaa.sqlite`) copia tudo para o PostgreSQL com `cd api && npm run importar-sqlite` (só corre numa base vazia).
+
 ## Testes automatizados
 
 ```bash
-npm run test:api        # API: 117 testes de unidade e integração (domínio, segurança, RBAC, conteúdos, ficheiros…)
+npm run test:api        # API: testes de unidade e integração (domínio, segurança, RBAC, conteúdos, ficheiros…)
 npm test                # site e painel: componentes e funções (Vitest + Testing Library)
 npm run test:e2e        # ponta-a-ponta com o Chrome: entrar no painel, publicar uma notícia, vê-la no site, gostar e comentar
 npm run test:tudo       # lint + todos os anteriores
 ```
 
-Os testes da API usam uma base de dados em memória; os ponta-a-ponta arrancam uma API e um site próprios (portas 3101 e 5174) com uma base de dados descartável. No GitHub, os testes correm em cada pull request e **antes de cada publicação**: se algum falhar, o site não é publicado. Cobertura: `npm run test:cobertura` (na raiz e em `api/`).
+Os testes da API usam o PostgreSQL do `docker compose` (cada teste num esquema próprio, apagado no fim); os ponta-a-ponta arrancam uma API e um site próprios (portas 3101 e 5174) com uma base de dados descartável. No GitHub, os testes correm em cada pull request e **antes de cada publicação**: se algum falhar, o site não é publicado. Cobertura: `npm run test:cobertura` (na raiz e em `api/`).
 
 ## Painel de administração
 
@@ -61,7 +66,7 @@ Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (pu
 
 ## Pôr a API online
 
-A API precisa de um servidor com **disco persistente** (a base de dados e as imagens carregadas ficam em `api/dados/`). Opções: um VPS com Node.js, ou um serviço como Render/Railway com disco persistente.
+A API precisa de uma base **PostgreSQL** (gerida, como Neon, Supabase ou Render, ou num VPS) e de um **disco persistente** para as imagens carregadas (`api/dados/uploads`). No arranque, `npm start` aplica as migrações pendentes.
 
 Variáveis de ambiente obrigatórias em produção (ver `api/.env.example`):
 
@@ -72,7 +77,8 @@ Variáveis de ambiente obrigatórias em produção (ver `api/.env.example`):
 | `ADMIN_PASSWORD` | palavra-passe do primeiro administrador (mínimo 10 caracteres, com letras e números) |
 | `PUBLIC_URL` | endereço público da API, ex.: `https://api.esgfaa.gov.ao` |
 | `CORS_ORIGINS` | sites autorizados, ex.: `https://cahuala.github.io` |
-| `DATA_DIR` | pasta persistente para a base de dados e os ficheiros |
+| `DATABASE_URL` | ligação ao PostgreSQL, ex.: `postgresql://utilizador:senha@servidor:5432/esgfaa` |
+| `DATA_DIR` | pasta persistente para os ficheiros carregados |
 | `TRUST_PROXY=1` | se estiver atrás de um proxy (Render, Nginx…) |
 
 Com Docker (construir a partir da raiz, porque a carga inicial lê `src/data`):
@@ -90,7 +96,7 @@ O painel **não** é publicado em `/admin`. Em **Settings → Secrets and variab
 
 O endereço secreto é só uma camada extra: a proteção real está na API (palavras-passe fortes, bloqueio da conta após 5 tentativas falhadas, sessões que se podem terminar, permissões verificadas em cada pedido e registo de atividades). Ver [api/README.md](api/README.md#segurança).
 
-Faça cópias de segurança regulares da pasta `api/dados/`.
+Faça cópias de segurança regulares da base de dados (`pg_dump`) e da pasta `api/dados/uploads/`.
 
 ## Notas
 

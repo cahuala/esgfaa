@@ -4,6 +4,8 @@ import { z } from 'zod'
 
 export const RAIZ_API = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SEGREDO_DESENVOLVIMENTO = 'desenvolvimento-apenas-nao-usar-em-producao'
+// PostgreSQL do docker-compose.yml (só para desenvolvimento)
+export const URL_DESENVOLVIMENTO = 'postgresql://esgfaa:esgfaa_dev@localhost:5434/esgfaa'
 
 const lista = (padrao) => z.string().default(padrao).transform((s) => s.split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean))
 const inteiro = (padrao, min, max) => z.coerce.number().int().min(min).max(max).default(padrao)
@@ -12,6 +14,8 @@ const ESQUEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: inteiro(3001, 1, 65535),
   DATA_DIR: z.string().default('dados'),
+  DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
+  FUSO_HORARIO: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$|^UTC$/).default('Africa/Luanda'),
   PUBLIC_URL: z.union([z.literal(''), z.url()]).default(''),
   CORS_ORIGINS: lista('http://localhost:5173,http://localhost:4173,https://cahuala.github.io'),
   JWT_SECRET: z.string().default(''),
@@ -29,7 +33,7 @@ const proxy = (v) => (!v ? false : /^\d+$/.test(v) ? Number(v) : v === 'true' ? 
 
 /*
   Lê e valida a configuração do ambiente (falha no arranque se algo estiver errado).
-  Em testes passa-se um objeto com os valores pretendidos (ex.: DATA_DIR ':memory:').
+  Em testes passa-se um objeto com os valores pretendidos.
 */
 export function criarConfig(env = process.env, extras = {}) {
   const r = ESQUEMA.safeParse(env)
@@ -48,16 +52,17 @@ export function criarConfig(env = process.env, extras = {}) {
     throw new Error('JWT_SECRET demasiado curto: use pelo menos 32 caracteres aleatórios.')
   }
 
-  const memoria = e.DATA_DIR === ':memory:'
-  const pastaDados = memoria ? null : path.resolve(RAIZ_API, e.DATA_DIR)
+  if (!e.DATABASE_URL && producao) throw new Error('Defina DATABASE_URL (PostgreSQL) antes de arrancar a API em produção.')
+  const pastaDados = path.resolve(RAIZ_API, e.DATA_DIR)
 
   return {
     ambiente: e.NODE_ENV,
     producao,
     porta: e.PORT,
     pastaDados,
-    ficheiroBase: memoria ? ':memory:' : path.join(pastaDados, 'esgfaa.sqlite'),
-    pastaUploads: memoria ? null : path.join(pastaDados, 'uploads'),
+    urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
+    fuso: e.FUSO_HORARIO,
+    pastaUploads: path.join(pastaDados, 'uploads'),
     urlPublico: e.PUBLIC_URL.replace(/\/$/, ''),
     origens: e.CORS_ORIGINS,
     segredoJwt,
@@ -70,6 +75,8 @@ export function criarConfig(env = process.env, extras = {}) {
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },
+      // tentativas por IP, qualquer que seja o e-mail (contra "password spraying")
+      entrarIp: { janelaMs: 15 * 60_000, maximo: 40 },
       admin: { janelaMs: 60_000, maximo: 600 },
       publico: { janelaMs: 60_000, maximo: 300 },
       gosto: { janelaMs: 60_000, maximo: 30 },

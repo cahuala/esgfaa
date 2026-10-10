@@ -12,22 +12,23 @@ export class ServicoPaginas {
     if (!PAGINAS.includes(chave)) throw new NaoEncontrado('Página desconhecida.')
   }
 
-  todas() {
-    return Object.fromEntries(PAGINAS.map((p) => [p, this.paginas.ler(p)]))
+  async todas() {
+    const dados = await Promise.all(PAGINAS.map((p) => this.paginas.ler(p)))
+    return Object.fromEntries(PAGINAS.map((p, i) => [p, dados[i]]))
   }
 
-  ler(ctx, chave) {
+  async ler(ctx, chave) {
     ctx.actor.exigir('paginas.ver')
     this.#existe(chave)
-    return this.paginas.ler(chave) || {}
+    return (await this.paginas.ler(chave)) || {}
   }
 
-  guardar(ctx, chave, corpo) {
+  async guardar(ctx, chave, corpo) {
     ctx.actor.exigir('paginas.editar')
     this.#existe(chave)
     const dados = relativizar(this.filtroHtml(validarPagina(chave, corpo)))
-    this.paginas.guardar(chave, dados, ctx.actor.id)
-    this.auditoria.registar(ctx, { acao: 'editar_pagina', colecao: 'paginas', alvoId: chave, alvoTitulo: `Página ${chave}` })
+    await this.paginas.guardar(chave, dados, ctx.actor.id)
+    await this.auditoria.registar(ctx, { acao: 'editar_pagina', colecao: 'paginas', alvoId: chave, alvoTitulo: `Página ${chave}` })
     return this.paginas.ler(chave)
   }
 }

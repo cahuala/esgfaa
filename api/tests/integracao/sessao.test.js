@@ -45,7 +45,7 @@ describe('sessão do painel', () => {
     relogio.avancar(16)
     assert.equal((await amb.http().post('/api/admin/entrar').send(ADMIN)).status, 200)
 
-    const acoes = amb.contentor.repositorios.atividades.listar({ acao: 'bloquear_conta' })
+    const acoes = await amb.contentor.repositorios.atividades.listar({ acao: 'bloquear_conta' })
     assert.equal(acoes.total, 1)
   })
 
@@ -65,7 +65,7 @@ describe('sessão do painel', () => {
       // outro e-mail não é afetado
       assert.equal((await lim.http().post('/api/admin/entrar').send(ADMIN)).status, 200)
     } finally {
-      lim.fechar()
+      await lim.fechar()
     }
   })
 
@@ -89,9 +89,9 @@ describe('sessão do painel', () => {
 
   it('palavra-passe fraca antiga obriga a mudar', async () => {
     const u = await amb.criarUtilizador('redator', { email: 'fraca@teste.ao' })
-    const conta = amb.contentor.repositorios.utilizadores.porId(u.id)
+    const conta = await amb.contentor.repositorios.utilizadores.porId(u.id)
     conta.senha = await amb.contentor.cifra.cifrar('Mudar1234')
-    amb.contentor.repositorios.utilizadores.guardar(conta)
+    await amb.contentor.repositorios.utilizadores.guardar(conta)
     const t = await amb.entrar('fraca@teste.ao', 'Mudar1234')
     assert.equal((await amb.com(t).get('/api/admin/eu')).body.deveMudarSenha, true)
   })

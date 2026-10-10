@@ -1,0 +1,23 @@
+# PostgreSQL para desenvolvimento e testes:  docker compose up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: esgfaa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: esgfaa
+      POSTGRES_PASSWORD: esgfaa_dev
+      POSTGRES_DB: esgfaa
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - esgfaa-pg:/var/lib/postgresql/data
+      - ./api/prisma/bd-iniciais.sql:/docker-entrypoint-initdb.d/01-bd-iniciais.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esgfaa -d esgfaa"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  esgfaa-pg:

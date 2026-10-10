@@ -9,33 +9,33 @@ export class ServicoInteracoes {
   }
 
   // só se interage com notícias, eventos e artigos publicados
-  #garantirItem(colecao, id) {
+  async #garantirItem(colecao, id) {
     if (!INTERATIVAS.includes(colecao)) throw new NaoEncontrado('Coleção inválida.')
-    if (!this.conteudos.publicadoExiste(colecao, id)) throw new NaoEncontrado('Conteúdo não encontrado.')
+    if (!(await this.conteudos.publicadoExiste(colecao, id))) throw new NaoEncontrado('Conteúdo não encontrado.')
   }
 
-  resumo(colecao, id, visitante) {
-    this.#garantirItem(colecao, id)
+  async resumo(colecao, id, visitante) {
+    await this.#garantirItem(colecao, id)
     return this.interacoes.resumo(colecao, id, visitanteValido(visitante) ? visitante : null)
   }
 
   // no máximo uma visualização por visitante a cada 30 min para o mesmo item
-  registarVisualizacao(colecao, id, visitante, ip) {
-    this.#garantirItem(colecao, id)
+  async registarVisualizacao(colecao, id, visitante, ip) {
+    await this.#garantirItem(colecao, id)
     const quem = visitanteValido(visitante) ? visitante : ip
-    if (this.vistasRecentes.marcarSeNova(`${colecao}/${id}/${quem}`)) this.interacoes.contarVisualizacao(colecao, id)
+    if (this.vistasRecentes.marcarSeNova(`${colecao}/${id}/${quem}`)) await this.interacoes.contarVisualizacao(colecao, id)
   }
 
-  alternarGosto(colecao, id, visitante) {
-    this.#garantirItem(colecao, id)
+  async alternarGosto(colecao, id, visitante) {
+    await this.#garantirItem(colecao, id)
     if (!visitanteValido(visitante)) throw new ErroValidacao('Identificador de visitante inválido.')
-    this.interacoes.alternarGosto(colecao, id, visitante)
+    await this.interacoes.alternarGosto(colecao, id, visitante)
     return this.interacoes.resumo(colecao, id, visitante)
   }
 
-  comentar(colecao, id, { nome, texto, visitante }, ip) {
-    this.#garantirItem(colecao, id)
-    this.interacoes.comentar(colecao, id, novoComentario({ nome, texto }), ip)
+  async comentar(colecao, id, { nome, texto, visitante }, ip) {
+    await this.#garantirItem(colecao, id)
+    await this.interacoes.comentar(colecao, id, novoComentario({ nome, texto }), ip)
     return this.interacoes.resumo(colecao, id, visitanteValido(visitante) ? visitante : null)
   }
 
@@ -46,18 +46,18 @@ export class ServicoInteracoes {
 
   // ---------- painel ----------
 
-  listarComentarios(ctx) {
+  async listarComentarios(ctx) {
     ctx.actor.exigir('comentarios.ver')
-    const titulos = this.titulos()
-    return this.interacoes.listarComentarios({ limite: 2000 }).map((c) => ({ ...c, tituloItem: titulos[`${c.colecao}/${c.item_id}`] || c.item_id }))
+    const [titulos, lista] = await Promise.all([this.titulos(), this.interacoes.listarComentarios({ limite: 2000 })])
+    return lista.map((c) => ({ ...c, tituloItem: titulos[`${c.colecao}/${c.item_id}`] || c.item_id }))
   }
 
-  apagarComentario(ctx, id) {
+  async apagarComentario(ctx, id) {
     ctx.actor.exigir('comentarios.apagar')
-    const c = this.interacoes.comentario(id)
+    const c = await this.interacoes.comentario(id)
     if (!c) throw new NaoEncontrado('Comentário não encontrado.')
-    this.interacoes.apagarComentario(c.id)
-    this.auditoria.registar(ctx, {
+    await this.interacoes.apagarComentario(c.id)
+    await this.auditoria.registar(ctx, {
       acao: 'apagar_comentario', colecao: c.colecao, alvoId: c.item_id,
       alvoTitulo: `Comentário de ${c.nome}`, detalhes: { texto: c.texto.slice(0, 300) },
     })
