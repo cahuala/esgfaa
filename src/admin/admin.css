@@ -324,3 +324,230 @@ form:has(> .barra-guardar) {
 .barra-guardar {
   margin-top: 20px;
 }
+
+/* ===== Página de entrada com a identidade da Escola ===== */
+
+.entrada-esg {
+  --esg-vermelho: #e53917;
+  background: #0f0b09;
+}
+
+.entrada-esg .news-image {
+  background-position: center 40%;
+  filter: saturate(0.85);
+}
+
+/* escurece a fotografia para o texto se ler bem */
+.entrada-esg .news-feed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, rgba(10, 5, 3, 0.95) 0%, rgba(10, 5, 3, 0.55) 45%, rgba(10, 5, 3, 0.25) 100%),
+    linear-gradient(to right, rgba(229, 57, 23, 0.18), transparent 60%);
+}
+
+.entrada-esg .news-caption.entrada-legenda {
+  z-index: 2;
+  padding: 0 60px 56px;
+  background: none;
+  color: #fff;
+}
+
+.entrada-sobretitulo {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--esg-vermelho, #e53917);
+  margin-bottom: 8px;
+}
+
+.entrada-esg .news-feed .news-caption .caption-title {
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 44px;
+  font-weight: 800 !important; /* o tema força 300 */
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+  color: #fff;
+}
+
+.entrada-legenda p {
+  max-width: 460px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 24px;
+}
+
+/* faixa com as cores da bandeira */
+.entrada-bandeira {
+  display: flex;
+  width: 120px;
+  height: 4px;
+}
+
+.entrada-bandeira i {
+  flex: 1;
+}
+
+.entrada-bandeira i:nth-child(1) { background: #cc092f; }
+.entrada-bandeira i:nth-child(2) { background: #000; outline: 1px solid rgba(255, 255, 255, 0.25); }
+.entrada-bandeira i:nth-child(3) { background: #ffcb00; }
+
+/* painel do formulário */
+.entrada-esg .login-container.entrada-painel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 56px 28px;
+  background:
+    radial-gradient(ellipse at top right, rgba(229, 57, 23, 0.16), transparent 55%),
+    #14100e;
+  color: #fff;
+  border-top: 4px solid var(--esg-vermelho, #e53917);
+}
+
+.entrada-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 26px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.entrada-brasao {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(229, 57, 23, 0.35));
+}
+
+.entrada-cabecalho h1 {
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 2px;
+  color: #fff;
+}
+
+.entrada-cabecalho p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.entrada-cabecalho .entrada-sobretitulo {
+  margin-bottom: 4px;
+}
+
+.entrada-rotulo {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.entrada-campo {
+  position: relative;
+}
+
+.entrada-campo > i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.entrada-campo .form-control {
+  height: 48px;
+  padding-left: 44px;
+  padding-right: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.entrada-campo .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.entrada-campo .form-control:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--esg-vermelho, #e53917);
+  box-shadow: 0 0 0 3px rgba(229, 57, 23, 0.2);
+}
+
+.entrada-ver {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.entrada-ver:hover {
+  color: #fff;
+}
+
+.entrada-esg .btn-theme {
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.entrada-aviso {
+  display: flex;
+  gap: 12px;
+  margin-top: 26px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--esg-vermelho, #e53917);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.entrada-aviso i {
+  margin-top: 2px;
+  color: var(--esg-vermelho, #e53917);
+}
+
+.entrada-voltar {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+}
+
+.entrada-voltar:hover {
+  color: #fff;
+}
+
+.entrada-rodape {
+  margin: 40px 0 0;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+@media (max-width: 991.98px) {
+  .entrada-esg .login-container.entrada-painel {
+    min-height: 100vh;
+    padding: 36px 24px 24px;
+  }
+}
