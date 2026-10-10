@@ -58,7 +58,7 @@
   font-size: clamp(26px, 2.6vw, 42px);
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.012em;
 }
 
 .destaqueTexto h2 a {

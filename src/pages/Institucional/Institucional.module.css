@@ -233,7 +233,7 @@
 .tituloSeccao h2 {
   font-size: clamp(26px, 2.6vw, 42px);
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.012em;
   margin: 8px 0 0;
 }
 

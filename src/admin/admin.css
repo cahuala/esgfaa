@@ -2,6 +2,9 @@
 
 /* cor de destaque do tema: vermelho da Escola em vez do verde-água por omissão */
 :root {
+  /* mesma letra do site */
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --bs-body-font-family: var(--bs-font-sans-serif);
   --bs-app-theme: #e53917;
   --bs-app-theme-rgb: 229, 57, 23;
   --bs-app-theme-hover: #c22f11;

@@ -166,7 +166,7 @@
   font-size: clamp(48px, 4.6vw, 80px);
   font-weight: 900;
   line-height: 0.8;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.012em;
   color: var(--vermelho);
 }
 

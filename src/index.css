@@ -8,16 +8,18 @@
 }
 
 body {
-  font-family: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-feature-settings: 'cv11', 'ss01'; /* a e l de desenho mais limpo */
   background-color: #ffffff;
   color: #333333;
   -webkit-font-smoothing: antialiased;
 }
 
+/* títulos em Inter Tight: mais compacta, ideal para corpos grandes */
 h1, h2, h3, h4, .font-display {
-  font-family: inherit;
+  font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
   font-weight: 700;
-  letter-spacing: -0.02em; /* Deixa os títulos mais compactos e elegantes */
+  letter-spacing: -0.012em; /* Deixa os títulos mais compactos e elegantes */
 }
 
 button, input, select, textarea {

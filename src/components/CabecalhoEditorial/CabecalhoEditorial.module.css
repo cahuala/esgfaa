@@ -77,14 +77,14 @@
   font-size: clamp(36px, 4.6vw, 72px);
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.012em;
   margin: 0;
 }
 
 .titulo h1.tituloLongo {
   font-size: clamp(28px, 3vw, 48px);
   line-height: 1.08;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.012em;
   max-width: 24ch;
 }
 
