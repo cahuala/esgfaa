@@ -31,6 +31,10 @@ export function SessaoProvider({ children }) {
       guardarToken(r.token)
       setUtilizador(await api('/eu'))
     },
+    // volta a ler a conta (ex.: depois de mudar a palavra-passe)
+    async recarregar() {
+      setUtilizador(await api('/eu'))
+    },
     async sair() {
       await api('/sair', { metodo: 'POST' }).catch(() => {})
       terminar()

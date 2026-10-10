@@ -25,3 +25,9 @@ dist-ssr
 
 # modelo Color Admin (licença comercial, ~1 GB) — não publicar
 color_admin_v5.5.2/
+
+# resultados de testes
+test-results/
+playwright-report/
+coverage/
+api/coverage/

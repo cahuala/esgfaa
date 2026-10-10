@@ -65,7 +65,15 @@ export const PAPEIS_PADRAO = [
   },
 ]
 
-// guarda só permissões que existem (evita lixo enviado pelo painel)
+export const ADMINISTRADOR = 'administrador'
+
+// guarda só permissões que existem (evita lixo enviado pelo painel) e garante que
+// qualquer ação sobre um recurso inclui "ver" esse recurso
 export function limparPermissoes(lista) {
-  return [...new Set((Array.isArray(lista) ? lista : []).filter((p) => TODAS.includes(p)))]
+  const validas = new Set((Array.isArray(lista) ? lista : []).filter((p) => TODAS.includes(p)))
+  for (const p of [...validas]) {
+    const ver = `${p.split('.')[0]}.ver`
+    if (TODAS.includes(ver)) validas.add(ver)
+  }
+  return TODAS.filter((p) => validas.has(p))
 }

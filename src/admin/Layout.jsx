@@ -175,6 +175,16 @@ function Layout({ children }) {
 
       {/* Conteúdo */}
       <div id="content" className="app-content">
+        {utilizador.deveMudarSenha && (
+          <div className="alert alert-warning d-flex align-items-center mb-3" role="alert">
+            <i className="fa fa-shield-alt fa-lg me-3" />
+            <div className="flex-fill">
+              <strong>Mude a sua palavra-passe.</strong> A atual foi definida por outra pessoa ou já não cumpre as regras de segurança
+              (mínimo de 10 caracteres, com letras e números).
+            </div>
+            <Link to="/perfil" className="btn btn-sm btn-warning ms-3">Mudar agora</Link>
+          </div>
+        )}
         {children}
       </div>
     </div>

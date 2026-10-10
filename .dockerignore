@@ -1,0 +1,11 @@
+**/node_modules
+api/dados
+api/.env
+api/tests
+api/coverage
+color_admin_v5.5.2
+dist
+coverage
+test-results
+playwright-report
+.git

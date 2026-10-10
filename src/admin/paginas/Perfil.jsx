@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { api } from '../api'
+import { api, guardarToken } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 
 function Perfil() {
-  const { utilizador } = useSessao()
+  const { utilizador, recarregar } = useSessao()
   const [form, setForm] = useState({ atual: '', nova: '', repetir: '' })
   const [aviso, setAviso] = useState(null)
 
@@ -16,9 +16,12 @@ function Perfil() {
       return
     }
     try {
-      await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } })
+      // as outras sessões terminam; esta continua com o token novo
+      const { token } = await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } })
+      guardarToken(token)
+      await recarregar()
       setForm({ atual: '', nova: '', repetir: '' })
-      setAviso({ texto: 'Palavra-passe alterada.' })
+      setAviso({ texto: 'Palavra-passe alterada. As sessões abertas noutros computadores foram terminadas.' })
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
     }
@@ -51,7 +54,7 @@ function Perfil() {
                   <input id={`p-${campo}`} type="password" className="form-control" autoComplete={auto} value={form[campo]} onChange={(e) => setForm({ ...form, [campo]: e.target.value })} required />
                 </div>
               ))}
-              <div className="form-text mb-3">Mínimo 8 caracteres, com letras e números.</div>
+              <div className="form-text mb-3">Mínimo 10 caracteres, com letras e números. Não use o seu nome nem o e-mail.</div>
               <button type="submit" className="btn btn-theme"><i className="fa fa-key me-1" /> Alterar palavra-passe</button>
             </form>
           </Painel>

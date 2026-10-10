@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, Navigate, useBlocker, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { COLECOES } from '../esquemas'
@@ -31,7 +31,9 @@ function EditarItem() {
   const [contexto, setContexto] = useState({ pessoas: [], sugestoes: {} })
   const [erro, setErro] = useState('')
   const [aGuardar, setAGuardar] = useState(false)
-  const [aviso, setAviso] = useState(null)
+  // a mensagem de "guardado" sobrevive à mudança de endereço depois de criar (/novo -> /identificador)
+  const { state: estadoNavegacao } = useLocation()
+  const [aviso, setAviso] = useState(() => estadoNavegacao?.aviso || null)
   const [previa, setPrevia] = useState(false)
 
   const doc = def?.documento
@@ -94,12 +96,13 @@ function EditarItem() {
       const pronto = preparar(guardado)
       setItem(pronto)
       setOriginal(JSON.stringify(pronto))
-      setAviso({
+      const mensagem = {
         texto: guardado._estado === 'publicado'
           ? 'Publicado — já está visível no site.'
           : podePublicar ? 'Guardado como rascunho (não aparece no site).' : 'Rascunho guardado. Um editor-chefe vai rever e publicar.',
-      })
-      if (novo) navegar(`/colecao/${colecao}/${guardado[def.chave]}`, { replace: true })
+      }
+      setAviso(mensagem)
+      if (novo) navegar(`/colecao/${colecao}/${guardado[def.chave]}`, { replace: true, state: { aviso: mensagem } })
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
     } finally {

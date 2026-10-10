@@ -12,7 +12,7 @@ const CORES_PAPEIS = { administrador: 'bg-danger', editor_chefe: 'bg-primary', r
 function gerarSenha() {
   const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz'
   const numeros = '23456789'
-  const valores = crypto.getRandomValues(new Uint32Array(12))
+  const valores = crypto.getRandomValues(new Uint32Array(14))
   const s = Array.from(valores, (v, i) => (i % 4 === 3 ? numeros[v % numeros.length] : letras[v % letras.length]))
   return s.join('')
 }
@@ -162,7 +162,7 @@ function Utilizadores() {
                     <input id="u-senha" className="form-control font-monospace" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} required={!form.id} placeholder={form.id ? 'Deixe vazio para manter' : ''} />
                     <button type="button" className="btn btn-default" onClick={() => setForm({ ...form, senha: gerarSenha() })} title="Gerar"><i className="fa fa-dice" /></button>
                   </div>
-                  <div className="form-text">Mínimo 8 caracteres, com letras e números.</div>
+                  <div className="form-text">Mínimo 10 caracteres, com letras e números. A pessoa terá de a mudar ao entrar.</div>
                 </div>
                 <div className="d-flex gap-2 justify-content-end">
                   <button type="button" className="btn btn-white" onClick={() => setForm(null)}>Cancelar</button>

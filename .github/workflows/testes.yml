@@ -1,0 +1,53 @@
+name: Testes
+
+# corre em cada pull request e antes de cada publicação (chamado por deploy.yml)
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: api
+
+      - name: Lint
+        run: npm run lint
+
+      - name: API (unidade e integração, com cobertura)
+        run: npm run test:cobertura
+        working-directory: api
+
+      - name: Site e painel (Vitest)
+        run: npm run test:cobertura
+
+      - name: Ponta-a-ponta (Playwright)
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+        env:
+          CI: true
+
+      - name: Relatório do Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
