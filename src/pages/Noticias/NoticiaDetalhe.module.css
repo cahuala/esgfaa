@@ -71,11 +71,10 @@
 .capa {
   margin: 24px 0 28px;
 }
-.capa img {
+.capaMoldura {
   width: 100%;
+  aspect-ratio: 16 / 9;
   max-height: 520px;
-  object-fit: cover;
-  display: block;
 }
 .indice {
   margin-bottom: 28px;

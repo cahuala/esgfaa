@@ -4,21 +4,25 @@ import { ADMIN_E2E } from '../../playwright.config.js'
 test('candidatura por passos chega à Secretaria e é avaliada no painel', async ({ page }) => {
   const email = `e2e${Date.now()}@faa.ao`
 
-  // começa no formulário rápido da página inicial
+  // começa no botão da página inicial
   await page.goto('/')
-  await page.getByLabel('Nome completo').fill('Oficial de Teste E2E')
-  await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Telefone').fill('+244 923 000 222')
-  await page.getByLabel('Curso pretendido').selectOption({ index: 1 })
-  await page.getByRole('button', { name: 'Continuar candidatura' }).click()
+  await page.getByRole('link', { name: /^Candidatar-me/ }).first().click()
   await expect(page).toHaveURL(/\/Candidatura$/)
 
-  // passo 2 (os dados do início já vêm preenchidos); sem os restantes campos não avança
-  await expect(page.getByLabel('Nome completo')).toHaveValue('Oficial de Teste E2E')
+  // passo 1: sem curso não avança
+  await page.getByRole('button', { name: /Seguinte/ }).click()
+  await expect(page.getByText('Escolha o curso a que se quer candidatar.')).toBeVisible()
+  await page.locator('label').filter({ hasText: 'Curso de Estado-Maior' }).click()
+  await page.getByRole('button', { name: /Seguinte/ }).click()
+
+  // passo 2
+  await page.getByLabel('Nome completo').fill('Oficial de Teste E2E')
   await page.getByRole('button', { name: /Seguinte/ }).click()
   await expect(page.getByText('Indique a data de nascimento.')).toBeVisible()
   await page.getByLabel('Data de nascimento').fill('1984-03-15')
   await page.getByLabel('N.º do bilhete de identidade').fill('004512345LA041')
+  await page.getByLabel('E-mail').fill(email)
+  await page.getByLabel('Telefone').fill('+244 923 000 222')
   await page.getByLabel('Província').fill('Luanda')
   await page.getByRole('button', { name: /Seguinte/ }).click()
 

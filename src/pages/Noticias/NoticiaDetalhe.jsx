@@ -6,7 +6,7 @@ import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Publicidade from '../../components/Publicidade/Publicidade'
 import Interacoes from '../../components/Interacoes/Interacoes'
-import { Cartao, Etiqueta } from '../../components/Corporativo/Corporativo'
+import { Cartao, Etiqueta, Foto } from '../../components/Corporativo/Corporativo'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
 import { ancora, subtitulosDe, tempoLeitura } from '../../utils/texto'
@@ -57,7 +57,7 @@ function NoticiaDetalhe() {
 
           {noticia.capa && (
             <figure className={styles.capa}>
-              <img src={noticia.capa} alt="" />
+              <Foto src={noticia.capa} className={styles.capaMoldura} carregar="eager" />
             </figure>
           )}
 

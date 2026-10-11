@@ -21,6 +21,19 @@ export function TituloSeccao({ rotulo, titulo, texto, centrada = false, nivel: N
   )
 }
 
+/*
+  Fotografia inteira dentro de uma moldura de proporção fixa: nada é cortado nem ampliado
+  além do necessário; o espaço que sobra é preenchido pela mesma imagem, desfocada.
+  (Os retratos ao alto deixam de aparecer recortados e "maiores que o lugar".)
+*/
+export function Foto({ src, alt = '', className = '', carregar = 'lazy' }) {
+  return (
+    <span className={`${s.moldura} ${className}`} style={src ? { '--foto': `url("${src}")` } : undefined}>
+      {src && <img src={src} alt={alt} loading={carregar} />}
+    </span>
+  )
+}
+
 const dataLegivel = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? formatarDataLonga(d) : d)
 
 // imagem em cima, etiqueta, título e data
@@ -35,7 +48,7 @@ export function Cartao({ para, imagem, etiqueta, titulo, resumo, data, elevado =
   )
   return (
     <Link to={para} className={`${s.cartao} ${elevado ? s.elevado : ''} ${className}`}>
-      {imagem && <span className={s.cartaoImagem}><img src={imagem} alt="" loading="lazy" /></span>}
+      {imagem && <Foto src={imagem} className={s.cartaoImagem} />}
       {elevado ? <div className={s.corpo}>{texto}</div> : texto}
     </Link>
   )
@@ -45,7 +58,7 @@ export function Cartao({ para, imagem, etiqueta, titulo, resumo, data, elevado =
 export function CartaoLista({ para, imagem, etiqueta, titulo, resumo, data, extra }) {
   return (
     <Link to={para} className={s.lista}>
-      <span className={s.cartaoImagem}>{imagem && <img src={imagem} alt="" loading="lazy" />}</span>
+      <Foto src={imagem} className={s.cartaoImagem} />
       <div className={s.texto}>
         {etiqueta && <div><Etiqueta>{etiqueta}</Etiqueta></div>}
         <h3 className={s.cartaoTitulo}>{titulo}</h3>

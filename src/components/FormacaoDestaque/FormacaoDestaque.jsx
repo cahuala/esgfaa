@@ -6,18 +6,14 @@ import styles from './FormacaoDestaque.module.css'
 
 const INTERVALO_MS = 7000
 
-// quem pediu ao sistema menos animação não tem rotação automática
-const menosAnimacao = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-
 /*
   Cursos da Escola em separadores que avançam sozinhos (a barra mostra o tempo até ao seguinte).
-  Pára enquanto o rato está por cima; um clique escolhe o curso e recomeça a contagem.
+  Um clique escolhe o curso e recomeça a contagem.
 */
 function FormacaoDestaque() {
   const { cursos, paginas } = useConteudo()
   const textos = paginas.home.formacao
   const [ativo, setAtivo] = useState(0)
-  const [pausa, setPausa] = useState(false)
   const [ciclo, setCiclo] = useState(0) // muda a cada troca: reinicia a barra de progresso
   const total = useRef(cursos.length)
 
@@ -26,13 +22,13 @@ function FormacaoDestaque() {
   }, [cursos.length])
 
   useEffect(() => {
-    if (pausa || menosAnimacao() || cursos.length < 2) return undefined
+    if (cursos.length < 2) return undefined
     const id = setTimeout(() => {
       setAtivo((a) => (a + 1) % Math.max(1, total.current))
       setCiclo((c) => c + 1)
     }, INTERVALO_MS)
     return () => clearTimeout(id)
-  }, [ativo, pausa, ciclo, cursos.length])
+  }, [ativo, ciclo, cursos.length])
 
   function escolher(i) {
     setAtivo(i)
@@ -48,13 +44,7 @@ function FormacaoDestaque() {
       <div className="contentor">
         <TituloSeccao titulo={textos.titulo} texto={textos.texto} centrada />
 
-        <div
-          className={styles.corpo}
-          onMouseEnter={() => setPausa(true)}
-          onMouseLeave={() => setPausa(false)}
-          onFocus={() => setPausa(true)}
-          onBlur={() => setPausa(false)}
-        >
+        <div className={styles.corpo}>
           <div className={styles.abas} role="tablist" aria-label="Cursos">
             {cursos.map((c, i) => (
               <button
@@ -73,7 +63,7 @@ function FormacaoDestaque() {
                     <span
                       key={ciclo}
                       className={styles.progressoBarra}
-                      style={{ animationDuration: `${INTERVALO_MS}ms`, animationPlayState: pausa ? 'paused' : 'running' }}
+                      style={{ animationDuration: `${INTERVALO_MS}ms` }}
                     />
                   </span>
                 )}

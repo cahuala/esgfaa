@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaSearch, FaSlidersH, FaTimes, FaPlay, FaImages, FaEnvelope } from 'react-icons/fa'
-import { CartaoLista, Etiqueta } from '../../components/Corporativo/Corporativo'
+import { CartaoLista, Etiqueta, Foto } from '../../components/Corporativo/Corporativo'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
 import Publicidade from '../../components/Publicidade/Publicidade'
@@ -186,7 +186,7 @@ function Noticias() {
             <>
               <article className={styles.destaque}>
                 <Link to={`/Noticias/${principal.slug}`} className={styles.destaqueFoto}>
-                  <img src={principal.capa} alt="" />
+                  <Foto src={principal.capa} className={styles.destaqueMoldura} carregar="eager" />
                 </Link>
                 <div className={styles.destaqueTexto}>
                   <div className={styles.meta}>

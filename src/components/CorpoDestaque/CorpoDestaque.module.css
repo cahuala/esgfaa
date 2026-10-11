@@ -1,46 +1,103 @@
-.grelha {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 24px;
+/* Corpo docente: a faixa escura com os cartões a passar, como na versão anterior */
+.secao {
+  width: 100%;
+  padding: 90px 0;
+  background-color: #0f0705;
+  color: #fff;
+  overflow: hidden;
 }
-.cartao {
+.cabecalho {
+  margin-bottom: 44px;
+}
+.etiqueta {
+  display: block;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+}
+.cabecalho h2 {
+  color: #fff;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 600;
+}
+
+.pista {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  /* esbate as pontas para a entrada/saída dos cartões ser suave */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+}
+.trilho {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 20px;
-  background: var(--superficie);
-  border-radius: var(--raio);
-  box-shadow: var(--sombra);
+  gap: 20px;
+  width: max-content;
+  animation: rolar 40s linear infinite;
 }
-.foto {
-  flex-shrink: 0;
+.pista:hover .trilho {
+  animation-play-state: paused;
+}
+@keyframes rolar {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); } /* metade, porque a lista está duplicada */
+}
+
+.cartao {
+  flex: 0 0 260px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px;
+}
+.fotoWrapper {
   width: 64px;
   height: 64px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--fundo-cinza);
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-  color: var(--texto-suave);
+  margin-bottom: 16px;
+  border: 2px solid var(--marca);
 }
-.foto img {
+.foto {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
+  display: block;
 }
-.corpo h3 {
-  font-size: 15px;
+.iniciais {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 57, 23, 0.12);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+.cartao h3 {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
 }
 .cargo {
   display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
+  font-size: 12px;
+  color: #ff6a4d;
   font-weight: 600;
-  color: var(--marca);
+  margin-bottom: 12px;
 }
-.corpo p {
-  margin-top: 8px;
-  font-size: 13.5px;
-  color: var(--texto-suave);
+.cartao p {
+  font-size: 13px;
+  color: #b8b8b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .cartao {
+    flex: 0 0 220px;
+  }
 }

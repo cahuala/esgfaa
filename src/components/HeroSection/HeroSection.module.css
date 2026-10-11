@@ -11,10 +11,6 @@
 }
 .grelha {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 380px);
-  gap: clamp(32px, 6vw, 80px);
-  align-items: center;
 }
 .texto h1 {
   color: #fff;
@@ -49,11 +45,33 @@
   font-size: 12.5px;
   color: rgba(255, 255, 255, 0.7);
 }
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+.botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: var(--marca);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.botao:hover {
+  background: var(--marca-escura);
+}
 .mais {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-top: 40px;
   color: #fff;
   font-size: 13.5px;
   font-weight: 600;
@@ -71,70 +89,4 @@
 .mais:hover span {
   background: var(--marca);
   border-color: var(--marca);
-}
-
-.formulario {
-  background: var(--superficie);
-  color: var(--texto);
-  border-radius: var(--raio);
-  padding: 26px 26px 28px;
-  box-shadow: var(--sombra-forte);
-}
-.formulario h2 {
-  font-size: 18px;
-}
-.formulario > p {
-  margin-top: 4px;
-  font-size: 13.5px;
-  color: var(--texto-suave);
-}
-.formulario form {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.formulario label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12.5px;
-  font-weight: 600;
-}
-.formulario input,
-.formulario select {
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--linha-forte);
-  border-radius: 4px;
-  background: var(--superficie);
-  color: var(--texto);
-  font-size: 14px;
-  font-weight: 400;
-}
-.formulario input:focus,
-.formulario select:focus {
-  outline: none;
-  border-color: var(--marca);
-  box-shadow: 0 0 0 3px rgba(200, 52, 27, 0.15);
-}
-.formulario button {
-  margin-top: 6px;
-  height: 42px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--marca);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.formulario button:hover {
-  background: var(--marca-escura);
-}
-
-@media (max-width: 900px) {
-  .grelha {
-    grid-template-columns: 1fr;
-  }
 }
