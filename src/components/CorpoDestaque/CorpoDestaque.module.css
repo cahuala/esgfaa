@@ -1,9 +1,9 @@
-/* Corpo docente: a faixa escura com os cartões a passar, como na versão anterior */
+/* Corpo docente: os cartões a passar, sobre o mesmo fundo das outras secções */
 .secao {
   width: 100%;
   padding: 90px 0;
-  background-color: #0f0705;
-  color: #fff;
+  background-color: var(--fundo-cinza);
+  color: var(--texto);
   overflow: hidden;
 }
 .cabecalho {
@@ -12,11 +12,11 @@
 .etiqueta {
   display: block;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--texto-fraco);
   margin-bottom: 6px;
 }
 .cabecalho h2 {
-  color: #fff;
+  color: var(--texto);
   font-size: clamp(22px, 2.4vw, 30px);
   font-weight: 600;
 }
@@ -25,6 +25,7 @@
   width: 100%;
   overflow: hidden;
   position: relative;
+  padding: 8px 0 20px; /* espaço para a sombra dos cartões */
   /* esbate as pontas para a entrada/saída dos cartões ser suave */
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
@@ -45,8 +46,9 @@
 
 .cartao {
   flex: 0 0 260px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  box-shadow: var(--sombra);
   border-radius: 14px;
   padding: 22px;
 }
@@ -71,13 +73,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(229, 57, 23, 0.12);
-  color: #fff;
+  background: var(--tinte-marca);
+  color: var(--marca);
   font-size: 20px;
   font-weight: 700;
 }
 .cartao h3 {
-  color: #fff;
+  color: var(--texto);
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 4px;
@@ -85,13 +87,13 @@
 .cargo {
   display: block;
   font-size: 12px;
-  color: #ff6a4d;
+  color: var(--marca);
   font-weight: 600;
   margin-bottom: 12px;
 }
 .cartao p {
   font-size: 13px;
-  color: #b8b8b8;
+  color: var(--texto-suave);
   line-height: 1.5;
   margin: 0;
 }
