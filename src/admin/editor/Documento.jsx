@@ -2,6 +2,7 @@ import { useState } from 'react'
 import EditorTexto from './EditorTexto'
 import { TextoAuto, ZonaFicheiro } from './Elementos'
 import { carregar } from './carregar'
+import { TAMANHOS, avaliarImagem, dicaTamanho, medirImagem } from '../imagens'
 
 /*
   Notícia/artigo/evento editado como um documento:
@@ -11,13 +12,19 @@ import { carregar } from './carregar'
 */
 function Documento({ item, setItem, doc, aoErro, editavel = true }) {
   const [capaACarregar, setCapaACarregar] = useState(false)
+  const [avisosCapa, setAvisosCapa] = useState([])
   const definir = (campo, valor) => setItem((i) => ({ ...i, [campo]: valor }))
 
-  async function trocarCapa(ficheiros) {
+  async function trocarCapa(escolhidos) {
+    // copia já a lista: o campo de ficheiro esvazia-a logo a seguir (e há esperas pelo meio)
+    const ficheiros = [...escolhidos]
     setCapaACarregar(true)
+    // mede a imagem antes de enviar, para avisar se for pequena, ao alto ou pesada
+    const info = await medirImagem(ficheiros[0])
     try {
       const [url] = await carregar(ficheiros)
       if (url) definir(doc.capa, url)
+      setAvisosCapa(avaliarImagem(info, TAMANHOS.capa))
     } catch (e) {
       aoErro(e.message)
     } finally {
@@ -52,7 +59,7 @@ function Documento({ item, setItem, doc, aoErro, editavel = true }) {
                 <ZonaFicheiro aceitar="image/*" className="doc-botao-zona" onFicheiros={trocarCapa}>
                   <span title="Substituir a imagem de capa"><i className={`fa ${capaACarregar ? 'fa-spinner fa-spin' : 'fa-sync-alt'} me-1`} />Substituir capa</span>
                 </ZonaFicheiro>
-                <button type="button" title="Retirar a imagem de capa" onClick={() => definir(doc.capa, '')}><i className="fa fa-trash-alt" /></button>
+                <button type="button" title="Retirar a imagem de capa" onClick={() => { definir(doc.capa, ''); setAvisosCapa([]) }}><i className="fa fa-trash-alt" /></button>
               </div>
             )}
           </figure>
@@ -61,9 +68,13 @@ function Documento({ item, setItem, doc, aoErro, editavel = true }) {
             <i className="fa fa-camera fa-2x mb-2" />
             <strong>{capaACarregar ? 'A carregar…' : 'Adicionar imagem de capa'}</strong>
             <span>a fotografia principal — clique ou arraste para aqui</span>
+            <small className="doc-capa-dica"><i className="fa fa-ruler-combined me-1" />{dicaTamanho(TAMANHOS.capa)}</small>
           </ZonaFicheiro>
         )
       )}
+      {doc.capa && avisosCapa.map((a) => (
+        <div key={a} className="alert alert-warning py-2 px-3 mt-2 mb-0 fs-12px doc-capa-aviso" role="status"><i className="fa fa-exclamation-triangle me-1" />{a}</div>
+      ))}
     </>
   )
 

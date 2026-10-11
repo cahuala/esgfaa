@@ -7,6 +7,8 @@
          imagem, ficheiro, video, youtube, listaTexto, objetos (lista de sub-formulários), blocos.
 */
 
+import { TAMANHOS } from './imagens'
+
 // ---------- blocos do conteúdo (corpo das notícias, artigos e eventos) ----------
 
 export const TIPOS_BLOCO = {
@@ -16,7 +18,7 @@ export const TIPOS_BLOCO = {
   imagem: {
     rotulo: 'Imagem', icone: 'fa-image',
     campos: [
-      { nome: 'src', rotulo: 'Imagem', tipo: 'imagem' },
+      { nome: 'src', rotulo: 'Imagem', tipo: 'imagem', recomendado: TAMANHOS.texto },
       { nome: 'legenda', rotulo: 'Legenda', tipo: 'texto', largura: 'metade' },
       {
         nome: 'posicao', rotulo: 'Posição no texto', tipo: 'selecao', largura: 'metade',
@@ -33,7 +35,7 @@ export const TIPOS_BLOCO = {
     rotulo: 'Galeria', icone: 'fa-images',
     campos: [
       { nome: 'imagens', rotulo: 'Imagens', tipo: 'objetos', rotuloItem: 'Imagem', campos: [
-        { nome: 'src', rotulo: 'Imagem', tipo: 'imagem' },
+        { nome: 'src', rotulo: 'Imagem', tipo: 'imagem', recomendado: TAMANHOS.texto },
         { nome: 'legenda', rotulo: 'Legenda', tipo: 'texto' },
       ] },
       { nome: 'legenda', rotulo: 'Legenda da galeria', tipo: 'texto' },
@@ -44,7 +46,7 @@ export const TIPOS_BLOCO = {
     campos: [
       { nome: 'youtube', rotulo: 'Vídeo do YouTube', tipo: 'youtube', ajuda: 'Cole o endereço do vídeo do YouTube — ou deixe vazio e carregue um ficheiro abaixo.' },
       { nome: 'src', rotulo: 'Ficheiro de vídeo (MP4)', tipo: 'video', largura: 'metade' },
-      { nome: 'poster', rotulo: 'Imagem de capa do vídeo', tipo: 'imagem', largura: 'metade' },
+      { nome: 'poster', rotulo: 'Imagem de capa do vídeo', tipo: 'imagem', largura: 'metade', recomendado: TAMANHOS.poster },
       { nome: 'legenda', rotulo: 'Legenda', tipo: 'texto' },
     ],
   },
@@ -96,7 +98,7 @@ export const COLECOES = {
       { nome: 'data', rotulo: 'Data', tipo: 'data', largura: 'terco', obrigatorio: true },
       { nome: 'autor', rotulo: 'Autoria', tipo: 'texto', largura: 'terco' },
       { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 2, obrigatorio: true, ajuda: 'Aparece nas listagens e no topo da notícia.' },
-      { nome: 'capa', rotulo: 'Imagem de capa', tipo: 'imagem', obrigatorio: true },
+      { nome: 'capa', rotulo: 'Imagem de capa', tipo: 'imagem', obrigatorio: true, recomendado: TAMANHOS.capa },
       { nome: 'destaque', rotulo: 'Manchete (aparece em grande no topo do boletim)', tipo: 'booleano' },
       { nome: 'conteudo', rotulo: 'Conteúdo da notícia', tipo: 'blocos' },
     ],
@@ -120,7 +122,7 @@ export const COLECOES = {
       { nome: 'autor', rotulo: 'Autor', tipo: 'selecao', opcoes: 'pessoas', largura: 'metade' },
       { nome: 'palavrasChave', rotulo: 'Palavras-chave', tipo: 'listaTexto', largura: 'metade' },
       { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 4, obrigatorio: true },
-      { nome: 'capa', rotulo: 'Imagem de capa (opcional)', tipo: 'imagem', largura: 'metade' },
+      { nome: 'capa', rotulo: 'Imagem de capa (opcional)', tipo: 'imagem', largura: 'metade', recomendado: TAMANHOS.capa },
       { nome: 'pdf', rotulo: 'Versão em PDF (opcional)', tipo: 'ficheiro', largura: 'metade' },
       { nome: 'conteudo', rotulo: 'Texto do artigo', tipo: 'blocos' },
     ],
@@ -145,7 +147,7 @@ export const COLECOES = {
       { nome: 'horaInicio', rotulo: 'Início', tipo: 'hora', largura: 'terco', obrigatorio: true },
       { nome: 'horaFim', rotulo: 'Fim', tipo: 'hora', largura: 'terco' },
       { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 2 },
-      { nome: 'capa', rotulo: 'Imagem', tipo: 'imagem' },
+      { nome: 'capa', rotulo: 'Imagem', tipo: 'imagem', recomendado: TAMANHOS.capa },
       { nome: 'inscricoes', rotulo: 'Inscrições abertas', tipo: 'booleano' },
       { nome: 'programa', rotulo: 'Programa do dia', tipo: 'objetos', rotuloItem: 'Momento', campos: [
         { nome: 'hora', rotulo: 'Hora', tipo: 'hora', largura: 'terco' },
@@ -169,7 +171,7 @@ export const COLECOES = {
       { nome: 'nome', rotulo: 'Nome do curso', tipo: 'texto', largura: 'doisTercos', obrigatorio: true },
       { nome: 'sigla', rotulo: 'Sigla', tipo: 'texto', largura: 'terco' },
       { nome: 'resumo', rotulo: 'Resumo', tipo: 'textarea', linhas: 2 },
-      { nome: 'imagem', rotulo: 'Imagem', tipo: 'imagem' },
+      { nome: 'imagem', rotulo: 'Imagem', tipo: 'imagem', recomendado: TAMANHOS.curso },
       { nome: 'duracao', rotulo: 'Duração', tipo: 'texto', largura: 'terco' },
       { nome: 'regime', rotulo: 'Regime', tipo: 'texto', largura: 'terco' },
       { nome: 'vagas', rotulo: 'Vagas', tipo: 'texto', largura: 'terco' },
@@ -201,7 +203,7 @@ export const COLECOES = {
       { nome: 'nome', rotulo: 'Nome (com posto, ex.: Cor. João Silva)', tipo: 'texto', obrigatorio: true },
       { nome: 'cargo', rotulo: 'Cargo', tipo: 'texto' },
       { nome: 'destaque', rotulo: 'Nota biográfica curta', tipo: 'textarea', linhas: 2 },
-      { nome: 'foto', rotulo: 'Fotografia', tipo: 'imagem', ajuda: 'Sem fotografia, o site mostra as iniciais.' },
+      { nome: 'foto', rotulo: 'Fotografia', tipo: 'imagem', ajuda: 'Sem fotografia, o site mostra as iniciais.', recomendado: TAMANHOS.pessoa },
     ],
   },
   publicidade: {
@@ -225,7 +227,7 @@ export const COLECOES = {
           { valor: 'imagem', rotulo: 'Só imagem — arte final do anunciante' },
         ],
       },
-      { nome: 'imagem', rotulo: 'Imagem', tipo: 'imagem', ajuda: 'Formato "só imagem": use 1600×300 px (horizontal) ou 600×500 px (lateral).' },
+      { nome: 'imagem', rotulo: 'Imagem', tipo: 'imagem', ajuda: 'Formato "só imagem": use 1600×300 px (horizontal) ou 600×500 px (lateral).', recomendado: TAMANHOS.bannerLargo },
       { nome: 'texto', rotulo: 'Texto (formato composto)', tipo: 'textarea', linhas: 2 },
       { nome: 'botao', rotulo: 'Texto do botão', tipo: 'texto', largura: 'metade' },
       { nome: 'ligacao', rotulo: 'Ligação', tipo: 'texto', largura: 'metade', ajuda: 'Endereço completo (https://…) ou página do site (ex.: /Cursos).' },
@@ -246,7 +248,7 @@ export const PAGINAS = {
       { titulo: 'Topo', campos: [
         { nome: 'hero.titulo', rotulo: 'Título principal', tipo: 'texto' },
         { nome: 'hero.texto', rotulo: 'Texto', tipo: 'textarea', linhas: 2 },
-        { nome: 'hero.imagem', rotulo: 'Imagem de fundo', tipo: 'imagem' },
+        { nome: 'hero.imagem', rotulo: 'Imagem de fundo', tipo: 'imagem', recomendado: TAMANHOS.fundo },
         { nome: 'hero.metricas', rotulo: 'Números em destaque', tipo: 'objetos', rotuloItem: 'Número', campos: [
           { nome: 'valor', rotulo: 'Valor', tipo: 'texto', largura: 'metade' },
           { nome: 'legenda', rotulo: 'Legenda', tipo: 'texto', largura: 'metade' },
@@ -277,7 +279,7 @@ export const PAGINAS = {
         ] },
       ] },
       { titulo: 'Missão, visão e valores', campos: [
-        { nome: 'missao.imagem', rotulo: 'Imagem de fundo', tipo: 'imagem' },
+        { nome: 'missao.imagem', rotulo: 'Imagem de fundo', tipo: 'imagem', recomendado: TAMANHOS.seccao },
         { nome: 'missao.missao', rotulo: 'Missão', tipo: 'textarea', linhas: 2 },
         { nome: 'missao.visao', rotulo: 'Visão', tipo: 'textarea', linhas: 2 },
         { nome: 'missao.valores', rotulo: 'Valores', tipo: 'textarea', linhas: 2 },
@@ -302,7 +304,7 @@ export const PAGINAS = {
     grupos: [
       { titulo: 'Abertura', campos: [
         { nome: 'entrada', rotulo: 'Texto de entrada', tipo: 'textarea', linhas: 2 },
-        { nome: 'imagemSede', rotulo: 'Fotografia da sede', tipo: 'imagem' },
+        { nome: 'imagemSede', rotulo: 'Fotografia da sede', tipo: 'imagem', recomendado: TAMANHOS.sede },
         { nome: 'legendaSede', rotulo: 'Legenda da fotografia', tipo: 'texto' },
         { nome: 'numeros', rotulo: 'Números institucionais', tipo: 'objetos', rotuloItem: 'Número', campos: [
           { nome: 'valor', rotulo: 'Valor', tipo: 'texto', largura: 'terco' },
@@ -312,7 +314,7 @@ export const PAGINAS = {
       { titulo: 'I. História', campos: [
         { nome: 'historia.titulo', rotulo: 'Título', tipo: 'texto' },
         { nome: 'historia.paragrafos', rotulo: 'Texto (um parágrafo por item)', tipo: 'listaTexto', multilinha: true },
-        { nome: 'historia.imagem', rotulo: 'Imagem', tipo: 'imagem', largura: 'metade' },
+        { nome: 'historia.imagem', rotulo: 'Imagem', tipo: 'imagem', largura: 'metade', recomendado: TAMANHOS.texto },
         { nome: 'historia.legenda', rotulo: 'Legenda da imagem', tipo: 'texto', largura: 'metade' },
         { nome: 'historia.marcos', rotulo: 'Cronologia', tipo: 'objetos', rotuloItem: 'Marco', campos: [
           { nome: 'ano', rotulo: 'Ano', tipo: 'texto', largura: 'terco' },

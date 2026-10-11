@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import { api } from '../api'
+import { avaliarImagem, dicaTamanho, medirImagem } from '../imagens'
 import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
 import { POSICOES_BANNER, TIPOS_BLOCO } from '../esquemas'
@@ -147,7 +148,7 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
     case 'imagem':
     case 'video':
     case 'ficheiro':
-      return <CampoFicheiro id={id} tipo={campo.tipo} valor={valor} onChange={onChange} />
+      return <CampoFicheiro id={id} tipo={campo.tipo} valor={valor} onChange={onChange} recomendado={campo.recomendado} />
 
     case 'youtube':
       return (
@@ -188,19 +189,26 @@ function idYoutube(texto) {
 
 const ACEITAR = { imagem: 'image/jpeg,image/png,image/webp,image/gif', video: 'video/mp4,video/webm', ficheiro: 'application/pdf' }
 
-export function CampoFicheiro({ id, tipo, valor, onChange }) {
+export function CampoFicheiro({ id, tipo, valor, onChange, recomendado }) {
   const entrada = useRef(null)
   const [estado, setEstado] = useState('')
+  const [avisos, setAvisos] = useState([])
 
-  async function carregar(ficheiros) {
-    if (!ficheiros?.length) return
+  async function carregar(escolhidos) {
+    // copia já a lista: o campo de ficheiro esvazia-a logo a seguir (e há esperas pelo meio)
+    const ficheiros = [...(escolhidos || [])]
+    if (!ficheiros.length) return
     setEstado('A carregar…')
+    // mede a imagem antes de enviar, para avisar se não servir bem o espaço
+    const info = tipo === 'imagem' ? await medirImagem(ficheiros[0]) : null
     try {
       const [f] = await api('/ficheiros', { metodo: 'POST', ficheiros: [ficheiros[0]] })
       onChange(f.url)
-      setEstado('')
+      setEstado(info ? `${info.largura} × ${info.altura} px` : '')
+      setAvisos(avaliarImagem(info, recomendado))
     } catch (erro) {
       setEstado(erro.message)
+      setAvisos([])
     }
   }
 
@@ -219,12 +227,16 @@ export function CampoFicheiro({ id, tipo, valor, onChange }) {
           <i className="fa fa-upload me-1" /> {valor ? 'Substituir' : 'Carregar'}
         </button>
         {valor && (
-          <button type="button" className="btn btn-sm btn-white text-danger" onClick={() => onChange('')}>
+          <button type="button" className="btn btn-sm btn-white text-danger" onClick={() => { onChange(''); setAvisos([]); setEstado('') }}>
             <i className="fa fa-times me-1" /> Remover
           </button>
         )}
         <span className="text-muted small">{estado || (valor ? '' : 'ou arraste o ficheiro para aqui')}</span>
       </div>
+      {tipo === 'imagem' && recomendado && <small className="d-block fs-12px text-gray-500 mt-1"><i className="fa fa-ruler-combined me-1" />{dicaTamanho(recomendado)}</small>}
+      {avisos.map((a) => (
+        <div key={a} className="alert alert-warning py-2 px-3 mt-2 mb-0 fs-12px" role="status"><i className="fa fa-exclamation-triangle me-1" />{a}</div>
+      ))}
       <input id={id} ref={entrada} type="file" accept={ACEITAR[tipo]} hidden onChange={(e) => { carregar(e.target.files); e.target.value = '' }} />
     </div>
   )
