@@ -6,7 +6,7 @@
 .cartao {
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   overflow: hidden;

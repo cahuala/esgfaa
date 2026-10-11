@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import Logo from '../../assets/Logo.png'
+import AlternarTema from '../AlternarTema/AlternarTema'
 import style from './NavBar.module.css'
 
 const LIGACOES = [
@@ -58,6 +59,7 @@ function NavBar() {
         </ul>
 
         <div className={style.acoes}>
+          <AlternarTema />
           <a href="#" className={`${style.botao} ${style.portalDesktop}`}>Portal Académico <span aria-hidden="true">→</span></a>
           <button
             className={`${style.hamburguer} ${menuAberto ? style.hamburguerAberto : ''}`}

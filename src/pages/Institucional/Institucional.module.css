@@ -1,6 +1,6 @@
 /* Página Institucional, no estilo do modelo Corporate */
 .pagina {
-  background: #fff;
+  background: var(--superficie);
 }
 .rotulo {
   display: block;
@@ -251,7 +251,7 @@
   align-items: center;
   gap: 18px;
   padding: 20px 24px;
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
 }

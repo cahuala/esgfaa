@@ -74,7 +74,7 @@
 }
 
 .formulario {
-  background: #fff;
+  background: var(--superficie);
   color: var(--texto);
   border-radius: var(--raio);
   padding: 26px 26px 28px;
@@ -105,9 +105,9 @@
 .formulario select {
   height: 40px;
   padding: 0 12px;
-  border: 1px solid #d5dbe0;
+  border: 1px solid var(--linha-forte);
   border-radius: 4px;
-  background: #fff;
+  background: var(--superficie);
   color: var(--texto);
   font-size: 14px;
   font-weight: 400;

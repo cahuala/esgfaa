@@ -72,7 +72,7 @@
   max-width: var(--conteudo);
   margin: 0 auto;
   padding: 20px var(--margem) 28px;
-  border-top: 1px solid #dde1e4;
+  border-top: 1px solid var(--linha);
   display: flex;
   justify-content: space-between;
   gap: 16px;

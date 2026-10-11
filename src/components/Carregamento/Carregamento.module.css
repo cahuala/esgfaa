@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--superficie);
   animation: sair 0.35s ease 0.75s forwards;
 }
 

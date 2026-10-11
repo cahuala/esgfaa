@@ -14,9 +14,18 @@
   --texto-suave: #6c757d;      /* resumos, legendas */
   --texto-fraco: #a0a8b0;      /* datas, metadados */
   --fundo: #ffffff;
+  --superficie: #ffffff;       /* cartões, menu, formulários */
+  --fundo-suave: #fafbfb;
   --fundo-cinza: #f2f3f4;      /* secções alternadas */
-  --fundo-escuro: #1c2024;     /* rodapé de topo, faixa institucional */
+  --fundo-escuro: #1c2024;     /* faixas escuras (fotografias, vídeo) */
   --linha: #e4e7ea;
+  --linha-forte: #d5dbe0;
+  --tinte-marca: #fdf4f2;      /* caixas de destaque em vermelho suave */
+  --tinte-marca-borda: #f1d2ca;
+  --sucesso-fundo: #d8f1e1;
+  --sucesso-texto: #1d6b3d;
+  --faixa-topo: var(--marca);  /* faixa institucional do topo */
+  color-scheme: light;
 
   --sombra: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
   --sombra-forte: 0 1rem 2rem rgba(0, 0, 0, 0.12);
@@ -28,6 +37,36 @@
   --vermelho: var(--marca);
   --filete: var(--linha);
   --filete-forte: var(--texto);
+}
+
+/* ---------- modo escuro (escolhido no botão do menu; segue o sistema à primeira visita) ---------- */
+html[data-tema='dark'] {
+  --marca: #e04a2f;            /* um vermelho mais vivo para se ler sobre fundo escuro */
+  --marca-escura: #c8341b;
+  --dourado: #d9a62e;
+
+  --texto: #e7eaed;
+  --texto-suave: #aab3bb;
+  --texto-fraco: #7f8a93;
+  --fundo: #12161a;
+  --superficie: #1b2127;
+  --fundo-suave: #161b20;
+  --fundo-cinza: #171c21;
+  --fundo-escuro: #0b0e11;
+  --linha: #2a3138;
+  --linha-forte: #3a434b;
+  --tinte-marca: rgba(224, 74, 47, 0.12);
+  --tinte-marca-borda: rgba(224, 74, 47, 0.32);
+  --sucesso-fundo: rgba(61, 190, 120, 0.16);
+  --sucesso-texto: #62d39a;
+  --faixa-topo: #a3291a;
+
+  --sombra: 0 0.5rem 1rem rgba(0, 0, 0, 0.45);
+  --sombra-forte: 0 1rem 2rem rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+html[data-tema='dark'] img:not([src$='.svg']) {
+  filter: brightness(0.92);
 }
 
 * {

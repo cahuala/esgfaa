@@ -11,8 +11,8 @@
   flex-wrap: wrap;
   padding: 14px 20px;
   border-radius: var(--raio);
-  background: #eaf6ee;
-  color: #1d4f31;
+  background: var(--sucesso-fundo);
+  color: var(--sucesso-texto);
   font-size: 14.5px;
 }
 .faixaSelo {
@@ -27,7 +27,7 @@
   flex: 1;
 }
 .faixaLigacao {
-  color: #1d6b3d;
+  color: var(--sucesso-texto);
   font-weight: 600;
   text-decoration: none;
 }
@@ -45,7 +45,7 @@
 .curso {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   overflow: hidden;
@@ -73,7 +73,7 @@
   left: 16px;
   padding: 2px 10px;
   border-radius: 4px;
-  background: #fff;
+  background: var(--superficie);
   color: var(--texto);
   font-size: 12px;
   font-weight: 600;

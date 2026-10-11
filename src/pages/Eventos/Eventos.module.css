@@ -26,7 +26,7 @@
 .destaqueInterior {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   overflow: hidden;
@@ -231,7 +231,7 @@
   color: #fff;
 }
 .diaSelecionado::after {
-  background: #fff;
+  background: var(--superficie);
 }
 
 .filtro ul {
@@ -306,7 +306,7 @@
   gap: 18px;
   align-items: center;
   padding: 16px;
-  background: #fff;
+  background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: var(--raio);
   text-decoration: none;
@@ -374,8 +374,8 @@
   font-style: normal;
   padding: 1px 7px;
   border-radius: 4px;
-  background: #d8f1e1;
-  color: #1d6b3d;
+  background: var(--sucesso-fundo);
+  color: var(--sucesso-texto);
   font-size: 11px;
   font-weight: 600;
 }
@@ -553,7 +553,7 @@
   position: sticky;
   top: 110px;
   padding: 22px;
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   display: flex;

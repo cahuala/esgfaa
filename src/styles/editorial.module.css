@@ -4,7 +4,7 @@
    ===================================================================== */
 
 .pagina {
-  background: #fff;
+  background: var(--superficie);
   color: var(--texto);
 }
 
@@ -166,7 +166,7 @@
   border-bottom: 1px solid var(--linha);
 }
 .tabela tbody tr:hover {
-  background: #fafbfb;
+  background: var(--fundo-suave);
 }
 .tabela tbody th,
 .tabela td {
@@ -230,7 +230,7 @@
 }
 .passos li {
   padding: 20px;
-  background: #fff;
+  background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: var(--raio);
 }
@@ -300,8 +300,8 @@
   background: var(--marca-escura);
 }
 .botaoContorno {
-  background: #fff;
-  border-color: #d5dbe0;
+  background: var(--superficie);
+  border-color: var(--linha-forte);
   color: var(--texto);
 }
 .botaoContorno:hover {
@@ -358,7 +358,7 @@
     z-index: 90;
     margin: 0 calc(-1 * var(--margem));
     padding: 0;
-    background: #fff;
+    background: var(--superficie);
     border-bottom: 1px solid var(--linha);
   }
   .indice > :not(nav),

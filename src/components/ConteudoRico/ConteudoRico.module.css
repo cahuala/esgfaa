@@ -188,8 +188,8 @@ ol.lista li::before {
 
 /* Caixa de destaque */
 .destaque {
-  background: #fdf4f2;
-  border: 1px solid #f1d2ca;
+  background: var(--tinte-marca);
+  border: 1px solid var(--tinte-marca-borda);
   border-radius: 12px;
   padding: 22px 26px;
   font-size: 16px;
@@ -649,8 +649,8 @@ ol.lista li::before {
   clear: both;
   margin: 1.8em 0;
   padding: 20px 24px;
-  background: #fdf4f2;
-  border: 1px solid #f1d2ca;
+  background: var(--tinte-marca);
+  border: 1px solid var(--tinte-marca-borda);
   border-left: 4px solid var(--marca);
   border-radius: 6px;
   font-size: 16px;

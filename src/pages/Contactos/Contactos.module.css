@@ -31,7 +31,7 @@
 /* formulário */
 .formularioCaixa {
   padding: clamp(22px, 3vw, 32px);
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
 }
@@ -55,7 +55,7 @@
 }
 .assuntos label {
   padding: 6px 14px;
-  border: 1px solid #d5dbe0;
+  border: 1px solid var(--linha-forte);
   border-radius: 999px;
   font-size: 13.5px;
   cursor: pointer;
@@ -104,9 +104,9 @@
 .campo textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d5dbe0;
+  border: 1px solid var(--linha-forte);
   border-radius: 4px;
-  background: #fff;
+  background: var(--superficie);
   color: var(--texto);
   font-size: 15px;
   line-height: 1.5;
@@ -153,8 +153,8 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #d8f1e1;
-  color: #1d6b3d;
+  background: var(--sucesso-fundo);
+  color: var(--sucesso-texto);
   display: grid;
   place-items: center;
   font-size: 18px;
@@ -244,7 +244,7 @@
   bottom: 20px;
   max-width: 300px;
   padding: 18px 20px;
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra-forte);
   display: flex;

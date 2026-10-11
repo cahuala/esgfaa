@@ -26,7 +26,7 @@
 .destaqueInterior {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   overflow: hidden;
@@ -102,7 +102,7 @@
   gap: 8px;
   height: 40px;
   padding: 0 12px;
-  border: 1px solid #d5dbe0;
+  border: 1px solid var(--linha-forte);
   border-radius: 4px;
   color: var(--texto-fraco);
 }
@@ -407,7 +407,7 @@
   color: var(--texto-suave);
 }
 .palavras .palavra {
-  background: #fff;
+  background: var(--superficie);
 }
 .sobreAutor {
   display: flex;
@@ -436,7 +436,7 @@
 }
 .caixa {
   padding: 20px;
-  background: #fff;
+  background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
 }

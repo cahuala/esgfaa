@@ -7,6 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..700;1,400..600&display=swap" rel="stylesheet">
+    <script>
+      // aplica o tema guardado (ou o do sistema) antes de o site ser desenhado
+      try {
+        var t = localStorage.getItem('esg_tema');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-tema', t);
+      } catch (e) {}
+    </script>
     <title>ESGFAA</title>
   </head>
   <body>

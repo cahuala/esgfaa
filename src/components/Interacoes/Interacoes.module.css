@@ -22,8 +22,8 @@
   gap: 10px;
   height: 38px;
   padding: 0 16px;
-  background: #fff;
-  border: 1px solid #d5dbe0;
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
   border-radius: 999px;
   color: var(--texto);
   font-size: 14px;
@@ -138,7 +138,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px;
-  background: #fff;
+  background: var(--superficie);
   border: 1px solid var(--linha);
   border-radius: var(--raio);
 }
@@ -159,8 +159,8 @@
 .formulario textarea {
   width: 100%;
   padding: 10px 12px;
-  background: #fff;
-  border: 1px solid #d5dbe0;
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
   border-radius: 4px;
   color: var(--texto);
   font-size: 15px;
@@ -230,7 +230,7 @@
   margin: 0;
   padding: 10px 14px;
   border-left: 3px solid var(--marca);
-  background: #fdf4f2;
+  background: var(--tinte-marca);
   font-size: 14px;
 }
 
@@ -265,7 +265,7 @@
   height: 46px;
   border-radius: 50%;
   border: 1px solid var(--marca);
-  background: #fdf4f2;
+  background: var(--tinte-marca);
   display: flex;
   align-items: center;
   justify-content: center;
