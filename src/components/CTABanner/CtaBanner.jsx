@@ -11,7 +11,7 @@ function CTABanner() {
           <h2>{cta.titulo}</h2>
           <p>{cta.texto}</p>
         </div>
-        <Link to="/#candidatura" className={styles.botao}>{cta.botao} <span aria-hidden="true">→</span></Link>
+        <Link to="/Candidatura" className={styles.botao}>{cta.botao} <span aria-hidden="true">→</span></Link>
       </div>
     </section>
   )

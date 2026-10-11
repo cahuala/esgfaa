@@ -1,33 +1,107 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useConteudo } from '../../conteudo/contexto'
 import { Etiqueta, TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './FormacaoDestaque.module.css'
 
-// Cursos da Escola em cartões (título centrado, como "Our missions" no modelo)
+const INTERVALO_MS = 7000
+
+// quem pediu ao sistema menos animação não tem rotação automática
+const menosAnimacao = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+/*
+  Cursos da Escola em separadores que avançam sozinhos (a barra mostra o tempo até ao seguinte).
+  Pára enquanto o rato está por cima; um clique escolhe o curso e recomeça a contagem.
+*/
 function FormacaoDestaque() {
   const { cursos, paginas } = useConteudo()
   const textos = paginas.home.formacao
-  if (!cursos.length) return null
+  const [ativo, setAtivo] = useState(0)
+  const [pausa, setPausa] = useState(false)
+  const [ciclo, setCiclo] = useState(0) // muda a cada troca: reinicia a barra de progresso
+  const total = useRef(cursos.length)
+
+  useEffect(() => {
+    total.current = cursos.length
+  }, [cursos.length])
+
+  useEffect(() => {
+    if (pausa || menosAnimacao() || cursos.length < 2) return undefined
+    const id = setTimeout(() => {
+      setAtivo((a) => (a + 1) % Math.max(1, total.current))
+      setCiclo((c) => c + 1)
+    }, INTERVALO_MS)
+    return () => clearTimeout(id)
+  }, [ativo, pausa, ciclo, cursos.length])
+
+  function escolher(i) {
+    setAtivo(i)
+    setCiclo((c) => c + 1)
+  }
+
+  const curso = cursos[ativo % Math.max(1, cursos.length)]
+  if (!curso) return null
+  const unidades = (curso.plano || []).flatMap((p) => p.unidades).slice(0, 4)
 
   return (
     <section className="seccao">
       <div className="contentor">
         <TituloSeccao titulo={textos.titulo} texto={textos.texto} centrada />
-        <div className={styles.grelha}>
-          {cursos.map((c) => (
-            <Link to={`/Cursos/${c.id}`} className={styles.cartao} key={c.id}>
-              <span className={styles.imagem}>{c.imagem && <img src={c.imagem} alt="" loading="lazy" />}</span>
-              <div className={styles.corpo}>
-                <div className={styles.etiquetas}>
-                  {c.duracao && <Etiqueta cor="cinzento">{c.duracao}</Etiqueta>}
-                  {c.regime && <Etiqueta cor="azul">{c.regime}</Etiqueta>}
-                </div>
-                <h3>{c.nome}</h3>
-                <p>{c.resumo}</p>
-                <span className={styles.ligacao}>Conhecer o curso →</span>
+
+        <div
+          className={styles.corpo}
+          onMouseEnter={() => setPausa(true)}
+          onMouseLeave={() => setPausa(false)}
+          onFocus={() => setPausa(true)}
+          onBlur={() => setPausa(false)}
+        >
+          <div className={styles.abas} role="tablist" aria-label="Cursos">
+            {cursos.map((c, i) => (
+              <button
+                key={c.id}
+                role="tab"
+                id={`aba-${c.id}`}
+                aria-selected={i === ativo}
+                aria-controls="painel-curso"
+                className={`${styles.aba} ${i === ativo ? styles.abaAtiva : ''}`}
+                onClick={() => escolher(i)}
+              >
+                <strong>{c.nome}</strong>
+                <span>{[c.duracao, c.regime].filter(Boolean).join(' · ')}</span>
+                {i === ativo && cursos.length > 1 && (
+                  <span className={styles.progresso} aria-hidden="true">
+                    <span
+                      key={ciclo}
+                      className={styles.progressoBarra}
+                      style={{ animationDuration: `${INTERVALO_MS}ms`, animationPlayState: pausa ? 'paused' : 'running' }}
+                    />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <article id="painel-curso" role="tabpanel" aria-labelledby={`aba-${curso.id}`} className={styles.painel} key={curso.id}>
+            <div className={styles.imagem}>{curso.imagem && <img src={curso.imagem} alt="" />}</div>
+            <div className={styles.texto}>
+              <div className={styles.etiquetas}>
+                {curso.sigla && <Etiqueta cor="vermelho">{curso.sigla}</Etiqueta>}
+                {curso.duracao && <Etiqueta cor="cinzento">{curso.duracao}</Etiqueta>}
+                {curso.vagas && <Etiqueta cor="azul">{curso.vagas} vagas</Etiqueta>}
               </div>
-            </Link>
-          ))}
+              <h3>{curso.nome}</h3>
+              <p>{curso.resumo}</p>
+              {unidades.length > 0 && (
+                <>
+                  <span className={styles.subtitulo}>Plano curricular</span>
+                  <ul className={styles.plano}>
+                    {unidades.map((u) => <li key={u.nome}>{u.nome}</li>)}
+                  </ul>
+                </>
+              )}
+              <Link to={`/Cursos/${curso.id}`} className={styles.ligacao}>Conhecer o curso →</Link>
+            </div>
+          </article>
         </div>
       </div>
     </section>

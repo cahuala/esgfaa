@@ -8,6 +8,7 @@ import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
 import { RepositorioPublicidade } from './infraestrutura/repositorios/publicidade.js'
 import { RepositorioAtividades } from './infraestrutura/repositorios/atividades.js'
 import { RepositorioSessoes } from './infraestrutura/repositorios/sessoes.js'
+import { RepositorioCandidaturas } from './infraestrutura/repositorios/candidaturas.js'
 import { CifraSenhas } from './infraestrutura/seguranca/cifra.js'
 import { Tokens } from './infraestrutura/seguranca/tokens.js'
 import { CacheLimitada } from './infraestrutura/seguranca/cacheLimitada.js'
@@ -23,6 +24,7 @@ import { ServicoPaginas } from './aplicacao/paginas.js'
 import { ServicoInteracoes } from './aplicacao/interacoes.js'
 import { ServicoEstatisticas } from './aplicacao/estatisticas.js'
 import { ServicoFicheiros } from './aplicacao/ficheiros.js'
+import { ServicoCandidaturas } from './aplicacao/candidaturas.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -42,6 +44,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
     sessoes: new RepositorioSessoes({ prisma }),
+    candidaturas: new RepositorioCandidaturas({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -67,6 +70,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,
     }),
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
+    candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
   }
 
   const fechar = () => prisma.$disconnect()

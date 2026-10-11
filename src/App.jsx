@@ -16,6 +16,7 @@ import ArtigoDetalhe from './pages/Artigos/ArtigoDetalhe'
 import Contactos from './pages/Contactos/Contactos'
 import Cursos from './pages/Cursos/Cursos'
 import CursoDetalhe from './pages/Cursos/CursoDetalhe'
+import Candidatura from './pages/Candidatura/Candidatura'
 import NaoEncontrado from './pages/NaoEncontrado/NaoEncontrado'
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
         <Route path="/Cursos" element={<Cursos />} />
         <Route path="/Cursos/:id" element={<CursoDetalhe />} />
         <Route path="/Contactos" element={<Contactos />} />
+        <Route path="/Candidatura" element={<Candidatura />} />
         <Route path="*" element={<NaoEncontrado />} />
       </Routes>
       <Publicidade posicao="rodape" />

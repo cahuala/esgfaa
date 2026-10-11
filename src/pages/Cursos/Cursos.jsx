@@ -122,9 +122,9 @@ function Cursos() {
             </tbody>
           </table>
           <aside className={styles.candidatar}>
-            <h3>Faça já a sua pré-candidatura</h3>
+            <h3>Pronto para avançar?</h3>
             <p>Preencha o formulário e a Secretaria Académica entra em contacto com os próximos passos.</p>
-            <Link to="/#candidatura" className={ed.botao}>Pré-candidatura</Link>
+            <Link to="/Candidatura" className={ed.botao}>Candidatar-me</Link>
             <Link to="/Contactos#formulario" className={`${ed.botao} ${ed.botaoContorno}`}>Pedir informações</Link>
           </aside>
         </div>

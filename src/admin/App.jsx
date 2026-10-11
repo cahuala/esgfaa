@@ -8,6 +8,8 @@ import ListaColecao from './paginas/ListaColecao'
 import EditarItem from './paginas/EditarItem'
 import EditarPagina from './paginas/EditarPagina'
 import Comentarios from './paginas/Comentarios'
+import Candidaturas from './paginas/Candidaturas'
+import CandidaturaDetalhe from './paginas/CandidaturaDetalhe'
 import Utilizadores from './paginas/Utilizadores'
 import Atividades from './paginas/Atividades'
 import Perfil from './paginas/Perfil'
@@ -37,6 +39,8 @@ function App() {
         <Route path="/colecao/:colecao/:id" element={<PorEndereco><EditarItem /></PorEndereco>} />
         {pode('paginas.ver') && <Route path="/paginas/:chave" element={<PorEndereco><EditarPagina /></PorEndereco>} />}
         {pode('comentarios.ver') && <Route path="/comentarios" element={<Comentarios />} />}
+        {pode('candidaturas.ver') && <Route path="/candidaturas" element={<Candidaturas />} />}
+        {pode('candidaturas.ver') && <Route path="/candidaturas/:id" element={<CandidaturaDetalhe />} />}
         {pode('estatisticas.ver') && <Route path="/estatisticas" element={<Estatisticas />} />}
         <Route path="/perfil" element={<Perfil />} />
         {pode('utilizadores.ver') && <Route path="/utilizadores" element={<Utilizadores />} />}

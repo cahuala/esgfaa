@@ -104,6 +104,8 @@ a {
 
 img {
   max-width: 100%;
+  /* fotografias recortadas (object-fit: cover) privilegiam a parte de cima: não cortam cabeças */
+  object-position: 50% 22%;
 }
 
 button, input, select, textarea {

@@ -84,6 +84,8 @@ export function criarConfig(env = process.env, extras = {}) {
       visita: { janelaMs: 60_000, maximo: 60 },
       impressao: { janelaMs: 60_000, maximo: 120 },
       clique: { janelaMs: 60_000, maximo: 30 },
+      // candidaturas por IP (uma pessoa raramente envia mais de uma ou duas)
+      candidatura: { janelaMs: 60 * 60_000, maximo: 5 },
     },
     ...extras,
   }

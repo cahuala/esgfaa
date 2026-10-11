@@ -11,6 +11,7 @@ export const RECURSOS = [
   ...CONTEUDOS.map((r) => ({ id: r, acoes: ['ver', 'criar', 'editar', 'apagar', 'publicar'] })),
   { id: 'paginas', acoes: ['ver', 'editar'] },
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
+  { id: 'candidaturas', acoes: ['ver', 'editar'] },
   { id: 'estatisticas', acoes: ['ver'] },
   { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
@@ -55,6 +56,13 @@ export const PAPEIS_PADRAO = [
     descricao: 'Acompanha e remove comentários dos visitantes.',
     sistema: 0,
     permissoes: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'comentarios.ver', 'comentarios.apagar'],
+  },
+  {
+    id: 'secretaria',
+    nome: 'Secretaria Académica',
+    descricao: 'Recebe e avalia as candidaturas aos cursos.',
+    sistema: 0,
+    permissoes: ['candidaturas.ver', 'candidaturas.editar', 'cursos.ver'],
   },
   {
     id: 'analista',

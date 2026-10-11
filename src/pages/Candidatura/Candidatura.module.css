@@ -1,0 +1,480 @@
+/* Candidatura por passos — navegação ao estilo "nav-wizards-1" do Color Admin */
+.grelha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 40px;
+  margin-top: 40px;
+  margin-bottom: 72px;
+  align-items: start;
+}
+
+/* ---------- passos ---------- */
+.passos ol {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 20px;
+}
+.passos li {
+  position: relative;
+}
+/* linha entre os círculos */
+.passos li::before,
+.passos li::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  height: 2px;
+  background: var(--linha-forte);
+}
+.passos li::before {
+  left: 0;
+  right: calc(50% + 24px);
+}
+.passos li::after {
+  left: calc(50% + 24px);
+  right: 0;
+  transition: background 0.2s;
+}
+.passos li:first-child::before,
+.passos li:last-child::after {
+  display: none;
+}
+.passos li.concluido::before,
+.passos li.concluido::after,
+.passos li.ativo::before {
+  background: var(--sucesso-texto);
+}
+.passos button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texto-fraco);
+  cursor: pointer;
+}
+.passos button:disabled {
+  cursor: default;
+}
+.numero {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--linha-forte);
+  background: var(--superficie);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.2s linear;
+}
+.nome {
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: center;
+}
+.concluido button {
+  color: var(--sucesso-texto);
+}
+.concluido .numero {
+  border-color: var(--sucesso-texto);
+  background: var(--sucesso-texto);
+  color: #fff;
+}
+.ativo button {
+  color: var(--marca);
+}
+.ativo .numero {
+  border-color: var(--marca);
+  color: var(--marca);
+  box-shadow: 0 0 0 5px var(--tinte-marca);
+}
+
+/* ---------- cartão do passo ---------- */
+.cartao {
+  padding: clamp(22px, 3vw, 32px);
+  background: var(--superficie);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+}
+.tituloPasso {
+  font-size: 20px;
+  margin-bottom: 22px;
+  outline: none;
+}
+.tituloPasso span {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--texto-fraco);
+}
+.armadilha {
+  position: absolute !important;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* escolha do curso */
+.cursos {
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.opcaoCurso {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 28px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--linha-forte);
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.opcaoCurso:hover {
+  border-color: var(--texto-fraco);
+}
+.opcaoCurso input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.opcaoCurso:focus-within {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+.opcaoCurso img {
+  width: 96px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.opcaoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.opcaoTexto strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.opcaoTexto span {
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.opcaoTexto small {
+  font-size: 12.5px;
+  color: var(--texto-fraco);
+}
+.marca {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--linha-forte);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: transparent;
+}
+.opcaoAtiva {
+  border-color: var(--marca);
+  box-shadow: 0 0 0 3px var(--tinte-marca);
+}
+.opcaoAtiva .marca {
+  border-color: var(--marca);
+  background: var(--marca);
+  color: #fff;
+}
+
+/* campos */
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.largo {
+  grid-column: 1 / -1;
+}
+.campo label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.campo label em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--texto-fraco);
+}
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--linha-forte);
+  border-radius: 4px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.campo textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--marca);
+  box-shadow: 0 0 0 3px var(--tinte-marca);
+}
+.comErro input,
+.comErro select,
+.comErro textarea {
+  border-color: var(--marca);
+}
+.erro {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--marca);
+}
+.ajuda {
+  font-size: 12.5px;
+  color: var(--texto-fraco);
+}
+
+/* revisão */
+.revisao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.resumo {
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+}
+.resumo header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--fundo-cinza);
+  border-radius: var(--raio) var(--raio) 0 0;
+}
+.resumo h3 {
+  font-size: 14.5px;
+}
+.resumo header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  color: var(--marca);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.resumo dl {
+  padding: 6px 16px;
+}
+.resumo dl div {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--linha);
+  font-size: 14px;
+}
+.resumo dl div:last-child {
+  border-bottom: 0;
+}
+.resumo dt {
+  color: var(--texto-suave);
+}
+.resumo dd {
+  word-break: break-word;
+}
+.declaracao {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  cursor: pointer;
+}
+.declaracao input {
+  margin-top: 4px;
+  accent-color: var(--marca);
+}
+
+.erroGeral {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 4px;
+  background: var(--tinte-marca);
+  border: 1px solid var(--tinte-marca-borda);
+  color: var(--marca);
+  font-size: 14px;
+}
+.navegacao {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--linha);
+}
+
+/* ---------- coluna lateral ---------- */
+.lateral {
+  position: sticky;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.caixa {
+  padding: 20px;
+  background: var(--fundo-cinza);
+  border-radius: var(--raio);
+  font-size: 13.5px;
+}
+.caixa h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.caixa h3 svg {
+  color: var(--marca);
+}
+.caixa p {
+  color: var(--texto-suave);
+  margin-bottom: 10px;
+}
+.caixa ul {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.duvidas {
+  font-size: 13.5px;
+  color: var(--texto-suave);
+}
+.duvidas a {
+  color: var(--marca);
+}
+
+/* ---------- candidatura recebida ---------- */
+.sucesso {
+  max-width: 720px;
+  padding-top: 48px;
+  padding-bottom: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.sucessoIcone {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--sucesso-fundo);
+  color: var(--sucesso-texto);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+.sucesso h2 {
+  font-size: 24px;
+  outline: none;
+}
+.sucesso > p {
+  font-size: 15.5px;
+  color: var(--texto-suave);
+}
+.codigo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 20px;
+  border: 1px dashed var(--linha-forte);
+  border-radius: var(--raio);
+}
+.codigo span,
+.codigo small {
+  font-size: 12.5px;
+  color: var(--texto-fraco);
+}
+.codigo strong {
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.proximos {
+  width: 100%;
+  margin-top: 8px;
+}
+.proximos h3 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.documentosSucesso {
+  width: 100%;
+}
+.acoesSucesso {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+@media (max-width: 960px) {
+  .grelha {
+    grid-template-columns: 1fr;
+  }
+  .lateral {
+    position: static;
+  }
+}
+@media (max-width: 600px) {
+  .campos {
+    grid-template-columns: 1fr;
+  }
+  .nome {
+    font-size: 11.5px;
+  }
+  .numero {
+    width: 34px;
+    height: 34px;
+  }
+  .passos li::before,
+  .passos li::after {
+    top: 17px;
+  }
+  .opcaoCurso {
+    grid-template-columns: 64px minmax(0, 1fr) 24px;
+  }
+  .opcaoCurso img {
+    width: 64px;
+    height: 48px;
+  }
+  .resumo dl div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

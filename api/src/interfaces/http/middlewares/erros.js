@@ -19,6 +19,7 @@ export function tratarErros(registar = (e) => console.error(e)) {
   return (erro, req, res, next) => {
     if (erro instanceof ErroDominio) {
       const corpo = { erro: erro.message, codigo: erro.codigo }
+      if (erro.detalhes?.campo) corpo.campo = erro.detalhes.campo
       if (erro.codigo === 'conta_bloqueada' && erro.detalhes?.ate) {
         corpo.ate = erro.detalhes.ate
         res.set('Retry-After', String(Math.max(1, Math.ceil((new Date(erro.detalhes.ate) - Date.now()) / 1000))))

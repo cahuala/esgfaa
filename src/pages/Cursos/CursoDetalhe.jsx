@@ -81,7 +81,7 @@ function CursoDetalhe() {
           <div className={ed.caixaLateral}>
             <h3 className={detalhe.caixaTitulo}>Candidaturas</h3>
             <p>{pagina.candidaturasAbertas && prazo ? `Abertas até ${prazo}.` : 'Consulte o calendário de admissão.'}</p>
-            <Link to="/#candidatura" className={ed.botao}>Pré-candidatura</Link>
+            <Link to={`/Candidatura?curso=${curso.id}`} className={ed.botao}>Candidatar-me a este curso</Link>
           </div>
         </aside>
 

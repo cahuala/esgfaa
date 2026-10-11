@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { FaArrowRight } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import styles from './HeroSection.module.css'
@@ -8,13 +9,16 @@ function HeroSection() {
   const { cursos, paginas } = useConteudo()
   const hero = paginas.home.hero
   const [form, setForm] = useState({ nome: '', email: '', telefone: '', curso: '' })
+  const navegar = useNavigate()
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  // o formulário rápido abre a candidatura completa já com estes dados preenchidos
   function handleSubmit(e) {
     e.preventDefault()
+    navegar('/Candidatura', { state: form })
   }
 
   return (
@@ -34,10 +38,10 @@ function HeroSection() {
             ))}
           </div>
 
-          <a href="#candidatura" className={styles.mais}>
+          <Link to="/Cursos" className={styles.mais}>
             <span><FaArrowRight size={12} aria-hidden="true" /></span>
-            Candidatar-me a um curso
-          </a>
+            Conhecer os cursos
+          </Link>
         </div>
 
         <div className={styles.formulario} id="candidatura">
@@ -63,7 +67,7 @@ function HeroSection() {
                 {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </label>
-            <button type="submit">Enviar pedido</button>
+            <button type="submit">Continuar candidatura</button>
           </form>
         </div>
       </div>

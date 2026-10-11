@@ -150,6 +150,9 @@ function Layout({ children }) {
             </div>
             )}
 
+            {pode('candidaturas.ver') && <div className="menu-header">Admissão</div>}
+            {pode('candidaturas.ver') && <ItemMenu para="/candidaturas" icone="fa-user-graduate" texto="Candidaturas" />}
+
             {(pode('comentarios.ver') || pode('publicidade.ver')) && <div className="menu-header">Interação e publicidade</div>}
             {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto="Comentários" />}
             {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto="Publicidade" />}

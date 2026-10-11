@@ -405,7 +405,7 @@ export const POSICOES_BANNER = [
 // nomes legíveis para a grelha de permissões
 export const NOMES_RECURSOS = {
   noticias: 'Notícias', artigos: 'Artigos', eventos: 'Eventos', cursos: 'Cursos', pessoas: 'Corpo docente',
-  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', estatisticas: 'Estatísticas',
+  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', estatisticas: 'Estatísticas',
   utilizadores: 'Utilizadores', papeis: 'Papéis e permissões', atividades: 'Registo de atividades',
 }
 export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir' }
@@ -414,6 +414,9 @@ export const NOMES_ACOES = {
   entrar: 'Entrou no painel',
   sair: 'Saiu do painel',
   falha_entrada: 'Tentativa de entrada falhada',
+  nova_candidatura: 'Candidatura recebida',
+  avaliar_candidatura: 'Avaliou uma candidatura',
+  bloquear_conta: 'Conta bloqueada por tentativas falhadas',
   criar: 'Criou',
   editar: 'Editou',
   apagar: 'Apagou',

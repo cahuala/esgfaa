@@ -9,7 +9,12 @@ export async function pedido(caminho, opcoes = {}) {
   })
   if (resposta.status === 204) return null
   const dados = await resposta.json().catch(() => ({}))
-  if (!resposta.ok) throw new Error(dados.erro || `Erro ${resposta.status}`)
+  if (!resposta.ok) {
+    const erro = new Error(dados.erro || `Erro ${resposta.status}`)
+    erro.estado = resposta.status
+    erro.campo = dados.campo // campo do formulário com o problema (quando a API o indica)
+    throw erro
+  }
   return dados
 }
 

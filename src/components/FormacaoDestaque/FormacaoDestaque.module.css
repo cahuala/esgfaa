@@ -1,27 +1,90 @@
-.grelha {
+.corpo {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2.2fr);
   gap: 28px;
+  align-items: stretch;
 }
-.cartao {
+
+/* separadores dos cursos */
+.abas {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+.aba {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  border: 1px solid var(--linha);
+  border-left: 3px solid transparent;
+  border-radius: var(--raio);
+  background: var(--superficie);
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.aba strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.aba span {
+  font-size: 12.5px;
+  color: var(--texto-suave);
+}
+.aba:hover {
+  border-color: var(--linha-forte);
+}
+.abaAtiva {
+  border-color: transparent;
+  border-left-color: var(--marca);
+  box-shadow: var(--sombra);
+}
+.abaAtiva strong {
+  color: var(--marca);
+}
+.progresso {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--fundo-cinza);
+}
+.progressoBarra {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--marca);
+  animation-name: preencher;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes preencher {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* painel do curso ativo */
+.painel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   background: var(--superficie);
   border-radius: var(--raio);
   box-shadow: var(--sombra);
   overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-  transition: box-shadow 0.2s, transform 0.2s;
+  animation: aparecer 0.35s ease;
 }
-.cartao:hover {
-  box-shadow: var(--sombra-forte);
-  transform: translateY(-2px);
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .imagem {
-  aspect-ratio: 16 / 9;
+  min-height: 320px;
   background: var(--fundo-cinza);
-  overflow: hidden;
 }
 .imagem img {
   width: 100%;
@@ -29,29 +92,84 @@
   object-fit: cover;
   display: block;
 }
-.corpo {
-  padding: 18px 22px 22px;
+.texto {
+  padding: clamp(22px, 3vw, 32px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex: 1;
+  gap: 10px;
 }
 .etiquetas {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
-.corpo h3 {
-  font-size: 17px;
+.texto h3 {
+  font-size: clamp(19px, 2vw, 23px);
 }
-.corpo p {
-  font-size: 14px;
+.texto p {
+  font-size: 14.5px;
   color: var(--texto-suave);
-  flex: 1;
 }
-.ligacao {
+.subtitulo {
   margin-top: 6px;
   font-size: 13px;
   font-weight: 600;
+}
+.plano {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.plano li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 14px;
+}
+.plano li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--marca);
+}
+.ligacao {
+  margin-top: auto;
+  padding-top: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--marca);
+  text-decoration: none;
+}
+.ligacao:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .painel {
+    animation: none;
+  }
+}
+@media (max-width: 900px) {
+  .corpo {
+    grid-template-columns: 1fr;
+  }
+  .abas {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .aba {
+    flex: 0 0 auto;
+    min-width: 210px;
+  }
+  .painel {
+    grid-template-columns: 1fr;
+  }
+  .imagem {
+    min-height: 200px;
+  }
 }
