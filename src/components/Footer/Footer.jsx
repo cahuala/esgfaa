@@ -37,7 +37,7 @@ const colunas = [
     links: [
       { label: 'Contactos', to: '/Contactos#formulario' },
       { label: 'Perguntas Frequentes', to: '/Contactos#faq' },
-      { label: 'Portal Académico', to: '/Contactos' },
+      { label: 'Portal Académico', href: `${import.meta.env.BASE_URL}portal/` },
     ],
   },
 ]
@@ -81,7 +81,7 @@ function Footer() {
             <ul>
               {coluna.links.map((link) => (
                 <li key={link.label}>
-                  <Link to={link.to}>{link.label}</Link>
+                  {link.href ? <a href={link.href}>{link.label}</a> : <Link to={link.to}>{link.label}</Link>}
                 </li>
               ))}
             </ul>

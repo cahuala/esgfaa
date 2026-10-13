@@ -5,10 +5,11 @@ import { idPedido, registoPedidos, semCache } from './middlewares/pedido.js'
 import { naoEncontrado, tratarErros } from './middlewares/erros.js'
 import { rotasAdmin } from './rotas/admin.js'
 import { rotasPublicas } from './rotas/publico.js'
+import { rotasPortal } from './rotas/portal.js'
 
 // Aplicação Express (sem arrancar o servidor: os testes usam-na diretamente)
 export function criarApp(contentor, { registarErro } = {}) {
-  const { config, servicos, armazenamento } = contentor
+  const { config, servicos, armazenamento, privados } = contentor
   const app = express()
 
   // atrás de um proxy (Render, Nginx…) o IP real vem no cabeçalho X-Forwarded-For
@@ -42,7 +43,8 @@ export function criarApp(contentor, { registarErro } = {}) {
 
   app.get('/api/saude', (req, res) => res.json({ ok: true }))
   app.use('/api/publico', rotasPublicas({ servicos, config }))
-  app.use('/api/admin', semCache, rotasAdmin({ servicos, config, armazenamento }))
+  app.use('/api/admin', semCache, rotasAdmin({ servicos, config, armazenamento, privados }))
+  app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))
 
   app.use(naoEncontrado)
   app.use(tratarErros(registarErro ?? ((e) => console.error(JSON.stringify({ t: new Date().toISOString(), id: e.id, erro: e.erro?.stack || String(e.erro) })))))

@@ -27,10 +27,11 @@ export function relogioFalso(inicio = '2026-10-10T12:00:00Z') {
 */
 export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
   const pastaUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-teste-'))
+  const pastaPrivada = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-privado-'))
   const config = criarConfig({
     NODE_ENV: 'test', DATABASE_URL: URL_TESTE, JWT_SECRET: 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres',
     ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.senha, ADMIN_NAME: 'Administrador Teste', ...env,
-  }, { pastaUploads })
+  }, { pastaUploads, pastaPrivada })
   // limites altos por omissão; os testes de limites baixam-nos
   for (const k of Object.keys(config.limites)) config.limites[k] = { janelaMs: 60_000, maximo: 10_000, ...limites[k] }
 
@@ -66,9 +67,10 @@ export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
     await contentor.fechar()
     await apagarEsquema(esquema)
     fs.rmSync(pastaUploads, { recursive: true, force: true })
+    fs.rmSync(pastaPrivada, { recursive: true, force: true })
   }
 
-  return { app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, esquema }
+  return { app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, pastaPrivada, esquema }
 }
 
 export const noticia = (extra = {}) => ({

@@ -57,3 +57,37 @@ export const filtrosCandidaturas = z.object({
   q: texto(200).optional(),
 })
 export const avaliacao = z.object({ estado: texto(30).optional(), notas: texto(4000).optional() })
+
+// ---------- portal académico ----------
+const textoLivre = (max) => z.union([z.string().max(max), z.number()]).optional()
+export const conta = z.object({
+  tipo: texto(20).optional(),
+  nome: texto(200).optional(),
+  email: texto(254).optional(),
+  ativo: z.boolean().optional(),
+  dados: z.record(z.string(), z.union([z.string().max(200), z.number()])).optional(),
+})
+export const filtrosContas = z.object({ tipo: texto(20).optional(), q: texto(200).optional() })
+export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), nome: texto(120).optional(), ativa: z.boolean().optional() })
+export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: texto(20).optional() })
+export const cadeira = z.object({
+  codigo: texto(40).optional(), nome: texto(200).optional(), semestre: textoLivre(4), horas: textoLivre(6),
+  docenteId: z.union([idNumerico, z.literal(''), z.null()]).optional(), descricao: texto(3000).optional(),
+})
+export const horario = z.object({ diaSemana: textoLivre(2), inicio: texto(5), fim: texto(5), sala: texto(80).optional() })
+export const avisoGeral = z.object({ turmaId: z.union([idNumerico, z.literal(''), z.null()]).optional(), titulo: texto(300), texto: texto(6000) })
+export const tratarPedido = z.object({ estado: texto(30).optional(), resposta: texto(3000).optional() })
+export const filtroEstado = z.object({ estado: texto(30).optional() })
+
+export const pedidoNovo = z.object({ tipo: texto(80), motivo: texto(1200).optional() })
+export const avisoCadeira = z.object({ titulo: texto(300), texto: texto(6000) })
+export const material = z.object({ titulo: texto(300).optional(), descricao: texto(3000).optional(), topico: texto(200).optional(), tipo: texto(20).optional(), url: texto(2000).optional() })
+export const avaliacao_ = z.object({ nome: texto(200).optional(), tipo: texto(30).optional(), peso: textoLivre(4), data: texto(10).optional(), publicada: z.boolean().optional() })
+export const pauta = z.object({ notas: z.array(z.object({ estudanteId: idNumerico, valor: z.union([z.string().max(6), z.number(), z.null()]), observacao: texto(400).optional() })).max(500) })
+export const trabalho = z.object({ titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(), aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
+export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional() })
+export const aula = z.object({
+  data: texto(10).optional(), sumario: texto(3000).optional(),
+  presencas: z.array(z.object({ estudanteId: idNumerico, estado: texto(20) })).max(500).optional(),
+})
+export const entrega = z.object({ comentario: texto(3000).optional() })

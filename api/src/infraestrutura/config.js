@@ -15,6 +15,8 @@ const ESQUEMA = z.object({
   PORT: inteiro(3001, 1, 65535),
   DATA_DIR: z.string().default('dados'),
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
+  // e-mails das contas do portal académico (vazio = qualquer domínio)
+  EMAIL_DOMINIO_ESCOLA: z.string().regex(/^$|^[a-z0-9.-]+\.[a-z]{2,}$/i, 'EMAIL_DOMINIO_ESCOLA deve ser um domínio (ex.: esgfaa.gov.ao)').default('esgfaa.gov.ao'),
   FUSO_HORARIO: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$|^UTC$/).default('Africa/Luanda'),
   PUBLIC_URL: z.union([z.literal(''), z.url()]).default(''),
   CORS_ORIGINS: lista('http://localhost:5173,http://localhost:4173,https://cahuala.github.io'),
@@ -63,6 +65,9 @@ export function criarConfig(env = process.env, extras = {}) {
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     fuso: e.FUSO_HORARIO,
     pastaUploads: path.join(pastaDados, 'uploads'),
+    // materiais, entregas e documentos do portal: fora da pasta pública
+    pastaPrivada: path.join(pastaDados, 'privado'),
+    dominioEmail: e.EMAIL_DOMINIO_ESCOLA.toLowerCase(),
     urlPublico: e.PUBLIC_URL.replace(/\/$/, ''),
     origens: e.CORS_ORIGINS,
     segredoJwt,
@@ -86,6 +91,9 @@ export function criarConfig(env = process.env, extras = {}) {
       clique: { janelaMs: 60_000, maximo: 30 },
       // candidaturas por IP (uma pessoa raramente envia mais de uma ou duas)
       candidatura: { janelaMs: 60 * 60_000, maximo: 5 },
+      entrarPortal: { janelaMs: 15 * 60_000, maximo: 10 },
+      entrarPortalIp: { janelaMs: 15 * 60_000, maximo: 60 },
+      portal: { janelaMs: 60_000, maximo: 600 },
     },
     ...extras,
   }

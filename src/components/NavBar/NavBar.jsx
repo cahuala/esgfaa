@@ -4,6 +4,9 @@ import Logo from '../../assets/Logo.png'
 import AlternarTema from '../AlternarTema/AlternarTema'
 import style from './NavBar.module.css'
 
+// o portal académico é uma aplicação à parte, em /portal/
+const PORTAL = `${import.meta.env.BASE_URL}portal/`
+
 const LIGACOES = [
   { para: '/Institucional', texto: 'Institucional' },
   { para: '/Cursos', texto: 'Cursos' },
@@ -54,13 +57,13 @@ function NavBar() {
             </li>
           ))}
           <li className={style.portalMovel}>
-            <a href="#" className={style.botao}>Portal Académico</a>
+            <a href={PORTAL} className={style.botao}>Portal Académico</a>
           </li>
         </ul>
 
         <div className={style.acoes}>
           <AlternarTema />
-          <a href="#" className={`${style.botao} ${style.portalDesktop}`}>Portal Académico <span aria-hidden="true">→</span></a>
+          <a href={PORTAL} className={`${style.botao} ${style.portalDesktop}`}>Portal Académico <span aria-hidden="true">→</span></a>
           <button
             className={`${style.hamburguer} ${menuAberto ? style.hamburguerAberto : ''}`}
             onClick={() => setMenuAberto(!menuAberto)}

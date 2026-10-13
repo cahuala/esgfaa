@@ -15,7 +15,8 @@
     "test:cobertura": "node --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include=\"src/**\" \"tests/**/*.test.js\"",
     "migrar": "prisma migrate deploy",
     "importar-sqlite": "node --env-file-if-exists=.env scripts/importar-sqlite.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "semear-portal": "node --env-file-if-exists=.env scripts/semear-portal.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

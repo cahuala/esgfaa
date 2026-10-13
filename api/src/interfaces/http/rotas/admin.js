@@ -9,6 +9,7 @@ import { contextoAnonimo } from '../middlewares/pedido.js'
 import { validar } from '../middlewares/validar.js'
 import { absolutizar, baseUrl } from '../apresentacao.js'
 import * as E from '../esquemas.js'
+import { rotasSecretaria } from './secretaria.js'
 
 const pColecao = z.object({ colecao: E.colecao })
 const pItem = z.object({ colecao: E.colecao, id: E.id })
@@ -20,7 +21,7 @@ const pPagina = z.object({ chave: z.string().max(40) })
 const nomeOriginal = (n) => limparTexto(Buffer.from(n, 'latin1').toString('utf8')).slice(0, 200)
 
 // Rotas do painel de administração: /api/admin/…
-export function rotasAdmin({ servicos, config, armazenamento }) {
+export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   const r = Router()
   const ctx = (req) => req.contexto
   const enviar = (req, res, dados, estado = 200) => res.status(estado).json(absolutizar(dados, baseUrl(req, config)))
@@ -143,6 +144,9 @@ export function rotasAdmin({ servicos, config, armazenamento }) {
     await servicos.interacoes.apagarComentario(ctx(req), req.dados.params.id)
     res.status(204).end()
   })
+
+  // ---------- gestão académica (Secretaria) ----------
+  r.use('/academico', rotasSecretaria({ servicos, config, privados }))
 
   // ---------- candidaturas ----------
 

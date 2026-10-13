@@ -34,3 +34,10 @@ export class Conflito extends ErroDominio {
 export class ContaBloqueada extends ErroDominio {
   constructor(mensagem, ate) { super(mensagem, 'conta_bloqueada', { ate }) }
 }
+
+// conta com a palavra-passe inicial: tem de a mudar antes de usar o portal
+export class SenhaPorMudar extends ErroDominio {
+  constructor(mensagem = 'Mude a palavra-passe inicial antes de continuar.') {
+    super(mensagem, 'mudar_senha')
+  }
+}

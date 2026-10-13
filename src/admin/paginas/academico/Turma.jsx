@@ -1,0 +1,188 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { api } from '../../api'
+import { useSessao } from '../../sessaoContexto'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+
+const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
+const RAMOS = ['Exército', 'Força Aérea Nacional', 'Marinha de Guerra Angolana']
+
+// uma turma: matrículas, cadeiras (com docente) e horário
+function Turma() {
+  const { id } = useParams()
+  const { pode } = useSessao()
+  const gerir = pode('academico.gerir')
+  const [t, setT] = useState(null)
+  const [erro, setErro] = useState('')
+  const [docentes, setDocentes] = useState([])
+  const [aviso, setAviso] = useState(null)
+
+  const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
+  useEffect(() => {
+    carregar()
+    api('/academico/contas?tipo=docente').then(setDocentes).catch(() => {})
+  }, [carregar])
+
+  const falhou = (e) => setAviso({ tipo: 'erro', texto: e.message })
+
+  if (erro) return <Erro texto={erro} />
+  if (!t) return <Carregando />
+
+  return (
+    <>
+      <CabecalhoPagina titulo={t.nome} subtitulo={t.anoLetivo} migalhas={[{ rotulo: 'Turmas', para: '/academico/turmas' }, { rotulo: t.nome }]}>
+        <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> Turmas</Link>
+      </CabecalhoPagina>
+      <div className="row">
+        <div className="col-xl-6">
+          <Painel titulo={`Matrículas (${t.matriculas.length})`} corpo={false}>
+            <div className="table-responsive">
+              <table className="table table-striped align-middle mb-0">
+                <thead><tr><th>Estudante</th><th>N.º</th><th>Estado</th></tr></thead>
+                <tbody>
+                  {t.matriculas.length === 0 && <tr><td colSpan={3} className="text-center text-muted py-4">Sem estudantes matriculados.</td></tr>}
+                  {t.matriculas.map((m) => (
+                    <tr key={m.id}>
+                      <td><span className="fw-bold">{m.estudante.nome}</span><div className="small text-muted">{m.estudante.email}</div></td>
+                      <td className="font-monospace">{m.estudante.numero}</td>
+                      <td>
+                        {gerir ? (
+                          <select className="form-select form-select-sm w-auto" value={m.estado} aria-label={`Estado da matrícula de ${m.estudante.nome}`} onChange={(e) => api(`/academico/matriculas/${m.id}`, { metodo: 'PUT', corpo: { estado: e.target.value } }).then(carregar).catch(falhou)}>
+                            {Object.entries(ESTADOS).map(([k, [, v]]) => <option key={k} value={k}>{v}</option>)}
+                          </select>
+                        ) : <span className={`badge ${ESTADOS[m.estado][0]}`}>{ESTADOS[m.estado][1]}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Painel>
+          {gerir && <NovaMatricula turma={t} carregar={carregar} avisar={setAviso} />}
+        </div>
+        <div className="col-xl-6">
+          {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} docentes={docentes} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+          {t.cadeiras.length === 0 && <div className="alert alert-info">Ainda não há cadeiras nesta turma.</div>}
+          {gerir && <NovaCadeira turma={t} docentes={docentes} carregar={carregar} avisar={setAviso} />}
+        </div>
+      </div>
+      <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
+    </>
+  )
+}
+
+// matrícula de um estudante novo: a conta é criada com o e-mail da Escola (palavra-passe inicial = e-mail)
+function NovaMatricula({ turma, carregar, avisar }) {
+  const vazio = { nome: '', email: '', posto: '', ramo: '', nip: '', telefone: '' }
+  const [f, setF] = useState(vazio)
+  const [erro, setErro] = useState('')
+  async function matricular(e) {
+    e.preventDefault()
+    setErro('')
+    try {
+      const { nome, email, ...dados } = f
+      const conta = await api(`/academico/turmas/${turma.id}/matricula-nova`, { metodo: 'POST', corpo: { nome, email, dados } })
+      setF(vazio)
+      avisar({ texto: `Matriculado: ${conta.nome} (n.º ${conta.numero}). Entra no portal com ${conta.email} e essa mesma palavra-passe na primeira vez.` })
+      carregar()
+    } catch (falha) {
+      setErro(falha.message)
+    }
+  }
+  return (
+    <Painel titulo="Nova matrícula">
+      <form onSubmit={matricular}>
+        {erro && <div className="alert alert-danger py-2">{erro}</div>}
+        <div className="row g-2">
+          <div className="col-12"><label className="form-label fw-bold" htmlFor="m-nome">Nome completo</label><input id="m-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
+          <div className="col-12"><label className="form-label fw-bold" htmlFor="m-email">E-mail da Escola</label><input id="m-email" type="email" className="form-control" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="nome.apelido@esgfaa.gov.ao" required /></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="m-posto">Posto</label><input id="m-posto" className="form-control" value={f.posto} onChange={(e) => setF({ ...f, posto: e.target.value })} /></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="m-ramo">Ramo</label><select id="m-ramo" className="form-select" value={f.ramo} onChange={(e) => setF({ ...f, ramo: e.target.value })}><option value="">—</option>{RAMOS.map((r) => <option key={r}>{r}</option>)}</select></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="m-nip">NIP</label><input id="m-nip" className="form-control" value={f.nip} onChange={(e) => setF({ ...f, nip: e.target.value })} /></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="m-tel">Telefone</label><input id="m-tel" className="form-control" value={f.telefone} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></div>
+        </div>
+        <div className="form-text mb-3">A palavra-passe inicial é o próprio e-mail; o portal obriga a mudá-la na primeira entrada.</div>
+        <button type="submit" className="btn btn-theme w-100"><i className="fa fa-user-plus me-1" /> Matricular</button>
+      </form>
+    </Painel>
+  )
+}
+
+function CadeiraTurma({ c, docentes, gerir, carregar, avisar }) {
+  const [h, setH] = useState({ diaSemana: '1', inicio: '08:00', fim: '10:00', sala: '' })
+  const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
+  return (
+    <Painel titulo={`${c.codigo} · ${c.nome}`} acoes={gerir && (
+      <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar cadeira" onClick={() => {
+        if (window.confirm(`Apagar "${c.nome}" com materiais, notas, trabalhos e presenças?`)) api(`/academico/cadeiras/${c.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
+      }}><i className="fa fa-times" /></button>
+    )}>
+      <div className="d-flex align-items-center gap-2 mb-2">
+        <span className="text-muted">Docente:</span>
+        {gerir ? (
+          <select className="form-select form-select-sm w-auto" value={c.docente?.id || ''} aria-label={`Docente de ${c.nome}`} onChange={(e) => api(`/academico/cadeiras/${c.id}`, { metodo: 'PUT', corpo: { docenteId: e.target.value ? Number(e.target.value) : null } }).then(carregar).catch(falhou)}>
+            <option value="">Por atribuir</option>
+            {docentes.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
+          </select>
+        ) : <strong>{c.docente?.nome || 'Por atribuir'}</strong>}
+        <span className="text-muted ms-auto small">{c.semestre}.º sem. · {c.horas} h</span>
+      </div>
+      <table className="table table-sm mb-2">
+        <tbody>
+          {c.horarios.length === 0 && <tr><td className="text-muted">Sem horário.</td></tr>}
+          {c.horarios.map((x) => (
+            <tr key={x.id}>
+              <td>{DIAS[x.diaSemana]}</td><td>{x.inicio}–{x.fim}</td><td>{x.sala}</td>
+              <td className="text-end">{gerir && <button type="button" className="btn btn-xs btn-white text-danger" aria-label="Retirar do horário" onClick={() => api(`/academico/horarios/${x.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)}><i className="fa fa-times" /></button>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {gerir && (
+        <form className="d-flex gap-1 flex-wrap" onSubmit={(e) => { e.preventDefault(); api(`/academico/cadeiras/${c.id}/horarios`, { metodo: 'POST', corpo: h }).then(carregar).catch(falhou) }}>
+          <select className="form-select form-select-sm w-auto" value={h.diaSemana} onChange={(e) => setH({ ...h, diaSemana: e.target.value })} aria-label="Dia">{DIAS.slice(1).map((d, i) => <option key={d} value={i + 1}>{d}</option>)}</select>
+          <input type="time" className="form-control form-control-sm w-auto" value={h.inicio} onChange={(e) => setH({ ...h, inicio: e.target.value })} aria-label="Início" />
+          <input type="time" className="form-control form-control-sm w-auto" value={h.fim} onChange={(e) => setH({ ...h, fim: e.target.value })} aria-label="Fim" />
+          <input className="form-control form-control-sm w-auto" placeholder="Sala" value={h.sala} onChange={(e) => setH({ ...h, sala: e.target.value })} aria-label="Sala" />
+          <button type="submit" className="btn btn-sm btn-default"><i className="fa fa-plus" /> Horário</button>
+        </form>
+      )}
+    </Painel>
+  )
+}
+
+function NovaCadeira({ turma, docentes, carregar, avisar }) {
+  const vazio = { codigo: '', nome: '', semestre: '1', horas: '', docenteId: '' }
+  const [f, setF] = useState(vazio)
+  const [erro, setErro] = useState('')
+  async function criar(e) {
+    e.preventDefault()
+    setErro('')
+    try {
+      await api(`/academico/turmas/${turma.id}/cadeiras`, { metodo: 'POST', corpo: { ...f, semestre: Number(f.semestre), horas: Number(f.horas || 0), docenteId: f.docenteId ? Number(f.docenteId) : null } })
+      setF(vazio)
+      avisar({ texto: 'Cadeira criada.' })
+      carregar()
+    } catch (falha) {
+      setErro(falha.message)
+    }
+  }
+  return (
+    <Painel titulo="Nova cadeira">
+      <form onSubmit={criar}>
+        {erro && <div className="alert alert-danger py-2">{erro}</div>}
+        <div className="row g-2">
+          <div className="col-md-4"><label className="form-label fw-bold" htmlFor="c-codigo">Código</label><input id="c-codigo" className="form-control" value={f.codigo} onChange={(e) => setF({ ...f, codigo: e.target.value })} placeholder="EST101" required /></div>
+          <div className="col-md-8"><label className="form-label fw-bold" htmlFor="c-nome">Nome</label><input id="c-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
+          <div className="col-md-3"><label className="form-label" htmlFor="c-sem">Semestre</label><input id="c-sem" type="number" min={1} max={12} className="form-control" value={f.semestre} onChange={(e) => setF({ ...f, semestre: e.target.value })} /></div>
+          <div className="col-md-3"><label className="form-label" htmlFor="c-horas">Horas</label><input id="c-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="c-doc">Docente</label><select id="c-doc" className="form-select" value={f.docenteId} onChange={(e) => setF({ ...f, docenteId: e.target.value })}><option value="">Por atribuir</option>{docentes.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}</select></div>
+        </div>
+        <button type="submit" className="btn btn-theme w-100 mt-3"><i className="fa fa-plus me-1" /> Criar cadeira</button>
+      </form>
+    </Painel>
+  )
+}
+
+export default Turma

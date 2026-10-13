@@ -150,8 +150,12 @@ function Layout({ children }) {
             </div>
             )}
 
-            {pode('candidaturas.ver') && <div className="menu-header">Admissão</div>}
+            {(pode('candidaturas.ver') || pode('academico.ver')) && <div className="menu-header">Secretaria Académica</div>}
             {pode('candidaturas.ver') && <ItemMenu para="/candidaturas" icone="fa-user-graduate" texto="Candidaturas" />}
+            {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto="Turmas e matrículas" />}
+            {pode('academico.ver') && <ItemMenu para="/academico/contas" icone="fa-id-card" texto="Contas do portal" />}
+            {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto="Pedidos de documentos" />}
+            {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto="Avisos do portal" />}
 
             {(pode('comentarios.ver') || pode('publicidade.ver')) && <div className="menu-header">Interação e publicidade</div>}
             {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto="Comentários" />}

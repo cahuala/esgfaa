@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/Logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..700;1,400..600&display=swap" rel="stylesheet">
+    <script>
+      // aplica o tema guardado (ou o do sistema) antes de o portal ser desenhado
+      try {
+        var t = localStorage.getItem('esg_tema');
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-tema', t);
+      } catch (e) {}
+    </script>
+    <title>Portal Académico · ESGFAA</title>
+  </head>
+  <body>
+    <div id="raiz-portal"></div>
+    <script type="module" src="/src/portal/main.jsx"></script>
+  </body>
+</html>

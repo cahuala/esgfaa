@@ -1,0 +1,85 @@
+import { test, expect } from '@playwright/test'
+import { ADMIN_E2E } from '../../playwright.config.js'
+
+const NOVA = 'Portal2026segura'
+
+async function primeiraEntrada(page, email) {
+  await page.goto('/portal/')
+  await page.getByLabel('E-mail').fill(email)
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(email)
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.getByText(/Por segurança, escolha uma palavra-passe nova/)).toBeVisible()
+  await page.getByLabel(/Palavra-passe atual/).fill(email)
+  await page.getByLabel('Nova palavra-passe', { exact: true }).fill(NOVA)
+  await page.getByLabel('Repetir a nova palavra-passe').fill(NOVA)
+  await page.getByRole('button', { name: 'Guardar nova palavra-passe' }).click()
+  await expect(page.getByText('As minhas cadeiras').first()).toBeVisible()
+}
+
+test('Secretaria matricula; docente publica; estudante consulta e pede um documento', async ({ page }) => {
+  const sufixo = Date.now()
+  const estudante = `estudante${sufixo}@esgfaa.gov.ao`
+  const docente = `docente${sufixo}@esgfaa.gov.ao`
+
+  // ---------- painel: Secretaria ----------
+  await page.goto('/admin/')
+  await page.getByLabel('E-mail institucional').fill(ADMIN_E2E.email)
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(ADMIN_E2E.senha)
+  await page.getByRole('button', { name: /Entrar/ }).click()
+
+  await page.goto('/admin/#/academico/contas')
+  await page.getByLabel('Nome completo').fill('Cor. Docente Teste')
+  await page.getByLabel('E-mail da Escola').fill(docente)
+  await page.getByRole('button', { name: 'Criar docente' }).click()
+  await expect(page.getByText(/Docente criado/)).toBeVisible()
+
+  await page.goto('/admin/#/academico/turmas')
+  await page.getByLabel('Nome da turma').fill(`CEM E2E ${sufixo}`)
+  await page.getByRole('button', { name: 'Criar turma' }).click()
+  await page.getByRole('row', { name: new RegExp(`CEM E2E ${sufixo}`) }).getByRole('link', { name: 'Abrir' }).click()
+
+  await page.getByLabel('Nome completo').fill('Maj. Estudante Teste')
+  await page.getByLabel('E-mail da Escola').fill(estudante)
+  await page.getByRole('button', { name: 'Matricular' }).click()
+  await expect(page.getByText(/Matriculado: Maj\. Estudante Teste/)).toBeVisible()
+
+  await page.getByLabel('Código').fill('EST101')
+  await page.getByLabel('Nome', { exact: true }).fill('Estratégia Militar')
+  await page.getByLabel('Docente', { exact: true }).selectOption({ label: 'Cor. Docente Teste' })
+  await page.getByRole('button', { name: 'Criar cadeira' }).click()
+  await expect(page.getByText('EST101 · Estratégia Militar')).toBeVisible()
+
+  // ---------- portal: docente ----------
+  await primeiraEntrada(page, docente)
+  await page.getByText('Estratégia Militar').first().click()
+  await page.getByRole('tab', { name: /Avisos/ }).click()
+  await expect(page.getByRole('heading', { name: 'Novo aviso' })).toBeVisible()
+  await page.getByLabel('Título').fill('Primeira aula')
+  await page.getByLabel('Texto').fill('Tragam o programa lido.')
+  await page.getByRole('button', { name: 'Publicar aviso' }).click()
+  await expect(page.getByText('Tragam o programa lido.')).toBeVisible()
+  await page.getByRole('tab', { name: /Materiais/ }).click()
+  await expect(page.getByRole('heading', { name: 'Publicar material' })).toBeVisible()
+  await page.getByLabel('Título').fill('Programa da cadeira')
+  await page.getByLabel('Tipo').selectOption('ligacao')
+  await page.getByLabel('Endereço').fill('https://example.org/programa')
+  await page.getByRole('button', { name: 'Publicar' }).click()
+  await expect(page.getByText('Programa da cadeira')).toBeVisible()
+  await page.locator('.p-conta-botao').click()
+  await page.getByRole('button', { name: 'Sair' }).click()
+
+  // ---------- portal: estudante ----------
+  await primeiraEntrada(page, estudante)
+  await expect(page.getByText('Primeira aula')).toBeVisible() // avisos das cadeiras na página inicial
+  await page.goto('/portal/#/cadeiras')
+  await page.getByText('Estratégia Militar').first().click()
+  await expect(page.getByText('Programa da cadeira')).toBeVisible()
+  // o estudante não vê os formulários do docente
+  await expect(page.getByRole('button', { name: 'Publicar' })).toHaveCount(0)
+
+  await page.goto('/portal/#/pedidos')
+  await page.getByLabel('Documento').selectOption('Declaração de matrícula')
+  await page.getByRole('button', { name: 'Enviar pedido' }).click()
+  await expect(page.getByText('Pedido enviado à Secretaria Académica.')).toBeVisible()
+  await expect(page.getByText('Pendente')).toBeVisible()
+})

@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { ErroDominio } from '../../../dominio/comum/erros.js'
 
 const ESTADOS = {
@@ -7,6 +8,7 @@ const ESTADOS = {
   nao_encontrado: 404,
   conflito: 409,
   conta_bloqueada: 423,
+  mudar_senha: 403,
 }
 
 export function naoEncontrado(req, res) {
@@ -17,6 +19,8 @@ export function naoEncontrado(req, res) {
 export function tratarErros(registar = (e) => console.error(e)) {
   // eslint-disable-next-line no-unused-vars
   return (erro, req, res, next) => {
+    // pedido falhado depois de gravar um ficheiro privado: não deixa ficheiros órfãos
+    if (req.ficheiro?.caminho) fs.rm(req.ficheiro.caminho, { force: true }, () => {})
     if (erro instanceof ErroDominio) {
       const corpo = { erro: erro.message, codigo: erro.codigo }
       if (erro.detalhes?.campo) corpo.campo = erro.detalhes.campo

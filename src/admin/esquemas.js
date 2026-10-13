@@ -407,7 +407,7 @@ export const POSICOES_BANNER = [
 // nomes legíveis para a grelha de permissões
 export const NOMES_RECURSOS = {
   noticias: 'Notícias', artigos: 'Artigos', eventos: 'Eventos', cursos: 'Cursos', pessoas: 'Corpo docente',
-  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', estatisticas: 'Estatísticas',
+  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', academico: 'Gestão académica (portal)', estatisticas: 'Estatísticas',
   utilizadores: 'Utilizadores', papeis: 'Papéis e permissões', atividades: 'Registo de atividades',
 }
 export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir' }
@@ -417,6 +417,24 @@ export const NOMES_ACOES = {
   sair: 'Saiu do painel',
   falha_entrada: 'Tentativa de entrada falhada',
   nova_candidatura: 'Candidatura recebida',
+  entrar_portal: 'Entrou no portal académico',
+  falha_entrada_portal: 'Tentativa falhada no portal',
+  alterar_senha_portal: 'Mudou a palavra-passe do portal',
+  criar_conta_portal: 'Criou uma conta do portal',
+  editar_conta_portal: 'Editou uma conta do portal',
+  repor_senha_portal: 'Repôs a palavra-passe de uma conta do portal',
+  criar_turma: 'Criou uma turma',
+  matricular: 'Matriculou um estudante',
+  alterar_matricula: 'Alterou uma matrícula',
+  criar_cadeira: 'Criou uma cadeira',
+  editar_cadeira: 'Editou uma cadeira',
+  apagar_cadeira: 'Apagou uma cadeira',
+  tratar_pedido: 'Tratou um pedido de documento',
+  aviso_geral: 'Publicou um aviso no portal',
+  entregar_trabalho: 'Entregou um trabalho (portal)',
+  lancar_notas: 'Lançou notas (portal)',
+  publicar_notas: 'Publicou notas (portal)',
+  pedido_documento: 'Pediu um documento (portal)',
   avaliar_candidatura: 'Avaliou uma candidatura',
   bloquear_conta: 'Conta bloqueada por tentativas falhadas',
   criar: 'Criou',

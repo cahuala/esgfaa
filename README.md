@@ -6,6 +6,7 @@ Três partes no mesmo repositório:
 |---|---|---|
 | Site público (React + Vite) | `src/` | `https://cahuala.github.io/esgfaa/` |
 | Painel de administração (tema Color Admin) | `src/admin/`, `admin/index.html` | endereço secreto (ver abaixo); no computador: `localhost:5173/admin/` |
+| Portal académico (estudantes e docentes) | `src/portal/`, `portal/index.html` | `…/portal/` (botão "Portal Académico" do site) |
 | API (Express + PostgreSQL com Prisma, arquitetura DDD) | `api/` | onde a alojar (ver abaixo); detalhes em [api/README.md](api/README.md) |
 
 O site funciona sem a API: usa os conteúdos de `src/data/`. Com a API ligada, passa a mostrar o que se edita no painel, e ativa gostos, comentários e contagem de visualizações.
@@ -49,6 +50,18 @@ npm run test:tudo       # lint + todos os anteriores
 ```
 
 Os testes da API usam o PostgreSQL do `docker compose` (cada teste num esquema próprio, apagado no fim); os ponta-a-ponta arrancam uma API e um site próprios (portas 3101 e 5174) com uma base de dados descartável. No GitHub, os testes correm em cada pull request e **antes de cada publicação**: se algum falhar, o site não é publicado. Cobertura: `npm run test:cobertura` (na raiz e em `api/`).
+
+## Portal académico
+
+Em `/portal/` (botão "Portal Académico" do site). Entra-se com o **e-mail da Escola**; a palavra-passe inicial é o próprio e-mail e o portal obriga a mudá-la na primeira entrada.
+
+- **Estudante:** início (aulas de hoje, prazos, avisos), cadeiras com materiais, avisos, trabalhos (entrega de ficheiros), avaliações e presenças; boletim de notas com média ponderada; horário semanal; avisos da Secretaria; pedidos de documentos (declarações, certificados) e perfil.
+- **Docente:** nas suas cadeiras publica materiais (ficheiros, ligações, vídeos) e avisos, cria trabalhos e corrige as entregas, gere os elementos de avaliação (pesos até 100 %), lança a pauta e decide quando publicar as notas, regista aulas (sumário) e presenças.
+- **Secretaria Académica (no painel):** turmas, matrículas (cria a conta do estudante), contas de docentes, cadeiras e horários, pedidos de documentos (com anexo do documento pronto) e avisos do portal. Papel "Secretaria Académica".
+
+Os materiais, entregas e documentos ficam numa pasta **privada** (`dados/privado`) e só são entregues pela API a quem tem acesso (inscrito na cadeira, dono da entrega, docente da cadeira). As sessões do portal e do painel são independentes. Variável `EMAIL_DOMINIO_ESCOLA` (por omissão `esgfaa.gov.ao`) define o domínio aceite nas contas.
+
+Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-portal` — cria uma turma, 4 cadeiras, 2 docentes (`miguel.santos@`, `ana.baptista@esgfaa.gov.ao`) e 4 estudantes (`joao.fernandes@`, `maria.costa@`, `pedro.neto@`, `sofia.lima@esgfaa.gov.ao`); a palavra-passe inicial de cada um é o próprio e-mail.
 
 ## Painel de administração
 
