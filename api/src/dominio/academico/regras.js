@@ -10,7 +10,7 @@ export const ESTADOS_PRESENCA = ['presente', 'falta', 'justificada']
 // período da cadeira e papel de cada docente alocado
 export const PERIODOS = { 1: '1.º semestre', 2: '2.º semestre', anual: 'Anual' }
 export const PAPEIS_DOCENCIA = ['regente', 'assistente']
-export const TIPOS_MATERIAL = ['ficheiro', 'ligacao', 'video']
+export const TIPOS_MATERIAL = ['ficheiro', 'ligacao', 'video', 'pagina', 'pasta', 'videoconferencia']
 export const TIPOS_PEDIDO = [
   'Declaração de matrícula',
   'Declaração de frequência',

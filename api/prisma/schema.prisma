@@ -196,21 +196,23 @@ model ContaPortal {
   deveMudarSenha     Boolean   @default(true) @map("deve_mudar_senha")
   notificarEmail     Boolean   @default(true) @map("notificar_email") // receber também por e-mail
 
-  matriculas         Matricula[]
-  docencias          Docencia[]
-  topicos            ForumTopico[]
-  respostas          ForumResposta[]
-  conclusoes         Conclusao[]
-  tentativas         Tentativa[]
-  notificacoes       Notificacao[]
-  mensagensEnviadas  Mensagem[]      @relation("enviadas")
-  mensagensRecebidas Mensagem[]      @relation("recebidas")
-  notas              NotaPauta[]
-  entregas           Entrega[]
-  presencas          Presenca[]
-  pedidos            Pedido[]
-  perguntaBancos     PerguntaBanco[]
-  certificados       Certificado[]
+  matriculas          Matricula[]
+  docencias           Docencia[]
+  topicos             ForumTopico[]
+  respostas           ForumResposta[]
+  conclusoes          Conclusao[]
+  tentativas          Tentativa[]
+  notificacoes        Notificacao[]
+  mensagensEnviadas   Mensagem[]              @relation("enviadas")
+  mensagensRecebidas  Mensagem[]              @relation("recebidas")
+  notas               NotaPauta[]
+  entregas            Entrega[]
+  presencas           Presenca[]
+  pedidos             Pedido[]
+  perguntaBancos      PerguntaBanco[]
+  certificados        Certificado[]
+  inqueritosAvaliados Inquerito[]             @relation("avaliado")
+  participacoes       ParticipacaoInquerito[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -277,6 +279,7 @@ model UnidadeCurricular {
   secaoCadeiras    SecaoCadeira[]
   composicaoNotas  ComposicaoNota[]
   certificados     Certificado[]
+  inqueritos       Inquerito[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -308,6 +311,7 @@ model Ficheiro {
   criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   entregas EntregaFicheiro[]
+  pastas   MaterialFicheiro[]
 
   @@map("ficheiros_privados")
 }
@@ -321,15 +325,19 @@ model Material {
   visivel      Boolean   @default(true) // escondida dos estudantes
   disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
   requisitos   Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
-  tipo         String // ficheiro | ligacao | video
+  tipo         String // ficheiro | ligacao | video | pagina | pasta | videoconferencia
   ficheiroId   String?   @map("ficheiro_id")
   url          String    @default("")
+  conteudo     String    @default("") // página: texto (HTML filtrado)
+  inicio       DateTime? @db.Timestamptz(3) // videoconferência: início da sessão
+  duracao      Int? // videoconferência: minutos
   autorId      Int?      @map("autor_id")
   publicadoEm  DateTime  @default(now()) @map("publicado_em") @db.Timestamptz(3)
 
-  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
+  cadeira    UnidadeCurricular  @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao      SecaoCadeira?      @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   conclusoes Conclusao[]
+  ficheiros  MaterialFicheiro[]
 
   @@index([cadeiraId])
   @@map("materiais")
@@ -648,6 +656,7 @@ model SecaoCadeira {
   materiais     Material[]
   trabalhos     Trabalho[]
   questionarios Questionario[]
+  inqueritos    Inquerito[]
 
   @@index([cadeiraId, ordem])
   @@map("secoes_cadeira")
@@ -760,4 +769,72 @@ model Certificado {
 
   @@unique([estudanteId, cadeiraId])
   @@map("certificados")
+}
+
+// ficheiros de um material do tipo "pasta"
+model MaterialFicheiro {
+  materialId Int    @map("material_id")
+  ficheiroId String @map("ficheiro_id")
+  ordem      Int    @default(0)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  ficheiro Ficheiro @relation(fields: [ficheiroId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, ficheiroId])
+  @@map("materiais_ficheiros")
+}
+
+// sondagem do docente ou inquérito de avaliação do docente (Administração Escolar)
+model Inquerito {
+  id           Int       @id @default(autoincrement())
+  cadeiraId    Int       @map("cadeira_id")
+  secaoId      Int?      @map("secao_id")
+  tipo         String // sondagem | avaliacao
+  titulo       String
+  descricao    String    @default("")
+  perguntas    Json // [{ tipo: escolha|escala|aberta, texto, opcoes?, multipla? }]
+  anonimo      Boolean   @default(false)
+  resultados   String    @default("apos_responder") // sondagem: apos_responder | apos_fecho | nunca
+  fecha        DateTime? @db.Timestamptz(3)
+  docenteId    Int?      @map("docente_id") // avaliação: o docente avaliado
+  visivel      Boolean   @default(true)
+  disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3)
+  requisitos   Json      @default("[]")
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira       UnidadeCurricular       @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao         SecaoCadeira?           @relation(fields: [secaoId], references: [id], onDelete: SetNull)
+  docente       ContaPortal?            @relation("avaliado", fields: [docenteId], references: [id], onDelete: SetNull)
+  respostas     RespostaInquerito[]
+  participacoes ParticipacaoInquerito[]
+
+  @@index([cadeiraId])
+  @@map("inqueritos")
+}
+
+// respostas: sem estudante quando o inquérito é anónimo
+model RespostaInquerito {
+  id          Int      @id @default(autoincrement())
+  inqueritoId Int      @map("inquerito_id")
+  estudanteId Int?     @map("estudante_id")
+  respostas   Json
+  criadaEm    DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  inquerito Inquerito @relation(fields: [inqueritoId], references: [id], onDelete: Cascade)
+
+  @@unique([inqueritoId, estudanteId])
+  @@map("respostas_inqueritos")
+}
+
+// quem já respondeu (separado das respostas, para o anonimato)
+model ParticipacaoInquerito {
+  inqueritoId Int      @map("inquerito_id")
+  estudanteId Int      @map("estudante_id")
+  em          DateTime @default(now()) @db.Timestamptz(3)
+
+  inquerito Inquerito   @relation(fields: [inqueritoId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@id([inqueritoId, estudanteId])
+  @@map("participacoes_inqueritos")
 }

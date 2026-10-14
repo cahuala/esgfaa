@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { abrirFicheiro, api } from '../api'
 import { Bloqueio, Vazio } from '../componentes'
-import { dataHora, faltam, nota } from '../formatar'
+import { dataHora, estadoSessao, faltam, nota } from '../formatar'
 import NovaAtividade from './NovaAtividade'
 import Importar from './Importar'
 import Restricoes from './Restricoes'
@@ -15,7 +15,13 @@ const TIPOS = {
   video: { icone: 'fa-play', cor: 'bg-danger', nome: 'Vídeo' },
   trabalho: { icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho' },
   questionario: { icone: 'fa-question', cor: 'bg-purple', nome: 'Questionário' },
+  pagina: { icone: 'fa-align-left', cor: 'bg-teal', nome: 'Página' },
+  pasta: { icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta' },
+  videoconferencia: { icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência' },
+  sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem' },
+  avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: 'Avaliação do docente' },
 }
+const SESSAO = { em_breve: ['bg-light text-dark border', 'Em breve'], abre: ['bg-success', 'Abre já'], a_decorrer: ['bg-danger', 'A decorrer'], terminou: ['bg-gray-500', 'Terminou'] }
 
 /*
   Página da cadeira como no Moodle: secção geral (avisos, fórum, programa) e os capítulos com
@@ -35,6 +41,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     ...c.materiais.map((m) => ({ ...m, chave: `material-${m.id}`, especie: 'material', visual: m.tipo, quando: m.publicadoEm })),
     ...c.trabalhos.map((t) => ({ ...t, chave: `trabalho-${t.id}`, especie: 'trabalho', visual: 'trabalho', quando: t.criadoEm })),
     ...c.questionarios.map((q) => ({ ...q, chave: `questionario-${q.id}`, especie: 'questionario', visual: 'questionario', quando: q.criadoEm })),
+    ...(c.inqueritos || []).map((i) => ({ ...i, chave: `inquerito-${i.id}`, especie: 'inquerito', visual: i.tipo, quando: i.criadoEm })),
   ].sort((a, b) => String(a.quando).localeCompare(String(b.quando)))
   const condicoes = new Set(atividades.flatMap((a) => (a.requisitos || []).map((r) => `${r.tipo}-${r.id}`)))
   const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
@@ -43,7 +50,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then((p) => { setProgresso(p); if (atividades.some((x) => x.bloqueio)) recarregar() }) // pode abrir outras.catch(falhou)
   function abrir(a) {
     if (a.bloqueio) return
-    if (a.especie === 'material') {
+    if (a.especie === 'material' && ['ficheiro', 'ligacao', 'video', 'videoconferencia'].includes(a.tipo)) {
+      if (a.tipo === 'videoconferencia' && !eDocente && !['abre', 'a_decorrer'].includes(estadoSessao(a))) return irPara({ atividade: a.chave })
       if (!eDocente && !feita(a)) marcar(a, true)
       if (a.tipo === 'ficheiro') abrirFicheiro(a.ficheiroId, { nome: a.titulo, ver: true }).catch(falhou)
       else window.open(a.url, '_blank', 'noopener')
@@ -76,7 +84,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
   async function apagarAtividade(a) {
     if (!window.confirm(`Apagar "${a.titulo}"?`)) return
-    const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}` }[a.especie]
+    const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}`, inquerito: `/inqueritos/${a.id}` }[a.especie]
     await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Atividade apagada.' }); recarregar() }).catch(falhou)
   }
 
@@ -87,6 +95,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     const t = TIPOS[a.visual] || TIPOS.ficheiro
     let meta = t.nome
     let estado = null
+    if (a.tipo === 'pasta') meta = `Pasta · ${a.ficheiros.length} ficheiro(s)`
     if (a.especie === 'trabalho') {
       meta = `Trabalho · entrega até ${dataHora(a.prazo)} (${faltam(a.prazo)})`
       if (eDocente) estado = <span className="badge bg-gray-500">{a.entregas} entrega(s)</span>
@@ -96,6 +105,15 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       meta = `Questionário · ${a.numeroPerguntas} pergunta(s)${a.duracao ? ` · ${a.duracao} min` : ''}${a.fecha ? ` · fecha ${dataHora(a.fecha)}` : ''}`
       if (eDocente) estado = a.publicado ? <span className="badge bg-success">Publicado</span> : <span className="badge bg-gray-500">Rascunho</span>
       else estado = feita(a) ? <span className="badge bg-success"><i className="fa fa-check me-1" />Feito</span> : <span className="badge bg-light text-dark border">{a.estado === 'fechado' ? 'Fechado' : 'Por fazer'}</span>
+    } else if (a.especie === 'inquerito') {
+      meta = a.tipo === 'avaliacao' ? `Inquérito anónimo · ${a.numeroPerguntas} perguntas` : `Sondagem${a.anonimo ? ' anónima' : ''}`
+      if (a.fecha) meta += ` · ${a.fechado ? 'fechou' : 'fecha'} ${dataHora(a.fecha)}`
+      if (eDocente) estado = <span className="badge bg-gray-500">{a.respostas} resposta(s)</span>
+      else estado = a.respondido ? <span className="badge bg-success"><i className="fa fa-check me-1" />Respondido</span> : <span className="badge bg-light text-dark border">{a.fechado ? 'Fechado' : 'Por responder'}</span>
+    } else if (a.tipo === 'videoconferencia') {
+      const e = estadoSessao(a)
+      meta = `Videoconferência · ${dataHora(a.inicio)} · ${a.duracao} min`
+      estado = <span className={`badge ${SESSAO[e][0]}`}>{SESSAO[e][1]}</span>
     } else if (!eDocente && progresso) {
       estado = feita(a)
         ? <button type="button" className="btn btn-xs btn-success" onClick={() => marcar(a, false)} title="Desmarcar"><i className="fa fa-check me-1" />Concluído</button>
@@ -120,10 +138,10 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
             : <button type="button" className="btn btn-link p-0 fw-bold text-start text-decoration-none text-body" onClick={() => abrir(a)}>{a.titulo}</button>}
           <div className="small text-muted">{meta}</div>
           <Bloqueio motivos={a.bloqueio} compacto />
-          {a.descricao && !a.bloqueio && <div className="small p-recorte">{a.descricao}</div>}
+          {a.descricao && !a.bloqueio && a.tipo !== 'avaliacao' && <div className="small p-recorte">{a.descricao}</div>}
           {marcas}
         </div>
-        {edicao ? (
+        {edicao && a.tipo === 'avaliacao' ? <span className="small text-muted flex-shrink-0">Gerida pela Administração Escolar</span> : edicao ? (
           <div className="d-flex gap-1 align-items-center flex-shrink-0">
             <select className="form-select form-select-sm" style={{ width: 170 }} value={a.secaoId ?? ''} onChange={(e) => moverAtividade(a, e.target.value)} aria-label={`Capítulo de ${a.titulo}`}>
               <option value="">Geral</option>
@@ -154,6 +172,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const proximas = [
     ...c.eventos.filter((e) => e.data >= hoje.slice(0, 10)).map((e) => ({ id: `e${e.id}`, quando: `${e.data}T${e.inicio || '00:00'}`, titulo: e.titulo, tipo: e.tipo, sub: [e.inicio, e.local].filter(Boolean).join(' · ') })),
     ...c.trabalhos.filter((t) => t.prazo >= hoje).map((t) => ({ id: `t${t.id}`, quando: t.prazo, titulo: `Entrega: ${t.titulo}`, tipo: 'prazo', sub: faltam(t.prazo) })),
+    ...c.materiais.filter((m) => m.tipo === 'videoconferencia' && estadoSessao(m) !== 'terminou' && !m.bloqueio).map((m) => ({ id: `v${m.id}`, quando: m.inicio, titulo: `Videoconferência: ${m.titulo}`, tipo: 'sessao', sub: `${new Date(m.inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })} · ${m.duracao} min` })),
   ].sort((a, b) => a.quando.localeCompare(b.quando)).slice(0, 5)
 
   return (

@@ -444,6 +444,8 @@ export const NOMES_ACOES = {
   composicao_notas: 'Definiu como se calcula uma componente da pauta',
   copiar_cadeira: 'Copiou os conteúdos de uma cadeira',
   emitir_certificado: 'Obteve o certificado de conclusão de uma cadeira',
+  lancar_avaliacao: 'Lançou o inquérito de avaliação dos docentes numa turma',
+  apagar_avaliacao: 'Apagou um inquérito de avaliação de docente',
   prorrogar_prazo: 'Alargou o prazo de um trabalho a um estudante',
   pedido_documento: 'Pediu um documento (portal)',
   avaliar_candidatura: 'Avaliou uma candidatura',

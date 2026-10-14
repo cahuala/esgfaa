@@ -112,7 +112,8 @@ function Paleta({ titulo, icone, cores, atual, onEscolher, onLimpar, corIcone })
   html: conteúdo inicial; onChange(html) em cada alteração do utilizador.
   antes: conteúdo mostrado entre o friso e o texto (cabeçalho do documento).
 */
-function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = 'Comece a escrever o texto…', antes = null }) {
+// semImagens: sem envio de fotografias (fora do painel, ex.: páginas do portal académico)
+function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = 'Comece a escrever o texto…', antes = null, semImagens = false }) {
   const entradaImagem = useRef(null)
   const entradaGaleria = useRef(null)
   const [ligacao, setLigacao] = useState(null) // texto do endereço em edição (null = fechado)
@@ -146,7 +147,7 @@ function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = 'C
       attributes: { class: 'ed-documento', spellcheck: 'true', lang: 'pt' },
       // largar fotografias do computador no ponto exato do texto
       handleDrop(view, event, slice, movido) {
-        if (movido || !event.dataTransfer?.files?.length) return false
+        if (semImagens || movido || !event.dataTransfer?.files?.length) return false
         const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos
         if (![...event.dataTransfer.files].some((f) => f.type.startsWith('image/'))) return false
         event.preventDefault()
@@ -156,7 +157,7 @@ function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = 'C
       // colar imagens (ex.: captura de ecrã)
       handlePaste(view, event) {
         const ficheiros = event.clipboardData?.files
-        if (!ficheiros?.length || ![...ficheiros].some((f) => f.type.startsWith('image/'))) return false
+        if (semImagens || !ficheiros?.length || ![...ficheiros].some((f) => f.type.startsWith('image/'))) return false
         event.preventDefault()
         inserirFicheiros(view, ficheiros, null, aoErro)
         return true
@@ -289,8 +290,8 @@ function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = 'C
 
           <div className="ed-grupo ed-grupo-inserir">
             <span className="ed-rotulo">Inserir</span>
-            <Botao titulo="Imagem no ponto do cursor" onClick={() => entradaImagem.current.click()}><i className="fa fa-image" /><span>Imagem</span></Botao>
-            <Botao titulo="Galeria de fotografias" onClick={() => entradaGaleria.current.click()}><i className="fa fa-images" /><span>Galeria</span></Botao>
+            {!semImagens && <Botao titulo="Imagem no ponto do cursor" onClick={() => entradaImagem.current.click()}><i className="fa fa-image" /><span>Imagem</span></Botao>}
+            {!semImagens && <Botao titulo="Galeria de fotografias" onClick={() => entradaGaleria.current.click()}><i className="fa fa-images" /><span>Galeria</span></Botao>}
             <Botao titulo="Vídeo do YouTube ou MP4" onClick={() => c().insertContentAt(posicaoElemento(editor.state, editor.state.selection.from), { type: 'video' }).run()}><i className="fa fa-video" /><span>Vídeo</span></Botao>
             <Botao titulo="Tabela" onClick={() => c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><i className="fa fa-table" /><span>Tabela</span></Botao>
           </div>

@@ -6,20 +6,21 @@ import { avaliarAcesso, chave, explicarMotivos } from '../../dominio/academico/d
   Usado para mostrar a cadeira, para o progresso e para recusar abrir o que ainda está fechado.
 */
 export class ServicoDisponibilidade {
-  constructor({ academico, recursos, relogio }) {
-    Object.assign(this, { academico, recursos, relogio })
+  constructor({ academico, recursos, inqueritos, relogio }) {
+    Object.assign(this, { academico, recursos, inqueritos, relogio })
   }
 
   // todas as atividades da cadeira (com as restrições) e os capítulos
   async atividades(cadeiraId) {
-    const [materiais, trabalhos, questionarios, secoes] = await Promise.all([
+    const [materiais, trabalhos, questionarios, inqueritos, secoes] = await Promise.all([
       this.academico.materiais(cadeiraId), this.academico.trabalhos(cadeiraId),
-      this.recursos.questionarios(cadeiraId), this.academico.secoes(cadeiraId),
+      this.recursos.questionarios(cadeiraId), this.inqueritos ? this.inqueritos.inqueritos(cadeiraId) : [], this.academico.secoes(cadeiraId),
     ])
     const lista = [
       ...materiais.map((a) => ({ ...a, tipoAtividade: 'material' })),
       ...trabalhos.map((a) => ({ ...a, tipoAtividade: 'trabalho' })),
       ...questionarios.map((a) => ({ ...a, tipoAtividade: 'questionario' })),
+      ...inqueritos.map((a) => ({ ...a, tipoAtividade: 'inquerito' })),
     ].map((a) => ({ ...a, chave: chave(a.tipoAtividade, a.id) }))
     return { lista, secoes: Object.fromEntries(secoes.map((s) => [s.id, s])) }
   }
@@ -27,10 +28,11 @@ export class ServicoDisponibilidade {
   // { "tipo-id": { feita, nota } } do estudante
   async estado(estudanteId, lista) {
     const ids = (t) => lista.filter((a) => a.tipoAtividade === t).map((a) => a.id)
-    const [concluidos, entregas, tentativas] = await Promise.all([
+    const [concluidos, entregas, tentativas, respondidos] = await Promise.all([
       this.recursos.conclusoesDoEstudante(estudanteId, ids('material')),
       this.academico.entregasDoEstudante(estudanteId, ids('trabalho')),
       this.recursos.tentativasDoEstudante(estudanteId, ids('questionario')),
+      this.inqueritos ? this.inqueritos.respondidos(estudanteId, ids('inquerito')) : new Set(),
     ])
     const estado = {}
     for (const id of ids('material')) estado[chave('material', id)] = { feita: concluidos.has(id), nota: null }
@@ -40,6 +42,7 @@ export class ServicoDisponibilidade {
       const notas = feitas.map((t) => t.nota).filter((n) => n !== null)
       estado[chave('questionario', id)] = { feita: feitas.length > 0, nota: notas.length ? Math.max(...notas) : null }
     }
+    for (const id of ids('inquerito')) estado[chave('inquerito', id)] = { feita: respondidos.has(id), nota: null }
     return estado
   }
 

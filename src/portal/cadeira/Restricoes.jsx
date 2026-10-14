@@ -3,7 +3,7 @@ import { api } from '../api'
 import { Campo } from '../componentes'
 import { localParaIso, paraLocal } from '../formatar'
 
-const NOMES = { material: 'Material', trabalho: 'Trabalho', questionario: 'Questionário' }
+const NOMES = { material: 'Material', trabalho: 'Trabalho', questionario: 'Questionário', inquerito: 'Inquérito' }
 
 /*
   Restringir o acesso a uma atividade (como o "Restrict access" do Moodle): visível ou escondida,
@@ -34,7 +34,7 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
       else {
         const requisitos = f.requisitos.map((r) => {
           const a = daChave(r.chave)
-          return { tipo: a.especie, id: a.id, ...(r.notaMinima !== '' && a.especie !== 'material' ? { notaMinima: r.notaMinima } : {}) }
+          return { tipo: a.especie, id: a.id, ...(r.notaMinima !== '' && !['material', 'inquerito'].includes(a.especie) ? { notaMinima: r.notaMinima } : {}) }
         })
         await api('/atividades/restricoes', { metodo: 'PUT', corpo: { tipo: alvo.especie, id: alvo.id, visivel: f.visivel, disponivelDe, requisitos } })
       }
@@ -69,7 +69,7 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
               {!secao && (
                 <div>
                   <span className="form-label fw-bold d-block mb-1">Só abre depois de concluir</span>
-                  <p className="small text-muted mb-2">Material: marcado como feito. Trabalho: entregue. Questionário: feito. Com nota mínima, conta a nota do trabalho ou a melhor do questionário.</p>
+                  <p className="small text-muted mb-2">Material: marcado como feito. Trabalho: entregue. Questionário: feito. Inquérito: respondido. Com nota mínima, conta a nota do trabalho ou a melhor do questionário.</p>
                   {f.requisitos.length === 0 && <div className="small text-muted mb-2">Sem condições.</div>}
                   {f.requisitos.map((r, i) => {
                     const a = daChave(r.chave)
@@ -79,7 +79,7 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
                           {a && <option value={a.chave}>{NOMES[a.especie]}: {a.titulo}</option>}
                           {livres.map((x) => <option key={x.chave} value={x.chave}>{NOMES[x.especie]}: {x.titulo}</option>)}
                         </select>
-                        {a?.especie !== 'material' && (
+                        {a && !['material', 'inquerito'].includes(a.especie) && (
                           <input className="form-control form-control-sm" style={{ width: 130 }} inputMode="decimal" value={r.notaMinima} onChange={(e) => requisito(i, 'notaMinima', e.target.value)} placeholder="Nota mínima" aria-label={`Nota mínima da condição ${i + 1}`} />
                         )}
                         <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, requisitos: f.requisitos.filter((_, j) => j !== i) })} aria-label="Retirar condição"><i className="fa fa-times" /></button>

@@ -65,7 +65,7 @@ export const ICONES_NOTIFICACAO = {
   material: ['fa-file-alt', 'bg-primary'], aviso: ['fa-bullhorn', 'bg-dark'], trabalho: ['fa-file-signature', 'bg-orange'],
   correcao: ['fa-check-double', 'bg-success'], notas: ['fa-clipboard-list', 'bg-red'], questionario: ['fa-question', 'bg-purple'],
   forum: ['fa-comments', 'bg-teal'], mensagem: ['fa-envelope', 'bg-blue'], prazo: ['fa-hourglass-half', 'bg-warning'],
-  pedido: ['fa-file-signature', 'bg-gray-600'], geral: ['fa-calendar-alt', 'bg-indigo'],
+  pedido: ['fa-file-signature', 'bg-gray-600'], geral: ['fa-calendar-alt', 'bg-indigo'], inquerito: ['fa-poll', 'bg-cyan'],
 }
 
 // ISO -> valor de um <input type="datetime-local"> (hora local)
@@ -79,3 +79,14 @@ export const paraLocal = (iso) => {
 export const textoBloqueio = (m) => (m.tipo === 'data'
   ? `Abre a ${dataHora(m.data)}`
   : m.notaMinima !== null && m.notaMinima !== undefined ? `Precisa de pelo menos ${nota(m.notaMinima)} valores em "${m.titulo}"` : `Precisa de concluir "${m.titulo}"`)
+
+// videoconferência: 'em_breve' | 'abre' (15 min antes) | 'a_decorrer' | 'terminou'
+export function estadoSessao(m, agora = new Date()) {
+  if (!m.inicio) return 'em_breve'
+  const inicio = new Date(m.inicio).getTime()
+  const fim = inicio + (m.duracao || 60) * 60_000
+  const t = agora.getTime()
+  if (t >= fim) return 'terminou'
+  if (t >= inicio) return 'a_decorrer'
+  return t >= inicio - 15 * 60_000 ? 'abre' : 'em_breve'
+}

@@ -21,8 +21,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio })
+  constructor({ academico, recursos, inqueritos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
+    Object.assign(this, { academico, recursos, inqueritos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -102,7 +102,7 @@ export class ServicoPortal {
     const cadeira = await this.#cadeiraAcessivel(conta, id)
     const agora = this.relogio.agora()
     const eDocente = conta.tipo === 'docente'
-    const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos] = await Promise.all([
+    const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos, todosInqueritos] = await Promise.all([
       this.academico.materiais(cadeira.id),
       this.academico.avisosDaCadeira(cadeira.id),
       this.academico.trabalhos(cadeira.id),
@@ -111,6 +111,7 @@ export class ServicoPortal {
       this.recursos.questionarios(cadeira.id, { soPublicados: !eDocente }),
       this.recursos.topicos(cadeira.id),
       this.recursos.eventosDaCadeira(cadeira.id),
+      this.inqueritos.inqueritos(cadeira.id),
     ])
     // estudante: o que está escondido não aparece; o que está fechado aparece com o motivo
     const acessos = eDocente ? null : (await this.disponibilidade.acessos(cadeira.id, conta.id)).acessos
@@ -123,8 +124,14 @@ export class ServicoPortal {
     const materiais = todosMateriais.filter(visivel('material')).map(comAcesso('material'))
     const trabalhos = todosTrabalhos.filter(visivel('trabalho')).map(comAcesso('trabalho'))
     const questionarios = todosQuestionarios.filter(visivel('questionario')).map(comAcesso('questionario')).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
+    // inquéritos: sem as perguntas na lista; o estudante não vê quantos responderam
+    const respondidos = eDocente ? new Set() : await this.inqueritos.respondidos(conta.id, todosInqueritos.map((i) => i.id))
+    const inqueritos = todosInqueritos.filter(visivel('inquerito')).map(comAcesso('inquerito')).map(({ perguntas, respostas, ...i }) => ({
+      ...i, fechado: Boolean(i.fecha && new Date(i.fecha) <= agora), numeroPerguntas: perguntas.length,
+      ...(eDocente ? { respostas } : { respondido: respondidos.has(i.id) }),
+    }))
     const base = {
-      ...cadeira, materiais, avisos, horario, questionarios, eventos,
+      ...cadeira, materiais, avisos, horario, questionarios, inqueritos, eventos,
       secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({
         id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel,
         disponivelDe: x.disponivelDe ? new Date(x.disponivelDe).toISOString() : null, fechado: Boolean(x.disponivelDe && new Date(x.disponivelDe) > agora),
@@ -340,15 +347,27 @@ export class ServicoPortal {
     }
   }
 
-  #dataValida(v) {
+  #dataValida(v, campo = 'disponivelDe') {
+    if (v === null || v === undefined || v === '') return null
     const d = new Date(v)
-    if (Number.isNaN(d.getTime())) throw new ErroValidacao('Data inválida.', { campo: 'disponivelDe' })
+    if (Number.isNaN(d.getTime())) throw new ErroValidacao('Data inválida.', { campo })
     return d
   }
 
   // restrições de uma atividade: esconder, data de abertura, condições (como o "Restrict access" do Moodle)
+  // como encontrar cada tipo de atividade; a avaliação do docente é da Administração Escolar
+  #buscarAtividade(tipo) {
+    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x), inquerito: (x) => this.inqueritos.inquerito(x) }[tipo]
+    if (!buscar) return null
+    return async (id) => {
+      const a = await buscar(id)
+      if (a?.tipo === 'avaliacao' && tipo === 'inquerito') throw new SemPermissao('A avaliação do docente é gerida pela Administração Escolar.')
+      return a
+    }
+  }
+
   async restricoes(ctx, { tipo, id, ...dados }) {
-    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x) }[tipo]
+    const buscar = this.#buscarAtividade(tipo)
     if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
     const a = await buscar(id)
     if (!a) throw new NaoEncontrado('Atividade não encontrada.')
@@ -388,7 +407,7 @@ export class ServicoPortal {
 
   // muda um material, trabalho ou questionário de capítulo
   async moverAtividade(ctx, { tipo, id, secaoId }) {
-    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x) }[tipo]
+    const buscar = this.#buscarAtividade(tipo)
     if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
     const atividade = await buscar(id)
     if (!atividade) throw new NaoEncontrado('Atividade não encontrada.')
@@ -415,27 +434,92 @@ export class ServicoPortal {
 
   // ---------- docente: materiais e avisos ----------
 
-  async criarMaterial(ctx, cadeiraId, dados, ficheiro) {
-    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e })
-    const tipo = escolha(dados.tipo, 'tipo', 'Tipo', TIPOS_MATERIAL)
-    const base = {
-      cadeiraId: cadeira.id, autorId: ctx.conta.id, tipo,
-      titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 200 }),
-      descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
-      secaoId: await this.#secaoDaCadeira(cadeira.id, dados.secaoId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e }),
+  async criarMaterial(ctx, cadeiraId, dados, recebidos = []) {
+    const ficheiros = (Array.isArray(recebidos) ? recebidos : [recebidos]).filter(Boolean)
+    const largar = () => { for (const f of ficheiros) this.privados.apagar(f.caminho) }
+    try {
+      const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
+      const tipo = escolha(dados.tipo, 'tipo', 'Tipo', TIPOS_MATERIAL)
+      const base = {
+        cadeiraId: cadeira.id, autorId: ctx.conta.id, tipo,
+        titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 200 }),
+        descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
+        secaoId: await this.#secaoDaCadeira(cadeira.id, dados.secaoId),
+        ...this.#camposMaterial(tipo, dados, { novo: true }),
+      }
+      if (tipo === 'ficheiro' && ficheiros.length !== 1) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
+      if (tipo === 'pasta' && ficheiros.length === 0) throw new ErroValidacao('Junte pelo menos um ficheiro à pasta.', { campo: 'ficheiros' })
+      if (tipo !== 'ficheiro' && tipo !== 'pasta') largar()
+      let m
+      if (tipo === 'ficheiro') m = await this.academico.criarMaterial({ ...base, ficheiroId: await this.#registarFicheiro(ficheiros[0], ctx.conta.id) })
+      else if (tipo === 'pasta') {
+        const ids = []
+        for (const f of ficheiros) ids.push(await this.#registarFicheiro(f, ctx.conta.id))
+        m = await this.academico.criarMaterial({ ...base, ficheiros: { create: ids.map((ficheiroId, ordem) => ({ ficheiroId, ordem })) } })
+      } else m = await this.academico.criarMaterial(base)
+      await this.#avisarEstudantes(ctx, cadeira, m.secaoId, {
+        tipo: 'material', titulo: tipo === 'videoconferencia' ? `Videoconferência em ${cadeira.nome}` : `Novo material em ${cadeira.nome}`,
+        texto: tipo === 'videoconferencia' && m.inicio ? `${m.titulo} · ${new Date(m.inicio).toLocaleString('pt-PT', { timeZone: 'Africa/Luanda', dateStyle: 'short', timeStyle: 'short' })}` : m.titulo,
+        ligacao: `/cadeiras/${cadeira.id}`,
+      })
+      return this.academico.material(m.id)
+    } catch (e) {
+      largar()
+      throw e
     }
-    let m
-    if (tipo === 'ficheiro') {
-      if (!ficheiro) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
-      m = await this.academico.criarMaterial({ ...base, ficheiroId: await this.#registarFicheiro(ficheiro, ctx.conta.id) })
-    } else {
-      if (ficheiro) this.privados.apagar(ficheiro.caminho)
-      const url = String(dados.url || '').trim()
+  }
+
+  // campos próprios de cada tipo: endereço, texto da página, hora da videoconferência
+  #camposMaterial(tipo, d, { novo = false } = {}) {
+    const r = {}
+    if (['ligacao', 'video', 'videoconferencia'].includes(tipo) && (novo || d.url !== undefined)) {
+      const url = String(d.url || '').trim()
       if (!/^https?:\/\//.test(url) || !urlSegura(url)) throw new ErroValidacao('Indique um endereço começado por https://', { campo: 'url' })
-      m = await this.academico.criarMaterial({ ...base, url })
+      r.url = url
     }
-    await this.#avisarEstudantes(ctx, cadeira, m.secaoId, { tipo: 'material', titulo: `Novo material em ${cadeira.nome}`, texto: m.titulo, ligacao: `/cadeiras/${cadeira.id}` })
-    return m
+    if (tipo === 'pagina' && (novo || d.conteudo !== undefined)) {
+      const html = String(d.conteudo || '')
+      if (html.length > 200_000) throw new ErroValidacao('A página é demasiado longa.', { campo: 'conteudo' })
+      r.conteudo = this.filtroHtml(html)
+      if (!r.conteudo.replace(/<[^>]*>/g, '').trim() && !/<img|<iframe|<video/i.test(r.conteudo)) throw new ErroValidacao('Escreva o conteúdo da página.', { campo: 'conteudo' })
+    }
+    if (tipo === 'videoconferencia') {
+      if (novo || d.inicio !== undefined) {
+        r.inicio = this.#dataValida(d.inicio, 'inicio')
+        if (!r.inicio) throw new ErroValidacao('Indique o dia e a hora da sessão.', { campo: 'inicio' })
+      }
+      if (novo || d.duracao !== undefined) {
+        const n = Number(d.duracao || 60)
+        if (!Number.isInteger(n) || n < 5 || n > 600) throw new ErroValidacao('A duração vai de 5 a 600 minutos.', { campo: 'duracao' })
+        r.duracao = n
+      }
+    }
+    return r
+  }
+
+  async editarMaterial(ctx, id, dados, recebidos = []) {
+    const ficheiros = (recebidos || []).filter(Boolean)
+    const largar = () => { for (const f of ficheiros) this.privados.apagar(f.caminho) }
+    try {
+      const m = await this.academico.material(id)
+      if (!m) throw new NaoEncontrado('Material não encontrado.')
+      await this.#cadeiraDoDocente(ctx.conta, m.cadeiraId)
+      const mudanca = {
+        ...(dados.titulo !== undefined ? { titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 200 }) } : {}),
+        ...(dados.descricao !== undefined ? { descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }) } : {}),
+        ...this.#camposMaterial(m.tipo, dados),
+      }
+      if (ficheiros.length && m.tipo !== 'pasta') throw new ErroValidacao('Só as pastas recebem mais ficheiros.', { campo: 'ficheiros' })
+      const retirar = (dados.retirarFicheiros || []).map(String).filter((x) => m.ficheiros.some((f) => f.id === x))
+      if (m.tipo === 'pasta' && m.ficheiros.length - retirar.length + ficheiros.length > 50) throw new ErroValidacao('Uma pasta tem até 50 ficheiros.', { campo: 'ficheiros' })
+      const novos = []
+      for (const f of ficheiros) novos.push(await this.#registarFicheiro(f, ctx.conta.id))
+      await this.academico.editarMaterial(m.id, mudanca, { juntar: novos, retirar, ordemBase: m.ficheiros.length })
+      return this.academico.material(m.id)
+    } catch (e) {
+      largar()
+      throw e
+    }
   }
 
   async apagarMaterial(ctx, id) {

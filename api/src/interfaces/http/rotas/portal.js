@@ -18,6 +18,7 @@ export function rotasPortal({ servicos, config, privados }) {
   const ctx = (req) => req.contexto
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
   const ficheiros = privados ? receberFicheiro({ privados, config, maximo: 10 }) : (req, res, next) => next()
+  const pasta = privados ? receberFicheiro({ privados, config, maximo: 20 }) : (req, res, next) => next()
 
   r.post(
     '/entrar',
@@ -65,9 +66,10 @@ export function rotasPortal({ servicos, config, privados }) {
   })
 
   // ---------- docente ----------
-  r.post('/cadeiras/:id/materiais', ficheiro, validar({ params: pId, body: E.material }), async (req, res) => {
-    res.status(201).json(await s.criarMaterial(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro))
+  r.post('/cadeiras/:id/materiais', pasta, validar({ params: pId, body: E.material }), async (req, res) => {
+    res.status(201).json(await s.criarMaterial(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || []))
   })
+  r.put('/materiais/:id', pasta, validar({ params: pId, body: E.material }), async (req, res) => res.json(await s.editarMaterial(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
   r.delete('/materiais/:id', validar({ params: pId }), async (req, res) => { await s.apagarMaterial(ctx(req), req.dados.params.id); res.status(204).end() })
 
   r.post('/cadeiras/:id/avisos', validar({ params: pId, body: E.avisoCadeira }), async (req, res) => res.status(201).json(await s.criarAviso(ctx(req), req.dados.params.id, req.dados.body)))
@@ -110,6 +112,13 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
+  // sondagens e inquéritos de avaliação do docente
+  const q = servicos.inqueritos
+  r.post('/cadeiras/:id/sondagens', validar({ params: pId, body: E.sondagem }), async (req, res) => res.status(201).json(await q.criarSondagem(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/inqueritos/:id', validar({ params: pId, body: E.sondagem }), async (req, res) => res.json(await q.atualizarSondagem(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.ver(ctx(req), req.dados.params.id)))
+  r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await s.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await s.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
   r.post('/cadeiras/:id/importar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await s.importar(ctx(req), req.dados.params.id, req.dados.body)))

@@ -16,6 +16,8 @@ import Forum from './Forum'
 import Questionarios from './Questionarios'
 import Progresso from './Progresso'
 import Datas from './Datas'
+import VerMaterial from './VerMaterial'
+import Inquerito from './Inquerito'
 
 const SEPARADORES = [
   { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
@@ -38,7 +40,7 @@ function Cadeira() {
   const [params, setParams] = useSearchParams()
   const pedido = ANTIGOS[params.get('separador')] || params.get('separador')
   const separador = SEPARADORES.some((s) => s.id === pedido) ? pedido : 'curso'
-  // atividade aberta a partir da página da cadeira: "trabalho-12", "questionario-3"
+  // atividade aberta a partir da página da cadeira: "trabalho-12", "questionario-3", "material-5", "inquerito-2"
   const [especie, atividadeId] = (params.get('atividade') || '').split('-')
   const irPara = useCallback((destino) => { setParams(destino, { replace: false }); window.scrollTo(0, 0) }, [setParams])
   const [c, setC] = useState(null)
@@ -102,6 +104,8 @@ function Cadeira() {
 
       <div role="tabpanel">
         {especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
+        {especie === 'material' && <><Voltar irPara={irPara} /><VerMaterial {...props} so={Number(atividadeId)} /></>}
+        {especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}
         {especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
         {!especie && separador === 'curso' && <Curso {...props} />}
         {!especie && separador === 'participantes' && <Participantes {...props} />}

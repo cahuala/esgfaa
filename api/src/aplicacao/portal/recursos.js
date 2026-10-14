@@ -25,8 +25,8 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
+  constructor({ academico, recursos, inqueritos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, inqueritos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
   }
 
   async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
@@ -180,33 +180,36 @@ export class ServicoRecursos {
 
   // atividades da cadeira que contam para o progresso: materiais, trabalhos e questionários publicados
   async #atividades(cadeiraId) {
-    const [todos, trab, quest, secoes] = await Promise.all([
+    const [todos, trab, quest, inq, secoes] = await Promise.all([
       this.academico.materiais(cadeiraId),
       this.academico.trabalhos(cadeiraId),
       this.recursos.questionarios(cadeiraId, { soPublicados: true }),
+      this.inqueritos ? this.inqueritos.inqueritos(cadeiraId) : [],
       this.academico.secoes(cadeiraId),
     ])
     // o que está em capítulos escondidos ainda não conta
     const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
-    const [materiais, trabalhos, questionarios] = [todos, trab, quest].map((l) => l.filter((a) => !escondidos.has(a.secaoId) && a.visivel !== false))
+    const [materiais, trabalhos, questionarios, inqueritos] = [todos, trab, quest, inq].map((l) => l.filter((a) => !escondidos.has(a.secaoId) && a.visivel !== false))
     return [
       ...materiais.map((m) => ({ tipo: 'material', id: m.id, titulo: m.titulo })),
       ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo })),
       ...questionarios.map((q) => ({ tipo: 'questionario', id: q.id, titulo: q.titulo })),
+      ...inqueritos.map((i) => ({ tipo: 'inquerito', id: i.id, titulo: i.titulo })),
     ]
   }
 
   async #feitasPor(estudanteId, atividades) {
     const ids = (tipo) => atividades.filter((a) => a.tipo === tipo).map((a) => a.id)
-    const [materiais, entregas, tentativas] = await Promise.all([
+    const [materiais, entregas, tentativas, respondidos] = await Promise.all([
       this.recursos.conclusoesDoEstudante(estudanteId, ids('material')),
       this.academico.entregasDoEstudante(estudanteId, ids('trabalho')),
       this.recursos.tentativasDoEstudante(estudanteId, ids('questionario')),
+      this.inqueritos ? this.inqueritos.respondidos(estudanteId, ids('inquerito')) : new Set(),
     ])
     const questionarios = new Set(tentativas.filter((t) => t.entregueEm).map((t) => t.questionarioId))
     return atividades.map((a) => ({
       ...a,
-      feita: a.tipo === 'material' ? materiais.has(a.id) : a.tipo === 'trabalho' ? Boolean(entregas[a.id]) : questionarios.has(a.id),
+      feita: a.tipo === 'material' ? materiais.has(a.id) : a.tipo === 'trabalho' ? Boolean(entregas[a.id]) : a.tipo === 'inquerito' ? respondidos.has(a.id) : questionarios.has(a.id),
     }))
   }
 

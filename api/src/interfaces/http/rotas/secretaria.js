@@ -36,6 +36,12 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/origens-copia', async (req, res) => res.json(await s.origensDeCopia(ctx(req))))
   r.post('/cadeiras/:id/copiar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await s.copiarParaCadeira(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/copiar', validar({ params: pId, body: E.copiarTurma }), async (req, res) => res.json(await s.copiarTurma(ctx(req), req.dados.params.id, req.dados.body)))
+  // inquérito pedagógico: avaliação dos docentes pelos estudantes
+  const q = servicos.inqueritos
+  r.get('/turmas/:id/avaliacao', validar({ params: pId }), async (req, res) => res.json(await q.avaliacoesDaTurma(ctx(req), req.dados.params.id)))
+  r.post('/turmas/:id/avaliacao', validar({ params: pId, body: E.lancarAvaliacao }), async (req, res) => res.status(201).json(await q.lancarAvaliacao(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.resultadosAdmin(ctx(req), req.dados.params.id)))
+  r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagarAvaliacao(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/alocacao', async (req, res) => res.json(await s.alocacao(ctx(req))))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))

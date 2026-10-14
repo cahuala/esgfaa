@@ -6,6 +6,8 @@ const num = (d) => (d === null || d === undefined ? null : Number(d))
 const contaResumo = { select: { id: true, nome: true, numero: true, email: true } }
 
 const ordemPapel = { regente: 0, assistente: 1 }
+// ficheiros de uma pasta, por ordem
+const FICHEIROS_PASTA = { ficheiros: { orderBy: { ordem: 'asc' }, include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
 
 // cadeira com a turma e os docentes alocados (regente primeiro); "docente" é o regente
 const cadeiraLinha = (c) => {
@@ -205,29 +207,49 @@ export class RepositorioAcademico {
 
   // grava as restrições de acesso de uma atividade
   restringirAtividade(tipo, id, dados) {
-    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario }[tipo]
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito }[tipo]
     return modelo.update({ where: { id }, data: dados })
   }
 
   // muda uma atividade (material, trabalho, questionário) de capítulo
   moverAtividade(tipo, id, secaoId) {
-    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario }[tipo]
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito }[tipo]
     return modelo.update({ where: { id }, data: { secaoId } })
   }
 
   // ---------- materiais e avisos ----------
 
+  #material(m) {
+    if (!m) return null
+    const { ficheiros, ...resto } = m
+    return {
+      ...resto, publicadoEm: iso(m.publicadoEm), inicio: iso(m.inicio), disponivelDe: iso(m.disponivelDe),
+      ficheiros: (ficheiros || []).map((x) => ({ id: x.ficheiro.id, nome: x.ficheiro.nome, tipo: x.ficheiro.tipo, tamanho: x.ficheiro.tamanho })),
+    }
+  }
+
   async materiais(cadeiraId) {
-    const linhas = await this.prisma.material.findMany({ where: { cadeiraId }, orderBy: [{ publicadoEm: 'asc' }, { id: 'asc' }] })
-    return linhas.map((m) => ({ ...m, publicadoEm: iso(m.publicadoEm) }))
+    const linhas = await this.prisma.material.findMany({ where: { cadeiraId }, orderBy: [{ publicadoEm: 'asc' }, { id: 'asc' }], include: FICHEIROS_PASTA })
+    return linhas.map((m) => this.#material(m))
   }
 
   criarMaterial(dados) {
     return this.prisma.material.create({ data: dados })
   }
 
-  material(id) {
-    return this.prisma.material.findUnique({ where: { id: Number(id) } })
+  // muda os campos e, numa pasta, junta e retira ficheiros
+  async editarMaterial(id, dados, { juntar = [], retirar = [], ordemBase = 0 } = {}) {
+    await this.prisma.$transaction([
+      this.prisma.material.update({ where: { id }, data: dados }),
+      this.prisma.materialFicheiro.deleteMany({ where: { materialId: id, ficheiroId: { in: retirar } } }),
+      this.prisma.materialFicheiro.createMany({ data: juntar.map((ficheiroId, i) => ({ materialId: id, ficheiroId, ordem: ordemBase + i })) }),
+    ])
+  }
+
+  async material(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    return this.#material(await this.prisma.material.findUnique({ where: { id: n }, include: FICHEIROS_PASTA }))
   }
 
   apagarMaterial(id) {
@@ -535,7 +557,7 @@ export class RepositorioAcademico {
   async usoDoFicheiro(id) {
     const p = this.prisma
     const [material, trabalho, entrega, pedido, programa] = await Promise.all([
-      p.material.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
+      p.material.findFirst({ where: { OR: [{ ficheiroId: id }, { ficheiros: { some: { ficheiroId: id } } }] }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),

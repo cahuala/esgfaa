@@ -85,7 +85,13 @@ export const filtroEstado = z.object({ estado: texto(30).optional() })
 
 export const pedidoNovo = z.object({ tipo: texto(80), motivo: texto(1200).optional() })
 export const avisoCadeira = z.object({ titulo: texto(300), texto: texto(6000) })
-export const material = z.object({ titulo: texto(300).optional(), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), tipo: texto(20).optional(), url: texto(2000).optional() })
+// listas chegam como lista (JSON) ou como texto JSON (multipart)
+const listaTexto = (item, max) => z.preprocess((v) => { if (typeof v !== 'string') return v; try { return JSON.parse(v) } catch { return v } }, z.array(item).max(max))
+export const material = z.object({
+  titulo: texto(300).optional(), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), tipo: texto(20).optional(), url: texto(2000).optional(),
+  conteudo: texto(200_000).optional(), inicio: z.union([texto(40), z.null()]).optional(), duracao: z.union([z.number(), z.string().max(6)]).optional(),
+  retirarFicheiros: listaTexto(z.string().max(40), 50).optional(),
+})
 const notaLivre = z.union([z.string().max(6), z.number(), z.null()]).optional()
 export const pauta = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, p1: notaLivre, p2: notaLivre, exame: notaLivre, recurso: notaLivre, observacao: texto(400).optional() })).max(500) })
 export const publicacaoNotas = z.object({ publicadas: z.array(z.enum(['p1', 'p2', 'exame', 'recurso'])).max(4) })
@@ -162,3 +168,12 @@ export const restricoes = z.object({
   tipo: texto(20), id: idNumerico, visivel: z.boolean().optional(), disponivelDe: z.union([texto(40), z.null()]).optional(),
   requisitos: z.array(z.object({ tipo: texto(20), id: idNumerico, notaMinima: z.union([z.number(), z.string().max(6), z.null()]).optional() })).max(10).optional(),
 })
+
+// ---------- inquéritos ----------
+export const sondagem = z.object({
+  titulo: texto(300).optional(), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
+  pergunta: texto(600).optional(), opcoes: z.array(texto(300)).max(12).optional(), multipla: z.boolean().optional(), anonimo: z.boolean().optional(),
+  mostrarResultados: texto(20).optional(), fecha: z.union([texto(40), z.null()]).optional(),
+})
+export const respostasInquerito = z.object({ respostas: z.record(z.string().max(3), z.union([z.array(z.number()).max(12), z.number(), z.string().max(2000)])) })
+export const lancarAvaliacao = z.object({ fecha: texto(40), titulo: texto(120).optional() })

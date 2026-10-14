@@ -5,6 +5,7 @@ import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { PERIODOS } from './comum'
 import CopiarTurma from './CopiarTurma'
+import AvaliacaoDocentes from './AvaliacaoDocentes'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
@@ -68,6 +69,7 @@ function Turma() {
           {gerir && <NovaCadeira turma={t} carregar={carregar} avisar={setAviso} />}
         </div>
       </div>
+      {t.cadeiras.length > 0 && <AvaliacaoDocentes turma={t} gerir={gerir} avisar={setAviso} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

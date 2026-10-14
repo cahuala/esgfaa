@@ -1,7 +1,8 @@
 /*
   Cópia dos conteúdos de uma cadeira para outra (novo ano letivo, como o "Importar" do Moodle):
-  capítulos, materiais, trabalhos, questionários com perguntas, datas, programa, composição das
-  notas e, se se pedir, a alocação de docentes. Não copia entregas, tentativas, notas, fórum nem presenças.
+  capítulos, materiais (páginas e pastas incluídas), trabalhos, questionários com perguntas, sondagens, datas,
+  programa, composição das notas e, se se pedir, a alocação de docentes. Não copia entregas, tentativas,
+  respostas, avaliações dos docentes, notas, fórum nem presenças.
 */
 export class RepositorioCopias {
   constructor({ prisma }) {
@@ -10,19 +11,20 @@ export class RepositorioCopias {
 
   async conteudoDe(cadeiraId) {
     const p = this.prisma
-    const [cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias] = await Promise.all([
+    const [cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, sondagens] = await Promise.all([
       p.unidadeCurricular.findUnique({ where: { id: cadeiraId } }),
       p.secaoCadeira.findMany({ where: { cadeiraId }, orderBy: [{ ordem: 'asc' }, { id: 'asc' }] }),
-      p.material.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' } }),
+      p.material.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' }, include: { ficheiros: { orderBy: { ordem: 'asc' } } } }),
       p.trabalho.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' } }),
       p.questionario.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' }, include: { perguntas: { orderBy: [{ ordem: 'asc' }, { id: 'asc' }] } } }),
       p.eventoAcademico.findMany({ where: { cadeiraId } }),
       p.composicaoNota.findMany({ where: { cadeiraId } }),
       p.docencia.findMany({ where: { cadeiraId } }),
+      p.inquerito.findMany({ where: { cadeiraId, tipo: 'sondagem' }, orderBy: { id: 'asc' } }),
     ])
-    const idsFicheiros = [...new Set([...materiais.map((m) => m.ficheiroId), ...trabalhos.map((t) => t.ficheiroId), cadeira?.programaFicheiroId].filter(Boolean))]
+    const idsFicheiros = [...new Set([...materiais.map((m) => m.ficheiroId), ...materiais.flatMap((m) => m.ficheiros.map((f) => f.ficheiroId)), ...trabalhos.map((t) => t.ficheiroId), cadeira?.programaFicheiroId].filter(Boolean))]
     const ficheiros = await p.ficheiro.findMany({ where: { id: { in: idsFicheiros } } })
-    return { cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, ficheiros }
+    return { cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, ficheiros, sondagens }
   }
 
   // a cadeira de destino já tem conteúdos? (para não duplicar ao copiar uma turma inteira)
@@ -56,6 +58,8 @@ export class RepositorioCopias {
           ...restricoes(m),
           cadeiraId: destinoId, secaoId: secao(m.secaoId), titulo: m.titulo, descricao: m.descricao, tipo: m.tipo,
           ficheiroId: m.ficheiroId ? ficheiros[m.ficheiroId] ?? null : null, url: m.url, autorId: m.autorId,
+          conteudo: m.conteudo, inicio: m.inicio ? data(m.inicio) : null, duracao: m.duracao,
+          ficheiros: { create: m.ficheiros.filter((f) => ficheiros[f.ficheiroId]).map((f) => ({ ficheiroId: ficheiros[f.ficheiroId], ordem: f.ordem })) },
         } })).id
       }
       const trabalhos = {}
@@ -78,10 +82,17 @@ export class RepositorioCopias {
           await tx.pergunta.createMany({ data: q.perguntas.map((x) => ({ questionarioId: novo.id, ordem: x.ordem, enunciado: x.enunciado, tipo: x.tipo, opcoes: x.opcoes, pontos: x.pontos })) })
         }
       }
+      const inqueritos = {}
+      for (const i of c.sondagens) {
+        inqueritos[i.id] = (await tx.inquerito.create({ data: {
+          ...restricoes(i), cadeiraId: destinoId, secaoId: secao(i.secaoId), tipo: 'sondagem', titulo: i.titulo, descricao: i.descricao,
+          perguntas: i.perguntas, anonimo: i.anonimo, resultados: i.resultados, fecha: i.fecha ? data(i.fecha) : null,
+        } })).id
+      }
       // condições de acesso, agora com as atividades novas
-      const novoId = { material: materiais, trabalho: trabalhos, questionario: questionarios }
+      const novoId = { material: materiais, trabalho: trabalhos, questionario: questionarios, inquerito: inqueritos }
       const remapear = (lista) => (lista || []).map((r) => ({ ...r, id: novoId[r.tipo]?.[r.id] })).filter((r) => r.id)
-      for (const [tipo, origem, modelo] of [['material', c.materiais, tx.material], ['trabalho', c.trabalhos, tx.trabalho], ['questionario', c.questionarios, tx.questionario]]) {
+      for (const [tipo, origem, modelo] of [['material', c.materiais, tx.material], ['trabalho', c.trabalhos, tx.trabalho], ['questionario', c.questionarios, tx.questionario], ['inquerito', c.sondagens, tx.inquerito]]) {
         for (const a of origem) if (a.requisitos?.length) await modelo.update({ where: { id: novoId[tipo][a.id] }, data: { requisitos: remapear(a.requisitos) } })
       }
       for (const e of c.eventos) {
@@ -111,7 +122,7 @@ export class RepositorioCopias {
       }
       return {
         capitulos: c.secoes.length, materiais: c.materiais.length, trabalhos: c.trabalhos.length,
-        questionarios: c.questionarios.length, datas: c.eventos.length, docentes: docentesCopiados,
+        questionarios: c.questionarios.length, sondagens: c.sondagens.length, datas: c.eventos.length, docentes: docentesCopiados,
       }
     }, { timeout: 30_000 })
   }

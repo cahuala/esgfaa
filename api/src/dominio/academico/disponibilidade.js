@@ -8,7 +8,7 @@ import { ErroValidacao } from '../comum/erros.js'
   Uma atividade fechada aparece ao estudante com o motivo, mas não se abre.
 */
 
-export const TIPOS_ATIVIDADE = ['material', 'trabalho', 'questionario']
+export const TIPOS_ATIVIDADE = ['material', 'trabalho', 'questionario', 'inquerito']
 const erro = (campo, mensagem) => new ErroValidacao(mensagem, { campo })
 export const chave = (tipo, id) => `${tipo}-${id}`
 
@@ -40,7 +40,7 @@ export function validarRestricoes(dados, existentes, propria) {
       vistas.add(k)
       let notaMinima = null
       if (x.notaMinima !== undefined && x.notaMinima !== null && x.notaMinima !== '') {
-        if (x.tipo === 'material') throw erro('requisitos', 'Os materiais não têm nota: use só "concluído".')
+        if (x.tipo === 'material' || x.tipo === 'inquerito') throw erro('requisitos', 'Os materiais e os inquéritos não têm nota: use só "concluído".')
         notaMinima = Number(String(x.notaMinima).replace(',', '.'))
         if (!Number.isFinite(notaMinima) || notaMinima < 0 || notaMinima > 20) throw erro('requisitos', 'A nota mínima vai de 0 a 20.')
       }

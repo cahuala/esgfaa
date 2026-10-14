@@ -2,13 +2,13 @@ const iso = (d) => (d ? new Date(d).toISOString() : null)
 const num = (d) => (d === null || d === undefined ? null : Number(d))
 const autor = { select: { id: true, nome: true, tipo: true } }
 
+// o que o certificado mostra: estudante, cadeira e turma
+const INCLUIR_CERTIFICADO = { estudante: { select: { nome: true, numero: true } }, cadeira: { select: { nome: true, codigo: true, horas: true, turma: { select: { nome: true, anoLetivo: true } } } } }
+
 /*
   Recursos de cada cadeira ao estilo do Moodle: fórum, calendário académico,
   conclusão de materiais (progresso) e questionários online.
 */
-// o que o certificado mostra: estudante, cadeira e turma
-const INCLUIR_CERTIFICADO = { estudante: { select: { nome: true, numero: true } }, cadeira: { select: { nome: true, codigo: true, horas: true, turma: { select: { nome: true, anoLetivo: true } } } } }
-
 export class RepositorioRecursosCadeira {
   constructor({ prisma }) {
     this.prisma = prisma

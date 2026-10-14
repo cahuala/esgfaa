@@ -131,6 +131,15 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Condição 1').selectOption({ label: 'Material: Leitura obrigatória' })
   await page.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByText('Restrições guardadas.')).toBeVisible()
+  // sondagem aos estudantes
+  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: /Sondagem/ }).click()
+  await page.getByLabel('Título').fill('Visita de estudo')
+  await page.getByLabel('Pergunta').fill('Que dia prefere?')
+  await page.getByLabel('Opção 1').fill('Quinta')
+  await page.getByLabel('Opção 2').fill('Sexta')
+  await page.getByRole('button', { name: 'Guardar e publicar' }).click()
+  await expect(page.getByText('Sondagem publicada.')).toBeVisible()
   await page.locator('.p-conta-botao').click()
   await page.getByRole('button', { name: 'Sair' }).click()
 
@@ -157,6 +166,13 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Marcar como feito' }).click()
   await expect(page.getByText('Precisa de concluir "Leitura obrigatória"')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Teste rápido' })).toBeVisible()
+  // responde à sondagem e vê os resultados
+  await page.getByRole('button', { name: 'Visita de estudo' }).click()
+  await page.getByLabel('Sexta').check()
+  await page.getByRole('button', { name: 'Enviar' }).click()
+  await expect(page.getByText('Resposta registada.')).toBeVisible()
+  await expect(page.getByText('1 resposta(s)')).toBeVisible()
+  await page.getByRole('button', { name: 'Voltar à cadeira' }).click()
   await page.getByRole('tab', { name: 'Programa' }).click()
   await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
 
