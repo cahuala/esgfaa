@@ -114,7 +114,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
     portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, registos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, registos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, registos, privados, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
     registos,

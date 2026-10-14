@@ -215,6 +215,8 @@ model ContaPortal {
   participacoes       ParticipacaoInquerito[]
   grupos              MembroGrupo[]
   registos            RegistoAcesso[]
+  subscricoesTopicos  SubscricaoTopico[]
+  subscricoesForuns   SubscricaoForum[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -285,6 +287,7 @@ model UnidadeCurricular {
   grupos           GrupoCadeira[]
   membrosGrupos    MembroGrupo[]
   registos         RegistoAcesso[]
+  subscricoesForum SubscricaoForum[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -315,8 +318,9 @@ model Ficheiro {
   donoId   Int?     @map("dono_id") // conta do portal que o enviou (se for o caso)
   criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  entregas EntregaFicheiro[]
-  pastas   MaterialFicheiro[]
+  entregas    EntregaFicheiro[]
+  pastas      MaterialFicheiro[]
+  anexosForum ForumAnexo[]
 
   @@map("ficheiros_privados")
 }
@@ -511,33 +515,40 @@ model Pedido {
 // ---------- fórum de cada cadeira (como no Moodle) ----------
 
 model ForumTopico {
-  id          Int      @id @default(autoincrement())
-  cadeiraId   Int      @map("cadeira_id")
-  autorId     Int      @map("autor_id")
-  titulo      String
-  texto       String
-  fixado      Boolean  @default(false) // o docente fixa no topo
-  fechado     Boolean  @default(false) // sem novas respostas
-  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
-  atividadeEm DateTime @default(now()) @map("atividade_em") @db.Timestamptz(3) // última resposta
+  id              Int       @id @default(autoincrement())
+  cadeiraId       Int       @map("cadeira_id")
+  autorId         Int       @map("autor_id")
+  titulo          String
+  texto           String
+  fixado          Boolean   @default(false) // o docente fixa no topo
+  fechado         Boolean   @default(false) // sem novas respostas
+  tipo            String    @default("discussao") // discussao | pergunta (perguntas e respostas: só vê as respostas quem respondeu)
+  respostaCertaId Int?      @map("resposta_certa_id") // resposta marcada como certa (autor do tópico ou docente)
+  editadoEm       DateTime? @map("editado_em") @db.Timestamptz(3)
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atividadeEm     DateTime  @default(now()) @map("atividade_em") @db.Timestamptz(3) // última resposta
 
-  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  autor     ContaPortal       @relation(fields: [autorId], references: [id], onDelete: Cascade)
-  respostas ForumResposta[]
+  cadeira     UnidadeCurricular  @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  autor       ContaPortal        @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  respostas   ForumResposta[]
+  anexos      ForumAnexo[]
+  subscricoes SubscricaoTopico[]
 
   @@index([cadeiraId, atividadeEm])
   @@map("forum_topicos")
 }
 
 model ForumResposta {
-  id       Int      @id @default(autoincrement())
-  topicoId Int      @map("topico_id")
-  autorId  Int      @map("autor_id")
-  texto    String
-  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id        Int       @id @default(autoincrement())
+  topicoId  Int       @map("topico_id")
+  autorId   Int       @map("autor_id")
+  texto     String
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  editadoEm DateTime? @map("editado_em") @db.Timestamptz(3)
 
-  topico ForumTopico @relation(fields: [topicoId], references: [id], onDelete: Cascade)
-  autor  ContaPortal @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  topico ForumTopico  @relation(fields: [topicoId], references: [id], onDelete: Cascade)
+  autor  ContaPortal  @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  anexos ForumAnexo[]
 
   @@index([topicoId, criadoEm])
   @@map("forum_respostas")
@@ -893,4 +904,43 @@ model RegistoAcesso {
   @@index([cadeiraId, em])
   @@index([cadeiraId, contaId])
   @@map("registos_acesso")
+}
+
+// anexos de um tópico ou de uma resposta do fórum
+model ForumAnexo {
+  id         Int    @id @default(autoincrement())
+  ficheiroId String @unique @map("ficheiro_id")
+  topicoId   Int?   @map("topico_id")
+  respostaId Int?   @map("resposta_id")
+
+  ficheiro Ficheiro       @relation(fields: [ficheiroId], references: [id], onDelete: Cascade)
+  topico   ForumTopico?   @relation(fields: [topicoId], references: [id], onDelete: Cascade)
+  resposta ForumResposta? @relation(fields: [respostaId], references: [id], onDelete: Cascade)
+
+  @@map("forum_anexos")
+}
+
+// seguir um tópico (ativa = false: deixou de seguir, mesmo tendo escrito nele)
+model SubscricaoTopico {
+  topicoId Int     @map("topico_id")
+  contaId  Int     @map("conta_id")
+  ativa    Boolean @default(true)
+
+  topico ForumTopico @relation(fields: [topicoId], references: [id], onDelete: Cascade)
+  conta  ContaPortal @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@id([topicoId, contaId])
+  @@map("subscricoes_topicos")
+}
+
+// seguir o fórum inteiro de uma cadeira (avisos de tópicos novos e de todas as respostas)
+model SubscricaoForum {
+  cadeiraId Int @map("cadeira_id")
+  contaId   Int @map("conta_id")
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  conta   ContaPortal       @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@id([cadeiraId, contaId])
+  @@map("subscricoes_foruns")
 }

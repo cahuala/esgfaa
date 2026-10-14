@@ -1,6 +1,8 @@
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 const num = (d) => (d === null || d === undefined ? null : Number(d))
 const autor = { select: { id: true, nome: true, tipo: true } }
+const ANEXOS = { include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } }
+const paraAnexo = (a) => ({ id: a.ficheiro.id, nome: a.ficheiro.nome, tipo: a.ficheiro.tipo, tamanho: a.ficheiro.tamanho })
 
 // o que o certificado mostra: estudante, cadeira e turma
 const INCLUIR_CERTIFICADO = { estudante: { select: { nome: true, numero: true } }, cadeira: { select: { nome: true, codigo: true, horas: true, turma: { select: { nome: true, anoLetivo: true } } } } }
@@ -16,32 +18,39 @@ export class RepositorioRecursosCadeira {
 
   // ---------- fórum ----------
 
-  async topicos(cadeiraId) {
+  async topicos(cadeiraId, { q } = {}) {
+    const termo = q ? { contains: q.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } : null
     const linhas = await this.prisma.forumTopico.findMany({
-      where: { cadeiraId },
+      where: { cadeiraId, ...(termo ? { OR: [{ titulo: termo }, { texto: termo }, { respostas: { some: { texto: termo } } }] } : {}) },
       orderBy: [{ fixado: 'desc' }, { atividadeEm: 'desc' }],
-      include: { autor, _count: { select: { respostas: true } } },
+      include: { autor, _count: { select: { respostas: true, anexos: true } } },
     })
-    return linhas.map((t) => ({ ...this.#topico(t), respostas: t._count.respostas }))
+    return linhas.map((t) => ({ ...this.#topico(t), respostas: t._count.respostas, anexos: t._count.anexos }))
   }
 
   #topico(t) {
     return {
       id: t.id, cadeiraId: t.cadeiraId, titulo: t.titulo, texto: t.texto, fixado: t.fixado, fechado: t.fechado,
+      tipo: t.tipo, respostaCertaId: t.respostaCertaId, editadoEm: iso(t.editadoEm),
       autor: t.autor, criadoEm: iso(t.criadoEm), atividadeEm: iso(t.atividadeEm),
     }
   }
 
   async topico(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
     const t = await this.prisma.forumTopico.findUnique({
-      where: { id: Number(id) },
-      include: { autor, respostas: { orderBy: { criadoEm: 'asc' }, include: { autor } } },
+      where: { id: n },
+      include: { autor, anexos: ANEXOS, respostas: { orderBy: { criadoEm: 'asc' }, include: { autor, anexos: ANEXOS } } },
     })
-    return t && { ...this.#topico(t), respostas: t.respostas.map((r) => ({ id: r.id, texto: r.texto, autor: r.autor, criadoEm: iso(r.criadoEm) })) }
+    return t && {
+      ...this.#topico(t), anexos: t.anexos.map(paraAnexo),
+      respostas: t.respostas.map((r) => ({ id: r.id, texto: r.texto, autor: r.autor, criadoEm: iso(r.criadoEm), editadoEm: iso(r.editadoEm), anexos: r.anexos.map(paraAnexo) })),
+    }
   }
 
-  criarTopico(dados) {
-    return this.prisma.forumTopico.create({ data: dados })
+  criarTopico(dados, anexos = []) {
+    return this.prisma.forumTopico.create({ data: { ...dados, anexos: { create: anexos.map((ficheiroId) => ({ ficheiroId })) } } })
   }
 
   atualizarTopico(id, dados) {
@@ -52,20 +61,57 @@ export class RepositorioRecursosCadeira {
     return this.prisma.forumTopico.delete({ where: { id } })
   }
 
-  async responder({ topicoId, autorId, texto }) {
+  async responder({ topicoId, autorId, texto, criadoEm = new Date() }, anexos = []) {
     const [r] = await this.prisma.$transaction([
-      this.prisma.forumResposta.create({ data: { topicoId, autorId, texto } }),
-      this.prisma.forumTopico.update({ where: { id: topicoId }, data: { atividadeEm: new Date() } }),
+      this.prisma.forumResposta.create({ data: { topicoId, autorId, texto, criadoEm, anexos: { create: anexos.map((ficheiroId) => ({ ficheiroId })) } } }),
+      this.prisma.forumTopico.update({ where: { id: topicoId }, data: { atividadeEm: criadoEm } }),
     ])
     return r
   }
 
-  resposta(id) {
-    return this.prisma.forumResposta.findUnique({ where: { id: Number(id) }, include: { topico: { select: { cadeiraId: true } } } })
+  async resposta(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    return this.prisma.forumResposta.findUnique({ where: { id: n }, include: { topico: { select: { id: true, cadeiraId: true, respostaCertaId: true } } } })
   }
 
-  apagarResposta(id) {
-    return this.prisma.forumResposta.delete({ where: { id } })
+  editarResposta(id, texto) {
+    return this.prisma.forumResposta.update({ where: { id }, data: { texto, editadoEm: new Date() } })
+  }
+
+  async apagarResposta(id) {
+    await this.prisma.$transaction([
+      this.prisma.forumTopico.updateMany({ where: { respostaCertaId: id }, data: { respostaCertaId: null } }),
+      this.prisma.forumResposta.delete({ where: { id } }),
+    ])
+  }
+
+  // ---------- subscrições do fórum ----------
+
+  async subscricaoTopico(topicoId, contaId) {
+    return (await this.prisma.subscricaoTopico.findUnique({ where: { topicoId_contaId: { topicoId, contaId } } }))?.ativa ?? null
+  }
+
+  definirSubscricaoTopico(topicoId, contaId, ativa) {
+    return this.prisma.subscricaoTopico.upsert({ where: { topicoId_contaId: { topicoId, contaId } }, create: { topicoId, contaId, ativa }, update: { ativa } })
+  }
+
+  async subscricoesDoTopico(topicoId) {
+    const l = await this.prisma.subscricaoTopico.findMany({ where: { topicoId } })
+    return { ativas: l.filter((x) => x.ativa).map((x) => x.contaId), inativas: l.filter((x) => !x.ativa).map((x) => x.contaId) }
+  }
+
+  async subscritoForum(cadeiraId, contaId) {
+    return Boolean(await this.prisma.subscricaoForum.findUnique({ where: { cadeiraId_contaId: { cadeiraId, contaId } } }))
+  }
+
+  async definirSubscricaoForum(cadeiraId, contaId, ativa) {
+    if (ativa) await this.prisma.subscricaoForum.upsert({ where: { cadeiraId_contaId: { cadeiraId, contaId } }, create: { cadeiraId, contaId }, update: {} })
+    else await this.prisma.subscricaoForum.deleteMany({ where: { cadeiraId, contaId } })
+  }
+
+  async subscritoresDoForum(cadeiraId) {
+    return (await this.prisma.subscricaoForum.findMany({ where: { cadeiraId }, select: { contaId: true } })).map((x) => x.contaId)
   }
 
   // ---------- calendário ----------

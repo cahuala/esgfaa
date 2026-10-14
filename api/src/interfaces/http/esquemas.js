@@ -113,7 +113,10 @@ export const aula = z.object({
 export const entrega = z.object({ comentario: texto(3000).optional(), texto: texto(60_000).optional() })
 
 // ---------- recursos da cadeira (fórum, calendário, progresso, questionários) ----------
-export const topico = z.object({ titulo: texto(300), texto: texto(12_000) })
+export const topico = z.object({ titulo: texto(300).optional(), texto: texto(12_000).optional(), tipo: texto(20).optional() })
+export const pesquisaForum = z.object({ q: texto(200).optional() })
+export const seguir = z.object({ ativa: z.boolean() })
+export const respostaCerta = z.object({ respostaId: z.union([idNumerico, z.null()]) })
 export const respostaForum = z.object({ texto: texto(12_000) })
 export const moderarTopico = z.object({ fixado: z.boolean().optional(), fechado: z.boolean().optional() })
 export const evento = z.object({

@@ -320,7 +320,7 @@ export class ServicoPortal {
     const uso = f && (await this.academico.usoDoFicheiro(f.id))
     const negar = () => { throw new NaoEncontrado('Ficheiro não encontrado.') }
     if (!uso) negar()
-    if (['material', 'enunciado', 'programa'].includes(uso.tipo)) {
+    if (['material', 'enunciado', 'programa', 'forum'].includes(uso.tipo)) {
       await this.#cadeiraAcessivel(conta, uso.cadeiraId)
       if (conta.tipo === 'estudante' && uso.escondido) negar() // capítulo ainda escondido
       if (conta.tipo === 'estudante' && uso.atividade) {

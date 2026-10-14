@@ -324,7 +324,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-comments me-2" />Fórum: recentes</h2></div>
               <div className="list-group list-group-flush">
                 {c.forum.recentes.map((t) => (
-                  <button key={t.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => irPara({ separador: 'forum' })}>
+                  <button key={t.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => irPara({ separador: 'forum', topico: String(t.id) })}>
                     <div className="fw-bold small">{t.titulo}</div><div className="small text-muted">{t.autor} · {dataHora(t.atividadeEm)}</div>
                   </button>
                 ))}

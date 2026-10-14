@@ -138,11 +138,18 @@ export function rotasPortal({ servicos, config, privados }) {
 
   // ---------- fórum, calendário, progresso e questionários ----------
   const m = servicos.recursos
-  r.get('/cadeiras/:id/forum', validar({ params: pId }), async (req, res) => res.json(await m.topicos(ctx(req), req.dados.params.id)))
-  r.post('/cadeiras/:id/forum', validar({ params: pId, body: E.topico }), async (req, res) => res.status(201).json(await m.criarTopico(ctx(req), req.dados.params.id, req.dados.body)))
+  const anexosForum = privados ? receberFicheiro({ privados, config, maximo: 3 }) : (req, res, next) => next()
+  r.get('/cadeiras/:id/forum', validar({ params: pId, query: E.pesquisaForum }), async (req, res) => res.json(await m.topicos(ctx(req), req.dados.params.id, req.dados.query)))
+  r.post('/cadeiras/:id/forum', anexosForum, validar({ params: pId, body: E.topico }), async (req, res) => res.status(201).json(await m.criarTopico(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
+  r.get('/cadeiras/:id/forum/subscricao', validar({ params: pId }), async (req, res) => res.json(await m.subscricaoForum(ctx(req), req.dados.params.id)))
+  r.put('/cadeiras/:id/forum/subscricao', validar({ params: pId, body: E.seguir }), async (req, res) => res.json(await m.seguirForum(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/forum/:id', validar({ params: pId }), async (req, res) => res.json(await m.topico(ctx(req), req.dados.params.id)))
-  r.post('/forum/:id/respostas', validar({ params: pId, body: E.respostaForum }), async (req, res) => res.status(201).json(await m.responder(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/forum/:id/respostas', anexosForum, validar({ params: pId, body: E.respostaForum }), async (req, res) => res.status(201).json(await m.responder(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
   r.put('/forum/:id', validar({ params: pId, body: E.moderarTopico }), async (req, res) => res.json(await m.moderar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/forum/:id/texto', validar({ params: pId, body: E.topico }), async (req, res) => res.json(await m.editarTopico(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/forum/:id/certa', validar({ params: pId, body: E.respostaCerta }), async (req, res) => res.json(await m.marcarCerta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/forum/:id/subscricao', validar({ params: pId, body: E.seguir }), async (req, res) => res.json(await m.seguirTopico(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/forum-respostas/:id', validar({ params: pId, body: E.respostaForum }), async (req, res) => res.json(await m.editarResposta(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/forum/:id', validar({ params: pId }), async (req, res) => { await m.apagarTopico(ctx(req), req.dados.params.id); res.status(204).end() })
   r.delete('/forum-respostas/:id', validar({ params: pId }), async (req, res) => { await m.apagarResposta(ctx(req), req.dados.params.id); res.status(204).end() })
 
