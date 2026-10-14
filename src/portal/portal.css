@@ -480,3 +480,11 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 
 /* menu "Mais" dos separadores da cadeira */
 .p-menu-mais { position: fixed; left: auto; z-index: 1050; min-width: 200px; }
+
+/* ---------- arrastar e largar no modo de edição ---------- */
+.p-arrastavel { cursor: grab; }
+.p-arrastavel:active { cursor: grabbing; }
+.p-pega { cursor: grab; flex-shrink: 0; }
+.p-a-arrastar { opacity: .45; }
+.p-alvo { outline: 2px dashed var(--bs-theme, #e53917); outline-offset: 3px; }
+.p-alvo .list-group { background: rgba(229, 57, 23, .05); }

@@ -85,10 +85,12 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Publicar aviso' }).click()
   await expect(page.getByText('Tragam o programa lido.')).toBeVisible()
   // página da cadeira (como no Moodle): capítulo novo e uma ligação lá dentro, no modo de edição
-  page.on('dialog', (d) => d.accept(d.type() === 'prompt' ? 'Capítulo 1 — Introdução' : undefined))
   await page.getByRole('tab', { name: /Cadeira/ }).click()
   await page.getByLabel('Modo de edição').check()
   await page.getByRole('button', { name: 'Novo capítulo' }).click()
+  // diálogo do tema (não a janela do navegador)
+  await page.getByRole('dialog').getByLabel('Título do novo capítulo').fill('Capítulo 1 — Introdução')
+  await page.getByRole('dialog').getByRole('button', { name: 'Criar' }).click()
   await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
   await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
   await page.getByRole('button', { name: /Ligação/ }).click()
@@ -182,6 +184,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Mensagem').fill('O ensaio conta para a MAC?')
   await page.getByRole('button', { name: 'Publicar tópico' }).click()
   await expect(page.getByText('O ensaio conta para a MAC?')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Todos os tópicos' })).toBeVisible() // o tópico novo já abriu
 
   // questionário: responde e recebe a nota logo
   await page.getByRole('tab', { name: /Cadeira/ }).click()
@@ -189,6 +192,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Começar' }).click()
   await page.getByLabel('Verdadeiro').check()
   await page.getByRole('button', { name: 'Entregar' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()
   await expect(page.getByText('Nota: 20 valores')).toBeVisible()
 
   await page.goto('/portal/#/calendario')

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
 import { Painel } from '../../componentes/Ui'
 import ResultadosInquerito from '../../../portal/cadeira/ResultadosInquerito'
+import { confirmar } from '../../../portal/dialogos'
 
 const dataHora = (v) => (v ? new Date(v).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
 const media = (v) => (v === null || v === undefined ? '—' : v.toLocaleString('pt-PT', { maximumFractionDigits: 2 }))
@@ -71,8 +72,8 @@ function AvaliacaoDocentes({ turma, gerir, avisar }) {
                 <td className="text-end text-nowrap">
                   <button type="button" className="btn btn-xs btn-white" onClick={() => ver(i.id)}><i className="fa fa-chart-bar me-1" />Resultados</button>
                   {gerir && (
-                    <button type="button" className="btn btn-xs btn-white text-danger ms-1" aria-label={`Apagar a avaliação de ${i.docente}`} onClick={() => {
-                      if (window.confirm(`Apagar a avaliação de ${i.docente} em ${i.cadeira.nome}, com as respostas?`)) api(`/academico/inqueritos/${i.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
+                    <button type="button" className="btn btn-xs btn-white text-danger ms-1" aria-label={`Apagar a avaliação de ${i.docente}`} onClick={async () => {
+                      if (await confirmar(`Apagar a avaliação de ${i.docente} em ${i.cadeira.nome}, com as respostas?`, { titulo: 'Apagar avaliação', botao: 'Apagar', perigo: true })) api(`/academico/inqueritos/${i.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
                     }}><i className="fa fa-trash-alt" /></button>
                   )}
                 </td>

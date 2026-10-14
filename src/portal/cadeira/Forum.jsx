@@ -5,6 +5,7 @@ import { useSessao } from '../sessaoContexto'
 import { Campo, Cartao, Carregando, Vazio } from '../componentes'
 import { dataHora, iconeFicheiro, iniciais } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
+import { confirmar } from '../dialogos'
 
 // envia texto e anexos (multipart) e devolve a resposta da API
 function enviar(caminho, campos, anexos) {
@@ -145,8 +146,8 @@ function Topico({ id, eDocente, avisar, voltar }) {
     }
   }
   const moderar = (mudanca) => api(`/forum/${id}`, { metodo: 'PUT', corpo: mudanca }).then(recarregar).catch(falhou)
-  const apagarTopico = () => window.confirm('Apagar este tópico e todas as respostas?') && api(`/forum/${id}`, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Tópico apagado.' }); voltar() }).catch(falhou)
-  const apagarResposta = (r) => window.confirm('Apagar esta resposta?') && api(`/forum-respostas/${r.id}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
+  const apagarTopico = async () => (await confirmar('Apagar este tópico e todas as respostas?', { titulo: 'Apagar tópico', botao: 'Apagar', perigo: true })) && api(`/forum/${id}`, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Tópico apagado.' }); voltar() }).catch(falhou)
+  const apagarResposta = async (r) => (await confirmar('Apagar esta resposta?', { titulo: 'Apagar resposta', botao: 'Apagar', perigo: true })) && api(`/forum-respostas/${r.id}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
   const certa = (respostaId) => api(`/forum/${id}/certa`, { metodo: 'PUT', corpo: { respostaId } }).then(setT).catch(falhou)
   const seguir = () => api(`/forum/${id}/subscricao`, { metodo: 'PUT', corpo: { ativa: !t.seguido } }).then((r) => setT({ ...t, seguido: r.seguido })).catch(falhou)
   async function guardarEdicao() {

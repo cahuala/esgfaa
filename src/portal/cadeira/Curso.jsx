@@ -7,6 +7,7 @@ import NovaAtividade from './NovaAtividade'
 import Importar from './Importar'
 import Restricoes from './Restricoes'
 import Conclusao from './Conclusao'
+import { confirmar, pedir } from '../dialogos'
 
 // aspeto de cada tipo de atividade (como os ícones coloridos do Moodle)
 const TIPOS = {
@@ -22,6 +23,8 @@ const TIPOS = {
   avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: 'Avaliação do docente' },
   workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares' },
 }
+// tipos de dados do arrasto (atividade para outro capítulo, capítulo para outra posição)
+const MIME = { atividade: 'application/x-esg-atividade', capitulo: 'application/x-esg-capitulo' }
 const SESSAO = { em_breve: ['bg-light text-dark border', 'Em breve'], abre: ['bg-success', 'Abre já'], a_decorrer: ['bg-danger', 'A decorrer'], terminou: ['bg-gray-500', 'Terminou'] }
 
 /*
@@ -35,6 +38,9 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const [importar, setImportar] = useState(false)
   const [restringir, setRestringir] = useState(null) // { alvo } ou { secao }
   const [fechados, setFechados] = useState(() => new Set())
+  // arrastar e largar no modo de edição: { tipo: 'atividade', chave } ou { tipo: 'capitulo', id }; alvo = onde se vai largar
+  const [arrasto, setArrasto] = useState(null)
+  const [alvo, setAlvo] = useState(null)
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
 
   // atividades de cada capítulo, por ordem de publicação
@@ -68,24 +74,64 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     await api(`/cadeiras/${c.id}/secoes/ordem`, { metodo: 'PUT', corpo: { ids } }).then(recarregar).catch(falhou)
   }
   async function editarCapitulo(s) {
-    const titulo = window.prompt('Título do capítulo', s.titulo)
+    const titulo = await pedir('Título do capítulo', s.titulo)
     if (titulo === null) return
-    const resumo = window.prompt('Resumo (opcional)', s.resumo)
+    const resumo = await pedir('Resumo do capítulo (opcional)', s.resumo, { multilinha: true, obrigatorio: false })
     await secao(s.id, { titulo, ...(resumo !== null ? { resumo } : {}) })
   }
   async function apagarCapitulo(s) {
-    if (!window.confirm(`Apagar o capítulo "${s.titulo}"? As atividades passam para a secção geral.`)) return
+    if (!(await confirmar(`Apagar o capítulo "${s.titulo}"? As atividades passam para a secção geral.`, { titulo: 'Apagar capítulo', botao: 'Apagar', perigo: true }))) return
     await api(`/secoes/${s.id}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
   }
   async function novoCapitulo() {
-    const titulo = window.prompt('Título do novo capítulo', `Capítulo ${c.secoes.length + 1}`)
+    const titulo = await pedir('Título do novo capítulo', `Capítulo ${c.secoes.length + 1}`, { botao: 'Criar' })
     if (!titulo) return
     await api(`/cadeiras/${c.id}/secoes`, { metodo: 'POST', corpo: { titulo } }).then(() => { avisar({ texto: 'Capítulo criado.' }); recarregar() }).catch(falhou)
   }
   const restricao = (a, corpo) => api('/atividades/restricoes', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, ...corpo } }).then(recarregar).catch(falhou)
+  // capítulo arrastado para a posição de outro
+  async function largarCapitulo(arrastado, destinoId) {
+    const ids = c.secoes.map((x) => x.id)
+    const de = ids.indexOf(arrastado.id)
+    const para = ids.indexOf(destinoId)
+    if (de < 0 || para < 0 || de === para) return
+    ids.splice(para, 0, ids.splice(de, 1)[0])
+    await api(`/cadeiras/${c.id}/secoes/ordem`, { metodo: 'PUT', corpo: { ids } }).then(() => { avisar({ texto: 'Capítulos reordenados.' }); recarregar() }).catch(falhou)
+  }
+  // atividade largada num capítulo (null = secção geral)
+  function largarAtividade(arrastado, secaoId) {
+    const a = atividades.find((x) => x.chave === arrastado.chave)
+    if (a && (a.secaoId ?? null) !== secaoId) moverAtividade(a, secaoId).then(() => avisar({ texto: `"${a.titulo}" mudou de capítulo.` }))
+  }
+  // propriedades de uma zona onde se larga (lista de atividades ou capítulo)
+  const zona = (secaoId) => (edicao ? {
+    // o tipo vem no próprio arrasto (o estado do React pode ainda não estar atualizado)
+    onDragOver: (e) => {
+      const tipos = e.dataTransfer.types
+      if (!tipos.includes(MIME.atividade) && !(tipos.includes(MIME.capitulo) && secaoId)) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      setAlvo(secaoId ?? 'geral')
+    },
+    onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setAlvo(null) },
+    onDrop: (e) => {
+      e.preventDefault()
+      const tipo = Object.keys(MIME).find((k) => e.dataTransfer.types.includes(MIME[k]))
+      const x = tipo ? { tipo, ...JSON.parse(e.dataTransfer.getData(MIME[tipo]) || '{}') } : null
+      if (x?.tipo === 'atividade') largarAtividade(x, secaoId)
+      else if (x?.tipo === 'capitulo' && secaoId) largarCapitulo(x, secaoId)
+      setArrasto(null)
+      setAlvo(null)
+    },
+  } : {})
+  const arrastavel = (dados) => (edicao ? {
+    draggable: true,
+    onDragStart: (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData(MIME[dados.tipo], JSON.stringify(dados)); e.stopPropagation(); setArrasto(dados) },
+    onDragEnd: () => { setArrasto(null); setAlvo(null) },
+  } : {})
   const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
   async function apagarAtividade(a) {
-    if (!window.confirm(`Apagar "${a.titulo}"?`)) return
+    if (!(await confirmar(`Apagar "${a.titulo}"? Não se pode desfazer.`, { titulo: 'Apagar atividade', botao: 'Apagar', perigo: true }))) return
     const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}`, inquerito: `/inqueritos/${a.id}`, workshop: `/workshops/${a.id}` }[a.especie]
     await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Atividade apagada.' }); recarregar() }).catch(falhou)
   }
@@ -136,7 +182,9 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       </div>
     )
     return (
-      <div key={a.chave} className={`list-group-item d-flex align-items-center gap-3 py-3 ${a.bloqueio ? 'p-atividade-fechada' : ''} ${a.visivel === false ? 'p-atividade-escondida' : ''}`}>
+      <div key={a.chave} {...(a.tipo === 'avaliacao' ? {} : arrastavel({ tipo: 'atividade', chave: a.chave }))}
+        className={`list-group-item d-flex align-items-center gap-3 py-3 ${a.bloqueio ? 'p-atividade-fechada' : ''} ${a.visivel === false ? 'p-atividade-escondida' : ''} ${edicao && a.tipo !== 'avaliacao' ? 'p-arrastavel' : ''} ${arrasto?.chave === a.chave ? 'p-a-arrastar' : ''}`}>
+        {edicao && a.tipo !== 'avaliacao' && <i className="fa fa-grip-vertical text-muted p-pega" title="Arraste para outro capítulo" aria-hidden="true" />}
         <span className={`p-atividade-icone ${a.bloqueio ? 'bg-gray-400' : t.cor}`}><i className={`fa ${a.bloqueio ? 'fa-lock' : t.icone}`} /></span>
         <div className="flex-grow-1 min-w-0">
           {a.bloqueio
@@ -190,13 +238,13 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               <input id="modo-edicao" className="form-check-input" type="checkbox" checked={edicao} onChange={(e) => setEdicao(e.target.checked)} />
               <label className="form-check-label fw-bold" htmlFor="modo-edicao">Modo de edição</label>
             </div>
-            {edicao && <span className="small text-muted d-none d-xl-inline">Junte atividades, mude-as de capítulo, esconda capítulos em preparação.</span>}
+            {edicao && <span className="small text-muted d-none d-xl-inline"><i className="fa fa-grip-vertical me-1" />Arraste as atividades entre capítulos e os capítulos para mudar a ordem.</span>}
             {edicao && <button type="button" className="btn btn-sm btn-white ms-auto" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />Importar de outra cadeira</button>}
           </div>
         )}
 
         {/* secção geral */}
-        <div className="panel panel-inverse" id="cap-geral">
+        <div className={`panel panel-inverse ${alvo === 'geral' && arrasto?.tipo === 'atividade' ? 'p-alvo' : ''}`} id="cap-geral" {...zona(null)}>
           <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-home me-2" />Geral</h2></div>
           <div className="list-group list-group-flush">
             <div className="list-group-item d-flex align-items-center gap-3 py-3">
@@ -234,8 +282,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
           const n = contagem(s.id)
           const fechado = fechados.has(s.id)
           return (
-            <div key={s.id} className={`panel panel-inverse ${!s.visivel ? 'p-capitulo-escondido' : ''}`} id={`cap-${s.id}`}>
-              <div className="panel-heading">
+            <div key={s.id} className={`panel panel-inverse ${!s.visivel ? 'p-capitulo-escondido' : ''} ${alvo === s.id ? 'p-alvo' : ''} ${arrasto?.id === s.id ? 'p-a-arrastar' : ''}`} id={`cap-${s.id}`} {...zona(s.id)}>
+              <div className={`panel-heading ${edicao ? 'p-arrastavel' : ''}`} {...arrastavel({ tipo: 'capitulo', id: s.id })} title={edicao ? 'Arraste para mudar a ordem dos capítulos' : undefined}>
                 <h2 className="panel-title">
                   <button type="button" className="btn btn-link p-0 text-white text-decoration-none fw-bold" onClick={() => alternar(s.id)} aria-expanded={!fechado}>
                     <i className={`fa fa-chevron-${fechado ? 'right' : 'down'} me-2 fs-11px`} />{s.titulo}

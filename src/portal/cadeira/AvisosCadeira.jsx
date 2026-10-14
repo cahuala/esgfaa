@@ -3,6 +3,7 @@ import { FaTrashAlt } from 'react-icons/fa'
 import { api } from '../api'
 import { Campo, Cartao, Vazio } from '../componentes'
 import { dataHora } from '../formatar'
+import { confirmar } from '../dialogos'
 
 function AvisosCadeira({ c, eDocente, recarregar, avisar }) {
   const [f, setF] = useState({ titulo: '', texto: '' })
@@ -22,7 +23,7 @@ function AvisosCadeira({ c, eDocente, recarregar, avisar }) {
   }
 
   async function apagar(a) {
-    if (!window.confirm(`Apagar o aviso "${a.titulo}"?`)) return
+    if (!(await confirmar(`Apagar o aviso "${a.titulo}"?`, { titulo: 'Apagar aviso', botao: 'Apagar', perigo: true }))) return
     await api(`/avisos/${a.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
   }
 

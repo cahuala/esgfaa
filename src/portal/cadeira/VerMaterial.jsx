@@ -4,6 +4,7 @@ import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import { Bloqueio, Cartao, Vazio } from '../componentes'
 import { dataHora, estadoSessao, iconeFicheiro, tamanho } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
+import { confirmar } from '../dialogos'
 
 const EditorPagina = lazy(() => import('./EditorPagina'))
 
@@ -104,7 +105,7 @@ function Pasta({ m, eDocente, recarregar, avisar, falhou }) {
             <span className="small text-muted text-nowrap">{tamanho(f.tamanho)}</span>
             <button type="button" className="btn btn-xs btn-white" onClick={() => baixar(f)} aria-label={`Descarregar ${f.nome}`}><i className="fa fa-download" /></button>
             {eDocente && (
-              <button type="button" className="btn btn-xs btn-white text-danger" disabled={aEnviar} aria-label={`Retirar ${f.nome}`} onClick={() => { if (window.confirm(`Retirar "${f.nome}" da pasta?`)) mudar([f.id]) }}><i className="fa fa-trash-alt" /></button>
+              <button type="button" className="btn btn-xs btn-white text-danger" disabled={aEnviar} aria-label={`Retirar ${f.nome}`} onClick={async () => { if (await confirmar(`Retirar "${f.nome}" da pasta?`, { titulo: 'Retirar ficheiro', botao: 'Retirar', perigo: true })) mudar([f.id]) }}><i className="fa fa-trash-alt" /></button>
             )}
           </div>
         ))}

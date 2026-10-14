@@ -20,6 +20,7 @@ import Perfil from './paginas/Perfil'
 import Certificado from './cadeira/Certificado'
 import Verificar from './paginas/Verificar'
 import Pesquisa from './paginas/Pesquisa'
+import JanelaDialogo from './JanelaDialogo'
 
 function App() {
   const { conta, aVerificar, eDocente } = useSessao()
@@ -35,6 +36,7 @@ function App() {
 
   return (
     <Layout>
+      <JanelaDialogo />
       <Routes>
         <Route path="/" element={<Inicio />} />
         <Route path="/cadeiras" element={<Cadeiras />} />

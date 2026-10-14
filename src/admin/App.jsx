@@ -30,6 +30,7 @@ import Atividades from './paginas/Atividades'
 import Perfil from './paginas/Perfil'
 import Papeis from './paginas/Papeis'
 import Estatisticas from './paginas/Estatisticas'
+import JanelaDialogo from '../portal/JanelaDialogo'
 
 // recria a página (e o seu estado) quando muda a coleção, o item ou a página editada
 function PorEndereco({ children }) {
@@ -47,6 +48,7 @@ function App() {
 
   return (
     <Layout>
+      <JanelaDialogo />
       <Routes>
         <Route path="/" element={<Painel />} />
         <Route path="/colecao/:colecao" element={<PorEndereco><ListaColecao /></PorEndereco>} />

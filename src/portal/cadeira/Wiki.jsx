@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify'
 import { api } from '../api'
 import { Cartao, Carregando, Vazio } from '../componentes'
 import { dataHora } from '../formatar'
+import { confirmar } from '../dialogos'
 
 const EditorPagina = lazy(() => import('./EditorPagina'))
 const escapar = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
@@ -79,7 +80,7 @@ function Pagina({ id, eDocente, titulos, irPara, avisar, mudou, apagada }) {
     if (a) { e.preventDefault(); irPara(a.dataset.wiki) }
   }
   const repor = () => api(`/wiki/${id}/restaurar`, { metodo: 'POST', corpo: { versaoId: p.versao.id } }).then((r) => { setVersao(null); setP(r); avisar({ texto: 'Versão reposta.' }); mudou() }).catch(falhou)
-  const apagar = () => window.confirm(`Apagar a página "${p.titulo}" e todas as versões?`) && api(`/wiki/${id}`, { metodo: 'DELETE' }).then(apagada).catch(falhou)
+  const apagar = async () => (await confirmar(`Apagar a página "${p.titulo}" e todas as versões?`, { titulo: 'Apagar página', botao: 'Apagar', perigo: true })) && api(`/wiki/${id}`, { metodo: 'DELETE' }).then(apagada).catch(falhou)
 
   if (editar) return <Editar pagina={p} avisar={avisar} feito={(r) => { setEditar(false); setVersao(null); setP(r); mudou() }} cancelar={() => setEditar(false)} />
   return (

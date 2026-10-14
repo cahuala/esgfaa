@@ -4,6 +4,7 @@ import ZonaUpload from '../ZonaUpload'
 import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
 import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
+import { confirmar } from '../dialogos'
 
 const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
 const TIPOS_ENTREGA = { ficheiro: 'Ficheiros', texto: 'Texto escrito no portal', ambos: 'Ficheiros e texto' }
@@ -55,7 +56,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
               <div className="p-acoes-linha">
                 <button type="button" className="btn btn-white btn-sm" onClick={() => setDefinicoes(!definicoes)}><i className="fa fa-cog me-1" />Definições</button>
                 <button type="button" className="btn btn-white btn-sm text-danger" onClick={async () => {
-                  if (!window.confirm(`Apagar "${t.titulo}" e todas as entregas?`)) return
+                  if (!(await confirmar(`Apagar "${t.titulo}" e todas as entregas?`, { titulo: 'Apagar trabalho', botao: 'Apagar', perigo: true }))) return
                   await api(`/trabalhos/${t.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
                 }}><i className="fa fa-trash-alt me-1" />Apagar</button>
               </div>

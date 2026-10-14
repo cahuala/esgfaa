@@ -8,6 +8,7 @@ import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
+import { confirmar } from '../../../portal/dialogos'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
@@ -136,8 +137,8 @@ function CadeiraTurma({ c, gerir, carregar, avisar }) {
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
   return (
     <Painel titulo={`${c.codigo} · ${c.nome}`} acoes={gerir && (
-      <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar cadeira" onClick={() => {
-        if (window.confirm(`Apagar "${c.nome}" com materiais, notas, trabalhos e presenças?`)) api(`/academico/cadeiras/${c.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
+      <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar cadeira" onClick={async () => {
+        if (await confirmar(`Apagar "${c.nome}" com materiais, notas, trabalhos e presenças?`, { titulo: 'Apagar cadeira', botao: 'Apagar', perigo: true })) api(`/academico/cadeiras/${c.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
       }}><i className="fa fa-times" /></button>
     )}>
       <div className="d-flex flex-wrap gap-1 mb-2">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Campo, Cartao, Carregando, Vazio } from '../componentes'
+import { confirmar } from '../dialogos'
 
 const sem = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
 
@@ -22,7 +23,7 @@ function Glossario({ c, eDocente, avisar }) {
   const lista = termos.filter((t) => (!letra || sem(t.termo)[0] === letra) && (!procura || sem(t.termo).includes(procura) || sem(t.definicao).includes(procura)))
   const pendentes = termos.filter((t) => !t.aprovado).length
   const aprovar = (t) => api(`/glossario/${t.id}`, { metodo: 'PUT', corpo: { aprovado: true } }).then(() => { avisar({ texto: `"${t.termo}" aprovado.` }); carregar() }).catch(falhou)
-  const apagar = (t) => window.confirm(`Apagar "${t.termo}"?`) && api(`/glossario/${t.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
+  const apagar = async (t) => (await confirmar(`Apagar "${t.termo}" do glossário?`, { titulo: 'Apagar termo', botao: 'Apagar', perigo: true })) && api(`/glossario/${t.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
 
   return (
     <div className="p-grelha-lado">

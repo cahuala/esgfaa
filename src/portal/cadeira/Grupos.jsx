@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { Campo, Cartao, Carregando, Vazio } from '../componentes'
+import { confirmar, pedir } from '../dialogos'
 
 // grupos da cadeira: o docente cria e organiza; o estudante vê o seu grupo
 function Grupos({ c, eDocente, avisar }) {
@@ -21,17 +22,17 @@ function Grupos({ c, eDocente, avisar }) {
   }
 
   async function novo() {
-    const nome = window.prompt('Nome do grupo', `Grupo ${d.grupos.length + 1}`)
+    const nome = await pedir('Nome do grupo', `Grupo ${d.grupos.length + 1}`, { botao: 'Criar grupo' })
     if (!nome) return
     await api(`/cadeiras/${c.id}/grupos`, { metodo: 'POST', corpo: { nome } }).then((g) => { carregar(); setEditar(g) }).catch(falhou)
   }
   async function renomear(g) {
-    const nome = window.prompt('Novo nome do grupo', g.nome)
+    const nome = await pedir('Novo nome do grupo', g.nome)
     if (!nome || nome === g.nome) return
     await api(`/grupos/${g.id}`, { metodo: 'PUT', corpo: { nome } }).then(carregar).catch(falhou)
   }
   async function apagar(g) {
-    if (!window.confirm(`Apagar o ${g.nome}? Os membros ficam sem grupo.`)) return
+    if (!(await confirmar(`Apagar o ${g.nome}? Os membros ficam sem grupo.`, { titulo: 'Apagar grupo', botao: 'Apagar', perigo: true }))) return
     await api(`/grupos/${g.id}`, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Grupo apagado.' }); carregar() }).catch(falhou)
   }
 

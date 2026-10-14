@@ -5,6 +5,7 @@ import { dataHora, localParaIso, nota, paraLocal } from '../formatar'
 import FormPergunta, { SolucaoPergunta } from './FormPergunta'
 import { TIPOS_PERGUNTA as TIPOS } from './tiposPergunta'
 import { BancoJanela } from './Banco'
+import { confirmar as perguntar, pedir } from '../dialogos'
 const ESTADOS = { em_breve: ['azul', 'Abre em breve'], aberto: ['verde', 'Aberto'], fechado: ['cinzento', 'Fechado'] }
 // ISO → valor de <input type="datetime-local"> na hora local
 
@@ -133,10 +134,10 @@ function EditorQuestionario({ id, avisar, voltar }) {
 
   const publicar = () => api(`/questionarios/${id}`, { metodo: 'PUT', corpo: { publicado: !q.publicado } })
     .then(() => { avisar({ texto: q.publicado ? 'Questionário escondido dos estudantes.' : 'Questionário publicado.' }); carregar() }).catch(falhou)
-  const apagar = () => window.confirm(`Apagar "${q.titulo}" e todas as tentativas?`) && api(`/questionarios/${id}`, { metodo: 'DELETE' }).then(voltar).catch(falhou)
+  const apagar = async () => (await perguntar(`Apagar "${q.titulo}" e todas as tentativas?`, { titulo: 'Apagar questionário', botao: 'Apagar', perigo: true })) && api(`/questionarios/${id}`, { metodo: 'DELETE' }).then(voltar).catch(falhou)
   const apagarPergunta = (p) => api(`/perguntas/${p.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
-  const paraBanco = (p) => {
-    const categoria = window.prompt('Categoria no banco de perguntas', 'Geral')
+  const paraBanco = async (p) => {
+    const categoria = await pedir('Categoria no banco de perguntas', 'Geral', { botao: 'Guardar no banco' })
     if (categoria === null) return
     api(`/perguntas/${p.id}/banco`, { metodo: 'POST', corpo: { categoria } }).then(() => avisar({ texto: 'Pergunta guardada no seu banco.' })).catch(falhou)
   }
@@ -367,7 +368,7 @@ function Realizar({ id, avisar, recarregar, voltar }) {
 
   const entregar = useCallback(async (confirmar = true) => {
     if (!tentativa || entregando.current) return
-    if (confirmar && !window.confirm('Entregar o questionário? Depois não pode mudar as respostas.')) return
+    if (confirmar && !(await perguntar('Entregar o questionário? Depois não pode mudar as respostas.', { titulo: 'Entregar', botao: 'Entregar' }))) return
     entregando.current = true
     clearTimeout(guardarT.current)
     try {

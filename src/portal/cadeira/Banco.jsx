@@ -4,6 +4,7 @@ import { Aviso, Cartao, Carregando, Titulo, Vazio } from '../componentes'
 import { nota } from '../formatar'
 import FormPergunta, { SolucaoPergunta } from './FormPergunta'
 import { TIPOS_PERGUNTA } from './tiposPergunta'
+import { confirmar } from '../dialogos'
 
 // agrupa as perguntas do banco por categoria
 const porCategoria = (lista) => lista.reduce((m, p) => ((m[p.categoria] ||= []).push(p), m), {})
@@ -85,7 +86,7 @@ function Banco() {
                   <div key={p.id} className="list-group-item">
                     <div className="d-flex justify-content-between gap-2">
                       <span><b>{p.enunciado}</b> <span className="small text-muted">· {TIPOS_PERGUNTA[p.tipo]} · {nota(p.pontos)} pt</span></span>
-                      <button type="button" className="btn btn-xs btn-white text-danger" aria-label="Apagar do banco" onClick={() => window.confirm('Apagar esta pergunta do banco? (Os questionários que já a usam ficam como estão.)') && api(`/banco/${p.id}`, { metodo: 'DELETE' }).then(carregar).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))}><i className="fa fa-trash-alt" /></button>
+                      <button type="button" className="btn btn-xs btn-white text-danger" aria-label="Apagar do banco" onClick={async () => (await confirmar('Apagar esta pergunta do banco? (Os questionários que já a usam ficam como estão.)', { titulo: 'Apagar pergunta', botao: 'Apagar', perigo: true })) && api(`/banco/${p.id}`, { metodo: 'DELETE' }).then(carregar).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))}><i className="fa fa-trash-alt" /></button>
                     </div>
                     <SolucaoPergunta p={p} />
                   </div>

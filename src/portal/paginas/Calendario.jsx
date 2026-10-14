@@ -4,6 +4,7 @@ import { api } from '../api'
 import { API_URL } from '../../conteudo/api'
 import { Cartao, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data as dataLonga, maiusculaInicial } from '../formatar'
+import { confirmar } from '../dialogos'
 
 const TIPOS = {
   aula: ['bg-gray-500', 'Aula'],
@@ -36,7 +37,7 @@ function Assinar() {
   useEffect(() => { api('/eu/calendario-ical').then((r) => setToken(r.token)).catch((e) => setErro(e.message)) }, [])
   const url = token ? `${API_URL}/api/publico/calendario/${token}.ics` : ''
   const copiar = () => navigator.clipboard?.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2000) })
-  const renovar = () => window.confirm('Criar um endereço novo? O antigo deixa de funcionar nos aparelhos onde o assinou.')
+  const renovar = async () => (await confirmar('Criar um endereço novo? O antigo deixa de funcionar nos aparelhos onde o assinou.', { titulo: 'Novo endereço', botao: 'Criar endereço novo', perigo: true }))
     && api('/eu/calendario-ical', { metodo: 'POST' }).then((r) => setToken(r.token)).catch((e) => setErro(e.message))
   return (
     <Cartao titulo={<><i className="fa fa-mobile-alt me-2" />Assinar o calendário</>}>

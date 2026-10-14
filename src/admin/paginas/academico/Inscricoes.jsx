@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { Painel } from '../../componentes/Ui'
+import { confirmar } from '../../../portal/dialogos'
 
 /*
   Estudantes da cadeira: os da turma e os inscritos de fora (cadeira em atraso, repetição,
@@ -35,7 +36,7 @@ function Inscricoes({ c, gerir, avisar }) {
       falhou(falha)
     }
   }
-  const anular = (i) => window.confirm(`Anular a inscrição de ${i.estudante.nome}? Deixa de ver a cadeira.`)
+  const anular = async (i) => (await confirmar(`Anular a inscrição de ${i.estudante.nome}? Deixa de ver a cadeira.`, { titulo: 'Anular inscrição', botao: 'Anular', perigo: true }))
     && api(`/academico/inscricoes/${i.id}`, { metodo: 'DELETE' }).then(setD).catch(falhou)
   const ativas = d.inscricoes.filter((i) => i.estado === 'ativa')
 

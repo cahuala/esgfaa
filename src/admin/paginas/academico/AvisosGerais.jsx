@@ -3,6 +3,7 @@ import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
+import { confirmar } from '../../../portal/dialogos'
 
 // avisos da Secretaria no portal (para todos os estudantes ou só para uma turma)
 function AvisosGerais() {
@@ -39,7 +40,7 @@ function AvisosGerais() {
           {erro && <Erro texto={erro} />}
           {!lista && !erro ? <Carregando /> : lista?.map((a) => (
             <Painel key={a.id} titulo={a.titulo} acoes={pode('academico.gerir') && (
-              <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar" onClick={() => { if (window.confirm('Apagar este aviso?')) api(`/academico/avisos/${a.id}`, { metodo: 'DELETE' }).then(carregar) }}><i className="fa fa-times" /></button>
+              <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar" onClick={async () => { if (await confirmar('Apagar este aviso?', { titulo: 'Apagar aviso', botao: 'Apagar', perigo: true })) api(`/academico/avisos/${a.id}`, { metodo: 'DELETE' }).then(carregar) }}><i className="fa fa-times" /></button>
             )}>
               <p style={{ whiteSpace: 'pre-wrap' }}>{a.texto}</p>
               <div className="small text-muted">{a.turma ? `Turma ${a.turma}` : 'Todos os estudantes'} · {dataHora(a.criadoEm)}</div>
