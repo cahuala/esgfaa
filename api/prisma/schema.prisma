@@ -227,6 +227,7 @@ model ContaPortal {
   diplomas                    CertificadoCurso[]
   participacoesInstitucionais ParticipacaoInstitucional[]
   emprestimos                 Emprestimo[]
+  reservas                    Reserva[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -1191,11 +1192,13 @@ model Obra {
   resumo       String   @default("")
   ficheiroId   String?  @map("ficheiro_id") // versão digital (PDF)
   acesso       String   @default("todos") // quem lê a versão digital: todos | docentes
+  capa         String   @default("") // imagem pública (/uploads/…); sem ela, o portal desenha uma capa
   criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
   ficheiro   Ficheiro?  @relation(fields: [ficheiroId], references: [id], onDelete: SetNull)
   exemplares Exemplar[]
+  reservas   Reserva[]
 
   @@map("biblioteca_obras")
 }
@@ -1233,4 +1236,25 @@ model Emprestimo {
   @@index([contaId, devolvidoEm])
   @@index([exemplarId])
   @@map("biblioteca_emprestimos")
+}
+
+// o leitor escolhe um livro no portal; a biblioteca separa-o e avisa; ao emprestar, a reserva fica atendida
+model Reserva {
+  id          Int       @id @default(autoincrement())
+  obraId      Int       @map("obra_id")
+  contaId     Int       @map("conta_id")
+  estado      String    @default("pendente") // pendente | pronta | atendida | cancelada
+  criadaEm    DateTime  @map("criada_em") @db.Timestamptz(3)
+  prontaEm    DateTime? @map("pronta_em") @db.Timestamptz(3)
+  levantarAte DateTime? @map("levantar_ate") @db.Timestamptz(3)
+  fechadaEm   DateTime? @map("fechada_em") @db.Timestamptz(3)
+  // = obraId enquanto está aberta: um leitor só tem uma reserva aberta por obra
+  aberta      String?   @unique
+
+  obra  Obra        @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  conta ContaPortal @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([estado])
+  @@index([contaId])
+  @@map("biblioteca_reservas")
 }

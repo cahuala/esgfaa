@@ -164,7 +164,7 @@ function Layout({ children }) {
 
             <div className="menu-header">Biblioteca</div>
             <ItemMenu para="/biblioteca" fim icone="fa-book-reader" texto="Catálogo" />
-            <ItemMenu para="/biblioteca/emprestimos" icone="fa-hand-holding" texto="Os meus empréstimos" />
+            <ItemMenu para="/biblioteca/emprestimos" icone="fa-hand-holding" texto="Os meus livros" />
 
             <div className="menu-header">Comunicação</div>
             <ItemMenu para="/mensagens" icone="fa-envelope" texto="Mensagens" />

@@ -8,7 +8,7 @@ export class ServicoFicheiros {
 
   // só quem pode criar ou editar algum conteúdo (ou páginas) envia ficheiros
   garantirPodeEnviar(ctx) {
-    const pode = [...ctx.actor.permissoes].some((p) => /\.(criar|editar)$/.test(p) && !p.startsWith('utilizadores') && !p.startsWith('papeis'))
+    const pode = [...ctx.actor.permissoes].some((p) => /\.(criar|editar|gerir)$/.test(p) && !p.startsWith('utilizadores') && !p.startsWith('papeis'))
     if (!pode) throw new SemPermissao('Não tem permissão para enviar ficheiros.')
   }
 

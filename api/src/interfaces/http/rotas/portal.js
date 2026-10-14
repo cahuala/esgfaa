@@ -60,6 +60,8 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/biblioteca/obras/:id', validar({ params: pId }), async (req, res) => res.json(await b.catalogo.obraPortal(ctx(req), req.dados.params.id)))
   r.get('/biblioteca/obras/:id/digital', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await b.catalogo.digitalPortal(ctx(req), req.dados.params.id)))
   r.get('/biblioteca/emprestimos', async (req, res) => res.json(await b.circulacao.meus(ctx(req))))
+  r.post('/biblioteca/obras/:id/reserva', validar({ params: pId }), async (req, res) => res.status(201).json(await b.circulacao.reservar(ctx(req), req.dados.params.id)))
+  r.delete('/biblioteca/reservas/:id', validar({ params: pId }), async (req, res) => res.json(await b.circulacao.cancelarMinhaReserva(ctx(req), req.dados.params.id)))
   r.post('/biblioteca/emprestimos/:id/renovar', validar({ params: pId }), async (req, res) => res.json(await b.circulacao.renovarMeu(ctx(req), req.dados.params.id)))
 
   // ---------- estudante ----------

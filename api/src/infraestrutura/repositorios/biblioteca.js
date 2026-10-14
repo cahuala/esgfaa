@@ -1,4 +1,5 @@
 import { Emprestimo } from '../../dominio/biblioteca/emprestimo.js'
+import { Reserva, chaveAberta } from '../../dominio/biblioteca/reserva.js'
 import { Conflito } from '../../dominio/comum/erros.js'
 import { eDuplicado } from '../bd/prisma.js'
 
@@ -14,7 +15,7 @@ const paraEmprestimo = (e) => e && new Emprestimo({
 
 const paraObra = (o) => o && {
   id: o.id, tipo: o.tipo, titulo: o.titulo, subtitulo: o.subtitulo, autores: o.autores, ano: o.ano, editora: o.editora, edicao: o.edicao, isbn: o.isbn,
-  cota: o.cota, assuntos: o.assuntos, idioma: o.idioma, resumo: o.resumo, ficheiroId: o.ficheiroId, acesso: o.acesso,
+  cota: o.cota, assuntos: o.assuntos, idioma: o.idioma, resumo: o.resumo, ficheiroId: o.ficheiroId, acesso: o.acesso, capa: o.capa,
   ficheiro: o.ficheiro ? { nome: o.ficheiro.nome, tamanho: o.ficheiro.tamanho, tipo: o.ficheiro.tipo } : null,
   criadoEm: iso(o.criadoEm), atualizadoEm: iso(o.atualizadoEm),
   ...(o.exemplares ? {
@@ -24,6 +25,12 @@ const paraObra = (o) => o && {
     })),
   } : {}),
 }
+
+const paraReserva = (r) => r && new Reserva({
+  id: r.id, obraId: r.obraId, contaId: r.contaId, estado: r.estado, criadaEm: iso(r.criadaEm), prontaEm: iso(r.prontaEm), levantarAte: iso(r.levantarAte), fechadaEm: iso(r.fechadaEm),
+  ...(r.conta ? { leitor: leitor(r.conta) } : {}),
+  ...(r.obra ? { obra: { id: r.obra.id, titulo: r.obra.titulo, autores: r.obra.autores, cota: r.obra.cota, capa: r.obra.capa, tipo: r.obra.tipo } } : {}),
+})
 
 const ativoCom = { where: { devolvidoEm: null }, include: { conta: true }, take: 1 }
 const sem = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -181,11 +188,56 @@ export class RepositorioBiblioteca {
     return this.emprestimo(id)
   }
 
+  // ---------- reservas ----------
+
+  async reserva(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    return paraReserva(await this.prisma.reserva.findUnique({ where: { id: n }, include: { conta: true, obra: true } }))
+  }
+
+  async reservasAbertasDoLeitor(contaId) {
+    return (await this.prisma.reserva.findMany({ where: { contaId, estado: { in: ['pendente', 'pronta'] } }, orderBy: { criadaEm: 'asc' }, include: { obra: true } })).map(paraReserva)
+  }
+
+  async reservasDoLeitor(contaId, { limite = 30 } = {}) {
+    return (await this.prisma.reserva.findMany({ where: { contaId }, orderBy: { criadaEm: 'desc' }, take: limite, include: { obra: true } })).map(paraReserva)
+  }
+
+  async reservasAbertas() {
+    return (await this.prisma.reserva.findMany({ where: { estado: { in: ['pendente', 'pronta'] } }, orderBy: { criadaEm: 'asc' }, include: { obra: true, conta: true } })).map(paraReserva)
+  }
+
+  async reservaAbertaDe(contaId, obraId) {
+    return paraReserva(await this.prisma.reserva.findUnique({ where: { aberta: chaveAberta(contaId, obraId) } }))
+  }
+
+  async reservar(contaId, obraId, quando) {
+    try {
+      return paraReserva(await this.prisma.reserva.create({ data: { contaId, obraId, criadaEm: quando, aberta: chaveAberta(contaId, obraId) }, include: { obra: true } }))
+    } catch (e) {
+      if (eDuplicado(e)) throw new Conflito('Já reservou esta obra.')
+      throw e
+    }
+  }
+
+  async mudarReserva(r, dados) {
+    // só muda se o estado ainda for o que se leu (dois pedidos ao mesmo tempo não se pisam)
+    const { count } = await this.prisma.reserva.updateMany({ where: { id: r.id, estado: r.estado }, data: dados })
+    if (!count) throw new Conflito('A reserva mudou entretanto. Atualize a página.')
+    return this.reserva(r.id)
+  }
+
+  async contarReservasAbertas(obraId) {
+    return this.prisma.reserva.count({ where: { obraId, estado: { in: ['pendente', 'pronta'] } } })
+  }
+
   async resumo(agora) {
-    const [obras, exemplares, ativos, atrasados, digitais] = await Promise.all([
+    const [obras, exemplares, ativos, atrasados, digitais, reservas] = await Promise.all([
       this.prisma.obra.count(), this.prisma.exemplar.count(), this.prisma.emprestimo.count({ where: { devolvidoEm: null } }),
       this.prisma.emprestimo.count({ where: { devolvidoEm: null, prazo: { lt: agora } } }), this.prisma.obra.count({ where: { ficheiroId: { not: null } } }),
+      this.prisma.reserva.count({ where: { estado: { in: ['pendente', 'pronta'] } } }),
     ])
-    return { obras, exemplares, ativos, atrasados, digitais }
+    return { obras, exemplares, ativos, atrasados, digitais, reservas }
   }
 }

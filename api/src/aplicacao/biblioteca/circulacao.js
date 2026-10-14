@@ -1,6 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../dominio/comum/erros.js'
 import { exemplarEmprestavel } from '../../dominio/biblioteca/obra.js'
 import { REGRAS_EMPRESTIMO, prazoPara, verificarLeitor } from '../../dominio/biblioteca/emprestimo.js'
+import { REGRAS_RESERVA, verificarReserva } from '../../dominio/biblioteca/reserva.js'
 
 const dia = (d) => new Date(d).toLocaleDateString('pt-PT', { timeZone: 'Africa/Luanda' })
 
@@ -66,6 +67,9 @@ export class ServicoCirculacao {
     const agora = this.relogio.agora()
     verificarLeitor(conta, await this.biblioteca.ativosDoLeitor(conta.id), agora)
     const e = await this.biblioteca.emprestar({ exemplarId: x.id, contaId: conta.id, emprestadoEm: agora, prazo: prazoPara(conta.tipo, agora), registadoPor: ctx.actor.nome || '' })
+    // se o leitor tinha reservado esta obra, a reserva fica atendida
+    const reserva = await this.biblioteca.reservaAbertaDe(conta.id, x.obraId)
+    if (reserva) await this.biblioteca.mudarReserva(reserva, reserva.fechar('atendida', agora))
     await this.auditoria.registar(ctx, { acao: 'emprestar_livro', colecao: 'biblioteca', alvoId: e.id, alvoTitulo: `${x.obra.titulo} → ${conta.nome}` })
     await this.notificacoes?.notificar([conta.id], { tipo: 'biblioteca', titulo: `Empréstimo: ${x.obra.titulo}`, texto: `Devolva até ${dia(e.prazo)}. Pode renovar no portal.`, ligacao: '/biblioteca/emprestimos' })
     return this.#comEstado(e, agora)
@@ -112,12 +116,73 @@ export class ServicoCirculacao {
     return { leitores: porLeitor.size, emprestimos: l.length }
   }
 
+  // reservas por atender (as prontas primeiro), com o que há na estante
+  async reservas(ctx) {
+    ctx.actor.exigir('biblioteca.ver')
+    const agora = this.relogio.agora()
+    const l = await this.biblioteca.reservasAbertas()
+    const obras = new Map()
+    for (const r of l) if (!obras.has(r.obraId)) obras.set(r.obraId, await this.biblioteca.obra(r.obraId))
+    return l.map((r) => {
+      const o = obras.get(r.obraId)
+      const livres = o.exemplares.filter((x) => !x.emprestimo && exemplarEmprestavel(x))
+      return { ...r, expirada: r.expirada(agora), naEstante: livres.map((x) => ({ codigo: x.codigo, localizacao: x.localizacao })) }
+    }).sort((a, b) => (a.estado === b.estado ? 0 : a.estado === 'pronta' ? -1 : 1))
+  }
+
+  async #reserva(id) {
+    const r = await this.biblioteca.reserva(id)
+    if (!r) throw new NaoEncontrado('Reserva não encontrada.')
+    return r
+  }
+
+  // o livro foi separado: o leitor é avisado e tem uns dias para o levantar
+  async prepararReserva(ctx, id) {
+    ctx.actor.exigir('biblioteca.gerir')
+    const r = await this.#reserva(id)
+    const g = await this.biblioteca.mudarReserva(r, r.preparar(this.relogio.agora()))
+    await this.notificacoes?.notificar([r.contaId], {
+      tipo: 'biblioteca', titulo: `Pronto a levantar: ${r.obra.titulo}`, texto: `Separámos o livro para si. Levante-o no balcão da biblioteca até ${dia(g.levantarAte)}.`, ligacao: '/biblioteca/emprestimos',
+    })
+    await this.auditoria.registar(ctx, { acao: 'preparar_reserva', colecao: 'biblioteca', alvoId: r.id, alvoTitulo: `${r.obra.titulo} → ${r.leitor.nome}` })
+    return g
+  }
+
+  async cancelarReserva(ctx, id) {
+    ctx.actor.exigir('biblioteca.gerir')
+    const r = await this.#reserva(id)
+    const g = await this.biblioteca.mudarReserva(r, r.fechar('cancelada', this.relogio.agora()))
+    await this.notificacoes?.notificar([r.contaId], { tipo: 'biblioteca', titulo: `Reserva cancelada: ${r.obra.titulo}`, texto: 'A biblioteca cancelou a sua reserva. Pode voltar a reservar no portal.', ligacao: '/biblioteca/emprestimos' })
+    return g
+  }
+
   // ---------- portal (o próprio leitor) ----------
+
+  async reservar(ctx, obraId) {
+    const obra = await this.biblioteca.obra(obraId)
+    if (!obra) throw new NaoEncontrado('Obra não encontrada.')
+    const [abertas, ativos] = await Promise.all([this.biblioteca.reservasAbertasDoLeitor(ctx.conta.id), this.biblioteca.ativosDoLeitor(ctx.conta.id)])
+    verificarReserva({ abertas, obra, emprestadaAoLeitor: ativos.some((e) => e.exemplar.obra.id === obra.id) })
+    await this.biblioteca.reservar(ctx.conta.id, obra.id, this.relogio.agora())
+    return this.meus(ctx)
+  }
+
+  async cancelarMinhaReserva(ctx, id) {
+    const r = await this.biblioteca.reserva(id)
+    if (!r || r.contaId !== ctx.conta.id) throw new NaoEncontrado('Reserva não encontrada.')
+    await this.biblioteca.mudarReserva(r, r.fechar('cancelada', this.relogio.agora()))
+    return this.meus(ctx)
+  }
+
 
   async meus(ctx) {
     const agora = this.relogio.agora()
     const l = (await this.biblioteca.doLeitor(ctx.conta.id, { limite: 50 })).map((e) => this.#comEstado(e, agora, ctx.conta.tipo))
-    return { regras: { ...REGRAS_EMPRESTIMO[ctx.conta.tipo], renovacoes: REGRAS_EMPRESTIMO.renovacoes }, ativos: l.filter((e) => e.ativo), historico: l.filter((e) => !e.ativo) }
+    const reservas = (await this.biblioteca.reservasAbertasDoLeitor(ctx.conta.id)).map((r) => ({ ...r, expirada: r.expirada(agora) }))
+    return {
+      regras: { ...REGRAS_EMPRESTIMO[ctx.conta.tipo], renovacoes: REGRAS_EMPRESTIMO.renovacoes, reservas: REGRAS_RESERVA.maximo, diasLevantar: REGRAS_RESERVA.diasLevantar },
+      ativos: l.filter((e) => e.ativo), historico: l.filter((e) => !e.ativo), reservas,
+    }
   }
 
   async renovarMeu(ctx, id) {

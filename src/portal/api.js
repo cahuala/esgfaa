@@ -56,10 +56,15 @@ export function abrirFicheiro(id, opcoes) {
   return abrirCaminho(`/ficheiros/${id}`, opcoes)
 }
 
-export async function abrirCaminho(caminho, { nome = 'ficheiro', ver = false } = {}) {
+// ficheiro pedido com a sessão, como endereço local (blob:) para mostrar na página; revogar depois de usar
+export async function urlFicheiro(caminho, { ver = true } = {}) {
   const r = await fetch(`${API_URL}/api/portal${caminho}${ver ? '?ver=1' : ''}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
   if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
-  const url = URL.createObjectURL(await r.blob())
+  return URL.createObjectURL(await r.blob())
+}
+
+export async function abrirCaminho(caminho, { nome = 'ficheiro', ver = false } = {}) {
+  const url = await urlFicheiro(caminho, { ver })
   if (ver) {
     window.open(url, '_blank', 'noopener')
   } else {

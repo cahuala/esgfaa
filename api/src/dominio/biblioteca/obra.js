@@ -64,6 +64,11 @@ export function validarObra(d, atual = null) {
     r.idioma = d.idioma ?? 'pt'
   }
   if (tem('resumo')) r.resumo = texto(d.resumo, 'resumo', 'Resumo', { max: 5000 })
+  if (tem('capa')) {
+    const c = String(d.capa ?? '').trim()
+    if (c && (!/^\/uploads\/[\w/-]+\.(jpe?g|png|webp)$/i.test(c) || c.includes('..'))) throw erro('capa', 'Capa: carregue uma imagem JPG, PNG ou WebP.')
+    r.capa = c
+  }
   if (tem('acesso')) {
     if (!ACESSOS_DIGITAL[d.acesso ?? 'todos']) throw erro('acesso', 'Acesso desconhecido.')
     r.acesso = d.acesso ?? 'todos'

@@ -147,7 +147,7 @@ export class ServicoCatalogo {
     const proxima = exemplares.map((x) => x.emprestimo?.prazo).filter(Boolean).sort()[0] || null
     return {
       id: o.id, tipo: o.tipo, titulo: o.titulo, subtitulo: o.subtitulo, autores: o.autores, ano: o.ano, editora: o.editora, edicao: o.edicao, isbn: o.isbn,
-      cota: o.cota, assuntos: o.assuntos, idioma: o.idioma, resumo: o.resumo,
+      cota: o.cota, assuntos: o.assuntos, idioma: o.idioma, resumo: o.resumo, capa: o.capa, criadoEm: o.criadoEm,
       exemplares: exemplares.length, disponiveis: livres, devolucaoPrevista: livres ? null : proxima,
       localizacoes: [...new Set(exemplares.map((x) => x.localizacao).filter(Boolean))],
       digital: o.ficheiroId ? { podeLer: podeLerDigital(o, conta), acesso: o.acesso, tamanho: o.ficheiro?.tamanho ?? null } : null,
@@ -160,7 +160,14 @@ export class ServicoCatalogo {
   }
 
   async obraPortal(ctx, id) {
-    return { ...this.#publica(await this.#obra(id), ctx.conta), tipos: TIPOS_OBRA, idiomas: IDIOMAS }
+    const o = await this.#obra(id)
+    const [reserva, ativos] = await Promise.all([this.biblioteca.reservaAbertaDe(ctx.conta.id, o.id), this.biblioteca.ativosDoLeitor(ctx.conta.id)])
+    const comigo = ativos.find((e) => e.exemplar.obra.id === o.id)
+    return {
+      ...this.#publica(o, ctx.conta), tipos: TIPOS_OBRA, idiomas: IDIOMAS,
+      minhaReserva: reserva ? { id: reserva.id, estado: reserva.estado, levantarAte: reserva.levantarAte } : null,
+      comigo: comigo ? { prazo: comigo.prazo } : null,
+    }
   }
 
   async digitalPortal(ctx, id) {

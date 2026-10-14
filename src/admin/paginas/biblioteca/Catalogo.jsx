@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import Capa from '../../../portal/biblioteca/Capa'
 
-const NUMEROS = [['obras', 'Obras', 'fa-book', 'bg-theme'], ['exemplares', 'Exemplares', 'fa-barcode', 'bg-dark'], ['ativos', 'Emprestados', 'fa-hand-holding', 'bg-info'], ['atrasados', 'Em atraso', 'fa-clock', 'bg-danger'], ['digitais', 'Digitais', 'fa-file-pdf', 'bg-success']]
+const NUMEROS = [['obras', 'Obras', 'fa-book', 'bg-theme'], ['exemplares', 'Exemplares', 'fa-barcode', 'bg-dark'], ['ativos', 'Emprestados', 'fa-hand-holding', 'bg-info'], ['atrasados', 'Em atraso', 'fa-clock', 'bg-danger'], ['digitais', 'Digitais', 'fa-file-pdf', 'bg-success'], ['reservas', 'Reservas', 'fa-bookmark', 'bg-purple']]
 
 // catálogo da biblioteca: números, pesquisa e lista de obras
 function Catalogo() {
@@ -33,6 +34,7 @@ function Catalogo() {
             <div className={`widget widget-stats ${cor} mb-0`}>
               <div className="stats-icon"><i className={`fa ${icone}`} /></div>
               <div className="stats-info"><h4>{rotulo}</h4><p>{resumo[k]}</p></div>
+              {k === 'reservas' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=reservas">Atender <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
               {k === 'atrasados' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=atrasados">Ver atrasos <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
             </div>
           </div>
@@ -58,8 +60,13 @@ function Catalogo() {
                   return (
                     <tr key={o.id}>
                       <td>
-                        <Link to={`/biblioteca/obras/${o.id}`} className="fw-bold text-body">{o.titulo}</Link>{o.subtitulo && <span className="text-muted">: {o.subtitulo}</span>}
-                        <div className="small text-muted">{[o.autores.join('; '), o.editora, o.ano].filter(Boolean).join(' · ')}</div>
+                        <div className="d-flex align-items-center gap-3">
+                          <Link to={`/biblioteca/obras/${o.id}`} style={{ width: 42, flex: '0 0 42px' }} tabIndex={-1}><Capa o={o} /></Link>
+                          <div>
+                            <Link to={`/biblioteca/obras/${o.id}`} className="fw-bold text-body">{o.titulo}</Link>{o.subtitulo && <span className="text-muted">: {o.subtitulo}</span>}
+                            <div className="small text-muted">{[o.autores.join('; '), o.editora, o.ano].filter(Boolean).join(' · ')}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="small">{resumo.tipos[o.tipo]}</td>
                       <td className="small text-nowrap">{o.cota || '—'}</td>

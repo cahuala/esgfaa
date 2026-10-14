@@ -4,9 +4,10 @@ import { api } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import { descarregarCsv } from '../academico/documentos/csv'
+import Capa from '../../../portal/biblioteca/Capa'
 
 const dia = (iso) => (iso ? new Date(iso).toLocaleDateString('pt-PT') : '—')
-const SEPARADORES = { ativos: 'Emprestados', atrasados: 'Em atraso', historico: 'Histórico' }
+const SEPARADORES = { ativos: 'Emprestados', atrasados: 'Em atraso', reservas: 'Reservas', historico: 'Histórico' }
 
 // balcão da biblioteca: emprestar e devolver pelo código do exemplar; listas e avisos de atraso
 function Circulacao() {
@@ -15,7 +16,11 @@ function Circulacao() {
   const [lista, setLista] = useState(null)
   const [aviso, setAviso] = useState(null)
   const falhou = useCallback((e) => setAviso({ tipo: 'erro', texto: e.message }), [])
-  const carregar = useCallback(() => api(`/biblioteca/emprestimos?estado=${estado}`).then(setLista).catch(falhou), [estado, falhou])
+  const [reservas, setReservas] = useState(null)
+  const carregar = useCallback(() => {
+    api('/biblioteca/reservas').then(setReservas).catch(falhou)
+    if (estado !== 'reservas') api(`/biblioteca/emprestimos?estado=${estado}`).then(setLista).catch(falhou)
+  }, [estado, falhou])
   useEffect(() => { carregar() }, [carregar])
 
   const renovar = (e) => api(`/biblioteca/emprestimos/${e.id}/renovar`, { metodo: 'POST' }).then((r) => { setAviso({ texto: `Renovado até ${dia(r.prazo)}.` }); carregar() }).catch(falhou)
@@ -43,9 +48,10 @@ function Circulacao() {
       </div>
       <ul className="nav nav-tabs">
         {Object.entries(SEPARADORES).map(([k, v]) => (
-          <li key={k} className="nav-item"><button type="button" className={`nav-link ${estado === k ? 'active' : ''}`} onClick={() => setParams(k === 'ativos' ? {} : { estado: k })}>{v}</button></li>
+          <li key={k} className="nav-item"><button type="button" className={`nav-link ${estado === k ? 'active' : ''}`} onClick={() => setParams(k === 'ativos' ? {} : { estado: k })}>{v}{k === 'reservas' && reservas?.length > 0 && <span className="badge bg-purple ms-1">{reservas.length}</span>}</button></li>
         ))}
       </ul>
+      {estado === 'reservas' ? <Reservas l={reservas} recarregar={carregar} avisar={setAviso} falhou={falhou} /> : (
       <Painel titulo={lista ? `${SEPARADORES[estado]} (${lista.length})` : SEPARADORES[estado]} corpo={false} acoes={lista?.length > 0 && <button type="button" className="btn btn-xs btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Excel</button>}>
         {!lista ? <Carregando /> : (
           <div className="table-responsive">
@@ -73,8 +79,59 @@ function Circulacao() {
           </div>
         )}
       </Painel>
+      )}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+// reservas feitas no portal: separar o livro (o leitor é avisado), emprestar quando vem levantar, ou cancelar
+function Reservas({ l, recarregar, avisar, falhou }) {
+  const preparar = (r) => api(`/biblioteca/reservas/${r.id}/preparar`, { metodo: 'POST' }).then(() => { avisar({ texto: `${r.leitor.nome} foi avisado de que o livro está pronto a levantar.` }); recarregar() }).catch(falhou)
+  async function emprestar(r) {
+    const codigo = r.naEstante[0]?.codigo
+    if (!(await confirmar(`Emprestar "${r.obra.titulo}" (${codigo}) a ${r.leitor.nome}?`, { titulo: 'Levantamento', botao: 'Emprestar' }))) return
+    await api('/biblioteca/emprestimos', { metodo: 'POST', corpo: { codigo, contaId: r.leitor.id } }).then((e) => { avisar({ texto: `Emprestado até ${dia(e.prazo)}. Reserva atendida.` }); recarregar() }).catch(falhou)
+  }
+  async function cancelar(r) {
+    if (!(await confirmar(`Cancelar a reserva de "${r.obra.titulo}" feita por ${r.leitor.nome}? O leitor é avisado.`, { titulo: 'Cancelar reserva', botao: 'Cancelar reserva', perigo: true }))) return
+    await api(`/biblioteca/reservas/${r.id}/cancelar`, { metodo: 'POST' }).then(recarregar).catch(falhou)
+  }
+  return (
+    <Painel titulo={l ? `Reservas (${l.length})` : 'Reservas'} corpo={false}>
+      {!l ? <Carregando /> : (
+        <div className="table-responsive">
+          <table className="table align-middle mb-0">
+            <thead><tr><th>Obra</th><th>Leitor</th><th>Pedida</th><th>Estado</th><th>Na estante</th><th /></tr></thead>
+            <tbody>
+              {l.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">Não há reservas por atender.</td></tr>}
+              {l.map((r) => (
+                <tr key={r.id} className={r.expirada ? 'table-warning' : ''}>
+                  <td>
+                    <div className="d-flex align-items-center gap-2">
+                      <div style={{ width: 34, flex: '0 0 34px' }}><Capa o={r.obra} /></div>
+                      <div><Link to={`/biblioteca/obras/${r.obra.id}`} className="fw-bold text-body">{r.obra.titulo}</Link><div className="small text-muted">{r.obra.cota}</div></div>
+                    </div>
+                  </td>
+                  <td>{r.leitor.nome}<div className="small text-muted">{r.leitor.numero}</div></td>
+                  <td className="small">{dia(r.criadaEm)}</td>
+                  <td>
+                    {r.estado === 'pendente' ? <span className="badge bg-warning text-dark">Por separar</span> : <span className="badge bg-purple">Separado até {dia(r.levantarAte)}</span>}
+                    {r.expirada && <div className="small text-danger">Prazo para levantar passou</div>}
+                  </td>
+                  <td className="small">{r.naEstante.length ? r.naEstante.map((x) => <div key={x.codigo}><span className="font-monospace">{x.codigo}</span>{x.localizacao && <span className="text-muted"> · {x.localizacao}</span>}</div>) : <span className="text-muted">todos emprestados</span>}</td>
+                  <td className="text-end text-nowrap">
+                    {r.estado === 'pendente' && <button type="button" className="btn btn-xs btn-white me-1" disabled={!r.naEstante.length} onClick={() => preparar(r)} title="Separar o livro e avisar o leitor"><i className="fa fa-box me-1" />Separar</button>}
+                    <button type="button" className="btn btn-xs btn-theme me-1" disabled={!r.naEstante.length} onClick={() => emprestar(r)}><i className="fa fa-hand-holding me-1" />Emprestar</button>
+                    <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => cancelar(r)} aria-label="Cancelar reserva"><i className="fa fa-times" /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Painel>
   )
 }
 

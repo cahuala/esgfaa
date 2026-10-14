@@ -12,6 +12,7 @@ export const TAMANHOS = {
   fundo: { largura: 1920, altura: 1080, forma: 'horizontal (16:9)', onde: 'imagem de fundo' },
   sede: { largura: 1920, altura: 800, forma: 'larga e baixa', onde: 'fotografia da sede' },
   seccao: { largura: 1200, altura: 900, forma: 'horizontal (4:3)', onde: 'imagem de secção' },
+  livro: { largura: 600, altura: 900, forma: 'vertical (2:3)', onde: 'capa de livro' },
   bannerLargo: { largura: 1600, altura: 300, forma: 'larga e baixa', onde: 'banner' },
 }
 

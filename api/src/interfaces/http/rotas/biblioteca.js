@@ -33,6 +33,9 @@ export function rotasBiblioteca({ servicos, config, privados }) {
   r.post('/devolucoes', validar({ body: E.devolver }), async (req, res) => res.json(await circulacao.devolver(ctx(req), req.dados.body)))
   r.post('/emprestimos/:id/renovar', validar({ params: pId }), async (req, res) => res.json(await circulacao.renovar(ctx(req), req.dados.params.id)))
   r.post('/avisar-atrasos', async (req, res) => res.json(await circulacao.avisarAtrasados(ctx(req))))
+  r.get('/reservas', async (req, res) => res.json(await circulacao.reservas(ctx(req))))
+  r.post('/reservas/:id/preparar', validar({ params: pId }), async (req, res) => res.json(await circulacao.prepararReserva(ctx(req), req.dados.params.id)))
+  r.post('/reservas/:id/cancelar', validar({ params: pId }), async (req, res) => res.json(await circulacao.cancelarReserva(ctx(req), req.dados.params.id)))
   r.get('/leitores', validar({ query: E.procurarLeitor }), async (req, res) => res.json(await circulacao.leitores(ctx(req), req.dados.query)))
   r.get('/leitores/:id', validar({ params: pId }), async (req, res) => res.json(await circulacao.leitor(ctx(req), req.dados.params.id)))
   return r

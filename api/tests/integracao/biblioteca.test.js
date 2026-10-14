@@ -158,4 +158,34 @@ describe('biblioteca: catálogo e circulação', () => {
     // o estudante não entra no painel da biblioteca
     assert.equal((await portal('ana').get('/api/admin/biblioteca')).status, 401)
   })
+
+  it('reserva no portal: a biblioteca separa, avisa e ao emprestar fica atendida; capas só de /uploads', async () => {
+    assert.equal((await bib.post('/api/admin/biblioteca/obras').send({ titulo: 'Capa má', capa: 'https://mau.example/x.jpg' })).status, 400)
+    const o = (await bib.post('/api/admin/biblioteca/obras').send({ titulo: 'Geopolítica de África', capa: '/uploads/2026-11/capa.webp' })).body
+    assert.equal(o.capa, '/uploads/2026-11/capa.webp')
+    // sem exemplares não se reserva
+    assert.equal((await portal('bruno').post(`/api/portal/biblioteca/obras/${o.id}/reserva`)).status, 409)
+    await bib.post(`/api/admin/biblioteca/obras/${o.id}/exemplares`).send({ codigo: 'GEO-1', localizacao: 'Estante 6' })
+    const m = (await portal('bruno').post(`/api/portal/biblioteca/obras/${o.id}/reserva`)).body
+    assert.equal(m.reservas[0].estado, 'pendente')
+    assert.equal((await portal('bruno').post(`/api/portal/biblioteca/obras/${o.id}/reserva`)).status, 409)
+    assert.equal((await portal('bruno').get(`/api/portal/biblioteca/obras/${o.id}`)).body.minhaReserva.estado, 'pendente')
+    const l = (await bib.get('/api/admin/biblioteca/reservas')).body
+    assert.deepEqual(l.map((r) => [r.obra.titulo, r.leitor.nome, r.naEstante.map((x) => x.codigo)]), [['Geopolítica de África', 'Estudante bruno Teste', ['GEO-1']]])
+    // a Ana não cancela a reserva do Bruno
+    assert.equal((await portal('ana').delete(`/api/portal/biblioteca/reservas/${l[0].id}`)).status, 404)
+    const pronta = (await bib.post(`/api/admin/biblioteca/reservas/${l[0].id}/preparar`)).body
+    assert.equal(pronta.estado, 'pronta')
+    const n = (await portal('bruno').get('/api/portal/notificacoes')).body
+    assert.ok((n.lista || n).some((x) => /Pronto a levantar/.test(x.titulo)))
+    await bib.post('/api/admin/biblioteca/emprestimos').send({ codigo: 'GEO-1', contaId: l[0].leitor.id })
+    const meus = (await portal('bruno').get('/api/portal/biblioteca/emprestimos')).body
+    assert.deepEqual([meus.reservas.length, meus.ativos.length], [0, 1])
+    // nova reserva e cancelamento pelo próprio
+    const o2 = (await bib.post('/api/admin/biblioteca/obras').send({ titulo: 'Doutrina conjunta' })).body
+    await bib.post(`/api/admin/biblioteca/obras/${o2.id}/exemplares`).send({})
+    const r2 = (await portal('bruno').post(`/api/portal/biblioteca/obras/${o2.id}/reserva`)).body.reservas[0]
+    assert.equal((await portal('bruno').delete(`/api/portal/biblioteca/reservas/${r2.id}`)).body.reservas.length, 0)
+    assert.equal((await portal('bruno').post(`/api/portal/biblioteca/obras/${o2.id}/reserva`)).status, 201)
+  })
 })

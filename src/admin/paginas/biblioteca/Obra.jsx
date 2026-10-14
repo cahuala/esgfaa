@@ -3,8 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
+import Capa from '../../../portal/biblioteca/Capa'
+import { CampoFicheiro } from '../../componentes/Campo'
+import { TAMANHOS } from '../../imagens'
 
-const VAZIA = { tipo: 'livro', titulo: '', subtitulo: '', autores: [], ano: '', editora: '', edicao: '', isbn: '', cota: '', assuntos: [], idioma: 'pt', resumo: '', acesso: 'todos' }
+const VAZIA = { capa: '', tipo: 'livro', titulo: '', subtitulo: '', autores: [], ano: '', editora: '', edicao: '', isbn: '', cota: '', assuntos: [], idioma: 'pt', resumo: '', acesso: 'todos' }
 const dia = (iso) => new Date(iso).toLocaleDateString('pt-PT')
 
 // ficha de uma obra: dados bibliográficos, versão digital e exemplares
@@ -54,7 +57,7 @@ function Formulario({ o, meta, nova, feito, falhou }) {
     setAGuardar(true)
     try {
       const fd = new FormData()
-      for (const k of ['tipo', 'titulo', 'subtitulo', 'autores', 'ano', 'editora', 'edicao', 'isbn', 'cota', 'assuntos', 'idioma', 'resumo', 'acesso']) fd.append(k, f[k] ?? '')
+      for (const k of ['capa', 'tipo', 'titulo', 'subtitulo', 'autores', 'ano', 'editora', 'edicao', 'isbn', 'cota', 'assuntos', 'idioma', 'resumo', 'acesso']) fd.append(k, f[k] ?? '')
       if (pdf) fd.append('ficheiro', pdf)
       else if (remover) fd.append('removerDigital', 'true')
       const g = await api(nova ? '/biblioteca/obras' : `/biblioteca/obras/${o.id}`, { metodo: nova ? 'POST' : 'PUT', formulario: fd })
@@ -84,6 +87,16 @@ function Formulario({ o, meta, nova, feito, falhou }) {
           <div className="col-md-6"><label className="form-label" htmlFor="o-cota">Cota <span className="text-muted small">(CDU e lugar na estante)</span></label><input className="form-control" {...campo('cota')} placeholder="355.01 CLA" /></div>
           <div className="col-12"><label className="form-label" htmlFor="o-resumo">Resumo</label><textarea className="form-control" rows={4} {...campo('resumo')} /></div>
         </div>
+        <fieldset className="border rounded p-2 mt-3">
+          <legend className="fs-13px fw-bold float-none w-auto px-1 mb-0">Capa</legend>
+          <div className="d-flex gap-3 align-items-start">
+            <div style={{ width: 96, flex: '0 0 96px' }}><Capa o={{ ...f, id: o.id ?? 0, autores: f.autores.split('\n').filter(Boolean), titulo: f.titulo || 'Título' }} /></div>
+            <div className="flex-grow-1">
+              <CampoFicheiro id="o-capa" tipo="imagem" valor={f.capa} onChange={(capa) => setF({ ...f, capa })} recomendado={TAMANHOS.livro} />
+              <div className="small text-muted mt-1">Fotografia ou digitalização da capa (JPG, PNG ou WebP, vertical). Sem imagem, o portal desenha uma capa com o título e o autor.</div>
+            </div>
+          </div>
+        </fieldset>
         <fieldset className="border rounded p-2 mt-3">
           <legend className="fs-13px fw-bold float-none w-auto px-1 mb-0">Versão digital (PDF)</legend>
           {o.ficheiro && !remover && (

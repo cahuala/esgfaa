@@ -231,7 +231,7 @@ export const obra = z.object({
   tipo: texto(20).optional(), titulo: texto(400).optional(), subtitulo: texto(400).optional(), autores: textoOuLista.optional(),
   ano: z.union([z.number(), texto(10)]).nullable().optional(), editora: texto(300).optional(), edicao: texto(100).optional(),
   isbn: texto(40).nullable().optional(), cota: texto(100).optional(), assuntos: textoOuLista.optional(), idioma: texto(10).optional(),
-  resumo: texto(6000).optional(), acesso: texto(20).optional(), removerDigital: z.union([z.boolean(), texto(5)]).optional(),
+  resumo: texto(6000).optional(), acesso: texto(20).optional(), capa: texto(300).optional(), removerDigital: z.union([z.boolean(), texto(5)]).optional(),
 })
 export const exemplares = z.object({ quantidade: z.coerce.number().int().optional(), codigo: texto(60).optional(), estado: texto(20).optional(), localizacao: texto(200).optional() })
 export const exemplar = z.object({ codigo: texto(60).optional(), estado: texto(20).optional(), localizacao: texto(200).optional() })

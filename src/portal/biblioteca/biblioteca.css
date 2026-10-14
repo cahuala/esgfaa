@@ -1,0 +1,208 @@
+/* ================= Biblioteca: capas, estantes e ficha da obra ================= */
+
+/* ---------- capa (proporção 2:3; as letras medem-se pela largura da capa) ---------- */
+.b-capa {
+  container-type: inline-size;
+  position: relative;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 2px 5px 5px 2px;
+  background: var(--c-fundo, #2b2d42);
+  color: var(--c-texto, #fff);
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .12), 0 6px 14px rgba(0, 0, 0, .22);
+  user-select: none;
+}
+/* lombada e brilho por cima de qualquer capa */
+.b-capa::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .32) 0, rgba(255, 255, 255, .16) 2.2%, rgba(0, 0, 0, .1) 4.5%, transparent 8%),
+    linear-gradient(115deg, rgba(255, 255, 255, .14) 0, transparent 38%);
+}
+.b-capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* o conteúdo desenhado fica numa camada interior: as medidas "cqw" contam a partir da capa e nada a estica */
+.b-interior { position: absolute; inset: 0; overflow: hidden; }
+.b-titulo { font-size: var(--c-titulo, 11cqw); line-height: 1.08; font-weight: 700; overflow-wrap: break-word; hyphens: manual; text-wrap: balance; }
+.b-subtitulo { font-size: 6cqw; font-style: italic; opacity: .85; margin-top: 3cqw; line-height: 1.2; }
+.b-autor { font-family: 'Inter', system-ui, sans-serif; font-size: 5.2cqw; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+.b-editora { font-family: 'Inter', system-ui, sans-serif; font-size: 4.4cqw; letter-spacing: .08em; opacity: .75; }
+.b-ornamento { width: 46cqw; height: 4.6cqw; margin: 5cqw auto; display: block; }
+.b-ornamento line { stroke: var(--c-acento); stroke-width: 1.2; }
+.b-ornamento path { fill: var(--c-acento); }
+
+/* clássico: moldura dupla dourada, tudo ao centro */
+.b-capa--classico .b-moldura {
+  position: absolute; inset: 6cqw 6cqw 6cqw 9cqw;
+  border: .9cqw double var(--c-acento);
+  outline: .4cqw solid var(--c-acento); outline-offset: 2.4cqw;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+  text-align: center; padding: 9cqw 6cqw;
+}
+.b-capa--classico .b-autor { color: var(--c-acento); }
+
+/* moderno: bloco de cor com título grande, pé claro */
+.b-capa--moderno { background: var(--c-texto); color: var(--c-fundo); }
+.b-mod-bloco { position: absolute; inset: 0 0 26% 0; background: var(--c-fundo); color: var(--c-texto); padding: 12cqw 9cqw 0 13cqw; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 9cqw; }
+.b-capa--moderno .b-titulo { font-family: 'Inter Tight', 'Inter', sans-serif; font-weight: 800; letter-spacing: -.02em; font-size: calc(var(--c-titulo) * 1.08); }
+.b-mod-pe { position: absolute; left: 13cqw; right: 9cqw; bottom: 0; height: 26%; display: flex; flex-direction: column; justify-content: center; gap: 3cqw; }
+.b-mod-pe i { display: block; width: 18cqw; height: 1.6cqw; background: var(--c-acento); }
+
+/* faixa: autor em cima, título numa faixa de destaque, editora em baixo */
+.b-capa--faixa .b-interior { display: flex; flex-direction: column; justify-content: space-between; padding: 12cqw 0 9cqw; text-align: center; }
+.b-capa--faixa .b-autor { padding: 0 8cqw 0 11cqw; }
+.b-faixa { background: var(--c-acento); color: var(--c-fundo); padding: 8cqw 8cqw 8cqw 11cqw; box-shadow: 0 0 0 1.6cqw color-mix(in srgb, var(--c-acento) 35%, transparent); }
+.b-capa--faixa .b-editora { padding-left: 3cqw; }
+
+/* geométrico: círculos concêntricos e uma diagonal, título em baixo */
+.b-geo-arte { position: absolute; inset: 0; width: 100%; height: 100%; }
+.b-geo-arte circle { fill: none; stroke: var(--c-acento); stroke-width: 1.4; opacity: .75; }
+.b-geo-arte circle:last-of-type { fill: var(--c-acento); opacity: .9; }
+.b-geo-arte path { stroke: var(--c-texto); stroke-width: .6; opacity: .45; }
+.b-geo-texto { position: absolute; left: 12cqw; right: 8cqw; bottom: 10cqw; }
+.b-capa--geometrico .b-titulo { margin-bottom: 5cqw; }
+.b-capa--geometrico .b-autor { color: var(--c-acento); }
+
+/* académico (teses, TFC, monografias): papel creme, faixa da Escola */
+.b-capa--academico { background: #f7f2e7; color: #1c2434; }
+.b-capa--academico .b-interior { display: flex; flex-direction: column; }
+.b-acad-topo { background: #14213d; color: #e9d8a6; display: flex; align-items: center; gap: 3cqw; padding: 5cqw 6cqw 5cqw 10cqw; font-family: 'Inter', sans-serif; font-size: 4.2cqw; letter-spacing: .16em; text-transform: uppercase; font-weight: 700; border-bottom: 1.2cqw solid #c9a227; }
+.b-acad-topo img { width: 11cqw; height: 11cqw; object-fit: contain; }
+.b-acad-corpo { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 6cqw 8cqw 6cqw 11cqw; }
+.b-capa--academico .b-titulo { font-size: calc(var(--c-titulo) * .86); }
+.b-capa--academico .b-ornamento line { stroke: #c9a227; }
+.b-capa--academico .b-ornamento path { fill: #c9a227; }
+.b-capa--academico .b-autor { font-size: 4.6cqw; color: #5c1a1b; }
+.b-acad-pe { font-family: 'Inter', sans-serif; font-size: 4cqw; text-align: center; padding: 4cqw 6cqw 5cqw 10cqw; border-top: .5cqw solid #d9cfb8; color: #4a5568; letter-spacing: .06em; }
+
+/* revista / artigo */
+.b-capa--revista .b-interior { padding: 7cqw 7cqw 9cqw 11cqw; display: flex; flex-direction: column; gap: 4cqw; }
+.b-rev-cabeca { font-family: 'Inter Tight', sans-serif; font-weight: 900; font-size: 15cqw; line-height: .9; text-transform: uppercase; color: var(--c-acento); display: flex; justify-content: space-between; align-items: flex-end; border-bottom: .8cqw solid var(--c-acento); padding-bottom: 2cqw; }
+.b-rev-cabeca span { font-size: 5cqw; color: var(--c-texto); font-weight: 600; }
+.b-rev-arte { flex: 1; position: relative; }
+.b-rev-arte i { position: absolute; border-radius: 50%; background: var(--c-acento); opacity: .85; }
+.b-rev-arte i:nth-child(1) { width: 44cqw; height: 44cqw; right: 0; top: 4cqw; }
+.b-rev-arte i:nth-child(2) { width: 24cqw; height: 24cqw; left: 4cqw; bottom: 2cqw; opacity: .5; background: var(--c-texto); }
+.b-rev-arte i:nth-child(3) { width: 12cqw; height: 12cqw; left: 36cqw; top: 14cqw; opacity: .7; background: var(--c-texto); }
+.b-capa--revista .b-titulo { font-size: calc(var(--c-titulo) * .9); }
+
+/* ---------- cabeçalho da biblioteca ---------- */
+.b-entrada {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  color: #f5ecd7;
+  padding: 44px 40px 36px;
+  margin-bottom: 26px;
+  background:
+    linear-gradient(180deg, rgba(20, 14, 8, .55), rgba(20, 14, 8, .92) 75%),
+    repeating-linear-gradient(90deg,
+      #6d2e1f 0 14px, #1f3d2b 14px 22px, #8a6d2f 22px 40px, #14213d 40px 52px, #5c1a1b 52px 62px,
+      #3d2c4e 62px 80px, #2b2d42 80px 88px, #7a5230 88px 106px, #0b3954 106px 118px, #4a3b1c 118px 130px);
+}
+.b-entrada::after { /* tábuas da estante ao fundo */
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(180deg, transparent 0 84px, rgba(58, 34, 14, .95) 84px 96px);
+  opacity: .55;
+}
+.b-entrada > * { position: relative; z-index: 1; }
+.b-entrada-rotulo { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: #e0b354; font-weight: 700; }
+.b-entrada h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: clamp(28px, 4vw, 44px); color: #fff; margin: 6px 0 6px; }
+.b-entrada p { color: #d8ccb4; max-width: 640px; margin-bottom: 22px; }
+.b-procura { display: flex; background: #fffdf8; border-radius: 999px; padding: 6px 6px 6px 20px; max-width: 680px; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); align-items: center; }
+.b-procura i { color: #8a7a5c; }
+.b-procura input { flex: 1; border: 0; outline: 0; background: transparent; padding: 10px 12px; font-size: 16px; color: #1b1b1b; min-width: 0; }
+.b-procura select { border: 0; background: #f1ebde; border-radius: 999px; padding: 9px 14px; font-size: 14px; color: #3b3326; outline: 0; }
+.b-numeros { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 22px; font-size: 13px; color: #d8ccb4; }
+.b-numeros b { display: block; font-family: 'Playfair Display', Georgia, serif; font-size: 26px; color: #fff; line-height: 1; }
+.b-assuntos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.b-assunto { border: 1px solid rgba(224, 179, 84, .5); color: #f1e3c2; background: rgba(0, 0, 0, .25); border-radius: 999px; padding: 4px 12px; font-size: 12.5px; cursor: pointer; }
+.b-assunto:hover, .b-assunto.ativo { background: #e0b354; color: #20160b; border-color: #e0b354; }
+
+/* ---------- estantes ---------- */
+.b-sala { --b-largura: 148px; --b-parede: #efe6d6; --b-parede2: #e5d8c1; }
+[data-bs-theme='dark'] .b-sala { --b-parede: #2a221a; --b-parede2: #221b14; }
+.b-estante { position: relative; margin-bottom: 30px; border-radius: 12px; background: linear-gradient(180deg, var(--b-parede), var(--b-parede2)); box-shadow: inset 0 2px 14px rgba(70, 45, 20, .18); padding: 18px 0 8px; }
+.b-estante-cabeca { display: flex; align-items: center; gap: 12px; padding: 0 26px 10px; }
+.b-placa { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 19px; color: #3b2a16; }
+[data-bs-theme='dark'] .b-placa { color: #f0dfbf; }
+.b-placa small { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 12.5px; color: #8a7558; margin-left: 8px; }
+.b-setas { margin-left: auto; display: flex; gap: 6px; }
+.b-setas button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(90, 60, 25, .25); background: rgba(255, 255, 255, .6); color: #4a3520; }
+[data-bs-theme='dark'] .b-setas button { background: rgba(255, 255, 255, .08); color: #f0dfbf; }
+.b-setas button:disabled { opacity: .35; }
+.b-prateleira { position: relative; }
+.b-livros { display: flex; gap: 30px; overflow-x: auto; scroll-behavior: smooth; scroll-snap-type: x proximity; padding: 14px 26px 6px; scrollbar-width: none; }
+.b-livros::-webkit-scrollbar { display: none; }
+.b-livros.grelha { flex-wrap: wrap; overflow: visible; }
+/* tábua de madeira por baixo das capas (a mesma altura em todas as filas) */
+.b-tabua { position: absolute; left: 0; right: 0; top: calc(14px + var(--b-largura) * 1.5 - 4px); height: 18px; pointer-events: none;
+  background: linear-gradient(180deg, #b07a43 0, #8c5a2b 35%, #6b4220 100%);
+  box-shadow: 0 10px 14px -6px rgba(40, 22, 6, .55), inset 0 1px 0 rgba(255, 230, 190, .45); }
+.b-tabua::after { content: ''; position: absolute; inset: 0; opacity: .25; background: repeating-linear-gradient(90deg, transparent 0 60px, rgba(60, 30, 5, .5) 60px 61px, transparent 61px 140px, rgba(255, 220, 170, .4) 140px 141px); }
+
+.b-livro { flex: 0 0 var(--b-largura); width: var(--b-largura); scroll-snap-align: start; text-decoration: none; color: inherit; position: relative; z-index: 1; }
+.b-livro .b-capa { transition: transform .25s ease, box-shadow .25s ease; transform-origin: 50% 100%; }
+.b-livro:hover .b-capa, .b-livro:focus-visible .b-capa { transform: translateY(-10px) rotate(-1.2deg); box-shadow: 0 2px 2px rgba(0, 0, 0, .15), 0 18px 28px rgba(0, 0, 0, .35); }
+.b-livro:focus-visible { outline: none; }
+.b-livro:focus-visible .b-capa { outline: 3px solid #e0b354; outline-offset: 3px; }
+.b-legenda { margin-top: 26px; min-height: 58px; }
+.b-legenda b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13.5px; line-height: 1.25; color: var(--bs-body-color); }
+.b-legenda span { display: block; font-size: 12px; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.b-fita { position: absolute; z-index: 4; top: -6px; right: -6px; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; padding: 3px 8px; border-radius: 3px 3px 0 3px; color: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); }
+.b-fita::after { content: ''; position: absolute; right: 0; bottom: -5px; border-top: 5px solid rgba(0, 0, 0, .45); border-right: 6px solid transparent; }
+.b-fita.livre { background: #2a9d8f; }
+.b-fita.fora { background: #b5651d; }
+.b-fita.digital { background: #3d5a80; }
+.b-fita.minha { background: #9b2226; }
+.b-vazio-estante { padding: 40px 26px; color: var(--bs-secondary-color); }
+
+/* ---------- ficha da obra ---------- */
+.b-ficha { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 48px; align-items: start; }
+.b-ficha-livro { perspective: 1400px; padding: 10px 26px 30px 0; position: sticky; top: 80px; }
+.b-livro3d { transform: rotateY(-14deg) rotateX(2deg); transform-style: preserve-3d; transition: transform .5s ease; }
+.b-livro3d:hover { transform: rotateY(-4deg); }
+.b-livro3d .b-capa { box-shadow: 4px 3px 0 -1px #fdfaf3, 5px 4px 0 -1px #cfc6b4, 8px 6px 0 -2px #fdfaf3, 9px 7px 0 -2px #cfc6b4, 12px 9px 0 -3px #fdfaf3, 13px 10px 0 -3px #cfc6b4, 26px 30px 40px rgba(0, 0, 0, .35); }
+.b-ficha h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: clamp(26px, 3.2vw, 40px); line-height: 1.1; margin-bottom: 6px; }
+.b-ficha-sub { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 19px; color: var(--bs-secondary-color); }
+.b-ficha-autores { font-size: 16px; margin: 12px 0 18px; }
+.b-ficha-acoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 22px 0; }
+.b-estado { display: flex; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 12px; background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); }
+.b-estado .ponto { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 12px; }
+.b-detalhes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px 24px; padding: 18px 0; border-top: 1px solid var(--bs-border-color); border-bottom: 1px solid var(--bs-border-color); }
+.b-detalhes dt { font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--bs-secondary-color); font-weight: 600; }
+.b-detalhes dd { margin: 2px 0 0; font-weight: 500; }
+.b-resumo { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; line-height: 1.65; margin-top: 22px; white-space: pre-line; }
+.b-chip { display: inline-block; border: 1px solid var(--bs-border-color); border-radius: 999px; padding: 3px 12px; font-size: 13px; margin: 0 6px 6px 0; color: inherit; text-decoration: none; }
+.b-chip:hover { border-color: #b5651d; color: #b5651d; }
+
+/* ---------- leitor de PDF dentro do portal ---------- */
+.b-leitor { position: fixed; inset: 0; z-index: 2000; background: rgba(14, 10, 6, .92); display: flex; flex-direction: column; }
+.b-leitor-barra { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: #f5ecd7; background: #1d150d; border-bottom: 1px solid #3a2b1a; }
+.b-leitor-barra b { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-leitor iframe { flex: 1; border: 0; width: min(1100px, 100%); margin: 0 auto; background: #fff; }
+
+/* ---------- os meus empréstimos ---------- */
+.b-emprestimo { display: grid; grid-template-columns: 74px 1fr auto; gap: 18px; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--bs-border-color); }
+.b-emprestimo:last-child { border-bottom: 0; }
+.b-prazo { height: 6px; border-radius: 3px; background: var(--bs-tertiary-bg); overflow: hidden; margin-top: 8px; max-width: 320px; }
+.b-prazo i { display: block; height: 100%; border-radius: 3px; }
+
+@media (max-width: 767.98px) {
+  .b-sala { --b-largura: 112px; }
+  .b-livros { gap: 18px; padding: 12px 16px 6px; }
+  .b-estante-cabeca { padding: 0 16px 8px; }
+  .b-entrada { padding: 28px 20px 24px; }
+  .b-procura select { display: none; }
+  .b-ficha { grid-template-columns: 1fr; gap: 20px; }
+  .b-ficha-livro { position: static; width: 200px; margin: 0 auto; }
+  .b-emprestimo { grid-template-columns: 56px 1fr; }
+  .b-emprestimo > :last-child { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .b-livro .b-capa, .b-livro3d { transition: none; }
+}
