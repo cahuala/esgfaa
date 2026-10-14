@@ -30,6 +30,7 @@ import { RepositorioGrupos } from './infraestrutura/repositorios/grupos.js'
 import { ServicoGrupos } from './aplicacao/portal/grupos.js'
 import { RepositorioRegistos } from './infraestrutura/repositorios/registos.js'
 import { ServicoRegistos } from './aplicacao/portal/registos.js'
+import { ServicoIndicadores } from './aplicacao/indicadores.js'
 import { ServicoInqueritos } from './aplicacao/portal/inqueritos.js'
 import { ServicoCopias } from './aplicacao/copias.js'
 import { ServicoDisponibilidade } from './aplicacao/portal/disponibilidade.js'
@@ -118,6 +119,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
     registos,
+    indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio }),
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     secretaria: new ServicoSecretaria({
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,

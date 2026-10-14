@@ -122,6 +122,18 @@ export class RepositorioAcademico {
     return linhas.map((m) => m.estudante)
   }
 
+  // presenças de várias cadeiras: [{ cadeiraId, estudanteId, estado }] (indicadores)
+  async presencasDasCadeiras(cadeiraIds) {
+    const l = await this.prisma.presenca.findMany({ where: { aula: { cadeiraId: { in: cadeiraIds } } }, select: { estudanteId: true, estado: true, aula: { select: { cadeiraId: true } } } })
+    return l.map((p) => ({ cadeiraId: p.aula.cadeiraId, estudanteId: p.estudanteId, estado: p.estado }))
+  }
+
+  // último acesso ao portal de cada conta: { id: ISO | null }
+  async ultimosAcessos(ids) {
+    const l = await this.prisma.contaPortal.findMany({ where: { id: { in: ids } }, select: { id: true, ultimoAcesso: true } })
+    return Object.fromEntries(l.map((c) => [c.id, iso(c.ultimoAcesso)]))
+  }
+
   // ---------- cadeiras ----------
 
   async cadeira(id) {

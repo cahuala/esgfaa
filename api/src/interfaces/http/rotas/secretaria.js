@@ -43,6 +43,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/turmas/:id/avaliacao', validar({ params: pId, body: E.lancarAvaliacao }), async (req, res) => res.status(201).json(await q.lancarAvaliacao(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.resultadosAdmin(ctx(req), req.dados.params.id)))
   r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagarAvaliacao(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/indicadores', validar({ query: E.filtroIndicadores }), async (req, res) => res.json(await servicos.indicadores.indicadores(ctx(req), req.dados.query)))
   r.get('/alocacao', async (req, res) => res.json(await s.alocacao(ctx(req))))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))

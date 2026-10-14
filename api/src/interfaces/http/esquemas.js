@@ -196,3 +196,4 @@ export const importarEstudantes = z.object({
 // ---------- registos e relatórios ----------
 export const vista = z.object({ tipo: texto(20), id: idNumerico })
 export const filtroRegistos = z.object({ estudanteId: idNumerico.optional(), antesDe: idNumerico.optional() })
+export const filtroIndicadores = z.object({ anoLetivo: texto(20).optional() })

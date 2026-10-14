@@ -14,6 +14,7 @@ import Turmas from './paginas/academico/Turmas'
 import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
 import Alocacao from './paginas/academico/Alocacao'
+import Indicadores from './paginas/academico/Indicadores'
 import CalendarioAcademico from './paginas/academico/Calendario'
 import Contas from './paginas/academico/Contas'
 import PedidosAcademicos from './paginas/academico/Pedidos'
@@ -53,6 +54,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/turmas/:id" element={<Turma />} />}
         {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
+        {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
         {pode('academico.ver') && <Route path="/academico/contas" element={<Contas />} />}
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}
