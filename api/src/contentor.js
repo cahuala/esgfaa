@@ -75,6 +75,8 @@ import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoe
 import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
 import { ServicoDocumentos } from './aplicacao/academico/administracao/documentos.js'
 import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
+import { RepositorioQualidade } from './infraestrutura/repositorios/qualidade.js'
+import { ServicoInqueritosInstitucionais } from './aplicacao/qualidade/inqueritos.js'
 import { RepositorioConclusao } from './infraestrutura/repositorios/conclusao.js'
 
 /*
@@ -108,6 +110,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     colaborativo: new RepositorioColaborativo({ prisma }),
     pesquisa: new RepositorioPesquisa({ prisma }),
     conclusao: new RepositorioConclusao({ prisma }),
+    qualidade: new RepositorioQualidade({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -198,6 +201,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     ensino: ensino(),
     administracaoEscolar: administracaoEscolar(),
+    // qualidade: inquéritos institucionais de satisfação
+    qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },
     // Repartição de Pessoal e Quadros: registo de estudantes e docentes
     pessoal: {
       registo: new ServicoRegistoPessoal({ contas: r.contasPortal, cifra, auditoria, relogio, dominioEmail: config.dominioEmail }),

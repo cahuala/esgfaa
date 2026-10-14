@@ -23,6 +23,7 @@ import Historico from './paginas/academico/documentos/Historico'
 import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import CalendarioAcademico from './paginas/academico/Calendario'
 import Registo from './paginas/pessoal/Registo'
+import Satisfacao from './paginas/academico/Satisfacao'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
 import Utilizadores from './paginas/Utilizadores'
@@ -63,6 +64,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
+        {pode('academico.ver') && <Route path="/academico/satisfacao" element={<Satisfacao />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/pauta" element={<PautaTurma />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/pauta" element={<PautaCadeira />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/presencas" element={<FolhaPresencas />} />}

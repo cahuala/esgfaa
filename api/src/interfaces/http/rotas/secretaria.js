@@ -57,6 +57,14 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/folha-presencas', validar({ params: pId }), async (req, res) => res.json(await a.documentos.folhaPresencas(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/lista-prova', validar({ params: pId }), async (req, res) => res.json(await a.documentos.listaProva(ctx(req), req.dados.params.id)))
+  // inquéritos institucionais de satisfação
+  const iq = servicos.qualidade.inqueritos
+  r.get('/satisfacao', async (req, res) => res.json(await iq.listar(ctx(req))))
+  r.post('/satisfacao', validar({ body: E.inqueritoInstitucional }), async (req, res) => res.status(201).json(await iq.criar(ctx(req), req.dados.body)))
+  r.put('/satisfacao/:id', validar({ params: pId, body: E.inqueritoInstitucional }), async (req, res) => res.json(await iq.atualizar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/satisfacao/:id/lancar', validar({ params: pId }), async (req, res) => res.json(await iq.lancar(ctx(req), req.dados.params.id)))
+  r.get('/satisfacao/:id/resultados', validar({ params: pId }), async (req, res) => res.json(await iq.resultados(ctx(req), req.dados.params.id)))
+  r.delete('/satisfacao/:id', validar({ params: pId }), async (req, res) => { await iq.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/alocacao', async (req, res) => res.json(await a.cadeiras.alocacao(ctx(req))))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await a.pautas.pauta(ctx(req), req.dados.params.id)))

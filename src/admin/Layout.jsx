@@ -156,6 +156,7 @@ function Layout({ children }) {
             {(pode('candidaturas.ver') || pode('academico.ver')) && <div className="menu-header">Administração Escolar</div>}
             {pode('candidaturas.ver') && <ItemMenu para="/candidaturas" icone="fa-user-graduate" texto="Candidaturas" />}
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto="Indicadores académicos" />}
+            {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto="Inquéritos de satisfação" />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto="Turmas e matrículas" />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto="Alocação de docentes" />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto="Calendário académico" />}

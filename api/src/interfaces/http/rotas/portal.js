@@ -139,6 +139,11 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/wiki/:id/restaurar', validar({ params: pId, body: E.restaurarWiki }), async (req, res) => res.json(await cb.restaurar(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/wiki/:id', validar({ params: pId }), async (req, res) => { await cb.apagarPagina(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/pesquisa', validar({ query: E.pesquisaForum }), async (req, res) => res.json(await servicos.pesquisa.pesquisar(ctx(req), req.dados.query)))
+  // inquéritos institucionais (satisfação): responder no portal
+  const iq = servicos.qualidade.inqueritos
+  r.get('/inqueritos-escola', async (req, res) => res.json(await iq.doPortal(ctx(req))))
+  r.get('/inqueritos-escola/:id', validar({ params: pId }), async (req, res) => res.json(await iq.ver(ctx(req), req.dados.params.id)))
+  r.post('/inqueritos-escola/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await iq.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   // assinatura do calendário (iCal)
   r.get('/eu/calendario-ical', async (req, res) => res.json(await e.calendario.tokenCalendario(ctx(req))))
   r.post('/eu/calendario-ical', async (req, res) => res.json(await e.calendario.tokenCalendario(ctx(req), { renovar: true })))

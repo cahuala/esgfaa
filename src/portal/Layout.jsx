@@ -165,6 +165,7 @@ function Layout({ children }) {
             <div className="menu-header">Comunicação</div>
             <ItemMenu para="/mensagens" icone="fa-envelope" texto="Mensagens" />
             <ItemMenu para="/notificacoes" icone="fa-bell" texto="Notificações" />
+            <ItemMenu para="/inqueritos" icone="fa-poll" texto="Inquéritos" />
 
             <div className="menu-header">Conta</div>
             <ItemMenu para="/perfil" icone="fa-user-circle" texto="O meu perfil" />

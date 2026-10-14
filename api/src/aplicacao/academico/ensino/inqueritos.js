@@ -1,8 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
-import {
-  MINIMO_RESPOSTAS_AVALIACAO, PERGUNTAS_AVALIACAO, RESULTADOS, limparRespostasInquerito, mediaGlobal, resultadosInquerito, validarSondagem,
-} from '../../../dominio/academico/atividades/inqueritos.js'
+import { MINIMO_RESPOSTAS_AVALIACAO, PERGUNTAS_AVALIACAO, RESULTADOS, validarSondagem } from '../../../dominio/academico/atividades/inqueritos.js'
+import { limparRespostasInquerito, mediaGlobal, resultadosInquerito } from '../../../dominio/comum/opiniao.js'
 import { eDuplicado } from '../../../infraestrutura/bd/prisma.js'
 
 const data = (v, campo = 'fecha') => {

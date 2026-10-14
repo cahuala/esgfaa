@@ -217,3 +217,10 @@ export const versaoWiki = z.object({ versao: idNumerico.optional() })
 export const restaurarWiki = z.object({ versaoId: idNumerico })
 export const inscricao = z.object({ estudanteId: idNumerico, motivo: texto(20).optional(), observacao: texto(400).optional() })
 export const tfc = z.object({ tema: texto(400).optional(), orientador: texto(200).optional(), juri: texto(600).optional(), dataDefesa: z.union([texto(20), z.null()]).optional(), nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), observacao: texto(600).optional() })
+
+// ---------- inquéritos institucionais ----------
+const perguntaOpiniao = z.object({ tipo: texto(20), texto: texto(600), opcoes: z.array(texto(300)).max(12).optional(), multipla: z.boolean().optional() })
+export const inqueritoInstitucional = z.object({
+  titulo: texto(300).optional(), descricao: texto(3000).optional(), perguntas: z.array(perguntaOpiniao).max(30).optional(),
+  publico: texto(20).optional(), turmaIds: z.array(idNumerico).max(100).optional(), fecha: texto(40).optional(),
+})

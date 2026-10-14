@@ -20,6 +20,7 @@ import Perfil from './paginas/Perfil'
 import Certificado from './cadeira/Certificado'
 import Verificar from './paginas/Verificar'
 import Pesquisa from './paginas/Pesquisa'
+import Inqueritos from './paginas/Inqueritos'
 import JanelaDialogo from './JanelaDialogo'
 
 function App() {
@@ -53,6 +54,8 @@ function App() {
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}
         {!eDocente && <Route path="/avisos" element={<Avisos />} />}
         <Route path="/pesquisa" element={<Pesquisa />} />
+        <Route path="/inqueritos" element={<Inqueritos />} />
+        <Route path="/inqueritos/:id" element={<Inqueritos />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

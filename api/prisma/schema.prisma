@@ -197,34 +197,35 @@ model ContaPortal {
   deveMudarSenha     Boolean   @default(true) @map("deve_mudar_senha")
   notificarEmail     Boolean   @default(true) @map("notificar_email") // receber também por e-mail
 
-  matriculas          Matricula[]
-  docencias           Docencia[]
-  topicos             ForumTopico[]
-  respostas           ForumResposta[]
-  conclusoes          Conclusao[]
-  tentativas          Tentativa[]
-  notificacoes        Notificacao[]
-  mensagensEnviadas   Mensagem[]              @relation("enviadas")
-  mensagensRecebidas  Mensagem[]              @relation("recebidas")
-  notas               NotaPauta[]
-  entregas            Entrega[]
-  presencas           Presenca[]
-  pedidos             Pedido[]
-  perguntaBancos      PerguntaBanco[]
-  certificados        Certificado[]
-  inqueritosAvaliados Inquerito[]             @relation("avaliado")
-  participacoes       ParticipacaoInquerito[]
-  grupos              MembroGrupo[]
-  registos            RegistoAcesso[]
-  subscricoesTopicos  SubscricaoTopico[]
-  subscricoesForuns   SubscricaoForum[]
-  submissoesWorkshop  SubmissaoWorkshop[]
-  avaliacoesPares     AvaliacaoPar[]
-  termosGlossario     TermoGlossario[]
-  versoesWiki         VersaoWiki[]
-  inscricoes          InscricaoCadeira[]
-  tfcs                TrabalhoFimCurso[]
-  diplomas            CertificadoCurso[]
+  matriculas                  Matricula[]
+  docencias                   Docencia[]
+  topicos                     ForumTopico[]
+  respostas                   ForumResposta[]
+  conclusoes                  Conclusao[]
+  tentativas                  Tentativa[]
+  notificacoes                Notificacao[]
+  mensagensEnviadas           Mensagem[]                  @relation("enviadas")
+  mensagensRecebidas          Mensagem[]                  @relation("recebidas")
+  notas                       NotaPauta[]
+  entregas                    Entrega[]
+  presencas                   Presenca[]
+  pedidos                     Pedido[]
+  perguntaBancos              PerguntaBanco[]
+  certificados                Certificado[]
+  inqueritosAvaliados         Inquerito[]                 @relation("avaliado")
+  participacoes               ParticipacaoInquerito[]
+  grupos                      MembroGrupo[]
+  registos                    RegistoAcesso[]
+  subscricoesTopicos          SubscricaoTopico[]
+  subscricoesForuns           SubscricaoForum[]
+  submissoesWorkshop          SubmissaoWorkshop[]
+  avaliacoesPares             AvaliacaoPar[]
+  termosGlossario             TermoGlossario[]
+  versoesWiki                 VersaoWiki[]
+  inscricoes                  InscricaoCadeira[]
+  tfcs                        TrabalhoFimCurso[]
+  diplomas                    CertificadoCurso[]
+  participacoesInstitucionais ParticipacaoInstitucional[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -1124,4 +1125,48 @@ model CertificadoCurso {
 
   @@unique([estudanteId, turmaId])
   @@map("certificados_curso")
+}
+
+// inquérito institucional (satisfação com os serviços, o curso, a Escola), da Administração Escolar
+model InqueritoInstitucional {
+  id        Int       @id @default(autoincrement())
+  titulo    String
+  descricao String    @default("")
+  perguntas Json // [{ tipo: escala|escolha|aberta, texto, opcoes?, multipla? }]
+  publico   String // estudantes | docentes | todos
+  turmaIds  Json      @default("[]") @map("turma_ids") // só estas turmas (vazio = todas)
+  fecha     DateTime  @db.Timestamptz(3)
+  lancadoEm DateTime? @map("lancado_em") @db.Timestamptz(3) // null = rascunho
+  autor     String    @default("")
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  respostas     RespostaInstitucional[]
+  participacoes ParticipacaoInstitucional[]
+
+  @@map("inqueritos_institucionais")
+}
+
+// respostas sempre anónimas (sem ligação a quem respondeu)
+model RespostaInstitucional {
+  id          Int      @id @default(autoincrement())
+  inqueritoId Int      @map("inquerito_id")
+  respostas   Json
+  criadaEm    DateTime @map("criada_em") @db.Timestamptz(3)
+
+  inquerito InqueritoInstitucional @relation(fields: [inqueritoId], references: [id], onDelete: Cascade)
+
+  @@index([inqueritoId])
+  @@map("respostas_institucionais")
+}
+
+model ParticipacaoInstitucional {
+  inqueritoId Int      @map("inquerito_id")
+  contaId     Int      @map("conta_id")
+  em          DateTime @db.Timestamptz(3)
+
+  inquerito InqueritoInstitucional @relation(fields: [inqueritoId], references: [id], onDelete: Cascade)
+  conta     ContaPortal            @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@id([inqueritoId, contaId])
+  @@map("participacoes_institucionais")
 }

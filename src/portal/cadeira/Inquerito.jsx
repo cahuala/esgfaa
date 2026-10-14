@@ -3,7 +3,7 @@ import { api } from '../api'
 import { Bloqueio, Carregando, Cartao, Erro } from '../componentes'
 import { dataHora } from '../formatar'
 import ResultadosInquerito from './ResultadosInquerito'
-import { ESCALA } from './escala'
+import FormularioOpiniao from '../FormularioOpiniao'
 
 const MOSTRAR = { apos_responder: 'Os estudantes veem os resultados depois de responderem.', apos_fecho: 'Os estudantes veem os resultados depois do fecho.', nunca: 'Só o docente vê os resultados.' }
 
@@ -55,31 +55,7 @@ function Inquerito({ c, eDocente, recarregar, avisar, so }) {
         {!eDocente && !i.respondido && i.fechado && <div className="alert alert-secondary mb-0">Este inquérito já fechou.</div>}
         {!eDocente && i.podeResponder && (
           <form onSubmit={enviar} className="p-formulario">
-            {i.perguntas.map((p, k) => (
-              <fieldset key={k} className="mb-2">
-                <legend className="fs-14px fw-bold mb-2">{i.tipo === 'avaliacao' && p.tipo === 'escala' ? `${k + 1}. ` : ''}{p.texto}</legend>
-                {p.tipo === 'escolha' && p.opcoes.map((o, j) => {
-                  const marcadas = respostas[k] || []
-                  return (
-                    <label key={j} className="p-caixa d-flex">
-                      <input type={p.multipla ? 'checkbox' : 'radio'} name={`p${k}`} checked={marcadas.includes(j)}
-                        onChange={(e) => definir(k, p.multipla ? (e.target.checked ? [...marcadas, j] : marcadas.filter((x) => x !== j)) : [j])} /> {o}
-                    </label>
-                  )
-                })}
-                {p.tipo === 'escala' && (
-                  <div className="p-escala" role="radiogroup" aria-label={p.texto}>
-                    {ESCALA.map((t, j) => (
-                      <label key={j} className={`p-escala-opcao ${respostas[k] === j + 1 ? 'ativa' : ''}`}>
-                        <input type="radio" name={`p${k}`} checked={respostas[k] === j + 1} onChange={() => definir(k, j + 1)} />
-                        <b>{j + 1}</b><span>{t}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-                {p.tipo === 'aberta' && <textarea className="form-control" rows={3} maxLength={2000} value={respostas[k] || ''} onChange={(e) => definir(k, e.target.value)} aria-label={p.texto} placeholder="Opcional" />}
-              </fieldset>
-            ))}
+            <FormularioOpiniao perguntas={i.perguntas} respostas={respostas} definir={definir} numerar={i.tipo === 'avaliacao'} />
             <div><button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? 'A enviar…' : i.respondido ? 'Mudar a resposta' : 'Enviar'}</button></div>
           </form>
         )}
