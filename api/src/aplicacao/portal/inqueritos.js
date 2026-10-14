@@ -17,8 +17,8 @@ const data = (v, campo = 'fecha') => {
   Nas respostas anónimas a base de dados não guarda quem respondeu o quê.
 */
 export class ServicoInqueritos {
-  constructor({ inqueritos, academico, acesso, disponibilidade, notificacoes, auditoria, relogio }) {
-    Object.assign(this, { inqueritos, academico, acesso, disponibilidade, notificacoes, auditoria, relogio })
+  constructor({ inqueritos, academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }) {
+    Object.assign(this, { inqueritos, academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio })
   }
 
   #fechado(i) {
@@ -112,6 +112,7 @@ export class ServicoInqueritos {
     }
 
     await this.disponibilidade.exigir(cadeira.id, ctx.conta.id, 'inquerito', i.id)
+    await this.registos?.registar(ctx.conta, cadeira.id, 'inquerito', i.id)
     const respondido = (await this.inqueritos.respondidos(ctx.conta.id, [i.id])).has(i.id)
     const minha = respondido && !i.anonimo ? await this.inqueritos.respostaDe(i.id, ctx.conta.id) : null
     const verResultados = i.tipo === 'sondagem' && (i.mostrarResultados === 'apos_responder' ? respondido || fechado : i.mostrarResultados === 'apos_fecho' ? fechado : false)

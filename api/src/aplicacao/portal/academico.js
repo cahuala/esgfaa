@@ -21,8 +21,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, inqueritos, grupos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
-    Object.assign(this, { academico, recursos, inqueritos, grupos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
+  constructor({ academico, recursos, inqueritos, grupos, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
+    Object.assign(this, { academico, recursos, inqueritos, grupos, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -100,6 +100,7 @@ export class ServicoPortal {
   async cadeira(ctx, id) {
     const { conta } = ctx
     const cadeira = await this.#cadeiraAcessivel(conta, id)
+    await this.registos?.registar(conta, cadeira.id, 'cadeira')
     const agora = this.relogio.agora()
     const eDocente = conta.tipo === 'docente'
     const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos, todosInqueritos] = await Promise.all([
@@ -326,6 +327,8 @@ export class ServicoPortal {
         const { acessos } = await this.disponibilidade.acessos(uso.cadeiraId, conta.id)
         const a = acessos[uso.atividade]
         if (!a || a.escondida || !a.aberta) negar()
+        const [tipo, alvo] = uso.atividade.split('-')
+        await this.registos?.registar(conta, uso.cadeiraId, tipo, Number(alvo))
       }
     }
     else if (uso.tipo === 'entrega') {

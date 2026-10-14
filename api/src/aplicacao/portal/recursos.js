@@ -25,8 +25,8 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, inqueritos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, inqueritos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
+  constructor({ academico, recursos, inqueritos, registos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, inqueritos, registos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
   }
 
   async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
@@ -50,7 +50,9 @@ export class ServicoRecursos {
   }
 
   async topico(ctx, id) {
-    return (await this.#topico(ctx, id)).t
+    const { t } = await this.#topico(ctx, id)
+    await this.registos?.registar(ctx.conta, t.cadeiraId, 'forum', t.id)
+    return t
   }
 
   async criarTopico(ctx, cadeiraId, dados) {
@@ -175,6 +177,7 @@ export class ServicoRecursos {
     await this.acesso.acessivel(ctx.conta, m.cadeiraId).catch(() => { throw new NaoEncontrado('Material não encontrado.') })
     await this.disponibilidade?.exigir(m.cadeiraId, ctx.conta.id, 'material', m.id)
     await this.recursos.marcarConclusao(m.id, ctx.conta.id, Boolean(concluido))
+    if (concluido) await this.registos?.registar(ctx.conta, m.cadeiraId, 'material', m.id)
     return this.progresso(ctx, m.cadeiraId)
   }
 
@@ -567,6 +570,7 @@ export class ServicoRecursos {
 
   async verQuestionario(ctx, id) {
     const q = await this.#questionarioDoEstudante(ctx, id)
+    await this.registos?.registar(ctx.conta, q.cadeiraId, 'questionario', q.id)
     await this.#fecharExpiradas(q, await this.recursos.tentativas(q.id, ctx.conta.id))
     const tentativas = await this.recursos.tentativas(q.id, ctx.conta.id)
     const emCurso = tentativas.find((t) => !t.entregueEm)

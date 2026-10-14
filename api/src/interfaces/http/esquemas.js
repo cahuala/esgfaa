@@ -182,3 +182,14 @@ export const lancarAvaliacao = z.object({ fecha: texto(40), titulo: texto(120).o
 // ---------- grupos ----------
 export const grupo = z.object({ nome: texto(80).optional(), membros: z.array(idNumerico).max(200).optional() })
 export const gruposAutomaticos = z.object({ modo: z.enum(['tamanho', 'numero']), valor: z.number().int().min(1).max(200), prefixo: texto(40).optional(), soSemGrupo: z.boolean().optional() })
+
+// importação de estudantes (folha lida no navegador)
+const celula = z.union([z.string().max(300), z.number()]).optional()
+export const importarEstudantes = z.object({
+  simular: z.boolean().optional(),
+  linhas: z.array(z.object({ nome: celula, email: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500),
+})
+
+// ---------- registos e relatórios ----------
+export const vista = z.object({ tipo: texto(20), id: idNumerico })
+export const filtroRegistos = z.object({ estudanteId: idNumerico.optional(), antesDe: idNumerico.optional() })

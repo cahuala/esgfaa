@@ -19,6 +19,7 @@ import Datas from './Datas'
 import VerMaterial from './VerMaterial'
 import Inquerito from './Inquerito'
 import Grupos from './Grupos'
+import Relatorios from './Relatorios'
 
 const SEPARADORES = [
   { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
@@ -31,6 +32,7 @@ const SEPARADORES = [
   { id: 'programa', texto: 'Programa', icone: 'fa-file-alt' },
   { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt' },
   { id: 'progresso', texto: 'Progresso', icone: 'fa-tasks', docente: true },
+  { id: 'relatorios', texto: 'Relatórios', icone: 'fa-chart-line', docente: true },
 ]
 // endereços antigos (?separador=materiais|trabalhos|questionarios) abrem a página da cadeira
 const ANTIGOS = { materiais: 'curso', trabalhos: 'curso', questionarios: 'curso' }
@@ -56,6 +58,11 @@ function Cadeira() {
   }, [id, eDocente])
   useEffect(() => { carregar() }, [carregar])
   useEffect(() => { if (c?.id) registarRecente(conta.id, c.id) }, [c?.id, conta.id])
+  // o estudante abriu uma página, pasta ou trabalho: fica no registo de acessos do docente
+  useEffect(() => {
+    if (eDocente || !c?.id || !['material', 'trabalho'].includes(especie) || !atividadeId) return
+    api(`/cadeiras/${c.id}/vistas`, { metodo: 'POST', corpo: { tipo: especie, id: Number(atividadeId) } }).catch(() => {})
+  }, [eDocente, c?.id, especie, atividadeId])
 
   if (erro) return <Erro texto={erro} />
   if (!c) return <Carregando />
@@ -118,6 +125,7 @@ function Cadeira() {
         {!especie && separador === 'presencas' && <Presencas {...props} />}
         {!especie && separador === 'forum' && <Forum {...props} />}
         {!especie && separador === 'progresso' && eDocente && <Progresso {...props} />}
+        {!especie && separador === 'relatorios' && eDocente && <Relatorios {...props} />}
         {!especie && separador === 'horario' && <Datas {...props} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />

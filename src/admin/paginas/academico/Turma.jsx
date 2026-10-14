@@ -6,6 +6,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { PERIODOS } from './comum'
 import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
+import ImportarEstudantes from './ImportarEstudantes'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
@@ -20,6 +21,7 @@ function Turma() {
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
+  const [importar, setImportar] = useState(false)
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
@@ -32,9 +34,11 @@ function Turma() {
   return (
     <>
       <CabecalhoPagina titulo={t.nome} subtitulo={`${t.anoLetivo} · ${t.anoCurricular}.º ano`} migalhas={[{ rotulo: 'Turmas', para: '/academico/turmas' }, { rotulo: t.nome }]}>
+        {gerir && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> Importar estudantes (Excel/CSV)</button>}
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" /> Copiar cadeiras de outra turma</button>}
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> Turmas</Link>
       </CabecalhoPagina>
+      {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
       <div className="row">
         <div className="col-xl-6">

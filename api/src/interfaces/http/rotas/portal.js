@@ -112,6 +112,11 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
+  // registos de acesso e relatórios de participação
+  const rg = servicos.registos
+  r.post('/cadeiras/:id/vistas', validar({ params: pId, body: E.vista }), async (req, res) => res.json(await rg.vista(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/cadeiras/:id/relatorios/participacao', validar({ params: pId }), async (req, res) => res.json(await rg.participacao(ctx(req), req.dados.params.id)))
+  r.get('/cadeiras/:id/relatorios/registos', validar({ params: pId, query: E.filtroRegistos }), async (req, res) => res.json(await rg.lista(ctx(req), req.dados.params.id, req.dados.query)))
   // grupos de estudantes da cadeira
   const g = servicos.grupos
   r.get('/cadeiras/:id/grupos', validar({ params: pId }), async (req, res) => res.json(await g.listar(ctx(req), req.dados.params.id)))

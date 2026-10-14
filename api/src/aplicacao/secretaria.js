@@ -1,4 +1,4 @@
-import { ErroValidacao, NaoEncontrado } from '../dominio/comum/erros.js'
+import { Conflito, ErroValidacao, NaoEncontrado } from '../dominio/comum/erros.js'
 import { limparTexto } from '../dominio/comum/texto.js'
 import {
   ESTADOS_MATRICULA, ESTADOS_PEDIDO, PERIODOS, TIPOS_CONTA, TIPOS_EVENTO, emailDaEscola, escolha, numeroConta, texto, validarAlocacao, validarEvento, validarHorario,
@@ -151,6 +151,48 @@ export class ServicoSecretaria {
     const conta = await this.criarConta(ctx, { ...dados, tipo: 'estudante' })
     await this.matricular(ctx, t.id, { estudanteId: conta.id })
     return conta
+  }
+
+  /*
+    Importação de estudantes de uma folha (CSV/Excel lido no navegador): cria as contas que faltam
+    e matricula todos na turma. Com simular, só diz o que faria a cada linha (pré-visualização).
+    Uma linha com erro não impede as outras.
+  */
+  async importarEstudantes(ctx, turmaId, { linhas, simular = true }) {
+    ctx.actor.exigir('academico.gerir')
+    const t = await this.academico.turma(turmaId)
+    if (!t) throw new NaoEncontrado('Turma não encontrada.')
+    if (!Array.isArray(linhas) || !linhas.length) throw new ErroValidacao('A folha não tem estudantes.', { campo: 'linhas' })
+    if (linhas.length > 500) throw new ErroValidacao('No máximo 500 estudantes de cada vez.', { campo: 'linhas' })
+    const matriculados = new Set((await this.academico.matriculasDaTurma(t.id)).map((m) => m.estudante.id))
+    const vistos = new Set()
+    const resultado = []
+    for (const [i, l] of linhas.entries()) {
+      const linha = { linha: i + 1, nome: String(l.nome ?? '').trim(), email: String(l.email ?? '').trim().toLowerCase() }
+      try {
+        const email = emailDaEscola(l.email, this.dominioEmail)
+        const nome = texto(l.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
+        if (vistos.has(email)) throw new ErroValidacao('E-mail repetido na folha.')
+        vistos.add(email)
+        const existente = await this.contas.porEmail(email)
+        if (existente && existente.tipo !== 'estudante') throw new ErroValidacao('Este e-mail é de uma conta de docente.')
+        let acao = existente ? (matriculados.has(existente.id) ? 'ja_matriculado' : 'matricular') : 'criar'
+        let numero = existente?.numero ?? null
+        if (!simular && acao !== 'ja_matriculado') {
+          const dados = { posto: l.posto, ramo: l.ramo, nip: l.nip, telefone: l.telefone }
+          const conta = existente || await this.criarConta(ctx, { tipo: 'estudante', nome, email, dados })
+          numero = conta.numero
+          await this.academico.matricular(conta.id, t.id).catch((e) => { if (e instanceof Conflito) acao = 'ja_matriculado'; else throw e })
+        }
+        resultado.push({ ...linha, nome, email, acao, numero })
+      } catch (e) {
+        if (!(e instanceof ErroValidacao)) throw e
+        resultado.push({ ...linha, acao: 'erro', erro: e.message })
+      }
+    }
+    const resumo = Object.fromEntries(['criar', 'matricular', 'ja_matriculado', 'erro'].map((k) => [k, resultado.filter((r) => r.acao === k).length]))
+    if (!simular) await this.auditoria.registar(ctx, { acao: 'importar_estudantes', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: resumo })
+    return { simulacao: simular, resumo, linhas: resultado }
   }
 
   async alterarMatricula(ctx, id, { estado }) {

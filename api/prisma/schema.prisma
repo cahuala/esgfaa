@@ -214,6 +214,7 @@ model ContaPortal {
   inqueritosAvaliados Inquerito[]             @relation("avaliado")
   participacoes       ParticipacaoInquerito[]
   grupos              MembroGrupo[]
+  registos            RegistoAcesso[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -283,6 +284,7 @@ model UnidadeCurricular {
   inqueritos       Inquerito[]
   grupos           GrupoCadeira[]
   membrosGrupos    MembroGrupo[]
+  registos         RegistoAcesso[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -874,4 +876,21 @@ model MembroGrupo {
   @@id([grupoId, estudanteId])
   @@unique([cadeiraId, estudanteId])
   @@map("membros_grupos")
+}
+
+// registo de acessos dos estudantes (quem abriu o quê e quando), para os relatórios do docente
+model RegistoAcesso {
+  id        Int      @id @default(autoincrement())
+  cadeiraId Int      @map("cadeira_id")
+  contaId   Int      @map("conta_id")
+  tipo      String // cadeira | material | trabalho | questionario | inquerito | forum
+  alvoId    Int?     @map("alvo_id")
+  em        DateTime @default(now()) @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  conta   ContaPortal       @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([cadeiraId, em])
+  @@index([cadeiraId, contaId])
+  @@map("registos_acesso")
 }

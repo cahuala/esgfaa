@@ -24,6 +24,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/turmas/:id', validar({ params: pId }), async (req, res) => res.json(await s.turma(ctx(req), req.dados.params.id)))
   r.put('/turmas/:id', validar({ params: pId, body: E.turma }), async (req, res) => res.json(await s.editarTurma(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/matriculas', validar({ params: pId, body: E.matricula }), async (req, res) => res.status(201).json(await s.matricular(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/turmas/:id/importar', validar({ params: pId, body: E.importarEstudantes }), async (req, res) => res.json(await s.importarEstudantes(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/matricula-nova', validar({ params: pId, body: E.conta }), async (req, res) => res.status(201).json(await s.matricularNovo(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/matriculas/:id', validar({ params: pId, body: E.matricula }), async (req, res) => res.json(await s.alterarMatricula(ctx(req), req.dados.params.id, req.dados.body)))
 

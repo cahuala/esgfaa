@@ -446,6 +446,7 @@ export const NOMES_ACOES = {
   emitir_certificado: 'Obteve o certificado de conclusão de uma cadeira',
   lancar_avaliacao: 'Lançou o inquérito de avaliação dos docentes numa turma',
   apagar_avaliacao: 'Apagou um inquérito de avaliação de docente',
+  importar_estudantes: 'Importou estudantes de uma folha (Excel/CSV) para uma turma',
   prorrogar_prazo: 'Alargou o prazo de um trabalho a um estudante',
   pedido_documento: 'Pediu um documento (portal)',
   avaliar_candidatura: 'Avaliou uma candidatura',

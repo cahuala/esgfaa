@@ -28,6 +28,8 @@ import { RepositorioCopias } from './infraestrutura/repositorios/copias.js'
 import { RepositorioInqueritos } from './infraestrutura/repositorios/inqueritos.js'
 import { RepositorioGrupos } from './infraestrutura/repositorios/grupos.js'
 import { ServicoGrupos } from './aplicacao/portal/grupos.js'
+import { RepositorioRegistos } from './infraestrutura/repositorios/registos.js'
+import { ServicoRegistos } from './aplicacao/portal/registos.js'
 import { ServicoInqueritos } from './aplicacao/portal/inqueritos.js'
 import { ServicoCopias } from './aplicacao/copias.js'
 import { ServicoDisponibilidade } from './aplicacao/portal/disponibilidade.js'
@@ -72,6 +74,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     copias: new RepositorioCopias({ prisma }),
     inqueritos: new RepositorioInqueritos({ prisma }),
     grupos: new RepositorioGrupos({ prisma }),
+    registos: new RepositorioRegistos({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -88,6 +91,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const titulos = () => conteudos.titulosInterativos()
   const acesso = new AcessoCadeiras({ academico: r.academico })
   const disponibilidade = new ServicoDisponibilidade({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, relogio })
+  const registos = new ServicoRegistos({ registos: r.registos, academico: r.academico, acesso, disponibilidade, relogio, registarErro: (x) => console.error(JSON.stringify(x)) })
   const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria })
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
@@ -109,11 +113,12 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, registos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, registos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
-    inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, auditoria, relogio }),
+    registos,
+    inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     secretaria: new ServicoSecretaria({
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
       filtroHtml: filtrarHtml,
