@@ -224,3 +224,19 @@ export const inqueritoInstitucional = z.object({
   titulo: texto(300).optional(), descricao: texto(3000).optional(), perguntas: z.array(perguntaOpiniao).max(30).optional(),
   publico: texto(20).optional(), turmaIds: z.array(idNumerico).max(100).optional(), fecha: texto(40).optional(),
 })
+
+// ---------- biblioteca ----------
+const textoOuLista = z.union([z.array(texto(200)).max(30), texto(6000)])
+export const obra = z.object({
+  tipo: texto(20).optional(), titulo: texto(400).optional(), subtitulo: texto(400).optional(), autores: textoOuLista.optional(),
+  ano: z.union([z.number(), texto(10)]).nullable().optional(), editora: texto(300).optional(), edicao: texto(100).optional(),
+  isbn: texto(40).nullable().optional(), cota: texto(100).optional(), assuntos: textoOuLista.optional(), idioma: texto(10).optional(),
+  resumo: texto(6000).optional(), acesso: texto(20).optional(), removerDigital: z.union([z.boolean(), texto(5)]).optional(),
+})
+export const exemplares = z.object({ quantidade: z.coerce.number().int().optional(), codigo: texto(60).optional(), estado: texto(20).optional(), localizacao: texto(200).optional() })
+export const exemplar = z.object({ codigo: texto(60).optional(), estado: texto(20).optional(), localizacao: texto(200).optional() })
+export const filtrosObras = z.object({ q: texto(200).default(''), tipo: texto(20).default(''), soDigital: z.enum(['1', '0', '']).default('').transform((v) => v === '1') })
+export const emprestar = z.object({ codigo: texto(60).default(''), contaId: idNumerico })
+export const devolver = z.object({ codigo: texto(60).optional(), id: idNumerico.optional() })
+export const filtrosEmprestimos = z.object({ estado: z.enum(['ativos', 'atrasados', 'historico']).default('ativos').catch('ativos') })
+export const procurarLeitor = z.object({ q: texto(200).default('') })

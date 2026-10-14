@@ -52,8 +52,12 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario } = {}) {
 }
 
 // ficheiros privados: pedem-se com a sessão e abrem-se (ou descarregam-se) a partir da memória
-export async function abrirFicheiro(id, { nome = 'ficheiro', ver = false } = {}) {
-  const r = await fetch(`${API_URL}/api/portal/ficheiros/${id}${ver ? '?ver=1' : ''}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+export function abrirFicheiro(id, opcoes) {
+  return abrirCaminho(`/ficheiros/${id}`, opcoes)
+}
+
+export async function abrirCaminho(caminho, { nome = 'ficheiro', ver = false } = {}) {
+  const r = await fetch(`${API_URL}/api/portal${caminho}${ver ? '?ver=1' : ''}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
   if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
   const url = URL.createObjectURL(await r.blob())
   if (ver) {

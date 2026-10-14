@@ -14,6 +14,7 @@ export const RECURSOS = [
   { id: 'candidaturas', acoes: ['ver', 'editar'] },
   { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
   { id: 'pessoal', acoes: ['ver', 'registar'] },
+  { id: 'biblioteca', acoes: ['ver', 'gerir'] },
   { id: 'estatisticas', acoes: ['ver'] },
   { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
@@ -72,6 +73,13 @@ export const PAPEIS_PADRAO = [
     descricao: 'Regista estudantes e docentes (dados pessoais, posto, NIP e conta do portal); não trata da vida académica.',
     sistema: 0,
     permissoes: ['pessoal.ver', 'pessoal.registar'],
+  },
+  {
+    id: 'bibliotecario',
+    nome: 'Bibliotecário',
+    descricao: 'Catálogo da biblioteca (obras, exemplares, versões digitais), empréstimos, devoluções e atrasos.',
+    sistema: 0,
+    permissoes: ['biblioteca.ver', 'biblioteca.gerir'],
   },
   {
     id: 'analista',

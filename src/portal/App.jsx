@@ -21,6 +21,7 @@ import Certificado from './cadeira/Certificado'
 import Verificar from './paginas/Verificar'
 import Pesquisa from './paginas/Pesquisa'
 import Inqueritos from './paginas/Inqueritos'
+import Biblioteca, { MeusEmprestimos } from './paginas/Biblioteca'
 import JanelaDialogo from './JanelaDialogo'
 
 function App() {
@@ -56,6 +57,9 @@ function App() {
         <Route path="/pesquisa" element={<Pesquisa />} />
         <Route path="/inqueritos" element={<Inqueritos />} />
         <Route path="/inqueritos/:id" element={<Inqueritos />} />
+        <Route path="/biblioteca" element={<Biblioteca />} />
+        <Route path="/biblioteca/emprestimos" element={<MeusEmprestimos />} />
+        <Route path="/biblioteca/:id" element={<Biblioteca />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

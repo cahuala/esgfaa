@@ -66,6 +66,7 @@ export const ICONES_NOTIFICACAO = {
   correcao: ['fa-check-double', 'bg-success'], notas: ['fa-clipboard-list', 'bg-red'], questionario: ['fa-question', 'bg-purple'],
   forum: ['fa-comments', 'bg-teal'], mensagem: ['fa-envelope', 'bg-blue'], prazo: ['fa-hourglass-half', 'bg-warning'],
   pedido: ['fa-file-signature', 'bg-gray-600'], geral: ['fa-calendar-alt', 'bg-indigo'], inquerito: ['fa-poll', 'bg-cyan'],
+  biblioteca: ['fa-book', 'bg-lime'],
 }
 
 // ISO -> valor de um <input type="datetime-local"> (hora local)

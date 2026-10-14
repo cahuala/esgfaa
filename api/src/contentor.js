@@ -78,6 +78,9 @@ import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
 import { RepositorioQualidade } from './infraestrutura/repositorios/qualidade.js'
 import { ServicoInqueritosInstitucionais } from './aplicacao/qualidade/inqueritos.js'
 import { RepositorioConclusao } from './infraestrutura/repositorios/conclusao.js'
+import { RepositorioBiblioteca } from './infraestrutura/repositorios/biblioteca.js'
+import { ServicoCatalogo } from './aplicacao/biblioteca/catalogo.js'
+import { ServicoCirculacao } from './aplicacao/biblioteca/circulacao.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -111,6 +114,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     pesquisa: new RepositorioPesquisa({ prisma }),
     conclusao: new RepositorioConclusao({ prisma }),
     qualidade: new RepositorioQualidade({ prisma }),
+    biblioteca: new RepositorioBiblioteca({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -203,6 +207,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     administracaoEscolar: administracaoEscolar(),
     // qualidade: inquéritos institucionais de satisfação
     qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },
+    // biblioteca: catálogo e circulação
+    biblioteca: {
+      catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio }),
+      circulacao: new ServicoCirculacao({ biblioteca: r.biblioteca, contas: r.contasPortal, notificacoes, auditoria, relogio }),
+    },
     // Repartição de Pessoal e Quadros: registo de estudantes e docentes
     pessoal: {
       registo: new ServicoRegistoPessoal({ contas: r.contasPortal, cifra, auditoria, relogio, dominioEmail: config.dominioEmail }),

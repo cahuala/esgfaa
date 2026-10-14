@@ -407,10 +407,10 @@ export const POSICOES_BANNER = [
 // nomes legíveis para a grelha de permissões
 export const NOMES_RECURSOS = {
   noticias: 'Notícias', artigos: 'Artigos', eventos: 'Eventos', cursos: 'Cursos', pessoas: 'Corpo docente',
-  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', academico: 'Gestão académica (portal)', estatisticas: 'Estatísticas',
+  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', academico: 'Gestão académica (portal)', pessoal: 'Pessoal e Quadros', biblioteca: 'Biblioteca', estatisticas: 'Estatísticas',
   utilizadores: 'Utilizadores', papeis: 'Papéis e permissões', atividades: 'Registo de atividades',
 }
-export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir' }
+export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir', notas: 'Notas', registar: 'Registar' }
 
 export const NOMES_ACOES = {
   entrar: 'Entrou no painel',
@@ -425,6 +425,14 @@ export const NOMES_ACOES = {
   criar_inquerito_institucional: 'Preparou um inquérito de satisfação',
   lancar_inquerito_institucional: 'Lançou um inquérito de satisfação',
   apagar_inquerito_institucional: 'Apagou um inquérito de satisfação',
+  criar_obra: 'Registou uma obra na biblioteca',
+  editar_obra: 'Editou uma obra da biblioteca',
+  apagar_obra: 'Apagou uma obra da biblioteca',
+  adicionar_exemplares: 'Registou exemplares',
+  apagar_exemplar: 'Apagou um exemplar',
+  emprestar_livro: 'Emprestou um livro',
+  devolver_livro: 'Registou uma devolução',
+  avisar_atrasos_biblioteca: 'Avisou leitores em atraso',
   editar_conta_portal: 'Editou uma conta do portal',
   repor_senha_portal: 'Repôs a palavra-passe de uma conta do portal',
   criar_turma: 'Criou uma turma',

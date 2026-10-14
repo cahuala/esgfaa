@@ -226,6 +226,7 @@ model ContaPortal {
   tfcs                        TrabalhoFimCurso[]
   diplomas                    CertificadoCurso[]
   participacoesInstitucionais ParticipacaoInstitucional[]
+  emprestimos                 Emprestimo[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -338,6 +339,7 @@ model Ficheiro {
   pastas             MaterialFicheiro[]
   anexosForum        ForumAnexo[]
   submissoesWorkshop SubmissaoWorkshop[]
+  obrasDigitais      Obra[]
 
   @@map("ficheiros_privados")
 }
@@ -1169,4 +1171,66 @@ model ParticipacaoInstitucional {
 
   @@id([inqueritoId, contaId])
   @@map("participacoes_institucionais")
+}
+
+// ---------- Biblioteca ----------
+
+model Obra {
+  id           Int      @id @default(autoincrement())
+  tipo         String // livro | tese | monografia | tfc | artigo | revista | outro
+  titulo       String
+  subtitulo    String   @default("")
+  autores      Json     @default("[]")
+  ano          Int?
+  editora      String   @default("")
+  edicao       String   @default("")
+  isbn         String?  @unique
+  cota         String   @default("") // classificação (CDU) e lugar na estante
+  assuntos     Json     @default("[]")
+  idioma       String   @default("pt")
+  resumo       String   @default("")
+  ficheiroId   String?  @map("ficheiro_id") // versão digital (PDF)
+  acesso       String   @default("todos") // quem lê a versão digital: todos | docentes
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  ficheiro   Ficheiro?  @relation(fields: [ficheiroId], references: [id], onDelete: SetNull)
+  exemplares Exemplar[]
+
+  @@map("biblioteca_obras")
+}
+
+model Exemplar {
+  id          Int      @id @default(autoincrement())
+  obraId      Int      @map("obra_id")
+  codigo      String   @unique // n.º de tombo
+  estado      String   @default("bom") // bom | danificado | perdido | abatido
+  localizacao String   @default("")
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  obra        Obra         @relation(fields: [obraId], references: [id], onDelete: Cascade)
+  emprestimos Emprestimo[]
+
+  @@index([obraId])
+  @@map("biblioteca_exemplares")
+}
+
+model Emprestimo {
+  id            Int       @id @default(autoincrement())
+  exemplarId    Int       @map("exemplar_id")
+  contaId       Int       @map("conta_id")
+  emprestadoEm  DateTime  @map("emprestado_em") @db.Timestamptz(3)
+  prazo         DateTime  @db.Timestamptz(3)
+  renovacoes    Int       @default(0)
+  devolvidoEm   DateTime? @map("devolvido_em") @db.Timestamptz(3)
+  // = exemplarId enquanto o empréstimo está ativo: a base garante um só empréstimo ativo por exemplar
+  exemplarAtivo Int?      @unique @map("exemplar_ativo")
+  registadoPor  String    @default("") @map("registado_por")
+
+  exemplar Exemplar    @relation(fields: [exemplarId], references: [id], onDelete: Cascade)
+  conta    ContaPortal @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([contaId, devolvidoEm])
+  @@index([exemplarId])
+  @@map("biblioteca_emprestimos")
 }

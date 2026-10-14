@@ -150,6 +150,10 @@ function Layout({ children }) {
             </div>
             )}
 
+            {pode('biblioteca.ver') && <div className="menu-header">Biblioteca</div>}
+            {pode('biblioteca.ver') && <ItemMenu para="/biblioteca" icone="fa-book" texto="Catálogo" fim />}
+            {pode('biblioteca.ver') && <ItemMenu para="/biblioteca/emprestimos" icone="fa-hand-holding" texto="Empréstimos" />}
+
             {pode('pessoal.ver') && <div className="menu-header">Pessoal e Quadros</div>}
             {pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto="Estudantes e docentes" />}
 

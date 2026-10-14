@@ -54,6 +54,14 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/horario', async (req, res) => res.json(await e.estudante.horario(ctx(req))))
   r.get('/ficheiros/:id', validar({ params: pFicheiro }), async (req, res) => enviarFicheiro(req, res, await e.ficheiros.ficheiro(ctx(req), req.dados.params.id)))
 
+  // ---------- biblioteca ----------
+  const b = servicos.biblioteca
+  r.get('/biblioteca', validar({ query: E.filtrosObras }), async (req, res) => res.json(await b.catalogo.pesquisar(ctx(req), req.dados.query)))
+  r.get('/biblioteca/obras/:id', validar({ params: pId }), async (req, res) => res.json(await b.catalogo.obraPortal(ctx(req), req.dados.params.id)))
+  r.get('/biblioteca/obras/:id/digital', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await b.catalogo.digitalPortal(ctx(req), req.dados.params.id)))
+  r.get('/biblioteca/emprestimos', async (req, res) => res.json(await b.circulacao.meus(ctx(req))))
+  r.post('/biblioteca/emprestimos/:id/renovar', validar({ params: pId }), async (req, res) => res.json(await b.circulacao.renovarMeu(ctx(req), req.dados.params.id)))
+
   // ---------- estudante ----------
   r.get('/notas', async (req, res) => res.json(await e.estudante.notas(ctx(req))))
   r.get('/percurso', async (req, res) => res.json(await e.estudante.percurso(ctx(req))))

@@ -47,16 +47,25 @@ export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulari
   return dados
 }
 
-// ficheiros privados do portal (documentos, entregas): pedem-se com a sessão e abrem-se a partir da memória
-export async function abrirFicheiro(id, nome = 'documento') {
-  const r = await fetch(`${API_URL}/api/admin/academico/ficheiros/${id}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+// ficheiros pedidos com a sessão: descarregam-se (ou abrem-se num separador, com abrir) a partir da memória
+export async function obterFicheiro(caminho, nome = 'documento', { abrir = false } = {}) {
+  const r = await fetch(`${API_URL}/api/admin${caminho}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
   if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
   const url = URL.createObjectURL(await r.blob())
-  const a = document.createElement('a')
-  a.href = url
-  a.download = nome
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
+  if (abrir) {
+    window.open(url, '_blank', 'noopener')
+  } else {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = nome
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+// ficheiros privados do portal (documentos, entregas)
+export function abrirFicheiro(id, nome = 'documento') {
+  return obterFicheiro(`/academico/ficheiros/${id}`, nome)
 }

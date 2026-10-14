@@ -4,7 +4,7 @@ import { useSessao } from '../sessaoContexto'
 import { NOMES_PERMISSOES, NOMES_RECURSOS } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 
-const ACOES = ['ver', 'criar', 'editar', 'apagar', 'publicar', 'gerir']
+const ACOES = ['ver', 'criar', 'editar', 'apagar', 'publicar', 'gerir', 'notas', 'registar']
 
 // Gestão de papéis (RBAC): grelha recursos × ações
 function Papeis() {

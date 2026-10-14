@@ -24,6 +24,9 @@ import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import CalendarioAcademico from './paginas/academico/Calendario'
 import Registo from './paginas/pessoal/Registo'
 import Satisfacao from './paginas/academico/Satisfacao'
+import Catalogo from './paginas/biblioteca/Catalogo'
+import Obra from './paginas/biblioteca/Obra'
+import Circulacao from './paginas/biblioteca/Circulacao'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
 import Utilizadores from './paginas/Utilizadores'
@@ -65,6 +68,9 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
         {pode('academico.ver') && <Route path="/academico/satisfacao" element={<Satisfacao />} />}
+        {pode('biblioteca.ver') && <Route path="/biblioteca" element={<Catalogo />} />}
+        {pode('biblioteca.ver') && <Route path="/biblioteca/obras/:id" element={<Obra />} />}
+        {pode('biblioteca.ver') && <Route path="/biblioteca/emprestimos" element={<Circulacao />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/pauta" element={<PautaTurma />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/pauta" element={<PautaCadeira />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/presencas" element={<FolhaPresencas />} />}
