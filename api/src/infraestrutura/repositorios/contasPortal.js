@@ -1,4 +1,4 @@
-import { ContaPortal } from '../../dominio/academico/conta.js'
+import { ContaPortal } from '../../dominio/academico/pessoas/conta.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../../dominio/identidade/utilizador.js'
 import { Conflito } from '../../dominio/comum/erros.js'
 import { eDuplicado } from '../bd/prisma.js'

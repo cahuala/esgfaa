@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { deLuanda, gerarIcal } from '../../src/dominio/academico/ical.js'
+import { deLuanda, gerarIcal } from '../../src/dominio/academico/organizacao/ical.js'
 
 describe('calendário iCal', () => {
   it('horas de Luanda passam a UTC; dias inteiros; momentos exatos; texto escapado e dobrado', () => {

@@ -1,8 +1,12 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  assiduidade, classificacao, emailDaEscola, estadoPrazo, entregaAtrasada, numeroConta, resultadoDisciplina, validarAlocacao, validarHorario, validarNota,
-} from '../../src/dominio/academico/regras.js'
+import { assiduidade } from '../../src/dominio/academico/atividades/presencas.js'
+import { entregaAtrasada, estadoPrazo } from '../../src/dominio/academico/atividades/trabalhos.js'
+import { classificacao, validarNota } from '../../src/dominio/academico/avaliacao/nota.js'
+import { resultadoDisciplina } from '../../src/dominio/academico/avaliacao/resultado.js'
+import { validarAlocacao } from '../../src/dominio/academico/organizacao/cadeira.js'
+import { validarHorario } from '../../src/dominio/academico/organizacao/horario.js'
+import { emailDaEscola, numeroConta } from '../../src/dominio/academico/pessoas/contas.js'
 import { assinaturaPrivadaValida } from '../../src/infraestrutura/ficheiros/privados.js'
 import { ErroValidacao } from '../../src/dominio/comum/erros.js'
 
@@ -94,7 +98,7 @@ describe('portal académico: regras', () => {
 })
 
 describe('livro de notas: componentes calculadas', async () => {
-  const { notaComposta, validarComposicao } = await import('../../src/dominio/academico/regras.js')
+  const { notaComposta, validarComposicao } = await import('../../src/dominio/academico/avaliacao/composicao.js')
   it('média ponderada; falta uma nota, fica por calcular', () => {
     const itens = [{ tipo: 'trabalho', id: 1, peso: 60 }, { tipo: 'questionario', id: 2, peso: 40 }]
     assert.equal(notaComposta(itens, { 'trabalho-1': 15, 'questionario-2': 10 }), 13)
@@ -112,7 +116,8 @@ describe('livro de notas: componentes calculadas', async () => {
 })
 
 describe('trabalhos: grelha de avaliação e prorrogações', async () => {
-  const { avaliarGrelha, prazoDe, validarGrelha } = await import('../../src/dominio/academico/regras.js')
+  const { avaliarGrelha, validarGrelha } = await import('../../src/dominio/academico/avaliacao/grelha.js')
+  const { prazoDe } = await import('../../src/dominio/academico/atividades/trabalhos.js')
   const grelha = [{ criterio: 'Estrutura', pontos: 4 }, { criterio: 'Argumentação', pontos: 10 }, { criterio: 'Fontes', pontos: 6 }]
   it('nota de 0 a 20 a partir dos pontos de cada critério', () => {
     assert.deepEqual(avaliarGrelha(grelha, { 0: 4, 1: '7,5', 2: 4 }), { pontos: { 0: 4, 1: 7.5, 2: 4 }, obtidos: 15.5, total: 20, nota: 15.5 })

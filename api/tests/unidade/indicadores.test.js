@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { media, motivosDeRisco, pautasEmAtraso, taxaAprovacao } from '../../src/dominio/academico/indicadores.js'
+import { media, motivosDeRisco, pautasEmAtraso, taxaAprovacao } from '../../src/dominio/academico/acompanhamento/indicadores.js'
 
 const agora = new Date('2026-12-01T12:00:00Z')
 

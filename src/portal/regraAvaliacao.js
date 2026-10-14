@@ -1,5 +1,6 @@
 // a mesma regra que a API usa (fonte única): MAC, dispensa, exame, recurso e classificação
-import { AVALIACAO, COMPONENTES_NOTA, NOMES_COMPONENTES, NOTA_MINIMA_APROVACAO, resultadoDisciplina } from '../../api/src/dominio/academico/regras.js'
+import { NOTA_MINIMA_APROVACAO } from '../../api/src/dominio/academico/avaliacao/nota.js'
+import { AVALIACAO, COMPONENTES_NOTA, NOMES_COMPONENTES, resultadoDisciplina } from '../../api/src/dominio/academico/avaliacao/resultado.js'
 
 export { AVALIACAO, COMPONENTES_NOTA, NOMES_COMPONENTES, NOTA_MINIMA_APROVACAO, resultadoDisciplina }
 

@@ -17,29 +17,28 @@ import { AUDIENCIAS, Tokens } from './infraestrutura/seguranca/tokens.js'
 import { CacheLimitada } from './infraestrutura/seguranca/cacheLimitada.js'
 import { ArmazenamentoLocal } from './infraestrutura/ficheiros/armazenamento.js'
 import { filtrarCamposHtml, filtrarHtml } from './infraestrutura/html/filtroHtml.js'
-import { ServicoPautas } from './aplicacao/pautas.js'
-import { AcessoCadeiras } from './aplicacao/portal/acesso.js'
-import { ServicoRecursos } from './aplicacao/portal/recursos.js'
+import { ServicoPautas } from './aplicacao/academico/partilhado/pautas.js'
+import { AcessoCadeiras } from './aplicacao/academico/partilhado/acesso.js'
 import { RepositorioRecursosCadeira } from './infraestrutura/repositorios/recursosCadeira.js'
 import { RepositorioComunicacao } from './infraestrutura/repositorios/comunicacao.js'
-import { ServicoComunicacao } from './aplicacao/portal/comunicacao.js'
+import { ServicoComunicacao } from './aplicacao/academico/partilhado/comunicacao.js'
 import { criarCorreio } from './infraestrutura/correio/correio.js'
 import { RepositorioCopias } from './infraestrutura/repositorios/copias.js'
 import { RepositorioInqueritos } from './infraestrutura/repositorios/inqueritos.js'
 import { RepositorioGrupos } from './infraestrutura/repositorios/grupos.js'
-import { ServicoGrupos } from './aplicacao/portal/grupos.js'
+import { ServicoGrupos } from './aplicacao/academico/ensino/grupos.js'
 import { RepositorioRegistos } from './infraestrutura/repositorios/registos.js'
-import { ServicoRegistos } from './aplicacao/portal/registos.js'
-import { ServicoIndicadores } from './aplicacao/indicadores.js'
+import { ServicoRegistos } from './aplicacao/academico/partilhado/registos.js'
+import { ServicoIndicadores } from './aplicacao/academico/administracao/indicadores.js'
 import { RepositorioWorkshops } from './infraestrutura/repositorios/workshops.js'
-import { ServicoWorkshops } from './aplicacao/portal/workshops.js'
+import { ServicoWorkshops } from './aplicacao/academico/ensino/workshops.js'
 import { RepositorioColaborativo } from './infraestrutura/repositorios/colaborativo.js'
-import { ServicoColaborativo } from './aplicacao/portal/colaborativo.js'
+import { ServicoColaborativo } from './aplicacao/academico/ensino/colaborativo.js'
 import { RepositorioPesquisa } from './infraestrutura/repositorios/pesquisa.js'
-import { ServicoPesquisa } from './aplicacao/portal/pesquisa.js'
-import { ServicoInqueritos } from './aplicacao/portal/inqueritos.js'
-import { ServicoCopias } from './aplicacao/copias.js'
-import { ServicoDisponibilidade } from './aplicacao/portal/disponibilidade.js'
+import { ServicoPesquisa } from './aplicacao/academico/ensino/pesquisa.js'
+import { ServicoInqueritos } from './aplicacao/academico/ensino/inqueritos.js'
+import { ServicoCopias } from './aplicacao/academico/partilhado/copias.js'
+import { ServicoDisponibilidade } from './aplicacao/academico/partilhado/disponibilidade.js'
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
@@ -51,9 +50,27 @@ import { ServicoInteracoes } from './aplicacao/interacoes.js'
 import { ServicoEstatisticas } from './aplicacao/estatisticas.js'
 import { ServicoFicheiros } from './aplicacao/ficheiros.js'
 import { ServicoCandidaturas } from './aplicacao/candidaturas.js'
-import { ServicoSessaoPortal } from './aplicacao/portal/sessao.js'
-import { ServicoPortal } from './aplicacao/portal/academico.js'
-import { ServicoSecretaria } from './aplicacao/secretaria.js'
+import { ServicoSessaoPortal } from './aplicacao/academico/ensino/sessao.js'
+import { ServicoPainel } from './aplicacao/academico/ensino/painel.js'
+import { ServicoEstudante } from './aplicacao/academico/ensino/estudante.js'
+import { ServicoFicheirosPortal } from './aplicacao/academico/ensino/ficheiros.js'
+import { ServicoOrganizacao } from './aplicacao/academico/ensino/organizacao.js'
+import { ServicoMateriais } from './aplicacao/academico/ensino/materiais.js'
+import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
+import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
+import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
+import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
+import { ServicoCalendario } from './aplicacao/academico/ensino/calendario.js'
+import { ServicoProgresso } from './aplicacao/academico/ensino/progresso.js'
+import { ServicoQuestionarios } from './aplicacao/academico/ensino/questionarios.js'
+import { ServicoContas } from './aplicacao/academico/administracao/contas.js'
+import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
+import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
+import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/pautas.js'
+import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/calendario.js'
+import { ServicoPedidos } from './aplicacao/academico/administracao/pedidos.js'
+import { ServicoAvisosGerais } from './aplicacao/academico/administracao/avisos.js'
+import { ApoioCadeiras } from './aplicacao/academico/partilhado/apoio.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -109,6 +126,46 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, auditoria, notificacoes, relogio })
 
+  const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
+  // casos de uso do portal académico (estudantes e docentes)
+  const ensino = () => {
+    const d = {
+      academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
+      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, filtroHtml: filtrarHtml,
+    }
+    return {
+      painel: new ServicoPainel(d),
+      estudante: new ServicoEstudante(d),
+      ficheiros: new ServicoFicheirosPortal(d),
+      organizacao: new ServicoOrganizacao(d),
+      materiais: new ServicoMateriais(d),
+      pautaDocente: new ServicoPautaDocente(d),
+      trabalhos: new ServicoTrabalhos(d),
+      presencas: new ServicoPresencas(d),
+      forum: new ServicoForum(d),
+      calendario: new ServicoCalendario(d),
+      progresso: new ServicoProgresso(d),
+      questionarios: new ServicoQuestionarios(d),
+    }
+  }
+  // casos de uso da Administração Escolar (painel)
+  const administracaoEscolar = () => {
+    const d = {
+      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias,
+      privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml,
+    }
+    d.servicoContas = new ServicoContas(d)
+    return {
+      contas: d.servicoContas,
+      turmas: new ServicoTurmas(d),
+      cadeiras: new ServicoCadeiras(d),
+      pautas: new ServicoPautasAdministracao(d),
+      calendario: new ServicoCalendarioAcademico(d),
+      pedidos: new ServicoPedidos(d),
+      avisos: new ServicoAvisosGerais(d),
+    }
+  }
+
   const servicos = {
     auditoria,
     conteudos,
@@ -123,8 +180,6 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, registos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, workshops: r.workshops, registos, privados, contas: r.contasPortal, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
     registos,
@@ -133,10 +188,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     pesquisa: new ServicoPesquisa({ pesquisa: r.pesquisa, acesso, disponibilidade }),
     indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio }),
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
-    secretaria: new ServicoSecretaria({
-      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
-      filtroHtml: filtrarHtml,
-    }),
+    ensino: ensino(),
+    administracaoEscolar: administracaoEscolar(),
   }
 
   const fechar = () => prisma.$disconnect()

@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
-import { anosEntre } from '../../src/aplicacao/copias.js'
+import { anosEntre } from '../../src/aplicacao/academico/partilhado/copias.js'
 
 const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')

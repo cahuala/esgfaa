@@ -12,9 +12,25 @@ src/
 │   ├── conteudos/      coleções e validação dos dados, regras de publicação (rascunho/publicado), páginas
 │   ├── interacao/      comentários e visitantes
 │   ├── publicidade/    banners em vigor
-│   └── estatisticas/   classificação de visitas (dispositivo, navegador, robôs)
+│   ├── estatisticas/   classificação de visitas (dispositivo, navegador, robôs)
+│   └── academico/      contexto académico (portal e Administração Escolar), por subdomínio:
+│       ├── comum/          validações (texto, escolhas, datas, horas)
+│       ├── pessoas/        ContaPortal (estudante, docente), e-mail da Escola, número de conta
+│       ├── organizacao/    cadeira (período, regente e assistentes), horário, calendário académico, iCal
+│       ├── matriculas/     estados da matrícula
+│       ├── avaliacao/      nota e classificação, resultado (MAC, dispensa, exame, recurso), composição, grelha
+│       ├── atividades/     materiais, trabalhos, presenças, questionários, workshops, inquéritos, restrições de acesso
+│       ├── secretaria/     pedidos de documentos
+│       └── acompanhamento/ indicadores (estudantes em risco, pautas em atraso)
 ├── aplicacao/          casos de uso: verificam permissões e registam a auditoria
-│   └── sessao, utilizadores, papeis, conteudos, paginas, interacoes, estatisticas, ficheiros, auditoria, arranque
+│   ├── sessao, utilizadores, papeis, conteudos, paginas, interacoes, estatisticas, ficheiros, auditoria, arranque
+│   └── academico/
+│       ├── partilhado/     acesso às cadeiras, apoio comum, restrições, pautas, cópias, notificações, registos
+│       ├── ensino/         portal: painel, estudante, organização da cadeira, materiais, trabalhos, presenças,
+│       │                   pauta do docente, fórum, calendário, progresso, questionários, grupos, inquéritos,
+│       │                   avaliação por pares, glossário e wiki, pesquisa, sessão
+│       └── administracao/  Administração Escolar: contas, turmas e matrículas, cadeiras, pautas,
+│                           calendário, pedidos, avisos gerais, indicadores
 ├── infraestrutura/     tudo o que toca no exterior
 │   ├── bd/             cliente Prisma ligado ao PostgreSQL (adaptador pg)
 │   ├── repositorios/   o único sítio que fala com a base (Prisma; SQL direto só com parâmetros)

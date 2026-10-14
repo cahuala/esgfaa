@@ -2,8 +2,9 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   corrigir, dentroDoTempo, estadoQuestionario, limiteTentativa, limparRespostas, validarPergunta,
-} from '../../src/dominio/academico/questionarios.js'
-import { expandirAulas, intervaloCalendario, validarEvento } from '../../src/dominio/academico/regras.js'
+} from '../../src/dominio/academico/atividades/questionarios.js'
+import { intervaloCalendario, validarEvento } from '../../src/dominio/academico/organizacao/calendario.js'
+import { expandirAulas } from '../../src/dominio/academico/organizacao/horario.js'
 import { ErroValidacao } from '../../src/dominio/comum/erros.js'
 
 const perguntas = [
@@ -72,7 +73,7 @@ describe('calendário académico: regras', () => {
 })
 
 describe('questionários: tipos novos, ordem aleatória e estatísticas', async () => {
-  const q = await import('../../src/dominio/academico/questionarios.js')
+  const q = await import('../../src/dominio/academico/atividades/questionarios.js')
   const curta = { id: 10, tipo: 'curta', pontos: 1, opcoes: { respostas: ['Carl von Clausewitz', 'Clausewitz'] } }
   const numerica = { id: 11, tipo: 'numerica', pontos: 1, opcoes: { valor: 1975, tolerancia: 0 } }
   const corresp = { id: 12, tipo: 'correspondencia', pontos: 3, opcoes: { pares: [{ a: 'Sun Tzu', b: 'A Arte da Guerra' }, { a: 'Clausewitz', b: 'Da Guerra' }, { a: 'Maquiavel', b: 'O Príncipe' }] } }
