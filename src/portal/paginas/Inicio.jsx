@@ -5,6 +5,7 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio } from '../componentes'
 import { dataHora, faltam, maiusculaInicial, primeiroNome } from '../formatar'
+import { PERIODOS } from '../regraAvaliacao'
 
 const saudacao = () => {
   const h = new Date().getHours()
@@ -67,7 +68,7 @@ function Inicio() {
           </div>
           <div className="p-coluna">
             {!eDocente && d.avisosGerais?.length > 0 && (
-              <Cartao titulo="Avisos da Secretaria" acoes={<Link to="/avisos" className="p-ligacao-simples">Ver todos</Link>}>
+              <Cartao titulo="Avisos da Administração Escolar" acoes={<Link to="/avisos" className="p-ligacao-simples">Ver todos</Link>}>
                 <ul className="p-lista">
                   {d.avisosGerais.map((a) => <li key={a.id}><strong>{a.titulo}</strong><div className="p-texto-suave">{a.texto}</div><small className="p-texto-fraco">{dataHora(a.criadoEm)}</small></li>)}
                 </ul>
@@ -98,17 +99,17 @@ function Inicio() {
 }
 
 export function ListaCadeiras({ cadeiras }) {
-  if (!cadeiras.length) return <Vazio>Ainda não tem cadeiras atribuídas. Contacte a Secretaria Académica.</Vazio>
+  if (!cadeiras.length) return <Vazio>Ainda não tem cadeiras atribuídas. Contacte a Administração Escolar.</Vazio>
   return (
     <div className="p-grelha-cadeiras">
       {cadeiras.map((c) => (
         <Link key={c.id} to={`/cadeiras/${c.id}`} className="p-cadeira">
           <span className="p-cadeira-topo">
             <span className="p-cadeira-icone"><FaBook aria-hidden="true" /></span>
-            <span className="p-cadeira-codigo">{c.codigo} · {c.semestre}.º semestre</span>
+            <span className="p-cadeira-codigo">{c.codigo} · {PERIODOS[c.periodo]}</span>
           </span>
           <strong>{c.nome}</strong>
-          <span className="p-texto-suave">{c.docente ? c.docente.nome : 'Docente por atribuir'}</span>
+          <span className="p-texto-suave">{c.docente ? c.docente.nome : 'Docente por alocar'}{c.docentes?.length > 1 && ` + ${c.docentes.length - 1}`}</span>
           {c.turma && <small className="p-texto-fraco">{c.turma.nome}</small>}
         </Link>
       ))}

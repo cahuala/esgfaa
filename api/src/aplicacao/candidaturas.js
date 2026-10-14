@@ -10,7 +10,7 @@ export function gerarCodigo(ano) {
   return `ESG-${ano}-${sufixo}`
 }
 
-// Candidaturas aos cursos: submissão pública e avaliação pela Secretaria Académica
+// Candidaturas aos cursos: submissão pública e avaliação pela Administração Escolar
 export class ServicoCandidaturas {
   constructor({ candidaturas, conteudos, auditoria, relogio }) {
     Object.assign(this, { candidaturas, conteudos, auditoria, relogio })
@@ -22,7 +22,7 @@ export class ServicoCandidaturas {
     const c = validarCandidatura(entrada, { cursos, hoje: agora })
 
     if (await this.candidaturas.existeEmCurso(c.email, c.curso, ESTADOS_FINAIS)) {
-      throw new Conflito('Já existe uma candidatura com este e-mail a este curso, em análise. A Secretaria Académica entrará em contacto.')
+      throw new Conflito('Já existe uma candidatura com este e-mail a este curso, em análise. A Administração Escolar entrará em contacto.')
     }
 
     let criada

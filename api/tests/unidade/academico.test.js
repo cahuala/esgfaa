@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  assiduidade, classificacao, emailDaEscola, estadoPrazo, entregaAtrasada, numeroConta, resultadoDisciplina, validarHorario, validarNota,
+  assiduidade, classificacao, emailDaEscola, estadoPrazo, entregaAtrasada, numeroConta, resultadoDisciplina, validarAlocacao, validarHorario, validarNota,
 } from '../../src/dominio/academico/regras.js'
 import { assinaturaPrivadaValida } from '../../src/infraestrutura/ficheiros/privados.js'
 import { ErroValidacao } from '../../src/dominio/comum/erros.js'
@@ -54,6 +54,18 @@ describe('portal académico: regras', () => {
   it('classificação qualitativa', () => {
     assert.deepEqual([9, 10, 13, 14, 16, 17, 20].map(classificacao), ['Reprovado', 'Suficiente', 'Suficiente', 'Bom', 'Bom', 'Muito bom', 'Muito bom'])
     assert.equal(classificacao(null), null)
+  })
+
+  it('alocação: um regente no máximo, docentes sem repetir, horas inteiras', () => {
+    assert.deepEqual(validarAlocacao([{ docenteId: '3', papel: 'regente', horas: '60' }, { docenteId: 4 }]), [
+      { docenteId: 3, papel: 'regente', horas: 60 }, { docenteId: 4, papel: 'assistente', horas: 0 },
+    ])
+    assert.deepEqual(validarAlocacao([]), []) // cadeira sem docentes
+    assert.throws(() => validarAlocacao([{ docenteId: 1, papel: 'regente' }, { docenteId: 2, papel: 'regente' }]), /um regente/)
+    assert.throws(() => validarAlocacao([{ docenteId: 1 }, { docenteId: 1 }]), /duas vezes/)
+    assert.throws(() => validarAlocacao([{ docenteId: 1, papel: 'chefe' }]), ErroValidacao)
+    assert.throws(() => validarAlocacao([{ docenteId: 1, horas: 1.5 }]), /Horas/)
+    assert.throws(() => validarAlocacao('x'), ErroValidacao)
   })
 
   it('prazos de entrega e atrasos', () => {

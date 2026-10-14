@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { ADMIN_E2E } from '../../playwright.config.js'
 
-test('candidatura por passos chega à Secretaria e é avaliada no painel', async ({ page }) => {
+test('candidatura por passos chega à Administração Escolar e é avaliada no painel', async ({ page }) => {
   const email = `e2e${Date.now()}@faa.ao`
 
   // começa no botão da página inicial

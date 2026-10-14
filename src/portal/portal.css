@@ -1093,3 +1093,11 @@ html[data-tema='dark'] .p-azul { background: rgba(80, 140, 230, 0.16); color: #8
   .p-material-acoes { grid-column: 1 / -1; justify-content: flex-start; }
   .p-ficha div { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* programa da cadeira (texto do editor) */
+.p-programa { font-size: 15px; line-height: 1.7; max-width: 80ch; }
+.p-programa h2 { font-size: 18px; margin: 18px 0 6px; }
+.p-programa h2:first-child { margin-top: 0; }
+.p-programa h3 { font-size: 16px; margin: 14px 0 4px; }
+.p-programa ul, .p-programa ol { padding-left: 22px; margin: 6px 0; }
+.p-programa p { margin: 6px 0; }

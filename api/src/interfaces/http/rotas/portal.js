@@ -54,6 +54,7 @@ export function rotasPortal({ servicos, config, privados }) {
 
   // ---------- estudante ----------
   r.get('/notas', async (req, res) => res.json(await s.notas(ctx(req))))
+  r.get('/percurso', async (req, res) => res.json(await s.percurso(ctx(req))))
   r.get('/presencas', async (req, res) => res.json(await s.presencas(ctx(req))))
   r.get('/avisos', async (req, res) => res.json(await s.avisosGerais(ctx(req))))
   r.get('/pedidos', async (req, res) => res.json(await s.pedidos(ctx(req))))

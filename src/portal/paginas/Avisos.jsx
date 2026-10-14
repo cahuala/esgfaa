@@ -9,7 +9,7 @@ function Avisos() {
   useEffect(() => { api('/avisos').then(setLista).catch((e) => setErro(e.message)) }, [])
   return (
     <>
-      <Titulo rotulo="Secretaria Académica" titulo="Avisos" />
+      <Titulo rotulo="Administração Escolar" titulo="Avisos" />
       {erro && <Erro texto={erro} />}
       {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Sem avisos.</Vazio> : (
         <div className="p-coluna">

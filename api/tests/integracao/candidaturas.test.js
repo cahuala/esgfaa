@@ -66,7 +66,7 @@ describe('candidaturas', () => {
     assert.equal(r.status, 201)
   })
 
-  it('a lista exige permissão; a Secretaria vê e avalia', async () => {
+  it('a lista exige permissão; a Administração Escolar vê e avalia', async () => {
     assert.equal((await amb.http().get('/api/admin/candidaturas')).status, 401)
     const redator = await amb.criarUtilizador('redator')
     assert.equal((await amb.com(redator.token).get('/api/admin/candidaturas')).status, 403)

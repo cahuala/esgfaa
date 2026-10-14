@@ -7,6 +7,9 @@ import { normalizarEmail } from '../identidade/email.js'
 export const TIPOS_CONTA = ['estudante', 'docente']
 export const ESTADOS_MATRICULA = ['ativa', 'suspensa', 'concluida', 'anulada']
 export const ESTADOS_PRESENCA = ['presente', 'falta', 'justificada']
+// período da cadeira e papel de cada docente alocado
+export const PERIODOS = { 1: '1.º semestre', 2: '2.º semestre', anual: 'Anual' }
+export const PAPEIS_DOCENCIA = ['regente', 'assistente']
 export const TIPOS_MATERIAL = ['ficheiro', 'ligacao', 'video']
 export const TIPOS_PEDIDO = [
   'Declaração de matrícula',
@@ -105,6 +108,26 @@ export function resultadoDisciplina({ p1 = null, p2 = null, exame = null, recurs
   if (nr === null) return { ...fim(normal, 'recurso'), classificacao: null }
   const final = comPeso(nr)
   return fim(final, final >= NOTA_MINIMA_APROVACAO ? 'aprovado' : 'reprovado')
+}
+
+/*
+  Alocação de docentes a uma cadeira: no máximo um regente, sem docentes repetidos,
+  horas inteiras de 0 a 1000. Devolve a lista limpa.
+*/
+export function validarAlocacao(lista) {
+  if (!Array.isArray(lista) || lista.length > 20) throw erro('docentes', 'Lista de docentes inválida.')
+  const vistos = new Set()
+  const limpa = lista.map((d) => {
+    const docenteId = Number(d.docenteId)
+    if (!Number.isSafeInteger(docenteId) || docenteId < 1) throw erro('docentes', 'Escolha um docente.')
+    if (vistos.has(docenteId)) throw erro('docentes', 'O mesmo docente está alocado duas vezes.')
+    vistos.add(docenteId)
+    const horas = Number(d.horas ?? 0)
+    if (!Number.isInteger(horas) || horas < 0 || horas > 1000) throw erro('horas', 'Horas inválidas (0 a 1000).')
+    return { docenteId, papel: escolha(d.papel || 'assistente', 'papel', 'Papel', PAPEIS_DOCENCIA), horas }
+  })
+  if (limpa.filter((d) => d.papel === 'regente').length > 1) throw erro('docentes', 'A cadeira só pode ter um regente.')
+  return limpa
 }
 
 // ---------- trabalhos ----------

@@ -36,7 +36,7 @@ export class ServicoSessaoPortal {
       }
       throw new NaoAutenticado(CREDENCIAIS_ERRADAS)
     }
-    if (!c.ativo) throw new SemPermissao('Esta conta está desativada. Contacte a Secretaria Académica.')
+    if (!c.ativo) throw new SemPermissao('Esta conta está desativada. Contacte a Administração Escolar.')
 
     await this.contas.registarEntrada(c.id, agora)
     await this.auditoria.registar(ctx, { acao: 'entrar_portal', utilizador: quem(c) })

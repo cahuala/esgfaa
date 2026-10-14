@@ -16,7 +16,8 @@ import { CifraSenhas } from './infraestrutura/seguranca/cifra.js'
 import { AUDIENCIAS, Tokens } from './infraestrutura/seguranca/tokens.js'
 import { CacheLimitada } from './infraestrutura/seguranca/cacheLimitada.js'
 import { ArmazenamentoLocal } from './infraestrutura/ficheiros/armazenamento.js'
-import { filtrarCamposHtml } from './infraestrutura/html/filtroHtml.js'
+import { filtrarCamposHtml, filtrarHtml } from './infraestrutura/html/filtroHtml.js'
+import { ServicoPautas } from './aplicacao/pautas.js'
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
@@ -67,6 +68,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     conteudos: r.conteudos, interacoes: r.interacoes, publicidade: r.publicidade, auditoria, filtroHtml: filtrarCamposHtml, relogio,
   })
   const titulos = () => conteudos.titulosInterativos()
+  const pautas = new ServicoPautas({ academico: r.academico, auditoria })
 
   const servicos = {
     auditoria,
@@ -82,9 +84,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, privados, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, pautas, privados, auditoria, relogio }),
     secretaria: new ServicoSecretaria({
-      contas: r.contasPortal, academico: r.academico, conteudos: r.conteudos, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
+      contas: r.contasPortal, academico: r.academico, conteudos: r.conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
+      filtroHtml: filtrarHtml,
     }),
   }
 

@@ -59,7 +59,7 @@ function Contas() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Contas do portal" subtitulo="estudantes e docentes" migalhas={[{ rotulo: 'Secretaria Académica' }, { rotulo: 'Contas do portal' }]} />
+      <CabecalhoPagina titulo="Contas do portal" subtitulo="estudantes e docentes" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Contas do portal' }]} />
       <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />Os estudantes são criados ao fazer a matrícula (em Turmas). A palavra-passe inicial de cada conta é o próprio e-mail da Escola e tem de ser mudada na primeira entrada.</div>
       <div className="row">
         <div className={gerir ? 'col-xl-8' : 'col-12'}>

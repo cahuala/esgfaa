@@ -5,7 +5,7 @@ import { api } from '../api'
 import { Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
-import { REGRA } from '../regraAvaliacao'
+import { PERIODOS, REGRA } from '../regraAvaliacao'
 
 /*
   Boletim em matriz: uma linha por disciplina e uma coluna por momento de avaliação
@@ -17,7 +17,7 @@ function Notas() {
   const [erro, setErro] = useState('')
   useEffect(() => { api('/notas').then(setLista).catch((e) => setErro(e.message)) }, [])
 
-  const semestres = lista ? [...new Set(lista.map((l) => l.cadeira.semestre))].sort() : []
+  const semestres = lista ? [...new Set(lista.map((l) => l.cadeira.periodo))].sort() : []
   const concluidas = lista?.filter((l) => l.situacao === 'aprovado' || l.situacao === 'dispensado') || []
   const media = concluidas.length ? Math.round((concluidas.reduce((s, l) => s + l.final, 0) / concluidas.length) * 10) / 10 : null
 
@@ -53,8 +53,8 @@ function Notas() {
                 </thead>
                 {semestres.map((s) => (
                   <tbody key={s}>
-                    {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={8}>{s}.º semestre</th></tr>}
-                    {lista.filter((l) => l.cadeira.semestre === s).map((l) => (
+                    {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={8}>{PERIODOS[s]}</th></tr>}
+                    {lista.filter((l) => l.cadeira.periodo === s).map((l) => (
                       <tr key={l.cadeira.id}>
                         <th scope="row" className="p-matriz-nome">
                           <Link to={`/cadeiras/${l.cadeira.id}?separador=avaliacoes`}>{l.cadeira.nome}</Link>

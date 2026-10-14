@@ -196,7 +196,7 @@ model ContaPortal {
   deveMudarSenha     Boolean   @default(true) @map("deve_mudar_senha")
 
   matriculas Matricula[]
-  cadeiras   UnidadeCurricular[] @relation("docencia")
+  docencias  Docencia[]
   notas      NotaPauta[]
   entregas   Entrega[]
   presencas  Presenca[]
@@ -208,12 +208,13 @@ model ContaPortal {
 
 // turma de um curso num ano letivo (ex.: CEM 2026/2027)
 model Turma {
-  id        Int      @id @default(autoincrement())
-  curso     String // identificador do curso (coleção "cursos")
-  anoLetivo String   @map("ano_letivo")
-  nome      String
-  ativa     Boolean  @default(true)
-  criadaEm  DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+  id            Int      @id @default(autoincrement())
+  curso         String // identificador do curso (coleção "cursos")
+  anoLetivo     String   @map("ano_letivo")
+  anoCurricular Int      @default(1) @map("ano_curricular") // 1.º ano, 2.º ano, …
+  nome          String
+  ativa         Boolean  @default(true)
+  criadaEm      DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
   cadeiras   UnidadeCurricular[]
   matriculas Matricula[]
@@ -240,28 +241,43 @@ model Matricula {
 
 // unidade curricular ("cadeira") de uma turma
 model UnidadeCurricular {
-  id        Int    @id @default(autoincrement())
-  turmaId   Int    @map("turma_id")
-  codigo    String
-  nome      String
-  semestre  Int    @default(1)
-  horas     Int    @default(0)
-  docenteId Int?   @map("docente_id")
-  descricao String @default("")
+  id                 Int      @id @default(autoincrement())
+  turmaId            Int      @map("turma_id")
+  codigo             String
+  nome               String
+  periodo            String   @default("1") // "1" (1.º semestre) | "2" (2.º semestre) | "anual"
+  horas              Int      @default(0)
+  descricao          String   @default("")
+  programa           String   @default("") // programa da cadeira escrito no portal (HTML filtrado)
+  programaFicheiroId String?  @map("programa_ficheiro_id") // ou em documento (PDF, Word)
+  notasPublicadas    String[] @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
 
-  turma           Turma          @relation(fields: [turmaId], references: [id], onDelete: Cascade)
-  docente         ContaPortal?   @relation("docencia", fields: [docenteId], references: [id], onDelete: SetNull)
-  materiais       Material[]
-  avisos          AvisoCadeira[]
-  pauta           NotaPauta[]
-  notasPublicadas String[]       @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
-  trabalhos       Trabalho[]
-  horarios        Horario[]
-  aulas           Aula[]
+  turma     Turma          @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  docentes  Docencia[]
+  materiais Material[]
+  avisos    AvisoCadeira[]
+  pauta     NotaPauta[]
+  trabalhos Trabalho[]
+  horarios  Horario[]
+  aulas     Aula[]
 
   @@unique([turmaId, codigo])
-  @@index([docenteId])
   @@map("unidades_curriculares")
+}
+
+// alocação de docentes às cadeiras: um regente e, se for o caso, assistentes
+model Docencia {
+  cadeiraId Int    @map("cadeira_id")
+  docenteId Int    @map("docente_id")
+  papel     String @default("regente") // "regente" | "assistente"
+  horas     Int    @default(0) // horas atribuídas a este docente na cadeira
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  docente ContaPortal       @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@id([cadeiraId, docenteId])
+  @@index([docenteId])
+  @@map("docencias")
 }
 
 // ficheiro privado (materiais, entregas, documentos): só se descarrega pela API, com permissão

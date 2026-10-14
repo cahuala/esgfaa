@@ -33,7 +33,7 @@ function AvisosGerais() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Avisos do portal" subtitulo="da Secretaria Académica" migalhas={[{ rotulo: 'Secretaria Académica' }, { rotulo: 'Avisos' }]} />
+      <CabecalhoPagina titulo="Avisos do portal" subtitulo="da Administração Escolar" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Avisos' }]} />
       <div className="row">
         <div className="col-xl-8">
           {erro && <Erro texto={erro} />}

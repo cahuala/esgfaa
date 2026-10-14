@@ -16,7 +16,7 @@ function Turmas() {
   const [lista, setLista] = useState(null)
   const [cursos, setCursos] = useState([])
   const [erro, setErro] = useState('')
-  const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), nome: '' })
+  const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), anoCurricular: '1', nome: '' })
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
 
@@ -43,7 +43,7 @@ function Turmas() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Turmas" subtitulo="matrículas, cadeiras e horários" migalhas={[{ rotulo: 'Secretaria Académica' }, { rotulo: 'Turmas' }]} />
+      <CabecalhoPagina titulo="Turmas" subtitulo="matrículas, cadeiras e horários" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Turmas' }]} />
       <div className="row">
         <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
@@ -51,14 +51,15 @@ function Turmas() {
             {!lista && !erro ? <Carregando /> : (
               <div className="table-responsive">
                 <table className="table table-striped align-middle mb-0">
-                  <thead><tr><th>Turma</th><th>Curso</th><th>Ano letivo</th><th className="text-end">Estudantes</th><th className="text-end">Cadeiras</th><th /></tr></thead>
+                  <thead><tr><th>Turma</th><th>Curso</th><th>Ano letivo</th><th>Ano curricular</th><th className="text-end">Estudantes</th><th className="text-end">Cadeiras</th><th /></tr></thead>
                   <tbody>
-                    {lista?.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">Ainda não há turmas.</td></tr>}
+                    {lista?.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">Ainda não há turmas.</td></tr>}
                     {lista?.map((t) => (
                       <tr key={t.id}>
                         <td className="fw-bold">{t.nome} {!t.ativa && <span className="badge bg-secondary ms-1">Inativa</span>}</td>
                         <td>{nomeCurso(t.curso)}</td>
                         <td>{t.anoLetivo}</td>
+                        <td>{t.anoCurricular}.º ano</td>
                         <td className="text-end">{t.estudantes}</td>
                         <td className="text-end">{t.cadeiras}</td>
                         <td className="text-end"><Link to={`/academico/turmas/${t.id}`} className="btn btn-sm btn-primary">Abrir</Link></td>
@@ -81,6 +82,10 @@ function Turmas() {
                 </select>
                 <label className="form-label fw-bold" htmlFor="t-ano">Ano letivo</label>
                 <input id="t-ano" className="form-control mb-3" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />
+                <label className="form-label fw-bold" htmlFor="t-anocur">Ano curricular</label>
+                <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
+                  {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}.º ano</option>)}
+                </select>
                 <label className="form-label fw-bold" htmlFor="t-nome">Nome da turma</label>
                 <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="CEM 2026/2027" required />
                 <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> Criar turma</button>

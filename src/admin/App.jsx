@@ -12,6 +12,8 @@ import Candidaturas from './paginas/Candidaturas'
 import CandidaturaDetalhe from './paginas/CandidaturaDetalhe'
 import Turmas from './paginas/academico/Turmas'
 import Turma from './paginas/academico/Turma'
+import CadeiraAcademica from './paginas/academico/Cadeira'
+import Alocacao from './paginas/academico/Alocacao'
 import Contas from './paginas/academico/Contas'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
@@ -48,6 +50,8 @@ function App() {
         {pode('candidaturas.ver') && <Route path="/candidaturas/:id" element={<CandidaturaDetalhe />} />}
         {pode('academico.ver') && <Route path="/academico/turmas" element={<Turmas />} />}
         {pode('academico.ver') && <Route path="/academico/turmas/:id" element={<Turma />} />}
+        {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}
+        {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/contas" element={<Contas />} />}
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}
         {pode('academico.ver') && <Route path="/academico/avisos" element={<AvisosGerais />} />}

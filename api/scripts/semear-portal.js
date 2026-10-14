@@ -37,9 +37,55 @@ async function semearPautas(turmaId) {
   console.log('Pautas de demonstração criadas.')
 }
 
+const PROGRAMA = `<h2>Objetivos</h2><p>Dotar os oficiais de instrumentos de análise e planeamento estratégico ao nível operacional e estratégico-militar.</p>
+<h2>Conteúdos</h2><ol><li>Conceitos de estratégia e de arte operacional</li><li>O processo de planeamento de operações</li><li>Estratégia de defesa nacional e cooperação regional (SADC)</li><li>Estudos de caso</li></ol>
+<h2>Avaliação</h2><p>Duas provas parcelares (MAC); dispensa de exame com MAC ≥ 14 sem prova negativa. Nota final = 40 % MAC + 60 % exame.</p>
+<h2>Bibliografia</h2><ul><li>Clausewitz, C. — <em>Da Guerra</em></li><li>Couto, A. C. — <em>Elementos de Estratégia</em></li></ul>`
+
+/*
+  Acrescentos que também correm sobre dados de demonstração antigos (idempotentes):
+  períodos, assistente na EST101, programa escrito, e um 1.º ano já concluído para o percurso académico.
+*/
+async function semearExtras(turma) {
+  const porCodigo = Object.fromEntries((await prisma.unidadeCurricular.findMany({ where: { turmaId: turma.id } })).map((u) => [u.codigo, u]))
+  await prisma.turma.update({ where: { id: turma.id }, data: { anoCurricular: 2 } })
+  if (porCodigo.GEO103) await prisma.unidadeCurricular.update({ where: { id: porCodigo.GEO103.id }, data: { periodo: '2' } })
+  if (porCodigo.MET104) await prisma.unidadeCurricular.update({ where: { id: porCodigo.MET104.id }, data: { periodo: 'anual' } })
+  if (porCodigo.EST101 && !porCodigo.EST101.programa) await prisma.unidadeCurricular.update({ where: { id: porCodigo.EST101.id }, data: { programa: PROGRAMA } })
+  const ana = await prisma.contaPortal.findUnique({ where: { email: `ana.baptista@${dominio}` } })
+  if (porCodigo.EST101 && ana) {
+    await prisma.docencia.upsert({
+      where: { cadeiraId_docenteId: { cadeiraId: porCodigo.EST101.id, docenteId: ana.id } },
+      create: { cadeiraId: porCodigo.EST101.id, docenteId: ana.id, papel: 'assistente', horas: 30 }, update: {},
+    })
+    await prisma.docencia.updateMany({ where: { cadeiraId: porCodigo.EST101.id, papel: 'regente' }, data: { horas: 60 } })
+  }
+
+  // 1.º ano (2025/2026), já concluído: dá história ao percurso académico
+  if (await prisma.turma.findFirst({ where: { nome: 'CEM 2025/2026 (demonstração)' } })) return
+  const anterior = await prisma.turma.create({ data: { curso: turma.curso, anoLetivo: '2025/2026', anoCurricular: 1, nome: 'CEM 2025/2026 (demonstração)', ativa: false } })
+  const estudantes = (await prisma.matricula.findMany({ where: { turmaId: turma.id }, orderBy: { estudanteId: 'asc' } })).map((m) => m.estudanteId)
+  for (const e of estudantes) await prisma.matricula.create({ data: { estudanteId: e, turmaId: anterior.id, estado: 'concluida' } })
+  const regente = (await prisma.docencia.findFirst({ where: { cadeiraId: porCodigo.EST101?.id } }))?.docenteId
+  // [código, nome, período, horas, notas (p1, p2, exame, recurso) de cada estudante]
+  const plano = [
+    ['HIS001', 'História Militar de Angola', '1', 60, [[16, 15], [13, 12, 12], [14, 15], [11, 9, 10]]],
+    ['DIR002', 'Direito Internacional Humanitário', '1', 45, [[15, 14], [12, 14, 13], [10, 12, 11], [9, 8, 7, 11]]],
+    ['TAT003', 'Tática Geral', '2', 75, [[17, 18], [14, 16], [12, 13, 14], [10, 11, 9, 12]]],
+    ['ING004', 'Inglês Técnico-Militar', 'anual', 90, [[14, 16], [15, 14], [13, 11, 15], [12, 10, 13]]],
+  ]
+  for (const [codigo, nome, periodo, horas, notas] of plano) {
+    const u = await prisma.unidadeCurricular.create({ data: { turmaId: anterior.id, codigo, nome, periodo, horas, notasPublicadas: ['p1', 'p2', 'exame', 'recurso'] } })
+    if (regente) await prisma.docencia.create({ data: { cadeiraId: u.id, docenteId: regente, papel: 'regente', horas } })
+    await prisma.notaPauta.createMany({ data: notas.map(([p1, p2, exame = null, recurso = null], i) => ({ cadeiraId: u.id, estudanteId: estudantes[i], p1, p2, exame, recurso })).filter((l) => l.estudanteId) })
+  }
+  console.log('Ano anterior (percurso académico) criado.')
+}
+
 const existente = await prisma.turma.findFirst({ where: { nome: 'CEM 2026/2027 (demonstração)' } })
 if (existente) {
   await semearPautas(existente.id)
+  await semearExtras(existente)
   console.log('Os dados de demonstração já existem.')
   await c.fechar()
   process.exit(0)
@@ -77,7 +123,8 @@ for (const [codigo, nome, docente, horas] of [
   ['GEO103', 'Geopolítica e Relações Internacionais', miguel, 60],
   ['MET104', 'Metodologia de Investigação', ana, 45],
 ]) {
-  cadeiras[codigo] = await prisma.unidadeCurricular.create({ data: { turmaId: turma.id, codigo, nome, horas, semestre: 1, docenteId: docente.id } })
+  cadeiras[codigo] = await prisma.unidadeCurricular.create({ data: { turmaId: turma.id, codigo, nome, horas, periodo: '1' } })
+  await prisma.docencia.create({ data: { cadeiraId: cadeiras[codigo].id, docenteId: docente.id, papel: 'regente', horas } })
 }
 
 const horarios = [
@@ -97,6 +144,7 @@ await prisma.avisoCadeira.create({ data: { cadeiraId: cadeiras.EST101.id, titulo
 await prisma.avisoGeral.create({ data: { titulo: 'Início do ano académico', texto: 'As aulas do 1.º semestre começam esta semana. Consultem o horário no portal.' } })
 
 await semearPautas(turma.id)
+await semearExtras(turma)
 
 const prazo = new Date(Date.now() + 7 * 86_400_000)
 prazo.setHours(23, 59, 0, 0)

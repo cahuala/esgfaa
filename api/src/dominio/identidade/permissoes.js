@@ -12,7 +12,7 @@ export const RECURSOS = [
   { id: 'paginas', acoes: ['ver', 'editar'] },
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
   { id: 'candidaturas', acoes: ['ver', 'editar'] },
-  { id: 'academico', acoes: ['ver', 'gerir'] },
+  { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
   { id: 'estatisticas', acoes: ['ver'] },
   { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
@@ -60,10 +60,10 @@ export const PAPEIS_PADRAO = [
   },
   {
     id: 'secretaria',
-    nome: 'Secretaria Académica',
-    descricao: 'Candidaturas, matrículas, turmas, cadeiras, horários e pedidos de documentos.',
+    nome: 'Repartição de Administração Escolar',
+    descricao: 'Matrículas, turmas, cadeiras, alocação de docentes, programas, pautas, horários e pedidos de documentos.',
     sistema: 0,
-    permissoes: ['candidaturas.ver', 'candidaturas.editar', 'cursos.ver', 'academico.ver', 'academico.gerir'],
+    permissoes: ['candidaturas.ver', 'candidaturas.editar', 'cursos.ver', 'academico.ver', 'academico.gerir', 'academico.notas'],
   },
   {
     id: 'analista',

@@ -68,12 +68,16 @@ export const conta = z.object({
   dados: z.record(z.string(), z.union([z.string().max(200), z.number()])).optional(),
 })
 export const filtrosContas = z.object({ tipo: texto(20).optional(), q: texto(200).optional() })
-export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), nome: texto(120).optional(), ativa: z.boolean().optional() })
+export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), anoCurricular: textoLivre(2), nome: texto(120).optional(), ativa: z.boolean().optional() })
 export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: texto(20).optional() })
 export const cadeira = z.object({
-  codigo: texto(40).optional(), nome: texto(200).optional(), semestre: textoLivre(4), horas: textoLivre(6),
-  docenteId: z.union([idNumerico, z.literal(''), z.null()]).optional(), descricao: texto(3000).optional(),
+  codigo: texto(40).optional(), nome: texto(200).optional(), periodo: texto(10).optional(), horas: textoLivre(6), descricao: texto(3000).optional(),
 })
+export const alocacao = z.object({
+  docentes: z.array(z.object({ docenteId: idNumerico, papel: texto(20).optional(), horas: textoLivre(6) })).max(20),
+})
+// multipart (com documento) ou JSON
+export const programa = z.object({ texto: z.string().max(200_000).optional(), removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
 export const horario = z.object({ diaSemana: textoLivre(2), inicio: texto(5), fim: texto(5), sala: texto(80).optional() })
 export const avisoGeral = z.object({ turmaId: z.union([idNumerico, z.literal(''), z.null()]).optional(), titulo: texto(300), texto: texto(6000) })
 export const tratarPedido = z.object({ estado: texto(30).optional(), resposta: texto(3000).optional() })

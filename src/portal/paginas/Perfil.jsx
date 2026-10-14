@@ -23,7 +23,7 @@ function Perfil() {
             {conta.matriculas?.map((m) => <div key={m.id}><dt>Matrícula</dt><dd>{m.turma.nome} ({m.estado})</dd></div>)}
             <div><dt>Último acesso</dt><dd>{dataHora(conta.ultimoAcesso)}</dd></div>
           </dl>
-          <p className="p-texto-fraco">Para corrigir os seus dados, contacte a Secretaria Académica.</p>
+          <p className="p-texto-fraco">Para corrigir os seus dados, contacte a Administração Escolar.</p>
         </Cartao>
         <Cartao titulo="Mudar a palavra-passe">
           <MudarSenha aoTerminar={() => setAviso({ texto: 'Palavra-passe alterada. As outras sessões foram terminadas.' })} />

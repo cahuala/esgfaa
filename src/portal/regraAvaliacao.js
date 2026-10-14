@@ -15,3 +15,5 @@ export const SITUACOES = {
 // texto da regra, para as legendas
 export const REGRA = `MAC = média da 1.ª e 2.ª prova. MAC ≥ ${AVALIACAO.macDispensa} sem prova negativa dispensa do exame. `
   + `Nota final = ${AVALIACAO.pesoMac * 100} % MAC + ${AVALIACAO.pesoExame * 100} % exame (ou recurso), arredondada às unidades; aprovação com ${NOTA_MINIMA_APROVACAO}.`
+
+export const PERIODOS = { 1: '1.º semestre', 2: '2.º semestre', anual: 'Anual' }

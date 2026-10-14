@@ -16,7 +16,7 @@ async function primeiraEntrada(page, email) {
   await expect(page.getByText('As minhas cadeiras').first()).toBeVisible()
 }
 
-test('Secretaria matricula; docente publica; estudante consulta e pede um documento', async ({ page }) => {
+test('Administração Escolar matricula; docente publica; estudante consulta e pede um documento', async ({ page }) => {
   const sufixo = Date.now()
   const estudante = `estudante${sufixo}@esgfaa.gov.ao`
   const docente = `docente${sufixo}@esgfaa.gov.ao`
@@ -45,9 +45,27 @@ test('Secretaria matricula; docente publica; estudante consulta e pede um docume
 
   await page.getByLabel('Código').fill('EST101')
   await page.getByLabel('Nome', { exact: true }).fill('Estratégia Militar')
-  await page.getByLabel('Docente', { exact: true }).selectOption({ label: 'Cor. Docente Teste' })
+  await page.getByLabel('Período').selectOption('anual')
   await page.getByRole('button', { name: 'Criar cadeira' }).click()
   await expect(page.getByText('EST101 · Estratégia Militar')).toBeVisible()
+  await expect(page.getByText('Docentes por alocar')).toBeVisible()
+
+  // alocação (regente) e programa na ficha da cadeira
+  await page.getByRole('link', { name: /Docentes, programa e pauta/ }).click()
+  await page.getByRole('tab', { name: /Docentes/ }).click()
+  await page.getByRole('button', { name: 'Adicionar docente' }).click()
+  const docenteSel = page.getByLabel('Docente 1', { exact: true })
+  const opcao = docenteSel.locator('option', { hasText: 'Cor. Docente Teste' })
+  await expect(opcao).toHaveCount(1)
+  await docenteSel.selectOption(await opcao.getAttribute('value'))
+  await page.getByLabel('Horas do docente 1').fill('60')
+  await page.getByRole('button', { name: 'Guardar alocação' }).click()
+  await expect(page.getByText('Alocação guardada.', { exact: false })).toBeVisible()
+  await page.getByRole('tab', { name: /Programa/ }).click()
+  await page.locator('.doc-folha, .ProseMirror').first().click()
+  await page.keyboard.type('Objetivos: planear operações.')
+  await page.getByRole('button', { name: 'Guardar programa' }).click()
+  await expect(page.getByText('Programa guardado.')).toBeVisible()
 
   // ---------- portal: docente ----------
   await primeiraEntrada(page, docente)
@@ -86,6 +104,9 @@ test('Secretaria matricula; docente publica; estudante consulta e pede um docume
   await page.goto('/portal/#/cadeiras')
   await page.getByText('Estratégia Militar').first().click()
   await expect(page.getByText('Programa da cadeira')).toBeVisible()
+  await page.getByRole('tab', { name: 'Programa' }).click()
+  await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
+  await page.getByRole('tab', { name: /Materiais/ }).click()
   // o estudante não vê os formulários do docente
   await expect(page.getByRole('button', { name: 'Publicar' })).toHaveCount(0)
 
@@ -98,6 +119,6 @@ test('Secretaria matricula; docente publica; estudante consulta e pede um docume
   await page.goto('/portal/#/pedidos')
   await page.getByLabel('Documento').selectOption('Declaração de matrícula')
   await page.getByRole('button', { name: 'Enviar pedido' }).click()
-  await expect(page.getByText('Pedido enviado à Secretaria Académica.')).toBeVisible()
+  await expect(page.getByText('Pedido enviado à Administração Escolar.')).toBeVisible()
   await expect(page.getByText('Pendente')).toBeVisible()
 })

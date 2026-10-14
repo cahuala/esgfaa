@@ -20,7 +20,7 @@ function Pedidos() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Pedidos de documentos" subtitulo="feitos no portal" migalhas={[{ rotulo: 'Secretaria Académica' }, { rotulo: 'Pedidos' }]} />
+      <CabecalhoPagina titulo="Pedidos de documentos" subtitulo="feitos no portal" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Pedidos' }]} />
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       <Painel titulo={`Pedidos${lista ? ` (${lista.length})` : ''}`} corpo={false}>
         <div className="panel-body pb-0">
@@ -91,7 +91,7 @@ function TratarPedido({ p, aoGuardar, avisar }) {
       </div>
       <div className="col-md-5">
         <label className="form-label fw-bold" htmlFor={`pr-${p.id}`}>Resposta ao estudante</label>
-        <input id={`pr-${p.id}`} className="form-control" value={f.resposta} onChange={(e) => setF({ ...f, resposta: e.target.value })} placeholder="Ex.: pode levantar na Secretaria a partir de…" />
+        <input id={`pr-${p.id}`} className="form-control" value={f.resposta} onChange={(e) => setF({ ...f, resposta: e.target.value })} placeholder="Ex.: pode levantar na Administração Escolar a partir de…" />
       </div>
       <div className="col-md-3">
         <label className="form-label fw-bold" htmlFor={`pf-${p.id}`}>Documento (PDF)</label>

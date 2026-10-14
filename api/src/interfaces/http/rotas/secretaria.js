@@ -7,7 +7,7 @@ import * as E from '../esquemas.js'
 const pId = z.object({ id: E.idNumerico })
 const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro não encontrado.') })
 
-// Gestão académica no painel (Secretaria): /api/admin/academico/… (já autenticado)
+// Gestão académica no painel (Repartição de Administração Escolar): /api/admin/academico/… (já autenticado)
 export function rotasSecretaria({ servicos, config, privados }) {
   const r = Router()
   const s = servicos.secretaria
@@ -30,6 +30,14 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/turmas/:id/cadeiras', validar({ params: pId, body: E.cadeira }), async (req, res) => res.status(201).json(await s.criarCadeira(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/cadeiras/:id', validar({ params: pId, body: E.cadeira }), async (req, res) => res.json(await s.editarCadeira(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/cadeiras/:id', validar({ params: pId }), async (req, res) => { await s.apagarCadeira(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/cadeiras/:id', validar({ params: pId }), async (req, res) => res.json(await s.cadeira(ctx(req), req.dados.params.id)))
+  r.put('/cadeiras/:id/programa', ficheiro, validar({ params: pId, body: E.programa }), async (req, res) => res.json(await s.programa(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
+  r.put('/cadeiras/:id/docentes', validar({ params: pId, body: E.alocacao }), async (req, res) => res.json(await s.alocarDocentes(ctx(req), req.dados.params.id, req.dados.body.docentes)))
+  r.get('/alocacao', async (req, res) => res.json(await s.alocacao(ctx(req))))
+
+  r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))
+  r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await s.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))
+  r.put('/cadeiras/:id/pauta/publicacao', validar({ params: pId, body: E.publicacaoNotas }), async (req, res) => res.json(await s.publicarNotas(ctx(req), req.dados.params.id, req.dados.body.publicadas)))
   r.post('/cadeiras/:id/horarios', validar({ params: pId, body: E.horario }), async (req, res) => res.status(201).json(await s.criarHorario(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/horarios/:id', validar({ params: pId }), async (req, res) => { await s.apagarHorario(ctx(req), req.dados.params.id); res.status(204).end() })
 

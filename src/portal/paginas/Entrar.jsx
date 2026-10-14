@@ -55,7 +55,7 @@ function Entrar() {
           <button type="submit" className="p-botao p-botao-largo" disabled={aEntrar || !email || !senha}>{aEntrar ? 'A entrar…' : 'Entrar'}</button>
           <p className="p-entrada-ajuda">
             Primeira vez? A palavra-passe inicial é o seu e-mail da Escola; vai ser-lhe pedido que a mude.
-            Problemas no acesso: Secretaria Académica.
+            Problemas no acesso: Administração Escolar.
           </p>
           <a href={SITE} className="p-entrada-voltar">← Voltar ao site da Escola</a>
         </form>

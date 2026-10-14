@@ -15,7 +15,7 @@ function Linha({ rotulo, children }) {
   )
 }
 
-// Uma candidatura: dados do candidato e avaliação pela Secretaria Académica
+// Uma candidatura: dados do candidato e avaliação pela Administração Escolar
 function CandidaturaDetalhe() {
   const { id } = useParams()
   const { pode } = useSessao()
@@ -110,7 +110,7 @@ function CandidaturaDetalhe() {
                 </button>
               </form>
             ) : (
-              <p className="text-muted mb-0">Só a Secretaria Académica pode alterar o estado.</p>
+              <p className="text-muted mb-0">Só a Administração Escolar pode alterar o estado.</p>
             )}
             <div className="text-muted small mt-3">Última alteração: {dataHora(c.atualizadaEm)}</div>
           </Painel>

@@ -5,6 +5,8 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, Carregando, Erro } from '../componentes'
 import { DIAS } from '../formatar'
+import { PERIODOS } from '../regraAvaliacao'
+import Programa from './Programa'
 import Materiais from './Materiais'
 import AvisosCadeira from './AvisosCadeira'
 import Trabalhos from './Trabalhos'
@@ -13,6 +15,7 @@ import Presencas from './Presencas'
 
 const SEPARADORES = [
   { id: 'materiais', texto: 'Materiais' },
+  { id: 'programa', texto: 'Programa' },
   { id: 'avisos', texto: 'Avisos' },
   { id: 'trabalhos', texto: 'Trabalhos' },
   { id: 'avaliacoes', texto: 'Notas' },
@@ -44,9 +47,9 @@ function Cadeira() {
       <header className="p-titulo p-cadeira-cabeca">
         <div>
           <Link to="/cadeiras" className="p-voltar"><FaArrowLeft aria-hidden="true" /> Cadeiras</Link>
-          <span className="p-rotulo">{c.codigo} · {c.semestre}.º semestre{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</span>
+          <span className="p-rotulo">{c.codigo} · {PERIODOS[c.periodo]}{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</span>
           <h1>{c.nome}</h1>
-          <p className="p-titulo-sub">{c.docente ? `Docente: ${c.docente.nome}` : 'Docente por atribuir'}{c.descricao ? ` — ${c.descricao}` : ''}</p>
+          <p className="p-titulo-sub">{c.docentes.length ? c.docentes.map((d) => `${d.papel === 'regente' ? 'Regente' : 'Assistente'}: ${d.nome}`).join(' · ') : 'Docentes por alocar'}{c.descricao ? ` — ${c.descricao}` : ''}</p>
         </div>
       </header>
 
@@ -66,6 +69,7 @@ function Cadeira() {
 
       <div role="tabpanel">
         {separador === 'materiais' && <Materiais {...props} />}
+        {separador === 'programa' && <Programa {...props} />}
         {separador === 'avisos' && <AvisosCadeira {...props} />}
         {separador === 'trabalhos' && <Trabalhos {...props} />}
         {separador === 'avaliacoes' && <Avaliacoes {...props} />}

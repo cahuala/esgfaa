@@ -3,26 +3,23 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { PERIODOS } from './comum'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
 const RAMOS = ['Exército', 'Força Aérea Nacional', 'Marinha de Guerra Angolana']
 
-// uma turma: matrículas, cadeiras (com docente) e horário
+// uma turma: matrículas, cadeiras (período, docentes alocados) e horário
 function Turma() {
   const { id } = useParams()
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
   const [t, setT] = useState(null)
   const [erro, setErro] = useState('')
-  const [docentes, setDocentes] = useState([])
   const [aviso, setAviso] = useState(null)
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
-  useEffect(() => {
-    carregar()
-    api('/academico/contas?tipo=docente').then(setDocentes).catch(() => {})
-  }, [carregar])
+  useEffect(() => { carregar() }, [carregar])
 
   const falhou = (e) => setAviso({ tipo: 'erro', texto: e.message })
 
@@ -31,7 +28,7 @@ function Turma() {
 
   return (
     <>
-      <CabecalhoPagina titulo={t.nome} subtitulo={t.anoLetivo} migalhas={[{ rotulo: 'Turmas', para: '/academico/turmas' }, { rotulo: t.nome }]}>
+      <CabecalhoPagina titulo={t.nome} subtitulo={`${t.anoLetivo} · ${t.anoCurricular}.º ano`} migalhas={[{ rotulo: 'Turmas', para: '/academico/turmas' }, { rotulo: t.nome }]}>
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> Turmas</Link>
       </CabecalhoPagina>
       <div className="row">
@@ -62,9 +59,9 @@ function Turma() {
           {gerir && <NovaMatricula turma={t} carregar={carregar} avisar={setAviso} />}
         </div>
         <div className="col-xl-6">
-          {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} docentes={docentes} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+          {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
           {t.cadeiras.length === 0 && <div className="alert alert-info">Ainda não há cadeiras nesta turma.</div>}
-          {gerir && <NovaCadeira turma={t} docentes={docentes} carregar={carregar} avisar={setAviso} />}
+          {gerir && <NovaCadeira turma={t} carregar={carregar} avisar={setAviso} />}
         </div>
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
@@ -109,7 +106,7 @@ function NovaMatricula({ turma, carregar, avisar }) {
   )
 }
 
-function CadeiraTurma({ c, docentes, gerir, carregar, avisar }) {
+function CadeiraTurma({ c, gerir, carregar, avisar }) {
   const [h, setH] = useState({ diaSemana: '1', inicio: '08:00', fim: '10:00', sala: '' })
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
   return (
@@ -118,15 +115,13 @@ function CadeiraTurma({ c, docentes, gerir, carregar, avisar }) {
         if (window.confirm(`Apagar "${c.nome}" com materiais, notas, trabalhos e presenças?`)) api(`/academico/cadeiras/${c.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
       }}><i className="fa fa-times" /></button>
     )}>
-      <div className="d-flex align-items-center gap-2 mb-2">
-        <span className="text-muted">Docente:</span>
-        {gerir ? (
-          <select className="form-select form-select-sm w-auto" value={c.docente?.id || ''} aria-label={`Docente de ${c.nome}`} onChange={(e) => api(`/academico/cadeiras/${c.id}`, { metodo: 'PUT', corpo: { docenteId: e.target.value ? Number(e.target.value) : null } }).then(carregar).catch(falhou)}>
-            <option value="">Por atribuir</option>
-            {docentes.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}
-          </select>
-        ) : <strong>{c.docente?.nome || 'Por atribuir'}</strong>}
-        <span className="text-muted ms-auto small">{c.semestre}.º sem. · {c.horas} h</span>
+      <div className="d-flex align-items-start gap-2 mb-2 flex-wrap">
+        <div className="d-flex gap-1 flex-wrap">
+          {c.docentes.length === 0 && <span className="badge bg-warning text-dark"><i className="fa fa-user-clock me-1" />Docentes por alocar</span>}
+          {c.docentes.map((d) => <span key={d.id} className={`badge ${d.papel === 'regente' ? 'bg-dark' : 'bg-gray-500'}`}>{d.papel === 'regente' ? 'Regente' : 'Assistente'}: {d.nome}</span>)}
+        </div>
+        <span className="text-muted ms-auto small text-nowrap">{PERIODOS[c.periodo]} · {c.horas} h</span>
+        <Link to={`/academico/cadeiras/${c.id}`} className="btn btn-xs btn-primary"><i className="fa fa-cog me-1" />Docentes, programa e pauta</Link>
       </div>
       <table className="table table-sm mb-2">
         <tbody>
@@ -152,17 +147,18 @@ function CadeiraTurma({ c, docentes, gerir, carregar, avisar }) {
   )
 }
 
-function NovaCadeira({ turma, docentes, carregar, avisar }) {
-  const vazio = { codigo: '', nome: '', semestre: '1', horas: '', docenteId: '' }
+// a cadeira cria-se sem docentes: a alocação (regente e assistentes) faz-se na ficha da cadeira
+function NovaCadeira({ turma, carregar, avisar }) {
+  const vazio = { codigo: '', nome: '', periodo: '1', horas: '' }
   const [f, setF] = useState(vazio)
   const [erro, setErro] = useState('')
   async function criar(e) {
     e.preventDefault()
     setErro('')
     try {
-      await api(`/academico/turmas/${turma.id}/cadeiras`, { metodo: 'POST', corpo: { ...f, semestre: Number(f.semestre), horas: Number(f.horas || 0), docenteId: f.docenteId ? Number(f.docenteId) : null } })
+      await api(`/academico/turmas/${turma.id}/cadeiras`, { metodo: 'POST', corpo: { ...f, horas: Number(f.horas || 0) } })
       setF(vazio)
-      avisar({ texto: 'Cadeira criada.' })
+      avisar({ texto: 'Cadeira criada. Aloque os docentes na ficha da cadeira.' })
       carregar()
     } catch (falha) {
       setErro(falha.message)
@@ -175,9 +171,8 @@ function NovaCadeira({ turma, docentes, carregar, avisar }) {
         <div className="row g-2">
           <div className="col-md-4"><label className="form-label fw-bold" htmlFor="c-codigo">Código</label><input id="c-codigo" className="form-control" value={f.codigo} onChange={(e) => setF({ ...f, codigo: e.target.value })} placeholder="EST101" required /></div>
           <div className="col-md-8"><label className="form-label fw-bold" htmlFor="c-nome">Nome</label><input id="c-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
-          <div className="col-md-3"><label className="form-label" htmlFor="c-sem">Semestre</label><input id="c-sem" type="number" min={1} max={12} className="form-control" value={f.semestre} onChange={(e) => setF({ ...f, semestre: e.target.value })} /></div>
-          <div className="col-md-3"><label className="form-label" htmlFor="c-horas">Horas</label><input id="c-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="c-doc">Docente</label><select id="c-doc" className="form-select" value={f.docenteId} onChange={(e) => setF({ ...f, docenteId: e.target.value })}><option value="">Por atribuir</option>{docentes.map((d) => <option key={d.id} value={d.id}>{d.nome}</option>)}</select></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="c-periodo">Período</label><select id="c-periodo" className="form-select" value={f.periodo} onChange={(e) => setF({ ...f, periodo: e.target.value })}>{Object.entries(PERIODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="c-horas">Horas</label><input id="c-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
         </div>
         <button type="submit" className="btn btn-theme w-100 mt-3"><i className="fa fa-plus me-1" /> Criar cadeira</button>
       </form>

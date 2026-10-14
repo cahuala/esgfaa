@@ -64,7 +64,7 @@ function Layout({ children }) {
       </header>
       <main className="p-contentor p-principal">{children}</main>
       <footer className="p-rodape">
-        <div className="p-contentor">© {new Date().getFullYear()} Escola Superior de Guerra das Forças Armadas Angolanas · Secretaria Académica</div>
+        <div className="p-contentor">© {new Date().getFullYear()} Escola Superior de Guerra das Forças Armadas Angolanas · Administração Escolar</div>
       </footer>
     </div>
   )

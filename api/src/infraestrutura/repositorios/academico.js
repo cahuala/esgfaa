@@ -5,12 +5,24 @@ const iso = (d) => (d ? new Date(d).toISOString() : null)
 const num = (d) => (d === null || d === undefined ? null : Number(d))
 const contaResumo = { select: { id: true, nome: true, numero: true, email: true } }
 
-const cadeiraLinha = (c) => c && ({
-  id: c.id, turmaId: c.turmaId, codigo: c.codigo, nome: c.nome, semestre: c.semestre, horas: c.horas, descricao: c.descricao,
-  notasPublicadas: c.notasPublicadas ?? [],
-  docente: c.docente ? { id: c.docente.id, nome: c.docente.nome, email: c.docente.email } : null,
-  turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo } : undefined,
-})
+const ordemPapel = { regente: 0, assistente: 1 }
+
+// cadeira com a turma e os docentes alocados (regente primeiro); "docente" é o regente
+const cadeiraLinha = (c) => {
+  if (!c) return c
+  const docentes = (c.docentes || [])
+    .map((d) => ({ id: d.docente.id, nome: d.docente.nome, email: d.docente.email, numero: d.docente.numero, papel: d.papel, horas: d.horas }))
+    .sort((a, b) => ordemPapel[a.papel] - ordemPapel[b.papel] || a.nome.localeCompare(b.nome))
+  const regente = docentes.find((d) => d.papel === 'regente') || null
+  return {
+    id: c.id, turmaId: c.turmaId, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, descricao: c.descricao,
+    programa: c.programa ?? '', programaFicheiroId: c.programaFicheiroId ?? null,
+    notasPublicadas: c.notasPublicadas ?? [],
+    docentes, docente: regente,
+    turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo, anoCurricular: c.turma.anoCurricular } : undefined,
+  }
+}
+const comDocentes = { docentes: { include: { docente: contaResumo } }, turma: true }
 
 const duplicado = (mensagem) => (erro) => {
   if (eDuplicado(erro)) throw new Conflito(mensagem)
@@ -30,7 +42,7 @@ export class RepositorioAcademico {
       orderBy: [{ anoLetivo: 'desc' }, { nome: 'asc' }],
       include: { _count: { select: { matriculas: { where: { estado: 'ativa' } }, cadeiras: true } } },
     })
-    return linhas.map((t) => ({ id: t.id, curso: t.curso, anoLetivo: t.anoLetivo, nome: t.nome, ativa: t.ativa, estudantes: t._count.matriculas, cadeiras: t._count.cadeiras }))
+    return linhas.map((t) => ({ id: t.id, curso: t.curso, anoLetivo: t.anoLetivo, anoCurricular: t.anoCurricular, nome: t.nome, ativa: t.ativa, estudantes: t._count.matriculas, cadeiras: t._count.cadeiras }))
   }
 
   turma(id) {
@@ -73,6 +85,26 @@ export class RepositorioAcademico {
     return linhas.map((l) => l.turmaId)
   }
 
+  // estudantes que entram na pauta: matrícula ativa ou já concluída (notas de anos anteriores)
+  async estudantesDaPauta(turmaId) {
+    const linhas = await this.prisma.matricula.findMany({
+      where: { turmaId, estado: { in: ['ativa', 'concluida'] } },
+      include: { estudante: contaResumo },
+      orderBy: { estudante: { nome: 'asc' } },
+    })
+    return linhas.map((m) => m.estudante)
+  }
+
+  // matrículas de um estudante em todos os anos (percurso académico), da mais antiga para a mais recente
+  async percursoDoEstudante(estudanteId) {
+    const linhas = await this.prisma.matricula.findMany({
+      where: { estudanteId, estado: { not: 'anulada' } },
+      include: { turma: true },
+      orderBy: [{ turma: { anoLetivo: 'asc' } }, { turma: { anoCurricular: 'asc' } }],
+    })
+    return linhas.map((m) => ({ id: m.id, estado: m.estado, turma: { id: m.turma.id, nome: m.turma.nome, curso: m.turma.curso, anoLetivo: m.turma.anoLetivo, anoCurricular: m.turma.anoCurricular } }))
+  }
+
   async estudantesAtivosDaTurma(turmaId) {
     const linhas = await this.prisma.matricula.findMany({
       where: { turmaId, estado: 'ativa', estudante: { ativo: true } },
@@ -87,21 +119,40 @@ export class RepositorioAcademico {
   async cadeira(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
-    return cadeiraLinha(await this.prisma.unidadeCurricular.findUnique({ where: { id: n }, include: { docente: contaResumo, turma: true } }))
+    return cadeiraLinha(await this.prisma.unidadeCurricular.findUnique({ where: { id: n }, include: comDocentes }))
   }
 
   async cadeirasDasTurmas(turmaIds) {
     const linhas = await this.prisma.unidadeCurricular.findMany({
-      where: { turmaId: { in: turmaIds } }, include: { docente: contaResumo, turma: true }, orderBy: [{ semestre: 'asc' }, { nome: 'asc' }],
+      where: { turmaId: { in: turmaIds } }, include: comDocentes, orderBy: [{ periodo: 'asc' }, { nome: 'asc' }],
     })
     return linhas.map(cadeiraLinha)
   }
 
+  // cadeiras onde o docente está alocado (regente ou assistente)
   async cadeirasDoDocente(docenteId) {
     const linhas = await this.prisma.unidadeCurricular.findMany({
-      where: { docenteId }, include: { docente: contaResumo, turma: true }, orderBy: [{ turma: { anoLetivo: 'desc' } }, { nome: 'asc' }],
+      where: { docentes: { some: { docenteId } } }, include: comDocentes, orderBy: [{ turma: { anoLetivo: 'desc' } }, { nome: 'asc' }],
     })
     return linhas.map(cadeiraLinha)
+  }
+
+  // todas as cadeiras (para a alocação de docentes), das turmas ativas primeiro
+  async todasCadeiras({ soAtivas = false } = {}) {
+    const linhas = await this.prisma.unidadeCurricular.findMany({
+      where: soAtivas ? { turma: { ativa: true } } : {}, include: comDocentes,
+      orderBy: [{ turma: { anoLetivo: 'desc' } }, { turma: { nome: 'asc' } }, { periodo: 'asc' }, { nome: 'asc' }],
+    })
+    return linhas.map(cadeiraLinha)
+  }
+
+  // substitui a alocação de docentes de uma cadeira
+  async definirDocentes(cadeiraId, docentes) {
+    const p = this.prisma
+    await p.$transaction([
+      p.docencia.deleteMany({ where: { cadeiraId } }),
+      p.docencia.createMany({ data: docentes.map((d) => ({ cadeiraId, ...d })) }),
+    ])
   }
 
   criarCadeira(dados) {
@@ -379,16 +430,18 @@ export class RepositorioAcademico {
   // a que pertence um ficheiro (para decidir quem o pode descarregar)
   async usoDoFicheiro(id) {
     const p = this.prisma
-    const [material, trabalho, entrega, pedido] = await Promise.all([
+    const [material, trabalho, entrega, pedido, programa] = await Promise.all([
       p.material.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true } }),
       p.entrega.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
+      p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
     ])
     if (material) return { tipo: 'material', cadeiraId: material.cadeiraId }
     if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId }
     if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId }
     if (pedido) return { tipo: 'pedido', estudanteId: pedido.estudanteId }
+    if (programa) return { tipo: 'programa', cadeiraId: programa.id }
     return null
   }
 }

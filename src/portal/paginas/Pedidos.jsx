@@ -12,7 +12,7 @@ const ESTADOS = {
   recusado: { texto: 'Recusado', cor: 'vermelho' },
 }
 
-// pedidos de documentos à Secretaria Académica
+// pedidos de documentos à Administração Escolar
 function Pedidos() {
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
@@ -30,7 +30,7 @@ function Pedidos() {
     try {
       await api('/pedidos', { metodo: 'POST', corpo: f })
       setF({ tipo: TIPOS[0], motivo: '' })
-      setAviso({ texto: 'Pedido enviado à Secretaria Académica.' })
+      setAviso({ texto: 'Pedido enviado à Administração Escolar.' })
       carregar()
     } catch (falha) {
       setErroForm(falha.message)
@@ -41,7 +41,7 @@ function Pedidos() {
 
   return (
     <>
-      <Titulo rotulo="Secretaria Académica" titulo="Pedidos de documentos" />
+      <Titulo rotulo="Administração Escolar" titulo="Pedidos de documentos" />
       <div className="p-grelha-lado">
         <Cartao titulo="Os meus pedidos">
           {erro && <Erro texto={erro} />}

@@ -15,7 +15,7 @@ function Horario() {
     <>
       <Titulo rotulo="Semana" titulo="Horário" />
       {erro && <Erro texto={erro} />}
-      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>O horário ainda não foi publicado pela Secretaria.</Vazio> : (
+      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>O horário ainda não foi publicado pela Administração Escolar.</Vazio> : (
         <div className="p-horario">
           {[1, 2, 3, 4, 5, 6].filter((d) => d <= 5 || lista.some((h) => h.diaSemana === 6)).map((dia) => (
             <section key={dia} className={`p-dia ${dia === hoje ? 'p-dia-hoje' : ''}`}>

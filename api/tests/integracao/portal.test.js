@@ -31,7 +31,7 @@ describe('portal académico', () => {
     turmaId = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM 2026/2027' })).body.id
     outraTurmaId = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body.id
 
-    for (const [chave, tipo, nome] of [['prof', 'docente', 'Professor Teste Silva'], ['prof2', 'docente', 'Professora Outra Turma']]) {
+    for (const [chave, tipo, nome] of [['prof', 'docente', 'Professor Teste Silva'], ['prof2', 'docente', 'Professora Outra Turma'], ['assist', 'docente', 'Assistente Teste Costa']]) {
       const r = await sec().post('/api/admin/academico/contas').send({ tipo, nome, email: `${chave}@esgfaa.gov.ao` })
       assert.equal(r.status, 201, r.body.erro)
       contas[chave] = r.body
@@ -43,11 +43,15 @@ describe('portal académico', () => {
     }
     contas.carla = (await sec().post(`/api/admin/academico/turmas/${outraTurmaId}/matricula-nova`).send({ nome: 'Estudante Carla Teste', email: 'carla@esgfaa.gov.ao' })).body
 
-    cadeira = (await sec().post(`/api/admin/academico/turmas/${turmaId}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia Militar', semestre: 1, horas: 90, docenteId: contas.prof.id })).body
-    cadeiraOutra = (await sec().post(`/api/admin/academico/turmas/${outraTurmaId}/cadeiras`).send({ codigo: 'LOG101', nome: 'Logística', docenteId: contas.prof2.id })).body
+    // as cadeiras são criadas sem docente; a alocação faz-se depois
+    cadeira = (await sec().post(`/api/admin/academico/turmas/${turmaId}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia Militar', periodo: '1', horas: 90 })).body
+    cadeiraOutra = (await sec().post(`/api/admin/academico/turmas/${outraTurmaId}/cadeiras`).send({ codigo: 'LOG101', nome: 'Logística', periodo: 'anual' })).body
+    assert.deepEqual(cadeira.docentes, [])
+    await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente', horas: 60 }] })
+    await sec().put(`/api/admin/academico/cadeiras/${cadeiraOutra.id}/docentes`).send({ docentes: [{ docenteId: contas.prof2.id, papel: 'regente', horas: 45 }] })
     await sec().post(`/api/admin/academico/cadeiras/${cadeira.id}/horarios`).send({ diaSemana: 2, inicio: '08:00', fim: '10:00', sala: 'Anfiteatro' })
 
-    for (const q of ['prof', 'prof2', 'ana', 'bruno', 'carla']) tokens[q] = await primeiraEntrada(`${q}@esgfaa.gov.ao`)
+    for (const q of ['prof', 'prof2', 'assist', 'ana', 'bruno', 'carla']) tokens[q] = await primeiraEntrada(`${q}@esgfaa.gov.ao`)
   })
   after(() => amb.fechar())
 
@@ -200,7 +204,7 @@ describe('portal académico', () => {
     assert.deepEqual(p[0], { cadeira: { id: cadeira.id, nome: 'Estratégia Militar' }, aulas: 1, faltas: 1, assiduidade: 0 })
   })
 
-  it('pedidos de documentos: o estudante pede, a Secretaria trata e anexa o documento', async () => {
+  it('pedidos de documentos: o estudante pede, a Administração Escolar trata e anexa o documento', async () => {
     const p = await portal('ana').post('/api/portal/pedidos').send({ tipo: 'Declaração de matrícula', motivo: 'Para o ramo' })
     assert.equal(p.status, 201)
     assert.equal((await portal('ana').post('/api/portal/pedidos').send({ tipo: 'Inventado' })).status, 400)
@@ -226,6 +230,98 @@ describe('portal académico', () => {
     assert.ok(inicio.prazos.some((p) => p.titulo === 'Ensaio estratégico' && p.entregue))
   })
 
+  it('alocação: regente + assistentes, sem repetidos nem dois regentes; o assistente também entra na cadeira', async () => {
+    const url = `/api/admin/academico/cadeiras/${cadeira.id}/docentes`
+    const dois = await sec().put(url).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }, { docenteId: contas.assist.id, papel: 'regente' }] })
+    assert.equal(dois.status, 400)
+    assert.match(dois.body.erro, /um regente/)
+    assert.equal((await sec().put(url).send({ docentes: [{ docenteId: contas.prof.id }, { docenteId: contas.prof.id }] })).status, 400)
+    assert.equal((await sec().put(url).send({ docentes: [{ docenteId: contas.ana.id, papel: 'assistente' }] })).status, 400) // é estudante
+    assert.equal((await portal('assist').get(`/api/portal/cadeiras/${cadeira.id}`)).status, 404) // ainda não alocado
+
+    const r = await sec().put(url).send({ docentes: [{ docenteId: contas.assist.id, papel: 'assistente', horas: 30 }, { docenteId: contas.prof.id, papel: 'regente', horas: 60 }] })
+    assert.equal(r.status, 200, r.body.erro)
+    assert.deepEqual(r.body.docentes.map((d) => [d.nome, d.papel, d.horas]), [['Professor Teste Silva', 'regente', 60], ['Assistente Teste Costa', 'assistente', 30]])
+    assert.equal(r.body.docente.id, contas.prof.id) // o regente
+
+    assert.equal((await portal('assist').get(`/api/portal/cadeiras/${cadeira.id}`)).status, 200)
+    assert.ok((await portal('assist').get('/api/portal/cadeiras')).body.some((c) => c.id === cadeira.id))
+    assert.equal((await portal('assist').get(`/api/portal/cadeiras/${cadeira.id}/pauta`)).status, 200)
+
+    const geral = (await sec().get('/api/admin/academico/alocacao')).body
+    const prof = geral.docentes.find((d) => d.docente.id === contas.prof.id)
+    assert.equal(prof.horas, 60)
+    assert.equal(geral.cadeiras.find((c) => c.id === cadeira.id).horasAlocadas, 90)
+    // só a Administração Escolar aloca
+    assert.equal((await portal('prof').put(url).send({ docentes: [] })).status, 401)
+  })
+
+  it('período: 1.º semestre, 2.º semestre ou anual', async () => {
+    const url = `/api/admin/academico/cadeiras/${cadeiraOutra.id}`
+    assert.equal((await sec().put(url).send({ periodo: '3' })).status, 400)
+    assert.equal((await sec().put(url).send({ periodo: '2' })).body.periodo, '2')
+  })
+
+  it('programa da cadeira: escrito no portal (HTML filtrado) ou em documento; os estudantes da turma consultam', async () => {
+    const url = `/api/admin/academico/cadeiras/${cadeira.id}/programa`
+    const r = await sec().put(url).send({ texto: '<h2>Objetivos</h2><p onclick="x()">Planear</p><script>alert(1)</script>' })
+    assert.equal(r.status, 200, r.body.erro)
+    assert.equal(r.body.programa, '<h2>Objetivos</h2><p>Planear</p>')
+    const doc = await sec().put(url).attach('ficheiro', PDF, { filename: 'programa.pdf', contentType: 'application/pdf' })
+    assert.equal(doc.status, 200, doc.body.erro)
+    assert.equal(doc.body.programaFicheiro.nome, 'programa.pdf')
+
+    const vista = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.equal(vista.programa, '<h2>Objetivos</h2><p>Planear</p>')
+    assert.equal((await portal('ana').get(`/api/portal/ficheiros/${vista.programaFicheiroId}`)).status, 200)
+    assert.equal((await portal('carla').get(`/api/portal/ficheiros/${vista.programaFicheiroId}`)).status, 404) // outra turma
+    assert.equal((await portal('prof').put(url).send({ texto: 'x' })).status, 401)
+
+    const sem = await sec().put(url).send({ removerFicheiro: true })
+    assert.equal(sem.body.programaFicheiroId, null)
+  })
+
+  it('a Administração Escolar também lança e publica notas; quem não tem permissão não', async () => {
+    const url = `/api/admin/academico/cadeiras/${cadeira.id}/pauta`
+    const r = await sec().put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 15, p2: 16 }] })
+    assert.equal(r.status, 200, r.body.erro)
+    assert.equal(r.body.linhas.find((l) => l.estudante.id === contas.ana.id).situacao, 'dispensado')
+    assert.equal((await sec().put(`${url}/publicacao`).send({ publicadas: ['p1', 'p2'] })).status, 200)
+    assert.equal((await portal('ana').get('/api/portal/notas')).body[0].final, 16)
+
+    const redator = await amb.criarUtilizador('redator')
+    assert.equal((await amb.com(redator.token).put(url).send({ linhas: [] })).status, 403)
+    assert.equal((await amb.com(redator.token).get(url)).status, 403)
+  })
+
+  it('percurso académico: todos os anos do estudante, com resumo', async () => {
+    // um 1.º ano já concluído, com uma disciplina aprovada e outra reprovada
+    const t1 = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2025/2026', anoCurricular: 1, nome: 'CEM 1.º ano' })).body
+    await sec().post(`/api/admin/academico/turmas/${t1.id}/matriculas`).send({ estudanteId: contas.ana.id })
+    const c1 = (await sec().post(`/api/admin/academico/turmas/${t1.id}/cadeiras`).send({ codigo: 'HIS001', nome: 'História Militar', periodo: '1', horas: 60 })).body
+    const c2 = (await sec().post(`/api/admin/academico/turmas/${t1.id}/cadeiras`).send({ codigo: 'DIR002', nome: 'Direito Humanitário', periodo: 'anual', horas: 40 })).body
+    await sec().put(`/api/admin/academico/cadeiras/${c1.id}/pauta`).send({ linhas: [{ estudanteId: contas.ana.id, p1: 12, p2: 13, exame: 14 }] })
+    await sec().put(`/api/admin/academico/cadeiras/${c2.id}/pauta`).send({ linhas: [{ estudanteId: contas.ana.id, p1: 8, p2: 9, exame: 7, recurso: 6 }] })
+    for (const c of [c1, c2]) await sec().put(`/api/admin/academico/cadeiras/${c.id}/pauta/publicacao`).send({ publicadas: ['p1', 'p2', 'exame', 'recurso'] })
+    const m = (await sec().get(`/api/admin/academico/turmas/${t1.id}`)).body.matriculas[0]
+    await sec().put(`/api/admin/academico/matriculas/${m.id}`).send({ estado: 'concluida' })
+
+    const p = await portal('ana').get('/api/portal/percurso')
+    assert.equal(p.status, 200, p.body.erro)
+    assert.deepEqual(p.body.anos.map((a) => [a.turma.anoLetivo, a.turma.anoCurricular, a.matricula.estado]), [['2025/2026', 1, 'concluida'], ['2026/2027', 1, 'ativa']])
+    const ano1 = p.body.anos[0]
+    // 0,4 × 12,5 + 0,6 × 14 = 13,4 → 13
+    assert.deepEqual(ano1.disciplinas.map((d) => [d.cadeira.codigo, d.final, d.situacao]), [['HIS001', 13, 'aprovado'], ['DIR002', 7, 'reprovado']])
+    assert.deepEqual(
+      { aprovadas: ano1.resumo.aprovadas, reprovadas: ano1.resumo.reprovadas, horas: ano1.resumo.horas, horasAprovadas: ano1.resumo.horasAprovadas, media: ano1.resumo.media },
+      { aprovadas: 1, reprovadas: 1, horas: 100, horasAprovadas: 60, media: 13 },
+    )
+    assert.equal(p.body.resumo.aprovadas, 2) // + EST101 dispensada no 2.º ano
+    // a matrícula concluída não dá acesso à cadeira antiga nem às dos colegas
+    assert.equal((await portal('ana').get(`/api/portal/cadeiras/${c1.id}`)).status, 404)
+    assert.equal((await portal('prof').get('/api/portal/percurso')).status, 403)
+  })
+
   it('suspender a matrícula corta o acesso às cadeiras; desativar a conta termina a sessão', async () => {
     const turma = (await sec().get(`/api/admin/academico/turmas/${turmaId}`)).body
     const mBruno = turma.matriculas.find((m) => m.estudante.id === contas.bruno.id)
@@ -247,4 +343,5 @@ describe('portal académico', () => {
     const r = await amb.http().post('/api/portal/entrar').send({ email: 'ana@esgfaa.gov.ao', senha: 'ana@esgfaa.gov.ao' })
     assert.equal(r.body.deveMudarSenha, true)
   })
+
 })
