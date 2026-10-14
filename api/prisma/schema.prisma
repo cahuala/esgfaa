@@ -209,6 +209,7 @@ model ContaPortal {
   entregas           Entrega[]
   presencas          Presenca[]
   pedidos            Pedido[]
+  perguntaBancos     PerguntaBanco[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -558,18 +559,20 @@ model Conclusao {
 // ---------- questionários online (correção automática) ----------
 
 model Questionario {
-  id               Int       @id @default(autoincrement())
-  cadeiraId        Int       @map("cadeira_id")
-  titulo           String
-  descricao        String    @default("")
-  abre             DateTime? @db.Timestamptz(3)
-  fecha            DateTime? @db.Timestamptz(3)
-  duracao          Int       @default(0) // minutos por tentativa (0 = sem limite)
-  tentativas       Int       @default(1) // tentativas permitidas
-  publicado        Boolean   @default(false)
-  mostrarRespostas Boolean   @default(true) @map("mostrar_respostas") // mostrar as corretas depois de entregar
-  secaoId          Int?      @map("secao_id")
-  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id                    Int       @id @default(autoincrement())
+  cadeiraId             Int       @map("cadeira_id")
+  titulo                String
+  descricao             String    @default("")
+  abre                  DateTime? @db.Timestamptz(3)
+  fecha                 DateTime? @db.Timestamptz(3)
+  duracao               Int       @default(0) // minutos por tentativa (0 = sem limite)
+  tentativas            Int       @default(1) // tentativas permitidas
+  publicado             Boolean   @default(false)
+  mostrarRespostas      Boolean   @default(true) @map("mostrar_respostas") // mostrar as corretas depois de entregar
+  baralhar              Boolean   @default(false) // baralhar perguntas e opções em cada tentativa
+  perguntasPorTentativa Int       @default(0) @map("perguntas_por_tentativa") // sorteia N perguntas (0 = todas)
+  secaoId               Int?      @map("secao_id")
+  criadoEm              DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
@@ -603,8 +606,13 @@ model Tentativa {
   iniciadaEm     DateTime  @default(now()) @map("iniciada_em") @db.Timestamptz(3)
   limite         DateTime? @db.Timestamptz(3) // até quando se aceitam respostas
   entregueEm     DateTime? @map("entregue_em") @db.Timestamptz(3)
-  respostas      Json      @default("{}") // { perguntaId: [índices escolhidos] }
-  nota           Decimal?  @db.Decimal(4, 2) // 0 a 20
+  respostas      Json      @default("{}") // { perguntaId: resposta (índices, texto ou número) }
+  nota           Decimal?  @db.Decimal(4, 2) // 0 a 20 (null enquanto houver dissertações por corrigir)
+  ordem          Json      @default("[]") // perguntas sorteadas para esta tentativa, pela ordem mostrada
+  permutacoes    Json      @default("{}") // { perguntaId: [ordem das opções mostradas] }
+  manuais        Json      @default("{}") // pontos dados pelo docente às dissertações { perguntaId: pontos }
+  porCorrigir    Boolean   @default(false) @map("por_corrigir")
+  comentario     String    @default("") // comentário do docente à tentativa
 
   questionario Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
   estudante    ContaPortal  @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
@@ -708,4 +716,21 @@ model Prorrogacao {
 
   @@id([trabalhoId, estudanteId])
   @@map("prorrogacoes")
+}
+
+// banco de perguntas do docente (reutilizável entre questionários e cadeiras)
+model PerguntaBanco {
+  id        Int      @id @default(autoincrement())
+  docenteId Int      @map("docente_id")
+  categoria String   @default("Geral")
+  tipo      String
+  enunciado String
+  opcoes    Json
+  pontos    Decimal  @default(1) @db.Decimal(5, 2)
+  criadaEm  DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  docente ContaPortal @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@index([docenteId, categoria])
+  @@map("banco_perguntas")
 }

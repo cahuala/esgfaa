@@ -121,15 +121,29 @@ export const questionario = z.object({
   titulo: texto(300).optional(), descricao: texto(4000).optional(), abre: dataHora, fecha: dataHora,
   duracao: z.union([z.number(), z.string().max(4)]).optional(), tentativas: z.union([z.number(), z.string().max(3)]).optional(),
   publicado: z.boolean().optional(), mostrarRespostas: z.boolean().optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
+  baralhar: z.boolean().optional(), perguntasPorTentativa: z.union([z.number(), z.string().max(4)]).optional(),
 })
+const valorLivre = z.union([z.number(), z.string().max(40)])
 export const pergunta = z.object({
-  tipo: texto(20), enunciado: texto(3000), pontos: z.union([z.number(), z.string().max(8)]).optional(),
-  opcoes: z.array(z.object({ texto: texto(600).optional(), correta: z.boolean().optional() })).max(8).optional(),
+  tipo: texto(20), enunciado: texto(3000), pontos: z.union([z.number(), z.string().max(8)]).optional(), categoria: texto(100).optional(),
+  opcoes: z.union([
+    z.array(z.object({ texto: texto(600).optional(), correta: z.boolean().optional() })).max(8),
+    z.object({
+      respostas: z.array(texto(300)).max(10).optional(), valor: valorLivre.optional(), tolerancia: valorLivre.optional(),
+      pares: z.array(z.object({ a: texto(400).optional(), b: texto(400).optional() })).max(8).optional(), orientacao: texto(1200).optional(),
+    }),
+  ]).optional(),
   correta: z.union([z.boolean(), z.literal('verdadeiro'), z.literal('falso')]).optional(),
 })
+// resposta de cada pergunta: índices (escolha, correspondência), texto (curta, dissertação) ou número
 export const respostasQuestionario = z.object({
-  respostas: z.record(z.string().regex(/^\d{1,10}$/), z.array(z.number().int().min(0).max(20)).max(8)).optional(),
+  respostas: z.record(z.string().regex(/^\d{1,10}$/), z.union([
+    z.array(z.union([z.number().int().min(0).max(20), z.null()])).max(8), z.string().max(20_000), z.number(),
+  ])).optional(),
 })
+export const correcaoTentativa = z.object({ pontos: z.record(z.string().regex(/^\d{1,10}$/), z.union([z.number(), z.string().max(8)])).optional(), comentario: texto(3500).optional() })
+export const paraBanco = z.object({ categoria: texto(100).optional() })
+export const doBanco = z.object({ ids: z.array(idNumerico).min(1).max(100) })
 export const secao = z.object({ titulo: texto(300).optional(), resumo: texto(4000).optional(), visivel: z.boolean().optional() })
 export const ordemSecoes = z.object({ ids: z.array(idNumerico).max(200) })
 export const moverAtividade = z.object({ tipo: texto(20), id: idNumerico, secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional() })

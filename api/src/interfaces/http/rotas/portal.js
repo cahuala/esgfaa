@@ -142,6 +142,15 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/perguntas/:id', validar({ params: pId, body: E.pergunta }), async (req, res) => res.json(await m.atualizarPergunta(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/perguntas/:id', validar({ params: pId }), async (req, res) => res.json(await m.apagarPergunta(ctx(req), req.dados.params.id)))
 
+  r.get('/questionarios/:id/estatisticas', validar({ params: pId }), async (req, res) => res.json(await m.estatisticas(ctx(req), req.dados.params.id)))
+  r.get('/tentativas/:id/correcao', validar({ params: pId }), async (req, res) => res.json(await m.tentativaParaCorrigir(ctx(req), req.dados.params.id)))
+  r.put('/tentativas/:id/correcao', validar({ params: pId, body: E.correcaoTentativa }), async (req, res) => res.json(await m.corrigirTentativa(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/banco', async (req, res) => res.json(await m.banco(ctx(req))))
+  r.post('/banco', validar({ body: E.pergunta }), async (req, res) => res.status(201).json(await m.criarNoBanco(ctx(req), req.dados.body)))
+  r.delete('/banco/:id', validar({ params: pId }), async (req, res) => { await m.apagarDoBanco(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.post('/perguntas/:id/banco', validar({ params: pId, body: E.paraBanco }), async (req, res) => res.status(201).json(await m.guardarNoBanco(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/questionarios/:id/do-banco', validar({ params: pId, body: E.doBanco }), async (req, res) => res.json(await m.juntarDoBanco(ctx(req), req.dados.params.id, req.dados.body)))
+
   r.get('/questionarios/:id', validar({ params: pId }), async (req, res) => res.json(await m.verQuestionario(ctx(req), req.dados.params.id)))
   r.post('/questionarios/:id/tentativas', validar({ params: pId }), async (req, res) => res.status(201).json(await m.iniciar(ctx(req), req.dados.params.id)))
   r.put('/tentativas/:id/respostas', validar({ params: pId, body: E.respostasQuestionario }), async (req, res) => res.json(await m.guardarRespostas(ctx(req), req.dados.params.id, req.dados.body.respostas)))

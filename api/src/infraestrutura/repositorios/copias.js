@@ -67,7 +67,7 @@ export class RepositorioCopias {
         const novo = await tx.questionario.create({ data: {
           cadeiraId: destinoId, secaoId: secao(q.secaoId), titulo: q.titulo, descricao: q.descricao,
           abre: q.abre ? data(q.abre) : null, fecha: q.fecha ? data(q.fecha) : null, duracao: q.duracao, tentativas: q.tentativas,
-          publicado: q.publicado, mostrarRespostas: q.mostrarRespostas,
+          publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
         } })
         questionarios[q.id] = novo.id
         if (q.perguntas.length) {

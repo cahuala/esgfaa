@@ -36,9 +36,11 @@ export class ServicoPautas {
         const q = await this.recursos.questionario(i.id)
         if (!q || q.cadeiraId !== cadeira.id) continue
         const melhor = {}
-        for (const t of await this.recursos.tentativas(q.id)) if (t.entregueEm) melhor[t.estudanteId] = Math.max(melhor[t.estudanteId] ?? 0, t.nota)
+        for (const t of await this.recursos.tentativas(q.id)) if (t.entregueEm && t.nota !== null) melhor[t.estudanteId] = Math.max(melhor[t.estudanteId] ?? 0, t.nota)
         const fechado = q.fecha && new Date(q.fecha) < agora
-        for (const e of estudantes) notas[chave][e] = melhor[e] ?? (fechado ? 0 : null)
+        // tentativa entregue mas com dissertações por corrigir: ainda sem nota
+        const pendentes = new Set((await this.recursos.tentativas(q.id)).filter((t) => t.entregueEm && t.porCorrigir).map((t) => t.estudanteId))
+        for (const e of estudantes) notas[chave][e] = melhor[e] ?? (pendentes.has(e) ? null : fechado ? 0 : null)
       }
     }
     return notas

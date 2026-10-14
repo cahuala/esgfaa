@@ -70,3 +70,60 @@ describe('calendário académico: regras', () => {
     assert.deepEqual(aulas.map((a) => [a.id, a.data]), [[1, '2026-11-09'], [1, '2026-11-16'], [2, '2026-11-18']])
   })
 })
+
+describe('questionários: tipos novos, ordem aleatória e estatísticas', async () => {
+  const q = await import('../../src/dominio/academico/questionarios.js')
+  const curta = { id: 10, tipo: 'curta', pontos: 1, opcoes: { respostas: ['Carl von Clausewitz', 'Clausewitz'] } }
+  const numerica = { id: 11, tipo: 'numerica', pontos: 1, opcoes: { valor: 1975, tolerancia: 0 } }
+  const corresp = { id: 12, tipo: 'correspondencia', pontos: 3, opcoes: { pares: [{ a: 'Sun Tzu', b: 'A Arte da Guerra' }, { a: 'Clausewitz', b: 'Da Guerra' }, { a: 'Maquiavel', b: 'O Príncipe' }] } }
+  const diss = { id: 13, tipo: 'dissertacao', pontos: 5, opcoes: { orientacao: '' } }
+
+  it('validação dos tipos novos', () => {
+    assert.deepEqual(q.validarPergunta({ tipo: 'curta', enunciado: 'Autor de Da Guerra?', opcoes: { respostas: [' Clausewitz ', ''] } }).opcoes, { respostas: ['Clausewitz'] })
+    assert.deepEqual(q.validarPergunta({ tipo: 'numerica', enunciado: 'Ano da independência?', opcoes: { valor: '1975', tolerancia: '0' } }).opcoes, { valor: 1975, tolerancia: 0 })
+    assert.throws(() => q.validarPergunta({ tipo: 'numerica', enunciado: 'Sem valor?', opcoes: {} }), /valor certo/)
+    assert.throws(() => q.validarPergunta({ tipo: 'correspondencia', enunciado: 'Um só par?', opcoes: { pares: [{ a: 'x', b: 'y' }] } }), /2 a 8 pares/)
+    assert.throws(() => q.validarPergunta({ tipo: 'correspondencia', enunciado: 'Repetidas?', opcoes: { pares: [{ a: 'x', b: 'y' }, { a: 'z', b: 'Y' }] } }), /diferentes/)
+    assert.equal(q.validarPergunta({ tipo: 'dissertacao', enunciado: 'Comente a frase.' }).tipo, 'dissertacao')
+  })
+
+  it('correção: curta sem acentos nem maiúsculas, numérica com tolerância, correspondência parcial', () => {
+    const r = q.corrigir([curta, numerica, corresp], { 10: 'clausewitz', 11: '1975', 12: [0, 2, 1] })
+    assert.deepEqual(r.detalhe.map((d) => d.obtidos), [1, 1, 1]) // 1 dos 3 pares certos
+    assert.deepEqual([r.obtidos, r.total, r.nota], [3, 5, 12])
+    assert.equal(q.corrigir([numerica], { 11: '1974' }).nota, 0)
+    assert.equal(q.corrigir([{ ...numerica, opcoes: { valor: 3.14, tolerancia: 0.01 } }], { 11: '3,15' }).nota, 20)
+    assert.equal(q.normalizar('  Ação  Militar '), 'acao militar')
+  })
+
+  it('dissertação: nota por corrigir até o docente dar os pontos', () => {
+    const r = q.corrigir([curta, diss], { 10: 'Clausewitz', 13: 'A guerra é…' })
+    assert.deepEqual([r.porCorrigir, r.nota], [true, null])
+    const c = q.corrigir([curta, diss], { 10: 'Clausewitz', 13: 'A guerra é…' }, { 13: 4 })
+    assert.deepEqual([c.porCorrigir, c.obtidos, c.nota], [false, 5, 16.67])
+    assert.equal(q.corrigir([diss], {}, { 13: 9 }).obtidos, 5) // nunca acima do máximo
+  })
+
+  it('ordem aleatória e subconjunto de perguntas', () => {
+    let s = 0
+    const aleatorio = () => { s = (s * 9301 + 49297) % 233280; return s / 233280 }
+    const perguntas = [1, 2, 3, 4, 5].map((id) => ({ id, tipo: 'unica', opcoes: [{}, {}, {}] }))
+    const t = q.sortearTentativa({ baralhar: true, perguntasPorTentativa: 3 }, perguntas, aleatorio)
+    assert.equal(t.ordem.length, 3)
+    assert.equal(new Set(t.ordem).size, 3)
+    for (const id of t.ordem) assert.deepEqual([...t.permutacoes[id]].sort(), [0, 1, 2])
+    const fixa = q.sortearTentativa({ baralhar: false, perguntasPorTentativa: 0 }, perguntas, aleatorio)
+    assert.deepEqual([fixa.ordem, fixa.permutacoes], [[1, 2, 3, 4, 5], {}])
+    assert.deepEqual(q.perguntasDaTentativa(perguntas, { ordem: [3, 1] }).map((p) => p.id), [3, 1])
+  })
+
+  it('estatísticas: média, mediana, facilidade e escolhas', () => {
+    const unica = { id: 1, tipo: 'unica', pontos: 1, opcoes: [{ correta: false }, { correta: true }] }
+    const e = q.estatisticas([unica], [
+      { entregueEm: 'x', nota: 20, respostas: { 1: [1] } }, { entregueEm: 'x', nota: 0, respostas: { 1: [0] } },
+      { entregueEm: 'x', nota: 20, respostas: { 1: [1] } }, { entregueEm: null, nota: null, respostas: {} },
+    ])
+    assert.deepEqual([e.tentativas, e.media, e.mediana], [3, 13.33, 20])
+    assert.deepEqual([e.porPergunta[0].facilidade, e.porPergunta[0].escolhas], [67, [1, 2]])
+  })
+})

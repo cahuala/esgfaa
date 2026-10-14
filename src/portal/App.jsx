@@ -12,6 +12,7 @@ import Percurso from './paginas/Percurso'
 import Calendario from './paginas/Calendario'
 import Notificacoes from './paginas/Notificacoes'
 import Mensagens from './paginas/Mensagens'
+import Banco from './cadeira/Banco'
 import Horario from './paginas/Horario'
 import Pedidos from './paginas/Pedidos'
 import Avisos from './paginas/Avisos'
@@ -35,6 +36,7 @@ function App() {
         <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/mensagens" element={<Mensagens />} />
         <Route path="/mensagens/:id" element={<Mensagens />} />
+        {eDocente && <Route path="/banco" element={<Banco />} />}
         {!eDocente && <Route path="/notas" element={<Notas />} />}
         {!eDocente && <Route path="/percurso" element={<Percurso />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}

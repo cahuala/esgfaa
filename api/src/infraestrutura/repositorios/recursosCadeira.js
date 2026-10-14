@@ -132,6 +132,7 @@ export class RepositorioRecursosCadeira {
     return q && {
       id: q.id, cadeiraId: q.cadeiraId, titulo: q.titulo, descricao: q.descricao, abre: iso(q.abre), fecha: iso(q.fecha),
       duracao: q.duracao, tentativas: q.tentativas, publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, secaoId: q.secaoId, criadoEm: iso(q.criadoEm),
+      baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
       ...(q.perguntas ? { perguntas: q.perguntas.map((p) => ({ id: p.id, ordem: p.ordem, enunciado: p.enunciado, tipo: p.tipo, opcoes: p.opcoes, pontos: num(p.pontos) })) } : {}),
       ...(q._count ? { numeroPerguntas: q._count.perguntas } : {}),
     }
@@ -183,6 +184,7 @@ export class RepositorioRecursosCadeira {
     return t && {
       id: t.id, questionarioId: t.questionarioId, estudanteId: t.estudanteId, numero: t.numero,
       iniciadaEm: iso(t.iniciadaEm), limite: iso(t.limite), entregueEm: iso(t.entregueEm), respostas: t.respostas || {}, nota: num(t.nota),
+      ordem: t.ordem || [], permutacoes: t.permutacoes || {}, manuais: t.manuais || {}, porCorrigir: t.porCorrigir, comentario: t.comentario,
       ...(t.estudante ? { estudante: t.estudante } : {}),
     }
   }
@@ -211,8 +213,37 @@ export class RepositorioRecursosCadeira {
   }
 
   // só fecha se ainda estiver aberta (duas entregas ao mesmo tempo não contam duas vezes)
-  async entregarTentativa(id, { respostas, nota, entregueEm }) {
-    const r = await this.prisma.tentativa.updateMany({ where: { id, entregueEm: null }, data: { respostas, nota, entregueEm } })
+  async entregarTentativa(id, { respostas, nota, entregueEm, porCorrigir = false }) {
+    const r = await this.prisma.tentativa.updateMany({ where: { id, entregueEm: null }, data: { respostas, nota, entregueEm, porCorrigir } })
     return r.count === 1
+  }
+
+  // correção manual (dissertações): pontos, nota recalculada e comentário
+  async corrigirTentativa(id, { manuais, nota, porCorrigir, comentario }) {
+    return this.#tentativa(await this.prisma.tentativa.update({ where: { id }, data: { manuais, nota, porCorrigir, comentario } }))
+  }
+
+  // ---------- banco de perguntas do docente ----------
+
+  #doBanco(p) {
+    return p && { id: p.id, docenteId: p.docenteId, categoria: p.categoria, tipo: p.tipo, enunciado: p.enunciado, opcoes: p.opcoes, pontos: num(p.pontos), criadaEm: iso(p.criadaEm) }
+  }
+
+  async banco(docenteId) {
+    const linhas = await this.prisma.perguntaBanco.findMany({ where: { docenteId }, orderBy: [{ categoria: 'asc' }, { id: 'desc' }], take: 2000 })
+    return linhas.map((p) => this.#doBanco(p))
+  }
+
+  async perguntaDoBanco(id) {
+    const n = Number(id)
+    return Number.isSafeInteger(n) && n > 0 ? this.#doBanco(await this.prisma.perguntaBanco.findUnique({ where: { id: n } })) : null
+  }
+
+  async guardarNoBanco(dados) {
+    return this.#doBanco(await this.prisma.perguntaBanco.create({ data: dados }))
+  }
+
+  apagarDoBanco(id) {
+    return this.prisma.perguntaBanco.delete({ where: { id } })
   }
 }

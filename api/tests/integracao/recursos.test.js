@@ -102,7 +102,7 @@ describe('portal: fórum, calendário, progresso e questionários', () => {
     assert.equal(t.status, 201, t.body.erro)
     assert.ok(!JSON.stringify(t.body).includes('correta'))
     const [perg1, perg2] = t.body.perguntas
-    assert.deepEqual(perg1.opcoes, ['Sun Tzu', 'Clausewitz'])
+    assert.deepEqual(perg1.opcoes, [{ i: 0, texto: 'Sun Tzu' }, { i: 1, texto: 'Clausewitz' }])
     // recomeçar devolve a mesma tentativa em curso
     assert.equal((await portal('ana').post(`/api/portal/questionarios/${q}/tentativas`)).body.id, t.body.id)
     assert.equal((await portal('bruno').put(`/api/portal/tentativas/${t.body.id}/respostas`).send({ respostas: {} })).status, 404) // de outro
