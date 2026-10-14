@@ -6,6 +6,7 @@ import {
   TIPOS_COM_OPCOES, corrigir, dentroDoTempo, estadoQuestionario, estatisticas, limiteTentativa, limparRespostas, perguntasDaTentativa,
   sortearTentativa, validarPergunta,
 } from '../../dominio/academico/questionarios.js'
+import { gerarIcal } from '../../dominio/academico/ical.js'
 
 // código de verificação legível (sem letras que se confundem: 0/O, 1/I)
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -25,8 +26,8 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, inqueritos, workshops, registos, privados, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, inqueritos, workshops, registos, privados, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
+  constructor({ academico, recursos, inqueritos, workshops, registos, privados, contas, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, inqueritos, workshops, registos, privados, contas, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
   }
 
   async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
@@ -228,12 +229,24 @@ export class ServicoRecursos {
     const cadeiras = await this.acesso.minhasCadeiras(ctx.conta)
     const ids = cadeiras.map((c) => c.id)
     const turmaIds = [...new Set(cadeiras.map((c) => c.turmaId))]
-    const [eventos, horarios, trabalhos, questionarios] = await Promise.all([
+    const [eventos, horarios, todosTrabalhos, todosQuestionarios, todosMateriais, todosWorkshops] = await Promise.all([
       this.recursos.eventos({ cadeiraIds: ids, turmaIds, ...intervalo }),
       this.academico.horariosDasCadeiras(ids),
       Promise.all(ids.map((id) => this.academico.trabalhos(id))).then((l) => l.flat()),
       Promise.all(ids.map((id) => this.recursos.questionarios(id, { soPublicados: ctx.conta.tipo === 'estudante' }))).then((l) => l.flat()),
+      Promise.all(ids.map((id) => this.academico.materiais(id))).then((l) => l.flat().filter((m) => m.tipo === 'videoconferencia')),
+      this.workshops ? Promise.all(ids.map((id) => this.workshops.workshops(id))).then((l) => l.flat()) : [],
     ])
+    // o estudante não vê no calendário o que está escondido
+    let visivel
+    if (ctx.conta.tipo === 'estudante' && this.disponibilidade) {
+      const acessos = Object.assign({}, ...(await Promise.all(ids.map((id) => this.disponibilidade.acessos(id, ctx.conta.id)))).map((a) => a.acessos))
+      visivel = (tipo) => (a) => acessos[`${tipo}-${a.id}`] && !acessos[`${tipo}-${a.id}`].escondida
+    } else visivel = () => () => true
+    const trabalhos = todosTrabalhos.filter(visivel('trabalho'))
+    const questionarios = todosQuestionarios.filter(visivel('questionario'))
+    const sessoes = todosMateriais.filter(visivel('material'))
+    const workshops = todosWorkshops.filter(visivel('workshop'))
     const nomeDe = Object.fromEntries(cadeiras.map((c) => [c.id, c.nome]))
     const feriados = eventos.filter((e) => e.tipo === 'feriado').map((e) => e.data)
     const dia = (iso) => (iso ? new Date(iso).toISOString().slice(0, 10) : null)
@@ -253,7 +266,42 @@ export class ServicoRecursos {
       ...questionarios.filter((q) => dentro(dia(q.fecha))).map((q) => ({
         tipo: 'questionario', id: `q${q.id}`, data: dia(q.fecha), inicio: hora(q.fecha), fim: '', momento: q.fecha, titulo: `Questionário: ${q.titulo}`, cadeiraId: q.cadeiraId, cadeira: nomeDe[q.cadeiraId],
       })),
+      ...sessoes.filter((m) => dentro(dia(m.inicio))).map((m) => ({
+        tipo: 'sessao', id: `v${m.id}`, data: dia(m.inicio), inicio: hora(m.inicio), fim: '', momento: m.inicio, duracao: m.duracao, titulo: `Videoconferência: ${m.titulo}`,
+        cadeiraId: m.cadeiraId, cadeira: nomeDe[m.cadeiraId], local: 'Online', descricao: m.url,
+      })),
+      ...workshops.flatMap((w) => [['fimSubmissao', 'Entrega (avaliação por pares)'], ['fimAvaliacao', 'Avaliar colegas']]
+        .filter(([k]) => dentro(dia(w[k])))
+        .map(([k, nome]) => ({ tipo: 'prazo', id: `w${w.id}-${k}`, data: dia(w[k]), inicio: hora(w[k]), fim: '', momento: w[k], titulo: `${nome}: ${w.titulo}`, cadeiraId: w.cadeiraId, cadeira: nomeDe[w.cadeiraId] }))),
     ].sort((a, b) => a.data.localeCompare(b.data) || (a.inicio || '').localeCompare(b.inicio || ''))
+  }
+
+  // ---------- calendário para o telemóvel/Outlook (iCal) ----------
+
+  // endereço secreto da assinatura (cria-o na primeira vez; renovar invalida o antigo)
+  async tokenCalendario(ctx, { renovar = false } = {}) {
+    let token = await this.contas.tokenCalendario(ctx.conta.id)
+    if (!token || renovar) {
+      token = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('')
+      await this.contas.definirTokenCalendario(ctx.conta.id, token)
+    }
+    return { token }
+  }
+
+  // o calendário de 30 dias para trás a 6 meses para a frente, para quem tem o endereço secreto
+  async ical(token) {
+    const conta = /^[0-9a-f]{48}$/.test(String(token)) ? await this.contas.porTokenCalendario(token) : null
+    if (!conta || !conta.ativo) throw new NaoEncontrado('Calendário não encontrado.')
+    const ctx = { conta }
+    const agora = this.relogio.agora()
+    const itens = []
+    for (let d = -30; d < 180; d += 45) {
+      const de = new Date(agora.getTime() + d * 86_400_000).toISOString().slice(0, 10)
+      const ate = new Date(agora.getTime() + (d + 44) * 86_400_000).toISOString().slice(0, 10)
+      itens.push(...await this.calendario(ctx, { de, ate }))
+    }
+    const unicos = [...new Map(itens.map((i) => [i.id, i])).values()]
+    return gerarIcal(unicos, { nome: `ESG — ${conta.nome}`, agora })
   }
 
   async eventosDaCadeira(ctx, cadeiraId) {

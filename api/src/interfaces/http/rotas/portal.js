@@ -138,6 +138,10 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/wiki/:id', validar({ params: pId, body: E.paginaWiki }), async (req, res) => res.json(await cb.editarPagina(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/wiki/:id/restaurar', validar({ params: pId, body: E.restaurarWiki }), async (req, res) => res.json(await cb.restaurar(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/wiki/:id', validar({ params: pId }), async (req, res) => { await cb.apagarPagina(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/pesquisa', validar({ query: E.pesquisaForum }), async (req, res) => res.json(await servicos.pesquisa.pesquisar(ctx(req), req.dados.query)))
+  // assinatura do calendário (iCal)
+  r.get('/eu/calendario-ical', async (req, res) => res.json(await servicos.recursos.tokenCalendario(ctx(req))))
+  r.post('/eu/calendario-ical', async (req, res) => res.json(await servicos.recursos.tokenCalendario(ctx(req), { renovar: true })))
   // grupos de estudantes da cadeira
   const g = servicos.grupos
   r.get('/cadeiras/:id/grupos', validar({ params: pId }), async (req, res) => res.json(await g.listar(ctx(req), req.dados.params.id)))

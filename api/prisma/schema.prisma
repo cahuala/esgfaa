@@ -190,6 +190,7 @@ model ContaPortal {
   dados              Json      @default("{}") // posto, ramo, telefone, …
   criadoEm           DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
   ultimoAcesso       DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
+  tokenCalendario    String?   @unique @map("token_calendario") // assinatura do calendário (iCal), sem sessão
   tentativasFalhadas Int       @default(0) @map("tentativas_falhadas")
   bloqueadoAte       DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
   versaoToken        Int       @default(0) @map("versao_token")

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
+import { API_URL } from '../../conteudo/api'
 import { Cartao, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data as dataLonga, maiusculaInicial } from '../formatar'
 
@@ -8,6 +9,7 @@ const TIPOS = {
   aula: ['bg-gray-500', 'Aula'],
   prazo: ['bg-orange', 'Entrega de trabalho'],
   questionario: ['bg-purple', 'Questionário'],
+  sessao: ['bg-success', 'Videoconferência'],
   p1: ['bg-yellow text-dark', '1.ª Prova'],
   p2: ['bg-yellow text-dark', '2.ª Prova'],
   exame: ['bg-red', 'Exame'],
@@ -26,11 +28,39 @@ function grelha(ano, mes) {
 }
 
 // calendário académico: aulas, provas, exames, recurso, entregas, questionários e eventos da Escola
+// endereço secreto do calendário para assinar no telemóvel, Outlook ou Google Calendar
+function Assinar() {
+  const [token, setToken] = useState(null)
+  const [erro, setErro] = useState('')
+  const [copiado, setCopiado] = useState(false)
+  useEffect(() => { api('/eu/calendario-ical').then((r) => setToken(r.token)).catch((e) => setErro(e.message)) }, [])
+  const url = token ? `${API_URL}/api/publico/calendario/${token}.ics` : ''
+  const copiar = () => navigator.clipboard?.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2000) })
+  const renovar = () => window.confirm('Criar um endereço novo? O antigo deixa de funcionar nos aparelhos onde o assinou.')
+    && api('/eu/calendario-ical', { metodo: 'POST' }).then((r) => setToken(r.token)).catch((e) => setErro(e.message))
+  return (
+    <Cartao titulo={<><i className="fa fa-mobile-alt me-2" />Assinar o calendário</>}>
+      {erro && <div className="alert alert-danger">{erro}</div>}
+      <p className="mb-2">Copie este endereço e junte-o como <b>calendário por URL / assinatura</b> no Google Calendar, Outlook ou no calendário do telemóvel. As aulas, provas, entregas e videoconferências aparecem lá e atualizam-se sozinhas (algumas horas de atraso).</p>
+      <div className="input-group mb-2">
+        <input className="form-control font-monospace small" value={url} readOnly aria-label="Endereço do calendário" onFocus={(e) => e.target.select()} />
+        <button type="button" className="btn btn-theme" onClick={copiar} disabled={!token}>{copiado ? 'Copiado' : 'Copiar'}</button>
+      </div>
+      <div className="d-flex flex-wrap gap-2 align-items-center">
+        {token && <a className="btn btn-sm btn-white" href={url.replace(/^https?:/, 'webcal:')}><i className="fa fa-calendar-plus me-1" />Abrir no calendário deste aparelho</a>}
+        <button type="button" className="btn btn-sm btn-white text-danger" onClick={renovar} disabled={!token}><i className="fa fa-sync me-1" />Criar endereço novo</button>
+        <span className="small text-muted">O endereço é pessoal: quem o tiver vê o seu calendário.</span>
+      </div>
+    </Cartao>
+  )
+}
+
 function Calendario() {
   const hoje = iso(new Date())
   const [mes, setMes] = useState(() => { const d = new Date(); return { ano: d.getFullYear(), mes: d.getMonth() } })
   const [itens, setItens] = useState(null)
   const [erro, setErro] = useState('')
+  const [assinar, setAssinar] = useState(false)
   const [dia, setDia] = useState(hoje)
   const [comAulas, setComAulas] = useState(true)
   const dias = useMemo(() => grelha(mes.ano, mes.mes), [mes])
@@ -53,7 +83,10 @@ function Calendario() {
 
   return (
     <>
-      <Titulo rotulo="Calendário" titulo="Calendário académico" sub="aulas, provas, exames, entregas e eventos" />
+      <Titulo rotulo="Calendário" titulo="Calendário académico" sub="aulas, provas, exames, entregas e eventos">
+        <button type="button" className="btn btn-white" onClick={() => setAssinar(!assinar)}><i className="fa fa-mobile-alt me-1" />Ver no telemóvel ou Outlook</button>
+      </Titulo>
+      {assinar && <Assinar />}
       {erro && <Erro texto={erro} />}
       <div className="row">
         <div className="col-xl-9">

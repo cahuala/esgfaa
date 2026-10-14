@@ -19,6 +19,7 @@ import Avisos from './paginas/Avisos'
 import Perfil from './paginas/Perfil'
 import Certificado from './cadeira/Certificado'
 import Verificar from './paginas/Verificar'
+import Pesquisa from './paginas/Pesquisa'
 
 function App() {
   const { conta, aVerificar, eDocente } = useSessao()
@@ -49,6 +50,7 @@ function App() {
         {!eDocente && <Route path="/percurso" element={<Percurso />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}
         {!eDocente && <Route path="/avisos" element={<Avisos />} />}
+        <Route path="/pesquisa" element={<Pesquisa />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -16,6 +16,18 @@ export class RepositorioContasPortal {
     this.prisma = prisma
   }
 
+  async tokenCalendario(id) {
+    return (await this.prisma.contaPortal.findUnique({ where: { id }, select: { tokenCalendario: true } }))?.tokenCalendario ?? null
+  }
+
+  definirTokenCalendario(id, token) {
+    return this.prisma.contaPortal.update({ where: { id }, data: { tokenCalendario: token } })
+  }
+
+  async porTokenCalendario(token) {
+    return paraConta(await this.prisma.contaPortal.findUnique({ where: { tokenCalendario: token } }))
+  }
+
   async porId(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null

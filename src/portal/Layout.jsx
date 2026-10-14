@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
+import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import Brasao from '../assets/Logo.png'
 import Sede from '../assets/Escola De Guerra.png'
 import { useTema } from '../tema/useTema'
@@ -27,6 +27,7 @@ function ItemMenu({ para, icone, texto, fim, etiqueta }) {
 function Layout({ children }) {
   const { conta, eDocente, sair } = useSessao()
   const { pathname } = useLocation()
+  const navegar = useNavigate()
   const { tema, alternar } = useTema()
   // os menus guardam o endereço em que foram abertos: ao mudar de página ficam fechados
   const [menuMovelEm, setMenuMovelEm] = useState(null)
@@ -74,6 +75,17 @@ function Layout({ children }) {
         </div>
 
         <div className="navbar-nav">
+          <div className="navbar-item navbar-form d-none d-md-block">
+            <form onSubmit={(e) => { e.preventDefault(); const q = e.currentTarget.q.value.trim(); if (q) navegar(`/pesquisa?q=${encodeURIComponent(q)}`) }} role="search">
+              <div className="form-group">
+                <input name="q" type="search" className="form-control" placeholder="Pesquisar no portal" aria-label="Pesquisar no portal" />
+                <button type="submit" className="btn btn-search" aria-label="Pesquisar"><i className="fa fa-search" /></button>
+              </div>
+            </form>
+          </div>
+          <div className="navbar-item d-md-none">
+            <Link to="/pesquisa" className="navbar-link icon" aria-label="Pesquisar"><i className="fa fa-search" /></Link>
+          </div>
           <div className="navbar-item">
             <button type="button" className="navbar-link icon border-0 bg-transparent" onClick={alternar} title={tema === 'dark' ? 'Modo claro' : 'Modo escuro'} aria-label={tema === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}>
               <i className={`fa ${tema === 'dark' ? 'fa-sun' : 'fa-moon'}`} />

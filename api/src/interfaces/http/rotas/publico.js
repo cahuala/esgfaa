@@ -15,6 +15,11 @@ export function rotasPublicas({ servicos, config }) {
   r.use(limitar(L.publico))
 
   // verificação pública de um certificado do portal pelo código
+  // calendário assinado (iCal): o endereço secreto substitui a sessão
+  r.get('/calendario/:token', validar({ params: z.object({ token: z.string().max(80) }) }), async (req, res) => {
+    const ics = await servicos.recursos.ical(req.dados.params.token.replace(/\.ics$/, ''))
+    res.set({ 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'inline; filename="esg.ics"', 'Cache-Control': 'private, max-age=900' }).send(ics)
+  })
   r.get('/certificados/:codigo', validar({ params: z.object({ codigo: z.string().max(40) }) }), async (req, res) => res.json(await servicos.recursos.verificarCertificado(req.dados.params.codigo)))
 
   // todo o conteúdo do site num só pedido (o site é pequeno e assim abre mais depressa)
