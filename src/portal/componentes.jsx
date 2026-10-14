@@ -3,12 +3,14 @@ import { FaCircleNotch, FaExclamationTriangle } from 'react-icons/fa'
 
 // peças comuns do portal
 
-export function Titulo({ rotulo, titulo, children }) {
+// faixa de título de cada página, sobre a fotografia da sede
+export function Titulo({ rotulo, titulo, sub, children }) {
   return (
     <div className="p-titulo">
       <div>
         {rotulo && <span className="p-rotulo">{rotulo}</span>}
         <h1>{titulo}</h1>
+        {sub && <p className="p-titulo-sub">{sub}</p>}
       </div>
       {children && <div className="p-titulo-acoes">{children}</div>}
     </div>

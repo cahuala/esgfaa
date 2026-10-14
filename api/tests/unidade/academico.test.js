@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  assiduidade, emailDaEscola, estadoPrazo, entregaAtrasada, mediaPonderada, numeroConta, validarHorario, validarNota, validarPeso,
+  assiduidade, classificacao, emailDaEscola, estadoPrazo, entregaAtrasada, numeroConta, resultadoDisciplina, validarHorario, validarNota,
 } from '../../src/dominio/academico/regras.js'
 import { assinaturaPrivadaValida } from '../../src/infraestrutura/ficheiros/privados.js'
 import { ErroValidacao } from '../../src/dominio/comum/erros.js'
@@ -22,20 +22,38 @@ describe('portal académico: regras', () => {
     for (const n of [-1, 20.5, 'abc', '1e9']) assert.throws(() => validarNota(n), ErroValidacao, String(n))
   })
 
-  it('a soma dos pesos não passa de 100 %', () => {
-    assert.equal(validarPeso(40, [30, 30]), 40)
-    assert.throws(() => validarPeso(50, [30, 30]), /110 %/)
-    assert.throws(() => validarPeso(0, []), ErroValidacao)
-    assert.throws(() => validarPeso(12.5, []), ErroValidacao)
+  it('MAC ≥ 14 sem provas negativas dispensa do exame', () => {
+    assert.deepEqual(resultadoDisciplina({ p1: 15, p2: 16 }), { mac: 15.5, final: 16, situacao: 'dispensado', classificacao: 'Bom' })
+    // MAC 14 mas uma prova negativa: vai a exame
+    assert.equal(resultadoDisciplina({ p1: 19, p2: 9 }).situacao, 'exame')
+    assert.equal(resultadoDisciplina({ p1: 13, p2: 14.5 }).situacao, 'exame')
   })
 
-  it('média ponderada: parcial enquanto faltam notas, aprovação só no fim', () => {
-    const parcial = mediaPonderada([{ peso: 40, nota: 15 }, { peso: 60, nota: null }])
-    assert.deepEqual(parcial, { media: 15, completa: false, aprovado: null })
-    const final = mediaPonderada([{ peso: 40, nota: 15 }, { peso: 60, nota: 8 }])
-    assert.deepEqual(final, { media: 10.8, completa: true, aprovado: true })
-    assert.equal(mediaPonderada([{ peso: 100, nota: 9.4 }]).aprovado, false)
-    assert.equal(mediaPonderada([]).media, null)
+  it('exame: nota final = 40 % MAC + 60 % exame, arredondada às unidades', () => {
+    // 0,4 × 12,5 + 0,6 × 11 = 11,6 → 12
+    assert.deepEqual(resultadoDisciplina({ p1: 12, p2: 13, exame: 11 }), { mac: 12.5, final: 12, situacao: 'aprovado', classificacao: 'Suficiente' })
+    // 0,4 × 12,5 + 0,6 × 7 = 9,2 → 9: vai a recurso
+    assert.deepEqual(resultadoDisciplina({ p1: 16, p2: 9, exame: 7 }), { mac: 12.5, final: 9, situacao: 'recurso', classificacao: null })
+    // 9,5 arredonda para 10
+    assert.equal(resultadoDisciplina({ p1: 10, p2: 10, exame: 9.17 }).final, 10)
+  })
+
+  it('recurso substitui o exame na mesma fórmula', () => {
+    assert.deepEqual(resultadoDisciplina({ p1: 16, p2: 9, exame: 7, recurso: 12 }), { mac: 12.5, final: 12, situacao: 'aprovado', classificacao: 'Suficiente' })
+    assert.deepEqual(resultadoDisciplina({ p1: 8, p2: 10, exame: 6, recurso: 8 }), { mac: 9, final: 8, situacao: 'reprovado', classificacao: 'Reprovado' })
+    // quem passou no exame não precisa do recurso: é ignorado
+    assert.equal(resultadoDisciplina({ p1: 12, p2: 13, exame: 11, recurso: 2 }).final, 12)
+  })
+
+  it('sem as duas provas a disciplina está em curso', () => {
+    assert.deepEqual(resultadoDisciplina({ p1: 15 }), { mac: null, final: null, situacao: 'em_curso', classificacao: null })
+    assert.equal(resultadoDisciplina({}).situacao, 'em_curso')
+    assert.equal(resultadoDisciplina({ p1: '', p2: 12 }).situacao, 'em_curso')
+  })
+
+  it('classificação qualitativa', () => {
+    assert.deepEqual([9, 10, 13, 14, 16, 17, 20].map(classificacao), ['Reprovado', 'Suficiente', 'Suficiente', 'Bom', 'Bom', 'Muito bom', 'Muito bom'])
+    assert.equal(classificacao(null), null)
   })
 
   it('prazos de entrega e atrasos', () => {

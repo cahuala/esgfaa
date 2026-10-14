@@ -15,7 +15,7 @@ const SEPARADORES = [
   { id: 'materiais', texto: 'Materiais' },
   { id: 'avisos', texto: 'Avisos' },
   { id: 'trabalhos', texto: 'Trabalhos' },
-  { id: 'avaliacoes', texto: 'Avaliações' },
+  { id: 'avaliacoes', texto: 'Notas' },
   { id: 'presencas', texto: 'Presenças' },
   { id: 'horario', texto: 'Horário' },
 ]
@@ -41,11 +41,13 @@ function Cadeira() {
 
   return (
     <>
-      <Link to="/cadeiras" className="p-voltar"><FaArrowLeft aria-hidden="true" /> Cadeiras</Link>
-      <header className="p-cadeira-cabeca">
-        <span className="p-rotulo">{c.codigo} · {c.semestre}.º semestre{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</span>
-        <h1>{c.nome}</h1>
-        <p className="p-texto-suave">{c.docente ? `Docente: ${c.docente.nome}` : 'Docente por atribuir'}{c.descricao ? ` — ${c.descricao}` : ''}</p>
+      <header className="p-titulo p-cadeira-cabeca">
+        <div>
+          <Link to="/cadeiras" className="p-voltar"><FaArrowLeft aria-hidden="true" /> Cadeiras</Link>
+          <span className="p-rotulo">{c.codigo} · {c.semestre}.º semestre{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</span>
+          <h1>{c.nome}</h1>
+          <p className="p-titulo-sub">{c.docente ? `Docente: ${c.docente.nome}` : 'Docente por atribuir'}{c.descricao ? ` — ${c.descricao}` : ''}</p>
+        </div>
       </header>
 
       <nav className="p-separadores" role="tablist" aria-label="Secções da cadeira">

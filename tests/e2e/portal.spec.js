@@ -65,6 +65,18 @@ test('Secretaria matricula; docente publica; estudante consulta e pede um docume
   await page.getByLabel('Endereço').fill('https://example.org/programa')
   await page.getByRole('button', { name: 'Publicar' }).click()
   await expect(page.getByText('Programa da cadeira')).toBeVisible()
+
+  // pauta: 1.ª e 2.ª prova; MAC 15 sem negativas = dispensado; publica só as provas
+  await page.getByRole('tab', { name: 'Notas' }).click()
+  await page.getByLabel(/^1\.ª Prova de .*Estudante Teste/).fill('14')
+  await page.getByLabel(/^2\.ª Prova de .*Estudante Teste/).fill('16')
+  await expect(page.locator('.p-matriz-pauta').getByText('Dispensado')).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar pauta' }).click()
+  await expect(page.getByText('Pauta guardada.')).toBeVisible()
+  await page.getByRole('columnheader', { name: /1\.ª Prova/ }).getByRole('button').click()
+  await expect(page.getByText('1.ª Prova: publicada aos estudantes.')).toBeVisible()
+  await page.getByRole('columnheader', { name: /2\.ª Prova/ }).getByRole('button').click()
+  await expect(page.getByText('2.ª Prova: publicada aos estudantes.')).toBeVisible()
   await page.locator('.p-conta-botao').click()
   await page.getByRole('button', { name: 'Sair' }).click()
 
@@ -76,6 +88,12 @@ test('Secretaria matricula; docente publica; estudante consulta e pede um docume
   await expect(page.getByText('Programa da cadeira')).toBeVisible()
   // o estudante não vê os formulários do docente
   await expect(page.getByRole('button', { name: 'Publicar' })).toHaveCount(0)
+
+  // boletim em matriz: disciplinas × provas
+  await page.goto('/portal/#/notas')
+  const linha = page.getByRole('row', { name: /Estratégia Militar/ })
+  await expect(linha.getByRole('cell').nth(2)).toHaveText('15') // MAC
+  await expect(linha.getByText('Dispensado', { exact: true })).toBeVisible()
 
   await page.goto('/portal/#/pedidos')
   await page.getByLabel('Documento').selectOption('Declaração de matrícula')

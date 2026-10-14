@@ -1,149 +1,179 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FaEye, FaEyeSlash, FaTrashAlt } from 'react-icons/fa'
+import { FaEye, FaEyeSlash, FaPrint, FaSave } from 'react-icons/fa'
 import { api } from '../api'
-import { Campo, Cartao, Etiqueta, Vazio } from '../componentes'
-import { data, nota } from '../formatar'
-import { Situacao } from '../paginas/Notas'
-
-const TIPOS = { teste: 'Teste', trabalho: 'Trabalho', exame: 'Exame', participacao: 'Participação', outro: 'Outro' }
+import { Cartao, Vazio } from '../componentes'
+import { Nota, Situacao } from '../avaliacao'
+import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../regraAvaliacao'
 
 function Avaliacoes(props) {
   return props.eDocente ? <Pauta {...props} /> : <MinhasNotas {...props} />
 }
 
-// estudante: as suas notas publicadas e a média
+// estudante: as suas notas nesta disciplina, em linha
 function MinhasNotas({ c }) {
-  if (!c.avaliacoes.length) return <Vazio>Ainda não há notas publicadas nesta cadeira.</Vazio>
+  const n = c.notas
   return (
-    <Cartao titulo="As minhas notas" acoes={<Situacao c={c.resultado} />}>
-      <div className="p-tabela-rolavel">
-        <table className="p-tabela">
-          <thead><tr><th>Avaliação</th><th>Data</th><th className="p-num">Peso</th><th className="p-num">Nota</th></tr></thead>
-          <tbody>
-            {c.avaliacoes.map((a) => (
-              <tr key={a.id}>
-                <td>{a.nome} <span className="p-texto-fraco">· {TIPOS[a.tipo] || a.tipo}</span>{a.observacao && <div className="p-texto-suave">{a.observacao}</div>}</td>
-                <td>{data(a.data)}</td>
-                <td className="p-num">{a.peso} %</td>
-                <td className="p-num"><strong>{nota(a.nota)}</strong></td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot><tr><th colSpan={3}>Média {c.resultado.completa ? 'final' : 'até agora'}</th><th className="p-num">{nota(c.resultado.media)}</th></tr></tfoot>
-        </table>
+    <Cartao titulo="As minhas notas" acoes={<Situacao situacao={n.situacao} />}>
+      <div className="p-notas-linha">
+        {COMPONENTES_NOTA.slice(0, 2).map((k) => <div key={k}><span>{NOMES_COMPONENTES[k]}</span><Nota valor={n[k]} /></div>)}
+        <div className="p-notas-destaque"><span>MAC</span><Nota valor={n.mac} /></div>
+        <div><span>Exame</span>{n.situacao === 'dispensado' ? <span className="p-nota-vazia">dispensado</span> : <Nota valor={n.exame} />}</div>
+        <div><span>Recurso</span><Nota valor={n.recurso} /></div>
+        <div className="p-notas-final"><span>Nota final</span><Nota valor={n.situacao === 'recurso' ? null : n.final} forte />{n.classificacao && n.situacao !== 'reprovado' && <small>{n.classificacao}</small>}</div>
       </div>
+      {n.observacao && <p className="p-resposta">{n.observacao}</p>}
+      <p className="p-legenda">{REGRA} “—” = nota ainda não publicada.</p>
     </Cartao>
   )
 }
 
-// docente: elementos de avaliação (peso e publicação) e pauta com todas as notas
+const paraTexto = (v) => (v === null || v === undefined ? '' : String(v).replace('.', ','))
+const paraNumero = (v) => {
+  const t = String(v).trim().replace(',', '.')
+  if (t === '') return null
+  const n = Number(t)
+  return Number.isFinite(n) && n >= 0 && n <= 20 ? n : undefined // undefined = inválida
+}
+
+// docente: pauta em matriz (estudantes × provas), com MAC e nota final calculadas enquanto escreve
 function Pauta({ c, avisar }) {
   const [p, setP] = useState(null)
-  const [edicao, setEdicao] = useState({}) // { avaliacaoId: { estudanteId: valor } }
-  const [f, setF] = useState({ nome: '', tipo: 'teste', peso: '', data: '' })
-  const [erro, setErro] = useState('')
+  const [edicao, setEdicao] = useState({}) // { estudanteId: { p1, p2, exame, recurso, observacao } }
+  const [alterado, setAlterado] = useState(false)
+  const [aGuardar, setAGuardar] = useState(false)
 
-  const carregar = useCallback(() => api(`/cadeiras/${c.id}/pauta`).then((r) => {
+  const aplicar = useCallback((r) => {
     setP(r)
-    setEdicao(Object.fromEntries(r.avaliacoes.map((a) => [a.id, Object.fromEntries(r.linhas.map((l) => [l.estudante.id, l.notas[a.id]?.valor ?? '']))])))
-  }).catch((e) => avisar({ tipo: 'erro', texto: e.message })), [c.id, avisar])
+    setEdicao(Object.fromEntries(r.linhas.map((l) => [l.estudante.id, {
+      ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraTexto(l[k])])), observacao: l.observacao,
+    }])))
+    setAlterado(false)
+  }, [])
+  const carregar = useCallback(() => api(`/cadeiras/${c.id}/pauta`).then(aplicar).catch((e) => avisar({ tipo: 'erro', texto: e.message })), [c.id, aplicar, avisar])
   useEffect(() => { carregar() }, [carregar])
 
   if (!p) return <p className="p-texto-suave">A carregar a pauta…</p>
-  const somaPesos = p.avaliacoes.reduce((s, a) => s + a.peso, 0)
+  if (p.linhas.length === 0) return <Vazio>A turma não tem estudantes matriculados.</Vazio>
 
-  async function criar(e) {
-    e.preventDefault()
-    setErro('')
+  const mudar = (id, k, v) => { setEdicao({ ...edicao, [id]: { ...edicao[id], [k]: v } }); setAlterado(true) }
+  const calculo = (id) => {
+    const valores = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[id][k])]))
+    const invalidas = COMPONENTES_NOTA.filter((k) => valores[k] === undefined)
+    for (const k of invalidas) valores[k] = null
+    return { ...resultadoDisciplina(valores), invalidas }
+  }
+  const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, calculo(l.estudante.id)]))
+  const contagem = Object.values(resultados).reduce((s, r) => ({ ...s, [r.situacao]: (s[r.situacao] || 0) + 1 }), {})
+  const temInvalidas = Object.values(resultados).some((r) => r.invalidas.length)
+
+  async function guardar() {
+    setAGuardar(true)
     try {
-      await api(`/cadeiras/${c.id}/avaliacoes`, { metodo: 'POST', corpo: f })
-      setF({ nome: '', tipo: 'teste', peso: '', data: '' })
-      carregar()
-    } catch (falha) {
-      setErro(falha.message)
+      const linhas = p.linhas.map((l) => ({ estudanteId: l.estudante.id, ...edicao[l.estudante.id] }))
+      aplicar(await api(`/cadeiras/${c.id}/pauta`, { metodo: 'PUT', corpo: { linhas } }))
+      avisar({ texto: 'Pauta guardada.' })
+    } catch (e) {
+      avisar({ tipo: 'erro', texto: e.message })
+    } finally {
+      setAGuardar(false)
     }
   }
 
-  async function guardarColuna(a) {
+  async function publicar(k) {
+    const publicadas = p.publicadas.includes(k) ? p.publicadas.filter((x) => x !== k) : [...p.publicadas, k]
     try {
-      const notas = p.linhas.map((l) => ({ estudanteId: l.estudante.id, valor: edicao[a.id][l.estudante.id] === '' ? null : String(edicao[a.id][l.estudante.id]) }))
-      await api(`/avaliacoes/${a.id}/notas`, { metodo: 'PUT', corpo: { notas } })
-      avisar({ texto: `Notas de "${a.nome}" guardadas${a.publicada ? '' : ' (ainda não publicadas)'}.` })
-      carregar()
+      setP({ ...p, ...(await api(`/cadeiras/${c.id}/pauta/publicacao`, { metodo: 'PUT', corpo: { publicadas } })), linhas: p.linhas })
+      avisar({ texto: publicadas.includes(k) ? `${NOMES_COMPONENTES[k]}: publicada aos estudantes.` : `${NOMES_COMPONENTES[k]}: escondida dos estudantes.` })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
     }
   }
 
-  async function publicar(a) {
-    await api(`/avaliacoes/${a.id}`, { metodo: 'PUT', corpo: { publicada: !a.publicada } })
-      .then(() => { avisar({ texto: a.publicada ? 'Notas escondidas dos estudantes.' : 'Notas publicadas: os estudantes já as veem.' }); carregar() })
-      .catch((x) => avisar({ tipo: 'erro', texto: x.message }))
+  const cabeca = (k) => {
+    const pub = p.publicadas.includes(k)
+    return (
+      <th scope="col" key={k}>
+        {NOMES_COMPONENTES[k]}
+        <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} aria-pressed={pub} title={pub ? 'Os estudantes já veem esta coluna. Clique para esconder.' : 'Ainda escondida. Clique para publicar aos estudantes.'}>
+          {pub ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {pub ? 'Publicada' : 'Por publicar'}
+        </button>
+      </th>
+    )
   }
 
-  async function apagar(a) {
-    if (!window.confirm(`Apagar "${a.nome}" e todas as notas lançadas?`)) return
-    await api(`/avaliacoes/${a.id}`, { metodo: 'DELETE' }).then(carregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
+  const campo = (l, k, desativado) => {
+    const id = l.estudante.id
+    const invalida = resultados[id].invalidas.includes(k)
+    return (
+      <td className={desativado && !edicao[id][k] ? 'p-celula-inativa' : ''}>
+        <input
+          className={`p-nota ${invalida ? 'p-nota-invalida' : ''}`}
+          inputMode="decimal"
+          aria-label={`${NOMES_COMPONENTES[k]} de ${l.estudante.nome}`}
+          aria-invalid={invalida || undefined}
+          value={edicao[id][k]}
+          disabled={desativado && !edicao[id][k]}
+          placeholder={desativado ? '' : '—'}
+          onChange={(e) => mudar(id, k, e.target.value)}
+        />
+      </td>
+    )
   }
 
   return (
     <div className="p-coluna">
-      <Cartao titulo="Pauta" acoes={<Etiqueta cor={somaPesos === 100 ? 'verde' : 'dourado'}>Pesos: {somaPesos} %</Etiqueta>}>
-        {p.avaliacoes.length === 0 ? <Vazio>Crie primeiro os elementos de avaliação (abaixo).</Vazio> : p.linhas.length === 0 ? <Vazio>A turma não tem estudantes matriculados.</Vazio> : (
-          <div className="p-tabela-rolavel">
-            <table className="p-tabela p-pauta">
-              <thead>
-                <tr>
-                  <th>Estudante</th>
-                  {p.avaliacoes.map((a) => (
-                    <th key={a.id} className="p-num">
-                      {a.nome}<div className="p-texto-fraco">{a.peso} %</div>
-                      <div className="p-pauta-acoes">
-                        <button type="button" className="p-botao p-botao-pequeno" onClick={() => guardarColuna(a)}>Guardar</button>
-                        <button type="button" className="p-botao-icone" onClick={() => publicar(a)} title={a.publicada ? 'Esconder dos estudantes' : 'Publicar aos estudantes'} aria-label={a.publicada ? `Esconder ${a.nome}` : `Publicar ${a.nome}`}>{a.publicada ? <FaEye /> : <FaEyeSlash />}</button>
-                        <button type="button" className="p-botao-icone" onClick={() => apagar(a)} aria-label={`Apagar ${a.nome}`}><FaTrashAlt /></button>
-                      </div>
-                    </th>
-                  ))}
-                  <th className="p-num">Média</th>
-                </tr>
-              </thead>
-              <tbody>
-                {p.linhas.map((l) => (
+      <div className="p-pauta-barra">
+        <div className="p-pauta-contagem">
+          {Object.entries(SITUACOES).filter(([k]) => contagem[k]).map(([k, s]) => <span key={k} className={`p-etiqueta p-${s.cor}`}>{s.texto}: {contagem[k]}</span>)}
+        </div>
+        <div className="p-acoes-linha p-sem-impressao">
+          {alterado && <span className="p-por-guardar">Alterações por guardar</span>}
+          <button type="button" className="p-botao p-botao-contorno" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
+          <button type="button" className="p-botao" onClick={guardar} disabled={!alterado || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? 'A guardar…' : 'Guardar pauta'}</button>
+        </div>
+      </div>
+
+      <div className="p-matriz-caixa">
+        <div className="p-impressao-cabeca">Pauta · {c.codigo} {c.nome} · {c.turma?.nome}</div>
+        <div className="p-tabela-rolavel">
+          <table className="p-matriz p-matriz-pauta">
+            <thead>
+              <tr>
+                <th scope="col" className="p-matriz-num">N.º</th>
+                <th scope="col" className="p-matriz-nome">Estudante</th>
+                {cabeca('p1')}
+                {cabeca('p2')}
+                <th scope="col" className="p-matriz-mac">MAC</th>
+                {cabeca('exame')}
+                {cabeca('recurso')}
+                <th scope="col" className="p-matriz-final">Nota final</th>
+                <th scope="col">Situação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {p.linhas.map((l, i) => {
+                const r = resultados[l.estudante.id]
+                const semExame = r.situacao === 'dispensado' || r.situacao === 'em_curso'
+                const semRecurso = !['recurso', 'reprovado'].includes(r.situacao) && !(r.situacao === 'aprovado' && edicao[l.estudante.id].recurso)
+                return (
                   <tr key={l.estudante.id}>
-                    <td><strong>{l.estudante.nome}</strong><div className="p-texto-fraco">{l.estudante.numero}</div></td>
-                    {p.avaliacoes.map((a) => (
-                      <td key={a.id} className="p-num">
-                        <input
-                          className="p-nota"
-                          inputMode="decimal"
-                          aria-label={`${a.nome} de ${l.estudante.nome}`}
-                          value={edicao[a.id]?.[l.estudante.id] ?? ''}
-                          onChange={(e) => setEdicao({ ...edicao, [a.id]: { ...edicao[a.id], [l.estudante.id]: e.target.value } })}
-                        />
-                      </td>
-                    ))}
-                    <td className="p-num"><strong>{nota(l.media)}</strong>{l.completa && <div className={l.aprovado ? 'p-ok' : 'p-mau'}>{l.aprovado ? 'Aprovado' : 'Reprovado'}</div>}</td>
+                    <td className="p-matriz-num">{i + 1}</td>
+                    <th scope="row" className="p-matriz-nome">{l.estudante.nome}<small>{l.estudante.numero}</small></th>
+                    {campo(l, 'p1')}
+                    {campo(l, 'p2')}
+                    <td className="p-matriz-mac"><Nota valor={r.mac} /></td>
+                    {campo(l, 'exame', semExame)}
+                    {campo(l, 'recurso', semRecurso)}
+                    <td className="p-matriz-final"><Nota valor={r.situacao === 'recurso' ? null : r.final} forte /></td>
+                    <td><Situacao situacao={r.situacao} />{r.classificacao && r.situacao !== 'reprovado' && <small className="p-classificacao">{r.classificacao}</small>}</td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p className="p-texto-fraco">Notas de 0 a 20 (aceita vírgula). Guarde cada coluna; o ícone do olho publica ou esconde essa avaliação aos estudantes.</p>
-      </Cartao>
-      <Cartao titulo="Novo elemento de avaliação">
-        <form onSubmit={criar} className="p-formulario p-formulario-linha">
-          {erro && <p className="p-erro p-largo" role="alert">{erro}</p>}
-          <Campo id="av-nome" rotulo="Nome"><input id="av-nome" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="Teste 1" required /></Campo>
-          <Campo id="av-tipo" rotulo="Tipo">
-            <select id="av-tipo" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>{Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-          </Campo>
-          <Campo id="av-peso" rotulo="Peso (%)"><input id="av-peso" type="number" min={1} max={100} value={f.peso} onChange={(e) => setF({ ...f, peso: e.target.value })} required /></Campo>
-          <Campo id="av-data" rotulo="Data"><input id="av-data" type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Campo>
-          <button type="submit" className="p-botao">Adicionar</button>
-        </form>
-      </Cartao>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p className="p-legenda">{REGRA} Notas de 0 a 20 (aceita vírgula); campo vazio = sem nota. O exame fica bloqueado para os dispensados e o recurso só abre para quem reprovou no exame. Os estudantes só veem as colunas publicadas.</p>
     </div>
   )
 }

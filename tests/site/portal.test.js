@@ -28,3 +28,13 @@ describe('portal: formatação', () => {
     expect(localParaIso('2026-10-20T23:59')).toMatch(/^2026-10-2\dT\d{2}:59:00\.000Z$/)
   })
 })
+
+describe('portal: regra de avaliação partilhada com a API', () => {
+  it('a pauta calcula como o servidor', async () => {
+    const { REGRA, SITUACOES, resultadoDisciplina } = await import('../../src/portal/regraAvaliacao')
+    expect(resultadoDisciplina({ p1: 14, p2: 16 }).situacao).toBe('dispensado')
+    expect(resultadoDisciplina({ p1: 12, p2: 13, exame: 11 }).final).toBe(12)
+    expect(Object.keys(SITUACOES)).toEqual(['em_curso', 'dispensado', 'exame', 'recurso', 'aprovado', 'reprovado'])
+    expect(REGRA).toMatch(/40 % MAC \+ 60 % exame/)
+  })
+})

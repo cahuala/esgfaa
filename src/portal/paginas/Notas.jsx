@@ -1,50 +1,87 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FaPrint } from 'react-icons/fa'
 import { api } from '../api'
-import { Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio } from '../componentes'
+import { Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { nota } from '../formatar'
+import { Nota, Situacao } from '../avaliacao'
+import { REGRA } from '../regraAvaliacao'
 
-// boletim: avaliações publicadas de cada cadeira, média ponderada e situação
+/*
+  Boletim em matriz: uma linha por disciplina e uma coluna por momento de avaliação
+  (1.ª prova, 2.ª prova, MAC, exame, recurso), com a nota final e a situação.
+  Só aparecem as notas que o docente já publicou.
+*/
 function Notas() {
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   useEffect(() => { api('/notas').then(setLista).catch((e) => setErro(e.message)) }, [])
 
+  const semestres = lista ? [...new Set(lista.map((l) => l.cadeira.semestre))].sort() : []
+  const concluidas = lista?.filter((l) => l.situacao === 'aprovado' || l.situacao === 'dispensado') || []
+  const media = concluidas.length ? Math.round((concluidas.reduce((s, l) => s + l.final, 0) / concluidas.length) * 10) / 10 : null
+
   return (
     <>
-      <Titulo rotulo="Avaliação" titulo="Notas" />
-      <p className="p-texto-suave p-mb">Só aparecem as avaliações já publicadas pelos docentes. A média é ponderada pelo peso de cada avaliação (escala de 0 a 20; aprovação a partir de 10).</p>
+      <Titulo rotulo="Avaliação" titulo="Boletim de notas">
+        <button type="button" className="p-botao p-botao-claro p-sem-impressao" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
+      </Titulo>
       {erro && <Erro texto={erro} />}
-      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Sem cadeiras.</Vazio> : (
-        <div className="p-coluna">
-          {lista.map((c) => (
-            <Cartao key={c.cadeira.id} titulo={<Link to={`/cadeiras/${c.cadeira.id}`}>{c.cadeira.codigo} · {c.cadeira.nome}</Link>} acoes={<Situacao c={c} />}>
-              {c.avaliacoes.length === 0 ? <Vazio>Sem notas publicadas.</Vazio> : (
-                <div className="p-tabela-rolavel">
-                  <table className="p-tabela">
-                    <thead><tr><th>Avaliação</th><th className="p-num">Peso</th><th className="p-num">Nota</th></tr></thead>
-                    <tbody>
-                      {c.avaliacoes.map((a) => (
-                        <tr key={a.id}><td>{a.nome}</td><td className="p-num">{a.peso} %</td><td className="p-num"><strong>{nota(a.nota)}</strong></td></tr>
-                      ))}
-                    </tbody>
-                    <tfoot><tr><th colSpan={2}>Média {c.completa ? 'final' : 'até agora'}</th><th className="p-num">{nota(c.media)}</th></tr></tfoot>
-                  </table>
-                </div>
-              )}
-            </Cartao>
-          ))}
-        </div>
+      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Sem disciplinas.</Vazio> : (
+        <>
+          <dl className="p-resumo">
+            <div><dt>Disciplinas</dt><dd>{lista.length}</dd></div>
+            <div><dt>Concluídas</dt><dd>{concluidas.length}</dd></div>
+            <div><dt>Média das concluídas</dt><dd>{nota(media)}</dd></div>
+            <div><dt>Por concluir</dt><dd>{lista.length - concluidas.length}</dd></div>
+          </dl>
+
+          <div className="p-matriz-caixa">
+            <div className="p-tabela-rolavel">
+              <table className="p-matriz">
+                <thead>
+                  <tr>
+                    <th scope="col" className="p-matriz-nome">Disciplina</th>
+                    <th scope="col">1.ª Prova</th>
+                    <th scope="col">2.ª Prova</th>
+                    <th scope="col" className="p-matriz-mac">MAC</th>
+                    <th scope="col">Exame</th>
+                    <th scope="col">Recurso</th>
+                    <th scope="col" className="p-matriz-final">Nota final</th>
+                    <th scope="col">Situação</th>
+                  </tr>
+                </thead>
+                {semestres.map((s) => (
+                  <tbody key={s}>
+                    {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={8}>{s}.º semestre</th></tr>}
+                    {lista.filter((l) => l.cadeira.semestre === s).map((l) => (
+                      <tr key={l.cadeira.id}>
+                        <th scope="row" className="p-matriz-nome">
+                          <Link to={`/cadeiras/${l.cadeira.id}?separador=avaliacoes`}>{l.cadeira.nome}</Link>
+                          <small>{l.cadeira.codigo}{l.cadeira.docente && ` · ${l.cadeira.docente}`}</small>
+                        </th>
+                        <td><Nota valor={l.p1} /></td>
+                        <td><Nota valor={l.p2} /></td>
+                        <td className="p-matriz-mac"><Nota valor={l.mac} /></td>
+                        <td>{l.situacao === 'dispensado' ? <span className="p-nota-vazia">dispensado</span> : <Nota valor={l.exame} />}</td>
+                        <td><Nota valor={l.recurso} /></td>
+                        <td className="p-matriz-final"><Nota valor={l.situacao === 'recurso' ? null : l.final} forte /></td>
+                        <td>
+                          <Situacao situacao={l.situacao} />
+                          {l.classificacao && l.situacao !== 'reprovado' && <small className="p-classificacao">{l.classificacao}</small>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+              </table>
+            </div>
+          </div>
+          <p className="p-legenda">{REGRA} Escala de 0 a 20. “—” = nota ainda não publicada.</p>
+        </>
       ))}
     </>
   )
-}
-
-export function Situacao({ c }) {
-  if (c.aprovado === true) return <Etiqueta cor="verde">Aprovado · {nota(c.media)}</Etiqueta>
-  if (c.aprovado === false) return <Etiqueta cor="vermelho">Reprovado · {nota(c.media)}</Etiqueta>
-  if (c.media !== null) return <Etiqueta cor="azul">Em curso · {nota(c.media)}</Etiqueta>
-  return <Etiqueta>Sem notas</Etiqueta>
 }
 
 export default Notas

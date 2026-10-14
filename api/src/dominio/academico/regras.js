@@ -8,7 +8,6 @@ export const TIPOS_CONTA = ['estudante', 'docente']
 export const ESTADOS_MATRICULA = ['ativa', 'suspensa', 'concluida', 'anulada']
 export const ESTADOS_PRESENCA = ['presente', 'falta', 'justificada']
 export const TIPOS_MATERIAL = ['ficheiro', 'ligacao', 'video']
-export const TIPOS_AVALIACAO = ['teste', 'trabalho', 'exame', 'participacao', 'outro']
 export const TIPOS_PEDIDO = [
   'Declaração de matrícula',
   'Declaração de frequência',
@@ -19,6 +18,19 @@ export const TIPOS_PEDIDO = [
 ]
 export const ESTADOS_PEDIDO = ['pendente', 'em_tratamento', 'pronto', 'recusado']
 export const NOTA_MINIMA_APROVACAO = 10
+
+/*
+  Avaliação no ensino superior angolano (modelo do regulamento do ISP Tundavala, art. 19.º a 26.º;
+  cada instituição tem o seu regulamento, por isso os números ficam aqui juntos):
+  - duas provas parcelares (1.ª e 2.ª prova) por semestre; a sua média é a MAC (média de avaliação contínua);
+  - MAC ≥ 14 sem nenhuma prova negativa: aprovado com dispensa de exame, nota final = MAC;
+  - os restantes fazem exame na época normal: nota final = 40 % MAC + 60 % exame;
+  - quem reprova no exame vai à época de recurso, com a mesma fórmula (o recurso substitui o exame);
+  - a nota final é arredondada às unidades; classificação: < 10 reprovado, 10–13 suficiente, 14–16 bom, 17–20 muito bom.
+*/
+export const AVALIACAO = { macDispensa: 14, pesoMac: 0.4, pesoExame: 0.6 }
+export const COMPONENTES_NOTA = ['p1', 'p2', 'exame', 'recurso']
+export const NOMES_COMPONENTES = { p1: '1.ª Prova', p2: '2.ª Prova', exame: 'Exame', recurso: 'Recurso' }
 
 const erro = (campo, mensagem) => new ErroValidacao(mensagem, { campo })
 
@@ -60,27 +72,39 @@ export function validarNota(valor) {
   return Math.round(n * 100) / 100
 }
 
-// a soma dos pesos das avaliações de uma cadeira não pode passar de 100 %
-export function validarPeso(peso, outrosPesos) {
-  const p = Number(peso)
-  if (!Number.isInteger(p) || p < 1 || p > 100) throw erro('peso', 'O peso é uma percentagem inteira entre 1 e 100.')
-  const soma = outrosPesos.reduce((s, x) => s + x, 0) + p
-  if (soma > 100) throw erro('peso', `A soma dos pesos ficaria em ${soma} %: o máximo é 100 %.`)
-  return p
+export function classificacao(nota) {
+  if (nota === null || nota === undefined) return null
+  if (nota < NOTA_MINIMA_APROVACAO) return 'Reprovado'
+  if (nota < 14) return 'Suficiente'
+  if (nota < 17) return 'Bom'
+  return 'Muito bom'
 }
 
+const temNota = (v) => v !== null && v !== undefined && v !== ''
+
 /*
-  Média ponderada das avaliações com nota (0 a 20, arredondada às décimas).
-  completa: todas as avaliações (soma de pesos 100) têm nota.
+  Resultado de um estudante numa cadeira a partir das notas lançadas (null = ainda sem nota).
+  situacao: em_curso (faltam provas) | dispensado | exame (aguarda exame) | recurso (aguarda recurso)
+            | aprovado | reprovado
 */
-export function mediaPonderada(itens) {
-  const comNota = itens.filter((i) => i.nota !== null && i.nota !== undefined)
-  const pesoComNota = comNota.reduce((s, i) => s + i.peso, 0)
-  const pesoTotal = itens.reduce((s, i) => s + i.peso, 0)
-  if (!pesoComNota) return { media: null, completa: false, aprovado: null }
-  const media = Math.round((comNota.reduce((s, i) => s + Number(i.nota) * i.peso, 0) / pesoComNota) * 10) / 10
-  const completa = pesoTotal === 100 && pesoComNota === 100
-  return { media, completa, aprovado: completa ? media >= NOTA_MINIMA_APROVACAO : null }
+export function resultadoDisciplina({ p1 = null, p2 = null, exame = null, recurso = null } = {}) {
+  const v = (x) => (temNota(x) ? Number(x) : null)
+  const [n1, n2, ne, nr] = [v(p1), v(p2), v(exame), v(recurso)]
+  const vazio = { mac: null, final: null, situacao: 'em_curso', classificacao: null }
+  if (n1 === null || n2 === null) return vazio
+  const mac = Math.round(((n1 + n2) / 2) * 10) / 10
+  const comPeso = (prova) => Math.round(AVALIACAO.pesoMac * mac + AVALIACAO.pesoExame * prova)
+  const fim = (final, situacao) => ({ mac, final, situacao, classificacao: final === null ? null : classificacao(final) })
+
+  if (mac >= AVALIACAO.macDispensa && n1 >= NOTA_MINIMA_APROVACAO && n2 >= NOTA_MINIMA_APROVACAO) {
+    return fim(Math.round(mac), 'dispensado')
+  }
+  if (ne === null) return fim(null, 'exame')
+  const normal = comPeso(ne)
+  if (normal >= NOTA_MINIMA_APROVACAO) return fim(normal, 'aprovado')
+  if (nr === null) return { ...fim(normal, 'recurso'), classificacao: null }
+  const final = comPeso(nr)
+  return fim(final, final >= NOTA_MINIMA_APROVACAO ? 'aprovado' : 'reprovado')
 }
 
 // ---------- trabalhos ----------

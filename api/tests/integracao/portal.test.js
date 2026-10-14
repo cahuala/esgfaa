@@ -117,34 +117,50 @@ describe('portal académico', () => {
     assert.equal(r.status, 400)
   })
 
-  it('notas: o estudante só vê as publicadas e só as suas; a pauta valida tudo', async () => {
-    const t1 = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/avaliacoes`).send({ nome: 'Teste 1', tipo: 'teste', peso: 40 })).body
-    const ex = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/avaliacoes`).send({ nome: 'Exame', tipo: 'exame', peso: 60 })).body
-    assert.equal((await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/avaliacoes`).send({ nome: 'A mais', peso: 10 })).status, 400)
-
-    const pauta = await portal('prof').put(`/api/portal/avaliacoes/${t1.id}/notas`).send({ notas: [
-      { estudanteId: contas.ana.id, valor: '15,5' }, { estudanteId: contas.bruno.id, valor: 9 },
+  it('pauta (1.ª e 2.ª prova, MAC, exame, recurso): o estudante só vê o publicado e só o seu', async () => {
+    const url = `/api/portal/cadeiras/${cadeira.id}/pauta`
+    const pauta = await portal('prof').put(url).send({ linhas: [
+      { estudanteId: contas.ana.id, p1: '15,5', p2: 16 },
+      { estudanteId: contas.bruno.id, p1: 9, p2: 12, exame: 8 },
     ] })
     assert.equal(pauta.status, 200, pauta.body.erro)
-    // estudante de outra turma ou nota fora da escala
-    assert.equal((await portal('prof').put(`/api/portal/avaliacoes/${t1.id}/notas`).send({ notas: [{ estudanteId: contas.carla.id, valor: 10 }] })).status, 400)
-    assert.equal((await portal('prof').put(`/api/portal/avaliacoes/${t1.id}/notas`).send({ notas: [{ estudanteId: contas.ana.id, valor: 25 }] })).status, 400)
-    // outro docente não lança notas aqui
-    assert.equal((await portal('prof2').put(`/api/portal/avaliacoes/${t1.id}/notas`).send({ notas: [] })).status, 404)
+    const [ana, bruno] = [contas.ana.id, contas.bruno.id].map((id) => pauta.body.linhas.find((l) => l.estudante.id === id))
+    assert.deepEqual({ mac: ana.mac, final: ana.final, situacao: ana.situacao }, { mac: 15.8, final: 16, situacao: 'dispensado' })
+    // MAC 10,5; 0,4 × 10,5 + 0,6 × 8 = 9 → recurso
+    assert.deepEqual({ final: bruno.final, situacao: bruno.situacao }, { final: 9, situacao: 'recurso' })
+
+    // estudante de outra turma, repetido, nota fora da escala, componente inventada
+    assert.equal((await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.carla.id, p1: 10 }] })).status, 400)
+    assert.equal((await portal('prof').put(url).send({ linhas: [{ estudanteId: ana.estudante.id, p1: 10 }, { estudanteId: ana.estudante.id, p1: 11 }] })).status, 400)
+    const fora = await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.ana.id, exame: 25 }] })
+    assert.equal(fora.status, 400)
+    assert.match(fora.body.erro, /Exame/)
+    assert.equal((await portal('prof').put(`${url}/publicacao`).send({ publicadas: ['p1', 'final'] })).status, 400)
+    // outro docente não vê nem lança notas aqui; o estudante também não
+    assert.equal((await portal('prof2').put(url).send({ linhas: [] })).status, 404)
+    assert.equal((await portal('prof2').put(`${url}/publicacao`).send({ publicadas: ['p1'] })).status, 404)
+    assert.equal((await portal('ana').get(url)).status, 403)
 
     let boletim = (await portal('ana').get('/api/portal/notas')).body
-    assert.equal(boletim[0].avaliacoes.length, 0) // ainda não publicada
-    await portal('prof').put(`/api/portal/avaliacoes/${t1.id}`).send({ publicada: true })
+    assert.deepEqual([boletim[0].p1, boletim[0].mac, boletim[0].situacao], [null, null, 'em_curso']) // nada publicado
+    assert.equal((await portal('prof').put(`${url}/publicacao`).send({ publicadas: ['p1'] })).status, 200)
     boletim = (await portal('ana').get('/api/portal/notas')).body
-    assert.deepEqual(boletim[0].avaliacoes.map((a) => a.nota), [15.5])
-    assert.equal(boletim[0].media, 15.5)
-    assert.equal(boletim[0].completa, false)
+    assert.deepEqual([boletim[0].p1, boletim[0].p2, boletim[0].mac], [15.5, null, null]) // a 2.ª prova ainda não
+    await portal('prof').put(`${url}/publicacao`).send({ publicadas: ['p2', 'p1'] })
+    boletim = (await portal('ana').get('/api/portal/notas')).body
+    assert.deepEqual([boletim[0].mac, boletim[0].final, boletim[0].situacao, boletim[0].classificacao], [15.8, 16, 'dispensado', 'Bom'])
 
-    const detalhe = (await portal('bruno').get(`/api/portal/cadeiras/${cadeira.id}`)).body
-    assert.deepEqual(detalhe.avaliacoes.map((a) => a.nota), [9]) // só a sua
-    assert.ok(!JSON.stringify(detalhe).includes('15.5'))
-    assert.equal((await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}/pauta`)).status, 403)
-    void ex
+    // o exame do Bruno ainda não foi publicado: para ele, aguarda exame
+    let detalhe = (await portal('bruno').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.deepEqual([detalhe.notas.p1, detalhe.notas.exame, detalhe.notas.situacao], [9, null, 'exame'])
+    assert.ok(!JSON.stringify(detalhe).includes('15.5')) // não vê as notas dos colegas
+    await portal('prof').put(`${url}/publicacao`).send({ publicadas: ['p1', 'p2', 'exame'] })
+    detalhe = (await portal('bruno').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.equal(detalhe.notas.situacao, 'recurso')
+
+    // linha sem notas é apagada
+    const limpa = await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.bruno.id }] })
+    assert.equal(limpa.body.linhas.find((l) => l.estudante.id === contas.bruno.id).p1, null)
   })
 
   it('trabalhos: entrega dentro do prazo, substituição, correção e prazo fechado', async () => {

@@ -15,7 +15,31 @@ const { prisma } = c
 const ano = new Date().getFullYear()
 const dominio = config.dominioEmail || 'esgfaa.gov.ao'
 
-if (await prisma.turma.findFirst({ where: { nome: 'CEM 2026/2027 (demonstração)' } })) {
+/*
+  Pautas de demonstração, com casos do regulamento: dispensa (MAC ≥ 14), aprovação no exame,
+  aprovação e reprovação no recurso, e componentes ainda por publicar.
+  Ordem das notas: estudantes por ordem de criação (João, Maria, Pedro, Sofia).
+*/
+async function semearPautas(turmaId) {
+  const cadeiras = Object.fromEntries((await prisma.unidadeCurricular.findMany({ where: { turmaId } })).map((u) => [u.codigo, u]))
+  if (!cadeiras.EST101 || (await prisma.notaPauta.count({ where: { cadeiraId: cadeiras.EST101.id } }))) return
+  const estudantes = (await prisma.matricula.findMany({ where: { turmaId }, orderBy: { estudanteId: 'asc' } })).map((m) => m.estudanteId)
+  const pautas = {
+    EST101: { publicadas: ['p1', 'p2', 'exame', 'recurso'], notas: [[15, 16], [12, 13, 11], [16, 9, 7, 12], [8, 10, 6, 8]] },
+    LID102: { publicadas: ['p1'], notas: [[14, 17], [12, 13], [15, 15], [11, 10]] },
+    GEO103: { publicadas: ['p1', 'p2'], notas: [[17, 18], [11, 12], [14, 15], [9, 13]] },
+  }
+  for (const [codigo, { publicadas, notas }] of Object.entries(pautas)) {
+    if (!cadeiras[codigo]) continue
+    await prisma.unidadeCurricular.update({ where: { id: cadeiras[codigo].id }, data: { notasPublicadas: publicadas } })
+    await prisma.notaPauta.createMany({ data: notas.map(([p1, p2, exame = null, recurso = null], i) => ({ cadeiraId: cadeiras[codigo].id, estudanteId: estudantes[i], p1, p2, exame, recurso })).filter((l) => l.estudanteId) })
+  }
+  console.log('Pautas de demonstração criadas.')
+}
+
+const existente = await prisma.turma.findFirst({ where: { nome: 'CEM 2026/2027 (demonstração)' } })
+if (existente) {
+  await semearPautas(existente.id)
   console.log('Os dados de demonstração já existem.')
   await c.fechar()
   process.exit(0)
@@ -72,10 +96,7 @@ await prisma.material.createMany({ data: [
 await prisma.avisoCadeira.create({ data: { cadeiraId: cadeiras.EST101.id, titulo: 'Bem-vindos à cadeira', texto: 'A primeira aula é na segunda-feira, no Anfiteatro A. Tragam o programa lido.', autorId: miguel.id } })
 await prisma.avisoGeral.create({ data: { titulo: 'Início do ano académico', texto: 'As aulas do 1.º semestre começam esta semana. Consultem o horário no portal.' } })
 
-const teste = await prisma.avaliacao.create({ data: { cadeiraId: cadeiras.EST101.id, nome: 'Teste 1', tipo: 'teste', peso: 40, publicada: true } })
-await prisma.avaliacao.create({ data: { cadeiraId: cadeiras.EST101.id, nome: 'Exame final', tipo: 'exame', peso: 60 } })
-const notas = [15.5, 13, 16, 11.5]
-for (const [i, e] of estudantes.entries()) await prisma.nota.create({ data: { avaliacaoId: teste.id, estudanteId: e.id, valor: notas[i] } })
+await semearPautas(turma.id)
 
 const prazo = new Date(Date.now() + 7 * 86_400_000)
 prazo.setHours(23, 59, 0, 0)

@@ -7,6 +7,7 @@ const contaResumo = { select: { id: true, nome: true, numero: true, email: true 
 
 const cadeiraLinha = (c) => c && ({
   id: c.id, turmaId: c.turmaId, codigo: c.codigo, nome: c.nome, semestre: c.semestre, horas: c.horas, descricao: c.descricao,
+  notasPublicadas: c.notasPublicadas ?? [],
   docente: c.docente ? { id: c.docente.id, nome: c.docente.nome, email: c.docente.email } : null,
   turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo } : undefined,
 })
@@ -180,54 +181,37 @@ export class RepositorioAcademico {
     return this.prisma.avisoGeral.deleteMany({ where: { id: Number(id) } })
   }
 
-  // ---------- avaliações e notas ----------
+  // ---------- pautas ----------
 
-  async avaliacoes(cadeiraId) {
-    return this.prisma.avaliacao.findMany({ where: { cadeiraId }, orderBy: [{ data: 'asc' }, { id: 'asc' }] })
+  #linhaPauta(n) {
+    return { estudanteId: n.estudanteId, cadeiraId: n.cadeiraId, p1: num(n.p1), p2: num(n.p2), exame: num(n.exame), recurso: num(n.recurso), observacao: n.observacao }
   }
 
-  avaliacao(id) {
-    return this.prisma.avaliacao.findUnique({ where: { id: Number(id) } })
+  // notas de uma cadeira: { [estudanteId]: { p1, p2, exame, recurso, observacao } }
+  async pautaDaCadeira(cadeiraId) {
+    const linhas = await this.prisma.notaPauta.findMany({ where: { cadeiraId } })
+    return Object.fromEntries(linhas.map((n) => [n.estudanteId, this.#linhaPauta(n)]))
   }
 
-  criarAvaliacao(dados) {
-    return this.prisma.avaliacao.create({ data: dados })
+  // notas de um estudante: { [cadeiraId]: { p1, p2, exame, recurso, observacao } }
+  async notasDoEstudante(estudanteId, cadeiraIds) {
+    const linhas = await this.prisma.notaPauta.findMany({ where: { estudanteId, cadeiraId: { in: cadeiraIds } } })
+    return Object.fromEntries(linhas.map((n) => [n.cadeiraId, this.#linhaPauta(n)]))
   }
 
-  atualizarAvaliacao(id, dados) {
-    return this.prisma.avaliacao.update({ where: { id }, data: dados })
-  }
-
-  apagarAvaliacao(id) {
-    return this.prisma.avaliacao.delete({ where: { id } })
-  }
-
-  // notas de uma cadeira: { [avaliacaoId]: { [estudanteId]: { valor, observacao } } }
-  async notasDaCadeira(cadeiraId) {
-    const linhas = await this.prisma.nota.findMany({ where: { avaliacao: { cadeiraId } } })
-    const mapa = {}
-    for (const n of linhas) {
-      mapa[n.avaliacaoId] ??= {}
-      mapa[n.avaliacaoId][n.estudanteId] = { valor: num(n.valor), observacao: n.observacao }
-    }
-    return mapa
-  }
-
-  async notasDoEstudante(estudanteId, avaliacaoIds) {
-    const linhas = await this.prisma.nota.findMany({ where: { estudanteId, avaliacaoId: { in: avaliacaoIds } } })
-    return Object.fromEntries(linhas.map((n) => [n.avaliacaoId, { valor: num(n.valor), observacao: n.observacao }]))
-  }
-
-  // grava a pauta de uma avaliação de uma só vez (null apaga a nota)
-  async gravarPauta(avaliacaoId, notas) {
+  // grava a pauta de uma cadeira de uma só vez (linha sem notas nem observação é apagada)
+  async gravarPauta(cadeiraId, linhas) {
     const p = this.prisma
-    await p.$transaction(notas.map(({ estudanteId, valor, observacao }) => (valor === null
-      ? p.nota.deleteMany({ where: { avaliacaoId, estudanteId } })
-      : p.nota.upsert({
-        where: { avaliacaoId_estudanteId: { avaliacaoId, estudanteId } },
-        create: { avaliacaoId, estudanteId, valor, observacao: observacao || '' },
-        update: { valor, observacao: observacao || '', atualizadaEm: new Date() },
-      }))))
+    await p.$transaction(linhas.map(({ estudanteId, ...notas }) => {
+      const vazia = ['p1', 'p2', 'exame', 'recurso'].every((k) => notas[k] === null) && !notas.observacao
+      return vazia
+        ? p.notaPauta.deleteMany({ where: { cadeiraId, estudanteId } })
+        : p.notaPauta.upsert({ where: { cadeiraId_estudanteId: { cadeiraId, estudanteId } }, create: { cadeiraId, estudanteId, ...notas }, update: notas })
+    }))
+  }
+
+  publicarNotas(cadeiraId, componentes) {
+    return this.prisma.unidadeCurricular.update({ where: { id: cadeiraId }, data: { notasPublicadas: componentes } })
   }
 
   // ---------- trabalhos e entregas ----------

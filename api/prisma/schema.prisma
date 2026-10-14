@@ -13,12 +13,12 @@ model Item {
   colecao       String
   id            String
   dados         Json
-  ordem         Int      @default(0)
-  estado        String   @default("publicado")
-  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
-  atualizadoEm  DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
-  criadoPor     Int?     @map("criado_por")
-  atualizadoPor Int?     @map("atualizado_por")
+  ordem         Int         @default(0)
+  estado        String      @default("publicado")
+  criadoEm      DateTime    @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm  DateTime    @default(now()) @map("atualizado_em") @db.Timestamptz(3)
+  criadoPor     Int?        @map("criado_por")
+  atualizadoPor Int?        @map("atualizado_por")
   autorEdicao   Utilizador? @relation("edicoes", fields: [atualizadoPor], references: [id], onDelete: SetNull)
 
   @@id([colecao, id])
@@ -181,7 +181,7 @@ model Candidatura {
 // conta do portal: estudante ou docente (separada das contas do painel)
 model ContaPortal {
   id                 Int       @id @default(autoincrement())
-  tipo               String    // "estudante" | "docente"
+  tipo               String // "estudante" | "docente"
   numero             String    @unique // n.º de estudante ou de docente
   nome               String
   email              String    @unique
@@ -195,12 +195,12 @@ model ContaPortal {
   versaoToken        Int       @default(0) @map("versao_token")
   deveMudarSenha     Boolean   @default(true) @map("deve_mudar_senha")
 
-  matriculas  Matricula[]
-  cadeiras    UnidadeCurricular[] @relation("docencia")
-  notas       Nota[]
-  entregas    Entrega[]
-  presencas   Presenca[]
-  pedidos     Pedido[]
+  matriculas Matricula[]
+  cadeiras   UnidadeCurricular[] @relation("docencia")
+  notas      NotaPauta[]
+  entregas   Entrega[]
+  presencas  Presenca[]
+  pedidos    Pedido[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -208,16 +208,16 @@ model ContaPortal {
 
 // turma de um curso num ano letivo (ex.: CEM 2026/2027)
 model Turma {
-  id          Int      @id @default(autoincrement())
-  curso       String   // identificador do curso (coleção "cursos")
-  anoLetivo   String   @map("ano_letivo")
-  nome        String
-  ativa       Boolean  @default(true)
-  criadaEm    DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+  id        Int      @id @default(autoincrement())
+  curso     String // identificador do curso (coleção "cursos")
+  anoLetivo String   @map("ano_letivo")
+  nome      String
+  ativa     Boolean  @default(true)
+  criadaEm  DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
-  cadeiras    UnidadeCurricular[]
-  matriculas  Matricula[]
-  avisos      AvisoGeral[]
+  cadeiras   UnidadeCurricular[]
+  matriculas Matricula[]
+  avisos     AvisoGeral[]
 
   @@unique([curso, anoLetivo, nome])
   @@map("turmas")
@@ -231,8 +231,8 @@ model Matricula {
   estado      String   @default("ativa") // ativa | suspensa | concluida | anulada
   criadaEm    DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
-  estudante   ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
-  turma       Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  turma     Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
   @@unique([estudanteId, turmaId])
   @@map("matriculas")
@@ -240,23 +240,24 @@ model Matricula {
 
 // unidade curricular ("cadeira") de uma turma
 model UnidadeCurricular {
-  id          Int      @id @default(autoincrement())
-  turmaId     Int      @map("turma_id")
-  codigo      String
-  nome        String
-  semestre    Int      @default(1)
-  horas       Int      @default(0)
-  docenteId   Int?     @map("docente_id")
-  descricao   String   @default("")
+  id        Int    @id @default(autoincrement())
+  turmaId   Int    @map("turma_id")
+  codigo    String
+  nome      String
+  semestre  Int    @default(1)
+  horas     Int    @default(0)
+  docenteId Int?   @map("docente_id")
+  descricao String @default("")
 
-  turma       Turma        @relation(fields: [turmaId], references: [id], onDelete: Cascade)
-  docente     ContaPortal? @relation("docencia", fields: [docenteId], references: [id], onDelete: SetNull)
-  materiais   Material[]
-  avisos      AvisoCadeira[]
-  avaliacoes  Avaliacao[]
-  trabalhos   Trabalho[]
-  horarios    Horario[]
-  aulas       Aula[]
+  turma           Turma          @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  docente         ContaPortal?   @relation("docencia", fields: [docenteId], references: [id], onDelete: SetNull)
+  materiais       Material[]
+  avisos          AvisoCadeira[]
+  pauta           NotaPauta[]
+  notasPublicadas String[]       @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
+  trabalhos       Trabalho[]
+  horarios        Horario[]
+  aulas           Aula[]
 
   @@unique([turmaId, codigo])
   @@index([docenteId])
@@ -265,13 +266,13 @@ model UnidadeCurricular {
 
 // ficheiro privado (materiais, entregas, documentos): só se descarrega pela API, com permissão
 model Ficheiro {
-  id        String   @id // identificador aleatório
-  caminho   String   // relativo à pasta privada
-  nome      String
-  tipo      String
-  tamanho   Int
-  donoId    Int?     @map("dono_id") // conta do portal que o enviou (se for o caso)
-  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id       String   @id // identificador aleatório
+  caminho  String // relativo à pasta privada
+  nome     String
+  tipo     String
+  tamanho  Int
+  donoId   Int?     @map("dono_id") // conta do portal que o enviou (se for o caso)
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   @@map("ficheiros_privados")
 }
@@ -282,13 +283,13 @@ model Material {
   titulo      String
   descricao   String   @default("")
   topico      String   @default("") // agrupa os materiais (ex.: "Semana 1")
-  tipo        String   // ficheiro | ligacao | video
+  tipo        String // ficheiro | ligacao | video
   ficheiroId  String?  @map("ficheiro_id")
   url         String   @default("")
   autorId     Int?     @map("autor_id")
   publicadoEm DateTime @default(now()) @map("publicado_em") @db.Timestamptz(3)
 
-  cadeira     UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
 
   @@index([cadeiraId])
   @@map("materiais")
@@ -302,7 +303,7 @@ model AvisoCadeira {
   autorId   Int?     @map("autor_id")
   criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
 
   @@index([cadeiraId])
   @@map("avisos_cadeira")
@@ -310,60 +311,49 @@ model AvisoCadeira {
 
 // avisos da Secretaria (a todos os estudantes ou a uma turma)
 model AvisoGeral {
-  id        Int      @id @default(autoincrement())
-  turmaId   Int?     @map("turma_id")
-  titulo    String
-  texto     String
-  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id       Int      @id @default(autoincrement())
+  turmaId  Int?     @map("turma_id")
+  titulo   String
+  texto    String
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  turma     Turma?   @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  turma Turma? @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
   @@map("avisos_gerais")
 }
 
 // elemento de avaliação (teste, trabalho, exame) com peso na nota final
-model Avaliacao {
-  id         Int      @id @default(autoincrement())
-  cadeiraId  Int      @map("cadeira_id")
-  nome       String
-  tipo       String   @default("teste")
-  peso       Int      // percentagem (a soma de uma cadeira é 100)
-  data       String   @default("")
-  publicada  Boolean  @default(false) // os estudantes só veem as notas publicadas
+// pauta: uma linha por estudante e por cadeira (notas de 0 a 20; null = ainda sem nota)
+model NotaPauta {
+  cadeiraId    Int      @map("cadeira_id")
+  estudanteId  Int      @map("estudante_id")
+  p1           Decimal? @db.Decimal(4, 2) // 1.ª prova parcelar
+  p2           Decimal? @db.Decimal(4, 2) // 2.ª prova parcelar
+  exame        Decimal? @db.Decimal(4, 2) // exame da época normal
+  recurso      Decimal? @db.Decimal(4, 2) // exame da época de recurso
+  observacao   String   @default("")
+  atualizadaEm DateTime @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz(3)
 
-  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  notas      Nota[]
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
 
-  @@index([cadeiraId])
-  @@map("avaliacoes")
-}
-
-model Nota {
-  avaliacaoId Int      @map("avaliacao_id")
-  estudanteId Int      @map("estudante_id")
-  valor       Decimal  @db.Decimal(4, 2) // 0 a 20
-  observacao  String   @default("")
-  atualizadaEm DateTime @default(now()) @map("atualizada_em") @db.Timestamptz(3)
-
-  avaliacao   Avaliacao   @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
-  estudante   ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
-
-  @@id([avaliacaoId, estudanteId])
-  @@map("notas")
+  @@id([cadeiraId, estudanteId])
+  @@index([estudanteId])
+  @@map("pautas")
 }
 
 model Trabalho {
-  id            Int      @id @default(autoincrement())
-  cadeiraId     Int      @map("cadeira_id")
-  titulo        String
-  enunciado     String   @default("")
-  prazo         DateTime @db.Timestamptz(3)
-  aceitaAtraso  Boolean  @default(false) @map("aceita_atraso")
-  ficheiroId    String?  @map("ficheiro_id") // enunciado em ficheiro (opcional)
-  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id           Int      @id @default(autoincrement())
+  cadeiraId    Int      @map("cadeira_id")
+  titulo       String
+  enunciado    String   @default("")
+  prazo        DateTime @db.Timestamptz(3)
+  aceitaAtraso Boolean  @default(false) @map("aceita_atraso")
+  ficheiroId   String?  @map("ficheiro_id") // enunciado em ficheiro (opcional)
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  cadeira       UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  entregas      Entrega[]
+  cadeira  UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  entregas Entrega[]
 
   @@index([cadeiraId])
   @@map("trabalhos")
@@ -380,8 +370,8 @@ model Entrega {
   correcao    String    @default("")
   corrigidaEm DateTime? @map("corrigida_em") @db.Timestamptz(3)
 
-  trabalho    Trabalho    @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
-  estudante   ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  trabalho  Trabalho    @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
 
   @@unique([trabalhoId, estudanteId])
   @@map("entregas")
@@ -389,14 +379,14 @@ model Entrega {
 
 // horário semanal de uma cadeira
 model Horario {
-  id         Int    @id @default(autoincrement())
-  cadeiraId  Int    @map("cadeira_id")
-  diaSemana  Int    @map("dia_semana") // 1 = segunda … 6 = sábado
-  inicio     String // "08:00"
-  fim        String
-  sala       String @default("")
+  id        Int    @id @default(autoincrement())
+  cadeiraId Int    @map("cadeira_id")
+  diaSemana Int    @map("dia_semana") // 1 = segunda … 6 = sábado
+  inicio    String // "08:00"
+  fim       String
+  sala      String @default("")
 
-  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
 
   @@index([cadeiraId])
   @@map("horarios")
@@ -404,14 +394,14 @@ model Horario {
 
 // aula dada (com sumário) e presenças
 model Aula {
-  id         Int      @id @default(autoincrement())
-  cadeiraId  Int      @map("cadeira_id")
-  data       String   // "AAAA-MM-DD"
-  sumario    String   @default("")
-  criadaEm   DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+  id        Int      @id @default(autoincrement())
+  cadeiraId Int      @map("cadeira_id")
+  data      String // "AAAA-MM-DD"
+  sumario   String   @default("")
+  criadaEm  DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
-  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  presencas  Presenca[]
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  presencas Presenca[]
 
   @@index([cadeiraId])
   @@map("aulas")
@@ -422,8 +412,8 @@ model Presenca {
   estudanteId Int    @map("estudante_id")
   estado      String // presente | falta | justificada
 
-  aula        Aula        @relation(fields: [aulaId], references: [id], onDelete: Cascade)
-  estudante   ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  aula      Aula        @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
 
   @@id([aulaId, estudanteId])
   @@map("presencas")
@@ -431,17 +421,17 @@ model Presenca {
 
 // pedido de documento à Secretaria (declarações, certificados)
 model Pedido {
-  id          Int      @id @default(autoincrement())
-  estudanteId Int      @map("estudante_id")
-  tipo        String
-  motivo      String   @default("")
-  estado      String   @default("pendente") // pendente | em_tratamento | pronto | recusado
-  resposta    String   @default("")
-  ficheiroId  String?  @map("ficheiro_id") // documento pronto para descarregar
-  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id           Int      @id @default(autoincrement())
+  estudanteId  Int      @map("estudante_id")
+  tipo         String
+  motivo       String   @default("")
+  estado       String   @default("pendente") // pendente | em_tratamento | pronto | recusado
+  resposta     String   @default("")
+  ficheiroId   String?  @map("ficheiro_id") // documento pronto para descarregar
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
 
-  estudante   ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
 
   @@index([estudanteId])
   @@index([estado])

@@ -71,11 +71,9 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/cadeiras/:id/avisos', validar({ params: pId, body: E.avisoCadeira }), async (req, res) => res.status(201).json(await s.criarAviso(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/avisos/:id', validar({ params: pId }), async (req, res) => { await s.apagarAviso(ctx(req), req.dados.params.id); res.status(204).end() })
 
-  r.post('/cadeiras/:id/avaliacoes', validar({ params: pId, body: E.avaliacao_ }), async (req, res) => res.status(201).json(await s.criarAvaliacao(ctx(req), req.dados.params.id, req.dados.body)))
-  r.put('/avaliacoes/:id', validar({ params: pId, body: E.avaliacao_ }), async (req, res) => res.json(await s.atualizarAvaliacao(ctx(req), req.dados.params.id, req.dados.body)))
-  r.delete('/avaliacoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarAvaliacao(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))
-  r.put('/avaliacoes/:id/notas', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await s.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.notas)))
+  r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await s.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))
+  r.put('/cadeiras/:id/pauta/publicacao', validar({ params: pId, body: E.publicacaoNotas }), async (req, res) => res.json(await s.publicarNotas(ctx(req), req.dados.params.id, req.dados.body.publicadas)))
 
   r.post('/cadeiras/:id/trabalhos', ficheiro, validar({ params: pId, body: E.trabalho }), async (req, res) => {
     res.status(201).json(await s.criarTrabalho(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro))

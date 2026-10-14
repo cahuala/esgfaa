@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { FaBook, FaCalendarAlt, FaChevronDown, FaClipboardList, FaFileAlt, FaHome, FaSignOutAlt, FaUser, FaBullhorn } from 'react-icons/fa'
 import Logo from '../assets/Logo.png'
+import Sede from '../assets/Escola De Guerra.png'
 import AlternarTema from '../components/AlternarTema/AlternarTema'
 import { useSessao } from './sessaoContexto'
 import { iniciais, primeiroNome } from './formatar'
@@ -28,15 +29,12 @@ function Layout({ children }) {
   ]
 
   return (
-    <div className="p-app">
+    <div className="p-app" style={{ '--p-sede': `url("${Sede}")` }}>
       <header className="p-cabecalho">
-        <div className="p-faixa">
-          <div className="p-contentor">Escola Superior de Guerra · Portal Académico</div>
-        </div>
         <div className="p-contentor p-barra">
           <Link to="/" className="p-marca">
             <img src={Logo} alt="" />
-            <span><small>Escola Superior de Guerra</small>Portal Académico</span>
+            <span><small>Escola Superior de Guerra · FAA</small>Portal Académico</span>
           </Link>
           <nav className="p-menu" aria-label="Portal">
             {ligacoes.map(({ para, texto, Icone, fim }) => (
@@ -46,7 +44,7 @@ function Layout({ children }) {
             ))}
           </nav>
           <div className="p-conta" ref={caixa}>
-            <AlternarTema />
+            <span className="p-tema"><AlternarTema /></span>
             <button type="button" className="p-conta-botao" onClick={() => setMenu(!menu)} aria-expanded={menu}>
               <span className="p-avatar">{iniciais(conta.nome)}</span>
               <span className="p-conta-nome">{primeiroNome(conta.nome)}</span>

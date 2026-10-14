@@ -20,12 +20,20 @@ function Inicio() {
 
   return (
     <>
-      <Titulo rotulo={maiusculaInicial(new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }))} titulo={`${saudacao()}, ${primeiroNome(conta.nome)}`} />
-      {conta.matriculas?.length > 0 && (
-        <p className="p-texto-suave p-mb">{conta.matriculas.filter((m) => m.estado === 'ativa').map((m) => m.turma.nome).join(' · ')} · n.º {conta.numero}</p>
-      )}
+      <Titulo
+        rotulo={maiusculaInicial(new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }))}
+        titulo={`${saudacao()}, ${primeiroNome(conta.nome)}`}
+        sub={[...(conta.matriculas || []).filter((m) => m.estado === 'ativa').map((m) => m.turma.nome), `${eDocente ? 'Docente' : 'Estudante'} n.º ${conta.numero}`].join(' · ')}
+      />
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
       {!d && !erro ? <Carregando /> : d && (
+        <>
+        <dl className="p-resumo">
+          <div><dt>{eDocente ? 'Cadeiras que lecciona' : 'Cadeiras'}</dt><dd>{d.cadeiras.length}</dd></div>
+          <div><dt>Aulas hoje</dt><dd>{d.aulasHoje.length}</dd></div>
+          <div><dt>{eDocente ? 'Prazos a decorrer' : 'Trabalhos por entregar'}</dt><dd>{eDocente ? d.prazos.length : d.prazos.filter((p) => !p.entregue).length}</dd></div>
+          <div><dt>Avisos recentes</dt><dd>{d.avisos.length + (d.avisosGerais?.length || 0)}</dd></div>
+        </dl>
         <div className="p-grelha-inicio">
           <div className="p-coluna">
             <Cartao titulo="Aulas de hoje">
@@ -83,6 +91,7 @@ function Inicio() {
             <ListaCadeiras cadeiras={d.cadeiras} />
           </Cartao>
         </div>
+        </>
       )}
     </>
   )
@@ -94,8 +103,10 @@ export function ListaCadeiras({ cadeiras }) {
     <div className="p-grelha-cadeiras">
       {cadeiras.map((c) => (
         <Link key={c.id} to={`/cadeiras/${c.id}`} className="p-cadeira">
-          <span className="p-cadeira-icone"><FaBook aria-hidden="true" /></span>
-          <span className="p-cadeira-codigo">{c.codigo} · {c.semestre}.º semestre</span>
+          <span className="p-cadeira-topo">
+            <span className="p-cadeira-icone"><FaBook aria-hidden="true" /></span>
+            <span className="p-cadeira-codigo">{c.codigo} · {c.semestre}.º semestre</span>
+          </span>
           <strong>{c.nome}</strong>
           <span className="p-texto-suave">{c.docente ? c.docente.nome : 'Docente por atribuir'}</span>
           {c.turma && <small className="p-texto-fraco">{c.turma.nome}</small>}

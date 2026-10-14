@@ -1,9 +1,15 @@
 import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { urlSegura } from '../../dominio/comum/urls.js'
 import {
-  ESTADOS_PRESENCA, TIPOS_AVALIACAO, TIPOS_MATERIAL, TIPOS_PEDIDO,
-  assiduidade, dataValida, entregaAtrasada, escolha, estadoPrazo, mediaPonderada, texto, validarNota, validarPeso,
+  COMPONENTES_NOTA, ESTADOS_PRESENCA, NOMES_COMPONENTES, TIPOS_MATERIAL, TIPOS_PEDIDO,
+  assiduidade, dataValida, entregaAtrasada, escolha, estadoPrazo, resultadoDisciplina, texto, validarNota,
 } from '../../dominio/academico/regras.js'
+
+// o estudante só vê as componentes já publicadas pelo docente; o resultado conta só com essas
+const notasVisiveis = (linha, publicadas) => {
+  const notas = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, publicadas.includes(k) ? linha?.[k] ?? null : null]))
+  return { ...notas, ...resultadoDisciplina(notas), observacao: publicadas.length ? linha?.observacao || '' : '' }
+}
 
 const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
 
@@ -86,11 +92,10 @@ export class ServicoPortal {
     const { conta } = ctx
     const cadeira = await this.#cadeiraAcessivel(conta, id)
     const agora = this.relogio.agora()
-    const [materiais, avisos, trabalhos, avaliacoes, horario] = await Promise.all([
+    const [materiais, avisos, trabalhos, horario] = await Promise.all([
       this.academico.materiais(cadeira.id),
       this.academico.avisosDaCadeira(cadeira.id),
       this.academico.trabalhos(cadeira.id),
-      this.academico.avaliacoes(cadeira.id),
       this.academico.horariosDasCadeiras([cadeira.id]),
     ])
     const base = { ...cadeira, materiais, avisos, horario }
@@ -100,15 +105,13 @@ export class ServicoPortal {
       const comEntregas = await Promise.all(trabalhos.map(async (t) => ({
         ...t, estado: estadoPrazo(t.prazo, agora, t.aceitaAtraso), entregas: (await this.academico.entregasDoTrabalho(t.id)).length,
       })))
-      return { ...base, trabalhos: comEntregas, avaliacoes, estudantes }
+      return { ...base, trabalhos: comEntregas, estudantes }
     }
 
-    // estudante: só avaliações publicadas, as suas notas, as suas entregas e presenças
-    const publicadas = avaliacoes.filter((a) => a.publicada)
-    const minhasNotas = await this.academico.notasDoEstudante(conta.id, publicadas.map((a) => a.id))
+    // estudante: as suas notas publicadas, as suas entregas e presenças
+    const minhasNotas = await this.academico.notasDoEstudante(conta.id, [cadeira.id])
     const minhasEntregas = await this.academico.entregasDoEstudante(conta.id, trabalhos.map((t) => t.id))
     const presencas = (await this.academico.presencasDoEstudante(conta.id, [cadeira.id])).sort((a, b) => b.data.localeCompare(a.data))
-    const itens = publicadas.map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo, peso: a.peso, data: a.data, nota: minhasNotas[a.id]?.valor ?? null, observacao: minhasNotas[a.id]?.observacao || '' }))
     return {
       ...base,
       trabalhos: trabalhos.map((t) => {
@@ -118,8 +121,7 @@ export class ServicoPortal {
           entrega: e ? { entregueEm: e.entregueEm, atrasada: entregaAtrasada(e.entregueEm, t.prazo), ficheiroId: e.ficheiroId, comentario: e.comentario, nota: e.nota, correcao: e.correcao } : null,
         }
       }),
-      avaliacoes: itens,
-      resultado: mediaPonderada(itens),
+      notas: notasVisiveis(minhasNotas[cadeira.id], cadeira.notasPublicadas),
       presencas,
       assiduidade: assiduidade(presencas),
     }
@@ -130,11 +132,12 @@ export class ServicoPortal {
   async notas(ctx) {
     this.#soEstudante(ctx.conta)
     const cadeiras = await this.#minhasCadeiras(ctx.conta)
-    return Promise.all(cadeiras.map(async (c) => {
-      const publicadas = (await this.academico.avaliacoes(c.id)).filter((a) => a.publicada)
-      const notas = await this.academico.notasDoEstudante(ctx.conta.id, publicadas.map((a) => a.id))
-      const itens = publicadas.map((a) => ({ id: a.id, nome: a.nome, peso: a.peso, nota: notas[a.id]?.valor ?? null }))
-      return { cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, semestre: c.semestre }, avaliacoes: itens, ...mediaPonderada(itens) }
+    const notas = await this.academico.notasDoEstudante(ctx.conta.id, cadeiras.map((c) => c.id))
+    // boletim em matriz: uma linha por disciplina, uma coluna por componente
+    return cadeiras.map((c) => ({
+      cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, semestre: c.semestre, horas: c.horas, docente: c.docente?.nome || '' },
+      publicadas: c.notasPublicadas,
+      ...notasVisiveis(notas[c.id], c.notasPublicadas),
     }))
   }
 
@@ -256,78 +259,59 @@ export class ServicoPortal {
     await this.academico.apagarAvisoCadeira(a.id)
   }
 
-  // ---------- docente: avaliações e pauta ----------
+  // ---------- docente: pauta ----------
 
-  async #outrosPesos(cadeiraId, excetoId) {
-    return (await this.academico.avaliacoes(cadeiraId)).filter((a) => a.id !== excetoId).map((a) => a.peso)
-  }
-
-  async criarAvaliacao(ctx, cadeiraId, dados) {
-    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
-    if (dados.data && !dataValida(dados.data)) throw new ErroValidacao('Data inválida.', { campo: 'data' })
-    return this.academico.criarAvaliacao({
-      cadeiraId: cadeira.id,
-      nome: texto(dados.nome, 'nome', 'Nome', { min: 2, max: 120 }),
-      tipo: escolha(dados.tipo || 'teste', 'tipo', 'Tipo', TIPOS_AVALIACAO),
-      peso: validarPeso(dados.peso, await this.#outrosPesos(cadeira.id)),
-      data: dados.data || '',
-    })
-  }
-
-  async atualizarAvaliacao(ctx, id, dados) {
-    const a = await this.academico.avaliacao(id)
-    if (!a) throw new NaoEncontrado('Avaliação não encontrada.')
-    await this.#cadeiraDoDocente(ctx.conta, a.cadeiraId)
-    const mudanca = {}
-    if (dados.nome !== undefined) mudanca.nome = texto(dados.nome, 'nome', 'Nome', { min: 2, max: 120 })
-    if (dados.peso !== undefined) mudanca.peso = validarPeso(dados.peso, await this.#outrosPesos(a.cadeiraId, a.id))
-    if (dados.data !== undefined) {
-      if (dados.data && !dataValida(dados.data)) throw new ErroValidacao('Data inválida.', { campo: 'data' })
-      mudanca.data = dados.data
-    }
-    if (dados.publicada !== undefined) mudanca.publicada = Boolean(dados.publicada)
-    const nova = await this.academico.atualizarAvaliacao(a.id, mudanca)
-    if (mudanca.publicada && !a.publicada) {
-      await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'avaliacoes', alvoId: a.id, alvoTitulo: a.nome, utilizador: quem(ctx.conta) })
-    }
-    return nova
-  }
-
-  async apagarAvaliacao(ctx, id) {
-    const a = await this.academico.avaliacao(id)
-    if (!a) throw new NaoEncontrado('Avaliação não encontrada.')
-    await this.#cadeiraDoDocente(ctx.conta, a.cadeiraId)
-    await this.academico.apagarAvaliacao(a.id)
-  }
-
-  // pauta completa: estudantes × avaliações, com a média de cada um
+  // pauta completa em matriz: estudantes × (1.ª prova, 2.ª prova, MAC, exame, recurso, final)
   async pauta(ctx, cadeiraId) {
     const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
-    const [estudantes, avaliacoes, notas] = await Promise.all([
+    const [estudantes, notas] = await Promise.all([
       this.academico.estudantesAtivosDaTurma(cadeira.turmaId),
-      this.academico.avaliacoes(cadeira.id),
-      this.academico.notasDaCadeira(cadeira.id),
+      this.academico.pautaDaCadeira(cadeira.id),
     ])
     return {
-      cadeira, avaliacoes,
+      cadeira, publicadas: cadeira.notasPublicadas,
       linhas: estudantes.map((e) => {
-        const itens = avaliacoes.map((a) => ({ peso: a.peso, nota: notas[a.id]?.[e.id]?.valor ?? null }))
-        return { estudante: e, notas: Object.fromEntries(avaliacoes.map((a) => [a.id, notas[a.id]?.[e.id] ?? null])), ...mediaPonderada(itens) }
+        const n = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, notas[e.id]?.[k] ?? null]))
+        return { estudante: e, ...n, observacao: notas[e.id]?.observacao || '', ...resultadoDisciplina(n) }
       }),
     }
   }
 
-  async gravarPauta(ctx, avaliacaoId, linhas) {
-    const a = await this.academico.avaliacao(avaliacaoId)
-    if (!a) throw new NaoEncontrado('Avaliação não encontrada.')
-    const cadeira = await this.#cadeiraDoDocente(ctx.conta, a.cadeiraId)
+  async gravarPauta(ctx, cadeiraId, linhas) {
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
     const validos = new Set((await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)).map((e) => e.id))
+    const vistos = new Set()
     const notas = linhas.map((l) => {
-      if (!validos.has(Number(l.estudanteId))) throw new ErroValidacao('A pauta tem um estudante que não pertence à turma.')
-      return { estudanteId: Number(l.estudanteId), valor: validarNota(l.valor), observacao: texto(l.observacao, 'observacao', 'Observação', { max: 300, obrigatorio: false }) }
+      const estudanteId = Number(l.estudanteId)
+      if (!validos.has(estudanteId)) throw new ErroValidacao('A pauta tem um estudante que não pertence à turma.')
+      if (vistos.has(estudanteId)) throw new ErroValidacao('A pauta tem o mesmo estudante repetido.')
+      vistos.add(estudanteId)
+      const linha = { estudanteId, observacao: texto(l.observacao, 'observacao', 'Observação', { max: 300, obrigatorio: false }) }
+      for (const k of COMPONENTES_NOTA) {
+        try {
+          linha[k] = validarNota(l[k])
+        } catch {
+          throw new ErroValidacao(`${NOMES_COMPONENTES[k]}: a nota deve estar entre 0 e 20.`, { campo: k })
+        }
+      }
+      return linha
     })
-    await this.academico.gravarPauta(a.id, notas)
-    await this.auditoria.registar(ctx, { acao: 'lancar_notas', colecao: 'avaliacoes', alvoId: a.id, alvoTitulo: `${a.nome} — ${cadeira.nome}`, detalhes: { notas: notas.length }, utilizador: quem(ctx.conta) })
+    await this.academico.gravarPauta(cadeira.id, notas)
+    await this.auditoria.registar(ctx, { acao: 'lancar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: cadeira.nome, detalhes: { estudantes: notas.length }, utilizador: quem(ctx.conta) })
+    return this.pauta(ctx, cadeira.id)
+  }
+
+  // escolhe que componentes da pauta os estudantes já podem ver
+  async publicarNotas(ctx, cadeiraId, componentes) {
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
+    const lista = [...new Set(componentes)]
+    if (lista.some((k) => !COMPONENTES_NOTA.includes(k))) throw new ErroValidacao('Componente de avaliação desconhecida.')
+    const ordenada = COMPONENTES_NOTA.filter((k) => lista.includes(k))
+    await this.academico.publicarNotas(cadeira.id, ordenada)
+    const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
+    if (novas.length) {
+      await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${novas.map((k) => NOMES_COMPONENTES[k]).join(', ')} — ${cadeira.nome}`, utilizador: quem(ctx.conta) })
+    }
     return this.pauta(ctx, cadeira.id)
   }
 
