@@ -97,9 +97,9 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.locator('.p-matriz-pauta').getByText('Dispensado')).toBeVisible()
   await page.getByRole('button', { name: 'Guardar pauta' }).click()
   await expect(page.getByText('Pauta guardada.')).toBeVisible()
-  await page.getByRole('columnheader', { name: /1\.ª Prova/ }).getByRole('button').click()
+  await page.getByRole('columnheader', { name: /1\.ª Prova/ }).getByRole('button', { name: /publicar/i }).click()
   await expect(page.getByText('1.ª Prova: publicada aos estudantes.')).toBeVisible()
-  await page.getByRole('columnheader', { name: /2\.ª Prova/ }).getByRole('button').click()
+  await page.getByRole('columnheader', { name: /2\.ª Prova/ }).getByRole('button', { name: /publicar/i }).click()
   await expect(page.getByText('2.ª Prova: publicada aos estudantes.')).toBeVisible()
 
   // questionário com uma pergunta de verdadeiro ou falso, publicado
