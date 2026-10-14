@@ -37,6 +37,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))
   r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await s.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))
+  r.put('/cadeiras/:id/pauta/composicao', validar({ params: pId, body: E.composicao }), async (req, res) => res.json(await s.definirComposicao(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/cadeiras/:id/pauta/publicacao', validar({ params: pId, body: E.publicacaoNotas }), async (req, res) => res.json(await s.publicarNotas(ctx(req), req.dados.params.id, req.dados.body.publicadas)))
   r.post('/cadeiras/:id/horarios', validar({ params: pId, body: E.horario }), async (req, res) => res.status(201).json(await s.criarHorario(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/horarios/:id', validar({ params: pId }), async (req, res) => { await s.apagarHorario(ctx(req), req.dados.params.id); res.status(204).end() })

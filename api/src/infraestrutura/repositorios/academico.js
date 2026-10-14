@@ -303,6 +303,27 @@ export class RepositorioAcademico {
     }))
   }
 
+  // composição das componentes calculadas: { p1: [{ tipo, id, peso }], … }
+  async composicoes(cadeiraId) {
+    const linhas = await this.prisma.composicaoNota.findMany({ where: { cadeiraId } })
+    return Object.fromEntries(linhas.map((l) => [l.componente, l.itens]))
+  }
+
+  guardarComposicao(cadeiraId, componente, itens) {
+    if (!itens) return this.prisma.composicaoNota.deleteMany({ where: { cadeiraId, componente } })
+    return this.prisma.composicaoNota.upsert({ where: { cadeiraId_componente: { cadeiraId, componente } }, create: { cadeiraId, componente, itens }, update: { itens } })
+  }
+
+  // escreve na pauta os valores calculados de uma componente ({ estudanteId: valor | null })
+  async gravarComponente(cadeiraId, componente, valores) {
+    const p = this.prisma
+    await p.$transaction(Object.entries(valores).map(([id, valor]) => p.notaPauta.upsert({
+      where: { cadeiraId_estudanteId: { cadeiraId, estudanteId: Number(id) } },
+      create: { cadeiraId, estudanteId: Number(id), [componente]: valor },
+      update: { [componente]: valor },
+    })))
+  }
+
   publicarNotas(cadeiraId, componentes) {
     return this.prisma.unidadeCurricular.update({ where: { id: cadeiraId }, data: { notasPublicadas: componentes } })
   }

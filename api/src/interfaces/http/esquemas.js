@@ -130,3 +130,7 @@ export const lerNotificacoes = z.object({ ids: z.array(idNumerico).max(200).opti
 export const paginaNotificacoes = z.object({ antesDe: idNumerico.optional() })
 export const preferencias = z.object({ notificarEmail: z.boolean() })
 export const mensagem = z.object({ texto: texto(6000) })
+export const composicao = z.object({
+  componente: texto(10),
+  itens: z.union([z.array(z.object({ tipo: texto(20), id: idNumerico, peso: z.union([z.number(), z.string().max(4)]).optional() })).max(20), z.null()]),
+})

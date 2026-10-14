@@ -81,7 +81,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const notificacoes = new ServicoComunicacao({
     comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
   })
-  const pautas = new ServicoPautas({ academico: r.academico, auditoria, notificacoes })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, auditoria, notificacoes, relogio })
 
   const servicos = {
     auditoria,
@@ -98,7 +98,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
     portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, notificacoes, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, notificacoes, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, notificacoes, pautas, auditoria, relogio }),
     comunicacao: notificacoes,
     secretaria: new ServicoSecretaria({
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,

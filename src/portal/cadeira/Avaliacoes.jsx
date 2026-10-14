@@ -3,6 +3,8 @@ import { FaEye, FaEyeSlash, FaPrint, FaSave } from 'react-icons/fa'
 import { api } from '../api'
 import { Cartao, Vazio } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
+import Composicao from './Composicao'
+import { exportarPautaExcel } from '../exportarPauta'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../regraAvaliacao'
 
 function Avaliacoes(props) {
@@ -41,6 +43,7 @@ function Pauta({ c, avisar }) {
   const [edicao, setEdicao] = useState({}) // { estudanteId: { p1, p2, exame, recurso, observacao } }
   const [alterado, setAlterado] = useState(false)
   const [aGuardar, setAGuardar] = useState(false)
+  const [compor, setCompor] = useState(null) // componente cuja composição se está a editar
 
   const aplicar = useCallback((r) => {
     setP(r)
@@ -89,11 +92,20 @@ function Pauta({ c, avisar }) {
     }
   }
 
+  const calculada = (k) => Boolean(p.composicoes?.[k])
+  const guardarComposicao = async (itens) => {
+    aplicar(await api(`/cadeiras/${c.id}/pauta/composicao`, { metodo: 'PUT', corpo: { componente: compor, itens } }))
+    avisar({ texto: itens ? `${NOMES_COMPONENTES[compor]}: calculada a partir das atividades.` : `${NOMES_COMPONENTES[compor]}: volta a ser lançada à mão.` })
+  }
+
   const cabeca = (k) => {
     const pub = p.publicadas.includes(k)
     return (
       <th scope="col" key={k}>
         {NOMES_COMPONENTES[k]}
+        <button type="button" className={`btn btn-xs ms-1 p-sem-impressao ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} title={calculada(k) ? 'Calculada a partir das atividades. Clique para mudar.' : 'Calcular a partir de trabalhos e questionários'} aria-label={`Como se calcula: ${NOMES_COMPONENTES[k]}`}>
+          <i className="fa fa-calculator" />
+        </button>
         <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} aria-pressed={pub} title={pub ? 'Os estudantes já veem esta coluna. Clique para esconder.' : 'Ainda escondida. Clique para publicar aos estudantes.'}>
           {pub ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {pub ? 'Publicada' : 'Por publicar'}
         </button>
@@ -104,6 +116,8 @@ function Pauta({ c, avisar }) {
   const campo = (l, k, desativado) => {
     const id = l.estudante.id
     const invalida = resultados[id].invalidas.includes(k)
+    // componente calculada: mostra o valor, não se escreve
+    if (calculada(k)) return <td className="p-celula-calculada" title="Calculada a partir das atividades"><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
     return (
       <td className={desativado && !edicao[id][k] ? 'p-celula-inativa' : ''}>
         <input
@@ -128,6 +142,7 @@ function Pauta({ c, avisar }) {
         </div>
         <div className="p-acoes-linha p-sem-impressao">
           {alterado && <span className="p-por-guardar">Alterações por guardar</span>}
+          <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(c, p.linhas.map((l) => ({ ...l, ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[l.estudante.id][k]) ?? null])), ...resultados[l.estudante.id] })))}><i className="fa fa-file-excel me-1" /> Exportar Excel</button>
           <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
           <button type="button" className="btn btn-theme" onClick={guardar} disabled={!alterado || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? 'A guardar…' : 'Guardar pauta'}</button>
         </div>
@@ -173,7 +188,8 @@ function Pauta({ c, avisar }) {
           </table>
         </div>
       </div>
-      <p className="p-legenda">{REGRA} Notas de 0 a 20 (aceita vírgula); campo vazio = sem nota. O exame fica bloqueado para os dispensados e o recurso só abre para quem reprovou no exame. Os estudantes só veem as colunas publicadas.</p>
+      {compor && <Composicao componente={compor} atividades={p.atividades || []} atual={p.composicoes?.[compor]} guardar={guardarComposicao} fechar={() => setCompor(null)} />}
+      <p className="p-legenda">{REGRA} Notas de 0 a 20 (aceita vírgula); campo vazio = sem nota. O botão <i className="fa fa-calculator" /> de cada coluna calcula-a a partir de trabalhos e questionários. O exame fica bloqueado para os dispensados e o recurso só abre para quem reprovou no exame. Os estudantes só veem as colunas publicadas.</p>
     </div>
   )
 }

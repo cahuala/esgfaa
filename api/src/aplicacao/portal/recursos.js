@@ -20,8 +20,8 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, acesso, notificacoes, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, acesso, notificacoes, auditoria, relogio })
+  constructor({ academico, recursos, acesso, notificacoes, pautas, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, acesso, notificacoes, pautas, auditoria, relogio })
   }
 
   async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
@@ -457,6 +457,8 @@ export class ServicoRecursos {
     const { nota } = corrigir(q.perguntas, finais)
     const entregueEm = noTempo ? agora : new Date(t.limite)
     if (!(await this.recursos.entregarTentativa(t.id, { respostas: finais, nota, entregueEm }))) throw new Conflito('Esta tentativa já foi entregue.')
+    // se o questionário conta para uma componente da pauta, a pauta fica atualizada
+    await this.pautas?.sincronizar(await this.academico.cadeira(q.cadeiraId))
     await this.auditoria.registar(ctx, { acao: 'entregar_questionario', colecao: 'questionarios', alvoId: q.id, alvoTitulo: q.titulo, detalhes: { nota, tentativa: t.numero }, utilizador: quem(ctx.conta) })
     return { ...this.#resultado(q, { ...t, respostas: finais, nota }), foraDeTempo: !noTempo }
   }

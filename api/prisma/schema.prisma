@@ -273,6 +273,7 @@ model UnidadeCurricular {
   eventoAcademicos EventoAcademico[]
   questionarios    Questionario[]
   secaoCadeiras    SecaoCadeira[]
+  composicaoNotas  ComposicaoNota[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -657,4 +658,17 @@ model Mensagem {
   @@index([deId, paraId, criadaEm])
   @@index([paraId, lidaEm])
   @@map("mensagens")
+}
+
+// como se calcula uma componente da pauta a partir das atividades (como o livro de notas do Moodle)
+model ComposicaoNota {
+  cadeiraId  Int      @map("cadeira_id")
+  componente String // p1 | p2 | exame | recurso
+  itens      Json // [{ tipo: "trabalho" | "questionario", id, peso }]
+  alteradaEm DateTime @default(now()) @updatedAt @map("alterada_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@id([cadeiraId, componente])
+  @@map("composicoes_nota")
 }

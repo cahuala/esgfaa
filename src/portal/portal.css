@@ -429,3 +429,4 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .app-header .navbar-nav .navbar-item.dropdown { position: relative; }
 .app-header .navbar-nav .navbar-item .p-notif-menu { position: absolute !important; top: 52px !important; right: 0 !important; left: auto !important; margin-top: 0; }
 .app-header .navbar-item button.navbar-link { height: 100%; }
+.p-celula-calculada { background: rgba(52, 143, 226, 0.07) !important; }

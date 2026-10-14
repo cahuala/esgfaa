@@ -155,6 +155,7 @@ export class ServicoPortal {
   async notas(ctx) {
     this.#soEstudante(ctx.conta)
     const cadeiras = await this.#minhasCadeiras(ctx.conta)
+    for (const c of cadeiras) await this.pautas.sincronizar(c) // componentes calculadas em dia
     const notas = await this.academico.notasDoEstudante(ctx.conta.id, cadeiras.map((c) => c.id))
     // boletim em matriz: uma linha por disciplina, uma coluna por componente
     return cadeiras.map((c) => ({
@@ -410,6 +411,10 @@ export class ServicoPortal {
     return this.pautas.publicar(ctx, await this.#cadeiraDoDocente(ctx.conta, cadeiraId), componentes, quem(ctx.conta))
   }
 
+  async definirComposicao(ctx, cadeiraId, { componente, itens }) {
+    return this.pautas.definirComposicao(ctx, await this.#cadeiraDoDocente(ctx.conta, cadeiraId), componente, itens, quem(ctx.conta))
+  }
+
   // ---------- docente: trabalhos e entregas ----------
 
   #dadosTrabalho(dados) {
@@ -475,6 +480,7 @@ export class ServicoPortal {
       nota: validarNota(nota),
       correcao: texto(correcao, 'correcao', 'Comentário de correção', { max: 5000, obrigatorio: false }),
     })
+    await this.pautas.sincronizar(cadeira) // a nota pode contar para uma componente da pauta
     await this.notificacoes?.notificar([e.estudanteId], {
       tipo: 'correcao', titulo: `Trabalho corrigido: ${t.titulo}`, texto: `${cadeira.nome}${r.nota !== null ? ` — nota ${r.nota} valores` : ''}`,
       ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,

@@ -311,6 +311,11 @@ export class ServicoSecretaria {
     return this.pautas.publicar(ctx, await this.#cadeira(cadeiraId), componentes)
   }
 
+  async definirComposicao(ctx, cadeiraId, { componente, itens }) {
+    ctx.actor.exigir('academico.notas')
+    return this.pautas.definirComposicao(ctx, await this.#cadeira(cadeiraId), componente, itens)
+  }
+
   // ---------- calendário académico ----------
 
   // eventos gerais e das turmas (início de semestre, épocas de exames, feriados) e datas das provas das cadeiras

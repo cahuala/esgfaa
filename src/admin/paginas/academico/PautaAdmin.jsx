@@ -3,6 +3,8 @@ import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Carregando } from '../../componentes/Ui'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../../../portal/regraAvaliacao'
+import Composicao from '../../../portal/cadeira/Composicao'
+import { exportarPautaExcel } from '../../../portal/exportarPauta'
 
 const COR = { cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }
 const paraTexto = (v) => (v === null || v === undefined ? '' : String(v).replace('.', ','))
@@ -24,6 +26,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const [p, setP] = useState(null)
   const [edicao, setEdicao] = useState({})
   const [alterado, setAlterado] = useState(false)
+  const [compor, setCompor] = useState(null)
 
   const aplicar = useCallback((r) => {
     setP(r)
@@ -64,11 +67,18 @@ function PautaAdmin({ cadeira, avisar }) {
     }
   }
 
+  const calculada = (k) => Boolean(p.composicoes?.[k])
+  const guardarComposicao = async (itens) => {
+    aplicar(await api(`/academico/cadeiras/${cadeira.id}/pauta/composicao`, { metodo: 'PUT', corpo: { componente: compor, itens } }))
+    avisar({ texto: itens ? `${NOMES_COMPONENTES[compor]}: calculada a partir das atividades.` : `${NOMES_COMPONENTES[compor]}: volta a ser lançada à mão.` })
+  }
+
   const coluna = (k) => {
     const pub = p.publicadas.includes(k)
     return (
       <th key={k} className="text-center">
         {NOMES_COMPONENTES[k]}
+        {editar && <button type="button" className={`btn btn-xs ms-1 ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} aria-label={`Como se calcula: ${NOMES_COMPONENTES[k]}`} title="Calcular a partir de trabalhos e questionários"><i className="fa fa-calculator" /></button>}
         <div>
           <button type="button" disabled={!editar} className={`btn btn-xs mt-1 ${pub ? 'btn-success' : 'btn-white'}`} onClick={() => publicar(k)} aria-pressed={pub}>
             <i className={`fa ${pub ? 'fa-eye' : 'fa-eye-slash'} me-1`} />{pub ? 'Publicada' : 'Por publicar'}
@@ -81,6 +91,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const celula = (l, k) => {
     const id = l.estudante.id
     const mal = resultados[id].invalidas.includes(k)
+    if (calculada(k)) return <td key={k} className="text-center fw-bold bg-primary bg-opacity-10" title="Calculada a partir das atividades">{nota(paraNumero(edicao[id][k]) ?? null)}</td>
     return (
       <td key={k} className="text-center">
         <input
@@ -106,6 +117,7 @@ function PautaAdmin({ cadeira, avisar }) {
         {editar && (
           <div className="ms-auto d-flex gap-2 align-items-center">
             {alterado && <span className="text-warning small fw-bold">Alterações por guardar</span>}
+            <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(cadeira, p.linhas.map((l) => ({ ...l, ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[l.estudante.id][k]) ?? null])), ...resultados[l.estudante.id] })))}><i className="fa fa-file-excel me-1" /> Exportar Excel</button>
             <button type="button" className="btn btn-white" onClick={() => window.print()}><i className="fa fa-print me-1" /> Imprimir</button>
             <button type="button" className="btn btn-theme" disabled={!alterado || invalida} onClick={guardar}><i className="fa fa-save me-1" /> Guardar pauta</button>
           </div>
@@ -141,7 +153,8 @@ function PautaAdmin({ cadeira, avisar }) {
           </tbody>
         </table>
       </div>
-      <p className="small text-muted mb-0">{REGRA} Os estudantes só veem as colunas publicadas.</p>
+      {compor && <Composicao componente={compor} atividades={p.atividades || []} atual={p.composicoes?.[compor]} guardar={guardarComposicao} fechar={() => setCompor(null)} />}
+      <p className="small text-muted mb-0">{REGRA} Os estudantes só veem as colunas publicadas. O botão <i className="fa fa-calculator" /> calcula uma coluna a partir de trabalhos e questionários.</p>
     </>
   )
 }

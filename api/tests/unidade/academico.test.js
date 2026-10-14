@@ -92,3 +92,21 @@ describe('portal académico: regras', () => {
     assert.ok(assinaturaPrivadaValida(Buffer.from('%PDF-1.7\n%âãÏÓ\n'), 'application/pdf'))
   })
 })
+
+describe('livro de notas: componentes calculadas', async () => {
+  const { notaComposta, validarComposicao } = await import('../../src/dominio/academico/regras.js')
+  it('média ponderada; falta uma nota, fica por calcular', () => {
+    const itens = [{ tipo: 'trabalho', id: 1, peso: 60 }, { tipo: 'questionario', id: 2, peso: 40 }]
+    assert.equal(notaComposta(itens, { 'trabalho-1': 15, 'questionario-2': 10 }), 13)
+    assert.equal(notaComposta(itens, { 'trabalho-1': 15 }), null)
+    assert.equal(notaComposta(itens, { 'trabalho-1': 0, 'questionario-2': 12.5 }), 5)
+    assert.equal(notaComposta([{ tipo: 'trabalho', id: 1, peso: 1 }, { tipo: 'trabalho', id: 2, peso: 2 }], { 'trabalho-1': 10, 'trabalho-2': 11 }), 10.67)
+  })
+  it('validação', () => {
+    assert.deepEqual(validarComposicao([{ tipo: 'trabalho', id: '3' }]), [{ tipo: 'trabalho', id: 3, peso: 1 }])
+    assert.throws(() => validarComposicao([]), /1 a 20/)
+    assert.throws(() => validarComposicao([{ tipo: 'trabalho', id: 3 }, { tipo: 'trabalho', id: 3 }]), /duas vezes/)
+    assert.throws(() => validarComposicao([{ tipo: 'forum', id: 3 }]), ErroValidacao)
+    assert.throws(() => validarComposicao([{ tipo: 'trabalho', id: 3, peso: 0 }]), /pesos/)
+  })
+})
