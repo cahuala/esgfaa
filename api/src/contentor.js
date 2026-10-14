@@ -26,6 +26,7 @@ import { ServicoComunicacao } from './aplicacao/portal/comunicacao.js'
 import { criarCorreio } from './infraestrutura/correio/correio.js'
 import { RepositorioCopias } from './infraestrutura/repositorios/copias.js'
 import { ServicoCopias } from './aplicacao/copias.js'
+import { ServicoDisponibilidade } from './aplicacao/portal/disponibilidade.js'
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
@@ -80,6 +81,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   const titulos = () => conteudos.titulosInterativos()
   const acesso = new AcessoCadeiras({ academico: r.academico })
+  const disponibilidade = new ServicoDisponibilidade({ academico: r.academico, recursos: r.recursos, relogio })
   const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria })
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
@@ -101,8 +103,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, notificacoes, copias, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, notificacoes, pautas, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
     comunicacao: notificacoes,
     secretaria: new ServicoSecretaria({
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,

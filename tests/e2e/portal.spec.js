@@ -16,6 +16,14 @@ async function primeiraEntrada(page, email) {
   await expect(page.locator('#content .page-header')).toContainText(/Bom dia|Boa tarde|Boa noite/)
 }
 
+test('verificação pública de certificados, sem entrar no portal', async ({ page }) => {
+  await page.goto('/portal/#/verificar')
+  await expect(page.getByRole('heading', { name: /Verificar certificado/ })).toBeVisible()
+  await page.getByLabel('Código de verificação').fill('ZZZZ-ZZZZ-ZZZZ')
+  await page.getByRole('button', { name: 'Verificar' }).click()
+  await expect(page.getByText(/Certificado não encontrado/)).toBeVisible()
+})
+
 test('Administração Escolar matricula; docente publica; estudante consulta e pede um documento', async ({ page }) => {
   const sufixo = Date.now()
   const estudante = `estudante${sufixo}@esgfaa.gov.ao`
@@ -115,6 +123,14 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('Pergunta juntada.')).toBeVisible()
   await page.getByRole('button', { name: 'Publicar' }).click()
   await expect(page.getByText('Questionário publicado.')).toBeVisible()
+  // restrição: o questionário só abre depois de concluir a leitura
+  await page.getByRole('tab', { name: /Cadeira/ }).click()
+  await page.getByLabel('Modo de edição').check()
+  await page.getByRole('button', { name: 'Restrições de Teste rápido' }).click()
+  await page.getByRole('button', { name: 'Condição' }).click()
+  await page.getByLabel('Condição 1').selectOption({ label: 'Material: Leitura obrigatória' })
+  await page.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByText('Restrições guardadas.')).toBeVisible()
   await page.locator('.p-conta-botao').click()
   await page.getByRole('button', { name: 'Sair' }).click()
 
@@ -133,9 +149,14 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.goto('/portal/#/cadeiras')
   await page.locator('#content').getByText('Estratégia Militar').first().click()
   await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
-  await expect(page.getByText('Leitura obrigatória')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Leitura obrigatória' })).toBeVisible()
   // o estudante não tem o modo de edição
   await expect(page.getByLabel('Modo de edição')).toHaveCount(0)
+  // o questionário está fechado até concluir a leitura
+  await expect(page.getByText('Precisa de concluir "Leitura obrigatória"')).toBeVisible()
+  await page.getByRole('button', { name: 'Marcar como feito' }).click()
+  await expect(page.getByText('Precisa de concluir "Leitura obrigatória"')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Teste rápido' })).toBeVisible()
   await page.getByRole('tab', { name: 'Programa' }).click()
   await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
 

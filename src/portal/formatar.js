@@ -67,3 +67,15 @@ export const ICONES_NOTIFICACAO = {
   forum: ['fa-comments', 'bg-teal'], mensagem: ['fa-envelope', 'bg-blue'], prazo: ['fa-hourglass-half', 'bg-warning'],
   pedido: ['fa-file-signature', 'bg-gray-600'], geral: ['fa-calendar-alt', 'bg-indigo'],
 }
+
+// ISO -> valor de um <input type="datetime-local"> (hora local)
+export const paraLocal = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
+
+// motivos por que uma atividade ainda está fechada ao estudante (restrições de acesso)
+export const textoBloqueio = (m) => (m.tipo === 'data'
+  ? `Abre a ${dataHora(m.data)}`
+  : m.notaMinima !== null && m.notaMinima !== undefined ? `Precisa de pelo menos ${nota(m.notaMinima)} valores em "${m.titulo}"` : `Precisa de concluir "${m.titulo}"`)

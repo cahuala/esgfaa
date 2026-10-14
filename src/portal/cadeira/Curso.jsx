@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { abrirFicheiro, api } from '../api'
-import { Vazio } from '../componentes'
+import { Bloqueio, Vazio } from '../componentes'
 import { dataHora, faltam, nota } from '../formatar'
-import { BarraProgresso } from './Progresso'
 import NovaAtividade from './NovaAtividade'
 import Importar from './Importar'
+import Restricoes from './Restricoes'
+import Conclusao from './Conclusao'
 
 // aspeto de cada tipo de atividade (como os ícones coloridos do Moodle)
 const TIPOS = {
@@ -25,6 +26,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const [edicao, setEdicao] = useState(false)
   const [nova, setNova] = useState(null) // capítulo onde se junta uma atividade (null = geral)
   const [importar, setImportar] = useState(false)
+  const [restringir, setRestringir] = useState(null) // { alvo } ou { secao }
   const [fechados, setFechados] = useState(() => new Set())
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
 
@@ -34,11 +36,13 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     ...c.trabalhos.map((t) => ({ ...t, chave: `trabalho-${t.id}`, especie: 'trabalho', visual: 'trabalho', quando: t.criadoEm })),
     ...c.questionarios.map((q) => ({ ...q, chave: `questionario-${q.id}`, especie: 'questionario', visual: 'questionario', quando: q.criadoEm })),
   ].sort((a, b) => String(a.quando).localeCompare(String(b.quando)))
+  const condicoes = new Set(atividades.flatMap((a) => (a.requisitos || []).map((r) => `${r.tipo}-${r.id}`)))
   const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
   const feita = (a) => progresso?.itens.find((i) => i.tipo === a.especie && i.id === a.id)?.feita
 
-  const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then(setProgresso).catch(falhou)
+  const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then((p) => { setProgresso(p); if (atividades.some((x) => x.bloqueio)) recarregar() }) // pode abrir outras.catch(falhou)
   function abrir(a) {
+    if (a.bloqueio) return
     if (a.especie === 'material') {
       if (!eDocente && !feita(a)) marcar(a, true)
       if (a.tipo === 'ficheiro') abrirFicheiro(a.ficheiroId, { nome: a.titulo, ver: true }).catch(falhou)
@@ -68,6 +72,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     if (!titulo) return
     await api(`/cadeiras/${c.id}/secoes`, { metodo: 'POST', corpo: { titulo } }).then(() => { avisar({ texto: 'Capítulo criado.' }); recarregar() }).catch(falhou)
   }
+  const restricao = (a, corpo) => api('/atividades/restricoes', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, ...corpo } }).then(recarregar).catch(falhou)
   const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
   async function apagarAtividade(a) {
     if (!window.confirm(`Apagar "${a.titulo}"?`)) return
@@ -96,13 +101,27 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
         ? <button type="button" className="btn btn-xs btn-success" onClick={() => marcar(a, false)} title="Desmarcar"><i className="fa fa-check me-1" />Concluído</button>
         : <button type="button" className="btn btn-xs btn-white" onClick={() => marcar(a, true)}>Marcar como feito</button>
     }
+    if (a.bloqueio) estado = <span className="badge bg-light text-dark border"><i className="fa fa-lock me-1" />Fechada</span>
+    // o docente vê as restrições de cada atividade
+    const marcas = eDocente && (
+      <div className="d-flex flex-wrap gap-1 mt-1">
+        {a.visivel === false && <span className="badge bg-warning text-dark"><i className="fa fa-eye-slash me-1" />Escondida</span>}
+        {a.disponivelDe && <span className="badge bg-light text-dark border"><i className="far fa-clock me-1" />Abre {dataHora(a.disponivelDe)}</span>}
+        {a.requisitos?.length > 0 && <span className="badge bg-light text-dark border" title={a.requisitos.map((r) => atividades.find((x) => x.chave === `${r.tipo}-${r.id}`)?.titulo).filter(Boolean).join(' · ')}><i className="fa fa-lock me-1" />{a.requisitos.length} condição(ões)</span>}
+        {condicoes.has(a.chave) && <span className="badge bg-light text-muted border"><i className="fa fa-key me-1" />Abre outras</span>}
+      </div>
+    )
     return (
-      <div key={a.chave} className="list-group-item d-flex align-items-center gap-3 py-3">
-        <span className={`p-atividade-icone ${t.cor}`}><i className={`fa ${t.icone}`} /></span>
+      <div key={a.chave} className={`list-group-item d-flex align-items-center gap-3 py-3 ${a.bloqueio ? 'p-atividade-fechada' : ''} ${a.visivel === false ? 'p-atividade-escondida' : ''}`}>
+        <span className={`p-atividade-icone ${a.bloqueio ? 'bg-gray-400' : t.cor}`}><i className={`fa ${a.bloqueio ? 'fa-lock' : t.icone}`} /></span>
         <div className="flex-grow-1 min-w-0">
-          <button type="button" className="btn btn-link p-0 fw-bold text-start text-decoration-none text-body" onClick={() => abrir(a)}>{a.titulo}</button>
+          {a.bloqueio
+            ? <span className="fw-bold text-muted">{a.titulo}</span>
+            : <button type="button" className="btn btn-link p-0 fw-bold text-start text-decoration-none text-body" onClick={() => abrir(a)}>{a.titulo}</button>}
           <div className="small text-muted">{meta}</div>
-          {a.descricao && <div className="small p-recorte">{a.descricao}</div>}
+          <Bloqueio motivos={a.bloqueio} compacto />
+          {a.descricao && !a.bloqueio && <div className="small p-recorte">{a.descricao}</div>}
+          {marcas}
         </div>
         {edicao ? (
           <div className="d-flex gap-1 align-items-center flex-shrink-0">
@@ -110,6 +129,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               <option value="">Geral</option>
               {c.secoes.map((s) => <option key={s.id} value={s.id}>{s.titulo}</option>)}
             </select>
+            <button type="button" className="btn btn-xs btn-white" onClick={() => restricao(a, { visivel: a.visivel === false })} aria-label={a.visivel === false ? `Mostrar ${a.titulo}` : `Esconder ${a.titulo}`} title={a.visivel === false ? 'Mostrar' : 'Esconder'}><i className={`fa ${a.visivel === false ? 'fa-eye-slash text-warning' : 'fa-eye'}`} /></button>
+            <button type="button" className="btn btn-xs btn-white" onClick={() => setRestringir({ alvo: a })} aria-label={`Restrições de ${a.titulo}`} title="Restrições de acesso"><i className="fa fa-lock" /></button>
             <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagarAtividade(a)} aria-label={`Apagar ${a.titulo}`}><i className="fa fa-trash-alt" /></button>
           </div>
         ) : estado && <div className="flex-shrink-0">{estado}</div>}
@@ -195,6 +216,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
                     <i className={`fa fa-chevron-${fechado ? 'right' : 'down'} me-2 fs-11px`} />{s.titulo}
                   </button>
                   {!s.visivel && <span className="badge bg-warning text-dark ms-2">Escondido dos estudantes</span>}
+                  {s.disponivelDe && (eDocente || s.fechado) && <span className="badge bg-light text-dark ms-2"><i className="far fa-clock me-1" />Abre {dataHora(s.disponivelDe)}</span>}
                 </h2>
                 <div className="panel-heading-btn">
                   {edicao ? (
@@ -202,6 +224,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
                       <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === 0} onClick={() => moverCapitulo(i, -1)} aria-label="Subir capítulo"><i className="fa fa-arrow-up" /></button>
                       <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === capitulos.length - 1} onClick={() => moverCapitulo(i, 1)} aria-label="Descer capítulo"><i className="fa fa-arrow-down" /></button>
                       <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => secao(s.id, { visivel: !s.visivel })} aria-label={s.visivel ? 'Esconder capítulo' : 'Mostrar capítulo'}><i className={`fa ${s.visivel ? 'fa-eye' : 'fa-eye-slash'}`} /></button>
+                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => setRestringir({ secao: s })} aria-label="Acesso ao capítulo" title="Data de abertura"><i className="fa fa-lock" /></button>
                       <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => editarCapitulo(s)} aria-label="Editar capítulo"><i className="fa fa-pen" /></button>
                       <button type="button" className="btn btn-xs btn-icon btn-danger" onClick={() => apagarCapitulo(s)} aria-label="Apagar capítulo"><i className="fa fa-trash-alt" /></button>
                     </>
@@ -245,15 +268,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
             </div>
           </div>
 
-          {!eDocente && progresso?.total > 0 && (
-            <div className="panel panel-inverse">
-              <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-tasks me-2" />O meu progresso</h2></div>
-              <div className="panel-body">
-                <BarraProgresso p={progresso} />
-                <div className="small text-muted mt-1">{progresso.feitas} de {progresso.total} atividades concluídas</div>
-              </div>
-            </div>
-          )}
+          {!eDocente && progresso?.total > 0 && <Conclusao c={c} progresso={progresso} avisar={avisar} />}
 
           <div className="panel panel-inverse">
             <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-calendar-alt me-2" />Próximas datas</h2></div>
@@ -300,6 +315,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
         </div>
       </div>
 
+      {restringir && <Restricoes {...restringir} atividades={atividades} fechar={() => setRestringir(null)} avisar={avisar} guardado={() => { setRestringir(null); recarregar() }} />}
       {importar && <Importar c={c} fechar={() => setImportar(false)} avisar={avisar} concluido={recarregar} />}
       {nova && <NovaAtividade c={c} secaoId={nova.secaoId} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
     </div>

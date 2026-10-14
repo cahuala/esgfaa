@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import ZonaUpload from '../ZonaUpload'
-import { Campo, Cartao, Etiqueta, Vazio } from '../componentes'
-import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho } from '../formatar'
+import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
+import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
 
 const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
 const TIPOS_ENTREGA = { ficheiro: 'Ficheiros', texto: 'Texto escrito no portal', ambos: 'Ficheiros e texto' }
-const paraLocal = (iso) => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-}
 
 // lista de ficheiros (entrega ou correção), cada um com descarregar
 function ListaFicheiros({ ficheiros, baixar }) {
@@ -63,7 +58,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
                   await api(`/trabalhos/${t.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
                 }}><i className="fa fa-trash-alt me-1" />Apagar</button>
               </div>
-            ) : <MinhaEntrega t={t} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
+            ) : t.bloqueio ? <Bloqueio motivos={t.bloqueio} /> : <MinhaEntrega t={t} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
           </Cartao>
           {eDocente && definicoes && <Definicoes t={t} avisar={avisar} guardado={() => { setDefinicoes(false); recarregar() }} />}
           {eDocente && <Entregas trabalho={t} avisar={avisar} baixar={baixar} />}

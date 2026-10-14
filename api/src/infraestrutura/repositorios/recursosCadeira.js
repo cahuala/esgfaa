@@ -6,6 +6,9 @@ const autor = { select: { id: true, nome: true, tipo: true } }
   Recursos de cada cadeira ao estilo do Moodle: fórum, calendário académico,
   conclusão de materiais (progresso) e questionários online.
 */
+// o que o certificado mostra: estudante, cadeira e turma
+const INCLUIR_CERTIFICADO = { estudante: { select: { nome: true, numero: true } }, cadeira: { select: { nome: true, codigo: true, horas: true, turma: { select: { nome: true, anoLetivo: true } } } } }
+
 export class RepositorioRecursosCadeira {
   constructor({ prisma }) {
     this.prisma = prisma
@@ -133,6 +136,7 @@ export class RepositorioRecursosCadeira {
       id: q.id, cadeiraId: q.cadeiraId, titulo: q.titulo, descricao: q.descricao, abre: iso(q.abre), fecha: iso(q.fecha),
       duracao: q.duracao, tentativas: q.tentativas, publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, secaoId: q.secaoId, criadoEm: iso(q.criadoEm),
       baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
+      visivel: q.visivel, disponivelDe: iso(q.disponivelDe), requisitos: q.requisitos || [],
       ...(q.perguntas ? { perguntas: q.perguntas.map((p) => ({ id: p.id, ordem: p.ordem, enunciado: p.enunciado, tipo: p.tipo, opcoes: p.opcoes, pontos: num(p.pontos) })) } : {}),
       ...(q._count ? { numeroPerguntas: q._count.perguntas } : {}),
     }
@@ -221,6 +225,34 @@ export class RepositorioRecursosCadeira {
   // correção manual (dissertações): pontos, nota recalculada e comentário
   async corrigirTentativa(id, { manuais, nota, porCorrigir, comentario }) {
     return this.#tentativa(await this.prisma.tentativa.update({ where: { id }, data: { manuais, nota, porCorrigir, comentario } }))
+  }
+
+  // ---------- certificados ----------
+
+  #certificado(c) {
+    return c && {
+      codigo: c.codigo, emitidoEm: iso(c.emitidoEm),
+      ...(c.estudante ? { estudante: c.estudante.nome, numero: c.estudante.numero } : {}),
+      ...(c.cadeira ? { cadeira: c.cadeira.nome, codigoCadeira: c.cadeira.codigo, horas: c.cadeira.horas, turma: c.cadeira.turma?.nome, anoLetivo: c.cadeira.turma?.anoLetivo } : {}),
+    }
+  }
+
+  async certificadoDe(estudanteId, cadeiraId) {
+    return this.#certificado(await this.prisma.certificado.findUnique({ where: { estudanteId_cadeiraId: { estudanteId, cadeiraId } }, include: INCLUIR_CERTIFICADO }))
+  }
+
+  async emitirCertificado(dados) {
+    return this.#certificado(await this.prisma.certificado.upsert({
+      where: { estudanteId_cadeiraId: { estudanteId: dados.estudanteId, cadeiraId: dados.cadeiraId } }, create: dados, update: {}, include: INCLUIR_CERTIFICADO,
+    }))
+  }
+
+  async certificado(codigo) {
+    if (!/^[A-Z0-9]{8,16}$/.test(codigo)) return null
+    return this.#certificado(await this.prisma.certificado.findUnique({
+      where: { codigo },
+      include: INCLUIR_CERTIFICADO,
+    }))
   }
 
   // ---------- banco de perguntas do docente ----------

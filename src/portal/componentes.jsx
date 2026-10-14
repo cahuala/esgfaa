@@ -1,5 +1,6 @@
 import { Children, cloneElement, isValidElement, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { textoBloqueio } from './formatar'
 
 // peças comuns do portal, no markup do Color Admin (o mesmo tema do painel)
 
@@ -104,6 +105,18 @@ export function Campo({ id, rotulo, erro, ajuda, largo, children }) {
         return cloneElement(c, { className: `${classe} ${erro ? 'is-invalid' : ''} ${c.props.className || ''}`.trim() })
       })}
       {erro ? <span className="p-campo-erro" role="alert">{erro}</span> : ajuda && <span className="form-text mt-0">{ajuda}</span>}
+    </div>
+  )
+}
+
+// atividade fechada ao estudante: os motivos (data de abertura, condições por cumprir)
+export function Bloqueio({ motivos, compacto = false }) {
+  if (!motivos?.length) return null
+  if (compacto) return <div className="small text-muted p-bloqueio"><i className="fa fa-lock me-1" />{motivos.map(textoBloqueio).join(' · ')}</div>
+  return (
+    <div className="alert alert-secondary d-flex gap-2 mb-0" role="status">
+      <i className="fa fa-lock mt-1" />
+      <div><b>Ainda não disponível.</b><ul className="mb-0 ps-3">{motivos.map((m, i) => <li key={i}>{textoBloqueio(m)}</li>)}</ul></div>
     </div>
   )
 }

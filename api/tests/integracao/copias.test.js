@@ -43,6 +43,7 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     await portal('prof').put(`/api/portal/questionarios/${q.id}`).send({ publicado: true })
     await portal('prof').post(`/api/portal/cadeiras/${origem.id}/eventos`).send({ tipo: 'p1', data: '2025-11-10', inicio: '08:00' })
     await portal('prof').put(`/api/portal/cadeiras/${origem.id}/pauta/composicao`).send({ componente: 'p1', itens: [{ tipo: 'trabalho', id: t.id, peso: 70 }, { tipo: 'questionario', id: q.id, peso: 30 }] })
+    await portal('prof').put('/api/portal/atividades/restricoes').send({ tipo: 'questionario', id: q.id, disponivelDe: '2025-11-01T08:00:00Z', requisitos: [{ tipo: 'material', id: m.body.id }, { tipo: 'trabalho', id: t.id, notaMinima: 10 }] })
     // o que não se copia: entregas e fórum
     await portal('velho').post(`/api/portal/trabalhos/${t.id}/entrega`).attach('ficheiro', PDF, { filename: 'e.pdf', contentType: 'application/pdf' })
     await portal('velho').post(`/api/portal/cadeiras/${origem.id}/forum`).send({ titulo: 'Dúvida antiga', texto: 'Olá' })
@@ -83,6 +84,11 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     // a composição da 1.ª prova aponta para as atividades novas
     const pauta = (await portal('prof').get(`/api/portal/cadeiras/${nova.id}/pauta`)).body
     assert.deepEqual(pauta.composicoes.p1.map((i) => [i.tipo, i.id, i.peso]), [['trabalho', v.trabalhos[0].id, 70], ['questionario', v.questionarios[0].id, 30]])
+
+    // as restrições vêm com a data um ano à frente e as condições sobre as atividades novas
+    const qp = (await portal('prof').get(`/api/portal/cadeiras/${nova.id}`)).body.questionarios[0]
+    assert.equal(qp.disponivelDe, '2026-11-01T08:00:00.000Z')
+    assert.deepEqual(qp.requisitos, [{ tipo: 'material', id: v.materiais[0].id, notaMinima: null }, { tipo: 'trabalho', id: v.trabalhos[0].id, notaMinima: 10 }])
 
     // repetir não duplica
     const outra = await sec().post(`/api/admin/academico/turmas/${turmaNova.id}/copiar`).send({ origemTurmaId: antiga.id })

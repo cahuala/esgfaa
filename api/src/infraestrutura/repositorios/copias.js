@@ -45,19 +45,23 @@ export class RepositorioCopias {
       const ordemBase = (await tx.secaoCadeira.aggregate({ where: { cadeiraId: destinoId }, _max: { ordem: true } }))._max.ordem ?? 0
       const secoes = {}
       for (const s of c.secoes) {
-        secoes[s.id] = (await tx.secaoCadeira.create({ data: { cadeiraId: destinoId, ordem: ordemBase + s.ordem, titulo: s.titulo, resumo: s.resumo, visivel: s.visivel } })).id
+        secoes[s.id] = (await tx.secaoCadeira.create({ data: { cadeiraId: destinoId, ordem: ordemBase + s.ordem, titulo: s.titulo, resumo: s.resumo, visivel: s.visivel, disponivelDe: s.disponivelDe ? data(s.disponivelDe) : null } })).id
       }
       const secao = (id) => (id ? secoes[id] ?? null : null)
+      // restrições: visibilidade e data copiam-se já; as condições remapeiam-se no fim
+      const restricoes = (a) => ({ visivel: a.visivel, disponivelDe: a.disponivelDe ? data(a.disponivelDe) : null })
+      const materiais = {}
       for (const m of c.materiais) {
-        await tx.material.create({ data: {
+        materiais[m.id] = (await tx.material.create({ data: {
+          ...restricoes(m),
           cadeiraId: destinoId, secaoId: secao(m.secaoId), titulo: m.titulo, descricao: m.descricao, tipo: m.tipo,
           ficheiroId: m.ficheiroId ? ficheiros[m.ficheiroId] ?? null : null, url: m.url, autorId: m.autorId,
-        } })
+        } })).id
       }
       const trabalhos = {}
       for (const t of c.trabalhos) {
         trabalhos[t.id] = (await tx.trabalho.create({ data: {
-          cadeiraId: destinoId, secaoId: secao(t.secaoId), titulo: t.titulo, enunciado: t.enunciado, prazo: data(t.prazo),
+          ...restricoes(t), cadeiraId: destinoId, secaoId: secao(t.secaoId), titulo: t.titulo, enunciado: t.enunciado, prazo: data(t.prazo),
           aceitaAtraso: t.aceitaAtraso, ficheiroId: t.ficheiroId ? ficheiros[t.ficheiroId] ?? null : null,
           tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros, grelha: t.grelha,
         } })).id
@@ -65,7 +69,7 @@ export class RepositorioCopias {
       const questionarios = {}
       for (const q of c.questionarios) {
         const novo = await tx.questionario.create({ data: {
-          cadeiraId: destinoId, secaoId: secao(q.secaoId), titulo: q.titulo, descricao: q.descricao,
+          ...restricoes(q), cadeiraId: destinoId, secaoId: secao(q.secaoId), titulo: q.titulo, descricao: q.descricao,
           abre: q.abre ? data(q.abre) : null, fecha: q.fecha ? data(q.fecha) : null, duracao: q.duracao, tentativas: q.tentativas,
           publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
         } })
@@ -73,6 +77,12 @@ export class RepositorioCopias {
         if (q.perguntas.length) {
           await tx.pergunta.createMany({ data: q.perguntas.map((x) => ({ questionarioId: novo.id, ordem: x.ordem, enunciado: x.enunciado, tipo: x.tipo, opcoes: x.opcoes, pontos: x.pontos })) })
         }
+      }
+      // condições de acesso, agora com as atividades novas
+      const novoId = { material: materiais, trabalho: trabalhos, questionario: questionarios }
+      const remapear = (lista) => (lista || []).map((r) => ({ ...r, id: novoId[r.tipo]?.[r.id] })).filter((r) => r.id)
+      for (const [tipo, origem, modelo] of [['material', c.materiais, tx.material], ['trabalho', c.trabalhos, tx.trabalho], ['questionario', c.questionarios, tx.questionario]]) {
+        for (const a of origem) if (a.requisitos?.length) await modelo.update({ where: { id: novoId[tipo][a.id] }, data: { requisitos: remapear(a.requisitos) } })
       }
       for (const e of c.eventos) {
         await tx.eventoAcademico.create({ data: { cadeiraId: destinoId, tipo: e.tipo, titulo: e.titulo, data: dia(e.data), inicio: e.inicio, fim: e.fim, local: e.local, descricao: e.descricao } })

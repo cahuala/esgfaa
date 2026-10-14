@@ -1,6 +1,7 @@
 import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { urlSegura } from '../../dominio/comum/urls.js'
 import { estadoQuestionario } from '../../dominio/academico/questionarios.js'
+import { validarRestricoes } from '../../dominio/academico/disponibilidade.js'
 import {
   COMPONENTES_NOTA, ESTADOS_PRESENCA, TIPOS_MATERIAL, TIPOS_PEDIDO,
   TIPOS_ENTREGA, assiduidade, avaliarGrelha, dataValida, entregaAtrasada, escolha, estadoPrazo, prazoDe, resultadoDisciplina, texto, validarGrelha, validarNota,
@@ -20,8 +21,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, pautas, notificacoes, copias, privados, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, pautas, notificacoes, copias, privados, auditoria, relogio })
+  constructor({ academico, recursos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -111,15 +112,23 @@ export class ServicoPortal {
       this.recursos.topicos(cadeira.id),
       this.recursos.eventosDaCadeira(cadeira.id),
     ])
-    // capítulos escondidos (e o que têm dentro) não aparecem aos estudantes
-    const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
-    const visivel = (a) => eDocente || !escondidos.has(a.secaoId)
-    const materiais = todosMateriais.filter(visivel)
-    const trabalhos = todosTrabalhos.filter(visivel)
-    const questionarios = todosQuestionarios.filter(visivel).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
+    // estudante: o que está escondido não aparece; o que está fechado aparece com o motivo
+    const acessos = eDocente ? null : (await this.disponibilidade.acessos(cadeira.id, conta.id)).acessos
+    const comAcesso = (tipo) => (a) => {
+      if (eDocente) return a
+      const x = acessos[`${tipo}-${a.id}`]
+      return { ...a, bloqueio: x && !x.aberta ? x.motivos : null }
+    }
+    const visivel = (tipo) => (a) => eDocente || (acessos[`${tipo}-${a.id}`] && !acessos[`${tipo}-${a.id}`].escondida)
+    const materiais = todosMateriais.filter(visivel('material')).map(comAcesso('material'))
+    const trabalhos = todosTrabalhos.filter(visivel('trabalho')).map(comAcesso('trabalho'))
+    const questionarios = todosQuestionarios.filter(visivel('questionario')).map(comAcesso('questionario')).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
     const base = {
       ...cadeira, materiais, avisos, horario, questionarios, eventos,
-      secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({ id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel })),
+      secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({
+        id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel,
+        disponivelDe: x.disponivelDe ? new Date(x.disponivelDe).toISOString() : null, fechado: Boolean(x.disponivelDe && new Date(x.disponivelDe) > agora),
+      })),
       forum: { topicos: topicos.length, recentes: topicos.slice(0, 3).map((t) => ({ id: t.id, titulo: t.titulo, autor: t.autor.nome, atividadeEm: t.atividadeEm })) },
     }
 
@@ -228,6 +237,7 @@ export class ServicoPortal {
       trabalho = await this.academico.trabalho(trabalhoId)
       if (!trabalho) throw new NaoEncontrado('Trabalho não encontrado.')
       await this.#cadeiraAcessivel(conta, trabalho.cadeiraId)
+      await this.disponibilidade.exigir(trabalho.cadeiraId, conta.id, 'trabalho', trabalho.id)
       const prazo = prazoDe(trabalho, await this.academico.prorrogacao(trabalho.id, conta.id))
       if (estadoPrazo(prazo, this.relogio.agora(), trabalho.aceitaAtraso) === 'fechado') throw new ErroValidacao('O prazo de entrega terminou.')
       corpo = texto(escrito, 'texto', 'Texto', { max: 50_000, obrigatorio: false })
@@ -291,6 +301,11 @@ export class ServicoPortal {
     if (['material', 'enunciado', 'programa'].includes(uso.tipo)) {
       await this.#cadeiraAcessivel(conta, uso.cadeiraId)
       if (conta.tipo === 'estudante' && uso.escondido) negar() // capítulo ainda escondido
+      if (conta.tipo === 'estudante' && uso.atividade) {
+        const { acessos } = await this.disponibilidade.acessos(uso.cadeiraId, conta.id)
+        const a = acessos[uso.atividade]
+        if (!a || a.escondida || !a.aberta) negar()
+      }
     }
     else if (uso.tipo === 'entrega') {
       if (conta.tipo === 'estudante' && uso.estudanteId !== conta.id) negar()
@@ -321,7 +336,27 @@ export class ServicoPortal {
       ...(dados.titulo !== undefined ? { titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 150 }) } : {}),
       ...(dados.resumo !== undefined ? { resumo: texto(dados.resumo, 'resumo', 'Resumo', { max: 3000, obrigatorio: false }) } : {}),
       ...(dados.visivel !== undefined ? { visivel: Boolean(dados.visivel) } : {}),
+      ...(dados.disponivelDe !== undefined ? { disponivelDe: dados.disponivelDe ? this.#dataValida(dados.disponivelDe) : null } : {}),
     }
+  }
+
+  #dataValida(v) {
+    const d = new Date(v)
+    if (Number.isNaN(d.getTime())) throw new ErroValidacao('Data inválida.', { campo: 'disponivelDe' })
+    return d
+  }
+
+  // restrições de uma atividade: esconder, data de abertura, condições (como o "Restrict access" do Moodle)
+  async restricoes(ctx, { tipo, id, ...dados }) {
+    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x) }[tipo]
+    if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
+    const a = await buscar(id)
+    if (!a) throw new NaoEncontrado('Atividade não encontrada.')
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, a.cadeiraId)
+    const { lista } = await this.disponibilidade.atividades(cadeira.id)
+    const mudanca = validarRestricoes(dados, new Set(lista.map((x) => x.chave)), `${tipo}-${a.id}`)
+    await this.academico.restringirAtividade(tipo, a.id, mudanca)
+    return { tipo, id: a.id, ...mudanca }
   }
 
   async criarSecao(ctx, cadeiraId, dados) {

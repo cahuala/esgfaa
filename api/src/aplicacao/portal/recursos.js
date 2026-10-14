@@ -7,6 +7,10 @@ import {
   sortearTentativa, validarPergunta,
 } from '../../dominio/academico/questionarios.js'
 
+// código de verificação legível (sem letras que se confundem: 0/O, 1/I)
+const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const novoCodigo = () => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => ALFABETO[b % ALFABETO.length]).join('')
+
 const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
 const data = (v) => {
   if (v === null || v === undefined || v === '') return null
@@ -21,8 +25,8 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, acesso, notificacoes, pautas, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, acesso, notificacoes, pautas, auditoria, relogio })
+  constructor({ academico, recursos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio })
   }
 
   async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
@@ -169,6 +173,7 @@ export class ServicoRecursos {
     const m = await this.academico.material(materialId)
     if (!m) throw new NaoEncontrado('Material não encontrado.')
     await this.acesso.acessivel(ctx.conta, m.cadeiraId).catch(() => { throw new NaoEncontrado('Material não encontrado.') })
+    await this.disponibilidade?.exigir(m.cadeiraId, ctx.conta.id, 'material', m.id)
     await this.recursos.marcarConclusao(m.id, ctx.conta.id, Boolean(concluido))
     return this.progresso(ctx, m.cadeiraId)
   }
@@ -183,7 +188,7 @@ export class ServicoRecursos {
     ])
     // o que está em capítulos escondidos ainda não conta
     const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
-    const [materiais, trabalhos, questionarios] = [todos, trab, quest].map((l) => l.filter((a) => !escondidos.has(a.secaoId)))
+    const [materiais, trabalhos, questionarios] = [todos, trab, quest].map((l) => l.filter((a) => !escondidos.has(a.secaoId) && a.visivel !== false))
     return [
       ...materiais.map((m) => ({ tipo: 'material', id: m.id, titulo: m.titulo })),
       ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo })),
@@ -226,6 +231,33 @@ export class ServicoRecursos {
       return { estudante: e, concluidas: itens.filter((i) => i.feita).map((i) => `${i.tipo}-${i.id}`), ...resumo(itens) }
     }))
     return { atividades, linhas }
+  }
+
+  // ---------- conclusão da cadeira e certificado ----------
+
+  // a cadeira está concluída quando todas as atividades que contam para o progresso estão feitas
+  async conclusao(ctx, cadeiraId) {
+    this.acesso.soEstudante(ctx.conta)
+    const p = await this.progresso(ctx, cadeiraId)
+    const certificado = await this.recursos.certificadoDe(ctx.conta.id, Number(cadeiraId))
+    return { feitas: p.feitas, total: p.total, percentagem: p.percentagem, concluida: p.total > 0 && p.feitas === p.total, certificado }
+  }
+
+  async emitirCertificado(ctx, cadeiraId) {
+    const c = await this.conclusao(ctx, cadeiraId)
+    if (c.certificado) return c.certificado
+    if (!c.concluida) throw new Conflito(`Ainda faltam atividades: ${c.feitas} de ${c.total} concluídas.`)
+    const cadeira = await this.academico.cadeira(cadeiraId)
+    const cert = await this.recursos.emitirCertificado({ estudanteId: ctx.conta.id, cadeiraId: cadeira.id, codigo: novoCodigo() })
+    await this.auditoria.registar(ctx, { acao: 'emitir_certificado', colecao: 'certificados', alvoId: cadeira.id, alvoTitulo: `${cert.codigo} — ${cadeira.nome}`, utilizador: quem(ctx.conta) })
+    return cert
+  }
+
+  // verificação pública de um certificado pelo código (sem sessão)
+  async verificarCertificado(codigo) {
+    const c = await this.recursos.certificado(String(codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
+    if (!c) throw new NaoEncontrado('Certificado não encontrado. Confirme o código.')
+    return c
   }
 
   // percentagem de cada cadeira do estudante (para o painel e a lista de cadeiras)
@@ -464,6 +496,7 @@ export class ServicoRecursos {
     const q = await this.recursos.questionario(id)
     if (!q || !q.publicado) throw new NaoEncontrado('Questionário não encontrado.')
     const cadeira = await this.acesso.acessivel(ctx.conta, q.cadeiraId).catch(() => { throw new NaoEncontrado('Questionário não encontrado.') })
+    await this.disponibilidade?.exigir(cadeira.id, ctx.conta.id, 'questionario', q.id)
     return { ...q, cadeira }
   }
 

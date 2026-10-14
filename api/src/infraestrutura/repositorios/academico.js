@@ -203,6 +203,12 @@ export class RepositorioAcademico {
     await p.$transaction(ids.map((id, i) => p.secaoCadeira.updateMany({ where: { id, cadeiraId }, data: { ordem: i + 1 } })))
   }
 
+  // grava as restrições de acesso de uma atividade
+  restringirAtividade(tipo, id, dados) {
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario }[tipo]
+    return modelo.update({ where: { id }, data: dados })
+  }
+
   // muda uma atividade (material, trabalho, questionário) de capítulo
   moverAtividade(tipo, id, secaoId) {
     const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario }[tipo]
@@ -529,14 +535,14 @@ export class RepositorioAcademico {
   async usoDoFicheiro(id) {
     const p = this.prisma
     const [material, trabalho, entrega, pedido, programa] = await Promise.all([
-      p.material.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
-      p.trabalho.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
+      p.material.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
+      p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
     ])
-    if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false }
-    if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false }
+    if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false, atividade: `material-${material.id}` }
+    if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false, atividade: `trabalho-${trabalho.id}` }
     if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId }
     if (pedido) return { tipo: 'pedido', estudanteId: pedido.estudanteId }
     if (programa) return { tipo: 'programa', cadeiraId: programa.id }

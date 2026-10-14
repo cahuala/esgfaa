@@ -14,6 +14,9 @@ export function rotasPublicas({ servicos, config }) {
   const L = config.limites
   r.use(limitar(L.publico))
 
+  // verificação pública de um certificado do portal pelo código
+  r.get('/certificados/:codigo', validar({ params: z.object({ codigo: z.string().max(40) }) }), async (req, res) => res.json(await servicos.recursos.verificarCertificado(req.dados.params.codigo)))
+
   // todo o conteúdo do site num só pedido (o site é pequeno e assim abre mais depressa)
   r.get('/conteudo', async (req, res) => {
     const conteudo = {

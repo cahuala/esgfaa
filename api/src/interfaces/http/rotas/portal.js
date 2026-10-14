@@ -110,6 +110,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await s.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await s.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
   r.post('/cadeiras/:id/importar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await s.importar(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/cadeiras/:id/participantes', validar({ params: pId }), async (req, res) => res.json(await s.participantes(ctx(req), req.dados.params.id)))
@@ -129,6 +130,8 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/cadeiras/:id/eventos', validar({ params: pId, body: E.evento }), async (req, res) => res.status(201).json(await m.criarEvento(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/eventos/:id', validar({ params: pId }), async (req, res) => { await m.apagarEvento(ctx(req), req.dados.params.id); res.status(204).end() })
 
+  r.get('/cadeiras/:id/conclusao', validar({ params: pId }), async (req, res) => res.json(await m.conclusao(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/certificado', validar({ params: pId }), async (req, res) => res.status(201).json(await m.emitirCertificado(ctx(req), req.dados.params.id)))
   r.get('/progresso', async (req, res) => res.json(await m.progressoGeral(ctx(req))))
   r.get('/cadeiras/:id/progresso', validar({ params: pId }), async (req, res) => res.json(await m.progresso(ctx(req), req.dados.params.id)))
   r.put('/materiais/:id/conclusao', validar({ params: pId, body: E.conclusao }), async (req, res) => res.json(await m.marcarConclusao(ctx(req), req.dados.params.id, req.dados.body)))

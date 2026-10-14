@@ -144,7 +144,7 @@ export const respostasQuestionario = z.object({
 export const correcaoTentativa = z.object({ pontos: z.record(z.string().regex(/^\d{1,10}$/), z.union([z.number(), z.string().max(8)])).optional(), comentario: texto(3500).optional() })
 export const paraBanco = z.object({ categoria: texto(100).optional() })
 export const doBanco = z.object({ ids: z.array(idNumerico).min(1).max(100) })
-export const secao = z.object({ titulo: texto(300).optional(), resumo: texto(4000).optional(), visivel: z.boolean().optional() })
+export const secao = z.object({ titulo: texto(300).optional(), resumo: texto(4000).optional(), visivel: z.boolean().optional(), disponivelDe: z.union([texto(40), z.null()]).optional() })
 export const ordemSecoes = z.object({ ids: z.array(idNumerico).max(200) })
 export const moverAtividade = z.object({ tipo: texto(20), id: idNumerico, secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional() })
 // ---------- notificações e mensagens ----------
@@ -158,3 +158,7 @@ export const composicao = z.object({
 })
 export const copiarCadeira = z.object({ origemId: idNumerico, docentes: z.boolean().optional() })
 export const copiarTurma = z.object({ origemTurmaId: idNumerico, docentes: z.boolean().optional() })
+export const restricoes = z.object({
+  tipo: texto(20), id: idNumerico, visivel: z.boolean().optional(), disponivelDe: z.union([texto(40), z.null()]).optional(),
+  requisitos: z.array(z.object({ tipo: texto(20), id: idNumerico, notaMinima: z.union([z.number(), z.string().max(6), z.null()]).optional() })).max(10).optional(),
+})

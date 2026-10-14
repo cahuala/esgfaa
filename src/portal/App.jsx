@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useSessao } from './sessaoContexto'
 import { Carregando } from './componentes'
 import Layout from './Layout'
@@ -17,9 +17,16 @@ import Horario from './paginas/Horario'
 import Pedidos from './paginas/Pedidos'
 import Avisos from './paginas/Avisos'
 import Perfil from './paginas/Perfil'
+import Certificado from './cadeira/Certificado'
+import Verificar from './paginas/Verificar'
 
 function App() {
   const { conta, aVerificar, eDocente } = useSessao()
+  const { pathname } = useLocation()
+  // a verificação de certificados é pública: não precisa de sessão
+  if (pathname.startsWith('/verificar')) {
+    return <Routes><Route path="/verificar" element={<Verificar />} /><Route path="/verificar/:codigo" element={<Verificar />} /></Routes>
+  }
   if (aVerificar) return <div className="p-ecra-centro"><Carregando /></div>
   if (!conta) return <Entrar />
   // com a palavra-passe inicial (o e-mail) não se usa mais nada
@@ -37,6 +44,7 @@ function App() {
         <Route path="/mensagens" element={<Mensagens />} />
         <Route path="/mensagens/:id" element={<Mensagens />} />
         {eDocente && <Route path="/banco" element={<Banco />} />}
+        {!eDocente && <Route path="/cadeiras/:id/certificado" element={<Certificado />} />}
         {!eDocente && <Route path="/notas" element={<Notas />} />}
         {!eDocente && <Route path="/percurso" element={<Percurso />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}

@@ -1,23 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
-import { Campo, Cartao, Carregando, Etiqueta, Vazio } from '../componentes'
-import { dataHora, localParaIso, nota } from '../formatar'
+import { Bloqueio, Campo, Cartao, Carregando, Erro, Etiqueta, Vazio } from '../componentes'
+import { dataHora, localParaIso, nota, paraLocal } from '../formatar'
 import FormPergunta, { SolucaoPergunta } from './FormPergunta'
 import { TIPOS_PERGUNTA as TIPOS } from './tiposPergunta'
 import { BancoJanela } from './Banco'
 const ESTADOS = { em_breve: ['azul', 'Abre em breve'], aberto: ['verde', 'Aberto'], fechado: ['cinzento', 'Fechado'] }
 // ISO → valor de <input type="datetime-local"> na hora local
-const paraLocal = (iso) => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-}
 
 // questionários online da cadeira (como os do Moodle)
 function Questionarios(props) {
   const [aberto, setAberto] = useState(props.so ?? null)
   const voltar = props.voltar || (() => setAberto(null))
   if (aberto) {
+    const bloqueio = !props.eDocente && props.c.questionarios.find((x) => x.id === aberto)?.bloqueio
+    if (bloqueio) {
+      return (
+        <Cartao titulo={<><i className="fa fa-question-circle me-2" />{props.c.questionarios.find((x) => x.id === aberto).titulo}</>}>
+          <Bloqueio motivos={bloqueio} />
+          <button type="button" className="btn btn-white mt-3" onClick={voltar}><i className="fa fa-arrow-left me-1" />Voltar</button>
+        </Cartao>
+      )
+    }
     return props.eDocente
       ? <EditorQuestionario id={aberto} avisar={props.avisar} voltar={voltar} />
       : <Realizar id={aberto} avisar={props.avisar} recarregar={props.recarregar} voltar={voltar} />
@@ -354,10 +358,11 @@ function Realizar({ id, avisar, recarregar, voltar }) {
   const guardarT = useRef(null)
   const entregando = useRef(false)
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
+  const [erroCarga, setErroCarga] = useState('')
   const carregar = useCallback(() => api(`/questionarios/${id}`).then((r) => {
     setQ(r)
     if (r.emCurso) { setTentativa(r.emCurso); setRespostas(r.emCurso.respostas || {}) }
-  }).catch(falhou), [id, falhou])
+  }).catch((e) => setErroCarga(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
 
   const entregar = useCallback(async (confirmar = true) => {
@@ -406,6 +411,7 @@ function Realizar({ id, avisar, recarregar, voltar }) {
     return Array.isArray(v) ? v.some((x) => x !== null && x !== undefined) : v !== undefined && String(v).trim() !== ''
   }
 
+  if (erroCarga) return <><Erro texto={erroCarga} /><button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" />Voltar</button></>
   if (!q) return <Carregando />
   const respondidas = tentativa ? tentativa.perguntas.filter(respondida).length : 0
 

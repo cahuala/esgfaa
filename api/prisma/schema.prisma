@@ -210,6 +210,7 @@ model ContaPortal {
   presencas          Presenca[]
   pedidos            Pedido[]
   perguntaBancos     PerguntaBanco[]
+  certificados       Certificado[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -275,6 +276,7 @@ model UnidadeCurricular {
   questionarios    Questionario[]
   secaoCadeiras    SecaoCadeira[]
   composicaoNotas  ComposicaoNota[]
+  certificados     Certificado[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -311,16 +313,19 @@ model Ficheiro {
 }
 
 model Material {
-  id          Int      @id @default(autoincrement())
-  cadeiraId   Int      @map("cadeira_id")
-  titulo      String
-  descricao   String   @default("")
-  secaoId     Int?     @map("secao_id") // capítulo da cadeira (null = secção geral)
-  tipo        String // ficheiro | ligacao | video
-  ficheiroId  String?  @map("ficheiro_id")
-  url         String   @default("")
-  autorId     Int?     @map("autor_id")
-  publicadoEm DateTime @default(now()) @map("publicado_em") @db.Timestamptz(3)
+  id           Int       @id @default(autoincrement())
+  cadeiraId    Int       @map("cadeira_id")
+  titulo       String
+  descricao    String    @default("")
+  secaoId      Int?      @map("secao_id") // capítulo da cadeira (null = secção geral)
+  visivel      Boolean   @default(true) // escondida dos estudantes
+  disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
+  requisitos   Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
+  tipo         String // ficheiro | ligacao | video
+  ficheiroId   String?   @map("ficheiro_id")
+  url          String    @default("")
+  autorId      Int?      @map("autor_id")
+  publicadoEm  DateTime  @default(now()) @map("publicado_em") @db.Timestamptz(3)
 
   cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
@@ -390,6 +395,9 @@ model Trabalho {
   maxFicheiros Int       @default(1) @map("max_ficheiros")
   grelha       Json      @default("[]") // grelha de avaliação: [{ criterio, descricao, pontos }]
   secaoId      Int?      @map("secao_id")
+  visivel      Boolean   @default(true) // escondida dos estudantes
+  disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
+  requisitos   Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
   criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira      UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
@@ -572,6 +580,9 @@ model Questionario {
   baralhar              Boolean   @default(false) // baralhar perguntas e opções em cada tentativa
   perguntasPorTentativa Int       @default(0) @map("perguntas_por_tentativa") // sorteia N perguntas (0 = todas)
   secaoId               Int?      @map("secao_id")
+  visivel               Boolean   @default(true) // escondida dos estudantes
+  disponivelDe          DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
+  requisitos            Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
   criadoEm              DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
@@ -624,13 +635,14 @@ model Tentativa {
 
 // capítulos da cadeira (as "secções" do Moodle): agrupam materiais, trabalhos e questionários
 model SecaoCadeira {
-  id        Int      @id @default(autoincrement())
-  cadeiraId Int      @map("cadeira_id")
-  ordem     Int      @default(0)
-  titulo    String
-  resumo    String   @default("")
-  visivel   Boolean  @default(true) // escondido dos estudantes enquanto o docente prepara
-  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id           Int       @id @default(autoincrement())
+  cadeiraId    Int       @map("cadeira_id")
+  ordem        Int       @default(0)
+  titulo       String
+  resumo       String    @default("")
+  visivel      Boolean   @default(true) // escondido dos estudantes enquanto o docente prepara
+  disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // o capítulo abre nesta data
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira       UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   materiais     Material[]
@@ -733,4 +745,19 @@ model PerguntaBanco {
 
   @@index([docenteId, categoria])
   @@map("banco_perguntas")
+}
+
+// certificado de conclusão de uma cadeira (verificável pelo código)
+model Certificado {
+  codigo      String   @id // código público de verificação
+  estudanteId Int      @map("estudante_id")
+  cadeiraId   Int      @map("cadeira_id")
+  emitidoEm   DateTime @default(now()) @map("emitido_em") @db.Timestamptz(3)
+  nota        Decimal? @db.Decimal(4, 2) // nota final da pauta no momento da emissão (se houver)
+
+  estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@unique([estudanteId, cadeiraId])
+  @@map("certificados")
 }
