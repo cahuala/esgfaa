@@ -89,13 +89,21 @@ export const material = z.object({ titulo: texto(300).optional(), descricao: tex
 const notaLivre = z.union([z.string().max(6), z.number(), z.null()]).optional()
 export const pauta = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, p1: notaLivre, p2: notaLivre, exame: notaLivre, recurso: notaLivre, observacao: texto(400).optional() })).max(500) })
 export const publicacaoNotas = z.object({ publicadas: z.array(z.enum(['p1', 'p2', 'exame', 'recurso'])).max(4) })
-export const trabalho = z.object({ secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(), aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
-export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional() })
+// a grelha chega como lista (JSON) ou como texto JSON (multipart)
+const grelhaLivre = z.union([z.string().max(20_000), z.array(z.object({ criterio: texto(200).optional(), descricao: texto(600).optional(), pontos: z.union([z.number(), z.string().max(4)]).optional() })).max(15)]).optional()
+const pontosLivres = z.union([z.string().max(2000), z.record(z.string().regex(/^\d{1,2}$/), z.union([z.number(), z.string().max(6), z.null()]))]).optional()
+export const trabalho = z.object({
+  secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(),
+  aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
+  tipoEntrega: texto(10).optional(), maxFicheiros: z.union([z.number(), z.string().max(3)]).optional(), grelha: grelhaLivre,
+})
+export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional(), grelha: pontosLivres, removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
+export const prorrogacao = z.object({ estudanteId: idNumerico, prazo: z.union([texto(40), z.null()]), motivo: texto(500).optional() })
 export const aula = z.object({
   data: texto(10).optional(), sumario: texto(3000).optional(),
   presencas: z.array(z.object({ estudanteId: idNumerico, estado: texto(20) })).max(500).optional(),
 })
-export const entrega = z.object({ comentario: texto(3000).optional() })
+export const entrega = z.object({ comentario: texto(3000).optional(), texto: texto(60_000).optional() })
 
 // ---------- recursos da cadeira (fórum, calendário, progresso, questionários) ----------
 export const topico = z.object({ titulo: texto(300), texto: texto(12_000) })

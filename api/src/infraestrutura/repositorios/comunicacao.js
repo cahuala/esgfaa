@@ -99,7 +99,7 @@ export class RepositorioComunicacao {
   trabalhosALembrar(agora, ate) {
     return this.prisma.trabalho.findMany({
       where: { lembreteEm: null, prazo: { gt: agora, lte: ate }, OR: [{ secaoId: null }, { secao: { visivel: true } }] },
-      include: { cadeira: { select: { id: true, nome: true, turmaId: true } }, entregas: { select: { estudanteId: true } } },
+      include: { cadeira: { select: { id: true, nome: true, turmaId: true } }, entregas: { select: { estudanteId: true } }, prorrogacoes: { select: { estudanteId: true } } },
     })
   }
 

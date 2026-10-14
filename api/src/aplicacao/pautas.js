@@ -28,8 +28,10 @@ export class ServicoPautas {
         const t = await this.academico.trabalho(i.id)
         if (!t || t.cadeiraId !== cadeira.id) continue
         const entregas = Object.fromEntries((await this.academico.entregasDoTrabalho(t.id)).map((e) => [e.estudanteId, e]))
-        const fechado = new Date(t.prazo) < agora && !t.aceitaAtraso
-        for (const e of estudantes) notas[chave][e] = entregas[e] ? entregas[e].nota : fechado ? 0 : null
+        const prorrogacoes = await this.academico.prorrogacoes(t.id)
+        // cada estudante tem o seu prazo (pode ter uma prorrogação)
+        const fechado = (e) => new Date(prorrogacoes[e]?.prazo || t.prazo) < agora && !t.aceitaAtraso
+        for (const e of estudantes) notas[chave][e] = entregas[e] ? entregas[e].nota : fechado(e) ? 0 : null
       } else {
         const q = await this.recursos.questionario(i.id)
         if (!q || q.cadeiraId !== cadeira.id) continue

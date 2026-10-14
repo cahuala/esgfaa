@@ -97,7 +97,8 @@ export class ServicoComunicacao {
     let enviados = 0
     for (const t of await this.comunicacao.trabalhosALembrar(agora, ate)) {
       if (!(await this.comunicacao.marcarLembrado(t.id, agora))) continue
-      const entregues = new Set(t.entregas.map((e) => e.estudanteId))
+      // quem já entregou ou tem o prazo alargado não é lembrado agora
+      const entregues = new Set([...t.entregas.map((e) => e.estudanteId), ...t.prorrogacoes.map((p) => p.estudanteId)])
       const faltam = (await this.academico.estudantesAtivosDaTurma(t.cadeira.turmaId)).map((e) => e.id).filter((id) => !entregues.has(id))
       const horas = Math.max(1, Math.round((new Date(t.prazo) - agora) / 3_600_000))
       await this.notificar(faltam, {

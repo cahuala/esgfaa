@@ -3,6 +3,7 @@ import { api, enviarComProgresso } from '../api'
 import { Campo } from '../componentes'
 import { localParaIso } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
+import { EditorGrelha } from './Grelha'
 
 const OPCOES = [
   { id: 'ficheiro', icone: 'fa-file-upload', cor: 'bg-primary', nome: 'Ficheiro', texto: 'PDF, Word, PowerPoint, imagens, vídeo (vários de uma vez)' },
@@ -15,7 +16,8 @@ const OPCOES = [
 // janela "Adicionar atividade ou recurso" (como no Moodle), no modal do tema
 function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
   const [tipo, setTipo] = useState(null)
-  const [f, setF] = useState({ titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1 })
+  const [f, setF] = useState({ titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1, tipoEntrega: 'ficheiro', maxFicheiros: 1 })
+  const [grelha, setGrelha] = useState([])
   const [ficheiros, setFicheiros] = useState([])
   const [erro, setErro] = useState('')
   const [aEnviar, setAEnviar] = useState(false)
@@ -56,6 +58,9 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         fd.append('enunciado', f.enunciado)
         fd.append('prazo', localParaIso(f.prazo))
         fd.append('aceitaAtraso', String(f.aceitaAtraso))
+        fd.append('tipoEntrega', f.tipoEntrega)
+        fd.append('maxFicheiros', String(f.maxFicheiros || 1))
+        fd.append('grelha', JSON.stringify(grelha.map((c) => ({ ...c, pontos: Number(c.pontos) }))))
         if (secaoId) fd.append('secaoId', String(secaoId))
         if (ficheiros[0]) fd.append('ficheiro', ficheiros[0].ficheiro)
         await enviarComProgresso(`/cadeiras/${c.id}/trabalhos`, fd, { aoProgresso: (p) => progresso(0, p) })
@@ -116,6 +121,11 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                         <div className="col-sm-6"><Campo id="na-prazo" rotulo="Prazo de entrega"><input id="na-prazo" type="datetime-local" value={f.prazo} onChange={(e) => setF({ ...f, prazo: e.target.value })} required /></Campo></div>
                         <div className="col-sm-6 d-flex align-items-end"><label className="p-caixa mb-2"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> Aceitar entregas fora de prazo</label></div>
                       </div>
+                      <div className="row g-2">
+                        <div className="col-sm-6"><Campo id="na-tipoentrega" rotulo="Como se entrega"><select id="na-tipoentrega" value={f.tipoEntrega} onChange={(e) => setF({ ...f, tipoEntrega: e.target.value })}><option value="ficheiro">Ficheiros</option><option value="texto">Texto escrito no portal</option><option value="ambos">Ficheiros e texto</option></select></Campo></div>
+                        <div className="col-sm-6"><Campo id="na-max" rotulo="Máximo de ficheiros"><input id="na-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
+                      </div>
+                      <div><span className="form-label fw-bold d-block mb-1">Grelha de avaliação (opcional)</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
                       <span className="form-label fw-bold mb-0">Enunciado em ficheiro (opcional)</span>
                       <ZonaUpload id="na-enunciado-f" ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} />
                     </>

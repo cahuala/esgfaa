@@ -17,6 +17,7 @@ export function rotasPortal({ servicos, config, privados }) {
   const s = servicos.portal
   const ctx = (req) => req.contexto
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
+  const ficheiros = privados ? receberFicheiro({ privados, config, maximo: 10 }) : (req, res, next) => next()
 
   r.post(
     '/entrar',
@@ -59,8 +60,8 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/avisos', async (req, res) => res.json(await s.avisosGerais(ctx(req))))
   r.get('/pedidos', async (req, res) => res.json(await s.pedidos(ctx(req))))
   r.post('/pedidos', validar({ body: E.pedidoNovo }), async (req, res) => res.status(201).json(await s.criarPedido(ctx(req), req.dados.body)))
-  r.post('/trabalhos/:id/entrega', ficheiro, validar({ params: pId, body: E.entrega }), async (req, res) => {
-    res.status(201).json(await s.entregar(ctx(req), req.dados.params.id, req.ficheiro, req.dados.body))
+  r.post('/trabalhos/:id/entrega', ficheiros, validar({ params: pId, body: E.entrega }), async (req, res) => {
+    res.status(201).json(await s.entregar(ctx(req), req.dados.params.id, req.ficheiros || [], req.dados.body))
   })
 
   // ---------- docente ----------
@@ -82,7 +83,9 @@ export function rotasPortal({ servicos, config, privados }) {
   })
   r.delete('/trabalhos/:id', validar({ params: pId }), async (req, res) => { await s.apagarTrabalho(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/trabalhos/:id/entregas', validar({ params: pId }), async (req, res) => res.json(await s.entregas(ctx(req), req.dados.params.id)))
-  r.put('/entregas/:id', validar({ params: pId, body: E.correcao }), async (req, res) => res.json(await s.corrigir(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/entregas/:id', ficheiro, validar({ params: pId, body: E.correcao }), async (req, res) => res.json(await s.corrigir(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
+  r.put('/trabalhos/:id', validar({ params: pId, body: E.trabalho }), async (req, res) => res.json(await s.editarTrabalho(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/trabalhos/:id/prorrogacao', validar({ params: pId, body: E.prorrogacao }), async (req, res) => res.json(await s.prorrogar(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.get('/cadeiras/:id/aulas', validar({ params: pId }), async (req, res) => res.json(await s.aulas(ctx(req), req.dados.params.id)))
   r.post('/cadeiras/:id/aulas', validar({ params: pId, body: E.aula }), async (req, res) => res.status(201).json(await s.registarAula(ctx(req), req.dados.params.id, req.dados.body)))

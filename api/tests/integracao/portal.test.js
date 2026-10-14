@@ -183,8 +183,8 @@ describe('portal académico', () => {
     const daAna = lista.linhas.find((l) => l.estudante.id === contas.ana.id).entrega
     assert.equal(daAna.comentario, 'Versão final')
     // o colega não descarrega a entrega da Ana; o docente sim
-    assert.equal((await portal('bruno').get(`/api/portal/ficheiros/${daAna.ficheiroId}`)).status, 404)
-    assert.equal((await portal('prof').get(`/api/portal/ficheiros/${daAna.ficheiroId}`)).status, 200)
+    assert.equal((await portal('bruno').get(`/api/portal/ficheiros/${daAna.ficheiros[0].id}`)).status, 404)
+    assert.equal((await portal('prof').get(`/api/portal/ficheiros/${daAna.ficheiros[0].id}`)).status, 200)
 
     const c = await portal('prof').put(`/api/portal/entregas/${daAna.id}`).send({ nota: 17, correcao: 'Bom trabalho.' })
     assert.equal(c.status, 200)

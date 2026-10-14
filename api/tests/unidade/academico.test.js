@@ -110,3 +110,23 @@ describe('livro de notas: componentes calculadas', async () => {
     assert.throws(() => validarComposicao([{ tipo: 'trabalho', id: 3, peso: 0 }]), /pesos/)
   })
 })
+
+describe('trabalhos: grelha de avaliação e prorrogações', async () => {
+  const { avaliarGrelha, prazoDe, validarGrelha } = await import('../../src/dominio/academico/regras.js')
+  const grelha = [{ criterio: 'Estrutura', pontos: 4 }, { criterio: 'Argumentação', pontos: 10 }, { criterio: 'Fontes', pontos: 6 }]
+  it('nota de 0 a 20 a partir dos pontos de cada critério', () => {
+    assert.deepEqual(avaliarGrelha(grelha, { 0: 4, 1: '7,5', 2: 4 }), { pontos: { 0: 4, 1: 7.5, 2: 4 }, obtidos: 15.5, total: 20, nota: 15.5 })
+    assert.equal(avaliarGrelha(grelha, { 0: 4 }).nota, null) // faltam critérios
+    assert.throws(() => avaliarGrelha(grelha, { 0: 5 }), /de 0 a 4/)
+  })
+  it('validação da grelha', () => {
+    assert.deepEqual(validarGrelha(null), [])
+    assert.equal(validarGrelha([{ criterio: 'Clareza', pontos: '5' }])[0].pontos, 5)
+    assert.throws(() => validarGrelha([{ criterio: 'X', pontos: 5 }]), ErroValidacao)
+    assert.throws(() => validarGrelha([{ criterio: 'Clareza', pontos: 0 }]), /pontos/)
+  })
+  it('prazo com prorrogação', () => {
+    assert.equal(prazoDe({ prazo: 'a' }, null), 'a')
+    assert.equal(prazoDe({ prazo: 'a' }, { prazo: 'b' }), 'b')
+  })
+})

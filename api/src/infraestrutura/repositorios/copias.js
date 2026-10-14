@@ -59,6 +59,7 @@ export class RepositorioCopias {
         trabalhos[t.id] = (await tx.trabalho.create({ data: {
           cadeiraId: destinoId, secaoId: secao(t.secaoId), titulo: t.titulo, enunciado: t.enunciado, prazo: data(t.prazo),
           aceitaAtraso: t.aceitaAtraso, ficheiroId: t.ficheiroId ? ficheiros[t.ficheiroId] ?? null : null,
+          tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros, grelha: t.grelha,
         } })).id
       }
       const questionarios = {}

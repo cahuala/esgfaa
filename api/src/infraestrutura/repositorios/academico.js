@@ -363,42 +363,77 @@ export class RepositorioAcademico {
   }
 
   paraEntrega = (e) => e && ({
-    id: e.id, trabalhoId: e.trabalhoId, estudanteId: e.estudanteId, ficheiroId: e.ficheiroId, comentario: e.comentario,
+    id: e.id, trabalhoId: e.trabalhoId, estudanteId: e.estudanteId, texto: e.texto, comentario: e.comentario,
+    ficheiros: (e.ficheiros || []).sort((x, y) => x.ordem - y.ordem).map((f) => ({ id: f.ficheiro.id, nome: f.ficheiro.nome, tipo: f.ficheiro.tipo, tamanho: f.ficheiro.tamanho })),
     entregueEm: iso(e.entregueEm), nota: num(e.nota), correcao: e.correcao, corrigidaEm: iso(e.corrigidaEm),
-    ...(e.estudante ? { estudante: e.estudante } : {}), ...(e.ficheiro ? { ficheiro: e.ficheiro } : {}),
+    correcaoFicheiroId: e.correcaoFicheiroId, grelha: e.grelha || {},
+    ...(e.estudante ? { estudante: e.estudante } : {}),
   })
 
+  #comFicheiros = { ficheiros: { include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
+
   async entregaDoEstudante(trabalhoId, estudanteId) {
-    return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } } }))
+    return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, include: this.#comFicheiros }))
   }
 
   async entregasDoEstudante(estudanteId, trabalhoIds) {
-    const linhas = await this.prisma.entrega.findMany({ where: { estudanteId, trabalhoId: { in: trabalhoIds } } })
+    const linhas = await this.prisma.entrega.findMany({ where: { estudanteId, trabalhoId: { in: trabalhoIds } }, include: this.#comFicheiros })
     return Object.fromEntries(linhas.map((e) => [e.trabalhoId, this.paraEntrega(e)]))
   }
 
   async entregasDoTrabalho(trabalhoId) {
-    const linhas = await this.prisma.entrega.findMany({ where: { trabalhoId }, include: { estudante: contaResumo }, orderBy: { entregueEm: 'asc' } })
+    const linhas = await this.prisma.entrega.findMany({ where: { trabalhoId }, include: { estudante: contaResumo, ...this.#comFicheiros }, orderBy: { entregueEm: 'asc' } })
     return linhas.map((e) => this.paraEntrega(e))
   }
 
   async entrega(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
-    return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { id: n } }))
+    return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { id: n }, include: this.#comFicheiros }))
   }
 
-  // entrega (ou substitui a anterior, enquanto o prazo permitir)
-  async gravarEntrega({ trabalhoId, estudanteId, ficheiroId, comentario }) {
-    return this.paraEntrega(await this.prisma.entrega.upsert({
-      where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } },
-      create: { trabalhoId, estudanteId, ficheiroId, comentario },
-      update: { ficheiroId, comentario, entregueEm: new Date(), nota: null, correcao: '', corrigidaEm: null },
-    }))
+  // entrega (ou substitui a anterior, enquanto o prazo permitir): ficheiros e/ou texto
+  async gravarEntrega({ trabalhoId, estudanteId, ficheiroIds, texto, comentario }) {
+    const p = this.prisma
+    const e = await p.$transaction(async (tx) => {
+      const x = await tx.entrega.upsert({
+        where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } },
+        create: { trabalhoId, estudanteId, texto, comentario },
+        update: { texto, comentario, entregueEm: new Date(), nota: null, correcao: '', corrigidaEm: null, correcaoFicheiroId: null, grelha: {} },
+      })
+      await tx.entregaFicheiro.deleteMany({ where: { entregaId: x.id } })
+      if (ficheiroIds.length) await tx.entregaFicheiro.createMany({ data: ficheiroIds.map((ficheiroId, ordem) => ({ entregaId: x.id, ficheiroId, ordem })) })
+      return x
+    })
+    return this.entrega(e.id)
   }
 
-  async corrigirEntrega(id, { nota, correcao }) {
-    return this.paraEntrega(await this.prisma.entrega.update({ where: { id }, data: { nota, correcao, corrigidaEm: new Date() } }))
+  async corrigirEntrega(id, dados) {
+    await this.prisma.entrega.update({ where: { id }, data: { ...dados, corrigidaEm: new Date() } })
+    return this.entrega(id)
+  }
+
+  // ---------- prorrogações de prazo ----------
+
+  async prorrogacoes(trabalhoId) {
+    const linhas = await this.prisma.prorrogacao.findMany({ where: { trabalhoId } })
+    return Object.fromEntries(linhas.map((p) => [p.estudanteId, { prazo: iso(p.prazo), motivo: p.motivo }]))
+  }
+
+  async prorrogacao(trabalhoId, estudanteId) {
+    const p = await this.prisma.prorrogacao.findUnique({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } } })
+    return p && { prazo: iso(p.prazo), motivo: p.motivo }
+  }
+
+  // prorrogações de um estudante em vários trabalhos: { trabalhoId: { prazo } }
+  async prorrogacoesDoEstudante(estudanteId, trabalhoIds) {
+    const linhas = await this.prisma.prorrogacao.findMany({ where: { estudanteId, trabalhoId: { in: trabalhoIds } } })
+    return Object.fromEntries(linhas.map((p) => [p.trabalhoId, { prazo: iso(p.prazo), motivo: p.motivo }]))
+  }
+
+  definirProrrogacao(trabalhoId, estudanteId, dados) {
+    if (!dados) return this.prisma.prorrogacao.deleteMany({ where: { trabalhoId, estudanteId } })
+    return this.prisma.prorrogacao.upsert({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, create: { trabalhoId, estudanteId, ...dados }, update: dados })
   }
 
   // ---------- horário ----------
@@ -496,7 +531,7 @@ export class RepositorioAcademico {
     const [material, trabalho, entrega, pedido, programa] = await Promise.all([
       p.material.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
-      p.entrega.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
+      p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
     ])
