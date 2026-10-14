@@ -17,6 +17,7 @@ const OPCOES = [
   { id: 'pasta', icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta', texto: 'Vários ficheiros juntos num só recurso' },
   { id: 'videoconferencia', icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência', texto: 'Aula à distância: ligação, dia e hora' },
   { id: 'sondagem', icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem', texto: 'Uma pergunta de escolha aos estudantes' },
+  { id: 'workshop', icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares', texto: 'Os estudantes entregam e avaliam trabalhos uns dos outros' },
 ]
 const RESULTADOS = { apos_responder: 'Depois de responderem', apos_fecho: 'Só depois do fecho', nunca: 'Nunca (só o docente)' }
 
@@ -25,7 +26,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
   const [tipo, setTipo] = useState(null)
   const [f, setF] = useState({
     titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1, tipoEntrega: 'ficheiro', maxFicheiros: 1,
-    emGrupo: false, conteudo: '', inicio: '', duracaoSessao: 90, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
+    emGrupo: false, fimSubmissao: '', fimAvaliacao: '', avaliacoesPorPar: 3, anonimoPares: true, conteudo: '', inicio: '', duracaoSessao: 90, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
   })
   const [grelha, setGrelha] = useState([])
   const [ficheiros, setFicheiros] = useState([])
@@ -74,6 +75,14 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         await enviarComProgresso(`/cadeiras/${c.id}/materiais`, fd, { aoProgresso: (p) => setFicheiros((l) => l.map((x) => ({ ...x, progresso: p }))) })
         avisar({ texto: 'Pasta publicada.' })
         return criada()
+      }
+      if (tipo === 'workshop') {
+        const w = await api(`/cadeiras/${c.id}/workshops`, {
+          metodo: 'POST',
+          corpo: { titulo: f.titulo, enunciado: f.enunciado, secaoId, fimSubmissao: localParaIso(f.fimSubmissao), fimAvaliacao: localParaIso(f.fimAvaliacao), avaliacoesPorPar: Number(f.avaliacoesPorPar), anonimo: f.anonimoPares, grelha: grelha.map((x) => ({ ...x, pontos: Number(x.pontos) })) },
+        })
+        avisar({ texto: 'Avaliação por pares criada. Os estudantes foram avisados.' })
+        return criada({ atividade: `workshop-${w.id}` })
       }
       if (tipo === 'sondagem') {
         await api(`/cadeiras/${c.id}/sondagens`, {
@@ -168,6 +177,20 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                       </div>
                     </>
                   )}
+                  {tipo === 'workshop' && (
+                    <>
+                      <Campo id="na-enunciado" rotulo="Enunciado"><textarea id="na-enunciado" rows={4} value={f.enunciado} onChange={(e) => setF({ ...f, enunciado: e.target.value })} /></Campo>
+                      <div className="row g-2">
+                        <div className="col-sm-6"><Campo id="na-fimsub" rotulo="Entregar até"><input id="na-fimsub" type="datetime-local" value={f.fimSubmissao} onChange={(e) => setF({ ...f, fimSubmissao: e.target.value })} required /></Campo></div>
+                        <div className="col-sm-6"><Campo id="na-fimav" rotulo="Avaliar os colegas até"><input id="na-fimav" type="datetime-local" value={f.fimAvaliacao} onChange={(e) => setF({ ...f, fimAvaliacao: e.target.value })} required /></Campo></div>
+                      </div>
+                      <div className="row g-2">
+                        <div className="col-sm-6"><Campo id="na-npares" rotulo="Trabalhos que cada estudante avalia"><input id="na-npares" type="number" min={1} max={10} value={f.avaliacoesPorPar} onChange={(e) => setF({ ...f, avaliacoesPorPar: e.target.value })} /></Campo></div>
+                        <div className="col-sm-6 d-flex align-items-end"><label className="p-caixa mb-2"><input type="checkbox" checked={f.anonimoPares} onChange={(e) => setF({ ...f, anonimoPares: e.target.checked })} /> Anónima (sem nomes nos dois sentidos)</label></div>
+                      </div>
+                      <div><span className="form-label fw-bold d-block mb-1">Grelha de avaliação (obrigatória: é com ela que os colegas avaliam)</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
+                    </>
+                  )}
                   {tipo === 'sondagem' && (
                     <>
                       <Campo id="na-pergunta" rotulo="Pergunta"><input id="na-pergunta" value={f.pergunta} onChange={(e) => setF({ ...f, pergunta: e.target.value })} maxLength={500} required /></Campo>
@@ -213,7 +236,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                       <div className="col-sm-6"><Campo id="na-tentativas" rotulo="Tentativas"><input id="na-tentativas" type="number" min={1} max={10} value={f.tentativas} onChange={(e) => setF({ ...f, tentativas: e.target.value })} /></Campo></div>
                     </div>
                   )}
-                  {tipo !== 'trabalho' && <Campo id="na-descricao" rotulo={tipo === 'questionario' ? 'Instruções (opcional)' : 'Descrição (opcional)'}><textarea id="na-descricao" rows={2} value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} maxLength={2000} /></Campo>}
+                  {tipo !== 'trabalho' && tipo !== 'workshop' && <Campo id="na-descricao" rotulo={tipo === 'questionario' ? 'Instruções (opcional)' : 'Descrição (opcional)'}><textarea id="na-descricao" rows={2} value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} maxLength={2000} /></Campo>}
                 </div>
               )}
             </div>

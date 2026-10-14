@@ -20,6 +20,7 @@ const TIPOS = {
   videoconferencia: { icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência' },
   sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem' },
   avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: 'Avaliação do docente' },
+  workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares' },
 }
 const SESSAO = { em_breve: ['bg-light text-dark border', 'Em breve'], abre: ['bg-success', 'Abre já'], a_decorrer: ['bg-danger', 'A decorrer'], terminou: ['bg-gray-500', 'Terminou'] }
 
@@ -42,6 +43,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     ...c.trabalhos.map((t) => ({ ...t, chave: `trabalho-${t.id}`, especie: 'trabalho', visual: 'trabalho', quando: t.criadoEm })),
     ...c.questionarios.map((q) => ({ ...q, chave: `questionario-${q.id}`, especie: 'questionario', visual: 'questionario', quando: q.criadoEm })),
     ...(c.inqueritos || []).map((i) => ({ ...i, chave: `inquerito-${i.id}`, especie: 'inquerito', visual: i.tipo, quando: i.criadoEm })),
+    ...(c.workshops || []).map((w) => ({ ...w, chave: `workshop-${w.id}`, especie: 'workshop', visual: 'workshop', quando: w.criadoEm })),
   ].sort((a, b) => String(a.quando).localeCompare(String(b.quando)))
   const condicoes = new Set(atividades.flatMap((a) => (a.requisitos || []).map((r) => `${r.tipo}-${r.id}`)))
   const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
@@ -84,7 +86,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
   async function apagarAtividade(a) {
     if (!window.confirm(`Apagar "${a.titulo}"?`)) return
-    const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}`, inquerito: `/inqueritos/${a.id}` }[a.especie]
+    const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}`, inquerito: `/inqueritos/${a.id}`, workshop: `/workshops/${a.id}` }[a.especie]
     await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Atividade apagada.' }); recarregar() }).catch(falhou)
   }
 
@@ -110,6 +112,10 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       if (a.fecha) meta += ` · ${a.fechado ? 'fechou' : 'fecha'} ${dataHora(a.fecha)}`
       if (eDocente) estado = <span className="badge bg-gray-500">{a.respostas} resposta(s)</span>
       else estado = a.respondido ? <span className="badge bg-success"><i className="fa fa-check me-1" />Respondido</span> : <span className="badge bg-light text-dark border">{a.fechado ? 'Fechado' : 'Por responder'}</span>
+    } else if (a.especie === 'workshop') {
+      meta = a.fase === 'submissao' ? `Avaliação por pares · entrega até ${dataHora(a.fimSubmissao)}` : a.fase === 'avaliacao' ? `Avaliação por pares · avaliar colegas até ${dataHora(a.fimAvaliacao)}` : 'Avaliação por pares · encerrada'
+      if (eDocente) estado = <span className="badge bg-gray-500">{a.submissoes} entrega(s)</span>
+      else estado = a.entregue ? <span className="badge bg-success"><i className="fa fa-check me-1" />Entregue</span> : <span className="badge bg-light text-dark border">{a.fase === 'submissao' ? 'Por entregar' : 'Não entregou'}</span>
     } else if (a.tipo === 'videoconferencia') {
       const e = estadoSessao(a)
       meta = `Videoconferência · ${dataHora(a.inicio)} · ${a.duracao} min`

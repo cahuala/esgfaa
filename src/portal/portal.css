@@ -474,3 +474,9 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .p-programa th, .p-programa td { border: 1px solid var(--bs-border-color, #dee2e6); padding: 6px 10px; vertical-align: top; }
 .p-programa th { background: var(--bs-light, #f5f6f8); }
 .p-programa td p, .p-programa th p { margin: 0; }
+
+/* wiki: ligação para uma página que ainda não existe */
+.p-programa a.p-wiki-nova { color: var(--bs-danger, #dc3545); border-bottom: 1px dashed currentColor; text-decoration: none; }
+
+/* menu "Mais" dos separadores da cadeira */
+.p-menu-mais { position: fixed; left: auto; z-index: 1050; min-width: 200px; }

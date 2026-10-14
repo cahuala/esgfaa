@@ -31,6 +31,10 @@ import { ServicoGrupos } from './aplicacao/portal/grupos.js'
 import { RepositorioRegistos } from './infraestrutura/repositorios/registos.js'
 import { ServicoRegistos } from './aplicacao/portal/registos.js'
 import { ServicoIndicadores } from './aplicacao/indicadores.js'
+import { RepositorioWorkshops } from './infraestrutura/repositorios/workshops.js'
+import { ServicoWorkshops } from './aplicacao/portal/workshops.js'
+import { RepositorioColaborativo } from './infraestrutura/repositorios/colaborativo.js'
+import { ServicoColaborativo } from './aplicacao/portal/colaborativo.js'
 import { ServicoInqueritos } from './aplicacao/portal/inqueritos.js'
 import { ServicoCopias } from './aplicacao/copias.js'
 import { ServicoDisponibilidade } from './aplicacao/portal/disponibilidade.js'
@@ -76,6 +80,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     inqueritos: new RepositorioInqueritos({ prisma }),
     grupos: new RepositorioGrupos({ prisma }),
     registos: new RepositorioRegistos({ prisma }),
+    workshops: new RepositorioWorkshops({ prisma }),
+    colaborativo: new RepositorioColaborativo({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -91,14 +97,14 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   const titulos = () => conteudos.titulosInterativos()
   const acesso = new AcessoCadeiras({ academico: r.academico })
-  const disponibilidade = new ServicoDisponibilidade({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, relogio })
+  const disponibilidade = new ServicoDisponibilidade({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, workshops: r.workshops, relogio })
   const registos = new ServicoRegistos({ registos: r.registos, academico: r.academico, acesso, disponibilidade, relogio, registarErro: (x) => console.error(JSON.stringify(x)) })
   const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria })
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
     comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
   })
-  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, auditoria, notificacoes, relogio })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, auditoria, notificacoes, relogio })
 
   const servicos = {
     auditoria,
@@ -114,11 +120,13 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, registos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, registos, privados, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, registos, filtroHtml: filtrarHtml, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, workshops: r.workshops, registos, privados, acesso, notificacoes, pautas, disponibilidade, auditoria, relogio }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
     registos,
+    workshops: new ServicoWorkshops({ workshops: r.workshops, academico: r.academico, acesso, disponibilidade, privados, notificacoes, pautas, registos, relogio }),
+    colaborativo: new ServicoColaborativo({ colaborativo: r.colaborativo, acesso, notificacoes, filtroHtml: filtrarHtml, relogio }),
     indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio }),
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     secretaria: new ServicoSecretaria({

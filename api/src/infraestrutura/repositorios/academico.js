@@ -219,13 +219,13 @@ export class RepositorioAcademico {
 
   // grava as restrições de acesso de uma atividade
   restringirAtividade(tipo, id, dados) {
-    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito }[tipo]
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito, workshop: this.prisma.workshop }[tipo]
     return modelo.update({ where: { id }, data: dados })
   }
 
   // muda uma atividade (material, trabalho, questionário) de capítulo
   moverAtividade(tipo, id, secaoId) {
-    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito }[tipo]
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario, inquerito: this.prisma.inquerito, workshop: this.prisma.workshop }[tipo]
     return modelo.update({ where: { id }, data: { secaoId } })
   }
 
@@ -596,12 +596,13 @@ export class RepositorioAcademico {
   // a que pertence um ficheiro (para decidir quem o pode descarregar)
   async usoDoFicheiro(id) {
     const p = this.prisma
-    const [material, trabalho, entrega, pedido, programa, anexo] = await Promise.all([
+    const [material, trabalho, entrega, pedido, programa, workshop, anexo] = await Promise.all([
       p.material.findFirst({ where: { OR: [{ ficheiroId: id }, { ficheiros: { some: { ficheiroId: id } } }] }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } }, grupo: { select: { membros: { select: { estudanteId: true } } } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
+      p.submissaoWorkshop.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true, workshop: { select: { cadeiraId: true } }, avaliacoes: { select: { avaliadorId: true } } } }),
       p.forumAnexo.findUnique({ where: { ficheiroId: id }, select: { topico: { select: { cadeiraId: true } }, resposta: { select: { topico: { select: { cadeiraId: true } } } } } }),
     ])
     if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false, atividade: `material-${material.id}` }
@@ -609,6 +610,7 @@ export class RepositorioAcademico {
     if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId, estudantes: entrega.grupo ? entrega.grupo.membros.map((m) => m.estudanteId) : [entrega.estudanteId] }
     if (pedido) return { tipo: 'pedido', estudanteId: pedido.estudanteId }
     if (programa) return { tipo: 'programa', cadeiraId: programa.id }
+    if (workshop) return { tipo: 'workshop', cadeiraId: workshop.workshop.cadeiraId, estudantes: [workshop.estudanteId, ...workshop.avaliacoes.map((a) => a.avaliadorId)] }
     if (anexo) return { tipo: 'forum', cadeiraId: anexo.topico?.cadeiraId ?? anexo.resposta.topico.cadeiraId }
     return null
   }

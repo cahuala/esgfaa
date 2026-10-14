@@ -197,3 +197,19 @@ export const importarEstudantes = z.object({
 export const vista = z.object({ tipo: texto(20), id: idNumerico })
 export const filtroRegistos = z.object({ estudanteId: idNumerico.optional(), antesDe: idNumerico.optional() })
 export const filtroIndicadores = z.object({ anoLetivo: texto(20).optional() })
+
+// ---------- avaliação por pares ----------
+export const workshop = z.object({
+  titulo: texto(300).optional(), enunciado: texto(12_000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
+  grelha: grelhaLivre, fimSubmissao: texto(40).optional(), fimAvaliacao: texto(40).optional(),
+  avaliacoesPorPar: z.union([z.number(), z.string().max(3)]).optional(), anonimo: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
+})
+export const submissaoWorkshop = z.object({ texto: texto(60_000).optional() })
+export const avaliacaoPar = z.object({ pontos: pontosLivres, comentario: texto(6000).optional() })
+export const notaWorkshop = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), comentario: texto(6000).optional() })
+
+// ---------- glossário e wiki ----------
+export const termo = z.object({ termo: texto(200).optional(), definicao: texto(6000).optional(), aprovado: z.boolean().optional() })
+export const paginaWiki = z.object({ titulo: texto(200).optional(), conteudo: texto(200_000).optional(), base: idNumerico.optional(), resumo: texto(300).optional() })
+export const versaoWiki = z.object({ versao: idNumerico.optional() })
+export const restaurarWiki = z.object({ versaoId: idNumerico })

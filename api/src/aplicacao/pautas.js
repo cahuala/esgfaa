@@ -1,4 +1,5 @@
 import { ErroValidacao } from '../dominio/comum/erros.js'
+import { notaDosPares } from '../dominio/academico/workshops.js'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, notaComposta, resultadoDisciplina, texto, validarComposicao, validarNota } from '../dominio/academico/regras.js'
 
 /*
@@ -7,8 +8,8 @@ import { COMPONENTES_NOTA, NOMES_COMPONENTES, notaComposta, resultadoDisciplina,
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, recursos, auditoria, notificacoes, relogio }) {
-    Object.assign(this, { academico, recursos, auditoria, notificacoes, relogio })
+  constructor({ academico, recursos, workshops, auditoria, notificacoes, relogio }) {
+    Object.assign(this, { academico, recursos, workshops, auditoria, notificacoes, relogio })
   }
 
   // ---------- componentes calculadas a partir das atividades ----------
@@ -32,6 +33,16 @@ export class ServicoPautas {
         // cada estudante tem o seu prazo (pode ter uma prorrogação)
         const fechado = (e) => new Date(prorrogacoes[e]?.prazo || t.prazo) < agora && !t.aceitaAtraso
         for (const e of estudantes) notas[chave][e] = entregas[e] ? entregas[e].nota : fechado(e) ? 0 : null
+      } else if (i.tipo === 'workshop') {
+        const w = this.workshops && await this.workshops.workshop(i.id)
+        if (!w || w.cadeiraId !== cadeira.id) continue
+        const porAutor = Object.fromEntries((await this.workshops.submissoes(w.id)).map((s) => [s.estudanteId, s]))
+        const encerrado = new Date(w.fimAvaliacao) <= agora
+        // nota do docente ou média dos pares, só no fim; quem não entregou fica com 0
+        for (const e of estudantes) {
+          const s = porAutor[e]
+          notas[chave][e] = !encerrado ? null : !s ? 0 : s.notaFinal ?? notaDosPares(s.avaliacoes)
+        }
       } else {
         const q = await this.recursos.questionario(i.id)
         if (!q || q.cadeiraId !== cadeira.id) continue
@@ -65,9 +76,9 @@ export class ServicoPautas {
     let limpos = null
     if (itens) {
       limpos = validarComposicao(itens)
-      const [trabalhos, questionarios] = await Promise.all([this.academico.trabalhos(cadeira.id), this.recursos.questionarios(cadeira.id)])
-      const daCadeira = new Set([...trabalhos.map((t) => `trabalho-${t.id}`), ...questionarios.map((q) => `questionario-${q.id}`)])
-      if (limpos.some((i) => !daCadeira.has(`${i.tipo}-${i.id}`))) throw new ErroValidacao('Só pode usar trabalhos e questionários desta cadeira.')
+      const [trabalhos, questionarios, workshops] = await Promise.all([this.academico.trabalhos(cadeira.id), this.recursos.questionarios(cadeira.id), this.workshops ? this.workshops.workshops(cadeira.id) : []])
+      const daCadeira = new Set([...trabalhos.map((t) => `trabalho-${t.id}`), ...questionarios.map((q) => `questionario-${q.id}`), ...workshops.map((w) => `workshop-${w.id}`)])
+      if (limpos.some((i) => !daCadeira.has(`${i.tipo}-${i.id}`))) throw new ErroValidacao('Só pode usar trabalhos, questionários e avaliações por pares desta cadeira.')
     }
     await this.academico.guardarComposicao(cadeira.id, componente, limpos)
     await this.auditoria.registar(ctx, { acao: 'composicao_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${NOMES_COMPONENTES[componente]} — ${cadeira.nome}`, detalhes: { itens: limpos }, utilizador })
@@ -78,9 +89,11 @@ export class ServicoPautas {
   async pauta(cadeira) {
     const composicoes = await this.sincronizar(cadeira)
     const [trabalhos, questionarios] = await Promise.all([this.academico.trabalhos(cadeira.id), this.recursos.questionarios(cadeira.id)])
+    const workshops = this.workshops ? await this.workshops.workshops(cadeira.id) : []
     const atividades = [
       ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo })),
       ...questionarios.map((q) => ({ tipo: 'questionario', id: q.id, titulo: q.titulo })),
+      ...workshops.map((w) => ({ tipo: 'workshop', id: w.id, titulo: w.titulo })),
     ]
     const [estudantes, notas] = await Promise.all([
       this.academico.estudantesDaPauta(cadeira.turmaId),

@@ -8,7 +8,7 @@ import { ErroValidacao } from '../comum/erros.js'
   Uma atividade fechada aparece ao estudante com o motivo, mas não se abre.
 */
 
-export const TIPOS_ATIVIDADE = ['material', 'trabalho', 'questionario', 'inquerito']
+export const TIPOS_ATIVIDADE = ['material', 'trabalho', 'questionario', 'inquerito', 'workshop']
 const erro = (campo, mensagem) => new ErroValidacao(mensagem, { campo })
 export const chave = (tipo, id) => `${tipo}-${id}`
 

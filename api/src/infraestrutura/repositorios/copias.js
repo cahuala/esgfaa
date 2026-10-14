@@ -11,7 +11,7 @@ export class RepositorioCopias {
 
   async conteudoDe(cadeiraId) {
     const p = this.prisma
-    const [cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, sondagens] = await Promise.all([
+    const [cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, sondagens, workshops] = await Promise.all([
       p.unidadeCurricular.findUnique({ where: { id: cadeiraId } }),
       p.secaoCadeira.findMany({ where: { cadeiraId }, orderBy: [{ ordem: 'asc' }, { id: 'asc' }] }),
       p.material.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' }, include: { ficheiros: { orderBy: { ordem: 'asc' } } } }),
@@ -21,10 +21,11 @@ export class RepositorioCopias {
       p.composicaoNota.findMany({ where: { cadeiraId } }),
       p.docencia.findMany({ where: { cadeiraId } }),
       p.inquerito.findMany({ where: { cadeiraId, tipo: 'sondagem' }, orderBy: { id: 'asc' } }),
+      p.workshop.findMany({ where: { cadeiraId }, orderBy: { id: 'asc' } }),
     ])
     const idsFicheiros = [...new Set([...materiais.map((m) => m.ficheiroId), ...materiais.flatMap((m) => m.ficheiros.map((f) => f.ficheiroId)), ...trabalhos.map((t) => t.ficheiroId), cadeira?.programaFicheiroId].filter(Boolean))]
     const ficheiros = await p.ficheiro.findMany({ where: { id: { in: idsFicheiros } } })
-    return { cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, ficheiros, sondagens }
+    return { cadeira, secoes, materiais, trabalhos, questionarios, eventos, composicoes, docencias, ficheiros, sondagens, workshops }
   }
 
   // a cadeira de destino já tem conteúdos? (para não duplicar ao copiar uma turma inteira)
@@ -89,10 +90,17 @@ export class RepositorioCopias {
           perguntas: i.perguntas, anonimo: i.anonimo, resultados: i.resultados, fecha: i.fecha ? data(i.fecha) : null,
         } })).id
       }
+      const workshops = {}
+      for (const w of c.workshops) {
+        workshops[w.id] = (await tx.workshop.create({ data: {
+          ...restricoes(w), cadeiraId: destinoId, secaoId: secao(w.secaoId), titulo: w.titulo, enunciado: w.enunciado, grelha: w.grelha,
+          fimSubmissao: data(w.fimSubmissao), fimAvaliacao: data(w.fimAvaliacao), avaliacoesPorPar: w.avaliacoesPorPar, anonimo: w.anonimo,
+        } })).id
+      }
       // condições de acesso, agora com as atividades novas
-      const novoId = { material: materiais, trabalho: trabalhos, questionario: questionarios, inquerito: inqueritos }
+      const novoId = { material: materiais, trabalho: trabalhos, questionario: questionarios, inquerito: inqueritos, workshop: workshops }
       const remapear = (lista) => (lista || []).map((r) => ({ ...r, id: novoId[r.tipo]?.[r.id] })).filter((r) => r.id)
-      for (const [tipo, origem, modelo] of [['material', c.materiais, tx.material], ['trabalho', c.trabalhos, tx.trabalho], ['questionario', c.questionarios, tx.questionario], ['inquerito', c.sondagens, tx.inquerito]]) {
+      for (const [tipo, origem, modelo] of [['material', c.materiais, tx.material], ['trabalho', c.trabalhos, tx.trabalho], ['questionario', c.questionarios, tx.questionario], ['inquerito', c.sondagens, tx.inquerito], ['workshop', c.workshops, tx.workshop]]) {
         for (const a of origem) if (a.requisitos?.length) await modelo.update({ where: { id: novoId[tipo][a.id] }, data: { requisitos: remapear(a.requisitos) } })
       }
       for (const e of c.eventos) {
@@ -106,7 +114,7 @@ export class RepositorioCopias {
       // composição das notas, com as atividades novas
       for (const comp of c.composicoes) {
         const itens = comp.itens
-          .map((i) => ({ ...i, id: (i.tipo === 'trabalho' ? trabalhos : questionarios)[i.id] }))
+          .map((i) => ({ ...i, id: ({ trabalho: trabalhos, questionario: questionarios, workshop: workshops })[i.tipo]?.[i.id] }))
           .filter((i) => i.id)
         if (itens.length) {
           await tx.composicaoNota.upsert({
@@ -122,7 +130,7 @@ export class RepositorioCopias {
       }
       return {
         capitulos: c.secoes.length, materiais: c.materiais.length, trabalhos: c.trabalhos.length,
-        questionarios: c.questionarios.length, sondagens: c.sondagens.length, datas: c.eventos.length, docentes: docentesCopiados,
+        questionarios: c.questionarios.length, sondagens: c.sondagens.length, workshops: c.workshops.length, datas: c.eventos.length, docentes: docentesCopiados,
       }
     }, { timeout: 30_000 })
   }

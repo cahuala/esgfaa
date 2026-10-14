@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
@@ -20,6 +20,9 @@ import VerMaterial from './VerMaterial'
 import Inquerito from './Inquerito'
 import Grupos from './Grupos'
 import Relatorios from './Relatorios'
+import Workshop from './Workshop'
+import Glossario from './Glossario'
+import Wiki from './Wiki'
 
 const SEPARADORES = [
   { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
@@ -27,12 +30,15 @@ const SEPARADORES = [
   { id: 'forum', texto: 'Fórum', icone: 'fa-comments' },
   { id: 'avaliacoes', texto: 'Notas', icone: 'fa-clipboard-list' },
   { id: 'participantes', texto: 'Participantes', icone: 'fa-users' },
-  { id: 'grupos', texto: 'Grupos', icone: 'fa-user-friends' },
-  { id: 'presencas', texto: 'Presenças', icone: 'fa-user-check' },
   { id: 'programa', texto: 'Programa', icone: 'fa-file-alt' },
-  { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt' },
-  { id: 'progresso', texto: 'Progresso', icone: 'fa-tasks', docente: true },
-  { id: 'relatorios', texto: 'Relatórios', icone: 'fa-chart-line', docente: true },
+  // no menu "Mais"
+  { id: 'glossario', texto: 'Glossário', icone: 'fa-book', mais: true },
+  { id: 'wiki', texto: 'Wiki', icone: 'fa-sitemap', mais: true },
+  { id: 'grupos', texto: 'Grupos', icone: 'fa-user-friends', mais: true },
+  { id: 'presencas', texto: 'Presenças', icone: 'fa-user-check', mais: true },
+  { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt', mais: true },
+  { id: 'progresso', texto: 'Progresso', icone: 'fa-tasks', docente: true, mais: true },
+  { id: 'relatorios', texto: 'Relatórios', icone: 'fa-chart-line', docente: true, mais: true },
 ]
 // endereços antigos (?separador=materiais|trabalhos|questionarios) abrem a página da cadeira
 const ANTIGOS = { materiais: 'curso', trabalhos: 'curso', questionarios: 'curso' }
@@ -60,7 +66,7 @@ function Cadeira() {
   useEffect(() => { if (c?.id) registarRecente(conta.id, c.id) }, [c?.id, conta.id])
   // o estudante abriu uma página, pasta ou trabalho: fica no registo de acessos do docente
   useEffect(() => {
-    if (eDocente || !c?.id || !['material', 'trabalho'].includes(especie) || !atividadeId) return
+    if (eDocente || !c?.id || !['material', 'trabalho'].includes(especie) || !atividadeId) return // os outros registam-se no servidor
     api(`/cadeiras/${c.id}/vistas`, { metodo: 'POST', corpo: { tipo: especie, id: Number(atividadeId) } }).catch(() => {})
   }, [eDocente, c?.id, especie, atividadeId])
 
@@ -92,7 +98,7 @@ function Cadeira() {
             </div>
           </div>
           <ul className="profile-header-tab nav nav-tabs" role="tablist" aria-label="Secções da cadeira">
-            {separadores.map((s) => (
+            {separadores.filter((s) => !s.mais).map((s) => (
               <li key={s.id} className="nav-item">
                 <button
                   type="button"
@@ -105,6 +111,7 @@ function Cadeira() {
                 </button>
               </li>
             ))}
+            <MenuMais itens={separadores.filter((s) => s.mais)} atual={especie ? null : separador} escolher={(id) => setParams({ separador: id }, { replace: true })} />
           </ul>
         </div>
       </div>
@@ -115,6 +122,7 @@ function Cadeira() {
         {especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
         {especie === 'material' && <><Voltar irPara={irPara} /><VerMaterial {...props} so={Number(atividadeId)} /></>}
         {especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}
+        {especie === 'workshop' && <><Voltar irPara={irPara} /><Workshop {...props} so={Number(atividadeId)} /></>}
         {especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
         {!especie && separador === 'curso' && <Curso {...props} />}
         {!especie && separador === 'participantes' && <Participantes {...props} />}
@@ -124,12 +132,48 @@ function Cadeira() {
         {!especie && separador === 'avaliacoes' && <Avaliacoes {...props} />}
         {!especie && separador === 'presencas' && <Presencas {...props} />}
         {!especie && separador === 'forum' && <Forum {...props} />}
+        {!especie && separador === 'glossario' && <Glossario {...props} />}
+        {!especie && separador === 'wiki' && <Wiki {...props} />}
         {!especie && separador === 'progresso' && eDocente && <Progresso {...props} />}
         {!especie && separador === 'relatorios' && eDocente && <Relatorios {...props} />}
         {!especie && separador === 'horario' && <Datas {...props} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+// separadores menos usados, num menu "Mais" (como no Moodle)
+function MenuMais({ itens, atual, escolher }) {
+  const [aberto, setAberto] = useState(null) // posição do menu (fixa: o cabeçalho corta o que transborda)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!aberto) return undefined
+    const fora = (e) => { if (!ref.current?.contains(e.target)) setAberto(null) }
+    const fechar = () => setAberto(null)
+    document.addEventListener('mousedown', fora)
+    window.addEventListener('scroll', fechar)
+    return () => { document.removeEventListener('mousedown', fora); window.removeEventListener('scroll', fechar) }
+  }, [aberto])
+  const escolhido = itens.find((s) => s.id === atual)
+  return (
+    <li className="nav-item position-relative" ref={ref}>
+      <button type="button" className={`nav-link border-0 bg-transparent ${escolhido ? 'active' : ''}`} aria-haspopup="menu" aria-expanded={Boolean(aberto)} onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect()
+        setAberto(aberto ? null : { top: r.bottom, right: Math.max(8, window.innerWidth - r.right) })
+      }}>
+        {escolhido ? <><i className={`fa ${escolhido.icone} me-1 d-none d-md-inline`} />{escolhido.texto}</> : 'Mais'} <i className="fa fa-caret-down ms-1" />
+      </button>
+      {aberto && (
+        <div className="dropdown-menu show p-menu-mais" role="menu" style={{ top: aberto.top, right: aberto.right }}>
+          {itens.map((s) => (
+            <button key={s.id} type="button" role="menuitem" className={`dropdown-item ${s.id === atual ? 'active' : ''}`} onClick={() => { setAberto(null); escolher(s.id) }}>
+              <i className={`fa ${s.icone} fa-fw me-2`} />{s.texto}
+            </button>
+          ))}
+        </div>
+      )}
+    </li>
   )
 }
 

@@ -1,7 +1,7 @@
 import { ErroValidacao, NaoEncontrado } from '../../dominio/comum/erros.js'
 import { chave } from '../../dominio/academico/disponibilidade.js'
 
-export const TIPOS_REGISTO = ['cadeira', 'material', 'trabalho', 'questionario', 'inquerito', 'forum']
+export const TIPOS_REGISTO = ['cadeira', 'material', 'trabalho', 'questionario', 'inquerito', 'forum', 'workshop']
 const INTERVALO = 5 * 60_000 // a mesma página aberta outra vez dentro de 5 minutos não conta de novo
 
 /*

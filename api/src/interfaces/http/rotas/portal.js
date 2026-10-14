@@ -117,6 +117,27 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/cadeiras/:id/vistas', validar({ params: pId, body: E.vista }), async (req, res) => res.json(await rg.vista(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/cadeiras/:id/relatorios/participacao', validar({ params: pId }), async (req, res) => res.json(await rg.participacao(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/relatorios/registos', validar({ params: pId, query: E.filtroRegistos }), async (req, res) => res.json(await rg.lista(ctx(req), req.dados.params.id, req.dados.query)))
+  // avaliação por pares
+  const ws = servicos.workshops
+  r.post('/cadeiras/:id/workshops', validar({ params: pId, body: E.workshop }), async (req, res) => res.status(201).json(await ws.criar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/workshops/:id', validar({ params: pId }), async (req, res) => res.json(await ws.ver(ctx(req), req.dados.params.id)))
+  r.put('/workshops/:id', validar({ params: pId, body: E.workshop }), async (req, res) => res.json(await ws.atualizar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/workshops/:id', validar({ params: pId }), async (req, res) => { await ws.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.post('/workshops/:id/submissao', ficheiro, validar({ params: pId, body: E.submissaoWorkshop }), async (req, res) => res.status(201).json(await ws.submeter(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
+  r.put('/avaliacoes-pares/:id', validar({ params: pId, body: E.avaliacaoPar }), async (req, res) => res.json(await ws.avaliar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/submissoes-workshop/:id', validar({ params: pId, body: E.notaWorkshop }), async (req, res) => res.json(await ws.notaFinal(ctx(req), req.dados.params.id, req.dados.body)))
+  // glossário e wiki da cadeira
+  const cb = servicos.colaborativo
+  r.get('/cadeiras/:id/glossario', validar({ params: pId, query: E.pesquisaForum }), async (req, res) => res.json(await cb.termos(ctx(req), req.dados.params.id, req.dados.query)))
+  r.post('/cadeiras/:id/glossario', validar({ params: pId, body: E.termo }), async (req, res) => res.status(201).json(await cb.criarTermo(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/glossario/:id', validar({ params: pId, body: E.termo }), async (req, res) => res.json(await cb.atualizarTermo(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/glossario/:id', validar({ params: pId }), async (req, res) => { await cb.apagarTermo(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/cadeiras/:id/wiki', validar({ params: pId }), async (req, res) => res.json(await cb.paginas(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/wiki', validar({ params: pId, body: E.paginaWiki }), async (req, res) => res.status(201).json(await cb.criarPagina(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/wiki/:id', validar({ params: pId, query: E.versaoWiki }), async (req, res) => res.json(await cb.pagina(ctx(req), req.dados.params.id, req.dados.query)))
+  r.put('/wiki/:id', validar({ params: pId, body: E.paginaWiki }), async (req, res) => res.json(await cb.editarPagina(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/wiki/:id/restaurar', validar({ params: pId, body: E.restaurarWiki }), async (req, res) => res.json(await cb.restaurar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/wiki/:id', validar({ params: pId }), async (req, res) => { await cb.apagarPagina(ctx(req), req.dados.params.id); res.status(204).end() })
   // grupos de estudantes da cadeira
   const g = servicos.grupos
   r.get('/cadeiras/:id/grupos', validar({ params: pId }), async (req, res) => res.json(await g.listar(ctx(req), req.dados.params.id)))

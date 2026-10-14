@@ -40,7 +40,7 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
             <div className="modal-body">
               {erro && <div className="alert alert-danger py-2">{erro}</div>}
               <p className="text-muted small">
-                Escolha os trabalhos e questionários que contam e o peso de cada um. A nota é a média ponderada (0 a 20).
+                Escolha os trabalhos, questionários e avaliações por pares que contam e o peso de cada um. A nota é a média ponderada (0 a 20).
                 Quem não entregar depois do prazo, ou não fizer o questionário até fechar, fica com 0. Enquanto faltar a correção de alguma atividade, a nota fica por calcular.
               </p>
               {atividades.length === 0 ? <div className="alert alert-info mb-0">Esta cadeira ainda não tem trabalhos nem questionários.</div> : (
@@ -53,7 +53,7 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
                       return (
                         <tr key={k} className={marcado ? '' : 'text-muted'}>
                           <td><input type="checkbox" className="form-check-input" checked={marcado} onChange={() => alternar(k)} aria-label={`Contar ${a.titulo}`} /></td>
-                          <td><i className={`fa ${a.tipo === 'trabalho' ? 'fa-file-signature text-orange' : 'fa-question-circle text-purple'} me-2`} />{a.titulo}</td>
+                          <td><i className={`fa ${{ trabalho: 'fa-file-signature text-orange', questionario: 'fa-question-circle text-purple', workshop: 'fa-people-arrows text-success' }[a.tipo]} me-2`} />{a.titulo}</td>
                           <td><input type="number" min={1} max={100} className="form-control form-control-sm" disabled={!marcado} value={itens[k] ?? ''} onChange={(e) => setItens({ ...itens, [k]: e.target.value })} aria-label={`Peso de ${a.titulo}`} /></td>
                           <td className="text-end">{marcado && total ? `${Math.round(((Number(itens[k]) || 0) / total) * 100)} %` : ''}</td>
                         </tr>

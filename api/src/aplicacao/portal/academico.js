@@ -1,6 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { urlSegura } from '../../dominio/comum/urls.js'
 import { estadoQuestionario } from '../../dominio/academico/questionarios.js'
+import { faseWorkshop } from '../../dominio/academico/workshops.js'
 import { validarRestricoes } from '../../dominio/academico/disponibilidade.js'
 import {
   COMPONENTES_NOTA, ESTADOS_PRESENCA, TIPOS_MATERIAL, TIPOS_PEDIDO,
@@ -21,8 +22,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, inqueritos, grupos, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
-    Object.assign(this, { academico, recursos, inqueritos, grupos, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
+  constructor({ academico, recursos, inqueritos, grupos, workshops, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
+    Object.assign(this, { academico, recursos, inqueritos, grupos, workshops, registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -103,7 +104,7 @@ export class ServicoPortal {
     await this.registos?.registar(conta, cadeira.id, 'cadeira')
     const agora = this.relogio.agora()
     const eDocente = conta.tipo === 'docente'
-    const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos, todosInqueritos] = await Promise.all([
+    const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos, todosInqueritos, todosWorkshops] = await Promise.all([
       this.academico.materiais(cadeira.id),
       this.academico.avisosDaCadeira(cadeira.id),
       this.academico.trabalhos(cadeira.id),
@@ -113,6 +114,7 @@ export class ServicoPortal {
       this.recursos.topicos(cadeira.id),
       this.recursos.eventosDaCadeira(cadeira.id),
       this.inqueritos.inqueritos(cadeira.id),
+      this.workshops.workshops(cadeira.id),
     ])
     // estudante: o que está escondido não aparece; o que está fechado aparece com o motivo
     const acessos = eDocente ? null : (await this.disponibilidade.acessos(cadeira.id, conta.id)).acessos
@@ -133,6 +135,7 @@ export class ServicoPortal {
     }))
     const base = {
       ...cadeira, materiais, avisos, horario, questionarios, inqueritos, eventos,
+      workshops: await this.#workshopsDaVista(todosWorkshops.filter(visivel('workshop')).map(comAcesso('workshop')), conta, agora),
       secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({
         id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel,
         disponivelDe: x.disponivelDe ? new Date(x.disponivelDe).toISOString() : null, fechado: Boolean(x.disponivelDe && new Date(x.disponivelDe) > agora),
@@ -171,6 +174,12 @@ export class ServicoPortal {
       presencas,
       assiduidade: assiduidade(presencas),
     }
+  }
+
+  // workshops na página da cadeira: a fase e, para o estudante, se já entregou
+  async #workshopsDaVista(lista, conta, agora) {
+    const minhas = conta.tipo === 'estudante' ? await this.workshops.estadoDoEstudante(conta.id, lista.map((w) => w.id)) : {}
+    return lista.map((w) => ({ ...w, fase: faseWorkshop(w, agora), ...(conta.tipo === 'estudante' ? { entregue: Boolean(minhas[w.id]) } : {}) }))
   }
 
   // ---------- estudante ----------
@@ -331,7 +340,10 @@ export class ServicoPortal {
         await this.registos?.registar(conta, uso.cadeiraId, tipo, Number(alvo))
       }
     }
-    else if (uso.tipo === 'entrega') {
+    else if (uso.tipo === 'workshop') {
+      if (conta.tipo === 'estudante' && !uso.estudantes.includes(conta.id)) negar()
+      if (conta.tipo === 'docente') await this.#cadeiraDoDocente(conta, uso.cadeiraId)
+    } else if (uso.tipo === 'entrega') {
       if (conta.tipo === 'estudante' && !uso.estudantes.includes(conta.id)) negar()
       if (conta.tipo === 'docente') await this.#cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'pedido' && uso.estudanteId !== conta.id) negar()
@@ -374,7 +386,7 @@ export class ServicoPortal {
   // restrições de uma atividade: esconder, data de abertura, condições (como o "Restrict access" do Moodle)
   // como encontrar cada tipo de atividade; a avaliação do docente é da Administração Escolar
   #buscarAtividade(tipo) {
-    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x), inquerito: (x) => this.inqueritos.inquerito(x) }[tipo]
+    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x), inquerito: (x) => this.inqueritos.inquerito(x), workshop: (x) => this.workshops.workshop(x) }[tipo]
     if (!buscar) return null
     return async (id) => {
       const a = await buscar(id)

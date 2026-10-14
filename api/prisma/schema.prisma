@@ -217,6 +217,10 @@ model ContaPortal {
   registos            RegistoAcesso[]
   subscricoesTopicos  SubscricaoTopico[]
   subscricoesForuns   SubscricaoForum[]
+  submissoesWorkshop  SubmissaoWorkshop[]
+  avaliacoesPares     AvaliacaoPar[]
+  termosGlossario     TermoGlossario[]
+  versoesWiki         VersaoWiki[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -288,6 +292,9 @@ model UnidadeCurricular {
   membrosGrupos    MembroGrupo[]
   registos         RegistoAcesso[]
   subscricoesForum SubscricaoForum[]
+  workshops        Workshop[]
+  glossario        TermoGlossario[]
+  paginasWiki      PaginaWiki[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -318,9 +325,10 @@ model Ficheiro {
   donoId   Int?     @map("dono_id") // conta do portal que o enviou (se for o caso)
   criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  entregas    EntregaFicheiro[]
-  pastas      MaterialFicheiro[]
-  anexosForum ForumAnexo[]
+  entregas           EntregaFicheiro[]
+  pastas             MaterialFicheiro[]
+  anexosForum        ForumAnexo[]
+  submissoesWorkshop SubmissaoWorkshop[]
 
   @@map("ficheiros_privados")
 }
@@ -677,6 +685,7 @@ model SecaoCadeira {
   trabalhos     Trabalho[]
   questionarios Questionario[]
   inqueritos    Inquerito[]
+  workshops     Workshop[]
 
   @@index([cadeiraId, ordem])
   @@map("secoes_cadeira")
@@ -943,4 +952,113 @@ model SubscricaoForum {
 
   @@id([cadeiraId, contaId])
   @@map("subscricoes_foruns")
+}
+
+// avaliação por pares ("Workshop" do Moodle): os estudantes entregam e avaliam trabalhos uns dos outros
+model Workshop {
+  id               Int       @id @default(autoincrement())
+  cadeiraId        Int       @map("cadeira_id")
+  secaoId          Int?      @map("secao_id")
+  titulo           String
+  enunciado        String    @default("")
+  grelha           Json // critérios com pontos, para os pares avaliarem
+  fimSubmissao     DateTime  @map("fim_submissao") @db.Timestamptz(3)
+  fimAvaliacao     DateTime  @map("fim_avaliacao") @db.Timestamptz(3)
+  avaliacoesPorPar Int       @default(3) @map("avaliacoes_por_par") // quantos trabalhos cada estudante avalia
+  anonimo          Boolean   @default(true) // quem avalia não vê o autor; o autor não vê quem o avaliou
+  distribuidoEm    DateTime? @map("distribuido_em") @db.Timestamptz(3)
+  visivel          Boolean   @default(true)
+  disponivelDe     DateTime? @map("disponivel_de") @db.Timestamptz(3)
+  requisitos       Json      @default("[]")
+  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira    UnidadeCurricular   @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao      SecaoCadeira?       @relation(fields: [secaoId], references: [id], onDelete: SetNull)
+  submissoes SubmissaoWorkshop[]
+
+  @@index([cadeiraId])
+  @@map("workshops")
+}
+
+model SubmissaoWorkshop {
+  id          Int      @id @default(autoincrement())
+  workshopId  Int      @map("workshop_id")
+  estudanteId Int      @map("estudante_id")
+  texto       String   @default("")
+  ficheiroId  String?  @map("ficheiro_id")
+  entregueEm  DateTime @default(now()) @map("entregue_em") @db.Timestamptz(3)
+  notaFinal   Decimal? @map("nota_final") @db.Decimal(4, 2) // o docente pode substituir a média dos pares
+  comentario  String   @default("") // comentário do docente
+
+  workshop   Workshop       @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  estudante  ContaPortal    @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  ficheiro   Ficheiro?      @relation(fields: [ficheiroId], references: [id], onDelete: SetNull)
+  avaliacoes AvaliacaoPar[]
+
+  @@unique([workshopId, estudanteId])
+  @@map("submissoes_workshop")
+}
+
+model AvaliacaoPar {
+  id          Int       @id @default(autoincrement())
+  submissaoId Int       @map("submissao_id")
+  avaliadorId Int       @map("avaliador_id")
+  pontos      Json      @default("{}")
+  comentario  String    @default("")
+  nota        Decimal?  @db.Decimal(4, 2)
+  feitaEm     DateTime? @map("feita_em") @db.Timestamptz(3)
+
+  submissao SubmissaoWorkshop @relation(fields: [submissaoId], references: [id], onDelete: Cascade)
+  avaliador ContaPortal       @relation(fields: [avaliadorId], references: [id], onDelete: Cascade)
+
+  @@unique([submissaoId, avaliadorId])
+  @@map("avaliacoes_pares")
+}
+
+// glossário da cadeira: termos propostos por estudantes (o docente aprova) e pelo docente
+model TermoGlossario {
+  id           Int      @id @default(autoincrement())
+  cadeiraId    Int      @map("cadeira_id")
+  termo        String
+  definicao    String
+  autorId      Int      @map("autor_id")
+  aprovado     Boolean  @default(false)
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  autor   ContaPortal       @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([cadeiraId, termo])
+  @@map("glossario")
+}
+
+// wiki da cadeira: páginas escritas em conjunto, com todas as versões
+model PaginaWiki {
+  id           Int      @id @default(autoincrement())
+  cadeiraId    Int      @map("cadeira_id")
+  titulo       String
+  criadaEm     DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+  atualizadaEm DateTime @default(now()) @map("atualizada_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  versoes VersaoWiki[]
+
+  @@unique([cadeiraId, titulo])
+  @@map("paginas_wiki")
+}
+
+model VersaoWiki {
+  id       Int      @id @default(autoincrement())
+  paginaId Int      @map("pagina_id")
+  conteudo String // HTML filtrado
+  resumo   String   @default("") // o que mudou
+  autorId  Int      @map("autor_id")
+  criadaEm DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  pagina PaginaWiki  @relation(fields: [paginaId], references: [id], onDelete: Cascade)
+  autor  ContaPortal @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([paginaId, id])
+  @@map("versoes_wiki")
 }

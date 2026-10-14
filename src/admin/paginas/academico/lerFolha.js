@@ -96,7 +96,7 @@ export async function lerXlsx(buffer) {
 
 // ---------- colunas ----------
 
-const sem = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+const sem = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 const CAMPOS = {
   nome: /^(nome( completo)?|estudante|aluno|formando)$/,
   email: /^(e-?mail|correio( eletronico)?|email institucional)$/,

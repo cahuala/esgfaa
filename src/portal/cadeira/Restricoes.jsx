@@ -3,7 +3,7 @@ import { api } from '../api'
 import { Campo } from '../componentes'
 import { localParaIso, paraLocal } from '../formatar'
 
-const NOMES = { material: 'Material', trabalho: 'Trabalho', questionario: 'Questionário', inquerito: 'Inquérito' }
+const NOMES = { material: 'Material', trabalho: 'Trabalho', questionario: 'Questionário', inquerito: 'Inquérito', workshop: 'Avaliação por pares' }
 
 /*
   Restringir o acesso a uma atividade (como o "Restrict access" do Moodle): visível ou escondida,

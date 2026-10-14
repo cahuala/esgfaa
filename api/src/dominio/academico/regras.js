@@ -214,7 +214,7 @@ export function expandirAulas(horarios, de, ate, feriados = []) {
 
 // ---------- livro de notas: componentes calculadas a partir das atividades ----------
 
-export const TIPOS_ITEM_NOTA = ['trabalho', 'questionario']
+export const TIPOS_ITEM_NOTA = ['trabalho', 'questionario', 'workshop']
 
 // [{ tipo, id, peso }]: 1 a 20 atividades sem repetir, pesos inteiros de 1 a 100
 export function validarComposicao(itens) {
