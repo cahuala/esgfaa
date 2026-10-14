@@ -18,6 +18,7 @@ import Progresso from './Progresso'
 import Datas from './Datas'
 import VerMaterial from './VerMaterial'
 import Inquerito from './Inquerito'
+import Grupos from './Grupos'
 
 const SEPARADORES = [
   { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
@@ -25,6 +26,7 @@ const SEPARADORES = [
   { id: 'forum', texto: 'Fórum', icone: 'fa-comments' },
   { id: 'avaliacoes', texto: 'Notas', icone: 'fa-clipboard-list' },
   { id: 'participantes', texto: 'Participantes', icone: 'fa-users' },
+  { id: 'grupos', texto: 'Grupos', icone: 'fa-user-friends' },
   { id: 'presencas', texto: 'Presenças', icone: 'fa-user-check' },
   { id: 'programa', texto: 'Programa', icone: 'fa-file-alt' },
   { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt' },
@@ -109,6 +111,7 @@ function Cadeira() {
         {especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
         {!especie && separador === 'curso' && <Curso {...props} />}
         {!especie && separador === 'participantes' && <Participantes {...props} />}
+        {!especie && separador === 'grupos' && <Grupos {...props} />}
         {!especie && separador === 'programa' && <Programa {...props} />}
         {!especie && separador === 'avisos' && <AvisosCadeira {...props} />}
         {!especie && separador === 'avaliacoes' && <Avaliacoes {...props} />}

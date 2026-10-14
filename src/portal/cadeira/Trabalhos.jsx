@@ -41,6 +41,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
               {t.prorrogado && <span className="badge bg-info">Prazo alargado para si (o geral era {dataHora(t.prazoOriginal)})</span>}
               <span><i className="fa fa-inbox me-1" />{TIPOS_ENTREGA[t.tipoEntrega]}{t.tipoEntrega !== 'texto' && ` · até ${t.maxFicheiros} ficheiro(s)`}</span>
               {t.aceitaAtraso && <span className="text-warning"><i className="fa fa-exclamation-triangle me-1" />Aceita entregas fora de prazo</span>}
+              {t.emGrupo && <span className="badge bg-indigo"><i className="fa fa-users me-1" />Trabalho em grupo</span>}
             </div>
             {t.enunciado && <p className="p-texto-pre">{t.enunciado}</p>}
             {t.ficheiroId && <button type="button" className="btn btn-white btn-sm mb-2" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><i className="fa fa-download me-1" />Enunciado</button>}
@@ -58,7 +59,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
                   await api(`/trabalhos/${t.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
                 }}><i className="fa fa-trash-alt me-1" />Apagar</button>
               </div>
-            ) : t.bloqueio ? <Bloqueio motivos={t.bloqueio} /> : <MinhaEntrega t={t} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
+            ) : t.bloqueio ? <Bloqueio motivos={t.bloqueio} /> : <MinhaEntrega t={t} grupo={c.meuGrupo} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
           </Cartao>
           {eDocente && definicoes && <Definicoes t={t} avisar={avisar} guardado={() => { setDefinicoes(false); recarregar() }} />}
           {eDocente && <Entregas trabalho={t} avisar={avisar} baixar={baixar} />}
@@ -70,7 +71,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
 
 // ---------- estudante ----------
 
-function MinhaEntrega({ t, recarregar, avisar, baixar }) {
+function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
   const e = t.entrega
   const [ficheiros, setFicheiros] = useState([])
   const [escrito, setEscrito] = useState(e?.texto || '')
@@ -78,7 +79,7 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
   const [aEnviar, setAEnviar] = useState(false)
   const [erro, setErro] = useState('')
   const [editar, setEditar] = useState(!e)
-  const podeEntregar = t.estado !== 'fechado' && !(e && e.nota !== null)
+  const podeEntregar = t.estado !== 'fechado' && !(e && e.nota !== null) && (!t.emGrupo || Boolean(grupo))
   const querFicheiros = t.tipoEntrega !== 'texto'
   const querTexto = t.tipoEntrega !== 'ficheiro'
 
@@ -105,7 +106,10 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
 
   return (
     <div className="p-entrega">
-      <h3 className="h6 fw-bold mb-2">A minha entrega</h3>
+      <h3 className="h6 fw-bold mb-2">{t.emGrupo ? `Entrega do grupo${grupo ? ` ${grupo.nome}` : ''}` : 'A minha entrega'}</h3>
+      {t.emGrupo && (grupo
+        ? <p className="small text-muted mb-2"><i className="fa fa-users me-1" />{grupo.membros.map((m) => m.nome).join(', ')}. Qualquer membro entrega pelo grupo; a nota vale para todos.{e?.estudante ? ` Última entrega: ${e.estudante.nome}.` : ''}</p>
+        : <div className="alert alert-warning py-2 small">Este trabalho é em grupo e ainda não está em nenhum grupo. Fale com o docente.</div>)}
       {e ? (
         <div className="mb-2">
           <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
@@ -156,7 +160,7 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
 // ---------- docente ----------
 
 function Definicoes({ t, avisar, guardado }) {
-  const [f, setF] = useState({ titulo: t.titulo, enunciado: t.enunciado, prazo: paraLocal(t.prazo), aceitaAtraso: t.aceitaAtraso, tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros })
+  const [f, setF] = useState({ titulo: t.titulo, enunciado: t.enunciado, prazo: paraLocal(t.prazo), aceitaAtraso: t.aceitaAtraso, tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros, emGrupo: t.emGrupo })
   const [grelha, setGrelha] = useState(t.grelha || [])
   const [erro, setErro] = useState('')
   async function guardar(e) {
@@ -182,6 +186,7 @@ function Definicoes({ t, avisar, guardado }) {
           <div className="col-md-4"><Campo id="dt-max" rotulo="Máximo de ficheiros"><input id="dt-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
         </div>
         <label className="p-caixa"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> Aceitar entregas depois do prazo (ficam marcadas como atrasadas)</label>
+        <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)</label>
         <div><span className="form-label fw-bold d-block mb-1">Grelha de avaliação</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
         <div><button type="submit" className="btn btn-theme">Guardar definições</button></div>
       </form>
@@ -210,8 +215,8 @@ function Entregas({ trabalho, avisar, baixar }) {
         <table className="table table-hover align-middle mb-0">
           <thead><tr><th>Estudante</th><th>Entrega</th><th className="text-center">Nota</th><th /></tr></thead>
           <tbody>
-            {d.linhas.map(({ estudante, entrega, prorrogacao }) => (
-              <LinhaEntrega key={estudante.id} t={trabalho} estudante={estudante} entrega={entrega} prorrogacao={prorrogacao}
+            {(trabalho.emGrupo ? [...d.linhas].sort((a, b) => (a.grupo?.nome ?? '\uffff').localeCompare(b.grupo?.nome ?? '\uffff', 'pt', { numeric: true })) : d.linhas).map(({ estudante, entrega, prorrogacao, grupo }) => (
+              <LinhaEntrega key={estudante.id} t={trabalho} estudante={estudante} entrega={entrega} prorrogacao={prorrogacao} grupo={grupo}
                 aberta={aberta === estudante.id} alternar={() => setAberta(aberta === estudante.id ? null : estudante.id)} baixar={baixar} avisar={avisar} recarregar={carregar} />
             ))}
           </tbody>
@@ -221,7 +226,7 @@ function Entregas({ trabalho, avisar, baixar }) {
   )
 }
 
-function LinhaEntrega({ t, estudante, entrega, prorrogacao, aberta, alternar, baixar, avisar, recarregar }) {
+function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, aberta, alternar, baixar, avisar, recarregar }) {
   const [notaManual, setNotaManual] = useState(entrega?.nota ?? '')
   const [pontos, setPontos] = useState(entrega?.grelha || {})
   const [correcao, setCorrecao] = useState(entrega?.correcao || '')
@@ -263,10 +268,14 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, aberta, alternar, ba
   return (
     <>
       <tr className={aberta ? 'table-active' : ''}>
-        <td><b>{estudante.nome}</b><div className="small text-muted">{estudante.numero}</div>{prorrogacao && <span className="badge bg-info">Prazo até {dataHora(prorrogacao.prazo)}</span>}</td>
+        <td>
+          <b>{estudante.nome}</b><div className="small text-muted">{estudante.numero}</div>
+          {t.emGrupo && (grupo ? <span className="badge bg-indigo me-1"><i className="fa fa-users me-1" />{grupo.nome}</span> : <span className="badge bg-warning text-dark me-1">Sem grupo</span>)}
+          {prorrogacao && <span className="badge bg-info">Prazo até {dataHora(prorrogacao.prazo)}</span>}
+        </td>
         <td className="small">
           {entrega ? <><Etiqueta cor={entrega.atrasada ? 'dourado' : 'verde'}>{entrega.atrasada ? 'Atrasada' : 'Entregue'}</Etiqueta> <span className="text-muted">{dataHora(entrega.entregueEm)}</span>
-            <div className="text-muted">{entrega.ficheiros.length} ficheiro(s){entrega.texto && ' · texto'}</div></> : <span className="text-muted">Não entregou</span>}
+            <div className="text-muted">{entrega.ficheiros.length} ficheiro(s){entrega.texto && ' · texto'}{entrega.grupo && entrega.estudante && entrega.estudanteId !== estudante.id ? ` · entregue por ${entrega.estudante.nome}` : ''}</div></> : <span className="text-muted">Não entregou</span>}
         </td>
         <td className="text-center fw-bold">{entrega?.nota !== null && entrega?.nota !== undefined ? nota(entrega.nota) : '—'}</td>
         <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? 'Fechar' : 'Ver e corrigir') : (aberta ? 'Fechar' : 'Prazo')}</button></td>

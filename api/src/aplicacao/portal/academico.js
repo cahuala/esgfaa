@@ -1,4 +1,4 @@
-import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
+import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { urlSegura } from '../../dominio/comum/urls.js'
 import { estadoQuestionario } from '../../dominio/academico/questionarios.js'
 import { validarRestricoes } from '../../dominio/academico/disponibilidade.js'
@@ -21,8 +21,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, inqueritos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
-    Object.assign(this, { academico, recursos, inqueritos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
+  constructor({ academico, recursos, inqueritos, grupos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml = (h) => h }) {
+    Object.assign(this, { academico, recursos, inqueritos, grupos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, filtroHtml })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -165,6 +165,7 @@ export class ServicoPortal {
           } : null,
         }
       }),
+      meuGrupo: await this.grupos.grupoDe(cadeira.id, conta.id),
       notas: notasVisiveis(minhasNotas[cadeira.id], cadeira.notasPublicadas),
       presencas,
       assiduidade: assiduidade(presencas),
@@ -239,6 +240,7 @@ export class ServicoPortal {
     const apagar = () => { for (const f of ficheiros) this.privados.apagar(f.caminho) }
     let trabalho
     let corpo
+    let grupo = null
     try {
       this.#soEstudante(conta)
       trabalho = await this.academico.trabalho(trabalhoId)
@@ -247,6 +249,12 @@ export class ServicoPortal {
       await this.disponibilidade.exigir(trabalho.cadeiraId, conta.id, 'trabalho', trabalho.id)
       const prazo = prazoDe(trabalho, await this.academico.prorrogacao(trabalho.id, conta.id))
       if (estadoPrazo(prazo, this.relogio.agora(), trabalho.aceitaAtraso) === 'fechado') throw new ErroValidacao('O prazo de entrega terminou.')
+      if (trabalho.emGrupo) {
+        grupo = await this.grupos.grupoDe(trabalho.cadeiraId, conta.id)
+        if (!grupo) throw new Conflito('Este trabalho é em grupo e ainda não está em nenhum grupo. Fale com o docente.')
+        const atual = await this.academico.entregaDoGrupo(trabalho.id, grupo.id)
+        if (atual?.nota !== null && atual?.nota !== undefined) throw new Conflito('A entrega do grupo já foi corrigida.')
+      }
       corpo = texto(escrito, 'texto', 'Texto', { max: 50_000, obrigatorio: false })
       const querFicheiros = trabalho.tipoEntrega !== 'texto'
       const querTexto = trabalho.tipoEntrega !== 'ficheiro'
@@ -268,9 +276,15 @@ export class ServicoPortal {
       throw e
     }
     const entrega = await this.academico.gravarEntrega({
-      trabalhoId: trabalho.id, estudanteId: conta.id, ficheiroIds, texto: corpo, comentario: texto(comentario, 'comentario', 'Comentário', { max: 2000, obrigatorio: false }),
+      trabalhoId: trabalho.id, estudanteId: conta.id, grupoId: grupo?.id ?? null, ficheiroIds, texto: corpo, comentario: texto(comentario, 'comentario', 'Comentário', { max: 2000, obrigatorio: false }),
     })
     await this.auditoria.registar(ctx, { acao: 'entregar_trabalho', colecao: 'trabalhos', alvoId: trabalho.id, alvoTitulo: trabalho.titulo, detalhes: { ficheiros: ficheiroIds.length }, utilizador: quem(conta) })
+    if (grupo) {
+      await this.notificacoes?.notificar(grupo.membros.map((m) => m.id), {
+        tipo: 'trabalho', titulo: `Entrega do grupo ${grupo.nome}: ${trabalho.titulo}`, texto: `${conta.nome} entregou o trabalho pelo grupo.`,
+        ligacao: `/cadeiras/${trabalho.cadeiraId}?atividade=trabalho-${trabalho.id}`,
+      }, { excepto: conta.id })
+    }
     const prazo = prazoDe(trabalho, await this.academico.prorrogacao(trabalho.id, conta.id))
     return { ...entrega, atrasada: entregaAtrasada(entrega.entregueEm, prazo) }
   }
@@ -315,7 +329,7 @@ export class ServicoPortal {
       }
     }
     else if (uso.tipo === 'entrega') {
-      if (conta.tipo === 'estudante' && uso.estudanteId !== conta.id) negar()
+      if (conta.tipo === 'estudante' && !uso.estudantes.includes(conta.id)) negar()
       if (conta.tipo === 'docente') await this.#cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'pedido' && uso.estudanteId !== conta.id) negar()
     return { caminho: this.privados.absoluto(f.caminho), nome: f.nome, tipo: f.tipo }
@@ -592,6 +606,7 @@ export class ServicoPortal {
       }
       r.grelha = validarGrelha(g)
     }
+    if (!parcial || dados.emGrupo !== undefined) r.emGrupo = dados.emGrupo === true || dados.emGrupo === 'true'
     return r
   }
 
@@ -599,7 +614,11 @@ export class ServicoPortal {
     const t = await this.academico.trabalho(id)
     if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
     await this.#cadeiraDoDocente(ctx.conta, t.cadeiraId)
-    await this.academico.atualizarTrabalho(t.id, this.#dadosTrabalho(dados, true))
+    const mudanca = this.#dadosTrabalho(dados, true)
+    if (mudanca.emGrupo !== undefined && mudanca.emGrupo !== t.emGrupo && (await this.academico.entregasDoTrabalho(t.id)).length) {
+      throw new Conflito('Já há entregas: o trabalho já não passa a ser (ou deixa de ser) em grupo.')
+    }
+    await this.academico.atualizarTrabalho(t.id, mudanca)
     return this.academico.trabalho(t.id)
   }
 
@@ -659,16 +678,17 @@ export class ServicoPortal {
     const t = await this.academico.trabalho(trabalhoId)
     if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
     const cadeira = await this.#cadeiraDoDocente(ctx.conta, t.cadeiraId)
-    const [estudantes, entregas, prorrogacoes] = await Promise.all([
-      this.academico.estudantesAtivosDaTurma(cadeira.turmaId), this.academico.entregasDoTrabalho(t.id), this.academico.prorrogacoes(t.id),
+    const [estudantes, porEstudante, prorrogacoes, grupos] = await Promise.all([
+      this.academico.estudantesAtivosDaTurma(cadeira.turmaId), this.academico.entregasPorEstudante(t.id), this.academico.prorrogacoes(t.id),
+      t.emGrupo ? this.grupos.grupos(cadeira.id) : [],
     ])
-    const porEstudante = Object.fromEntries(entregas.map((e) => [e.estudanteId, e]))
+    const grupoDe = Object.fromEntries(grupos.flatMap((g) => g.membros.map((m) => [m.id, { id: g.id, nome: g.nome }])))
     return {
       trabalho: t,
       linhas: estudantes.map((e) => {
         const x = porEstudante[e.id]
-        const prazo = prazoDe(t, prorrogacoes[e.id])
-        return { estudante: e, prorrogacao: prorrogacoes[e.id] || null, entrega: x ? { ...x, atrasada: entregaAtrasada(x.entregueEm, prazo) } : null }
+        const prazo = prazoDe(t, prorrogacoes[x?.estudanteId ?? e.id])
+        return { estudante: e, grupo: grupoDe[e.id] || null, prorrogacao: prorrogacoes[e.id] || null, entrega: x ? { ...x, atrasada: entregaAtrasada(x.entregueEm, prazo) } : null }
       }),
     }
   }
@@ -704,7 +724,7 @@ export class ServicoPortal {
     else if (removerFicheiro === true || removerFicheiro === 'true') dados.correcaoFicheiroId = null
     const r = await this.academico.corrigirEntrega(e.id, dados)
     await this.pautas.sincronizar(cadeira) // a nota pode contar para uma componente da pauta
-    await this.notificacoes?.notificar([e.estudanteId], {
+    await this.notificacoes?.notificar(e.grupo ? e.grupo.membros : [e.estudanteId], {
       tipo: 'correcao', titulo: `Trabalho corrigido: ${t.titulo}`, texto: `${cadeira.nome}${r.nota !== null ? ` — nota ${r.nota} valores` : ''}`,
       ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,
     })

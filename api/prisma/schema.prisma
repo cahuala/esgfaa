@@ -213,6 +213,7 @@ model ContaPortal {
   certificados        Certificado[]
   inqueritosAvaliados Inquerito[]             @relation("avaliado")
   participacoes       ParticipacaoInquerito[]
+  grupos              MembroGrupo[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -280,6 +281,8 @@ model UnidadeCurricular {
   composicaoNotas  ComposicaoNota[]
   certificados     Certificado[]
   inqueritos       Inquerito[]
+  grupos           GrupoCadeira[]
+  membrosGrupos    MembroGrupo[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -402,6 +405,7 @@ model Trabalho {
   tipoEntrega  String    @default("ficheiro") @map("tipo_entrega") // ficheiro | texto | ambos
   maxFicheiros Int       @default(1) @map("max_ficheiros")
   grelha       Json      @default("[]") // grelha de avaliação: [{ criterio, descricao, pontos }]
+  emGrupo      Boolean   @default(false) @map("em_grupo") // uma entrega por grupo, a nota vale para todos
   secaoId      Int?      @map("secao_id")
   visivel      Boolean   @default(true) // escondida dos estudantes
   disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
@@ -421,6 +425,7 @@ model Entrega {
   id                 Int       @id @default(autoincrement())
   trabalhoId         Int       @map("trabalho_id")
   estudanteId        Int       @map("estudante_id")
+  grupoId            Int?      @map("grupo_id") // trabalho em grupo: a entrega é do grupo (estudanteId = quem entregou)
   texto              String    @default("") // texto escrito no portal (entrega "online")
   comentario         String    @default("")
   entregueEm         DateTime  @default(now()) @map("entregue_em") @db.Timestamptz(3)
@@ -433,8 +438,10 @@ model Entrega {
   trabalho  Trabalho          @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
   estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
   ficheiros EntregaFicheiro[]
+  grupo     GrupoCadeira?     @relation(fields: [grupoId], references: [id], onDelete: Cascade)
 
   @@unique([trabalhoId, estudanteId])
+  @@unique([trabalhoId, grupoId])
   @@map("entregas")
 }
 
@@ -837,4 +844,34 @@ model ParticipacaoInquerito {
 
   @@id([inqueritoId, estudanteId])
   @@map("participacoes_inqueritos")
+}
+
+// grupos de estudantes dentro de uma cadeira (trabalhos em grupo)
+model GrupoCadeira {
+  id        Int      @id @default(autoincrement())
+  cadeiraId Int      @map("cadeira_id")
+  nome      String
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira  UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  membros  MembroGrupo[]
+  entregas Entrega[]
+
+  @@unique([cadeiraId, nome])
+  @@map("grupos_cadeira")
+}
+
+// cada estudante está, no máximo, num grupo de cada cadeira
+model MembroGrupo {
+  grupoId     Int @map("grupo_id")
+  cadeiraId   Int @map("cadeira_id")
+  estudanteId Int @map("estudante_id")
+
+  grupo     GrupoCadeira      @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@id([grupoId, estudanteId])
+  @@unique([cadeiraId, estudanteId])
+  @@map("membros_grupos")
 }

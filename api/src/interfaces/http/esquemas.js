@@ -102,6 +102,7 @@ export const trabalho = z.object({
   secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(),
   aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
   tipoEntrega: texto(10).optional(), maxFicheiros: z.union([z.number(), z.string().max(3)]).optional(), grelha: grelhaLivre,
+  emGrupo: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
 })
 export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional(), grelha: pontosLivres, removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
 export const prorrogacao = z.object({ estudanteId: idNumerico, prazo: z.union([texto(40), z.null()]), motivo: texto(500).optional() })
@@ -177,3 +178,7 @@ export const sondagem = z.object({
 })
 export const respostasInquerito = z.object({ respostas: z.record(z.string().max(3), z.union([z.array(z.number()).max(12), z.number(), z.string().max(2000)])) })
 export const lancarAvaliacao = z.object({ fecha: texto(40), titulo: texto(120).optional() })
+
+// ---------- grupos ----------
+export const grupo = z.object({ nome: texto(80).optional(), membros: z.array(idNumerico).max(200).optional() })
+export const gruposAutomaticos = z.object({ modo: z.enum(['tamanho', 'numero']), valor: z.number().int().min(1).max(200), prefixo: texto(40).optional(), soSemGrupo: z.boolean().optional() })

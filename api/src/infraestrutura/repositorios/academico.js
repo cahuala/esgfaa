@@ -396,17 +396,45 @@ export class RepositorioAcademico {
     entregueEm: iso(e.entregueEm), nota: num(e.nota), correcao: e.correcao, corrigidaEm: iso(e.corrigidaEm),
     correcaoFicheiroId: e.correcaoFicheiroId, grelha: e.grelha || {},
     ...(e.estudante ? { estudante: e.estudante } : {}),
+    grupoId: e.grupoId ?? null,
+    ...(e.grupo ? { grupo: { id: e.grupo.id, nome: e.grupo.nome, membros: e.grupo.membros.map((m) => m.estudanteId) } } : {}),
   })
 
-  #comFicheiros = { ficheiros: { include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
+  #comFicheiros = {
+    ficheiros: { include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } },
+    grupo: { select: { id: true, nome: true, membros: { select: { estudanteId: true } } } },
+  }
 
   async entregaDoEstudante(trabalhoId, estudanteId) {
     return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, include: this.#comFicheiros }))
   }
 
+  // entregas do estudante (as suas e as do seu grupo, nos trabalhos em grupo): { trabalhoId: entrega }
   async entregasDoEstudante(estudanteId, trabalhoIds) {
-    const linhas = await this.prisma.entrega.findMany({ where: { estudanteId, trabalhoId: { in: trabalhoIds } }, include: this.#comFicheiros })
+    const grupos = (await this.prisma.membroGrupo.findMany({ where: { estudanteId }, select: { grupoId: true } })).map((m) => m.grupoId)
+    const linhas = await this.prisma.entrega.findMany({
+      where: { trabalhoId: { in: trabalhoIds }, OR: [{ estudanteId, grupoId: null }, { grupoId: { in: grupos }, trabalho: { emGrupo: true } }] },
+      include: this.#comFicheiros,
+    })
     return Object.fromEntries(linhas.map((e) => [e.trabalhoId, this.paraEntrega(e)]))
+  }
+
+  // entrega de cada estudante num trabalho (a do grupo vale para todos os membros): { estudanteId: entrega }
+  async entregasPorEstudante(trabalhoId) {
+    const r = {}
+    for (const e of await this.entregasDoTrabalho(trabalhoId)) {
+      for (const id of e.grupo ? e.grupo.membros : [e.estudanteId]) r[id] = e
+      r[e.estudanteId] ??= e
+    }
+    return r
+  }
+
+  temEntregasDoGrupo(grupoId) {
+    return this.prisma.entrega.count({ where: { grupoId } }).then((n) => n > 0)
+  }
+
+  async entregaDoGrupo(trabalhoId, grupoId) {
+    return this.paraEntrega(await this.prisma.entrega.findUnique({ where: { trabalhoId_grupoId: { trabalhoId, grupoId } }, include: this.#comFicheiros }))
   }
 
   async entregasDoTrabalho(trabalhoId) {
@@ -421,14 +449,14 @@ export class RepositorioAcademico {
   }
 
   // entrega (ou substitui a anterior, enquanto o prazo permitir): ficheiros e/ou texto
-  async gravarEntrega({ trabalhoId, estudanteId, ficheiroIds, texto, comentario }) {
+  async gravarEntrega({ trabalhoId, estudanteId, grupoId = null, ficheiroIds, texto, comentario }) {
     const p = this.prisma
     const e = await p.$transaction(async (tx) => {
-      const x = await tx.entrega.upsert({
-        where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } },
-        create: { trabalhoId, estudanteId, texto, comentario },
-        update: { texto, comentario, entregueEm: new Date(), nota: null, correcao: '', corrigidaEm: null, correcaoFicheiroId: null, grelha: {} },
-      })
+      const limpar = { texto, comentario, entregueEm: new Date(), nota: null, correcao: '', corrigidaEm: null, correcaoFicheiroId: null, grelha: {} }
+      // em grupo: uma só entrega do grupo; quem entregou por último fica como autor
+      const x = grupoId
+        ? await tx.entrega.upsert({ where: { trabalhoId_grupoId: { trabalhoId, grupoId } }, create: { trabalhoId, estudanteId, grupoId, texto, comentario }, update: { ...limpar, estudanteId } })
+        : await tx.entrega.upsert({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, create: { trabalhoId, estudanteId, texto, comentario }, update: limpar })
       await tx.entregaFicheiro.deleteMany({ where: { entregaId: x.id } })
       if (ficheiroIds.length) await tx.entregaFicheiro.createMany({ data: ficheiroIds.map((ficheiroId, ordem) => ({ entregaId: x.id, ficheiroId, ordem })) })
       return x
@@ -559,13 +587,13 @@ export class RepositorioAcademico {
     const [material, trabalho, entrega, pedido, programa] = await Promise.all([
       p.material.findFirst({ where: { OR: [{ ficheiroId: id }, { ficheiros: { some: { ficheiroId: id } } }] }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
-      p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
+      p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } }, grupo: { select: { membros: { select: { estudanteId: true } } } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
     ])
     if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false, atividade: `material-${material.id}` }
     if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false, atividade: `trabalho-${trabalho.id}` }
-    if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId }
+    if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId, estudantes: entrega.grupo ? entrega.grupo.membros.map((m) => m.estudanteId) : [entrega.estudanteId] }
     if (pedido) return { tipo: 'pedido', estudanteId: pedido.estudanteId }
     if (programa) return { tipo: 'programa', cadeiraId: programa.id }
     return null

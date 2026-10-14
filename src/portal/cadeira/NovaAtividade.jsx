@@ -25,7 +25,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
   const [tipo, setTipo] = useState(null)
   const [f, setF] = useState({
     titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1, tipoEntrega: 'ficheiro', maxFicheiros: 1,
-    conteudo: '', inicio: '', duracaoSessao: 90, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
+    emGrupo: false, conteudo: '', inicio: '', duracaoSessao: 90, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
   })
   const [grelha, setGrelha] = useState([])
   const [ficheiros, setFicheiros] = useState([])
@@ -94,6 +94,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         fd.append('enunciado', f.enunciado)
         fd.append('prazo', localParaIso(f.prazo))
         fd.append('aceitaAtraso', String(f.aceitaAtraso))
+        fd.append('emGrupo', String(f.emGrupo))
         fd.append('tipoEntrega', f.tipoEntrega)
         fd.append('maxFicheiros', String(f.maxFicheiros || 1))
         fd.append('grelha', JSON.stringify(grelha.map((c) => ({ ...c, pontos: Number(c.pontos) }))))
@@ -200,6 +201,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                         <div className="col-sm-6"><Campo id="na-tipoentrega" rotulo="Como se entrega"><select id="na-tipoentrega" value={f.tipoEntrega} onChange={(e) => setF({ ...f, tipoEntrega: e.target.value })}><option value="ficheiro">Ficheiros</option><option value="texto">Texto escrito no portal</option><option value="ambos">Ficheiros e texto</option></select></Campo></div>
                         <div className="col-sm-6"><Campo id="na-max" rotulo="Máximo de ficheiros"><input id="na-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
                       </div>
+                      <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)</label>
                       <div><span className="form-label fw-bold d-block mb-1">Grelha de avaliação (opcional)</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
                       <span className="form-label fw-bold mb-0">Enunciado em ficheiro (opcional)</span>
                       <ZonaUpload id="na-enunciado-f" ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} />

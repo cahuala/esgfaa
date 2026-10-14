@@ -112,6 +112,13 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
+  // grupos de estudantes da cadeira
+  const g = servicos.grupos
+  r.get('/cadeiras/:id/grupos', validar({ params: pId }), async (req, res) => res.json(await g.listar(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/grupos', validar({ params: pId, body: E.grupo }), async (req, res) => res.status(201).json(await g.criar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/cadeiras/:id/grupos/automatico', validar({ params: pId, body: E.gruposAutomaticos }), async (req, res) => res.json(await g.automatico(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/grupos/:id', validar({ params: pId, body: E.grupo }), async (req, res) => res.json(await g.atualizar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/grupos/:id', validar({ params: pId }), async (req, res) => { await g.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   // sondagens e inquéritos de avaliação do docente
   const q = servicos.inqueritos
   r.post('/cadeiras/:id/sondagens', validar({ params: pId, body: E.sondagem }), async (req, res) => res.status(201).json(await q.criarSondagem(ctx(req), req.dados.params.id, req.dados.body)))
