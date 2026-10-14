@@ -7,13 +7,14 @@
     <meta name="robots" content="noindex, nofollow" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..700;1,400..600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..600&family=Inter+Tight:wght@600..900&display=swap" rel="stylesheet">
     <script>
       // aplica o tema guardado (ou o do sistema) antes de o portal ser desenhado
       try {
         var t = localStorage.getItem('esg_tema');
         if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.setAttribute('data-tema', t);
+        document.documentElement.setAttribute('data-bs-theme', t);
       } catch (e) {}
     </script>
     <title>Portal Académico · ESGFAA</title>

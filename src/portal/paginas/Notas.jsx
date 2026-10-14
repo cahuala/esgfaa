@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaPrint } from 'react-icons/fa'
 import { api } from '../api'
-import { Carregando, Erro, Titulo, Vazio } from '../componentes'
+import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
@@ -23,20 +23,20 @@ function Notas() {
 
   return (
     <>
-      <Titulo rotulo="Avaliação" titulo="Boletim de notas">
-        <button type="button" className="p-botao p-botao-claro p-sem-impressao" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
+      <Titulo rotulo="Notas" titulo="Boletim de notas" sub="só as notas publicadas pelos docentes">
+        <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" className="me-1" /> Imprimir</button>
       </Titulo>
       {erro && <Erro texto={erro} />}
       {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Sem disciplinas.</Vazio> : (
         <>
-          <dl className="p-resumo">
-            <div><dt>Disciplinas</dt><dd>{lista.length}</dd></div>
-            <div><dt>Concluídas</dt><dd>{concluidas.length}</dd></div>
-            <div><dt>Média das concluídas</dt><dd>{nota(media)}</dd></div>
-            <div><dt>Por concluir</dt><dd>{lista.length - concluidas.length}</dd></div>
-          </dl>
+          <div className="row p-sem-impressao">
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo="DISCIPLINAS" valor={lista.length} nota="este ano letivo" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-teal" icone="fa-check-circle" titulo="CONCLUÍDAS" valor={concluidas.length} nota="aprovadas ou dispensadas" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-red" icone="fa-star" titulo="MÉDIA DAS CONCLUÍDAS" valor={nota(media)} nota="escala de 0 a 20" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo="POR CONCLUIR" valor={lista.length - concluidas.length} nota="Ver percurso académico" para="/percurso" /></div>
+          </div>
 
-          <div className="p-matriz-caixa">
+          <Cartao titulo={<><i className="fa fa-table me-2" />Boletim de notas</>} corpo={false}>
             <div className="p-tabela-rolavel">
               <table className="p-matriz">
                 <thead>
@@ -76,7 +76,7 @@ function Notas() {
                 ))}
               </table>
             </div>
-          </div>
+          </Cartao>
           <p className="p-legenda">{REGRA} Escala de 0 a 20. “—” = nota ainda não publicada.</p>
         </>
       ))}

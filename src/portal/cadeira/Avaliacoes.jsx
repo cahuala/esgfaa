@@ -124,7 +124,7 @@ function Pauta({ c, avisar }) {
     <div className="p-coluna">
       <div className="p-pauta-barra">
         <div className="p-pauta-contagem">
-          {Object.entries(SITUACOES).filter(([k]) => contagem[k]).map(([k, s]) => <span key={k} className={`p-etiqueta p-${s.cor}`}>{s.texto}: {contagem[k]}</span>)}
+          {Object.entries(SITUACOES).filter(([k]) => contagem[k]).map(([k, s]) => <span key={k} className={`badge ${{ cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }[s.cor]}`}>{s.texto}: {contagem[k]}</span>)}
         </div>
         <div className="p-acoes-linha p-sem-impressao">
           {alterado && <span className="p-por-guardar">Alterações por guardar</span>}
@@ -133,7 +133,7 @@ function Pauta({ c, avisar }) {
         </div>
       </div>
 
-      <div className="p-matriz-caixa">
+      <div className="panel mb-2 overflow-hidden">
         <div className="p-impressao-cabeca">Pauta · {c.codigo} {c.nome} · {c.turma?.nome}</div>
         <div className="p-tabela-rolavel">
           <table className="p-matriz p-matriz-pauta">

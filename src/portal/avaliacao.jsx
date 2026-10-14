@@ -1,9 +1,11 @@
 import { AVALIACAO, NOTA_MINIMA_APROVACAO, SITUACOES } from './regraAvaliacao'
 import { nota } from './formatar'
 
+const BADGES = { cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }
+
 export function Situacao({ situacao }) {
   const s = SITUACOES[situacao] || SITUACOES.em_curso
-  return <span className={`p-etiqueta p-${s.cor}`}>{s.texto}</span>
+  return <span className={`badge ${BADGES[s.cor]}`}>{s.texto}</span>
 }
 
 // uma nota na matriz: negativa a vermelho, ≥ 14 a verde

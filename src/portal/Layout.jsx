@@ -1,71 +1,190 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
-import { FaBook, FaCalendarAlt, FaChevronDown, FaClipboardList, FaFileAlt, FaHome, FaSignOutAlt, FaUser, FaBullhorn } from 'react-icons/fa'
-import Logo from '../assets/Logo.png'
+import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
+import Brasao from '../assets/Logo.png'
 import Sede from '../assets/Escola De Guerra.png'
-import AlternarTema from '../components/AlternarTema/AlternarTema'
+import { useTema } from '../tema/useTema'
+import { api } from './api'
 import { useSessao } from './sessaoContexto'
-import { iniciais, primeiroNome } from './formatar'
+import { iniciais } from './formatar'
 
 const SITE = import.meta.env.BASE_URL
 
-// moldura do portal: cabeçalho com o menu e a conta
+// o Color Admin destaca o item ativo pela classe "active" no menu-item
+function ItemMenu({ para, icone, texto, fim, etiqueta }) {
+  const ativo = useMatch({ path: para, end: Boolean(fim) })
+  return (
+    <div className={`menu-item ${ativo ? 'active' : ''}`}>
+      <NavLink to={para} end={fim} className="menu-link">
+        <div className="menu-icon"><i className={`fa ${icone}`} /></div>
+        <div className="menu-text">{texto}</div>
+        {etiqueta ? <div className="menu-badge">{etiqueta}</div> : null}
+      </NavLink>
+    </div>
+  )
+}
+
+// moldura do portal no tema do painel (Color Admin): cabeçalho, barra lateral com o perfil e o menu
 function Layout({ children }) {
   const { conta, eDocente, sair } = useSessao()
-  const [menu, setMenu] = useState(false)
+  const { pathname } = useLocation()
+  const { tema, alternar } = useTema()
+  // os menus guardam o endereço em que foram abertos: ao mudar de página ficam fechados
+  const [menuMovelEm, setMenuMovelEm] = useState(null)
+  const [contaEm, setContaEm] = useState(null)
+  const [minimizado, setMinimizado] = useState(false)
+  const [cadeirasAbertas, setCadeirasAbertas] = useState(pathname.startsWith('/cadeiras'))
+  const [cadeiras, setCadeiras] = useState([])
   const caixa = useRef(null)
-  useEffect(() => {
-    const fora = (e) => { if (!caixa.current?.contains(e.target)) setMenu(false) }
-    document.addEventListener('click', fora)
-    return () => document.removeEventListener('click', fora)
-  }, [])
+  const menuMovel = menuMovelEm === pathname
+  const menuConta = contaEm === pathname
 
-  const ligacoes = [
-    { para: '/', texto: 'Início', Icone: FaHome, fim: true },
-    { para: '/cadeiras', texto: eDocente ? 'As minhas cadeiras' : 'Cadeiras', Icone: FaBook },
-    ...(eDocente ? [] : [{ para: '/notas', texto: 'Notas', Icone: FaClipboardList }]),
-    { para: '/horario', texto: 'Horário', Icone: FaCalendarAlt },
-    ...(eDocente ? [] : [{ para: '/avisos', texto: 'Avisos', Icone: FaBullhorn }, { para: '/pedidos', texto: 'Pedidos', Icone: FaFileAlt }]),
-  ]
+  useEffect(() => { document.documentElement.setAttribute('data-bs-theme', tema) }, [tema])
+  useEffect(() => { api('/cadeiras').then(setCadeiras).catch(() => {}) }, [])
+  useEffect(() => {
+    if (!menuConta) return undefined
+    const fora = (e) => { if (!caixa.current?.contains(e.target)) setContaEm(null) }
+    const esc = (e) => { if (e.key === 'Escape') setContaEm(null) }
+    document.addEventListener('mousedown', fora)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', fora)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [menuConta])
+
+  const papel = eDocente ? 'Docente' : 'Estudante'
+  const turma = conta.matriculas?.find((m) => m.estado === 'ativa')?.turma?.nome
 
   return (
-    <div className="p-app" style={{ '--p-sede': `url("${Sede}")` }}>
-      <header className="p-cabecalho">
-        <div className="p-contentor p-barra">
-          <Link to="/" className="p-marca">
-            <img src={Logo} alt="" />
-            <span><small>Escola Superior de Guerra · FAA</small>Portal Académico</span>
+    <div
+      id="app"
+      style={{ '--esg-sede': `url("${Sede}")` }}
+      className={`app app-header-fixed app-sidebar-fixed ${menuMovel ? 'app-sidebar-mobile-toggled' : ''} ${minimizado ? 'app-sidebar-minified' : ''}`}
+    >
+      {/* Cabeçalho */}
+      <div id="header" className="app-header">
+        <div className="navbar-header">
+          <Link to="/" className="navbar-brand">
+            <img src={Brasao} alt="" className="admin-brasao" />
+            <span className="esg-cabecalho-titulo">
+              <b>Portal Académico</b>
+              <small>Escola Superior de Guerra</small>
+            </span>
           </Link>
-          <nav className="p-menu" aria-label="Portal">
-            {ligacoes.map(({ para, texto, Icone, fim }) => (
-              <NavLink key={para} to={para} end={fim} className={({ isActive }) => (isActive ? 'p-ativo' : undefined)}>
-                <Icone aria-hidden="true" /> <span>{texto}</span>
-              </NavLink>
-            ))}
-          </nav>
-          <div className="p-conta" ref={caixa}>
-            <span className="p-tema"><AlternarTema /></span>
-            <button type="button" className="p-conta-botao" onClick={() => setMenu(!menu)} aria-expanded={menu}>
-              <span className="p-avatar">{iniciais(conta.nome)}</span>
-              <span className="p-conta-nome">{primeiroNome(conta.nome)}</span>
-              <FaChevronDown aria-hidden="true" />
+          <button type="button" className="navbar-mobile-toggler" onClick={() => setMenuMovelEm(menuMovel ? null : pathname)} aria-label="Abrir menu">
+            <span className="icon-bar" /><span className="icon-bar" /><span className="icon-bar" />
+          </button>
+        </div>
+
+        <div className="navbar-nav">
+          <div className="navbar-item">
+            <button type="button" className="navbar-link icon border-0 bg-transparent" onClick={alternar} title={tema === 'dark' ? 'Modo claro' : 'Modo escuro'} aria-label={tema === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}>
+              <i className={`fa ${tema === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
             </button>
-            {menu && (
-              <div className="p-conta-menu">
-                <strong>{conta.nome}</strong>
-                <span>{eDocente ? 'Docente' : 'Estudante'} · {conta.numero}</span>
-                <Link to="/perfil" onClick={() => setMenu(false)}><FaUser aria-hidden="true" /> O meu perfil</Link>
-                <a href={SITE}>Site da Escola</a>
-                <button type="button" onClick={sair}><FaSignOutAlt aria-hidden="true" /> Sair</button>
+          </div>
+          <div className="navbar-item">
+            <a href={SITE} target="_blank" rel="noreferrer" className="navbar-link icon" title="Site da Escola">
+              <i className="fa fa-globe" />
+            </a>
+          </div>
+          <div ref={caixa} className={`navbar-item navbar-user dropdown esg-menu-utilizador ${menuConta ? 'show' : ''}`}>
+            <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center p-conta-botao" aria-expanded={menuConta} onClick={() => setContaEm(menuConta ? null : pathname)}>
+              <span className="admin-avatar">{iniciais(conta.nome)}</span>
+              <span>
+                <span className="d-none d-md-inline fw-bold">{conta.nome}</span>
+                <b className="caret" />
+              </span>
+            </button>
+            {menuConta && (
+              <div className="dropdown-menu dropdown-menu-end show esg-menu-lista" data-bs-popper="static">
+                <div className="esg-menu-cabecalho">
+                  <span className="admin-avatar admin-avatar-grande">{iniciais(conta.nome)}</span>
+                  <div>
+                    <strong>{conta.nome}</strong>
+                    <small>{conta.email}</small>
+                    <span className="esg-menu-papel">{papel} · {conta.numero}</span>
+                  </div>
+                </div>
+                <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />O meu perfil</Link>
+                {!eDocente && <Link to="/percurso" className="dropdown-item"><i className="fa fa-route fa-fw me-2" />Percurso académico</Link>}
+                <a href={SITE} className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />Site da Escola</a>
+                <div className="dropdown-divider" />
+                <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />Sair</button>
               </div>
             )}
           </div>
         </div>
-      </header>
-      <main className="p-contentor p-principal">{children}</main>
-      <footer className="p-rodape">
-        <div className="p-contentor">© {new Date().getFullYear()} Escola Superior de Guerra das Forças Armadas Angolanas · Administração Escolar</div>
-      </footer>
+      </div>
+
+      {/* Barra lateral */}
+      <div id="sidebar" className="app-sidebar" data-bs-theme="dark">
+        <div className="app-sidebar-content admin-sidebar-rolavel">
+          <div className="menu">
+            <div className="esg-marca">
+              <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="esg-marca-brasao" />
+              <div className="esg-marca-nome">Escola Superior de Guerra</div>
+              <div className="esg-marca-sub">Portal Académico</div>
+              <Link to="/perfil" className="esg-marca-utilizador">
+                <span className="admin-avatar admin-avatar-grande">{iniciais(conta.nome)}</span>
+                <span>
+                  <strong>{conta.nome}</strong>
+                  <small>{papel}{turma ? ` · ${turma}` : ''}</small>
+                </span>
+              </Link>
+            </div>
+
+            <div className="menu-header">Geral</div>
+            <ItemMenu para="/" fim icone="fa-th-large" texto="Painel" />
+            <div className={`menu-item has-sub ${cadeirasAbertas ? 'expand' : ''} ${pathname.startsWith('/cadeiras') ? 'active' : ''}`}>
+              <button type="button" className="menu-link w-100 border-0 bg-transparent text-start" onClick={() => setCadeirasAbertas(!cadeirasAbertas)}>
+                <div className="menu-icon"><i className="fa fa-book" /></div>
+                <div className="menu-text">{eDocente ? 'As minhas cadeiras' : 'Cadeiras'}</div>
+                <div className="menu-caret" />
+              </button>
+              <div className="menu-submenu" style={{ display: cadeirasAbertas ? 'block' : 'none' }}>
+                <div className={`menu-item ${pathname === '/cadeiras' ? 'active' : ''}`}>
+                  <NavLink to="/cadeiras" end className="menu-link"><div className="menu-text">Todas</div></NavLink>
+                </div>
+                {cadeiras.map((c) => (
+                  <div key={c.id} className={`menu-item ${pathname === `/cadeiras/${c.id}` ? 'active' : ''}`}>
+                    <NavLink to={`/cadeiras/${c.id}`} className="menu-link"><div className="menu-text text-truncate">{c.codigo} · {c.nome}</div></NavLink>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ItemMenu para="/horario" icone="fa-clock" texto="Horário" />
+
+            {!eDocente && (
+              <>
+                <div className="menu-header">Avaliação</div>
+                <ItemMenu para="/notas" icone="fa-clipboard-list" texto="Notas" />
+                <ItemMenu para="/percurso" icone="fa-route" texto="Percurso académico" />
+
+                <div className="menu-header">Administração Escolar</div>
+                <ItemMenu para="/avisos" icone="fa-bullhorn" texto="Avisos" />
+                <ItemMenu para="/pedidos" icone="fa-file-signature" texto="Pedidos de documentos" />
+              </>
+            )}
+
+            <div className="menu-header">Conta</div>
+            <ItemMenu para="/perfil" icone="fa-user-circle" texto="O meu perfil" />
+
+            <div className="menu-divider" />
+            <div className="menu-item d-flex">
+              <button type="button" className="app-sidebar-minify-btn ms-auto border-0" onClick={() => setMinimizado(!minimizado)} aria-label="Minimizar menu">
+                <i className="fa fa-angle-double-left" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="app-sidebar-bg" data-bs-theme="dark" />
+      <div className="app-sidebar-mobile-backdrop"><button type="button" className="stretched-link border-0 bg-transparent w-100" onClick={() => setMenuMovelEm(null)} aria-label="Fechar menu" /></div>
+
+      {/* Conteúdo */}
+      <div id="content" className="app-content">
+        {children}
+      </div>
     </div>
   )
 }

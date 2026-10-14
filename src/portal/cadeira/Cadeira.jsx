@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { FaArrowLeft } from 'react-icons/fa'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, Carregando, Erro } from '../componentes'
@@ -44,28 +43,42 @@ function Cadeira() {
 
   return (
     <>
-      <header className="p-titulo p-cadeira-cabeca">
-        <div>
-          <Link to="/cadeiras" className="p-voltar"><FaArrowLeft aria-hidden="true" /> Cadeiras</Link>
-          <span className="p-rotulo">{c.codigo} · {PERIODOS[c.periodo]}{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</span>
-          <h1>{c.nome}</h1>
-          <p className="p-titulo-sub">{c.docentes.length ? c.docentes.map((d) => `${d.papel === 'regente' ? 'Regente' : 'Assistente'}: ${d.nome}`).join(' · ') : 'Docentes por alocar'}{c.descricao ? ` — ${c.descricao}` : ''}</p>
+      <ol className="breadcrumb mb-2">
+        <li className="breadcrumb-item"><Link to="/">Portal</Link></li>
+        <li className="breadcrumb-item"><Link to="/cadeiras">Cadeiras</Link></li>
+        <li className="breadcrumb-item active">{c.codigo}</li>
+      </ol>
+      <div className="profile p-perfil mb-3">
+        <div className="profile-header">
+          <div className="profile-header-cover" />
+          <div className="profile-header-content">
+            <div className="profile-header-img"><div className="p-perfil-avatar"><i className="fa fa-book-open" /></div></div>
+            <div className="profile-header-info">
+              <h1 className="h4 mt-0 mb-1">{c.nome}</h1>
+              <p className="mb-1">{c.codigo} · {PERIODOS[c.periodo]}{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</p>
+              <p className="mb-0 small opacity-75">
+                {c.docentes.length ? c.docentes.map((d) => `${d.papel === 'regente' ? 'Regente' : 'Assistente'}: ${d.nome}`).join(' · ') : 'Docentes por alocar'}
+              </p>
+            </div>
+          </div>
+          <ul className="profile-header-tab nav nav-tabs" role="tablist" aria-label="Secções da cadeira">
+            {SEPARADORES.map((s) => (
+              <li key={s.id} className="nav-item">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={separador === s.id}
+                  className={`nav-link border-0 bg-transparent ${separador === s.id ? 'active' : ''}`}
+                  onClick={() => setParams({ separador: s.id }, { replace: true })}
+                >
+                  {s.texto}{contagem[s.id] ? <span className="badge bg-gray-500 ms-1">{contagem[s.id]}</span> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
-      </header>
-
-      <nav className="p-separadores" role="tablist" aria-label="Secções da cadeira">
-        {SEPARADORES.map((s) => (
-          <button
-            key={s.id}
-            role="tab"
-            aria-selected={separador === s.id}
-            className={separador === s.id ? 'p-sep-ativo' : ''}
-            onClick={() => setParams({ separador: s.id }, { replace: true })}
-          >
-            {s.texto}{contagem[s.id] ? <span>{contagem[s.id]}</span> : null}
-          </button>
-        ))}
-      </nav>
+      </div>
+      {c.descricao && <p className="text-muted">{c.descricao}</p>}
 
       <div role="tabpanel">
         {separador === 'materiais' && <Materiais {...props} />}
@@ -76,7 +89,7 @@ function Cadeira() {
         {separador === 'presencas' && <Presencas {...props} />}
         {separador === 'horario' && (
           c.horario.length === 0 ? <p className="p-vazio">Sem horário publicado.</p> : (
-            <ul className="p-lista p-cartao p-cartao-corpo">
+            <ul className="p-lista panel panel-body">
               {c.horario.map((h) => <li key={h.id}><strong>{DIAS[h.diaSemana]}</strong>, {h.inicio}–{h.fim}{h.sala && ` · ${h.sala}`}</li>)}
             </ul>
           )

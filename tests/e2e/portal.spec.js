@@ -8,12 +8,12 @@ async function primeiraEntrada(page, email) {
   await page.getByLabel('E-mail').fill(email)
   await page.getByLabel('Palavra-passe', { exact: true }).fill(email)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page.getByText(/Por segurança, escolha uma palavra-passe nova/)).toBeVisible()
+  await expect(page.getByText(/Escolha uma palavra-passe nova para continuar/)).toBeVisible()
   await page.getByLabel(/Palavra-passe atual/).fill(email)
   await page.getByLabel('Nova palavra-passe', { exact: true }).fill(NOVA)
   await page.getByLabel('Repetir a nova palavra-passe').fill(NOVA)
   await page.getByRole('button', { name: 'Guardar nova palavra-passe' }).click()
-  await expect(page.getByText('As minhas cadeiras').first()).toBeVisible()
+  await expect(page.locator('#content .page-header')).toContainText(/Bom dia|Boa tarde|Boa noite/)
 }
 
 test('Administração Escolar matricula; docente publica; estudante consulta e pede um documento', async ({ page }) => {
@@ -69,7 +69,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
 
   // ---------- portal: docente ----------
   await primeiraEntrada(page, docente)
-  await page.getByText('Estratégia Militar').first().click()
+  await page.locator('#content').getByText('Estratégia Militar').first().click()
   await page.getByRole('tab', { name: /Avisos/ }).click()
   await expect(page.getByRole('heading', { name: 'Novo aviso' })).toBeVisible()
   await page.getByLabel('Título').fill('Primeira aula')
@@ -102,7 +102,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await primeiraEntrada(page, estudante)
   await expect(page.getByText('Primeira aula')).toBeVisible() // avisos das cadeiras na página inicial
   await page.goto('/portal/#/cadeiras')
-  await page.getByText('Estratégia Militar').first().click()
+  await page.locator('#content').getByText('Estratégia Militar').first().click()
   await expect(page.getByText('Programa da cadeira')).toBeVisible()
   await page.getByRole('tab', { name: 'Programa' }).click()
   await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()

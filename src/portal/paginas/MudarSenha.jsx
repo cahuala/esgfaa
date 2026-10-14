@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { FaShieldAlt } from 'react-icons/fa'
 import { useSessao } from '../sessaoContexto'
 import { Campo } from '../componentes'
 import { primeiroNome } from '../formatar'
+import MolduraEntrada from './MolduraEntrada'
 
 // regras iguais às da API (para avisar antes de enviar)
 function regras(nova, conta) {
@@ -50,24 +50,18 @@ function MudarSenha({ obrigatoria = false, aoTerminar }) {
       <Campo id="repetir" rotulo="Repetir a nova palavra-passe" erro={erros.repetir}>
         <input id="repetir" type="password" autoComplete="new-password" value={f.repetir} onChange={(e) => setF({ ...f, repetir: e.target.value })} required />
       </Campo>
-      <button type="submit" className="p-botao" disabled={aGuardar || !lista.every((r) => r.ok) || !f.atual}>{aGuardar ? 'A guardar…' : 'Guardar nova palavra-passe'}</button>
+      <button type="submit" className="btn btn-theme" disabled={aGuardar || !lista.every((r) => r.ok) || !f.atual}>{aGuardar ? 'A guardar…' : 'Guardar nova palavra-passe'}</button>
     </form>
   )
 
   if (!obrigatoria) return formulario
 
   return (
-    <div className="p-ecra-centro">
-      <div className="p-cartao p-cartao-estreito">
-        <div className="p-cartao-corpo">
-          <span className="p-icone-grande"><FaShieldAlt aria-hidden="true" /></span>
-          <h1 className="p-h1-pequeno">Bem-vindo(a), {primeiroNome(conta.nome)}</h1>
-          <p className="p-texto-suave">Por segurança, escolha uma palavra-passe nova antes de continuar. A palavra-passe inicial (o seu e-mail) deixa de funcionar.</p>
-          {formulario}
-          <button type="button" className="p-ligacao-simples" onClick={sair}>Sair</button>
-        </div>
-      </div>
-    </div>
+    <MolduraEntrada sobretitulo="Primeira entrada" titulo={`Bem-vindo(a), ${primeiroNome(conta.nome)}`} subtitulo="Escolha uma palavra-passe nova para continuar">
+      <div className="alert alert-warning d-flex gap-2 py-2"><i className="fa fa-shield-alt mt-1" /><span>Por segurança, a palavra-passe inicial (o seu e-mail) deixa de funcionar.</span></div>
+      {formulario}
+      <button type="button" className="btn btn-link px-0 mt-2" onClick={sair}>Sair</button>
+    </MolduraEntrada>
   )
 }
 

@@ -8,6 +8,7 @@ import Inicio from './paginas/Inicio'
 import Cadeiras from './paginas/Cadeiras'
 import Cadeira from './cadeira/Cadeira'
 import Notas from './paginas/Notas'
+import Percurso from './paginas/Percurso'
 import Horario from './paginas/Horario'
 import Pedidos from './paginas/Pedidos'
 import Avisos from './paginas/Avisos'
@@ -28,6 +29,7 @@ function App() {
         <Route path="/cadeiras/:id" element={<Cadeira />} />
         <Route path="/horario" element={<Horario />} />
         {!eDocente && <Route path="/notas" element={<Notas />} />}
+        {!eDocente && <Route path="/percurso" element={<Percurso />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}
         {!eDocente && <Route path="/avisos" element={<Avisos />} />}
         <Route path="/perfil" element={<Perfil />} />
