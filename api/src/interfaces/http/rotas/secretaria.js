@@ -45,6 +45,11 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/pedidos/:id', ficheiro, validar({ params: pId, body: E.tratarPedido }), async (req, res) => res.json(await s.tratarPedido(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.get('/ficheiros/:id', validar({ params: pFicheiro }), async (req, res) => enviarFicheiro(req, res, await s.ficheiro(ctx(req), req.dados.params.id)))
 
+  r.get('/eventos', async (req, res) => res.json(await s.listarEventos(ctx(req))))
+  r.get('/cadeiras/:id/eventos', validar({ params: pId }), async (req, res) => res.json(await s.eventosDaCadeira(ctx(req), req.dados.params.id)))
+  r.post('/eventos', validar({ body: E.evento }), async (req, res) => res.status(201).json(await s.criarEvento(ctx(req), req.dados.body)))
+  r.delete('/eventos/:id', validar({ params: pId }), async (req, res) => { await s.apagarEvento(ctx(req), req.dados.params.id); res.status(204).end() })
+
   r.get('/avisos', async (req, res) => res.json(await s.listarAvisos(ctx(req))))
   r.post('/avisos', validar({ body: E.avisoGeral }), async (req, res) => res.status(201).json(await s.criarAviso(ctx(req), req.dados.body)))
   r.delete('/avisos/:id', validar({ params: pId }), async (req, res) => { await s.apagarAviso(ctx(req), req.dados.params.id); res.status(204).end() })

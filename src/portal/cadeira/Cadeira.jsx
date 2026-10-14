@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, Carregando, Erro } from '../componentes'
-import { DIAS } from '../formatar'
 import { PERIODOS } from '../regraAvaliacao'
 import Programa from './Programa'
 import Materiais from './Materiais'
@@ -11,15 +10,22 @@ import AvisosCadeira from './AvisosCadeira'
 import Trabalhos from './Trabalhos'
 import Avaliacoes from './Avaliacoes'
 import Presencas from './Presencas'
+import Forum from './Forum'
+import Questionarios from './Questionarios'
+import Progresso, { BarraProgresso } from './Progresso'
+import Datas from './Datas'
 
 const SEPARADORES = [
   { id: 'materiais', texto: 'Materiais' },
   { id: 'programa', texto: 'Programa' },
   { id: 'avisos', texto: 'Avisos' },
+  { id: 'forum', texto: 'Fórum' },
   { id: 'trabalhos', texto: 'Trabalhos' },
+  { id: 'questionarios', texto: 'Questionários' },
   { id: 'avaliacoes', texto: 'Notas' },
   { id: 'presencas', texto: 'Presenças' },
-  { id: 'horario', texto: 'Horário' },
+  { id: 'progresso', texto: 'Progresso', docente: true },
+  { id: 'horario', texto: 'Datas e horário' },
 ]
 
 // uma cadeira: separadores com tudo o que lhe diz respeito (vista do estudante ou do docente)
@@ -31,14 +37,19 @@ function Cadeira() {
   const [c, setC] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
+  const [progresso, setProgresso] = useState(null)
 
-  const carregar = useCallback(() => api(`/cadeiras/${id}`).then((r) => { setErro(''); setC(r) }).catch((e) => setErro(e.message)), [id])
+  const carregar = useCallback(() => {
+    api(`/cadeiras/${id}`).then((r) => { setErro(''); setC(r) }).catch((e) => setErro(e.message))
+    if (!eDocente) api(`/cadeiras/${id}/progresso`).then(setProgresso).catch(() => {})
+  }, [id, eDocente])
   useEffect(() => { carregar() }, [carregar])
 
   if (erro) return <Erro texto={erro} />
   if (!c) return <Carregando />
 
-  const props = { c, eDocente, recarregar: carregar, avisar: setAviso }
+  const props = { c, eDocente, recarregar: carregar, avisar: setAviso, progresso, setProgresso }
+  const separadores = SEPARADORES.filter((s) => !s.docente || eDocente)
   const contagem = { materiais: c.materiais.length, avisos: c.avisos.length, trabalhos: c.trabalhos.length }
 
   return (
@@ -62,7 +73,7 @@ function Cadeira() {
             </div>
           </div>
           <ul className="profile-header-tab nav nav-tabs" role="tablist" aria-label="Secções da cadeira">
-            {SEPARADORES.map((s) => (
+            {separadores.map((s) => (
               <li key={s.id} className="nav-item">
                 <button
                   type="button"
@@ -79,6 +90,15 @@ function Cadeira() {
         </div>
       </div>
       {c.descricao && <p className="text-muted">{c.descricao}</p>}
+      {!eDocente && progresso?.total > 0 && (
+        <div className="panel mb-3">
+          <div className="panel-body py-2 d-flex align-items-center gap-3">
+            <span className="small fw-bold text-nowrap"><i className="fa fa-tasks me-1" />O meu progresso</span>
+            <div className="flex-grow-1"><BarraProgresso p={progresso} /></div>
+            <span className="small text-muted text-nowrap">{progresso.feitas} de {progresso.total} atividades</span>
+          </div>
+        </div>
+      )}
 
       <div role="tabpanel">
         {separador === 'materiais' && <Materiais {...props} />}
@@ -87,13 +107,10 @@ function Cadeira() {
         {separador === 'trabalhos' && <Trabalhos {...props} />}
         {separador === 'avaliacoes' && <Avaliacoes {...props} />}
         {separador === 'presencas' && <Presencas {...props} />}
-        {separador === 'horario' && (
-          c.horario.length === 0 ? <p className="p-vazio">Sem horário publicado.</p> : (
-            <ul className="p-lista panel panel-body">
-              {c.horario.map((h) => <li key={h.id}><strong>{DIAS[h.diaSemana]}</strong>, {h.inicio}–{h.fim}{h.sala && ` · ${h.sala}`}</li>)}
-            </ul>
-          )
-        )}
+        {separador === 'forum' && <Forum {...props} />}
+        {separador === 'questionarios' && <Questionarios {...props} />}
+        {separador === 'progresso' && eDocente && <Progresso {...props} />}
+        {separador === 'horario' && <Datas {...props} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>

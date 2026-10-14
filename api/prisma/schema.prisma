@@ -197,6 +197,10 @@ model ContaPortal {
 
   matriculas Matricula[]
   docencias  Docencia[]
+  topicos    ForumTopico[]
+  respostas  ForumResposta[]
+  conclusoes Conclusao[]
+  tentativas Tentativa[]
   notas      NotaPauta[]
   entregas   Entrega[]
   presencas  Presenca[]
@@ -219,6 +223,7 @@ model Turma {
   cadeiras   UnidadeCurricular[]
   matriculas Matricula[]
   avisos     AvisoGeral[]
+  eventos    EventoAcademico[]
 
   @@unique([curso, anoLetivo, nome])
   @@map("turmas")
@@ -252,14 +257,17 @@ model UnidadeCurricular {
   programaFicheiroId String?  @map("programa_ficheiro_id") // ou em documento (PDF, Word)
   notasPublicadas    String[] @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
 
-  turma     Turma          @relation(fields: [turmaId], references: [id], onDelete: Cascade)
-  docentes  Docencia[]
-  materiais Material[]
-  avisos    AvisoCadeira[]
-  pauta     NotaPauta[]
-  trabalhos Trabalho[]
-  horarios  Horario[]
-  aulas     Aula[]
+  turma            Turma             @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  docentes         Docencia[]
+  materiais        Material[]
+  avisos           AvisoCadeira[]
+  pauta            NotaPauta[]
+  trabalhos        Trabalho[]
+  horarios         Horario[]
+  aulas            Aula[]
+  forumTopicos     ForumTopico[]
+  eventoAcademicos EventoAcademico[]
+  questionarios    Questionario[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -305,7 +313,8 @@ model Material {
   autorId     Int?     @map("autor_id")
   publicadoEm DateTime @default(now()) @map("publicado_em") @db.Timestamptz(3)
 
-  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  conclusoes Conclusao[]
 
   @@index([cadeiraId])
   @@map("materiais")
@@ -452,4 +461,134 @@ model Pedido {
   @@index([estudanteId])
   @@index([estado])
   @@map("pedidos")
+}
+
+// ---------- fórum de cada cadeira (como no Moodle) ----------
+
+model ForumTopico {
+  id          Int      @id @default(autoincrement())
+  cadeiraId   Int      @map("cadeira_id")
+  autorId     Int      @map("autor_id")
+  titulo      String
+  texto       String
+  fixado      Boolean  @default(false) // o docente fixa no topo
+  fechado     Boolean  @default(false) // sem novas respostas
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atividadeEm DateTime @default(now()) @map("atividade_em") @db.Timestamptz(3) // última resposta
+
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  autor     ContaPortal       @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  respostas ForumResposta[]
+
+  @@index([cadeiraId, atividadeEm])
+  @@map("forum_topicos")
+}
+
+model ForumResposta {
+  id       Int      @id @default(autoincrement())
+  topicoId Int      @map("topico_id")
+  autorId  Int      @map("autor_id")
+  texto    String
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  topico ForumTopico @relation(fields: [topicoId], references: [id], onDelete: Cascade)
+  autor  ContaPortal @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([topicoId, criadoEm])
+  @@map("forum_respostas")
+}
+
+// ---------- calendário académico ----------
+
+// prova, exame, recurso de uma cadeira; ou evento geral / de uma turma (Administração Escolar)
+model EventoAcademico {
+  id        Int      @id @default(autoincrement())
+  cadeiraId Int?     @map("cadeira_id")
+  turmaId   Int?     @map("turma_id")
+  tipo      String // p1 | p2 | exame | recurso | geral | feriado
+  titulo    String
+  data      String // AAAA-MM-DD
+  inicio    String   @default("") // HH:MM (opcional)
+  fim       String   @default("")
+  local     String   @default("")
+  descricao String   @default("")
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular? @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  turma   Turma?             @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  @@index([data])
+  @@map("eventos_academicos")
+}
+
+// ---------- progresso: materiais que o estudante já concluiu ----------
+
+model Conclusao {
+  materialId  Int      @map("material_id")
+  estudanteId Int      @map("estudante_id")
+  concluidoEm DateTime @default(now()) @map("concluido_em") @db.Timestamptz(3)
+
+  material  Material    @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, estudanteId])
+  @@index([estudanteId])
+  @@map("conclusoes")
+}
+
+// ---------- questionários online (correção automática) ----------
+
+model Questionario {
+  id               Int       @id @default(autoincrement())
+  cadeiraId        Int       @map("cadeira_id")
+  titulo           String
+  descricao        String    @default("")
+  abre             DateTime? @db.Timestamptz(3)
+  fecha            DateTime? @db.Timestamptz(3)
+  duracao          Int       @default(0) // minutos por tentativa (0 = sem limite)
+  tentativas       Int       @default(1) // tentativas permitidas
+  publicado        Boolean   @default(false)
+  mostrarRespostas Boolean   @default(true) @map("mostrar_respostas") // mostrar as corretas depois de entregar
+  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  perguntas  Pergunta[]
+  realizadas Tentativa[]
+
+  @@index([cadeiraId])
+  @@map("questionarios")
+}
+
+model Pergunta {
+  id             Int     @id @default(autoincrement())
+  questionarioId Int     @map("questionario_id")
+  ordem          Int     @default(0)
+  enunciado      String
+  tipo           String // unica | multipla | vf
+  opcoes         Json // [{ texto, correta }]
+  pontos         Decimal @default(1) @db.Decimal(5, 2)
+
+  questionario Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
+
+  @@index([questionarioId, ordem])
+  @@map("perguntas")
+}
+
+model Tentativa {
+  id             Int       @id @default(autoincrement())
+  questionarioId Int       @map("questionario_id")
+  estudanteId    Int       @map("estudante_id")
+  numero         Int       @default(1)
+  iniciadaEm     DateTime  @default(now()) @map("iniciada_em") @db.Timestamptz(3)
+  limite         DateTime? @db.Timestamptz(3) // até quando se aceitam respostas
+  entregueEm     DateTime? @map("entregue_em") @db.Timestamptz(3)
+  respostas      Json      @default("{}") // { perguntaId: [índices escolhidos] }
+  nota           Decimal?  @db.Decimal(4, 2) // 0 a 20
+
+  questionario Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
+  estudante    ContaPortal  @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@unique([questionarioId, estudanteId, numero])
+  @@index([estudanteId])
+  @@map("tentativas")
 }

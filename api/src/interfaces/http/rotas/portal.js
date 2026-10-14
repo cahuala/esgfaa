@@ -88,5 +88,40 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/aulas/:id', validar({ params: pId, body: E.aula }), async (req, res) => { await s.atualizarAula(ctx(req), req.dados.params.id, req.dados.body); res.status(204).end() })
   r.delete('/aulas/:id', validar({ params: pId }), async (req, res) => { await s.apagarAula(ctx(req), req.dados.params.id); res.status(204).end() })
 
+
+  // ---------- fórum, calendário, progresso e questionários ----------
+  const m = servicos.recursos
+  r.get('/cadeiras/:id/forum', validar({ params: pId }), async (req, res) => res.json(await m.topicos(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/forum', validar({ params: pId, body: E.topico }), async (req, res) => res.status(201).json(await m.criarTopico(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/forum/:id', validar({ params: pId }), async (req, res) => res.json(await m.topico(ctx(req), req.dados.params.id)))
+  r.post('/forum/:id/respostas', validar({ params: pId, body: E.respostaForum }), async (req, res) => res.status(201).json(await m.responder(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/forum/:id', validar({ params: pId, body: E.moderarTopico }), async (req, res) => res.json(await m.moderar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/forum/:id', validar({ params: pId }), async (req, res) => { await m.apagarTopico(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.delete('/forum-respostas/:id', validar({ params: pId }), async (req, res) => { await m.apagarResposta(ctx(req), req.dados.params.id); res.status(204).end() })
+
+  r.get('/calendario', validar({ query: E.intervalo }), async (req, res) => res.json(await m.calendario(ctx(req), req.dados.query)))
+  r.get('/cadeiras/:id/eventos', validar({ params: pId }), async (req, res) => res.json(await m.eventosDaCadeira(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/eventos', validar({ params: pId, body: E.evento }), async (req, res) => res.status(201).json(await m.criarEvento(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/eventos/:id', validar({ params: pId }), async (req, res) => { await m.apagarEvento(ctx(req), req.dados.params.id); res.status(204).end() })
+
+  r.get('/progresso', async (req, res) => res.json(await m.progressoGeral(ctx(req))))
+  r.get('/cadeiras/:id/progresso', validar({ params: pId }), async (req, res) => res.json(await m.progresso(ctx(req), req.dados.params.id)))
+  r.put('/materiais/:id/conclusao', validar({ params: pId, body: E.conclusao }), async (req, res) => res.json(await m.marcarConclusao(ctx(req), req.dados.params.id, req.dados.body)))
+
+  r.get('/cadeiras/:id/questionarios', validar({ params: pId }), async (req, res) => res.json(await m.questionarios(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/questionarios', validar({ params: pId, body: E.questionario }), async (req, res) => res.status(201).json(await m.criarQuestionario(ctx(req), req.dados.params.id, req.dados.body)))
+  r.get('/questionarios/:id/edicao', validar({ params: pId }), async (req, res) => res.json(await m.questionarioDocente(ctx(req), req.dados.params.id)))
+  r.put('/questionarios/:id', validar({ params: pId, body: E.questionario }), async (req, res) => res.json(await m.atualizarQuestionario(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/questionarios/:id', validar({ params: pId }), async (req, res) => { await m.apagarQuestionario(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.post('/questionarios/:id/perguntas', validar({ params: pId, body: E.pergunta }), async (req, res) => res.status(201).json(await m.criarPergunta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/perguntas/:id', validar({ params: pId, body: E.pergunta }), async (req, res) => res.json(await m.atualizarPergunta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/perguntas/:id', validar({ params: pId }), async (req, res) => res.json(await m.apagarPergunta(ctx(req), req.dados.params.id)))
+
+  r.get('/questionarios/:id', validar({ params: pId }), async (req, res) => res.json(await m.verQuestionario(ctx(req), req.dados.params.id)))
+  r.post('/questionarios/:id/tentativas', validar({ params: pId }), async (req, res) => res.status(201).json(await m.iniciar(ctx(req), req.dados.params.id)))
+  r.put('/tentativas/:id/respostas', validar({ params: pId, body: E.respostasQuestionario }), async (req, res) => res.json(await m.guardarRespostas(ctx(req), req.dados.params.id, req.dados.body.respostas)))
+  r.post('/tentativas/:id/entrega', validar({ params: pId, body: E.respostasQuestionario }), async (req, res) => res.json(await m.entregar(ctx(req), req.dados.params.id, req.dados.body.respostas)))
+  r.get('/tentativas/:id', validar({ params: pId }), async (req, res) => res.json(await m.revisao(ctx(req), req.dados.params.id)))
+
   return r
 }

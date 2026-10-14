@@ -338,3 +338,40 @@
 [data-bs-theme=dark] .breadcrumb-item.active { color: #8c949b; }
 [data-bs-theme=dark] .p-cadeira-topo,
 [data-bs-theme=dark] .p-matriz thead th:not(.p-matriz-mac):not(.p-matriz-final) { background: #0b0e11; }
+
+/* ---------- calendário (vista mensal) ---------- */
+.p-calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.p-cal-cabeca { padding: 8px; text-align: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--p-suave); border-bottom: 1px solid var(--p-linha); }
+.p-cal-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 104px;
+  padding: 4px;
+  border: 0;
+  border-right: 1px solid var(--p-linha);
+  border-bottom: 1px solid var(--p-linha);
+  background: transparent;
+  color: var(--p-texto);
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+}
+.p-cal-dia:nth-child(7n + 7) { border-right: 0; }
+.p-cal-dia:hover { background: var(--p-fundo); }
+.p-cal-numero { font-size: 12px; font-weight: 700; padding: 1px 4px; align-self: flex-start; border-radius: 3px; }
+.p-cal-fora { opacity: 0.45; }
+.p-cal-hoje .p-cal-numero { background: var(--p-marca); color: #fff; }
+.p-cal-escolhido { box-shadow: inset 0 0 0 2px var(--p-marca); }
+.p-cal-feriado { background: rgba(0, 172, 172, 0.07); }
+.p-cal-item { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 10.5px; font-weight: 600; padding: 2px 4px; }
+.p-cal-mais { font-size: 11px; color: var(--p-suave); padding-left: 4px; }
+@media (max-width: 767.98px) {
+  .p-cal-dia { min-height: 54px; }
+  .p-cal-item { font-size: 0; padding: 0; height: 6px; border-radius: 3px; }
+}
+
+/* separadores da cadeira numa só linha, a deslizar se não couberem */
+.p-perfil .profile-header-tab { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+.p-perfil .profile-header-tab .nav-link { white-space: nowrap; }

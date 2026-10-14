@@ -9,6 +9,7 @@ import Cadeiras from './paginas/Cadeiras'
 import Cadeira from './cadeira/Cadeira'
 import Notas from './paginas/Notas'
 import Percurso from './paginas/Percurso'
+import Calendario from './paginas/Calendario'
 import Horario from './paginas/Horario'
 import Pedidos from './paginas/Pedidos'
 import Avisos from './paginas/Avisos'
@@ -28,6 +29,7 @@ function App() {
         <Route path="/cadeiras" element={<Cadeiras />} />
         <Route path="/cadeiras/:id" element={<Cadeira />} />
         <Route path="/horario" element={<Horario />} />
+        <Route path="/calendario" element={<Calendario />} />
         {!eDocente && <Route path="/notas" element={<Notas />} />}
         {!eDocente && <Route path="/percurso" element={<Percurso />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}

@@ -18,6 +18,9 @@ import { CacheLimitada } from './infraestrutura/seguranca/cacheLimitada.js'
 import { ArmazenamentoLocal } from './infraestrutura/ficheiros/armazenamento.js'
 import { filtrarCamposHtml, filtrarHtml } from './infraestrutura/html/filtroHtml.js'
 import { ServicoPautas } from './aplicacao/pautas.js'
+import { AcessoCadeiras } from './aplicacao/portal/acesso.js'
+import { ServicoRecursos } from './aplicacao/portal/recursos.js'
+import { RepositorioRecursosCadeira } from './infraestrutura/repositorios/recursosCadeira.js'
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
@@ -54,6 +57,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     candidaturas: new RepositorioCandidaturas({ prisma }),
     contasPortal: new RepositorioContasPortal({ prisma }),
     academico: new RepositorioAcademico({ prisma }),
+    recursos: new RepositorioRecursosCadeira({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -69,6 +73,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   const titulos = () => conteudos.titulosInterativos()
   const pautas = new ServicoPautas({ academico: r.academico, auditoria })
+  const acesso = new AcessoCadeiras({ academico: r.academico })
 
   const servicos = {
     auditoria,
@@ -85,8 +90,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
     portal: new ServicoPortal({ academico: r.academico, pautas, privados, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, auditoria, relogio }),
     secretaria: new ServicoSecretaria({
-      contas: r.contasPortal, academico: r.academico, conteudos: r.conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
+      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
       filtroHtml: filtrarHtml,
     }),
   }

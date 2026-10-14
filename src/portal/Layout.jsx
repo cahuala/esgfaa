@@ -135,6 +135,7 @@ function Layout({ children }) {
 
             <div className="menu-header">Geral</div>
             <ItemMenu para="/" fim icone="fa-th-large" texto="Painel" />
+            <ItemMenu para="/calendario" icone="fa-calendar-alt" texto="Calendário" />
             <div className={`menu-item has-sub ${cadeirasAbertas ? 'expand' : ''} ${pathname.startsWith('/cadeiras') ? 'active' : ''}`}>
               <button type="button" className="menu-link w-100 border-0 bg-transparent text-start" onClick={() => setCadeirasAbertas(!cadeirasAbertas)}>
                 <div className="menu-icon"><i className="fa fa-book" /></div>

@@ -95,6 +95,18 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('1.ª Prova: publicada aos estudantes.')).toBeVisible()
   await page.getByRole('columnheader', { name: /2\.ª Prova/ }).getByRole('button').click()
   await expect(page.getByText('2.ª Prova: publicada aos estudantes.')).toBeVisible()
+
+  // questionário com uma pergunta de verdadeiro ou falso, publicado
+  page.on('dialog', (d) => d.accept())
+  await page.getByRole('tab', { name: 'Questionários' }).click()
+  await page.getByLabel('Título').fill('Teste rápido')
+  await page.getByRole('button', { name: 'Criar e juntar perguntas' }).click()
+  await page.getByLabel('Tipo', { exact: true }).selectOption('vf')
+  await page.getByLabel('Enunciado').fill('Clausewitz escreveu "Da Guerra".')
+  await page.getByRole('button', { name: 'Juntar pergunta' }).click()
+  await expect(page.getByText('Pergunta juntada.')).toBeVisible()
+  await page.getByRole('button', { name: 'Publicar' }).click()
+  await expect(page.getByText('Questionário publicado.')).toBeVisible()
   await page.locator('.p-conta-botao').click()
   await page.getByRole('button', { name: 'Sair' }).click()
 
@@ -109,6 +121,24 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('tab', { name: /Materiais/ }).click()
   // o estudante não vê os formulários do docente
   await expect(page.getByRole('button', { name: 'Publicar' })).toHaveCount(0)
+
+  // fórum: o estudante abre um tópico
+  await page.getByRole('tab', { name: 'Fórum' }).click()
+  await page.getByLabel('Assunto').fill('Dúvida sobre o programa')
+  await page.getByLabel('Mensagem').fill('O ensaio conta para a MAC?')
+  await page.getByRole('button', { name: 'Publicar tópico' }).click()
+  await expect(page.getByText('O ensaio conta para a MAC?')).toBeVisible()
+
+  // questionário: responde e recebe a nota logo
+  await page.getByRole('tab', { name: 'Questionários' }).click()
+  await page.getByRole('button', { name: 'Abrir' }).click()
+  await page.getByRole('button', { name: 'Começar' }).click()
+  await page.getByLabel('Verdadeiro').check()
+  await page.getByRole('button', { name: 'Entregar' }).click()
+  await expect(page.getByText('Nota: 20 valores')).toBeVisible()
+
+  await page.goto('/portal/#/calendario')
+  await expect(page.getByRole('grid')).toBeVisible()
 
   // boletim em matriz: disciplinas × provas
   await page.goto('/portal/#/notas')

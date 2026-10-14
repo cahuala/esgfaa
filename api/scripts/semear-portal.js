@@ -61,6 +61,8 @@ async function semearExtras(turma) {
     await prisma.docencia.updateMany({ where: { cadeiraId: porCodigo.EST101.id, papel: 'regente' }, data: { horas: 60 } })
   }
 
+  await semearRecursos(porCodigo, ana)
+
   // 1.º ano (2025/2026), já concluído: dá história ao percurso académico
   if (await prisma.turma.findFirst({ where: { nome: 'CEM 2025/2026 (demonstração)' } })) return
   const anterior = await prisma.turma.create({ data: { curso: turma.curso, anoLetivo: '2025/2026', anoCurricular: 1, nome: 'CEM 2025/2026 (demonstração)', ativa: false } })
@@ -80,6 +82,41 @@ async function semearExtras(turma) {
     await prisma.notaPauta.createMany({ data: notas.map(([p1, p2, exame = null, recurso = null], i) => ({ cadeiraId: u.id, estudanteId: estudantes[i], p1, p2, exame, recurso })).filter((l) => l.estudanteId) })
   }
   console.log('Ano anterior (percurso académico) criado.')
+}
+
+// fórum, datas das provas, feriado e um questionário publicado na EST101 (idempotente)
+async function semearRecursos(porCodigo, ana) {
+  const est = porCodigo.EST101
+  if (!est || (await prisma.questionario.count({ where: { cadeiraId: est.id } }))) return
+  const regente = (await prisma.docencia.findFirst({ where: { cadeiraId: est.id, papel: 'regente' } }))?.docenteId
+  const joao = await prisma.contaPortal.findUnique({ where: { email: `joao.fernandes@${dominio}` } })
+  const dia = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10)
+
+  if (joao && regente) {
+    const t = await prisma.forumTopico.create({ data: { cadeiraId: est.id, autorId: joao.id, titulo: 'Ensaio: podemos usar fontes em inglês?', texto: 'Professor, as fontes da bibliografia complementar podem estar em inglês ou só em português?' } })
+    await prisma.forumResposta.create({ data: { topicoId: t.id, autorId: regente, texto: 'Podem, desde que citem corretamente. Pelo menos metade das fontes deve ser lusófona.' } })
+    if (ana) await prisma.forumResposta.create({ data: { topicoId: t.id, autorId: ana.id, texto: 'Deixei na biblioteca uma lista de revistas lusófonas que podem ajudar.' } })
+    await prisma.forumTopico.create({ data: { cadeiraId: est.id, autorId: regente, titulo: 'Regras do fórum', texto: 'Usem este fórum para dúvidas da matéria. Respondo até 48 horas.', fixado: true } })
+  }
+
+  await prisma.eventoAcademico.createMany({ data: [
+    { cadeiraId: est.id, tipo: 'p1', titulo: '1.ª Prova', data: dia(9), inicio: '08:00', fim: '10:00', local: 'Anfiteatro A' },
+    { cadeiraId: est.id, tipo: 'p2', titulo: '2.ª Prova', data: dia(30), inicio: '08:00', fim: '10:00', local: 'Anfiteatro A' },
+    { cadeiraId: porCodigo.LID102?.id ?? est.id, tipo: 'p1', titulo: '1.ª Prova', data: dia(12), inicio: '10:30', fim: '12:30', local: 'Sala 2.04' },
+    { tipo: 'feriado', titulo: 'Dia da Independência Nacional', data: '2026-11-11' },
+    { turmaId: est.turmaId, tipo: 'geral', titulo: 'Visita de estudo ao Estado-Maior General', data: dia(16), inicio: '09:00', local: 'Luanda' },
+  ] })
+
+  const q = await prisma.questionario.create({ data: {
+    cadeiraId: est.id, titulo: 'Teste formativo: conceitos de estratégia', descricao: 'Três perguntas sobre a matéria das primeiras semanas. Não conta para a nota.',
+    duracao: 15, tentativas: 2, publicado: true, fecha: new Date(Date.now() + 14 * 86_400_000),
+  } })
+  await prisma.pergunta.createMany({ data: [
+    { questionarioId: q.id, ordem: 1, tipo: 'unica', enunciado: 'Quem escreveu "Da Guerra"?', opcoes: [{ texto: 'Sun Tzu', correta: false }, { texto: 'Carl von Clausewitz', correta: true }, { texto: 'Antoine-Henri Jomini', correta: false }], pontos: 2 },
+    { questionarioId: q.id, ordem: 2, tipo: 'multipla', enunciado: 'Quais destes são níveis da guerra?', opcoes: [{ texto: 'Estratégico', correta: true }, { texto: 'Operacional', correta: true }, { texto: 'Administrativo', correta: false }, { texto: 'Tático', correta: true }], pontos: 2 },
+    { questionarioId: q.id, ordem: 3, tipo: 'vf', enunciado: 'A SADC tem sede em Gaborone, no Botswana.', opcoes: [{ texto: 'Verdadeiro', correta: true }, { texto: 'Falso', correta: false }], pontos: 1 },
+  ] })
+  console.log('Fórum, calendário e questionário de demonstração criados.')
 }
 
 const existente = await prisma.turma.findFirst({ where: { nome: 'CEM 2026/2027 (demonstração)' } })

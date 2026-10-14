@@ -6,7 +6,7 @@ import { data } from '../formatar'
 
 const ICONES = { ficheiro: FaFileAlt, ligacao: FaLink, video: FaPlay }
 
-function Materiais({ c, eDocente, recarregar, avisar }) {
+function Materiais({ c, eDocente, recarregar, avisar, progresso, setProgresso }) {
   // agrupados por tópico ("Semana 1", "Bibliografia", …)
   const grupos = c.materiais.reduce((g, m) => {
     const t = m.topico || 'Geral'
@@ -25,7 +25,16 @@ function Materiais({ c, eDocente, recarregar, avisar }) {
     }
   }
 
-  const abrir = (m, ver) => abrirFicheiro(m.ficheiroId, { nome: m.titulo, ver }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))
+  // progresso (estudante): abrir um material marca-o como concluído; também se marca à mão
+  const feito = (m) => Boolean(progresso?.itens.find((i) => i.tipo === 'material' && i.id === m.id)?.feita)
+  const marcar = (m, concluido) => {
+    if (eDocente || feito(m) === concluido) return
+    api(`/materiais/${m.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then(setProgresso).catch(() => {})
+  }
+  const abrir = (m, ver) => {
+    marcar(m, true)
+    abrirFicheiro(m.ficheiroId, { nome: m.titulo, ver }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))
+  }
 
   return (
     <div className={eDocente ? 'p-grelha-lado' : ''}>
@@ -51,9 +60,15 @@ function Materiais({ c, eDocente, recarregar, avisar }) {
                           <button type="button" className="p-botao p-botao-pequeno" onClick={() => abrir(m, false)} title="Descarregar"><FaDownload aria-hidden="true" /> Descarregar</button>
                         </>
                       ) : (
-                        <a href={m.url} target="_blank" rel="noopener noreferrer" className="p-botao p-botao-pequeno"><FaExternalLinkAlt aria-hidden="true" /> Abrir</a>
+                        <a href={m.url} target="_blank" rel="noopener noreferrer" className="p-botao p-botao-pequeno" onClick={() => marcar(m, true)}><FaExternalLinkAlt aria-hidden="true" /> Abrir</a>
                       )}
                       {eDocente && <button type="button" className="p-botao-icone" onClick={() => apagar(m)} aria-label={`Apagar ${m.titulo}`}><FaTrashAlt /></button>}
+                      {!eDocente && progresso && (
+                        <label className="form-check form-switch mb-0 ms-1 small text-nowrap" title="Marcar como concluído">
+                          <input className="form-check-input" type="checkbox" checked={feito(m)} onChange={(e) => marcar(m, e.target.checked)} aria-label={`${m.titulo} concluído`} />
+                          <span className="form-check-label">{feito(m) ? 'Concluído' : 'Por ver'}</span>
+                        </label>
+                      )}
                     </div>
                   </li>
                 )

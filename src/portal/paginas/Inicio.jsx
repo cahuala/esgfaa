@@ -5,6 +5,7 @@ import { useSessao } from '../sessaoContexto'
 import { Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio, Widget } from '../componentes'
 import { dataHora, faltam, maiusculaInicial, nota, primeiroNome } from '../formatar'
 import { PERIODOS } from '../regraAvaliacao'
+import { BarraProgresso } from '../cadeira/Progresso'
 
 const saudacao = () => {
   const h = new Date().getHours()
@@ -16,10 +17,14 @@ function Inicio() {
   const { conta, eDocente } = useSessao()
   const [d, setD] = useState(null)
   const [percurso, setPercurso] = useState(null)
+  const [progresso, setProgresso] = useState(null)
   const [erro, setErro] = useState('')
   const carregar = useCallback(() => {
     api('/inicio').then(setD).catch((e) => setErro(e.message))
-    if (!eDocente) api('/percurso').then(setPercurso).catch(() => {})
+    if (!eDocente) {
+      api('/percurso').then(setPercurso).catch(() => {})
+      api('/progresso').then(setProgresso).catch(() => {})
+    }
   }, [eDocente])
   useEffect(() => { carregar() }, [carregar])
 
@@ -45,8 +50,8 @@ function Inicio() {
                 icone="fa-tasks"
                 titulo={eDocente ? 'PRAZOS A DECORRER' : 'TRABALHOS POR ENTREGAR'}
                 valor={eDocente ? d.prazos.length : d.prazos.filter((p) => !p.entregue).length}
-                nota="Ver cadeiras"
-                para="/cadeiras"
+                nota="Ver calendário"
+                para="/calendario"
               />
             </div>
             <div className="col-xl-3 col-md-6">
@@ -77,7 +82,7 @@ function Inicio() {
                 )}
               </Cartao>
               <Cartao titulo={<><i className="fa fa-book me-2" />{eDocente ? 'As minhas cadeiras' : 'Cadeiras deste ano'}</>}>
-                <ListaCadeiras cadeiras={d.cadeiras} />
+                <ListaCadeiras cadeiras={d.cadeiras} progresso={progresso} />
               </Cartao>
             </div>
 
@@ -196,7 +201,7 @@ function Progresso({ percurso }) {
   )
 }
 
-export function ListaCadeiras({ cadeiras }) {
+export function ListaCadeiras({ cadeiras, progresso }) {
   if (!cadeiras.length) return <Vazio>Ainda não tem cadeiras. Contacte a Administração Escolar.</Vazio>
   return (
     <div className="p-grelha-cadeiras">
@@ -212,6 +217,7 @@ export function ListaCadeiras({ cadeiras }) {
             {c.docentes?.length > 1 && ` + ${c.docentes.length - 1}`}
           </span>
           {c.turma && <small className="text-muted">{c.turma.nome}</small>}
+          {progresso?.[c.id]?.total > 0 && <div className="mt-2"><BarraProgresso p={progresso[c.id]} /></div>}
         </Link>
       ))}
     </div>

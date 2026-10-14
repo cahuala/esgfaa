@@ -96,3 +96,29 @@ export const aula = z.object({
   presencas: z.array(z.object({ estudanteId: idNumerico, estado: texto(20) })).max(500).optional(),
 })
 export const entrega = z.object({ comentario: texto(3000).optional() })
+
+// ---------- recursos da cadeira (fórum, calendário, progresso, questionários) ----------
+export const topico = z.object({ titulo: texto(300), texto: texto(12_000) })
+export const respostaForum = z.object({ texto: texto(12_000) })
+export const moderarTopico = z.object({ fixado: z.boolean().optional(), fechado: z.boolean().optional() })
+export const evento = z.object({
+  tipo: texto(20), titulo: texto(200).optional(), data: dataIso, inicio: texto(5).optional(), fim: texto(5).optional(),
+  local: texto(200).optional(), descricao: texto(3000).optional(),
+  turmaId: z.union([idNumerico, z.null()]).optional(), cadeiraId: z.union([idNumerico, z.null()]).optional(),
+})
+export const intervalo = z.object({ de: dataIso, ate: dataIso })
+export const conclusao = z.object({ concluido: z.boolean().optional() })
+const dataHora = z.union([z.string().max(40), z.null()]).optional()
+export const questionario = z.object({
+  titulo: texto(300).optional(), descricao: texto(4000).optional(), abre: dataHora, fecha: dataHora,
+  duracao: z.union([z.number(), z.string().max(4)]).optional(), tentativas: z.union([z.number(), z.string().max(3)]).optional(),
+  publicado: z.boolean().optional(), mostrarRespostas: z.boolean().optional(),
+})
+export const pergunta = z.object({
+  tipo: texto(20), enunciado: texto(3000), pontos: z.union([z.number(), z.string().max(8)]).optional(),
+  opcoes: z.array(z.object({ texto: texto(600).optional(), correta: z.boolean().optional() })).max(8).optional(),
+  correta: z.union([z.boolean(), z.literal('verdadeiro'), z.literal('falso')]).optional(),
+})
+export const respostasQuestionario = z.object({
+  respostas: z.record(z.string().regex(/^\d{1,10}$/), z.array(z.number().int().min(0).max(20)).max(8)).optional(),
+})
