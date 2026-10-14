@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Carregando, Erro, Titulo } from '../componentes'
-import { ListaCadeiras } from './Inicio'
+import VisaoCadeiras from '../VisaoCadeiras'
 
 function Cadeiras() {
   const { eDocente } = useSessao()
@@ -15,9 +15,9 @@ function Cadeiras() {
   }, [eDocente])
   return (
     <>
-      <Titulo rotulo={eDocente ? 'Docência' : 'Plano de estudos'} titulo={eDocente ? 'As minhas cadeiras' : 'Cadeiras'} />
+      <Titulo rotulo="As minhas cadeiras" titulo="As minhas cadeiras" sub={eDocente ? 'onde é regente ou assistente' : 'do ano letivo em curso'} />
       {erro && <Erro texto={erro} />}
-      {!lista && !erro ? <Carregando /> : lista && <ListaCadeiras cadeiras={lista} progresso={progresso} />}
+      {!lista && !erro ? <Carregando /> : lista && <div className="panel panel-body"><VisaoCadeiras cadeiras={lista} progresso={progresso} /></div>}
     </>
   )
 }

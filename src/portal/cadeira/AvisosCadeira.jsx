@@ -31,7 +31,7 @@ function AvisosCadeira({ c, eDocente, recarregar, avisar }) {
       <div className="p-coluna">
         {c.avisos.length === 0 && <Vazio>Sem avisos.</Vazio>}
         {c.avisos.map((a) => (
-          <Cartao key={a.id} titulo={a.titulo} acoes={eDocente && <button type="button" className="p-botao-icone" onClick={() => apagar(a)} aria-label="Apagar aviso"><FaTrashAlt /></button>}>
+          <Cartao key={a.id} titulo={a.titulo} acoes={eDocente && <button type="button" className="btn btn-white btn-icon btn-sm" onClick={() => apagar(a)} aria-label="Apagar aviso"><FaTrashAlt /></button>}>
             <p className="p-texto-pre">{a.texto}</p>
             <small className="p-texto-fraco">{dataHora(a.criadoEm)}</small>
           </Cartao>
@@ -43,7 +43,7 @@ function AvisosCadeira({ c, eDocente, recarregar, avisar }) {
             {erro && <p className="p-erro" role="alert">{erro}</p>}
             <Campo id="a-titulo" rotulo="Título"><input id="a-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>
             <Campo id="a-texto" rotulo="Texto"><textarea id="a-texto" rows={5} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} maxLength={5000} required /></Campo>
-            <button type="submit" className="p-botao">Publicar aviso</button>
+            <button type="submit" className="btn btn-theme">Publicar aviso</button>
           </form>
         </Cartao>
       )}

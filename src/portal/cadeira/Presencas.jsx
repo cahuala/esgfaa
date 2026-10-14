@@ -81,14 +81,14 @@ function Aulas({ c, avisar }) {
               {d.estudantes.map((e) => (
                 <li key={e.id} className="p-linha-entre">
                   <span>{e.nome}</span>
-                  <select aria-label={`Presença de ${e.nome}`} value={estados[e.id]} onChange={(x) => setEstados({ ...estados, [e.id]: x.target.value })}>
+                  <select className="form-select form-select-sm" aria-label={`Presença de ${e.nome}`} value={estados[e.id]} onChange={(x) => setEstados({ ...estados, [e.id]: x.target.value })}>
                     {Object.entries(ESTADOS).map(([k, [, t]]) => <option key={k} value={k}>{t}</option>)}
                   </select>
                 </li>
               ))}
             </ul>
           )}
-          <button type="submit" className="p-botao">Registar</button>
+          <button type="submit" className="btn btn-theme">Registar</button>
         </form>
       </Cartao>
     </div>

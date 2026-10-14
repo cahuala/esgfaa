@@ -1,5 +1,6 @@
 import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { urlSegura } from '../../dominio/comum/urls.js'
+import { estadoQuestionario } from '../../dominio/academico/questionarios.js'
 import {
   COMPONENTES_NOTA, ESTADOS_PRESENCA, TIPOS_MATERIAL, TIPOS_PEDIDO,
   assiduidade, dataValida, entregaAtrasada, escolha, estadoPrazo, resultadoDisciplina, texto, validarNota,
@@ -19,8 +20,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, pautas, privados, auditoria, relogio }) {
-    Object.assign(this, { academico, pautas, privados, auditoria, relogio })
+  constructor({ academico, recursos, pautas, privados, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, pautas, privados, auditoria, relogio })
   }
 
   // ---------- acesso ----------
@@ -92,15 +93,30 @@ export class ServicoPortal {
     const { conta } = ctx
     const cadeira = await this.#cadeiraAcessivel(conta, id)
     const agora = this.relogio.agora()
-    const [materiais, avisos, trabalhos, horario] = await Promise.all([
+    const eDocente = conta.tipo === 'docente'
+    const [todosMateriais, avisos, todosTrabalhos, horario, secoes, todosQuestionarios, topicos, eventos] = await Promise.all([
       this.academico.materiais(cadeira.id),
       this.academico.avisosDaCadeira(cadeira.id),
       this.academico.trabalhos(cadeira.id),
       this.academico.horariosDasCadeiras([cadeira.id]),
+      this.academico.secoes(cadeira.id),
+      this.recursos.questionarios(cadeira.id, { soPublicados: !eDocente }),
+      this.recursos.topicos(cadeira.id),
+      this.recursos.eventosDaCadeira(cadeira.id),
     ])
-    const base = { ...cadeira, materiais, avisos, horario }
+    // capítulos escondidos (e o que têm dentro) não aparecem aos estudantes
+    const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
+    const visivel = (a) => eDocente || !escondidos.has(a.secaoId)
+    const materiais = todosMateriais.filter(visivel)
+    const trabalhos = todosTrabalhos.filter(visivel)
+    const questionarios = todosQuestionarios.filter(visivel).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
+    const base = {
+      ...cadeira, materiais, avisos, horario, questionarios, eventos,
+      secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({ id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel })),
+      forum: { topicos: topicos.length, recentes: topicos.slice(0, 3).map((t) => ({ id: t.id, titulo: t.titulo, autor: t.autor.nome, atividadeEm: t.atividadeEm })) },
+    }
 
-    if (conta.tipo === 'docente') {
+    if (eDocente) {
       const estudantes = await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
       const comEntregas = await Promise.all(trabalhos.map(async (t) => ({
         ...t, estado: estadoPrazo(t.prazo, agora, t.aceitaAtraso), entregas: (await this.academico.entregasDoTrabalho(t.id)).length,
@@ -239,12 +255,87 @@ export class ServicoPortal {
     const uso = f && (await this.academico.usoDoFicheiro(f.id))
     const negar = () => { throw new NaoEncontrado('Ficheiro não encontrado.') }
     if (!uso) negar()
-    if (['material', 'enunciado', 'programa'].includes(uso.tipo)) await this.#cadeiraAcessivel(conta, uso.cadeiraId)
+    if (['material', 'enunciado', 'programa'].includes(uso.tipo)) {
+      await this.#cadeiraAcessivel(conta, uso.cadeiraId)
+      if (conta.tipo === 'estudante' && uso.escondido) negar() // capítulo ainda escondido
+    }
     else if (uso.tipo === 'entrega') {
       if (conta.tipo === 'estudante' && uso.estudanteId !== conta.id) negar()
       if (conta.tipo === 'docente') await this.#cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'pedido' && uso.estudanteId !== conta.id) negar()
     return { caminho: this.privados.absoluto(f.caminho), nome: f.nome, tipo: f.tipo }
+  }
+
+  // ---------- docente: capítulos da cadeira ----------
+
+  // capítulo indicado num formulário: tem de ser desta cadeira (vazio = secção geral)
+  async #secaoDaCadeira(cadeiraId, secaoId) {
+    if (secaoId === undefined || secaoId === null || secaoId === '' || secaoId === 'null') return null
+    const secao = await this.academico.secao(secaoId)
+    if (!secao || secao.cadeiraId !== cadeiraId) throw new ErroValidacao('Capítulo inválido.', { campo: 'secaoId' })
+    return secao.id
+  }
+
+  async #secaoDoDocente(ctx, id) {
+    const secao = await this.academico.secao(id)
+    if (!secao) throw new NaoEncontrado('Capítulo não encontrado.')
+    await this.#cadeiraDoDocente(ctx.conta, secao.cadeiraId)
+    return secao
+  }
+
+  #camposSecao(dados) {
+    return {
+      ...(dados.titulo !== undefined ? { titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 150 }) } : {}),
+      ...(dados.resumo !== undefined ? { resumo: texto(dados.resumo, 'resumo', 'Resumo', { max: 3000, obrigatorio: false }) } : {}),
+      ...(dados.visivel !== undefined ? { visivel: Boolean(dados.visivel) } : {}),
+    }
+  }
+
+  async criarSecao(ctx, cadeiraId, dados) {
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
+    if (dados.titulo === undefined) throw new ErroValidacao('Indique o título.', { campo: 'titulo' })
+    return this.academico.criarSecao({ cadeiraId: cadeira.id, ...this.#camposSecao(dados) })
+  }
+
+  async atualizarSecao(ctx, id, dados) {
+    const secao = await this.#secaoDoDocente(ctx, id)
+    return this.academico.atualizarSecao(secao.id, this.#camposSecao(dados))
+  }
+
+  async apagarSecao(ctx, id) {
+    const secao = await this.#secaoDoDocente(ctx, id)
+    await this.academico.apagarSecao(secao.id)
+  }
+
+  async ordenarSecoes(ctx, cadeiraId, ids) {
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
+    const minhas = new Set((await this.academico.secoes(cadeira.id)).map((x) => x.id))
+    const lista = ids.map(Number)
+    if (lista.length !== minhas.size || lista.some((x) => !minhas.has(x)) || new Set(lista).size !== lista.length) {
+      throw new ErroValidacao('A ordem tem de incluir todos os capítulos da cadeira, uma vez cada.')
+    }
+    await this.academico.ordenarSecoes(cadeira.id, lista)
+    return this.academico.secoes(cadeira.id)
+  }
+
+  // muda um material, trabalho ou questionário de capítulo
+  async moverAtividade(ctx, { tipo, id, secaoId }) {
+    const buscar = { material: (x) => this.academico.material(x), trabalho: (x) => this.academico.trabalho(x), questionario: (x) => this.recursos.questionario(x) }[tipo]
+    if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
+    const atividade = await buscar(id)
+    if (!atividade) throw new NaoEncontrado('Atividade não encontrada.')
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, atividade.cadeiraId)
+    await this.academico.moverAtividade(tipo, atividade.id, await this.#secaoDaCadeira(cadeira.id, secaoId))
+  }
+
+  // participantes da cadeira (docentes e estudantes da turma), como no Moodle
+  async participantes(ctx, cadeiraId) {
+    const cadeira = await this.#cadeiraAcessivel(ctx.conta, cadeiraId)
+    const estudantes = await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
+    return {
+      docentes: cadeira.docentes.map((d) => ({ id: d.id, nome: d.nome, email: d.email, papel: d.papel })),
+      estudantes: estudantes.map((e) => ({ id: e.id, nome: e.nome, numero: e.numero, email: e.email })),
+    }
   }
 
   // ---------- docente: materiais e avisos ----------
@@ -256,7 +347,7 @@ export class ServicoPortal {
       cadeiraId: cadeira.id, autorId: ctx.conta.id, tipo,
       titulo: texto(dados.titulo, 'titulo', 'Título', { min: 2, max: 200 }),
       descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
-      topico: texto(dados.topico, 'topico', 'Tópico', { max: 120, obrigatorio: false }),
+      secaoId: await this.#secaoDaCadeira(cadeira.id, dados.secaoId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e }),
     }
     if (tipo === 'ficheiro') {
       if (!ficheiro) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
@@ -329,8 +420,9 @@ export class ServicoPortal {
       if (ficheiro) this.privados.apagar(ficheiro.caminho)
       throw e
     }
+    const secaoId = await this.#secaoDaCadeira(cadeira.id, dados.secaoId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e })
     const ficheiroId = ficheiro ? await this.#registarFicheiro(ficheiro, ctx.conta.id) : null
-    return this.academico.criarTrabalho({ cadeiraId: cadeira.id, ...campos, ficheiroId })
+    return this.academico.criarTrabalho({ cadeiraId: cadeira.id, ...campos, secaoId, ficheiroId })
   }
 
   async apagarTrabalho(ctx, id) {

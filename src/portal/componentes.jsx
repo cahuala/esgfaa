@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Children, cloneElement, isValidElement, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 // peças comuns do portal, no markup do Color Admin (o mesmo tema do painel)
@@ -97,7 +97,12 @@ export function Campo({ id, rotulo, erro, ajuda, largo, children }) {
   return (
     <div className={`p-campo ${largo ? 'p-largo' : ''} ${erro ? 'p-com-erro' : ''}`}>
       <label htmlFor={id} className="form-label fw-bold mb-0">{rotulo}</label>
-      {children}
+      {Children.map(children, (c) => {
+        // os campos ganham as classes do tema (form-control / form-select)
+        if (!isValidElement(c) || !['input', 'select', 'textarea'].includes(c.type) || ['checkbox', 'radio', 'file'].includes(c.props.type)) return c
+        const classe = c.type === 'select' ? 'form-select' : 'form-control'
+        return cloneElement(c, { className: `${classe} ${erro ? 'is-invalid' : ''} ${c.props.className || ''}`.trim() })
+      })}
       {erro ? <span className="p-campo-erro" role="alert">{erro}</span> : ajuda && <span className="form-text mt-0">{ajuda}</span>}
     </div>
   )

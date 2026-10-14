@@ -3,7 +3,6 @@ import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import Brasao from '../assets/Logo.png'
 import Sede from '../assets/Escola De Guerra.png'
 import { useTema } from '../tema/useTema'
-import { api } from './api'
 import { useSessao } from './sessaoContexto'
 import { iniciais } from './formatar'
 
@@ -32,14 +31,11 @@ function Layout({ children }) {
   const [menuMovelEm, setMenuMovelEm] = useState(null)
   const [contaEm, setContaEm] = useState(null)
   const [minimizado, setMinimizado] = useState(false)
-  const [cadeirasAbertas, setCadeirasAbertas] = useState(pathname.startsWith('/cadeiras'))
-  const [cadeiras, setCadeiras] = useState([])
   const caixa = useRef(null)
   const menuMovel = menuMovelEm === pathname
   const menuConta = contaEm === pathname
 
   useEffect(() => { document.documentElement.setAttribute('data-bs-theme', tema) }, [tema])
-  useEffect(() => { api('/cadeiras').then(setCadeiras).catch(() => {}) }, [])
   useEffect(() => {
     if (!menuConta) return undefined
     const fora = (e) => { if (!caixa.current?.contains(e.target)) setContaEm(null) }
@@ -136,23 +132,7 @@ function Layout({ children }) {
             <div className="menu-header">Geral</div>
             <ItemMenu para="/" fim icone="fa-th-large" texto="Painel" />
             <ItemMenu para="/calendario" icone="fa-calendar-alt" texto="Calendário" />
-            <div className={`menu-item has-sub ${cadeirasAbertas ? 'expand' : ''} ${pathname.startsWith('/cadeiras') ? 'active' : ''}`}>
-              <button type="button" className="menu-link w-100 border-0 bg-transparent text-start" onClick={() => setCadeirasAbertas(!cadeirasAbertas)}>
-                <div className="menu-icon"><i className="fa fa-book" /></div>
-                <div className="menu-text">{eDocente ? 'As minhas cadeiras' : 'Cadeiras'}</div>
-                <div className="menu-caret" />
-              </button>
-              <div className="menu-submenu" style={{ display: cadeirasAbertas ? 'block' : 'none' }}>
-                <div className={`menu-item ${pathname === '/cadeiras' ? 'active' : ''}`}>
-                  <NavLink to="/cadeiras" end className="menu-link"><div className="menu-text">Todas</div></NavLink>
-                </div>
-                {cadeiras.map((c) => (
-                  <div key={c.id} className={`menu-item ${pathname === `/cadeiras/${c.id}` ? 'active' : ''}`}>
-                    <NavLink to={`/cadeiras/${c.id}`} className="menu-link"><div className="menu-text text-truncate">{c.codigo} · {c.nome}</div></NavLink>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ItemMenu para="/cadeiras" icone="fa-book" texto={eDocente ? 'As minhas cadeiras' : 'As minhas cadeiras'} />
             <ItemMenu para="/horario" icone="fa-clock" texto="Horário" />
 
             {!eDocente && (

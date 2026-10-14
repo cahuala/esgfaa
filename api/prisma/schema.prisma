@@ -268,6 +268,7 @@ model UnidadeCurricular {
   forumTopicos     ForumTopico[]
   eventoAcademicos EventoAcademico[]
   questionarios    Questionario[]
+  secaoCadeiras    SecaoCadeira[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -306,7 +307,7 @@ model Material {
   cadeiraId   Int      @map("cadeira_id")
   titulo      String
   descricao   String   @default("")
-  topico      String   @default("") // agrupa os materiais (ex.: "Semana 1")
+  secaoId     Int?     @map("secao_id") // capítulo da cadeira (null = secção geral)
   tipo        String // ficheiro | ligacao | video
   ficheiroId  String?  @map("ficheiro_id")
   url         String   @default("")
@@ -314,6 +315,7 @@ model Material {
   publicadoEm DateTime @default(now()) @map("publicado_em") @db.Timestamptz(3)
 
   cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   conclusoes Conclusao[]
 
   @@index([cadeiraId])
@@ -375,9 +377,11 @@ model Trabalho {
   prazo        DateTime @db.Timestamptz(3)
   aceitaAtraso Boolean  @default(false) @map("aceita_atraso")
   ficheiroId   String?  @map("ficheiro_id") // enunciado em ficheiro (opcional)
+  secaoId      Int?     @map("secao_id")
   criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira  UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao    SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   entregas Entrega[]
 
   @@index([cadeiraId])
@@ -549,9 +553,11 @@ model Questionario {
   tentativas       Int       @default(1) // tentativas permitidas
   publicado        Boolean   @default(false)
   mostrarRespostas Boolean   @default(true) @map("mostrar_respostas") // mostrar as corretas depois de entregar
+  secaoId          Int?      @map("secao_id")
   criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   perguntas  Pergunta[]
   realizadas Tentativa[]
 
@@ -591,4 +597,23 @@ model Tentativa {
   @@unique([questionarioId, estudanteId, numero])
   @@index([estudanteId])
   @@map("tentativas")
+}
+
+// capítulos da cadeira (as "secções" do Moodle): agrupam materiais, trabalhos e questionários
+model SecaoCadeira {
+  id        Int      @id @default(autoincrement())
+  cadeiraId Int      @map("cadeira_id")
+  ordem     Int      @default(0)
+  titulo    String
+  resumo    String   @default("")
+  visivel   Boolean  @default(true) // escondido dos estudantes enquanto o docente prepara
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira       UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  materiais     Material[]
+  trabalhos     Trabalho[]
+  questionarios Questionario[]
+
+  @@index([cadeiraId, ordem])
+  @@map("secoes_cadeira")
 }

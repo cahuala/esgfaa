@@ -1,31 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FaClock, FaDownload, FaTrashAlt, FaUpload } from 'react-icons/fa'
-import { abrirFicheiro, api } from '../api'
+import { abrirFicheiro, api, enviarComProgresso } from '../api'
+import ZonaUpload from '../ZonaUpload'
 import { Campo, Cartao, Etiqueta, Vazio } from '../componentes'
-import { dataHora, faltam, localParaIso, nota } from '../formatar'
+import { dataHora, faltam, nota } from '../formatar'
 
 const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
 
-function Trabalhos({ c, eDocente, recarregar, avisar }) {
-  const [aberto, setAberto] = useState(null) // trabalho com as entregas abertas (docente)
+// um trabalho (aberto a partir da página da cadeira): enunciado, entrega do estudante ou entregas para o docente
+function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
+  const [aberto, setAberto] = useState(so ?? null) // trabalho com as entregas abertas (docente)
+  const lista = so ? c.trabalhos.filter((t) => t.id === so) : c.trabalhos
   const baixar = (id, nome) => abrirFicheiro(id, { nome }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))
 
   return (
-    <div className={eDocente ? 'p-grelha-lado' : ''}>
+    <div>
       <div className="p-coluna">
-        {c.trabalhos.length === 0 && <Vazio>Sem trabalhos.</Vazio>}
-        {c.trabalhos.map((t) => (
+        {lista.length === 0 && <Vazio>Trabalho não encontrado.</Vazio>}
+        {lista.map((t) => (
           <Cartao key={t.id} titulo={t.titulo} acoes={<Etiqueta cor={ESTADO[t.estado][0]}>{ESTADO[t.estado][1]}</Etiqueta>}>
             <p className="p-linha-meta"><FaClock aria-hidden="true" /> Prazo: <strong>{dataHora(t.prazo)}</strong> · {faltam(t.prazo)}</p>
             {t.enunciado && <p className="p-texto-pre">{t.enunciado}</p>}
-            {t.ficheiroId && <button type="button" className="p-botao p-botao-contorno p-botao-pequeno" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><FaDownload aria-hidden="true" /> Enunciado</button>}
+            {t.ficheiroId && <button type="button" className="btn btn-white btn-sm" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><FaDownload aria-hidden="true" /> Enunciado</button>}
 
             {eDocente ? (
               <div className="p-acoes-linha">
-                <button type="button" className="p-botao p-botao-pequeno" onClick={() => setAberto(aberto === t.id ? null : t.id)}>
+                <button type="button" className="btn btn-theme btn-sm" onClick={() => setAberto(aberto === t.id ? null : t.id)}>
                   {aberto === t.id ? 'Fechar entregas' : `Ver entregas (${t.entregas})`}
                 </button>
-                <button type="button" className="p-botao-icone" aria-label="Apagar trabalho" onClick={async () => {
+                <button type="button" className="btn btn-white btn-icon btn-sm" aria-label="Apagar trabalho" onClick={async () => {
                   if (!window.confirm(`Apagar "${t.titulo}" e todas as entregas?`)) return
                   await api(`/trabalhos/${t.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
                 }}><FaTrashAlt /></button>
@@ -33,18 +36,18 @@ function Trabalhos({ c, eDocente, recarregar, avisar }) {
             ) : (
               <MinhaEntrega t={t} recarregar={recarregar} avisar={avisar} baixar={baixar} />
             )}
-            {eDocente && aberto === t.id && <Entregas trabalho={t} avisar={avisar} baixar={baixar} />}
+            {eDocente && (aberto === t.id) && <Entregas trabalho={t} avisar={avisar} baixar={baixar} />}
           </Cartao>
         ))}
       </div>
-      {eDocente && <NovoTrabalho c={c} recarregar={recarregar} avisar={avisar} />}
     </div>
   )
 }
 
 // estudante: estado da sua entrega e formulário para entregar (ou substituir)
 function MinhaEntrega({ t, recarregar, avisar, baixar }) {
-  const [ficheiro, setFicheiro] = useState(null)
+  const [ficheiros, setFicheiros] = useState([])
+  const ficheiro = ficheiros[0]?.ficheiro
   const [comentario, setComentario] = useState('')
   const [aEnviar, setAEnviar] = useState(false)
   const [erro, setErro] = useState('')
@@ -59,7 +62,7 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
       const fd = new FormData()
       fd.append('comentario', comentario)
       if (ficheiro) fd.append('ficheiro', ficheiro)
-      await api(`/trabalhos/${t.id}/entrega`, { metodo: 'POST', formulario: fd })
+      await enviarComProgresso(`/trabalhos/${t.id}/entrega`, fd, { aoProgresso: (p) => setFicheiros((l) => l.map((x) => ({ ...x, progresso: p }))) })
       avisar({ texto: 'Trabalho entregue.' })
       recarregar()
     } catch (falha) {
@@ -75,7 +78,7 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
         <div className="p-entrega-feita">
           <Etiqueta cor={e.atrasada ? 'dourado' : 'verde'}>{e.atrasada ? 'Entregue com atraso' : 'Entregue'}</Etiqueta>
           <span className="p-texto-suave"> {dataHora(e.entregueEm)}</span>
-          <button type="button" className="p-ligacao-simples" onClick={() => baixar(e.ficheiroId, `Entrega - ${t.titulo}`)}>Ver o que entreguei</button>
+          <button type="button" className="btn btn-link p-0" onClick={() => baixar(e.ficheiroId, `Entrega - ${t.titulo}`)}>Ver o que entreguei</button>
           {e.nota !== null && (
             <div className="p-correcao">
               <strong>Nota: {nota(e.nota)}</strong>
@@ -88,13 +91,12 @@ function MinhaEntrega({ t, recarregar, avisar, baixar }) {
       {podeEntregar && (
         <form onSubmit={entregar} className="p-formulario p-entrega-form">
           {erro && <p className="p-erro" role="alert">{erro}</p>}
-          <Campo id={`f-${t.id}`} rotulo={e ? 'Substituir a entrega' : 'Ficheiro'} ajuda="PDF, Word, PowerPoint, Excel, imagens ou ZIP.">
-            <input id={`f-${t.id}`} type="file" onChange={(x) => setFicheiro(x.target.files[0] || null)} required />
-          </Campo>
+          <span className="form-label fw-bold mb-0">{e ? 'Substituir a entrega' : 'O seu trabalho'}</span>
+          <ZonaUpload id={`f-${t.id}`} ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} nota="PDF, Word, PowerPoint, Excel, imagens ou ZIP — até 50 MB." />
           <Campo id={`c-${t.id}`} rotulo="Comentário para o docente (opcional)">
             <textarea id={`c-${t.id}`} rows={2} maxLength={2000} value={comentario} onChange={(x) => setComentario(x.target.value)} />
           </Campo>
-          <button type="submit" className="p-botao" disabled={aEnviar || !ficheiro}><FaUpload aria-hidden="true" /> {aEnviar ? 'A enviar…' : 'Entregar'}</button>
+          <button type="submit" className="btn btn-theme" disabled={aEnviar || !ficheiro}><FaUpload aria-hidden="true" /> {aEnviar ? 'A enviar…' : 'Entregar'}</button>
         </form>
       )}
     </div>
@@ -125,8 +127,8 @@ function Entregas({ trabalho, avisar, baixar }) {
   return (
     <div className="p-entregas">
       <p className="p-texto-suave">{entregues} de {d.linhas.length} estudantes entregaram.</p>
-      <div className="p-tabela-rolavel">
-        <table className="p-tabela">
+      <div className="table-responsive">
+        <table className="table table-hover align-middle mb-0">
           <thead><tr><th>Estudante</th><th>Entrega</th><th className="p-num">Nota</th><th>Comentário</th><th /></tr></thead>
           <tbody>
             {d.linhas.map(({ estudante, entrega }) => (
@@ -135,65 +137,23 @@ function Entregas({ trabalho, avisar, baixar }) {
                 <td>
                   {entrega ? (
                     <>
-                      <button type="button" className="p-ligacao-simples" onClick={() => baixar(entrega.ficheiroId, `${estudante.numero} - ${trabalho.titulo}`)}>Descarregar</button>
+                      <button type="button" className="btn btn-link p-0" onClick={() => baixar(entrega.ficheiroId, `${estudante.numero} - ${trabalho.titulo}`)}>Descarregar</button>
                       <div className="p-texto-fraco">{dataHora(entrega.entregueEm)}{entrega.atrasada && ' · atrasada'}</div>
                       {entrega.comentario && <div className="p-texto-suave">“{entrega.comentario}”</div>}
                     </>
                   ) : <span className="p-texto-fraco">Não entregou</span>}
                 </td>
                 <td className="p-num">
-                  {entrega && <input className="p-nota" inputMode="decimal" aria-label={`Nota de ${estudante.nome}`} value={notas[entrega.id]?.nota ?? ''} onChange={(e) => setNotas({ ...notas, [entrega.id]: { ...notas[entrega.id], nota: e.target.value } })} />}
+                  {entrega && <input className="form-control form-control-sm p-nota" inputMode="decimal" aria-label={`Nota de ${estudante.nome}`} value={notas[entrega.id]?.nota ?? ''} onChange={(e) => setNotas({ ...notas, [entrega.id]: { ...notas[entrega.id], nota: e.target.value } })} />}
                 </td>
-                <td>{entrega && <input aria-label={`Comentário para ${estudante.nome}`} value={notas[entrega.id]?.correcao ?? ''} onChange={(e) => setNotas({ ...notas, [entrega.id]: { ...notas[entrega.id], correcao: e.target.value } })} />}</td>
-                <td>{entrega && <button type="button" className="p-botao p-botao-pequeno" onClick={() => corrigir(entrega.id)}>Guardar</button>}</td>
+                <td>{entrega && <input className="form-control form-control-sm" aria-label={`Comentário para ${estudante.nome}`} value={notas[entrega.id]?.correcao ?? ''} onChange={(e) => setNotas({ ...notas, [entrega.id]: { ...notas[entrega.id], correcao: e.target.value } })} />}</td>
+                <td>{entrega && <button type="button" className="btn btn-theme btn-sm" onClick={() => corrigir(entrega.id)}>Guardar</button>}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
     </div>
-  )
-}
-
-function NovoTrabalho({ c, recarregar, avisar }) {
-  const vazio = { titulo: '', enunciado: '', prazo: '', aceitaAtraso: false }
-  const [f, setF] = useState(vazio)
-  const [ficheiro, setFicheiro] = useState(null)
-  const [erro, setErro] = useState('')
-
-  async function criar(e) {
-    e.preventDefault()
-    setErro('')
-    try {
-      const fd = new FormData()
-      fd.append('titulo', f.titulo)
-      fd.append('enunciado', f.enunciado)
-      fd.append('prazo', localParaIso(f.prazo))
-      fd.append('aceitaAtraso', String(f.aceitaAtraso))
-      if (ficheiro) fd.append('ficheiro', ficheiro)
-      await api(`/cadeiras/${c.id}/trabalhos`, { metodo: 'POST', formulario: fd })
-      setF(vazio)
-      setFicheiro(null)
-      e.target.reset()
-      avisar({ texto: 'Trabalho criado. Os estudantes já o veem.' })
-      recarregar()
-    } catch (falha) {
-      setErro(falha.message)
-    }
-  }
-
-  return (
-    <Cartao titulo="Novo trabalho">
-      <form onSubmit={criar} className="p-formulario">
-        {erro && <p className="p-erro" role="alert">{erro}</p>}
-        <Campo id="t-titulo" rotulo="Título"><input id="t-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>
-        <Campo id="t-enunciado" rotulo="Enunciado"><textarea id="t-enunciado" rows={5} value={f.enunciado} onChange={(e) => setF({ ...f, enunciado: e.target.value })} /></Campo>
-        <Campo id="t-ficheiro" rotulo="Enunciado em ficheiro (opcional)"><input id="t-ficheiro" type="file" onChange={(e) => setFicheiro(e.target.files[0] || null)} /></Campo>
-        <Campo id="t-prazo" rotulo="Prazo de entrega"><input id="t-prazo" type="datetime-local" value={f.prazo} onChange={(e) => setF({ ...f, prazo: e.target.value })} required /></Campo>
-        <label className="p-caixa"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> Aceitar entregas depois do prazo (ficam marcadas como atrasadas)</label>
-        <button type="submit" className="p-botao">Criar trabalho</button>
-      </form>
-    </Cartao>
   )
 }
 

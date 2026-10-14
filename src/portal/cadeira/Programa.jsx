@@ -10,7 +10,7 @@ function Programa({ c, avisar }) {
     <Cartao
       titulo="Programa da cadeira"
       acoes={c.programaFicheiroId && (
-        <button type="button" className="p-botao p-botao-pequeno" onClick={() => abrirFicheiro(c.programaFicheiroId, { nome: `Programa ${c.codigo}`, ver: true }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>
+        <button type="button" className="btn btn-theme btn-sm" onClick={() => abrirFicheiro(c.programaFicheiroId, { nome: `Programa ${c.codigo}`, ver: true }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>
           <FaFileDownload aria-hidden="true" /> Descarregar documento
         </button>
       )}

@@ -1,24 +1,39 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
-import { Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio, Widget } from '../componentes'
-import { dataHora, faltam, maiusculaInicial, nota, primeiroNome } from '../formatar'
-import { PERIODOS } from '../regraAvaliacao'
-import { BarraProgresso } from '../cadeira/Progresso'
+import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
+import { dataHora, maiusculaInicial, nota, primeiroNome } from '../formatar'
+import { lerRecentes } from '../recentes'
+import VisaoCadeiras from '../VisaoCadeiras'
 
 const saudacao = () => {
   const h = new Date().getHours()
   return h < 12 ? 'Bom dia' : h < 19 ? 'Boa tarde' : 'Boa noite'
 }
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const ICONES = {
+  prazo: ['fa-file-signature', 'bg-orange', 'Entregar'], questionario: ['fa-question', 'bg-purple', 'Responder'],
+  p1: ['fa-pen', 'bg-yellow text-dark', 'Ver'], p2: ['fa-pen', 'bg-yellow text-dark', 'Ver'], exame: ['fa-graduation-cap', 'bg-red', 'Ver'],
+  recurso: ['fa-redo', 'bg-dark', 'Ver'], geral: ['fa-flag', 'bg-blue', 'Ver'], feriado: ['fa-umbrella-beach', 'bg-teal', 'Ver'],
+}
 
-// painel inicial (dashboard): números, aulas de hoje, prazos, avisos, notas e progresso no curso
+/*
+  Painel do portal (como o "Dashboard" do Moodle): números, linha temporal das próximas atividades,
+  cadeiras acedidas recentemente, visão das cadeiras com progresso; à direita o mini-calendário,
+  o progresso no curso, as aulas de hoje e os avisos.
+*/
 function Inicio() {
   const { conta, eDocente } = useSessao()
   const [d, setD] = useState(null)
   const [percurso, setPercurso] = useState(null)
   const [progresso, setProgresso] = useState(null)
+  const [agenda, setAgenda] = useState(null)
+  const [mes, setMes] = useState([])
+  const [dias, setDias] = useState(30)
   const [erro, setErro] = useState('')
+  const hoje = useMemo(() => new Date(), [])
+
   const carregar = useCallback(() => {
     api('/inicio').then(setD).catch((e) => setErro(e.message))
     if (!eDocente) {
@@ -27,78 +42,110 @@ function Inicio() {
     }
   }, [eDocente])
   useEffect(() => { carregar() }, [carregar])
+  // próximas seis semanas (linha temporal) e o mês corrente (mini-calendário)
+  useEffect(() => {
+    const ate = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 44)
+    api(`/calendario?de=${iso(hoje)}&ate=${iso(ate)}`).then(setAgenda).catch(() => setAgenda([]))
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    api(`/calendario?de=${iso(inicioMes)}&ate=${iso(fimMes)}`).then(setMes).catch(() => {})
+  }, [hoje])
 
-  const hoje = maiusculaInicial(new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const recentes = d ? lerRecentes(conta.id).map((id) => d.cadeiras.find((c) => c.id === id)).filter(Boolean).slice(0, 3) : []
   const anoAtual = percurso?.anos.at(-1)
+  const limite = iso(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + dias))
+  const linha = (agenda || [])
+    .map((i) => (i.momento ? { ...i, data: iso(new Date(i.momento)), inicio: new Date(i.momento).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) } : i))
+    .filter((i) => i.tipo !== 'aula' && i.data >= iso(hoje) && i.data <= limite)
+  const porDia = linha.reduce((m, i) => ((m[i.data] ||= []).push(i), m), {})
+  const porEntregar = d ? d.prazos.filter((p) => !p.entregue).length : 0
 
   return (
     <>
-      <Titulo rotulo="Painel" titulo={`${saudacao()}, ${primeiroNome(conta.nome)}`} sub={hoje} />
+      <Titulo rotulo="Painel" titulo={`${saudacao()}, ${primeiroNome(conta.nome)}`} sub={maiusculaInicial(hoje.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}>
+        <Link to="/calendario" className="btn btn-white"><i className="fa fa-calendar-alt me-1" /> Calendário</Link>
+        {!eDocente && <Link to="/notas" className="btn btn-theme"><i className="fa fa-clipboard-list me-1" /> As minhas notas</Link>}
+      </Titulo>
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
       {!d && !erro ? <Carregando /> : d && (
         <>
           <div className="row">
-            <div className="col-xl-3 col-md-6">
-              <Widget cor="bg-dark" icone="fa-book" titulo={eDocente ? 'CADEIRAS QUE LECIONA' : 'CADEIRAS'} valor={d.cadeiras.length} nota="Ver cadeiras" para="/cadeiras" />
-            </div>
-            <div className="col-xl-3 col-md-6">
-              <Widget cor="bg-red" icone="fa-chalkboard" titulo="AULAS HOJE" valor={d.aulasHoje.length} nota="Ver horário" para="/horario" />
-            </div>
-            <div className="col-xl-3 col-md-6">
-              <Widget
-                cor="bg-orange"
-                icone="fa-tasks"
-                titulo={eDocente ? 'PRAZOS A DECORRER' : 'TRABALHOS POR ENTREGAR'}
-                valor={eDocente ? d.prazos.length : d.prazos.filter((p) => !p.entregue).length}
-                nota="Ver calendário"
-                para="/calendario"
-              />
-            </div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo={eDocente ? 'CADEIRAS QUE LECIONA' : 'CADEIRAS EM CURSO'} valor={d.cadeiras.length} nota="Ver as cadeiras" para="/cadeiras" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-red" icone="fa-chalkboard" titulo="AULAS HOJE" valor={d.aulasHoje.length} nota="Ver horário" para="/horario" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo={eDocente ? 'ENTREGAS A DECORRER' : 'TRABALHOS POR ENTREGAR'} valor={eDocente ? d.prazos.length : porEntregar} nota="Ver calendário" para="/calendario" /></div>
             <div className="col-xl-3 col-md-6">
               {eDocente
-                ? <Widget cor="bg-teal" icone="fa-bullhorn" titulo="AVISOS RECENTES" valor={d.avisos.length} nota="nas suas cadeiras" />
+                ? <Widget cor="bg-teal" icone="fa-calendar-check" titulo="DATAS PRÓXIMAS" valor={linha.length} nota="provas, exames e entregas" />
                 : <Widget cor="bg-teal" icone="fa-graduation-cap" titulo="MÉDIA DAS APROVADAS" valor={percurso ? nota(percurso.resumo.media) : '—'} nota="Ver percurso académico" para="/percurso" />}
             </div>
           </div>
 
           <div className="row">
             <div className="col-xl-8">
-              {!eDocente && anoAtual && <GraficoNotas ano={anoAtual} />}
-              <Cartao titulo={<><i className="fa fa-chalkboard me-2" />Aulas de hoje</>}>
-                {d.aulasHoje.length === 0 ? <Vazio>Sem aulas hoje.</Vazio> : (
-                  <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                      <tbody>
-                        {d.aulasHoje.map((a) => (
-                          <tr key={a.id}>
-                            <td className="fw-bold text-nowrap" style={{ width: 120 }}>{a.inicio}–{a.fim}</td>
-                            <td><Link to={`/cadeiras/${a.cadeiraId}`} className="fw-bold text-decoration-none">{a.cadeira}</Link></td>
-                            <td className="text-muted text-nowrap">{a.sala && <><i className="fa fa-map-marker-alt me-1" />{a.sala}</>}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <Cartao
+                titulo={<><i className="fa fa-stream me-2" />Linha temporal</>}
+                acoes={(
+                  <select className="form-select form-select-sm p-select-escuro" value={dias} onChange={(e) => setDias(Number(e.target.value))} aria-label="Período da linha temporal">
+                    <option value={7}>Próximos 7 dias</option>
+                    <option value={30}>Próximos 30 dias</option>
+                    <option value={44}>Próximas 6 semanas</option>
+                  </select>
+                )}
+                corpo={false}
+              >
+                {!agenda ? <div className="panel-body"><Carregando /></div> : linha.length === 0 ? (
+                  <div className="panel-body text-center text-muted py-4"><i className="fa fa-mug-hot fa-2x d-block mb-2 opacity-50" />Nada para fazer nos próximos {dias} dias.</div>
+                ) : (
+                  <div className="list-group list-group-flush">
+                    {Object.entries(porDia).map(([dia, itens]) => (
+                      <div key={dia}>
+                        <div className="list-group-item p-dia-titulo">{maiusculaInicial(new Date(`${dia}T12:00:00`).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
+                        {itens.map((i) => {
+                          const [icone, cor, acao] = ICONES[i.tipo] || ICONES.geral
+                          const destino = i.tipo === 'prazo' ? `/cadeiras/${i.cadeiraId}?atividade=trabalho-${i.id.slice(1)}`
+                            : i.tipo === 'questionario' ? `/cadeiras/${i.cadeiraId}?atividade=questionario-${i.id.slice(1)}`
+                              : i.cadeiraId ? `/cadeiras/${i.cadeiraId}?separador=horario` : '/calendario'
+                          return (
+                            <div key={i.id} className="list-group-item d-flex align-items-center gap-3">
+                              <span className="small text-muted text-nowrap" style={{ width: 44 }}>{i.inicio || '—'}</span>
+                              <span className={`p-atividade-icone ${cor}`} style={{ width: 34, height: 34, fontSize: 14 }}><i className={`fa ${icone}`} /></span>
+                              <div className="flex-grow-1 min-w-0">
+                                <div className="fw-bold text-truncate">{i.titulo}</div>
+                                <div className="small text-muted text-truncate">{i.cadeira || i.turma || 'Escola Superior de Guerra'}{i.local && ` · ${i.local}`}</div>
+                              </div>
+                              <Link to={destino} className="btn btn-sm btn-white text-nowrap">{eDocente ? 'Ver' : acao}</Link>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
                   </div>
                 )}
               </Cartao>
-              <Cartao titulo={<><i className="fa fa-book me-2" />{eDocente ? 'As minhas cadeiras' : 'Cadeiras deste ano'}</>}>
-                <ListaCadeiras cadeiras={d.cadeiras} progresso={progresso} />
+
+              {recentes.length > 0 && (
+                <Cartao titulo={<><i className="fa fa-history me-2" />Acedidas recentemente</>}>
+                  <VisaoCadeiras cadeiras={recentes} progresso={progresso} compacto />
+                </Cartao>
+              )}
+
+              <Cartao titulo={<><i className="fa fa-book me-2" />As minhas cadeiras</>} acoes={<Link to="/cadeiras" className="btn btn-xs btn-white">Ver todas</Link>}>
+                <VisaoCadeiras cadeiras={d.cadeiras} progresso={progresso} compacto />
               </Cartao>
+
+              {!eDocente && anoAtual && <GraficoNotas ano={anoAtual} />}
             </div>
 
             <div className="col-xl-4">
+              <MiniCalendario hoje={hoje} itens={mes} />
               {!eDocente && percurso && <Progresso percurso={percurso} />}
-              <Cartao titulo={<><i className="fa fa-hourglass-half me-2" />{eDocente ? 'Prazos dos trabalhos' : 'Próximos prazos'}</>} corpo={false}>
-                {d.prazos.length === 0 ? <div className="panel-body"><Vazio>Sem trabalhos com prazo próximo.</Vazio></div> : (
+              <Cartao titulo={<><i className="fa fa-chalkboard me-2" />Aulas de hoje</>} corpo={false}>
+                {d.aulasHoje.length === 0 ? <div className="panel-body"><Vazio>Sem aulas hoje.</Vazio></div> : (
                   <div className="list-group list-group-flush">
-                    {d.prazos.map((p) => (
-                      <Link key={p.id} to={`/cadeiras/${p.cadeiraId}?separador=trabalhos`} className="list-group-item list-group-item-action">
-                        <div className="d-flex justify-content-between gap-2">
-                          <span className="fw-bold">{p.titulo}</span>
-                          {!eDocente && (p.entregue ? <Etiqueta cor="verde">Entregue</Etiqueta> : <Etiqueta cor="dourado">Por entregar</Etiqueta>)}
-                        </div>
-                        <div className="small text-muted">{p.cadeira}</div>
-                        <div className="small"><i className="far fa-clock me-1" />{dataHora(p.prazo)} · {faltam(p.prazo)}</div>
+                    {d.aulasHoje.map((a) => (
+                      <Link key={a.id} to={`/cadeiras/${a.cadeiraId}`} className="list-group-item list-group-item-action d-flex gap-3 align-items-center">
+                        <span className="p-hora">{a.inicio}</span>
+                        <span className="flex-grow-1 min-w-0"><span className="d-block fw-bold text-truncate">{a.cadeira}</span><span className="small text-muted">{a.inicio}–{a.fim}{a.sala && ` · ${a.sala}`}</span></span>
                       </Link>
                     ))}
                   </div>
@@ -135,6 +182,38 @@ function Inicio() {
         </>
       )}
     </>
+  )
+}
+
+// mini-calendário do mês com pontos nos dias com datas (como o bloco "Calendário" do Moodle)
+function MiniCalendario({ hoje, itens }) {
+  const navegar = useNavigate()
+  const primeiro = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1 - ((primeiro.getDay() + 6) % 7))
+  const dias = Array.from({ length: 42 }, (_, i) => new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i))
+  const marcados = itens.reduce((m, i) => {
+    if (i.tipo === 'aula') return m
+    const dia = i.momento ? iso(new Date(i.momento)) : i.data
+    ;(m[dia] ||= new Set()).add(i.tipo)
+    return m
+  }, {})
+  const cor = (tipos) => (tipos.has('exame') || tipos.has('recurso') ? 'bg-danger' : tipos.has('feriado') ? 'bg-teal' : tipos.has('prazo') ? 'bg-orange' : tipos.has('p1') || tipos.has('p2') ? 'bg-warning' : 'bg-primary')
+  return (
+    <Cartao titulo={<><i className="fa fa-calendar me-2" />{maiusculaInicial(hoje.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }))}</>} acoes={<Link to="/calendario" className="btn btn-xs btn-white">Abrir</Link>}>
+      <div className="p-mini-cal">
+        {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((x, i) => <span key={i} className="p-mini-cab">{x}</span>)}
+        {dias.map((x) => {
+          const k = iso(x)
+          const t = marcados[k]
+          return (
+            <button key={k} type="button" className={`p-mini-dia ${x.getMonth() !== hoje.getMonth() ? 'opacity-25' : ''} ${k === iso(hoje) ? 'p-mini-hoje' : ''}`} onClick={() => navegar('/calendario')} aria-label={x.toLocaleDateString('pt-PT')}>
+              {x.getDate()}
+              {t && <span className={`p-mini-ponto ${cor(t)}`} />}
+            </button>
+          )
+        })}
+      </div>
+    </Cartao>
   )
 }
 
@@ -198,29 +277,6 @@ function Progresso({ percurso }) {
         </div>
       </div>
     </Cartao>
-  )
-}
-
-export function ListaCadeiras({ cadeiras, progresso }) {
-  if (!cadeiras.length) return <Vazio>Ainda não tem cadeiras. Contacte a Administração Escolar.</Vazio>
-  return (
-    <div className="p-grelha-cadeiras">
-      {cadeiras.map((c) => (
-        <Link key={c.id} to={`/cadeiras/${c.id}`} className="p-cadeira">
-          <span className="p-cadeira-topo">
-            <span className="p-cadeira-icone"><i className="fa fa-book" /></span>
-            <span className="p-cadeira-codigo">{c.codigo} · {PERIODOS[c.periodo]}</span>
-          </span>
-          <strong>{c.nome}</strong>
-          <span className="small text-muted">
-            {c.docente ? <><i className="fa fa-star text-warning me-1" />{c.docente.nome}</> : 'Docentes por alocar'}
-            {c.docentes?.length > 1 && ` + ${c.docentes.length - 1}`}
-          </span>
-          {c.turma && <small className="text-muted">{c.turma.nome}</small>}
-          {progresso?.[c.id]?.total > 0 && <div className="mt-2"><BarraProgresso p={progresso[c.id]} /></div>}
-        </Link>
-      ))}
-    </div>
   )
 }
 

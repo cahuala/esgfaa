@@ -58,7 +58,7 @@ function Pedidos() {
                   <div className="p-linha-meta">
                     Pedido em {dataHora(p.criadoEm)}
                     {p.ficheiroId && (
-                      <button type="button" className="p-botao p-botao-pequeno" onClick={() => abrirFicheiro(p.ficheiroId, { nome: `${p.tipo}.pdf` }).catch((x) => setAviso({ tipo: 'erro', texto: x.message }))}>
+                      <button type="button" className="btn btn-theme btn-sm" onClick={() => abrirFicheiro(p.ficheiroId, { nome: `${p.tipo}.pdf` }).catch((x) => setAviso({ tipo: 'erro', texto: x.message }))}>
                         <FaDownload aria-hidden="true" /> Descarregar
                       </button>
                     )}
@@ -79,7 +79,7 @@ function Pedidos() {
             <Campo id="motivo" rotulo={f.tipo === 'Outro' ? 'Descreva o pedido' : 'Finalidade (opcional)'}>
               <textarea id="motivo" rows={4} maxLength={1000} value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} />
             </Campo>
-            <button type="submit" className="p-botao" disabled={aEnviar}>{aEnviar ? 'A enviar…' : 'Enviar pedido'}</button>
+            <button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? 'A enviar…' : 'Enviar pedido'}</button>
           </form>
         </Cartao>
       </div>

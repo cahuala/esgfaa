@@ -167,10 +167,46 @@ export class RepositorioAcademico {
     return this.prisma.unidadeCurricular.delete({ where: { id } })
   }
 
+  // ---------- capítulos (secções) ----------
+
+  secoes(cadeiraId) {
+    return this.prisma.secaoCadeira.findMany({ where: { cadeiraId }, orderBy: [{ ordem: 'asc' }, { id: 'asc' }] })
+  }
+
+  secao(id) {
+    const n = Number(id)
+    return Number.isSafeInteger(n) && n > 0 ? this.prisma.secaoCadeira.findUnique({ where: { id: n } }) : null
+  }
+
+  async criarSecao(dados) {
+    const ultima = await this.prisma.secaoCadeira.aggregate({ where: { cadeiraId: dados.cadeiraId }, _max: { ordem: true } })
+    return this.prisma.secaoCadeira.create({ data: { ...dados, ordem: (ultima._max.ordem ?? 0) + 1 } })
+  }
+
+  atualizarSecao(id, dados) {
+    return this.prisma.secaoCadeira.update({ where: { id }, data: dados })
+  }
+
+  // as atividades do capítulo apagado passam para a secção geral (onDelete: SetNull)
+  apagarSecao(id) {
+    return this.prisma.secaoCadeira.delete({ where: { id } })
+  }
+
+  async ordenarSecoes(cadeiraId, ids) {
+    const p = this.prisma
+    await p.$transaction(ids.map((id, i) => p.secaoCadeira.updateMany({ where: { id, cadeiraId }, data: { ordem: i + 1 } })))
+  }
+
+  // muda uma atividade (material, trabalho, questionário) de capítulo
+  moverAtividade(tipo, id, secaoId) {
+    const modelo = { material: this.prisma.material, trabalho: this.prisma.trabalho, questionario: this.prisma.questionario }[tipo]
+    return modelo.update({ where: { id }, data: { secaoId } })
+  }
+
   // ---------- materiais e avisos ----------
 
   async materiais(cadeiraId) {
-    const linhas = await this.prisma.material.findMany({ where: { cadeiraId }, orderBy: [{ topico: 'asc' }, { publicadoEm: 'asc' }] })
+    const linhas = await this.prisma.material.findMany({ where: { cadeiraId }, orderBy: [{ publicadoEm: 'asc' }, { id: 'asc' }] })
     return linhas.map((m) => ({ ...m, publicadoEm: iso(m.publicadoEm) }))
   }
 
@@ -431,14 +467,14 @@ export class RepositorioAcademico {
   async usoDoFicheiro(id) {
     const p = this.prisma
     const [material, trabalho, entrega, pedido, programa] = await Promise.all([
-      p.material.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true } }),
-      p.trabalho.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true } }),
+      p.material.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
+      p.trabalho.findFirst({ where: { ficheiroId: id }, select: { cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true, trabalho: { select: { cadeiraId: true } } } }),
       p.pedido.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true } }),
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
     ])
-    if (material) return { tipo: 'material', cadeiraId: material.cadeiraId }
-    if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId }
+    if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false }
+    if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false }
     if (entrega) return { tipo: 'entrega', cadeiraId: entrega.trabalho.cadeiraId, estudanteId: entrega.estudanteId }
     if (pedido) return { tipo: 'pedido', estudanteId: pedido.estudanteId }
     if (programa) return { tipo: 'programa', cadeiraId: programa.id }

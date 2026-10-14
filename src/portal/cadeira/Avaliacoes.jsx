@@ -107,7 +107,7 @@ function Pauta({ c, avisar }) {
     return (
       <td className={desativado && !edicao[id][k] ? 'p-celula-inativa' : ''}>
         <input
-          className={`p-nota ${invalida ? 'p-nota-invalida' : ''}`}
+          className={`form-control form-control-sm p-nota ${invalida ? 'p-nota-invalida' : ''}`}
           inputMode="decimal"
           aria-label={`${NOMES_COMPONENTES[k]} de ${l.estudante.nome}`}
           aria-invalid={invalida || undefined}
@@ -128,15 +128,15 @@ function Pauta({ c, avisar }) {
         </div>
         <div className="p-acoes-linha p-sem-impressao">
           {alterado && <span className="p-por-guardar">Alterações por guardar</span>}
-          <button type="button" className="p-botao p-botao-contorno" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
-          <button type="button" className="p-botao" onClick={guardar} disabled={!alterado || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? 'A guardar…' : 'Guardar pauta'}</button>
+          <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" /> Imprimir</button>
+          <button type="button" className="btn btn-theme" onClick={guardar} disabled={!alterado || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? 'A guardar…' : 'Guardar pauta'}</button>
         </div>
       </div>
 
       <div className="panel mb-2 overflow-hidden">
         <div className="p-impressao-cabeca">Pauta · {c.codigo} {c.nome} · {c.turma?.nome}</div>
-        <div className="p-tabela-rolavel">
-          <table className="p-matriz p-matriz-pauta">
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz p-matriz-pauta">
             <thead>
               <tr>
                 <th scope="col" className="p-matriz-num">N.º</th>

@@ -131,7 +131,7 @@ export class RepositorioRecursosCadeira {
   #questionario(q) {
     return q && {
       id: q.id, cadeiraId: q.cadeiraId, titulo: q.titulo, descricao: q.descricao, abre: iso(q.abre), fecha: iso(q.fecha),
-      duracao: q.duracao, tentativas: q.tentativas, publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, criadoEm: iso(q.criadoEm),
+      duracao: q.duracao, tentativas: q.tentativas, publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, secaoId: q.secaoId, criadoEm: iso(q.criadoEm),
       ...(q.perguntas ? { perguntas: q.perguntas.map((p) => ({ id: p.id, ordem: p.ordem, enunciado: p.enunciado, tipo: p.tipo, opcoes: p.opcoes, pontos: num(p.pontos) })) } : {}),
       ...(q._count ? { numeroPerguntas: q._count.perguntas } : {}),
     }

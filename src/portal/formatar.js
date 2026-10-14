@@ -41,3 +41,11 @@ export const iniciais = (nome) => {
 }
 
 export const maiusculaInicial = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t)
+
+// ícone Font Awesome conforme o tipo do ficheiro (PDF, Word, Excel, …)
+const ICONES = [
+  [/pdf/, 'fa-file-pdf text-danger'], [/word|document/, 'fa-file-word text-primary'], [/sheet|excel/, 'fa-file-excel text-success'],
+  [/presentation|powerpoint/, 'fa-file-powerpoint text-warning'], [/^image\//, 'fa-file-image text-info'], [/^video\//, 'fa-file-video text-purple'],
+  [/zip/, 'fa-file-archive text-gray-600'],
+]
+export const iconeFicheiro = (tipo = '') => ICONES.find(([re]) => re.test(tipo))?.[1] || 'fa-file-alt text-gray-600'

@@ -223,23 +223,17 @@
 .p-programa ul, .p-programa ol { padding-left: 22px; margin: 6px 0; }
 .p-programa p { margin: 6px 0; }
 
-/* ---------- matriz de notas (boletim, percurso e pauta) ---------- */
-.p-matriz { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; margin: 0; }
-.p-matriz th, .p-matriz td { padding: 10px 12px; border-bottom: 1px solid var(--p-linha); border-right: 1px solid var(--p-linha); text-align: center; vertical-align: middle; white-space: nowrap; }
-.p-matriz th:last-child, .p-matriz td:last-child { border-right: 0; }
-.p-matriz tbody tr:last-child > * { border-bottom: 0; }
-.p-matriz thead th { background: var(--esg-preto, #14100e); color: #fff; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; border-right-color: rgba(255, 255, 255, 0.1); border-bottom: 3px solid var(--p-marca); }
-.p-matriz tbody tr:hover > * { background: var(--p-fundo); }
-.p-matriz .p-matriz-nome { position: sticky; left: 0; z-index: 1; min-width: 230px; text-align: left; white-space: normal; background: var(--p-superficie); font-weight: 600; }
-.p-matriz thead .p-matriz-nome { background: var(--esg-preto, #14100e); z-index: 2; }
+/* ---------- matriz de notas (tabelas do tema, com a MAC e a nota final em destaque) ---------- */
+.p-matriz { font-variant-numeric: tabular-nums; }
+.p-matriz > :not(caption) > * > * { padding: 10px 12px; }
+.p-matriz thead th { font-size: 12px; font-weight: 700; white-space: nowrap; vertical-align: middle; }
+.p-matriz .p-matriz-nome { position: sticky; left: 0; z-index: 1; min-width: 230px; text-align: left; background: var(--bs-component-bg, #fff); font-weight: 600; }
 .p-matriz-nome a { color: var(--p-texto); text-decoration: none; }
 .p-matriz-nome a:hover { color: var(--p-marca); }
 .p-matriz-nome small { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 400; color: var(--p-fraco); }
 .p-matriz-num { width: 44px; color: var(--p-fraco); font-size: 12px; }
-.p-matriz tbody .p-matriz-mac { background: rgba(201, 162, 39, 0.09); }
-.p-matriz tbody .p-matriz-final { background: rgba(229, 57, 23, 0.06); }
-.p-matriz thead .p-matriz-mac { background: #3a2f12; }
-.p-matriz thead .p-matriz-final { background: #4a1a10; }
+.p-matriz .p-matriz-mac { background-color: rgba(201, 162, 39, 0.1) !important; }
+.p-matriz .p-matriz-final { background-color: rgba(229, 57, 23, 0.07) !important; }
 .p-matriz-grupo th { text-align: left !important; background: var(--p-fundo) !important; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--p-suave); }
 .p-valor { font-weight: 600; font-size: 14px; }
 .p-valor-forte { font-size: 16px; font-weight: 800; }
@@ -254,8 +248,8 @@
 .p-nota:disabled { background: transparent !important; border-style: dashed !important; opacity: 0.5; }
 .p-nota-invalida { border-color: var(--p-marca) !important; background: var(--p-tinte) !important; }
 .p-celula-inativa { background: repeating-linear-gradient(-45deg, transparent 0 6px, var(--p-fundo) 6px 7px); }
-.p-publicar { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 6px auto 0; padding: 2px 8px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 3px; background: transparent; color: rgba(255, 255, 255, 0.75); font-size: 10.5px; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
-.p-publicar:hover { color: #fff; border-color: #fff; }
+.p-publicar { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 6px auto 0; padding: 2px 8px; border: 1px solid var(--p-linha); border-radius: 3px; background: var(--bs-component-bg, #fff); color: var(--p-suave); font-size: 10.5px; font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.p-publicar:hover { color: var(--p-marca); border-color: var(--p-marca); }
 .p-publicar.p-publicada { background: #2f7d4f; border-color: #2f7d4f; color: #fff; }
 .p-pauta-barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .p-pauta-barra .p-acoes-linha { margin-top: 0; }
@@ -336,8 +330,7 @@
 /* modo escuro: textos que a identidade do painel fixa em preto */
 [data-bs-theme=dark] .page-header { color: #e7eaed; }
 [data-bs-theme=dark] .breadcrumb-item.active { color: #8c949b; }
-[data-bs-theme=dark] .p-cadeira-topo,
-[data-bs-theme=dark] .p-matriz thead th:not(.p-matriz-mac):not(.p-matriz-final) { background: #0b0e11; }
+[data-bs-theme=dark] .p-cadeira-topo { background: #0b0e11; }
 
 /* ---------- calendário (vista mensal) ---------- */
 .p-calendario { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
@@ -375,3 +368,43 @@
 /* separadores da cadeira numa só linha, a deslizar se não couberem */
 .p-perfil .profile-header-tab { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
 .p-perfil .profile-header-tab .nav-link { white-space: nowrap; }
+
+/* zona de envio (dropzone do Color Admin) */
+.p-ondrop { cursor: pointer; min-height: 0 !important; padding: 8px !important; transition: border-color 0.15s, background 0.15s; }
+.p-ondrop:hover, .p-ondrop:focus-visible, .p-dz-sobre { border-color: var(--p-marca) !important; background: var(--p-tinte) !important; outline: none; }
+.p-ondrop .dz-message { font-size: 15px !important; margin: 18px 0 !important; }
+
+/* ---------- página da cadeira (como no Moodle) ---------- */
+.p-atividade-icone { width: 40px; height: 40px; flex-shrink: 0; border-radius: 6px; display: inline-grid; place-items: center; color: #fff; font-size: 16px; }
+.p-atividade-icone-grande { width: 54px; height: 54px; font-size: 22px; }
+.p-escolha { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 18px 12px; border: 1px solid var(--p-linha); border-radius: 8px; background: var(--bs-component-bg, #fff); color: var(--p-texto); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+.p-escolha:hover, .p-escolha:focus-visible { border-color: var(--p-marca); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08); transform: translateY(-2px); outline: none; }
+.p-capitulo-escondido { opacity: 0.75; }
+.p-capitulo-escondido .panel-heading { background: repeating-linear-gradient(-45deg, #2d353c 0 10px, #343d45 10px 20px); }
+.p-coluna-direita { position: sticky; top: 76px; }
+.p-indice .list-group-item { font-size: 13px; padding: 8px 14px; }
+html { scroll-padding-top: 80px; scroll-behavior: smooth; }
+@media (max-width: 1199.98px) { .p-coluna-direita { position: static; } }
+
+/* ---------- cartões das cadeiras (como no Moodle) ---------- */
+.p-cartao-cadeira { overflow: hidden; border: 1px solid var(--p-linha); transition: box-shadow 0.15s, transform 0.15s; }
+.p-cartao-cadeira:hover { box-shadow: 0 0.6rem 1.2rem rgba(0, 0, 0, 0.12); transform: translateY(-3px); }
+.p-cartao-cadeira:hover .card-title { color: var(--p-marca) !important; }
+.p-capa { position: relative; height: 104px; overflow: hidden; background-size: cover; }
+.p-capa::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px); background-size: 12px 12px; }
+.p-capa-codigo { position: absolute; left: 14px; bottom: 10px; z-index: 1; color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 0.04em; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+.p-capa-icone { position: absolute; right: -6px; top: -8px; font-size: 92px; color: rgba(255, 255, 255, 0.1); }
+.p-capa-mini { width: 48px; height: 48px; border-radius: 6px; flex-shrink: 0; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px; }
+
+/* ---------- painel (dashboard) ---------- */
+.p-dia-titulo { background: var(--p-fundo) !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--p-suave); padding-top: 6px !important; padding-bottom: 6px !important; }
+.p-select-escuro { background-color: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(255, 255, 255, 0.25); width: auto; }
+.p-select-escuro option { color: #212529; }
+.p-hora { display: inline-grid; place-items: center; min-width: 56px; padding: 6px 4px; border-radius: 6px; background: var(--p-tinte); color: var(--p-marca); font-weight: 800; font-size: 13px; }
+.p-mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+.p-mini-cab { font-size: 11px; font-weight: 700; color: var(--p-suave); padding: 4px 0; }
+.p-mini-dia { position: relative; border: 0; background: transparent; color: var(--p-texto); font-size: 12.5px; padding: 7px 0 9px; border-radius: 4px; cursor: pointer; }
+.p-mini-dia:hover { background: var(--p-fundo); }
+.p-mini-hoje { background: var(--p-marca) !important; color: #fff; font-weight: 700; }
+.p-mini-ponto { position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; }
+.p-mini-hoje .p-mini-ponto { background: #fff !important; }

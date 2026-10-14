@@ -76,13 +76,19 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Texto').fill('Tragam o programa lido.')
   await page.getByRole('button', { name: 'Publicar aviso' }).click()
   await expect(page.getByText('Tragam o programa lido.')).toBeVisible()
-  await page.getByRole('tab', { name: /Materiais/ }).click()
-  await expect(page.getByRole('heading', { name: 'Publicar material' })).toBeVisible()
-  await page.getByLabel('Título').fill('Programa da cadeira')
-  await page.getByLabel('Tipo').selectOption('ligacao')
-  await page.getByLabel('Endereço').fill('https://example.org/programa')
-  await page.getByRole('button', { name: 'Publicar' }).click()
-  await expect(page.getByText('Programa da cadeira')).toBeVisible()
+  // página da cadeira (como no Moodle): capítulo novo e uma ligação lá dentro, no modo de edição
+  page.on('dialog', (d) => d.accept(d.type() === 'prompt' ? 'Capítulo 1 — Introdução' : undefined))
+  await page.getByRole('tab', { name: /Cadeira/ }).click()
+  await page.getByLabel('Modo de edição').check()
+  await page.getByRole('button', { name: 'Novo capítulo' }).click()
+  await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: /Ligação/ }).click()
+  await page.getByLabel('Título').fill('Leitura obrigatória')
+  await page.getByLabel('Endereço').fill('https://example.org/leitura')
+  await page.getByRole('button', { name: 'Guardar e publicar' }).click()
+  await expect(page.getByText('Recurso publicado.')).toBeVisible()
+  await expect(page.locator('#content').getByText('Leitura obrigatória')).toBeVisible()
 
   // pauta: 1.ª e 2.ª prova; MAC 15 sem negativas = dispensado; publica só as provas
   await page.getByRole('tab', { name: 'Notas' }).click()
@@ -97,8 +103,10 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('2.ª Prova: publicada aos estudantes.')).toBeVisible()
 
   // questionário com uma pergunta de verdadeiro ou falso, publicado
-  page.on('dialog', (d) => d.accept())
-  await page.getByRole('tab', { name: 'Questionários' }).click()
+  await page.getByRole('tab', { name: /Cadeira/ }).click()
+  await page.getByLabel('Modo de edição').check()
+  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: /Questionário/ }).click()
   await page.getByLabel('Título').fill('Teste rápido')
   await page.getByRole('button', { name: 'Criar e juntar perguntas' }).click()
   await page.getByLabel('Tipo', { exact: true }).selectOption('vf')
@@ -115,12 +123,12 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('Primeira aula')).toBeVisible() // avisos das cadeiras na página inicial
   await page.goto('/portal/#/cadeiras')
   await page.locator('#content').getByText('Estratégia Militar').first().click()
-  await expect(page.getByText('Programa da cadeira')).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
+  await expect(page.getByText('Leitura obrigatória')).toBeVisible()
+  // o estudante não tem o modo de edição
+  await expect(page.getByLabel('Modo de edição')).toHaveCount(0)
   await page.getByRole('tab', { name: 'Programa' }).click()
   await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
-  await page.getByRole('tab', { name: /Materiais/ }).click()
-  // o estudante não vê os formulários do docente
-  await expect(page.getByRole('button', { name: 'Publicar' })).toHaveCount(0)
 
   // fórum: o estudante abre um tópico
   await page.getByRole('tab', { name: 'Fórum' }).click()
@@ -130,8 +138,8 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('O ensaio conta para a MAC?')).toBeVisible()
 
   // questionário: responde e recebe a nota logo
-  await page.getByRole('tab', { name: 'Questionários' }).click()
-  await page.getByRole('button', { name: 'Abrir' }).click()
+  await page.getByRole('tab', { name: /Cadeira/ }).click()
+  await page.getByRole('button', { name: 'Teste rápido' }).click()
   await page.getByRole('button', { name: 'Começar' }).click()
   await page.getByLabel('Verdadeiro').check()
   await page.getByRole('button', { name: 'Entregar' }).click()

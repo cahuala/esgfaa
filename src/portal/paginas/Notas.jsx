@@ -37,8 +37,8 @@ function Notas() {
           </div>
 
           <Cartao titulo={<><i className="fa fa-table me-2" />Boletim de notas</>} corpo={false}>
-            <div className="p-tabela-rolavel">
-              <table className="p-matriz">
+            <div className="table-responsive">
+              <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz">
                 <thead>
                   <tr>
                     <th scope="col" className="p-matriz-nome">Disciplina</th>

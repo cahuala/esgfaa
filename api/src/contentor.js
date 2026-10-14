@@ -89,7 +89,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, pautas, privados, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, privados, auditoria, relogio }),
     recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, auditoria, relogio }),
     secretaria: new ServicoSecretaria({
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,

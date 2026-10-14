@@ -68,7 +68,7 @@ function Percurso() {
                   </div>
                   <div className="timeline-body">
                     <div className="table-responsive">
-                      <table className="p-matriz">
+                      <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz">
                         <thead>
                           <tr>
                             <th scope="col" className="p-matriz-nome">Disciplina</th>

@@ -68,3 +68,29 @@ export async function abrirFicheiro(id, { nome = 'ficheiro', ver = false } = {})
   }
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
+
+/*
+  Envio de ficheiros com progresso (XMLHttpRequest dá o avanço do envio, o fetch não).
+  aoProgresso(0..100) é chamado durante o envio.
+*/
+export function enviarComProgresso(caminho, formulario, { metodo = 'POST', aoProgresso } = {}) {
+  if (!API_URL) return Promise.reject(new Error('O portal não está ligado ao servidor (VITE_API_URL).'))
+  return new Promise((resolver, rejeitar) => {
+    const x = new XMLHttpRequest()
+    x.open(metodo, `${API_URL}/api/portal${caminho}`)
+    const token = lerToken()
+    if (token) x.setRequestHeader('Authorization', `Bearer ${token}`)
+    x.upload.onprogress = (e) => { if (e.lengthComputable) aoProgresso?.(Math.round((e.loaded / e.total) * 100)) }
+    x.onerror = () => rejeitar(new Error('Não foi possível contactar o servidor. Verifique a ligação.'))
+    x.onload = () => {
+      let dados = {}
+      try { dados = JSON.parse(x.responseText || '{}') } catch { /* resposta vazia */ }
+      if (x.status >= 200 && x.status < 300) return resolver(dados)
+      if (x.status === 401) ouvintes.expirou()
+      const erro = new Error(dados.erro || `Erro ${x.status}`)
+      Object.assign(erro, { estado: x.status, codigo: dados.codigo, campo: dados.campo })
+      rejeitar(erro)
+    }
+    x.send(formulario)
+  })
+}

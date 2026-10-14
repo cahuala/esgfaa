@@ -1,0 +1,305 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { abrirFicheiro, api } from '../api'
+import { Vazio } from '../componentes'
+import { dataHora, faltam, nota } from '../formatar'
+import { BarraProgresso } from './Progresso'
+import NovaAtividade from './NovaAtividade'
+
+// aspeto de cada tipo de atividade (como os ícones coloridos do Moodle)
+const TIPOS = {
+  ficheiro: { icone: 'fa-file-alt', cor: 'bg-primary', nome: 'Ficheiro' },
+  ligacao: { icone: 'fa-link', cor: 'bg-info', nome: 'Ligação' },
+  video: { icone: 'fa-play', cor: 'bg-danger', nome: 'Vídeo' },
+  trabalho: { icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho' },
+  questionario: { icone: 'fa-question', cor: 'bg-purple', nome: 'Questionário' },
+}
+
+/*
+  Página da cadeira como no Moodle: secção geral (avisos, fórum, programa) e os capítulos com
+  os materiais, trabalhos e questionários. À direita: índice dos capítulos e blocos
+  (progresso, próximas datas, docentes, fórum). O docente organiza no "modo de edição".
+*/
+function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPara }) {
+  const [edicao, setEdicao] = useState(false)
+  const [nova, setNova] = useState(null) // capítulo onde se junta uma atividade (null = geral)
+  const [fechados, setFechados] = useState(() => new Set())
+  const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
+
+  // atividades de cada capítulo, por ordem de publicação
+  const atividades = [
+    ...c.materiais.map((m) => ({ ...m, chave: `material-${m.id}`, especie: 'material', visual: m.tipo, quando: m.publicadoEm })),
+    ...c.trabalhos.map((t) => ({ ...t, chave: `trabalho-${t.id}`, especie: 'trabalho', visual: 'trabalho', quando: t.criadoEm })),
+    ...c.questionarios.map((q) => ({ ...q, chave: `questionario-${q.id}`, especie: 'questionario', visual: 'questionario', quando: q.criadoEm })),
+  ].sort((a, b) => String(a.quando).localeCompare(String(b.quando)))
+  const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
+  const feita = (a) => progresso?.itens.find((i) => i.tipo === a.especie && i.id === a.id)?.feita
+
+  const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then(setProgresso).catch(falhou)
+  function abrir(a) {
+    if (a.especie === 'material') {
+      if (!eDocente && !feita(a)) marcar(a, true)
+      if (a.tipo === 'ficheiro') abrirFicheiro(a.ficheiroId, { nome: a.titulo, ver: true }).catch(falhou)
+      else window.open(a.url, '_blank', 'noopener')
+    } else irPara({ atividade: a.chave })
+  }
+
+  // ---------- ações do modo de edição ----------
+  const secao = (id, corpo) => api(`/secoes/${id}`, { metodo: 'PUT', corpo }).then(recarregar).catch(falhou)
+  async function moverCapitulo(i, d) {
+    const ids = c.secoes.map((x) => x.id)
+    ;[ids[i], ids[i + d]] = [ids[i + d], ids[i]]
+    await api(`/cadeiras/${c.id}/secoes/ordem`, { metodo: 'PUT', corpo: { ids } }).then(recarregar).catch(falhou)
+  }
+  async function editarCapitulo(s) {
+    const titulo = window.prompt('Título do capítulo', s.titulo)
+    if (titulo === null) return
+    const resumo = window.prompt('Resumo (opcional)', s.resumo)
+    await secao(s.id, { titulo, ...(resumo !== null ? { resumo } : {}) })
+  }
+  async function apagarCapitulo(s) {
+    if (!window.confirm(`Apagar o capítulo "${s.titulo}"? As atividades passam para a secção geral.`)) return
+    await api(`/secoes/${s.id}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
+  }
+  async function novoCapitulo() {
+    const titulo = window.prompt('Título do novo capítulo', `Capítulo ${c.secoes.length + 1}`)
+    if (!titulo) return
+    await api(`/cadeiras/${c.id}/secoes`, { metodo: 'POST', corpo: { titulo } }).then(() => { avisar({ texto: 'Capítulo criado.' }); recarregar() }).catch(falhou)
+  }
+  const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
+  async function apagarAtividade(a) {
+    if (!window.confirm(`Apagar "${a.titulo}"?`)) return
+    const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}` }[a.especie]
+    await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: 'Atividade apagada.' }); recarregar() }).catch(falhou)
+  }
+
+  const alternar = (id) => setFechados((f) => { const n = new Set(f); if (n.has(id)) n.delete(id); else n.add(id); return n })
+
+  // ---------- desenho ----------
+  const linhaAtividade = (a) => {
+    const t = TIPOS[a.visual] || TIPOS.ficheiro
+    let meta = t.nome
+    let estado = null
+    if (a.especie === 'trabalho') {
+      meta = `Trabalho · entrega até ${dataHora(a.prazo)} (${faltam(a.prazo)})`
+      if (eDocente) estado = <span className="badge bg-gray-500">{a.entregas} entrega(s)</span>
+      else if (a.entrega) estado = a.entrega.nota !== null ? <span className="badge bg-success">Nota {nota(a.entrega.nota)}</span> : <span className="badge bg-success"><i className="fa fa-check me-1" />Entregue</span>
+      else estado = a.estado === 'fechado' ? <span className="badge bg-danger">Não entregue</span> : <span className="badge bg-warning text-dark">Por entregar</span>
+    } else if (a.especie === 'questionario') {
+      meta = `Questionário · ${a.numeroPerguntas} pergunta(s)${a.duracao ? ` · ${a.duracao} min` : ''}${a.fecha ? ` · fecha ${dataHora(a.fecha)}` : ''}`
+      if (eDocente) estado = a.publicado ? <span className="badge bg-success">Publicado</span> : <span className="badge bg-gray-500">Rascunho</span>
+      else estado = feita(a) ? <span className="badge bg-success"><i className="fa fa-check me-1" />Feito</span> : <span className="badge bg-light text-dark border">{a.estado === 'fechado' ? 'Fechado' : 'Por fazer'}</span>
+    } else if (!eDocente && progresso) {
+      estado = feita(a)
+        ? <button type="button" className="btn btn-xs btn-success" onClick={() => marcar(a, false)} title="Desmarcar"><i className="fa fa-check me-1" />Concluído</button>
+        : <button type="button" className="btn btn-xs btn-white" onClick={() => marcar(a, true)}>Marcar como feito</button>
+    }
+    return (
+      <div key={a.chave} className="list-group-item d-flex align-items-center gap-3 py-3">
+        <span className={`p-atividade-icone ${t.cor}`}><i className={`fa ${t.icone}`} /></span>
+        <div className="flex-grow-1 min-w-0">
+          <button type="button" className="btn btn-link p-0 fw-bold text-start text-decoration-none text-body" onClick={() => abrir(a)}>{a.titulo}</button>
+          <div className="small text-muted">{meta}</div>
+          {a.descricao && <div className="small p-recorte">{a.descricao}</div>}
+        </div>
+        {edicao ? (
+          <div className="d-flex gap-1 align-items-center flex-shrink-0">
+            <select className="form-select form-select-sm" style={{ width: 170 }} value={a.secaoId ?? ''} onChange={(e) => moverAtividade(a, e.target.value)} aria-label={`Capítulo de ${a.titulo}`}>
+              <option value="">Geral</option>
+              {c.secoes.map((s) => <option key={s.id} value={s.id}>{s.titulo}</option>)}
+            </select>
+            <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagarAtividade(a)} aria-label={`Apagar ${a.titulo}`}><i className="fa fa-trash-alt" /></button>
+          </div>
+        ) : estado && <div className="flex-shrink-0">{estado}</div>}
+      </div>
+    )
+  }
+
+  const botaoNova = (secaoId) => edicao && (
+    <div className="list-group-item text-center py-2">
+      <button type="button" className="btn btn-sm btn-white" onClick={() => setNova({ secaoId })}><i className="fa fa-plus me-1 text-theme" /> Adicionar atividade ou recurso</button>
+    </div>
+  )
+
+  const capitulos = c.secoes
+  const contagem = (id) => {
+    const l = doCapitulo(id).filter((a) => a.especie !== 'questionario' || a.publicado !== false)
+    const feitas = l.filter((a) => feita(a)).length
+    return { feitas, total: l.length }
+  }
+  const hoje = new Date().toISOString()
+  const proximas = [
+    ...c.eventos.filter((e) => e.data >= hoje.slice(0, 10)).map((e) => ({ id: `e${e.id}`, quando: `${e.data}T${e.inicio || '00:00'}`, titulo: e.titulo, tipo: e.tipo, sub: [e.inicio, e.local].filter(Boolean).join(' · ') })),
+    ...c.trabalhos.filter((t) => t.prazo >= hoje).map((t) => ({ id: `t${t.id}`, quando: t.prazo, titulo: `Entrega: ${t.titulo}`, tipo: 'prazo', sub: faltam(t.prazo) })),
+  ].sort((a, b) => a.quando.localeCompare(b.quando)).slice(0, 5)
+
+  return (
+    <div className="row">
+      <div className="col-xl-9">
+        {eDocente && (
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <div className="form-check form-switch mb-0">
+              <input id="modo-edicao" className="form-check-input" type="checkbox" checked={edicao} onChange={(e) => setEdicao(e.target.checked)} />
+              <label className="form-check-label fw-bold" htmlFor="modo-edicao">Modo de edição</label>
+            </div>
+            {edicao && <span className="small text-muted">Junte atividades, mude-as de capítulo, esconda capítulos em preparação.</span>}
+          </div>
+        )}
+
+        {/* secção geral */}
+        <div className="panel panel-inverse" id="cap-geral">
+          <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-home me-2" />Geral</h2></div>
+          <div className="list-group list-group-flush">
+            <div className="list-group-item d-flex align-items-center gap-3 py-3">
+              <span className="p-atividade-icone bg-dark"><i className="fa fa-bullhorn" /></span>
+              <div className="flex-grow-1">
+                <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'avisos' })}>Avisos</button>
+                <div className="small text-muted">{c.avisos.length ? `Último: ${c.avisos[0].titulo} · ${dataHora(c.avisos[0].criadoEm)}` : 'Sem avisos'}</div>
+              </div>
+            </div>
+            <div className="list-group-item d-flex align-items-center gap-3 py-3">
+              <span className="p-atividade-icone bg-teal"><i className="fa fa-comments" /></span>
+              <div className="flex-grow-1">
+                <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'forum' })}>Fórum da cadeira</button>
+                <div className="small text-muted">{c.forum.topicos} tópico(s) de discussão</div>
+              </div>
+            </div>
+            {(c.programa || c.programaFicheiroId) && (
+              <div className="list-group-item d-flex align-items-center gap-3 py-3">
+                <span className="p-atividade-icone bg-gray-600"><i className="fa fa-book-open" /></span>
+                <div className="flex-grow-1">
+                  <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'programa' })}>Programa da cadeira</button>
+                  <div className="small text-muted">Objetivos, conteúdos, avaliação e bibliografia</div>
+                </div>
+              </div>
+            )}
+            {doCapitulo(null).map(linhaAtividade)}
+            {botaoNova(null)}
+          </div>
+        </div>
+
+        {/* capítulos */}
+        {capitulos.length === 0 && !edicao && <Vazio>{eDocente ? 'Ainda não há capítulos. Ligue o modo de edição para organizar a cadeira.' : 'O docente ainda não organizou a matéria em capítulos.'}</Vazio>}
+        {capitulos.map((s, i) => {
+          const lista = doCapitulo(s.id)
+          const n = contagem(s.id)
+          const fechado = fechados.has(s.id)
+          return (
+            <div key={s.id} className={`panel panel-inverse ${!s.visivel ? 'p-capitulo-escondido' : ''}`} id={`cap-${s.id}`}>
+              <div className="panel-heading">
+                <h2 className="panel-title">
+                  <button type="button" className="btn btn-link p-0 text-white text-decoration-none fw-bold" onClick={() => alternar(s.id)} aria-expanded={!fechado}>
+                    <i className={`fa fa-chevron-${fechado ? 'right' : 'down'} me-2 fs-11px`} />{s.titulo}
+                  </button>
+                  {!s.visivel && <span className="badge bg-warning text-dark ms-2">Escondido dos estudantes</span>}
+                </h2>
+                <div className="panel-heading-btn">
+                  {edicao ? (
+                    <>
+                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === 0} onClick={() => moverCapitulo(i, -1)} aria-label="Subir capítulo"><i className="fa fa-arrow-up" /></button>
+                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === capitulos.length - 1} onClick={() => moverCapitulo(i, 1)} aria-label="Descer capítulo"><i className="fa fa-arrow-down" /></button>
+                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => secao(s.id, { visivel: !s.visivel })} aria-label={s.visivel ? 'Esconder capítulo' : 'Mostrar capítulo'}><i className={`fa ${s.visivel ? 'fa-eye' : 'fa-eye-slash'}`} /></button>
+                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => editarCapitulo(s)} aria-label="Editar capítulo"><i className="fa fa-pen" /></button>
+                      <button type="button" className="btn btn-xs btn-icon btn-danger" onClick={() => apagarCapitulo(s)} aria-label="Apagar capítulo"><i className="fa fa-trash-alt" /></button>
+                    </>
+                  ) : !eDocente && n.total > 0 && <span className="text-white small">{n.feitas}/{n.total} concluídas</span>}
+                </div>
+              </div>
+              {!fechado && (
+                <>
+                  {s.resumo && <div className="panel-body pb-0 text-muted">{s.resumo}</div>}
+                  <div className="list-group list-group-flush">
+                    {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">Sem atividades neste capítulo.</div>}
+                    {lista.map(linhaAtividade)}
+                    {botaoNova(s.id)}
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })}
+        {edicao && <button type="button" className="btn btn-theme mb-4" onClick={novoCapitulo}><i className="fa fa-plus me-1" /> Novo capítulo</button>}
+      </div>
+
+      {/* coluna direita: índice e blocos */}
+      <div className="col-xl-3">
+        <div className="p-coluna-direita">
+          <div className="panel panel-inverse">
+            <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-list-ol me-2" />Índice da cadeira</h2></div>
+            <div className="list-group list-group-flush p-indice">
+              <a href="#cap-geral" className="list-group-item list-group-item-action"><i className="fa fa-home me-2 text-muted" />Geral</a>
+              {capitulos.map((s) => {
+                const n = contagem(s.id)
+                const completo = !eDocente && n.total > 0 && n.feitas === n.total
+                return (
+                  <a key={s.id} href={`#cap-${s.id}`} className="list-group-item list-group-item-action d-flex gap-2 align-items-start" onClick={() => setFechados((f) => { const x = new Set(f); x.delete(s.id); return x })}>
+                    <i className={`fa ${completo ? 'fa-check-circle text-success' : 'fa-circle text-gray-300'} mt-1 fs-11px`} />
+                    <span className="flex-grow-1">{s.titulo}{!s.visivel && <i className="fa fa-eye-slash text-warning ms-1" />}</span>
+                    {!eDocente && n.total > 0 && <span className="small text-muted">{n.feitas}/{n.total}</span>}
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+
+          {!eDocente && progresso?.total > 0 && (
+            <div className="panel panel-inverse">
+              <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-tasks me-2" />O meu progresso</h2></div>
+              <div className="panel-body">
+                <BarraProgresso p={progresso} />
+                <div className="small text-muted mt-1">{progresso.feitas} de {progresso.total} atividades concluídas</div>
+              </div>
+            </div>
+          )}
+
+          <div className="panel panel-inverse">
+            <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-calendar-alt me-2" />Próximas datas</h2></div>
+            <div className="list-group list-group-flush">
+              {proximas.length === 0 && <div className="list-group-item small text-muted">Nada marcado.</div>}
+              {proximas.map((p) => (
+                <div key={p.id} className="list-group-item d-flex gap-2">
+                  <div className="text-center flex-shrink-0" style={{ width: 40 }}>
+                    <div className="fw-bold lh-1">{new Date(p.quando).getDate()}</div>
+                    <div className="small text-uppercase text-muted">{new Date(p.quando).toLocaleDateString('pt-PT', { month: 'short' })}</div>
+                  </div>
+                  <div className="min-w-0"><div className="fw-bold small">{p.titulo}</div><div className="small text-muted">{p.sub}</div></div>
+                </div>
+              ))}
+              <Link to="/calendario" className="list-group-item list-group-item-action small text-center">Abrir o calendário</Link>
+            </div>
+          </div>
+
+          <div className="panel panel-inverse">
+            <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-chalkboard-teacher me-2" />Docentes</h2></div>
+            <div className="list-group list-group-flush">
+              {c.docentes.length === 0 && <div className="list-group-item small text-muted">Por alocar.</div>}
+              {c.docentes.map((d) => (
+                <div key={d.id} className="list-group-item d-flex gap-2 align-items-center">
+                  <span className="admin-avatar flex-shrink-0">{d.nome.split(/\s+/).filter((x) => !x.includes('.')).map((x) => x[0]).slice(0, 2).join('')}</span>
+                  <div className="min-w-0"><div className="fw-bold small text-truncate">{d.nome}</div><div className="small text-muted">{d.papel === 'regente' ? 'Regente' : 'Assistente'} · <a href={`mailto:${d.email}`}>{d.email}</a></div></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {c.forum.recentes.length > 0 && (
+            <div className="panel panel-inverse">
+              <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-comments me-2" />Fórum: recentes</h2></div>
+              <div className="list-group list-group-flush">
+                {c.forum.recentes.map((t) => (
+                  <button key={t.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => irPara({ separador: 'forum' })}>
+                    <div className="fw-bold small">{t.titulo}</div><div className="small text-muted">{t.autor} · {dataHora(t.atividadeEm)}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {nova && <NovaAtividade c={c} secaoId={nova.secaoId} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
+    </div>
+  )
+}
+
+export default Curso

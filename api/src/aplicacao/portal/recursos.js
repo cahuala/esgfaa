@@ -158,11 +158,15 @@ export class ServicoRecursos {
 
   // atividades da cadeira que contam para o progresso: materiais, trabalhos e questionários publicados
   async #atividades(cadeiraId) {
-    const [materiais, trabalhos, questionarios] = await Promise.all([
+    const [todos, trab, quest, secoes] = await Promise.all([
       this.academico.materiais(cadeiraId),
       this.academico.trabalhos(cadeiraId),
       this.recursos.questionarios(cadeiraId, { soPublicados: true }),
+      this.academico.secoes(cadeiraId),
     ])
+    // o que está em capítulos escondidos ainda não conta
+    const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
+    const [materiais, trabalhos, questionarios] = [todos, trab, quest].map((l) => l.filter((a) => !escondidos.has(a.secaoId)))
     return [
       ...materiais.map((m) => ({ tipo: 'material', id: m.id, titulo: m.titulo })),
       ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo })),
@@ -270,9 +274,16 @@ export class ServicoRecursos {
     })
   }
 
+  async #secaoDe(cadeiraId, secaoId) {
+    if (secaoId === undefined || secaoId === null || secaoId === '') return null
+    const s = await this.academico.secao(secaoId)
+    if (!s || s.cadeiraId !== cadeiraId) throw new ErroValidacao('Capítulo inválido.', { campo: 'secaoId' })
+    return s.id
+  }
+
   async criarQuestionario(ctx, cadeiraId, dados) {
     const c = await this.acesso.doDocente(ctx.conta, cadeiraId)
-    return this.recursos.criarQuestionario({ cadeiraId: c.id, ...this.#dadosQuestionario(dados) })
+    return this.recursos.criarQuestionario({ cadeiraId: c.id, secaoId: await this.#secaoDe(c.id, dados.secaoId), ...this.#dadosQuestionario(dados) })
   }
 
   async atualizarQuestionario(ctx, id, dados) {

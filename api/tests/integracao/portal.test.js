@@ -92,7 +92,7 @@ describe('portal académico', () => {
 
   it('o docente publica materiais privados; só os inscritos os descarregam', async () => {
     const m = await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`)
-      .field('titulo', 'Sebenta 1').field('topico', 'Semana 1').field('tipo', 'ficheiro')
+      .field('titulo', 'Sebenta 1').field('tipo', 'ficheiro')
       .attach('ficheiro', PDF, { filename: 'sebenta.pdf', contentType: 'application/pdf' })
     assert.equal(m.status, 201, m.body.erro)
     const ligacao = await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).send({ titulo: 'Leitura', tipo: 'ligacao', url: 'javascript:alert(1)' })

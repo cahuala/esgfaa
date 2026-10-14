@@ -159,4 +159,39 @@ describe('portal: fórum, calendário, progresso e questionários', () => {
     const desmarcar = (await portal('ana').put(`/api/portal/materiais/${fd.id}/conclusao`).send({ concluido: false })).body
     assert.equal(desmarcar.feitas, 1)
   })
+
+  it('capítulos: o docente organiza; capítulos escondidos e o que têm não chegam aos estudantes', async () => {
+    const url = `/api/portal/cadeiras/${cadeira.id}/secoes`
+    const c1 = (await portal('prof').post(url).send({ titulo: 'Capítulo 1 — Teoria', resumo: 'Clássicos.' })).body
+    const c2 = (await portal('prof').post(url).send({ titulo: 'Capítulo 2 — Prática', visivel: false })).body
+    assert.equal((await portal('ana').post(url).send({ titulo: 'Intruso' })).status, 403)
+    assert.equal((await portal('prof2').post(url).send({ titulo: 'Intruso' })).status, 404)
+
+    const m = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).send({ titulo: 'Sebenta escondida', tipo: 'ligacao', url: 'https://example.org/s', secaoId: c2.id })).body
+    assert.equal(m.secaoId, c2.id)
+    // capítulo de outra cadeira é recusado
+    const alheio = (await portal('prof2').post(`/api/portal/cadeiras/${outra.id}/secoes`).send({ titulo: 'Da outra' })).body
+    assert.equal((await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).send({ titulo: 'X', tipo: 'ligacao', url: 'https://example.org/x', secaoId: alheio.id })).status, 400)
+
+    let vista = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.deepEqual(vista.secoes.map((x) => x.titulo), ['Capítulo 1 — Teoria'])
+    assert.ok(!vista.materiais.some((x) => x.id === m.id))
+    assert.equal((await portal('prof').get(`/api/portal/cadeiras/${cadeira.id}`)).body.secoes.length, 2)
+
+    // mostrar, reordenar, mover e apagar
+    await portal('prof').put(`/api/portal/secoes/${c2.id}`).send({ visivel: true })
+    vista = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.ok(vista.materiais.some((x) => x.id === m.id))
+    const ordem = await portal('prof').put(`${url}/ordem`).send({ ids: [c2.id, c1.id] })
+    assert.deepEqual(ordem.body.map((x) => x.id), [c2.id, c1.id])
+    assert.equal((await portal('prof').put(`${url}/ordem`).send({ ids: [c2.id] })).status, 400)
+    assert.equal((await portal('prof').put('/api/portal/atividades/capitulo').send({ tipo: 'material', id: m.id, secaoId: c1.id })).status, 204)
+    assert.equal((await portal('prof').delete(`/api/portal/secoes/${c1.id}`)).status, 204)
+    vista = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
+    assert.equal(vista.materiais.find((x) => x.id === m.id).secaoId, null) // passou para a secção geral
+
+    const part = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}/participantes`)).body
+    assert.deepEqual([part.docentes.length, part.estudantes.length], [1, 2])
+    assert.equal((await portal('carla').get(`/api/portal/cadeiras/${cadeira.id}/participantes`)).status, 404)
+  })
 })

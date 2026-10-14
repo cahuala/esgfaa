@@ -89,6 +89,14 @@ export function rotasPortal({ servicos, config, privados }) {
   r.delete('/aulas/:id', validar({ params: pId }), async (req, res) => { await s.apagarAula(ctx(req), req.dados.params.id); res.status(204).end() })
 
 
+  // ---------- capítulos e participantes ----------
+  r.post('/cadeiras/:id/secoes', validar({ params: pId, body: E.secao }), async (req, res) => res.status(201).json(await s.criarSecao(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
+  r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await s.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
+  r.get('/cadeiras/:id/participantes', validar({ params: pId }), async (req, res) => res.json(await s.participantes(ctx(req), req.dados.params.id)))
+
   // ---------- fórum, calendário, progresso e questionários ----------
   const m = servicos.recursos
   r.get('/cadeiras/:id/forum', validar({ params: pId }), async (req, res) => res.json(await m.topicos(ctx(req), req.dados.params.id)))

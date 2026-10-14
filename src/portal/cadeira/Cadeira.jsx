@@ -4,36 +4,43 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, Carregando, Erro } from '../componentes'
 import { PERIODOS } from '../regraAvaliacao'
+import { registarRecente } from '../recentes'
 import Programa from './Programa'
-import Materiais from './Materiais'
+import Curso from './Curso'
+import Participantes from './Participantes'
 import AvisosCadeira from './AvisosCadeira'
 import Trabalhos from './Trabalhos'
 import Avaliacoes from './Avaliacoes'
 import Presencas from './Presencas'
 import Forum from './Forum'
 import Questionarios from './Questionarios'
-import Progresso, { BarraProgresso } from './Progresso'
+import Progresso from './Progresso'
 import Datas from './Datas'
 
 const SEPARADORES = [
-  { id: 'materiais', texto: 'Materiais' },
-  { id: 'programa', texto: 'Programa' },
-  { id: 'avisos', texto: 'Avisos' },
-  { id: 'forum', texto: 'Fórum' },
-  { id: 'trabalhos', texto: 'Trabalhos' },
-  { id: 'questionarios', texto: 'Questionários' },
-  { id: 'avaliacoes', texto: 'Notas' },
-  { id: 'presencas', texto: 'Presenças' },
-  { id: 'progresso', texto: 'Progresso', docente: true },
-  { id: 'horario', texto: 'Datas e horário' },
+  { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
+  { id: 'avisos', texto: 'Avisos', icone: 'fa-bullhorn' },
+  { id: 'forum', texto: 'Fórum', icone: 'fa-comments' },
+  { id: 'avaliacoes', texto: 'Notas', icone: 'fa-clipboard-list' },
+  { id: 'participantes', texto: 'Participantes', icone: 'fa-users' },
+  { id: 'presencas', texto: 'Presenças', icone: 'fa-user-check' },
+  { id: 'programa', texto: 'Programa', icone: 'fa-file-alt' },
+  { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt' },
+  { id: 'progresso', texto: 'Progresso', icone: 'fa-tasks', docente: true },
 ]
+// endereços antigos (?separador=materiais|trabalhos|questionarios) abrem a página da cadeira
+const ANTIGOS = { materiais: 'curso', trabalhos: 'curso', questionarios: 'curso' }
 
 // uma cadeira: separadores com tudo o que lhe diz respeito (vista do estudante ou do docente)
 function Cadeira() {
   const { id } = useParams()
-  const { eDocente } = useSessao()
+  const { conta, eDocente } = useSessao()
   const [params, setParams] = useSearchParams()
-  const separador = SEPARADORES.some((s) => s.id === params.get('separador')) ? params.get('separador') : 'materiais'
+  const pedido = ANTIGOS[params.get('separador')] || params.get('separador')
+  const separador = SEPARADORES.some((s) => s.id === pedido) ? pedido : 'curso'
+  // atividade aberta a partir da página da cadeira: "trabalho-12", "questionario-3"
+  const [especie, atividadeId] = (params.get('atividade') || '').split('-')
+  const irPara = useCallback((destino) => { setParams(destino, { replace: false }); window.scrollTo(0, 0) }, [setParams])
   const [c, setC] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
@@ -44,13 +51,14 @@ function Cadeira() {
     if (!eDocente) api(`/cadeiras/${id}/progresso`).then(setProgresso).catch(() => {})
   }, [id, eDocente])
   useEffect(() => { carregar() }, [carregar])
+  useEffect(() => { if (c?.id) registarRecente(conta.id, c.id) }, [c?.id, conta.id])
 
   if (erro) return <Erro texto={erro} />
   if (!c) return <Carregando />
 
-  const props = { c, eDocente, recarregar: carregar, avisar: setAviso, progresso, setProgresso }
+  const props = { c, eDocente, recarregar: carregar, avisar: setAviso, progresso, setProgresso, irPara }
   const separadores = SEPARADORES.filter((s) => !s.docente || eDocente)
-  const contagem = { materiais: c.materiais.length, avisos: c.avisos.length, trabalhos: c.trabalhos.length }
+  const contagem = { avisos: c.avisos.length, forum: c.forum.topicos }
 
   return (
     <>
@@ -79,10 +87,10 @@ function Cadeira() {
                   type="button"
                   role="tab"
                   aria-selected={separador === s.id}
-                  className={`nav-link border-0 bg-transparent ${separador === s.id ? 'active' : ''}`}
+                  className={`nav-link border-0 bg-transparent ${separador === s.id && !especie ? 'active' : ''}`}
                   onClick={() => setParams({ separador: s.id }, { replace: true })}
                 >
-                  {s.texto}{contagem[s.id] ? <span className="badge bg-gray-500 ms-1">{contagem[s.id]}</span> : null}
+                  <i className={`fa ${s.icone} me-1 d-none d-md-inline`} />{s.texto}{contagem[s.id] ? <span className="badge bg-gray-500 ms-1">{contagem[s.id]}</span> : null}
                 </button>
               </li>
             ))}
@@ -90,31 +98,28 @@ function Cadeira() {
         </div>
       </div>
       {c.descricao && <p className="text-muted">{c.descricao}</p>}
-      {!eDocente && progresso?.total > 0 && (
-        <div className="panel mb-3">
-          <div className="panel-body py-2 d-flex align-items-center gap-3">
-            <span className="small fw-bold text-nowrap"><i className="fa fa-tasks me-1" />O meu progresso</span>
-            <div className="flex-grow-1"><BarraProgresso p={progresso} /></div>
-            <span className="small text-muted text-nowrap">{progresso.feitas} de {progresso.total} atividades</span>
-          </div>
-        </div>
-      )}
+
 
       <div role="tabpanel">
-        {separador === 'materiais' && <Materiais {...props} />}
-        {separador === 'programa' && <Programa {...props} />}
-        {separador === 'avisos' && <AvisosCadeira {...props} />}
-        {separador === 'trabalhos' && <Trabalhos {...props} />}
-        {separador === 'avaliacoes' && <Avaliacoes {...props} />}
-        {separador === 'presencas' && <Presencas {...props} />}
-        {separador === 'forum' && <Forum {...props} />}
-        {separador === 'questionarios' && <Questionarios {...props} />}
-        {separador === 'progresso' && eDocente && <Progresso {...props} />}
-        {separador === 'horario' && <Datas {...props} />}
+        {especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
+        {especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
+        {!especie && separador === 'curso' && <Curso {...props} />}
+        {!especie && separador === 'participantes' && <Participantes {...props} />}
+        {!especie && separador === 'programa' && <Programa {...props} />}
+        {!especie && separador === 'avisos' && <AvisosCadeira {...props} />}
+        {!especie && separador === 'avaliacoes' && <Avaliacoes {...props} />}
+        {!especie && separador === 'presencas' && <Presencas {...props} />}
+        {!especie && separador === 'forum' && <Forum {...props} />}
+        {!especie && separador === 'progresso' && eDocente && <Progresso {...props} />}
+        {!especie && separador === 'horario' && <Datas {...props} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )
+}
+
+function Voltar({ irPara }) {
+  return <button type="button" className="btn btn-white mb-3" onClick={() => irPara({ separador: 'curso' })}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
 }
 
 export default Cadeira

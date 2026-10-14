@@ -85,11 +85,11 @@ export const filtroEstado = z.object({ estado: texto(30).optional() })
 
 export const pedidoNovo = z.object({ tipo: texto(80), motivo: texto(1200).optional() })
 export const avisoCadeira = z.object({ titulo: texto(300), texto: texto(6000) })
-export const material = z.object({ titulo: texto(300).optional(), descricao: texto(3000).optional(), topico: texto(200).optional(), tipo: texto(20).optional(), url: texto(2000).optional() })
+export const material = z.object({ titulo: texto(300).optional(), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), tipo: texto(20).optional(), url: texto(2000).optional() })
 const notaLivre = z.union([z.string().max(6), z.number(), z.null()]).optional()
 export const pauta = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, p1: notaLivre, p2: notaLivre, exame: notaLivre, recurso: notaLivre, observacao: texto(400).optional() })).max(500) })
 export const publicacaoNotas = z.object({ publicadas: z.array(z.enum(['p1', 'p2', 'exame', 'recurso'])).max(4) })
-export const trabalho = z.object({ titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(), aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
+export const trabalho = z.object({ secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), titulo: texto(300).optional(), enunciado: texto(12000).optional(), prazo: texto(40).optional(), aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
 export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional() })
 export const aula = z.object({
   data: texto(10).optional(), sumario: texto(3000).optional(),
@@ -112,7 +112,7 @@ const dataHora = z.union([z.string().max(40), z.null()]).optional()
 export const questionario = z.object({
   titulo: texto(300).optional(), descricao: texto(4000).optional(), abre: dataHora, fecha: dataHora,
   duracao: z.union([z.number(), z.string().max(4)]).optional(), tentativas: z.union([z.number(), z.string().max(3)]).optional(),
-  publicado: z.boolean().optional(), mostrarRespostas: z.boolean().optional(),
+  publicado: z.boolean().optional(), mostrarRespostas: z.boolean().optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
 })
 export const pergunta = z.object({
   tipo: texto(20), enunciado: texto(3000), pontos: z.union([z.number(), z.string().max(8)]).optional(),
@@ -122,3 +122,6 @@ export const pergunta = z.object({
 export const respostasQuestionario = z.object({
   respostas: z.record(z.string().regex(/^\d{1,10}$/), z.array(z.number().int().min(0).max(20)).max(8)).optional(),
 })
+export const secao = z.object({ titulo: texto(300).optional(), resumo: texto(4000).optional(), visivel: z.boolean().optional() })
+export const ordemSecoes = z.object({ ids: z.array(idNumerico).max(200) })
+export const moverAtividade = z.object({ tipo: texto(20), id: idNumerico, secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional() })

@@ -14,11 +14,12 @@ const paraLocal = (iso) => {
 
 // questionários online da cadeira (como os do Moodle)
 function Questionarios(props) {
-  const [aberto, setAberto] = useState(null)
+  const [aberto, setAberto] = useState(props.so ?? null)
+  const voltar = props.voltar || (() => setAberto(null))
   if (aberto) {
     return props.eDocente
-      ? <EditorQuestionario id={aberto} avisar={props.avisar} voltar={() => setAberto(null)} />
-      : <Realizar id={aberto} avisar={props.avisar} recarregar={props.recarregar} voltar={() => setAberto(null)} />
+      ? <EditorQuestionario id={aberto} avisar={props.avisar} voltar={voltar} />
+      : <Realizar id={aberto} avisar={props.avisar} recarregar={props.recarregar} voltar={voltar} />
   }
   return <Lista {...props} abrir={setAberto} />
 }
@@ -125,7 +126,7 @@ function EditorQuestionario({ id, avisar, voltar }) {
   return (
     <>
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Questionários</button>
+        <button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
         <button type="button" className={`btn ${q.publicado ? 'btn-white' : 'btn-success'}`} onClick={publicar}><i className={`fa ${q.publicado ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{q.publicado ? 'Esconder' : 'Publicar'}</button>
         <button type="button" className="btn btn-danger ms-auto" onClick={apagar}><i className="fa fa-trash-alt me-1" /> Apagar</button>
       </div>
@@ -313,7 +314,7 @@ function Realizar({ id, avisar, recarregar, voltar }) {
   const podeComecar = q.estado === 'aberto' && q.feitas.length < q.tentativas
   return (
     <>
-      <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Questionários</button>
+      <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
       {resultado && (
         <div className={`alert ${resultado.nota >= 10 ? 'alert-success' : 'alert-danger'}`}>
           <h4 className="alert-heading mb-1">Nota: {nota(resultado.nota)} valores</h4>

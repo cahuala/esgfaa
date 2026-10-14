@@ -62,6 +62,7 @@ async function semearExtras(turma) {
   }
 
   await semearRecursos(porCodigo, ana)
+  await semearCapitulos(porCodigo.EST101, (await prisma.docencia.findFirst({ where: { cadeiraId: porCodigo.EST101?.id, papel: 'regente' } }))?.docenteId)
 
   // 1.º ano (2025/2026), já concluído: dá história ao percurso académico
   if (await prisma.turma.findFirst({ where: { nome: 'CEM 2025/2026 (demonstração)' } })) return
@@ -85,6 +86,34 @@ async function semearExtras(turma) {
 }
 
 // fórum, datas das provas, feriado e um questionário publicado na EST101 (idempotente)
+// capítulos da EST101 com resumo e materiais, como uma cadeira a sério no Moodle (idempotente)
+async function semearCapitulos(est, autorId) {
+  if (!est || (await prisma.secaoCadeira.count({ where: { cadeiraId: est.id } })) > 2) return
+  const base = await prisma.secaoCadeira.count({ where: { cadeiraId: est.id } })
+  const capitulos = [
+    ['Capítulo 1 — Teoria da estratégia', 'Conceitos fundamentais: fins, modos e meios; os níveis da guerra; os clássicos (Sun Tzu, Clausewitz, Jomini).', [
+      ['Sebenta do capítulo 1', 'ligacao', 'https://pt.wikipedia.org/wiki/Estrat%C3%A9gia_militar'],
+      ['Clausewitz — Da Guerra (excertos)', 'ligacao', 'https://pt.wikipedia.org/wiki/Da_Guerra'],
+    ]],
+    ['Capítulo 2 — Planeamento de operações', 'O processo de planeamento: análise da missão, modalidades de ação, ordem de operações.', [
+      ['Guia do processo de planeamento', 'ligacao', 'https://pt.wikipedia.org/wiki/Planejamento_militar'],
+    ]],
+    ['Capítulo 3 — Estratégia de defesa nacional', 'A defesa nacional de Angola e a cooperação regional na SADC.', [
+      ['A SADC e a arquitetura de paz e segurança', 'ligacao', 'https://pt.wikipedia.org/wiki/Comunidade_para_o_Desenvolvimento_da_%C3%81frica_Austral'],
+    ]],
+    ['Capítulo 4 — Estudos de caso', 'Análise de campanhas: preparação do ensaio final.', []],
+  ]
+  for (const [i, [titulo, resumo, materiais]] of capitulos.entries()) {
+    const s = await prisma.secaoCadeira.create({ data: { cadeiraId: est.id, titulo, resumo, ordem: base + i + 1 } })
+    for (const [t, tipo, url] of materiais) await prisma.material.create({ data: { cadeiraId: est.id, secaoId: s.id, titulo: t, tipo, url, autorId } })
+    if (i === 3) await prisma.trabalho.updateMany({ where: { cadeiraId: est.id }, data: { secaoId: s.id } })
+    if (i === 0) await prisma.questionario.updateMany({ where: { cadeiraId: est.id }, data: { secaoId: s.id } })
+  }
+  // um capítulo ainda em preparação: o docente vê-o, os estudantes não
+  await prisma.secaoCadeira.create({ data: { cadeiraId: est.id, titulo: 'Capítulo 5 — Revisões para o exame', resumo: 'Em preparação.', ordem: base + 5, visivel: false } })
+  console.log('Capítulos de demonstração criados.')
+}
+
 async function semearRecursos(porCodigo, ana) {
   const est = porCodigo.EST101
   if (!est || (await prisma.questionario.count({ where: { cadeiraId: est.id } }))) return
@@ -171,10 +200,13 @@ const horarios = [
 ]
 for (const [cod, diaSemana, inicio, fim, sala] of horarios) await prisma.horario.create({ data: { cadeiraId: cadeiras[cod].id, diaSemana, inicio, fim, sala } })
 
+const capitulo = async (cadeira, titulo, ordem) => (await prisma.secaoCadeira.create({ data: { cadeiraId: cadeira.id, titulo, ordem } })).id
+const apresentacao = await capitulo(cadeiras.EST101, 'Apresentação', 1)
+const semana1 = await capitulo(cadeiras.EST101, 'Semana 1', 2)
 await prisma.material.createMany({ data: [
-  { cadeiraId: cadeiras.EST101.id, titulo: 'Programa da cadeira', topico: 'Apresentação', tipo: 'ligacao', url: 'https://cahuala.github.io/esgfaa/Cursos', autorId: miguel.id },
-  { cadeiraId: cadeiras.EST101.id, titulo: 'Conferência: estratégia e defesa nacional', topico: 'Semana 1', tipo: 'video', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', descricao: 'Ver antes da aula de quarta-feira.', autorId: miguel.id },
-  { cadeiraId: cadeiras.LID102.id, titulo: 'Leituras recomendadas', topico: 'Bibliografia', tipo: 'ligacao', url: 'https://cahuala.github.io/esgfaa/Artigos', autorId: ana.id },
+  { cadeiraId: cadeiras.EST101.id, titulo: 'Programa da cadeira', secaoId: apresentacao, tipo: 'ligacao', url: 'https://cahuala.github.io/esgfaa/Cursos', autorId: miguel.id },
+  { cadeiraId: cadeiras.EST101.id, titulo: 'Conferência: estratégia e defesa nacional', secaoId: semana1, tipo: 'video', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', descricao: 'Ver antes da aula de quarta-feira.', autorId: miguel.id },
+  { cadeiraId: cadeiras.LID102.id, titulo: 'Leituras recomendadas', secaoId: await capitulo(cadeiras.LID102, 'Bibliografia', 1), tipo: 'ligacao', url: 'https://cahuala.github.io/esgfaa/Artigos', autorId: ana.id },
 ] })
 
 await prisma.avisoCadeira.create({ data: { cadeiraId: cadeiras.EST101.id, titulo: 'Bem-vindos à cadeira', texto: 'A primeira aula é na segunda-feira, no Anfiteatro A. Tragam o programa lido.', autorId: miguel.id } })
