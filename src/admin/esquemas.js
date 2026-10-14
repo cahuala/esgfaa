@@ -441,6 +441,8 @@ export const NOMES_ACOES = {
   publicar_questionario: 'Publicou um questionário',
   apagar_questionario: 'Apagou um questionário',
   entregar_questionario: 'Entregou um questionário (portal)',
+  composicao_notas: 'Definiu como se calcula uma componente da pauta',
+  copiar_cadeira: 'Copiou os conteúdos de uma cadeira',
   pedido_documento: 'Pediu um documento (portal)',
   avaliar_candidatura: 'Avaliou uma candidatura',
   bloquear_conta: 'Conta bloqueada por tentativas falhadas',

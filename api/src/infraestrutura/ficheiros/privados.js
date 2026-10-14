@@ -77,4 +77,13 @@ export class ArmazenamentoPrivado {
   apagar(caminho) {
     fs.rmSync(caminho, { force: true })
   }
+
+  // cópia independente de um ficheiro (ao copiar uma cadeira para o novo ano); devolve { id, caminho } relativos
+  copiar(relativo, tipo) {
+    const origem = this.absoluto(relativo)
+    const nome = this.nomeNovo(tipo)
+    const destino = path.join(this.pastaDoMes(), nome)
+    fs.copyFileSync(origem, destino, fs.constants.COPYFILE_EXCL)
+    return { id: nome.split('.')[0], caminho: this.relativo(destino) }
+  }
 }

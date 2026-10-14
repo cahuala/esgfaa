@@ -13,8 +13,8 @@ const ANO_LETIVO = /^\d{4}\/\d{4}$/
   na primeira entrada.
 */
 export class ServicoSecretaria {
-  constructor({ contas, academico, recursos, conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml }) {
-    Object.assign(this, { contas, academico, recursos, conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml })
+  constructor({ contas, academico, recursos, conteudos, pautas, notificacoes, copias, copiasRepo, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml }) {
+    Object.assign(this, { contas, academico, recursos, conteudos, pautas, notificacoes, copias, copiasRepo, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml })
   }
 
   // ---------- contas do portal ----------
@@ -251,6 +251,50 @@ export class ServicoSecretaria {
     await this.academico.atualizarCadeira(c.id, mudanca)
     await this.auditoria.registar(ctx, { acao: 'programa_cadeira', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome })
     return this.cadeira(ctx, c.id)
+  }
+
+  // ---------- novo ano letivo: copiar cadeiras ----------
+
+  // cadeiras de onde se pode copiar (todas, das turmas mais recentes para as mais antigas)
+  async origensDeCopia(ctx) {
+    ctx.actor.exigir('academico.ver')
+    return (await this.academico.todasCadeiras()).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, turma: c.turma }))
+  }
+
+  // copia os conteúdos de uma cadeira (de outro ano) para esta
+  async copiarParaCadeira(ctx, destinoId, { origemId, docentes }) {
+    ctx.actor.exigir('academico.gerir')
+    const [origem, destino] = [await this.#cadeira(origemId), await this.#cadeira(destinoId)]
+    return this.copias.copiar(ctx, origem, destino, { docentes: Boolean(docentes) })
+  }
+
+  /*
+    Novo ano letivo: para cada cadeira da turma de origem, cria a cadeira na turma nova (se não existir,
+    com o mesmo código) e copia os conteúdos. Cadeiras que já têm conteúdos ficam como estão.
+  */
+  async copiarTurma(ctx, turmaId, { origemTurmaId, docentes }) {
+    ctx.actor.exigir('academico.gerir')
+    const destino = await this.academico.turma(turmaId)
+    const origem = await this.academico.turma(origemTurmaId)
+    if (!destino || !origem) throw new NaoEncontrado('Turma não encontrada.')
+    if (destino.id === origem.id) throw new ErroValidacao('Escolha outra turma de origem.', { campo: 'origemTurmaId' })
+    const [deOrigem, existentes] = await Promise.all([this.academico.cadeirasDasTurmas([origem.id]), this.academico.cadeirasDasTurmas([destino.id])])
+    const resultado = []
+    for (const o of deOrigem) {
+      let alvo = existentes.find((x) => x.codigo === o.codigo)
+      let criada = false
+      if (!alvo) {
+        const nova = await this.academico.criarCadeira({ turmaId: destino.id, codigo: o.codigo, nome: o.nome, periodo: o.periodo, horas: o.horas, descricao: o.descricao })
+        alvo = await this.academico.cadeira(nova.id)
+        criada = true
+      } else if (await this.copiasRepo.temConteudos(alvo.id)) {
+        resultado.push({ codigo: o.codigo, nome: o.nome, criada: false, copiada: false, motivo: 'já tinha conteúdos' })
+        continue
+      }
+      const resumo = await this.copias.copiar(ctx, o, alvo, { docentes: Boolean(docentes) })
+      resultado.push({ codigo: o.codigo, nome: o.nome, criada, copiada: true, ...resumo })
+    }
+    return { turma: { id: destino.id, nome: destino.nome }, origem: { id: origem.id, nome: origem.nome }, cadeiras: resultado }
   }
 
   // ---------- alocação de docentes ----------

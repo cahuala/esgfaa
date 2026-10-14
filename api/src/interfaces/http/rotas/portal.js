@@ -108,6 +108,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await s.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await s.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await s.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
+  r.post('/cadeiras/:id/importar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await s.importar(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/cadeiras/:id/participantes', validar({ params: pId }), async (req, res) => res.json(await s.participantes(ctx(req), req.dados.params.id)))
 
   // ---------- fórum, calendário, progresso e questionários ----------

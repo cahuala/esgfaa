@@ -33,6 +33,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/cadeiras/:id', validar({ params: pId }), async (req, res) => res.json(await s.cadeira(ctx(req), req.dados.params.id)))
   r.put('/cadeiras/:id/programa', ficheiro, validar({ params: pId, body: E.programa }), async (req, res) => res.json(await s.programa(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.put('/cadeiras/:id/docentes', validar({ params: pId, body: E.alocacao }), async (req, res) => res.json(await s.alocarDocentes(ctx(req), req.dados.params.id, req.dados.body.docentes)))
+  r.get('/origens-copia', async (req, res) => res.json(await s.origensDeCopia(ctx(req))))
+  r.post('/cadeiras/:id/copiar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await s.copiarParaCadeira(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/turmas/:id/copiar', validar({ params: pId, body: E.copiarTurma }), async (req, res) => res.json(await s.copiarTurma(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/alocacao', async (req, res) => res.json(await s.alocacao(ctx(req))))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await s.pauta(ctx(req), req.dados.params.id)))

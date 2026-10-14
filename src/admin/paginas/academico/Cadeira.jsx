@@ -53,13 +53,57 @@ function Cadeira() {
         ))}
       </ul>
       <div className="tab-content panel rounded-0 rounded-bottom p-3 mb-4">
-        {separador === 'dados' && <Dados {...props} />}
+        {separador === 'dados' && <><Dados {...props} />{gerir && <div className="mt-4" style={{ maxWidth: 820 }}><CopiarConteudos {...props} /></div>}</>}
         {separador === 'docentes' && <Docentes {...props} />}
         {separador === 'programa' && <Programa {...props} />}
         {separador === 'pauta' && <PautaAdmin cadeira={c} avisar={setAviso} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+// copiar os conteúdos de uma cadeira de outro ano (ou de outra turma) para esta
+function CopiarConteudos({ c, recarregar, avisar }) {
+  const [origens, setOrigens] = useState(null)
+  const [origem, setOrigem] = useState('')
+  const [docentes, setDocentes] = useState(false)
+  const [aCopiar, setACopiar] = useState(false)
+  useEffect(() => {
+    api('/academico/origens-copia').then((l) => {
+      const outras = l.filter((x) => x.id !== c.id)
+      setOrigens(outras)
+      setOrigem(String(outras.find((x) => x.codigo === c.codigo)?.id || ''))
+    }).catch(() => setOrigens([]))
+  }, [c.id, c.codigo])
+  async function copiar() {
+    setACopiar(true)
+    try {
+      const r = await api(`/academico/cadeiras/${c.id}/copiar`, { metodo: 'POST', corpo: { origemId: Number(origem), docentes } })
+      avisar({ texto: `Copiados: ${r.capitulos} capítulos, ${r.materiais} materiais, ${r.trabalhos} trabalhos, ${r.questionarios} questionários, ${r.datas} datas.` })
+      recarregar()
+    } catch (e) {
+      avisar({ tipo: 'erro', texto: e.message })
+    } finally {
+      setACopiar(false)
+    }
+  }
+  if (!origens) return null
+  return (
+    <Painel titulo="Copiar conteúdos de outra cadeira">
+      <p className="small text-muted">Capítulos, materiais e ficheiros, trabalhos, questionários, datas, programa e composição das notas. As datas avançam os anos que separam os anos letivos.</p>
+      <div className="d-flex gap-2 flex-wrap align-items-center">
+        <select className="form-select w-auto" value={origem} onChange={(e) => setOrigem(e.target.value)} aria-label="Cadeira de origem">
+          <option value="">Escolha a cadeira…</option>
+          {origens.map((x) => <option key={x.id} value={x.id}>{x.codigo} · {x.nome} — {x.turma?.nome}</option>)}
+        </select>
+        <div className="form-check mb-0">
+          <input id="cc-docentes" type="checkbox" className="form-check-input" checked={docentes} onChange={(e) => setDocentes(e.target.checked)} />
+          <label className="form-check-label" htmlFor="cc-docentes">e os docentes</label>
+        </div>
+        <button type="button" className="btn btn-theme" disabled={!origem || aCopiar} onClick={copiar}><i className="fa fa-copy me-1" />{aCopiar ? 'A copiar…' : 'Copiar'}</button>
+      </div>
+    </Painel>
   )
 }
 

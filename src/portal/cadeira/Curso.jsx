@@ -5,6 +5,7 @@ import { Vazio } from '../componentes'
 import { dataHora, faltam, nota } from '../formatar'
 import { BarraProgresso } from './Progresso'
 import NovaAtividade from './NovaAtividade'
+import Importar from './Importar'
 
 // aspeto de cada tipo de atividade (como os ícones coloridos do Moodle)
 const TIPOS = {
@@ -23,6 +24,7 @@ const TIPOS = {
 function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPara }) {
   const [edicao, setEdicao] = useState(false)
   const [nova, setNova] = useState(null) // capítulo onde se junta uma atividade (null = geral)
+  const [importar, setImportar] = useState(false)
   const [fechados, setFechados] = useState(() => new Set())
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
 
@@ -142,7 +144,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               <input id="modo-edicao" className="form-check-input" type="checkbox" checked={edicao} onChange={(e) => setEdicao(e.target.checked)} />
               <label className="form-check-label fw-bold" htmlFor="modo-edicao">Modo de edição</label>
             </div>
-            {edicao && <span className="small text-muted">Junte atividades, mude-as de capítulo, esconda capítulos em preparação.</span>}
+            {edicao && <span className="small text-muted d-none d-xl-inline">Junte atividades, mude-as de capítulo, esconda capítulos em preparação.</span>}
+            {edicao && <button type="button" className="btn btn-sm btn-white ms-auto" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />Importar de outra cadeira</button>}
           </div>
         )}
 
@@ -297,6 +300,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
         </div>
       </div>
 
+      {importar && <Importar c={c} fechar={() => setImportar(false)} avisar={avisar} concluido={recarregar} />}
       {nova && <NovaAtividade c={c} secaoId={nova.secaoId} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
     </div>
   )

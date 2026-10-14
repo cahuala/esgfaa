@@ -134,3 +134,5 @@ export const composicao = z.object({
   componente: texto(10),
   itens: z.union([z.array(z.object({ tipo: texto(20), id: idNumerico, peso: z.union([z.number(), z.string().max(4)]).optional() })).max(20), z.null()]),
 })
+export const copiarCadeira = z.object({ origemId: idNumerico, docentes: z.boolean().optional() })
+export const copiarTurma = z.object({ origemTurmaId: idNumerico, docentes: z.boolean().optional() })

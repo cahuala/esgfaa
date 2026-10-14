@@ -20,8 +20,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, pautas, notificacoes, privados, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, pautas, notificacoes, privados, auditoria, relogio })
+  constructor({ academico, recursos, pautas, notificacoes, copias, privados, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, pautas, notificacoes, copias, privados, auditoria, relogio })
   }
 
   // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
@@ -334,6 +334,13 @@ export class ServicoPortal {
     if (!atividade) throw new NaoEncontrado('Atividade não encontrada.')
     const cadeira = await this.#cadeiraDoDocente(ctx.conta, atividade.cadeiraId)
     await this.academico.moverAtividade(tipo, atividade.id, await this.#secaoDaCadeira(cadeira.id, secaoId))
+  }
+
+  // importar conteúdos de outra cadeira do mesmo docente (como o "Importar" do Moodle)
+  async importar(ctx, destinoId, { origemId }) {
+    const destino = await this.#cadeiraDoDocente(ctx.conta, destinoId)
+    const origem = await this.#cadeiraDoDocente(ctx.conta, origemId)
+    return this.copias.copiar(ctx, origem, destino, { docentes: false }, quem(ctx.conta))
   }
 
   // participantes da cadeira (docentes e estudantes da turma), como no Moodle
