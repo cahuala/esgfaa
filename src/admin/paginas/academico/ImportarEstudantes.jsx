@@ -3,16 +3,14 @@ import { api } from '../../api'
 import { lerFolha } from './lerFolha'
 
 const ACOES = {
-  criar: ['bg-success', 'Conta nova + matrícula'],
-  matricular: ['bg-primary', 'Matricular (conta já existe)'],
+  matricular: ['bg-primary', 'Matricular'],
   ja_matriculado: ['bg-gray-500', 'Já matriculado'],
   erro: ['bg-danger', 'Erro'],
 }
-const NOMES = { nome: 'Nome', email: 'E-mail', posto: 'Posto', ramo: 'Ramo', nip: 'NIP', telefone: 'Telefone' }
 
 /*
-  Importar estudantes de uma folha Excel (.xlsx) ou CSV: lê no navegador, mostra o que vai
-  acontecer a cada linha (pré-visualização na API) e só depois cria as contas e matricula.
+  Matricular estudantes de uma folha Excel (.xlsx) ou CSV: só quem já está registado pelo Pessoal e Quadros,
+  encontrado pelo e-mail ou pelo número de estudante. Pré-visualização na API antes de matricular.
 */
 function ImportarEstudantes({ turma, fechar, concluido }) {
   const [folha, setFolha] = useState(null) // { nome, linhas, colunas, faltam }
@@ -30,7 +28,7 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
     try {
       const f = await lerFolha(ficheiro)
       setFolha({ nome: ficheiro.name, ...f })
-      if (f.faltam.length) throw new Error(`A folha precisa das colunas: ${f.faltam.map((k) => NOMES[k]).join(' e ')} (na primeira linha).`)
+      if (f.colunas.email === undefined && f.colunas.numero === undefined) throw new Error('A folha precisa de uma coluna E-mail ou Número (na primeira linha).')
       if (!f.linhas.length) throw new Error('A folha não tem estudantes por baixo do cabeçalho.')
       setPrevia(await api(`/academico/turmas/${turma.id}/importar`, { metodo: 'POST', corpo: { linhas: f.linhas, simular: true } }))
     } catch (e) {
@@ -54,20 +52,20 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
     }
   }
 
-  const aGravar = previa ? previa.resumo.criar + previa.resumo.matricular : 0
+  const aGravar = previa && !feito ? previa.resumo.matricular : 0
   return (
     <>
       <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="imp-titulo" onClick={() => !aTrabalhar && fechar()}>
         <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />Importar estudantes para {turma.nome}</h4>
+              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />Matricular a partir de uma folha — {turma.nome}</h4>
               <button type="button" className="btn-close" onClick={fechar} disabled={aTrabalhar} aria-label="Fechar" />
             </div>
             <div className="modal-body">
               <p className="text-muted small mb-2">
-                Excel (.xlsx) ou CSV com uma linha de cabeçalho. Colunas obrigatórias: <b>Nome</b> e <b>E-mail</b> (da Escola); opcionais: Posto, Ramo, NIP, Telefone.
-                Quem ainda não tem conta recebe uma (a palavra-passe inicial é o e-mail); quem já tem é só matriculado.
+                Excel (.xlsx) ou CSV com uma linha de cabeçalho e uma coluna <b>E-mail</b> ou <b>Número</b> (de estudante).
+                Só se matricula quem já está registado pela Repartição de Pessoal e Quadros; ninguém novo é registado aqui.
               </p>
               {!feito && (
                 <label className="d-block border border-2 border-dashed rounded p-4 text-center" style={{ cursor: 'pointer' }}>
@@ -78,7 +76,7 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
               )}
               {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />A tratar a folha…</p>}
               {erro && <div className="alert alert-danger mt-3 mb-0">{erro}</div>}
-              {feito && <div className="alert alert-success">Importação concluída: {feito.resumo.criar} conta(s) nova(s), {feito.resumo.criar + feito.resumo.matricular} matrícula(s){feito.resumo.erro ? `, ${feito.resumo.erro} linha(s) com erro` : ''}.</div>}
+              {feito && <div className="alert alert-success">Matrícula concluída: {feito.resumo.matricular} estudante(s) matriculado(s){feito.resumo.erro ? `, ${feito.resumo.erro} linha(s) com erro` : ''}.</div>}
               {previa && (
                 <>
                   <div className="d-flex flex-wrap gap-2 my-3">
@@ -86,13 +84,13 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
                   </div>
                   <div className="table-responsive">
                     <table className="table table-sm table-striped align-middle mb-0">
-                      <thead><tr><th>Linha</th><th>Nome</th><th>E-mail</th><th>Resultado</th></tr></thead>
+                      <thead><tr><th>Linha</th><th>Nome</th><th>E-mail / número</th><th>Resultado</th></tr></thead>
                       <tbody>
                         {previa.linhas.map((l) => (
                           <tr key={l.linha} className={l.acao === 'erro' ? 'text-danger' : ''}>
                             <td className="text-muted">{l.linha + 1}</td>
                             <td>{l.nome}</td>
-                            <td className="small">{l.email}</td>
+                            <td className="small">{l.email || l.numero}</td>
                             <td><span className={`badge ${ACOES[l.acao][0]}`}>{ACOES[l.acao][1]}</span>{l.erro && <span className="small ms-2">{l.erro}</span>}{l.numero && feito && <span className="small text-muted ms-2 font-monospace">{l.numero}</span>}</td>
                           </tr>
                         ))}
@@ -104,7 +102,7 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-white" onClick={fechar} disabled={aTrabalhar}>{feito ? 'Fechar' : 'Cancelar'}</button>
-              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? `Importar ${aGravar} estudante(s)` : 'Importar'}</button>}
+              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? `Matricular ${aGravar} estudante(s)` : 'Matricular'}</button>}
             </div>
           </div>
         </div>

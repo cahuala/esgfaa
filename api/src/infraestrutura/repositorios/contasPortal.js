@@ -28,6 +28,10 @@ export class RepositorioContasPortal {
     return paraConta(await this.prisma.contaPortal.findUnique({ where: { tokenCalendario: token } }))
   }
 
+  async porNumero(numero) {
+    return paraConta(await this.prisma.contaPortal.findUnique({ where: { numero: String(numero).toUpperCase() } }))
+  }
+
   async porId(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null

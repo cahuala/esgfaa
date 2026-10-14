@@ -26,6 +26,7 @@ src/
 │   ├── sessao, utilizadores, papeis, conteudos, paginas, interacoes, estatisticas, ficheiros, auditoria, arranque
 │   └── academico/
 │       ├── partilhado/     acesso às cadeiras, apoio comum, restrições, pautas, cópias, notificações, registos
+│       ├── pessoal/        Pessoal e Quadros: registo de estudantes e docentes (contas, dados pessoais, folhas)
 │       ├── ensino/         portal: painel, estudante, organização da cadeira, materiais, trabalhos, presenças,
 │       │                   pauta do docente, fórum, calendário, progresso, questionários, grupos, inquéritos,
 │       │                   avaliação por pares, glossário e wiki, pesquisa, sessão

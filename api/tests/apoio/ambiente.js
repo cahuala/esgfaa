@@ -70,7 +70,20 @@ export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
     fs.rmSync(pastaPrivada, { recursive: true, force: true })
   }
 
-  return { app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, pastaPrivada, esquema }
+  /*
+    Estudante novo como na Escola: o Pessoal e Quadros regista a conta e a Administração Escolar
+    matricula-o na turma. agente: pedido autenticado com as duas permissões. Devolve a resposta do registo.
+  */
+  async function registarEMatricular(agente, turmaId, dados) {
+    const r = await agente.post('/api/admin/academico/contas').send({ tipo: 'estudante', ...dados })
+    if (r.status === 201) {
+      const m = await agente.post(`/api/admin/academico/turmas/${turmaId}/matriculas`).send({ estudanteId: r.body.id })
+      if (m.status !== 201) return m
+    }
+    return r
+  }
+
+  return { registarEMatricular, app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, pastaPrivada, esquema }
 }
 
 export const noticia = (extra = {}) => ({

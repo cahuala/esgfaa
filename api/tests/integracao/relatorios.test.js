@@ -5,7 +5,7 @@ import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 
-describe('relatórios (registos e participação) e importação de estudantes', () => {
+describe('relatórios: registos e participação', () => {
   let amb, relogio, cadeira, turma, sec
   const contas = {}
   const tokens = {}
@@ -16,11 +16,11 @@ describe('relatórios (registos e participação) e importação de estudantes',
     amb = await criarAmbiente({ relogio })
     const admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    const s = await amb.criarUtilizador('secretaria')
+    const s = await amb.criarUtilizador('administrador')
     sec = () => amb.com(s.token)
     turma = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM A' })).body
     contas.prof = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })).body
-    for (const k of ['ana', 'bruno']) contas[k] = (await sec().post(`/api/admin/academico/turmas/${turma.id}/matricula-nova`).send({ nome: `Estudante ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
+    for (const k of ['ana', 'bruno']) contas[k] = (await amb.registarEMatricular(sec(), turma.id, { nome: `Estudante ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
     cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia' })).body
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })
     for (const k of ['prof', 'ana', 'bruno']) {
@@ -64,35 +64,5 @@ describe('relatórios (registos e participação) e importação de estudantes',
     assert.equal(soBruno.length, 1)
     const antes = (await portal('prof').get(`/api/portal/cadeiras/${cadeira.id}/relatorios/registos?antesDe=${todos[1].id}`)).body
     assert.equal(antes.length, 2)
-  })
-
-  it('importação de estudantes: pré-visualização, depois cria contas e matricula', async () => {
-    const outra = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body
-    const linhas = [
-      { nome: 'Cap. Carlos Mendes', email: 'carlos.mendes@esgfaa.gov.ao', posto: 'Capitão', nip: '12345' },
-      { nome: 'Estudante ana Teste', email: 'ANA@esgfaa.gov.ao' }, // já existe: só matricula
-      { nome: 'Sem e-mail da Escola', email: 'alguem@gmail.com' },
-      { nome: 'Cap. Carlos Repetido', email: 'carlos.mendes@esgfaa.gov.ao' },
-      { nome: 'Docente', email: 'prof@esgfaa.gov.ao' },
-      { nome: 'Abc', email: 'curto@esgfaa.gov.ao' },
-    ]
-    const sim = (await sec().post(`/api/admin/academico/turmas/${outra.id}/importar`).send({ linhas })).body
-    assert.equal(sim.simulacao, true)
-    assert.deepEqual(sim.linhas.map((l) => l.acao), ['criar', 'matricular', 'erro', 'erro', 'erro', 'erro'])
-    assert.match(sim.linhas[3].erro, /repetido/)
-    assert.match(sim.linhas[4].erro, /docente/)
-    assert.equal((await sec().get(`/api/admin/academico/turmas/${outra.id}`)).body.matriculas.length, 0) // nada gravado
-
-    const r = (await sec().post(`/api/admin/academico/turmas/${outra.id}/importar`).send({ linhas, simular: false })).body
-    assert.deepEqual(r.resumo, { criar: 1, matricular: 1, ja_matriculado: 0, erro: 4 })
-    assert.match(r.linhas[0].numero, /^E2026-/)
-    const t = (await sec().get(`/api/admin/academico/turmas/${outra.id}`)).body
-    assert.deepEqual(t.matriculas.map((m) => m.estudante.email).sort(), ['ana@esgfaa.gov.ao', 'carlos.mendes@esgfaa.gov.ao'])
-    // repetir: já matriculados
-    const de = (await sec().post(`/api/admin/academico/turmas/${outra.id}/importar`).send({ linhas: linhas.slice(0, 2), simular: false })).body
-    assert.deepEqual(de.resumo, { criar: 0, matricular: 0, ja_matriculado: 2, erro: 0 })
-    // a conta nova entra com o e-mail como palavra-passe
-    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'carlos.mendes@esgfaa.gov.ao', senha: 'carlos.mendes@esgfaa.gov.ao' })).status, 200)
-    assert.equal((await amb.com(tokens.ana).post(`/api/admin/academico/turmas/${outra.id}/importar`).send({ linhas })).status, 401)
   })
 })

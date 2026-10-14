@@ -11,21 +11,23 @@ const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro n
 export function rotasSecretaria({ servicos, config, privados }) {
   const r = Router()
   const a = servicos.administracaoEscolar
+  const p = servicos.pessoal
   const ctx = (req) => req.contexto
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
 
-  r.get('/contas', validar({ query: E.filtrosContas }), async (req, res) => res.json(await a.contas.listarContas(ctx(req), req.dados.query)))
-  r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await a.contas.criarConta(ctx(req), req.dados.body)))
-  r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await a.contas.editarConta(ctx(req), req.dados.params.id, req.dados.body)))
-  r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => { await a.contas.reporSenha(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/contas', validar({ query: E.filtrosContas }), async (req, res) => res.json(await p.registo.listarContas(ctx(req), req.dados.query)))
+  r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))
+  r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await p.registo.editarConta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => { await p.registo.reporSenha(ctx(req), req.dados.params.id); res.status(204).end() })
 
   r.get('/turmas', async (req, res) => res.json(await a.turmas.listarTurmas(ctx(req))))
   r.post('/turmas', validar({ body: E.turma }), async (req, res) => res.status(201).json(await a.turmas.criarTurma(ctx(req), req.dados.body)))
   r.get('/turmas/:id', validar({ params: pId }), async (req, res) => res.json(await a.turmas.turma(ctx(req), req.dados.params.id)))
   r.put('/turmas/:id', validar({ params: pId, body: E.turma }), async (req, res) => res.json(await a.turmas.editarTurma(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/matriculas', validar({ params: pId, body: E.matricula }), async (req, res) => res.status(201).json(await a.turmas.matricular(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/contas/importar', validar({ body: E.importarPessoas }), async (req, res) => res.json(await p.registo.importar(ctx(req), req.dados.body)))
+  r.post('/turmas/:id/matricular', validar({ params: pId, body: E.matricularVarios }), async (req, res) => res.json(await a.turmas.matricularVarios(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/importar', validar({ params: pId, body: E.importarEstudantes }), async (req, res) => res.json(await a.turmas.importarEstudantes(ctx(req), req.dados.params.id, req.dados.body)))
-  r.post('/turmas/:id/matricula-nova', validar({ params: pId, body: E.conta }), async (req, res) => res.status(201).json(await a.turmas.matricularNovo(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/matriculas/:id', validar({ params: pId, body: E.matricula }), async (req, res) => res.json(await a.turmas.alterarMatricula(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.post('/turmas/:id/cadeiras', validar({ params: pId, body: E.cadeira }), async (req, res) => res.status(201).json(await a.cadeiras.criarCadeira(ctx(req), req.dados.params.id, req.dados.body)))

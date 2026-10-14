@@ -46,7 +46,7 @@ function Alocacao() {
         <div className="col-xl-5">
           <Painel titulo="Carga horária por docente" corpo={false}>
             <div className="list-group list-group-flush">
-              {d.docentes.length === 0 && <div className="list-group-item text-muted">Ainda não há docentes. Crie-os em Contas do portal.</div>}
+              {d.docentes.length === 0 && <div className="list-group-item text-muted">Ainda não há docentes registados: o registo é feito pela Repartição de Pessoal e Quadros.</div>}
               {d.docentes.map((x) => (
                 <div key={x.docente.id} className="list-group-item">
                   <div className="d-flex justify-content-between align-items-baseline">

@@ -1,16 +1,21 @@
-import { NaoEncontrado } from '../../../dominio/comum/erros.js'
+import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
 import { emailDaEscola, numeroConta, TIPOS_CONTA } from '../../../dominio/academico/pessoas/contas.js'
 
-// Contas do portal (estudantes e docentes), geridas pela Administração Escolar.
-export class ServicoContas {
+/*
+  Registo de pessoas (Repartição de Pessoal e Quadros): estudantes e docentes, com os dados pessoais
+  e a conta do portal. A Administração Escolar consulta este registo para matricular, inscrever
+  e alocar, mas não regista ninguém.
+*/
+export class ServicoRegistoPessoal {
   constructor(dependencias) {
     Object.assign(this, dependencias)
   }
 
+  // quem pode ver o registo: o Pessoal e Quadros e a Administração Escolar (para escolher)
   listarContas(ctx, filtros) {
-    ctx.actor.exigir('academico.ver')
+    ctx.actor.exigir('pessoal.ver', 'academico.ver')
     return this.contas.listar(filtros).then((l) => l.map((c) => ({ ...c.publico(), deveMudarSenha: c.deveMudarSenha })))
   }
 
@@ -22,7 +27,7 @@ export class ServicoContas {
   }
 
   async criarConta(ctx, { tipo, nome, email, dados }) {
-    ctx.actor.exigir('academico.gerir')
+    ctx.actor.exigir('pessoal.registar')
     const t = escolha(tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
     const e = emailDaEscola(email, this.dominioEmail)
     const n = texto(nome, 'nome', 'Nome completo', { min: 5, max: 150 })
@@ -43,7 +48,7 @@ export class ServicoContas {
   }
 
   async editarConta(ctx, id, { nome, email, ativo, dados }) {
-    ctx.actor.exigir('academico.gerir')
+    ctx.actor.exigir('pessoal.registar')
     const c = await this.contas.porId(id)
     if (!c) throw new NaoEncontrado('Conta não encontrada.')
     if (nome !== undefined) c.nome = texto(nome, 'nome', 'Nome completo', { min: 5, max: 150 })
@@ -60,7 +65,7 @@ export class ServicoContas {
 
   // repõe a palavra-passe inicial (o e-mail) e termina as sessões abertas
   async reporSenha(ctx, id) {
-    ctx.actor.exigir('academico.gerir')
+    ctx.actor.exigir('pessoal.registar')
     const c = await this.contas.porId(id)
     if (!c) throw new NaoEncontrado('Conta não encontrada.')
     c.mudarSenha(await this.cifra.cifrar(c.email))
@@ -69,5 +74,43 @@ export class ServicoContas {
     c.bloqueadoAte = null
     await this.contas.guardar(c)
     await this.auditoria.registar(ctx, { acao: 'repor_senha_portal', colecao: 'contas_portal', alvoId: c.id, alvoTitulo: `${c.nome} (${c.numero})` })
+  }
+
+  /*
+    Registo de várias pessoas de uma folha (CSV/Excel lido no navegador), todas do mesmo tipo.
+    Com simular, só diz o que faria a cada linha. Quem já está registado não se repete.
+  */
+  async importar(ctx, { tipo = 'estudante', linhas, simular = true }) {
+    ctx.actor.exigir('pessoal.registar')
+    const t = escolha(tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
+    if (!Array.isArray(linhas) || !linhas.length) throw new ErroValidacao('A folha não tem pessoas.', { campo: 'linhas' })
+    if (linhas.length > 500) throw new ErroValidacao('No máximo 500 pessoas de cada vez.', { campo: 'linhas' })
+    const vistos = new Set()
+    const resultado = []
+    for (const [i, l] of linhas.entries()) {
+      const linha = { linha: i + 1, nome: String(l.nome ?? '').trim(), email: String(l.email ?? '').trim().toLowerCase() }
+      try {
+        const email = emailDaEscola(l.email, this.dominioEmail)
+        const nome = texto(l.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
+        if (vistos.has(email)) throw new ErroValidacao('E-mail repetido na folha.')
+        vistos.add(email)
+        const existente = await this.contas.porEmail(email)
+        let acao = existente ? 'ja_registado' : 'registar'
+        let numero = existente?.numero ?? null
+        if (existente && existente.tipo !== t) throw new ErroValidacao(`Já está registado como ${existente.tipo}.`)
+        if (!simular && !existente) {
+          numero = (await this.criarConta(ctx, { tipo: t, nome, email, dados: { posto: l.posto, ramo: l.ramo, nip: l.nip, telefone: l.telefone } })).numero
+          acao = 'registado'
+        }
+        resultado.push({ ...linha, nome, email, acao, numero })
+      } catch (e) {
+        if (!(e instanceof ErroValidacao)) throw e
+        resultado.push({ ...linha, acao: 'erro', erro: e.message })
+      }
+    }
+    const conta = (k) => resultado.filter((r) => r.acao === k).length
+    const resumo = { registar: conta('registar') + conta('registado'), ja_registado: conta('ja_registado'), erro: conta('erro') }
+    if (!simular) await this.auditoria.registar(ctx, { acao: 'importar_pessoas', colecao: 'contas_portal', alvoTitulo: `${resumo.registar} ${t}(s)`, detalhes: resumo })
+    return { simulacao: simular, tipo: t, resumo, linhas: resultado }
   }
 }

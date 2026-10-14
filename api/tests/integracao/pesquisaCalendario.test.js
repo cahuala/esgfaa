@@ -14,12 +14,12 @@ describe('pesquisa global e calendário iCal', () => {
     amb = await criarAmbiente({ relogio: relogioFalso('2026-11-09T09:00:00Z') })
     const admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    const s = await amb.criarUtilizador('secretaria')
+    const s = await amb.criarUtilizador('administrador')
     const sec = () => amb.com(s.token)
     const turma = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM A' })).body
     const t2 = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body
     contas.prof = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })).body
-    contas.ana = (await sec().post(`/api/admin/academico/turmas/${turma.id}/matricula-nova`).send({ nome: 'Estudante ana Teste', email: 'ana@esgfaa.gov.ao' })).body
+    contas.ana = (await amb.registarEMatricular(sec(), turma.id, { nome: 'Estudante ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia' })).body
     outra = (await sec().post(`/api/admin/academico/turmas/${t2.id}/cadeiras`).send({ codigo: 'GEO103', nome: 'Geopolítica' })).body
     for (const c of [cadeira, outra]) await sec().put(`/api/admin/academico/cadeiras/${c.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })

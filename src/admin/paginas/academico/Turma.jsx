@@ -12,7 +12,6 @@ import { confirmar } from '../../../portal/dialogos'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
-const RAMOS = ['Exército', 'Força Aérea Nacional', 'Marinha de Guerra Angolana']
 
 // uma turma: matrículas, cadeiras (período, docentes alocados) e horário
 function Turma() {
@@ -36,7 +35,7 @@ function Turma() {
   return (
     <>
       <CabecalhoPagina titulo={t.nome} subtitulo={`${t.anoLetivo} · ${t.anoCurricular}.º ano`} migalhas={[{ rotulo: 'Turmas', para: '/academico/turmas' }, { rotulo: t.nome }]}>
-        {gerir && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> Importar estudantes (Excel/CSV)</button>}
+        {gerir && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> Matricular a partir de Excel/CSV</button>}
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" /> Copiar cadeiras de outra turma</button>}
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> Turmas</Link>
       </CabecalhoPagina>
@@ -81,7 +80,7 @@ function Turma() {
               </table>
             </div>
           </Painel>
-          {gerir && <NovaMatricula turma={t} carregar={carregar} avisar={setAviso} />}
+          {gerir && <MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} />}
         </div>
         <div className="col-xl-6">
           {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
@@ -95,39 +94,53 @@ function Turma() {
   )
 }
 
-// matrícula de um estudante novo: a conta é criada com o e-mail da Escola (palavra-passe inicial = e-mail)
-function NovaMatricula({ turma, carregar, avisar }) {
-  const vazio = { nome: '', email: '', posto: '', ramo: '', nip: '', telefone: '' }
-  const [f, setF] = useState(vazio)
-  const [erro, setErro] = useState('')
-  async function matricular(e) {
-    e.preventDefault()
-    setErro('')
+// matricular estudantes já registados pelo Pessoal e Quadros: pesquisar e escolher (vários de uma vez)
+function MatricularEstudantes({ turma, carregar, avisar }) {
+  const [q, setQ] = useState('')
+  const [encontrados, setEncontrados] = useState([])
+  const [escolhidos, setEscolhidos] = useState([])
+  const [aGravar, setAGravar] = useState(false)
+  const jaNaTurma = new Set(turma.matriculas.map((m) => m.estudante.id))
+  useEffect(() => {
+    const t = setTimeout(() => api(`/academico/contas?tipo=estudante${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ''}`).then((l) => setEncontrados(l.filter((e) => e.ativo && !jaNaTurma.has(e.id)).slice(0, 30))).catch(() => {}), 250)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, turma.matriculas.length])
+  const alternar = (e) => setEscolhidos((l) => (l.some((x) => x.id === e.id) ? l.filter((x) => x.id !== e.id) : [...l, e]))
+  async function matricular() {
+    setAGravar(true)
     try {
-      const { nome, email, ...dados } = f
-      const conta = await api(`/academico/turmas/${turma.id}/matricula-nova`, { metodo: 'POST', corpo: { nome, email, dados } })
-      setF(vazio)
-      avisar({ texto: `Matriculado: ${conta.nome} (n.º ${conta.numero}). Entra no portal com ${conta.email} e essa mesma palavra-passe na primeira vez.` })
+      const r = await api(`/academico/turmas/${turma.id}/matricular`, { metodo: 'POST', corpo: { estudanteIds: escolhidos.map((e) => e.id) } })
+      avisar({ texto: `${r.matriculados} estudante(s) matriculado(s) em ${turma.nome}.` })
+      setEscolhidos([])
       carregar()
-    } catch (falha) {
-      setErro(falha.message)
+    } catch (e) {
+      avisar({ tipo: 'erro', texto: e.message })
+    } finally {
+      setAGravar(false)
     }
   }
   return (
-    <Painel titulo="Nova matrícula">
-      <form onSubmit={matricular}>
-        {erro && <div className="alert alert-danger py-2">{erro}</div>}
-        <div className="row g-2">
-          <div className="col-12"><label className="form-label fw-bold" htmlFor="m-nome">Nome completo</label><input id="m-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
-          <div className="col-12"><label className="form-label fw-bold" htmlFor="m-email">E-mail da Escola</label><input id="m-email" type="email" className="form-control" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="nome.apelido@esgfaa.gov.ao" required /></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="m-posto">Posto</label><input id="m-posto" className="form-control" value={f.posto} onChange={(e) => setF({ ...f, posto: e.target.value })} /></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="m-ramo">Ramo</label><select id="m-ramo" className="form-select" value={f.ramo} onChange={(e) => setF({ ...f, ramo: e.target.value })}><option value="">—</option>{RAMOS.map((r) => <option key={r}>{r}</option>)}</select></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="m-nip">NIP</label><input id="m-nip" className="form-control" value={f.nip} onChange={(e) => setF({ ...f, nip: e.target.value })} /></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="m-tel">Telefone</label><input id="m-tel" className="form-control" value={f.telefone} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></div>
-        </div>
-        <div className="form-text mb-3">A palavra-passe inicial é o próprio e-mail; o portal obriga a mudá-la na primeira entrada.</div>
-        <button type="submit" className="btn btn-theme w-100"><i className="fa fa-user-plus me-1" /> Matricular</button>
-      </form>
+    <Painel titulo="Matricular estudantes registados">
+      <p className="small text-muted">O registo dos estudantes é feito pela Repartição de Pessoal e Quadros. Aqui escolhe-se quem entra nesta turma.</p>
+      <div className="input-group mb-2">
+        <span className="input-group-text"><i className="fa fa-search" /></span>
+        <input className="form-control" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nome, e-mail ou número de estudante" aria-label="Pesquisar estudantes registados" />
+      </div>
+      <div className="list-group mb-2" style={{ maxHeight: 260, overflowY: 'auto' }}>
+        {encontrados.length === 0 && <div className="list-group-item small text-muted">{q.trim() ? 'Ninguém encontrado (ou já está na turma).' : 'Todos os estudantes registados já estão nesta turma.'}</div>}
+        {encontrados.map((e) => {
+          const marcado = escolhidos.some((x) => x.id === e.id)
+          return (
+            <label key={e.id} className={`list-group-item list-group-item-action d-flex align-items-center gap-2 ${marcado ? 'active' : ''}`}>
+              <input type="checkbox" className="form-check-input mt-0" checked={marcado} onChange={() => alternar(e)} aria-label={e.nome} />
+              <span className="flex-grow-1"><b>{e.nome}</b><span className="d-block small opacity-75">{e.numero}{e.dados?.posto ? ` · ${e.dados.posto}` : ''}</span></span>
+            </label>
+          )
+        })}
+      </div>
+      {escolhidos.length > 0 && <div className="d-flex flex-wrap gap-1 mb-2">{escolhidos.map((e) => <span key={e.id} className="badge bg-theme">{e.nome} <button type="button" className="btn-close btn-close-white ms-1" style={{ fontSize: 8 }} onClick={() => alternar(e)} aria-label={`Retirar ${e.nome}`} /></span>)}</div>}
+      <button type="button" className="btn btn-theme w-100" onClick={matricular} disabled={!escolhidos.length || aGravar}><i className="fa fa-user-check me-1" />{aGravar ? 'A matricular…' : `Matricular ${escolhidos.length || ''} estudante(s)`}</button>
     </Painel>
   )
 }

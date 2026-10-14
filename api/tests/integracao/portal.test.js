@@ -26,7 +26,7 @@ describe('portal académico', () => {
     amb = await criarAmbiente({ relogio: relogioFalso('2026-10-13T10:00:00Z') })
     admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    secretaria = await amb.criarUtilizador('secretaria')
+    secretaria = await amb.criarUtilizador('administrador')
 
     turmaId = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM 2026/2027' })).body.id
     outraTurmaId = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body.id
@@ -37,11 +37,11 @@ describe('portal académico', () => {
       contas[chave] = r.body
     }
     for (const chave of ['ana', 'bruno']) {
-      const r = await sec().post(`/api/admin/academico/turmas/${turmaId}/matricula-nova`).send({ nome: `Estudante ${chave} Teste`, email: `${chave}@esgfaa.gov.ao`, dados: { posto: 'Major' } })
+      const r = await amb.registarEMatricular(sec(), turmaId, { nome: `Estudante ${chave} Teste`, email: `${chave}@esgfaa.gov.ao`, dados: { posto: 'Major' } })
       assert.equal(r.status, 201, r.body.erro)
       contas[chave] = r.body
     }
-    contas.carla = (await sec().post(`/api/admin/academico/turmas/${outraTurmaId}/matricula-nova`).send({ nome: 'Estudante Carla Teste', email: 'carla@esgfaa.gov.ao' })).body
+    contas.carla = (await amb.registarEMatricular(sec(), outraTurmaId, { nome: 'Estudante Carla Teste', email: 'carla@esgfaa.gov.ao' })).body
 
     // as cadeiras são criadas sem docente; a alocação faz-se depois
     cadeira = (await sec().post(`/api/admin/academico/turmas/${turmaId}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia Militar', periodo: '1', horas: 90 })).body

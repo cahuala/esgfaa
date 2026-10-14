@@ -190,8 +190,10 @@ export const gruposAutomaticos = z.object({ modo: z.enum(['tamanho', 'numero']),
 const celula = z.union([z.string().max(300), z.number()]).optional()
 export const importarEstudantes = z.object({
   simular: z.boolean().optional(),
-  linhas: z.array(z.object({ nome: celula, email: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500),
+  linhas: z.array(z.object({ nome: celula, email: celula, numero: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500),
 })
+export const importarPessoas = z.object({ tipo: texto(20).optional(), simular: z.boolean().optional(), linhas: z.array(z.object({ nome: celula, email: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500) })
+export const matricularVarios = z.object({ estudanteIds: z.array(idNumerico).max(300) })
 
 // ---------- registos e relatórios ----------
 export const vista = z.object({ tipo: texto(20), id: idNumerico })

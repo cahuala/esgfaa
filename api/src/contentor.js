@@ -63,7 +63,7 @@ import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
 import { ServicoCalendario } from './aplicacao/academico/ensino/calendario.js'
 import { ServicoProgresso } from './aplicacao/academico/ensino/progresso.js'
 import { ServicoQuestionarios } from './aplicacao/academico/ensino/questionarios.js'
-import { ServicoContas } from './aplicacao/academico/administracao/contas.js'
+import { ServicoRegistoPessoal } from './aplicacao/academico/pessoal/registo.js'
 import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
 import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
 import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/pautas.js'
@@ -161,9 +161,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias,
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao,
     }
-    d.servicoContas = new ServicoContas(d)
     return {
-      contas: d.servicoContas,
       inscricoes: new ServicoInscricoes(d),
       conclusao: new ServicoConclusaoCurso(d),
       documentos: new ServicoDocumentos(d),
@@ -200,6 +198,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     ensino: ensino(),
     administracaoEscolar: administracaoEscolar(),
+    // Repartição de Pessoal e Quadros: registo de estudantes e docentes
+    pessoal: {
+      registo: new ServicoRegistoPessoal({ contas: r.contasPortal, cifra, auditoria, relogio, dominioEmail: config.dominioEmail }),
+    },
   }
 
   const fechar = () => prisma.$disconnect()

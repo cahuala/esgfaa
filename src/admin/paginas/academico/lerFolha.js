@@ -100,6 +100,7 @@ const sem = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').to
 const CAMPOS = {
   nome: /^(nome( completo)?|estudante|aluno|formando)$/,
   email: /^(e-?mail|correio( eletronico)?|email institucional)$/,
+  numero: /^(n\.?º?|numero|n\.? ?de estudante|numero de estudante|n\.?º? de estudante)$/,
   posto: /^(posto|patente|graduacao)$/,
   ramo: /^ramo$/,
   nip: /^(nip|n\.?º? ?ip|numero de identificacao)$/,

@@ -15,14 +15,14 @@ describe('portal: fórum, calendário, progresso e questionários', () => {
     amb = await criarAmbiente({ relogio })
     const admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    const s = await amb.criarUtilizador('secretaria')
+    const s = await amb.criarUtilizador('administrador')
     sec = () => amb.com(s.token)
 
     const turma = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM A' })).body
     const turmaB = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body
     for (const k of ['prof', 'prof2']) contas[k] = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: `Docente ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
-    for (const k of ['ana', 'bruno']) contas[k] = (await sec().post(`/api/admin/academico/turmas/${turma.id}/matricula-nova`).send({ nome: `Estudante ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
-    contas.carla = (await sec().post(`/api/admin/academico/turmas/${turmaB.id}/matricula-nova`).send({ nome: 'Estudante carla Teste', email: 'carla@esgfaa.gov.ao' })).body
+    for (const k of ['ana', 'bruno']) contas[k] = (await amb.registarEMatricular(sec(), turma.id, { nome: `Estudante ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
+    contas.carla = (await amb.registarEMatricular(sec(), turmaB.id, { nome: 'Estudante carla Teste', email: 'carla@esgfaa.gov.ao' })).body
 
     cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia', horas: 60 })).body
     outra = (await sec().post(`/api/admin/academico/turmas/${turmaB.id}/cadeiras`).send({ codigo: 'LOG101', nome: 'Logística' })).body

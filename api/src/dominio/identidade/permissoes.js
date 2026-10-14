@@ -13,6 +13,7 @@ export const RECURSOS = [
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
   { id: 'candidaturas', acoes: ['ver', 'editar'] },
   { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
+  { id: 'pessoal', acoes: ['ver', 'registar'] },
   { id: 'estatisticas', acoes: ['ver'] },
   { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
@@ -61,9 +62,16 @@ export const PAPEIS_PADRAO = [
   {
     id: 'secretaria',
     nome: 'Repartição de Administração Escolar',
-    descricao: 'Matrículas, turmas, cadeiras, alocação de docentes, programas, pautas, horários e pedidos de documentos.',
+    descricao: 'Turmas, matrículas e inscrições (de quem o Pessoal e Quadros registou), cadeiras, alocação de docentes, programas, pautas, horários, documentos e pedidos.',
     sistema: 0,
     permissoes: ['candidaturas.ver', 'candidaturas.editar', 'cursos.ver', 'academico.ver', 'academico.gerir', 'academico.notas'],
+  },
+  {
+    id: 'pessoal_quadros',
+    nome: 'Repartição de Pessoal e Quadros',
+    descricao: 'Regista estudantes e docentes (dados pessoais, posto, NIP e conta do portal); não trata da vida académica.',
+    sistema: 0,
+    permissoes: ['pessoal.ver', 'pessoal.registar'],
   },
   {
     id: 'analista',

@@ -40,7 +40,7 @@ function Historico() {
 
   return (
     <Documento
-      titulo="Histórico académico" voltar={h.anos.length ? `/academico/turmas/${h.anos[h.anos.length - 1].turma.id}` : '/academico/contas'}
+      titulo="Histórico académico" voltar={h.anos.length ? `/academico/turmas/${h.anos[h.anos.length - 1].turma.id}` : '/pessoal/registo'}
       acoes={<button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}
       assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Diretor da Escola']}
     >

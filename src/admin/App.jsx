@@ -22,7 +22,7 @@ import ListaProva from './paginas/academico/documentos/ListaProva'
 import Historico from './paginas/academico/documentos/Historico'
 import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import CalendarioAcademico from './paginas/academico/Calendario'
-import Contas from './paginas/academico/Contas'
+import Registo from './paginas/pessoal/Registo'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
 import Utilizadores from './paginas/Utilizadores'
@@ -70,7 +70,8 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/documentos/estudante/:id/historico" element={<Historico />} />}
         {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/certificado/:estudanteId" element={<CertificadoCurso />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
-        {pode('academico.ver') && <Route path="/academico/contas" element={<Contas />} />}
+        {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo" element={<Registo />} />}
+        <Route path="/academico/contas" element={<Navigate to="/pessoal/registo" replace />} />
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}
         {pode('academico.ver') && <Route path="/academico/avisos" element={<AvisosGerais />} />}
         {pode('estatisticas.ver') && <Route path="/estatisticas" element={<Estatisticas />} />}

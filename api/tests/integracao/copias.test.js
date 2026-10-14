@@ -16,13 +16,13 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     amb = await criarAmbiente({ relogio: relogioFalso('2025-10-01T09:00:00Z') })
     const admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    const s = await amb.criarUtilizador('secretaria')
+    const s = await amb.criarUtilizador('administrador')
     sec = () => amb.com(s.token)
     antiga = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2025/2026', nome: 'CEM 2025' })).body
     turmaNova = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM 2026' })).body
     for (const k of ['prof', 'prof2']) contas[k] = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: `Docente ${k} Teste`, email: `${k}@esgfaa.gov.ao` })).body
-    contas.velho = (await sec().post(`/api/admin/academico/turmas/${antiga.id}/matricula-nova`).send({ nome: 'Estudante Antigo Teste', email: 'velho@esgfaa.gov.ao' })).body
-    contas.ana = (await sec().post(`/api/admin/academico/turmas/${turmaNova.id}/matricula-nova`).send({ nome: 'Estudante Ana Teste', email: 'ana@esgfaa.gov.ao' })).body
+    contas.velho = (await amb.registarEMatricular(sec(), antiga.id, { nome: 'Estudante Antigo Teste', email: 'velho@esgfaa.gov.ao' })).body
+    contas.ana = (await amb.registarEMatricular(sec(), turmaNova.id, { nome: 'Estudante Ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     origem = (await sec().post(`/api/admin/academico/turmas/${antiga.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia', periodo: 'anual', horas: 90 })).body
     await sec().put(`/api/admin/academico/cadeiras/${origem.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente', horas: 90 }] })
     await sec().put(`/api/admin/academico/cadeiras/${origem.id}/programa`).send({ texto: '<p>Objetivos do curso.</p>' })

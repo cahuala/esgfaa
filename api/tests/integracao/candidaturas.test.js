@@ -71,7 +71,7 @@ describe('candidaturas', () => {
     const redator = await amb.criarUtilizador('redator')
     assert.equal((await amb.com(redator.token).get('/api/admin/candidaturas')).status, 403)
 
-    const secretaria = await amb.criarUtilizador('secretaria')
+    const secretaria = await amb.criarUtilizador('administrador')
     const r = await amb.com(secretaria.token).get('/api/admin/candidaturas?q=joao.fernandes')
     assert.equal(r.status, 200)
     assert.equal(r.body.lista.length, 1)

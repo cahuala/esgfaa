@@ -14,16 +14,16 @@ describe('Administração Escolar: inscrições, TFC, conclusão do curso, hist�
     amb = await criarAmbiente({ relogio: relogioFalso('2026-11-09T09:00:00Z') })
     const admin = await amb.entrar()
     await amb.com(admin).post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Estado-Maior' })
-    const s = await amb.criarUtilizador('secretaria')
+    const s = await amb.criarUtilizador('administrador')
     sec = () => amb.com(s.token)
     ano1 = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2025/2026', nome: 'CEM 1', anoCurricular: 1 })).body
     ano2 = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM 2', anoCurricular: 2 })).body
     contas.prof = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })).body
     // a Ana fez o 1.º ano e está no 2.º; o Bruno está só no 2.º
-    contas.ana = (await sec().post(`/api/admin/academico/turmas/${ano1.id}/matricula-nova`).send({ nome: 'Estudante ana Teste', email: 'ana@esgfaa.gov.ao' })).body
+    contas.ana = (await amb.registarEMatricular(sec(), ano1.id, { nome: 'Estudante ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     await sec().put(`/api/admin/academico/matriculas/${(await sec().get(`/api/admin/academico/turmas/${ano1.id}`)).body.matriculas[0].id}`).send({ estado: 'concluida' })
     await sec().post(`/api/admin/academico/turmas/${ano2.id}/matriculas`).send({ estudanteId: contas.ana.id })
-    contas.bruno = (await sec().post(`/api/admin/academico/turmas/${ano2.id}/matricula-nova`).send({ nome: 'Estudante bruno Teste', email: 'bruno@esgfaa.gov.ao' })).body
+    contas.bruno = (await amb.registarEMatricular(sec(), ano2.id, { nome: 'Estudante bruno Teste', email: 'bruno@esgfaa.gov.ao' })).body
     cad1 = (await sec().post(`/api/admin/academico/turmas/${ano1.id}/cadeiras`).send({ codigo: 'HIS101', nome: 'História Militar', horas: 60 })).body
     cad2 = (await sec().post(`/api/admin/academico/turmas/${ano2.id}/cadeiras`).send({ codigo: 'EST201', nome: 'Estratégia', horas: 90 })).body
     cad3 = (await sec().post(`/api/admin/academico/turmas/${ano2.id}/cadeiras`).send({ codigo: 'LOG202', nome: 'Logística', horas: 60 })).body

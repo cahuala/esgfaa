@@ -35,21 +35,30 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Palavra-passe', { exact: true }).fill(ADMIN_E2E.senha)
   await page.getByRole('button', { name: /Entrar/ }).click()
 
-  await page.goto('/admin/#/academico/contas')
+  // Pessoal e Quadros: regista o docente e o estudante
+  await page.goto('/admin/#/pessoal/registo')
+  await page.getByRole('button', { name: 'Docente', exact: true }).click()
   await page.getByLabel('Nome completo').fill('Cor. Docente Teste')
   await page.getByLabel('E-mail da Escola').fill(docente)
-  await page.getByRole('button', { name: 'Criar docente' }).click()
-  await expect(page.getByText(/Docente criado/)).toBeVisible()
+  await page.getByRole('button', { name: 'Registar docente' }).click()
+  await expect(page.getByText(/Docente registado/)).toBeVisible()
+  await page.getByRole('button', { name: 'Estudante', exact: true }).click()
+  await page.getByLabel('Nome completo').fill('Maj. Estudante Teste')
+  await page.getByLabel('E-mail da Escola').fill(estudante)
+  await page.getByRole('button', { name: 'Registar estudante' }).click()
+  await expect(page.getByText(/Estudante registado/)).toBeVisible()
+
+  // Administração Escolar: turma e matrícula de quem já está registado
 
   await page.goto('/admin/#/academico/turmas')
   await page.getByLabel('Nome da turma').fill(`CEM E2E ${sufixo}`)
   await page.getByRole('button', { name: 'Criar turma' }).click()
   await page.getByRole('row', { name: new RegExp(`CEM E2E ${sufixo}`) }).getByRole('link', { name: 'Abrir' }).click()
 
-  await page.getByLabel('Nome completo').fill('Maj. Estudante Teste')
-  await page.getByLabel('E-mail da Escola').fill(estudante)
-  await page.getByRole('button', { name: 'Matricular' }).click()
-  await expect(page.getByText(/Matriculado: Maj\. Estudante Teste/)).toBeVisible()
+  await page.getByLabel('Pesquisar estudantes registados').fill(estudante)
+  await page.getByRole('checkbox', { name: 'Maj. Estudante Teste' }).check()
+  await page.getByRole('button', { name: /Matricular 1 estudante/ }).click()
+  await expect(page.getByText(/1 estudante\(s\) matriculado\(s\)/)).toBeVisible()
 
   await page.getByLabel('Código').fill('EST101')
   await page.getByLabel('Nome', { exact: true }).fill('Estratégia Militar')
