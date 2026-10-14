@@ -106,7 +106,7 @@ export class ServicoInqueritos {
         }
       }
       const resultados = resultadosInquerito(i.perguntas, await this.inqueritos.respostas(i.id))
-      const estudantes = await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
+      const estudantes = await this.academico.estudantesDaCadeira(cadeira)
       const extra = i.tipo === 'sondagem' && !i.anonimo ? { porEstudante: await this.inqueritos.respostasComEstudante(i.id) } : {}
       return { ...base, resultados, media: mediaGlobal(resultados), estudantes: estudantes.length, ...extra }
     }

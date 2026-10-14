@@ -96,7 +96,7 @@ export class ServicoOrganizacao {
   // participantes da cadeira (docentes e estudantes da turma), como no Moodle
   async participantes(ctx, cadeiraId) {
     const cadeira = await this.apoio.cadeiraAcessivel(ctx.conta, cadeiraId)
-    const estudantes = await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
+    const estudantes = await this.academico.estudantesDaCadeira(cadeira)
     return {
       docentes: cadeira.docentes.map((d) => ({ id: d.id, nome: d.nome, email: d.email, papel: d.papel })),
       estudantes: estudantes.map((e) => ({ id: e.id, nome: e.nome, numero: e.numero, email: e.email })),

@@ -29,30 +29,7 @@ export class ServicoEstudante {
   */
   async percurso(ctx) {
     this.apoio.soEstudante(ctx.conta)
-    const matriculas = await this.academico.percursoDoEstudante(ctx.conta.id)
-    const cadeiras = await this.academico.cadeirasDasTurmas(matriculas.map((m) => m.turma.id))
-    const notas = await this.academico.notasDoEstudante(ctx.conta.id, cadeiras.map((c) => c.id))
-    const aprovada = (l) => l.situacao === 'aprovado' || l.situacao === 'dispensado'
-    const resumir = (linhas) => {
-      const feitas = linhas.filter(aprovada)
-      return {
-        disciplinas: linhas.length,
-        aprovadas: feitas.length,
-        reprovadas: linhas.filter((l) => l.situacao === 'reprovado').length,
-        emCurso: linhas.length - feitas.length - linhas.filter((l) => l.situacao === 'reprovado').length,
-        horas: linhas.reduce((s, l) => s + l.cadeira.horas, 0),
-        horasAprovadas: feitas.reduce((s, l) => s + l.cadeira.horas, 0),
-        media: feitas.length ? Math.round((feitas.reduce((s, l) => s + l.final, 0) / feitas.length) * 10) / 10 : null,
-      }
-    }
-    const anos = matriculas.map((m) => {
-      const linhas = cadeiras.filter((c) => c.turmaId === m.turma.id).map((c) => ({
-        cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, docente: c.docente?.nome || '' },
-        ...notasVisiveis(notas[c.id], c.notasPublicadas),
-      }))
-      return { matricula: { id: m.id, estado: m.estado }, turma: m.turma, disciplinas: linhas, resumo: resumir(linhas) }
-    })
-    return { anos, resumo: resumir(anos.flatMap((a) => a.disciplinas)) }
+    return (await this.percursos.de(ctx.conta.id, { publicadas: true })).paraJSON()
   }
 
   async horario(ctx) {

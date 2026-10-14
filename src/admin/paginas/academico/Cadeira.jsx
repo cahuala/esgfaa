@@ -6,12 +6,14 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import EditorTexto from '../../editor/EditorTexto'
 import { PAPEIS_DOCENCIA, PERIODOS } from './comum'
 import PautaAdmin from './PautaAdmin'
+import Inscricoes from './Inscricoes'
 
 const SEPARADORES = [
   ['dados', 'fa-info-circle', 'Dados'],
   ['docentes', 'fa-chalkboard-teacher', 'Docentes'],
   ['programa', 'fa-book-open', 'Programa'],
   ['pauta', 'fa-table', 'Pauta'],
+  ['estudantes', 'fa-users', 'Estudantes e inscrições'],
 ]
 
 // ficha de uma cadeira na Administração Escolar: dados e período, alocação de docentes, programa e pauta
@@ -57,6 +59,7 @@ function Cadeira() {
         {separador === 'docentes' && <Docentes {...props} />}
         {separador === 'programa' && <Programa {...props} />}
         {separador === 'pauta' && <PautaAdmin cadeira={c} avisar={setAviso} />}
+        {separador === 'estudantes' && <Inscricoes c={c} gerir={gerir} avisar={setAviso} />}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>

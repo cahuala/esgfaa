@@ -10,12 +10,12 @@ export class ServicoPresencas {
 
   async aulas(ctx, cadeiraId) {
     const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, cadeiraId)
-    const [aulas, estudantes] = await Promise.all([this.academico.aulas(cadeira.id), this.academico.estudantesAtivosDaTurma(cadeira.turmaId)])
+    const [aulas, estudantes] = await Promise.all([this.academico.aulas(cadeira.id), this.academico.estudantesDaCadeira(cadeira)])
     return { aulas, estudantes }
   }
 
   async #presencasValidas(cadeira, presencas) {
-    const validos = new Set((await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)).map((e) => e.id))
+    const validos = new Set((await this.academico.estudantesDaCadeira(cadeira)).map((e) => e.id))
     return (presencas || []).map((p) => {
       if (!validos.has(Number(p.estudanteId))) throw new ErroValidacao('A lista de presenças tem um estudante que não pertence à turma.')
       return { estudanteId: Number(p.estudanteId), estado: escolha(p.estado, 'estado', 'Presença', ESTADOS_PRESENCA) }

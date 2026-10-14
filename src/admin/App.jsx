@@ -15,6 +15,12 @@ import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
 import Alocacao from './paginas/academico/Alocacao'
 import Indicadores from './paginas/academico/Indicadores'
+import PautaTurma from './paginas/academico/documentos/PautaTurma'
+import PautaCadeira from './paginas/academico/documentos/PautaCadeira'
+import FolhaPresencas from './paginas/academico/documentos/FolhaPresencas'
+import ListaProva from './paginas/academico/documentos/ListaProva'
+import Historico from './paginas/academico/documentos/Historico'
+import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import CalendarioAcademico from './paginas/academico/Calendario'
 import Contas from './paginas/academico/Contas'
 import PedidosAcademicos from './paginas/academico/Pedidos'
@@ -55,6 +61,12 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/pauta" element={<PautaTurma />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/pauta" element={<PautaCadeira />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/presencas" element={<FolhaPresencas />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/prova" element={<ListaProva />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/estudante/:id/historico" element={<Historico />} />}
+        {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/certificado/:estudanteId" element={<CertificadoCurso />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
         {pode('academico.ver') && <Route path="/academico/contas" element={<Contas />} />}
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}

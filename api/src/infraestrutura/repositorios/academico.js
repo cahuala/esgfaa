@@ -6,6 +6,8 @@ const num = (d) => (d === null || d === undefined ? null : Number(d))
 const contaResumo = { select: { id: true, nome: true, numero: true, email: true } }
 
 const ordemPapel = { regente: 0, assistente: 1 }
+// junta duas listas de estudantes sem repetir, por ordem alfabética
+const juntarEstudantes = (a, b) => [...new Map([...a, ...b].map((e) => [e.id, e])).values()].sort((x, y) => x.nome.localeCompare(y.nome, 'pt'))
 // ficheiros de uma pasta, por ordem
 const FICHEIROS_PASTA = { ficheiros: { orderBy: { ordem: 'asc' }, include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
 
@@ -44,7 +46,7 @@ export class RepositorioAcademico {
       orderBy: [{ anoLetivo: 'desc' }, { nome: 'asc' }],
       include: { _count: { select: { matriculas: { where: { estado: 'ativa' } }, cadeiras: true } } },
     })
-    return linhas.map((t) => ({ id: t.id, curso: t.curso, anoLetivo: t.anoLetivo, anoCurricular: t.anoCurricular, nome: t.nome, ativa: t.ativa, estudantes: t._count.matriculas, cadeiras: t._count.cadeiras }))
+    return linhas.map((t) => ({ id: t.id, curso: t.curso, anoLetivo: t.anoLetivo, anoCurricular: t.anoCurricular, nome: t.nome, ativa: t.ativa, anoFinal: t.anoFinal, estudantes: t._count.matriculas, cadeiras: t._count.cadeiras }))
   }
 
   turma(id) {
@@ -132,6 +134,61 @@ export class RepositorioAcademico {
   async ultimosAcessos(ids) {
     const l = await this.prisma.contaPortal.findMany({ where: { id: { in: ids } }, select: { id: true, ultimoAcesso: true } })
     return Object.fromEntries(l.map((c) => [c.id, iso(c.ultimoAcesso)]))
+  }
+
+  // estudantes de uma cadeira: os da turma (matrícula ativa) e os inscritos nela (inscrição ativa)
+  async estudantesDaCadeira(cadeira) {
+    const [daTurma, inscritos] = await Promise.all([
+      this.estudantesAtivosDaTurma(cadeira.turmaId),
+      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa', estudante: { ativo: true } }, include: { estudante: contaResumo } }),
+    ])
+    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...i.estudante, inscrito: true })))
+  }
+
+  // estudantes que entram na pauta da cadeira (também os de matrícula concluída)
+  async estudantesDaPautaDaCadeira(cadeira) {
+    const [daTurma, inscritos] = await Promise.all([
+      this.estudantesDaPauta(cadeira.turmaId),
+      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa' }, include: { estudante: contaResumo } }),
+    ])
+    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...i.estudante, inscrito: true })))
+  }
+
+  // ids das cadeiras onde o estudante está inscrito (fora da turma)
+  async cadeirasInscritas(estudanteId) {
+    const l = await this.prisma.inscricaoCadeira.findMany({ where: { estudanteId, estado: 'ativa' }, select: { cadeiraId: true } })
+    return l.map((i) => i.cadeiraId)
+  }
+
+  // ---------- inscrições em cadeiras ----------
+
+  async inscricoesDaCadeira(cadeiraId) {
+    const l = await this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId }, include: { estudante: contaResumo }, orderBy: { criadaEm: 'asc' } })
+    return l.map((i) => ({ ...i, criadaEm: iso(i.criadaEm) }))
+  }
+
+  async inscricoesDoEstudante(estudanteId) {
+    const l = await this.prisma.inscricaoCadeira.findMany({ where: { estudanteId }, include: { cadeira: { include: { turma: true } } }, orderBy: { criadaEm: 'asc' } })
+    return l.map((i) => ({ ...i, criadaEm: iso(i.criadaEm) }))
+  }
+
+  async inscricao(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    return this.prisma.inscricaoCadeira.findUnique({ where: { id: n } })
+  }
+
+  inscricaoDe(estudanteId, cadeiraId) {
+    return this.prisma.inscricaoCadeira.findUnique({ where: { estudanteId_cadeiraId: { estudanteId, cadeiraId } } })
+  }
+
+  // grava a inscrição (reativa uma anulada)
+  gravarInscricao(i) {
+    const dados = { motivo: i.motivo, observacao: i.observacao, estado: i.estado }
+    return this.prisma.inscricaoCadeira.upsert({
+      where: { estudanteId_cadeiraId: { estudanteId: i.estudanteId, cadeiraId: i.cadeiraId } },
+      create: { estudanteId: i.estudanteId, cadeiraId: i.cadeiraId, ...dados }, update: dados,
+    })
   }
 
   // ---------- cadeiras ----------

@@ -60,7 +60,7 @@ export class ServicoComunicacao {
 
   // estudantes com matrícula ativa na turma da cadeira
   async estudantesDaCadeira(cadeira) {
-    return (await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)).map((e) => e.id)
+    return (await this.academico.estudantesDaCadeira(cadeira)).map((e) => e.id)
   }
 
   listar(ctx, { antesDe } = {}) {
@@ -99,7 +99,7 @@ export class ServicoComunicacao {
       if (!(await this.comunicacao.marcarLembrado(t.id, agora))) continue
       // quem já entregou ou tem o prazo alargado não é lembrado agora
       const entregues = new Set([...t.entregas.flatMap((e) => [e.estudanteId, ...(e.grupo?.membros.map((m) => m.estudanteId) || [])]), ...t.prorrogacoes.map((p) => p.estudanteId)])
-      const faltam = (await this.academico.estudantesAtivosDaTurma(t.cadeira.turmaId)).map((e) => e.id).filter((id) => !entregues.has(id))
+      const faltam = (await this.academico.estudantesDaCadeira(t.cadeira)).map((e) => e.id).filter((id) => !entregues.has(id))
       const horas = Math.max(1, Math.round((new Date(t.prazo) - agora) / 3_600_000))
       await this.notificar(faltam, {
         tipo: 'prazo', titulo: `Faltam ${horas} h para entregar: ${t.titulo}`, texto: `${t.cadeira.nome}. Ainda não entregou este trabalho.`,
@@ -118,7 +118,7 @@ export class ServicoComunicacao {
     const pessoas = new Map()
     for (const c of cadeiras) {
       for (const d of c.docentes) pessoas.set(d.id, { id: d.id, nome: d.nome, tipo: 'docente', papel: d.papel === 'regente' ? 'Regente' : 'Assistente', cadeiras: [] })
-      for (const e of await this.academico.estudantesAtivosDaTurma(c.turmaId)) if (!pessoas.has(e.id)) pessoas.set(e.id, { id: e.id, nome: e.nome, tipo: 'estudante', papel: 'Estudante', numero: e.numero, cadeiras: [] })
+      for (const e of await this.academico.estudantesDaCadeira(c)) if (!pessoas.has(e.id)) pessoas.set(e.id, { id: e.id, nome: e.nome, tipo: 'estudante', papel: 'Estudante', numero: e.numero, cadeiras: [] })
       for (const id of [...c.docentes.map((d) => d.id)]) pessoas.get(id).cadeiras.push(c.codigo)
     }
     pessoas.delete(ctx.conta.id)

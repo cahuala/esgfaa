@@ -34,7 +34,18 @@ function Verificar() {
         {r?.cert && (
           <>
             <div className="alert alert-success"><i className="fa fa-check-circle me-1" />Certificado válido, emitido pela Escola Superior de Guerra.</div>
-            <DocumentoCertificado cert={r.cert} />
+            {r.cert.tipo === 'curso' ? (
+              <div className="p-certificado">
+                <div className="p-certificado-escola">Forças Armadas Angolanas · Escola Superior de Guerra</div>
+                <h1 className="p-certificado-titulo">Certificado de conclusão do curso</h1>
+                <p className="p-certificado-nome">{r.cert.estudante}</p>
+                <p className="small text-muted">Estudante n.º {r.cert.numero}</p>
+                <p className="mb-1">concluiu o</p>
+                <p className="p-certificado-cadeira">{r.cert.curso}</p>
+                <p>com a classificação final de <b>{String(r.cert.media).replace('.', ',')} valores</b> · ano letivo {r.cert.anoLetivo}</p>
+                <div className="small text-muted">Emitido em {new Date(r.cert.emitidoEm).toLocaleDateString('pt-PT')} · código {r.cert.codigo}</div>
+              </div>
+            ) : <DocumentoCertificado cert={r.cert} />}
           </>
         )}
       </div>

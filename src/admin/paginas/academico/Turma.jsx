@@ -7,6 +7,7 @@ import { PERIODOS } from './comum'
 import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
+import Finalistas from './Finalistas'
 
 const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const ESTADOS = { ativa: ['bg-success', 'Ativa'], suspensa: ['bg-warning text-dark', 'Suspensa'], concluida: ['bg-info', 'Concluída'], anulada: ['bg-secondary', 'Anulada'] }
@@ -39,6 +40,20 @@ function Turma() {
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> Turmas</Link>
       </CabecalhoPagina>
       {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
+      <div className="panel panel-inverse">
+        <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-print me-2" />Documentos da turma</h4></div>
+        <div className="panel-body d-flex flex-wrap gap-2 align-items-center">
+          <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-white"><i className="fa fa-table me-1" />Pauta da turma</Link>
+          <span className="text-muted small">Por cadeira (pauta, folha de presenças, lista para a prova): botões em cada cadeira abaixo.</span>
+          {gerir && (
+            <label className="form-check form-switch ms-auto mb-0">
+              <input className="form-check-input" type="checkbox" checked={Boolean(t.anoFinal)} onChange={(e) => api(`/academico/turmas/${t.id}`, { metodo: 'PUT', corpo: { anoFinal: e.target.checked } }).then(carregar).catch(falhou)} />
+              <span className="form-check-label fw-bold">Turma de finalistas (último ano: trabalho de fim de curso)</span>
+            </label>
+          )}
+        </div>
+      </div>
+      {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
       <div className="row">
         <div className="col-xl-6">
@@ -50,7 +65,7 @@ function Turma() {
                   {t.matriculas.length === 0 && <tr><td colSpan={3} className="text-center text-muted py-4">Sem estudantes matriculados.</td></tr>}
                   {t.matriculas.map((m) => (
                     <tr key={m.id}>
-                      <td><span className="fw-bold">{m.estudante.nome}</span><div className="small text-muted">{m.estudante.email}</div></td>
+                      <td><Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="fw-bold" title="Histórico académico">{m.estudante.nome}</Link><div className="small text-muted">{m.estudante.email}</div></td>
                       <td className="font-monospace">{m.estudante.numero}</td>
                       <td>
                         {gerir ? (
@@ -125,6 +140,11 @@ function CadeiraTurma({ c, gerir, carregar, avisar }) {
         if (window.confirm(`Apagar "${c.nome}" com materiais, notas, trabalhos e presenças?`)) api(`/academico/cadeiras/${c.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
       }}><i className="fa fa-times" /></button>
     )}>
+      <div className="d-flex flex-wrap gap-1 mb-2">
+        <Link to={`/academico/documentos/cadeira/${c.id}/pauta`} className="btn btn-xs btn-white"><i className="fa fa-print me-1" />Pauta</Link>
+        <Link to={`/academico/documentos/cadeira/${c.id}/presencas`} className="btn btn-xs btn-white"><i className="fa fa-user-check me-1" />Folha de presenças</Link>
+        <Link to={`/academico/documentos/cadeira/${c.id}/prova`} className="btn btn-xs btn-white"><i className="fa fa-signature me-1" />Lista para a prova</Link>
+      </div>
       <div className="d-flex align-items-start gap-2 mb-2 flex-wrap">
         <div className="d-flex gap-1 flex-wrap">
           {c.docentes.length === 0 && <span className="badge bg-warning text-dark"><i className="fa fa-user-clock me-1" />Docentes por alocar</span>}

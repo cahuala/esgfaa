@@ -74,7 +74,7 @@ export class ServicoWorkshops {
     const fase = faseWorkshop(w, this.relogio.agora())
 
     if (ctx.conta.tipo === 'docente') {
-      const [subs, estudantes] = await Promise.all([this.workshops.submissoes(w.id), this.academico.estudantesAtivosDaTurma(cadeira.turmaId)])
+      const [subs, estudantes] = await Promise.all([this.workshops.submissoes(w.id), this.academico.estudantesDaCadeira(cadeira)])
       return {
         ...w, fase, totalEstudantes: estudantes.length,
         submissoes: subs.map((s) => ({ ...s, notaPares: notaDosPares(s.avaliacoes), nota: s.notaFinal ?? notaDosPares(s.avaliacoes) })),

@@ -81,7 +81,7 @@ export class ServicoPainel {
     }
 
     if (eDocente) {
-      const estudantes = await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
+      const estudantes = await this.academico.estudantesDaCadeira(cadeira)
       const comEntregas = await Promise.all(trabalhos.map(async (t) => ({
         ...t, estado: estadoPrazo(t.prazo, agora, t.aceitaAtraso), entregas: (await this.academico.entregasDoTrabalho(t.id)).length,
       })))

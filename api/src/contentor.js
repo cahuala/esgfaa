@@ -71,6 +71,11 @@ import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/
 import { ServicoPedidos } from './aplicacao/academico/administracao/pedidos.js'
 import { ServicoAvisosGerais } from './aplicacao/academico/administracao/avisos.js'
 import { ApoioCadeiras } from './aplicacao/academico/partilhado/apoio.js'
+import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoes.js'
+import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
+import { ServicoDocumentos } from './aplicacao/academico/administracao/documentos.js'
+import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
+import { RepositorioConclusao } from './infraestrutura/repositorios/conclusao.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -102,6 +107,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     workshops: new RepositorioWorkshops({ prisma }),
     colaborativo: new RepositorioColaborativo({ prisma }),
     pesquisa: new RepositorioPesquisa({ prisma }),
+    conclusao: new RepositorioConclusao({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -126,12 +132,13 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, auditoria, notificacoes, relogio })
 
+  const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
   // casos de uso do portal académico (estudantes e docentes)
   const ensino = () => {
     const d = {
       academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
-      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, filtroHtml: filtrarHtml,
+      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml,
     }
     return {
       painel: new ServicoPainel(d),
@@ -152,11 +159,14 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const administracaoEscolar = () => {
     const d = {
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias,
-      privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml,
+      privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao,
     }
     d.servicoContas = new ServicoContas(d)
     return {
       contas: d.servicoContas,
+      inscricoes: new ServicoInscricoes(d),
+      conclusao: new ServicoConclusaoCurso(d),
+      documentos: new ServicoDocumentos(d),
       turmas: new ServicoTurmas(d),
       cadeiras: new ServicoCadeiras(d),
       pautas: new ServicoPautasAdministracao(d),

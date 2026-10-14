@@ -40,7 +40,7 @@ export class ServicoTurmas {
     return turma
   }
 
-  async editarTurma(ctx, id, { nome, ativa, anoCurricular }) {
+  async editarTurma(ctx, id, { nome, ativa, anoCurricular, anoFinal }) {
     ctx.actor.exigir('academico.gerir')
     const t = await this.academico.turma(id)
     if (!t) throw new NaoEncontrado('Turma não encontrada.')
@@ -48,6 +48,7 @@ export class ServicoTurmas {
       ...(nome !== undefined ? { nome: texto(nome, 'nome', 'Nome da turma', { min: 2, max: 80 }) } : {}),
       ...(ativa !== undefined ? { ativa: Boolean(ativa) } : {}),
       ...(anoCurricular !== undefined ? { anoCurricular: this.#anoCurricular(anoCurricular) } : {}),
+      ...(anoFinal !== undefined ? { anoFinal: Boolean(anoFinal) } : {}),
     })
   }
 

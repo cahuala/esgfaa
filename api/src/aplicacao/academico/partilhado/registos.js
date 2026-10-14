@@ -46,7 +46,7 @@ export class ServicoRegistos {
   async participacao(ctx, cadeiraId) {
     const c = await this.acesso.doDocente(ctx.conta, cadeiraId)
     const [estudantes, p, porAtividade, { lista }] = await Promise.all([
-      this.academico.estudantesAtivosDaTurma(c.turmaId), this.registos.participacao(c.id), this.registos.porAtividade(c.id), this.disponibilidade.atividades(c.id),
+      this.academico.estudantesDaCadeira(c), this.registos.participacao(c.id), this.registos.porAtividade(c.id), this.disponibilidade.atividades(c.id),
     ])
     const entregas = await Promise.all(estudantes.map((e) => this.academico.entregasDoEstudante(e.id, lista.filter((a) => a.tipoAtividade === 'trabalho').map((a) => a.id))))
     const agora = this.relogio.agora()

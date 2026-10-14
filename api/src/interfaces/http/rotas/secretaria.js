@@ -44,6 +44,17 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.resultadosAdmin(ctx(req), req.dados.params.id)))
   r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagarAvaliacao(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/indicadores', validar({ query: E.filtroIndicadores }), async (req, res) => res.json(await servicos.indicadores.indicadores(ctx(req), req.dados.query)))
+  r.get('/cadeiras/:id/inscricoes', validar({ params: pId }), async (req, res) => res.json(await a.inscricoes.daCadeira(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/inscricoes', validar({ params: pId, body: E.inscricao }), async (req, res) => res.status(201).json(await a.inscricoes.inscrever(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/inscricoes/:id', validar({ params: pId }), async (req, res) => res.json(await a.inscricoes.anular(ctx(req), req.dados.params.id)))
+  // conclusão do curso e documentos para imprimir
+  r.get('/turmas/:id/finalistas', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.finalistas(ctx(req), req.dados.params.id)))
+  r.put('/turmas/:id/tfc/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }), body: E.tfc }), async (req, res) => res.json(await a.conclusao.lancarTfc(ctx(req), req.dados.params.id, req.dados.params.estudanteId, req.dados.body)))
+  r.post('/turmas/:id/certificados/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }) }), async (req, res) => res.status(201).json(await a.conclusao.emitirCertificado(ctx(req), req.dados.params.id, req.dados.params.estudanteId)))
+  r.get('/estudantes/:id/historico', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.historico(ctx(req), req.dados.params.id)))
+  r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))
+  r.get('/cadeiras/:id/folha-presencas', validar({ params: pId }), async (req, res) => res.json(await a.documentos.folhaPresencas(ctx(req), req.dados.params.id)))
+  r.get('/cadeiras/:id/lista-prova', validar({ params: pId }), async (req, res) => res.json(await a.documentos.listaProva(ctx(req), req.dados.params.id)))
   r.get('/alocacao', async (req, res) => res.json(await a.cadeiras.alocacao(ctx(req))))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await a.pautas.pauta(ctx(req), req.dados.params.id)))

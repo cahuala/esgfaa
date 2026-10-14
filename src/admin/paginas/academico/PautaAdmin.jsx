@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
@@ -118,7 +119,7 @@ function PautaAdmin({ cadeira, avisar }) {
           <div className="ms-auto d-flex gap-2 align-items-center">
             {alterado && <span className="text-warning small fw-bold">Alterações por guardar</span>}
             <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(cadeira, p.linhas.map((l) => ({ ...l, ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[l.estudante.id][k]) ?? null])), ...resultados[l.estudante.id] })))}><i className="fa fa-file-excel me-1" /> Exportar Excel</button>
-            <button type="button" className="btn btn-white" onClick={() => window.print()}><i className="fa fa-print me-1" /> Imprimir</button>
+            <Link to={`/academico/documentos/cadeira/${cadeira.id}/pauta`} className="btn btn-white"><i className="fa fa-print me-1" /> Imprimir pauta</Link>
             <button type="button" className="btn btn-theme" disabled={!alterado || invalida} onClick={guardar}><i className="fa fa-save me-1" /> Guardar pauta</button>
           </div>
         )}

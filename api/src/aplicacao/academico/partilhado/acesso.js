@@ -14,7 +14,10 @@ export class AcessoCadeiras {
     const cadeira = await this.academico.cadeira(cadeiraId)
     if (cadeira) {
       if (conta.tipo === 'docente' && cadeira.docentes.some((d) => d.id === conta.id)) return cadeira
-      if (conta.tipo === 'estudante' && (await this.academico.turmasAtivas(conta.id)).includes(cadeira.turmaId)) return cadeira
+      if (conta.tipo === 'estudante') {
+        if ((await this.academico.turmasAtivas(conta.id)).includes(cadeira.turmaId)) return cadeira
+        if ((await this.academico.cadeirasInscritas(conta.id)).includes(cadeira.id)) return cadeira
+      }
     }
     throw new NaoEncontrado('Cadeira não encontrada.')
   }
@@ -30,6 +33,11 @@ export class AcessoCadeiras {
 
   async minhasCadeiras(conta) {
     if (conta.tipo === 'docente') return this.academico.cadeirasDoDocente(conta.id)
-    return this.academico.cadeirasDasTurmas(await this.academico.turmasAtivas(conta.id))
+    const [daTurma, inscritas] = await Promise.all([
+      this.academico.cadeirasDasTurmas(await this.academico.turmasAtivas(conta.id)),
+      this.academico.cadeirasInscritas(conta.id),
+    ])
+    const extra = await Promise.all(inscritas.filter((id) => !daTurma.some((c) => c.id === id)).map((id) => this.academico.cadeira(id)))
+    return [...daTurma, ...extra.filter(Boolean).map((c) => ({ ...c, inscrito: true }))]
   }
 }

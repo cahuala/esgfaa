@@ -112,7 +112,7 @@ export class ServicoTrabalhos {
     if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
     const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, t.cadeiraId)
     const id = Number(estudanteId)
-    if (!(await this.academico.estudantesAtivosDaTurma(cadeira.turmaId)).some((e) => e.id === id)) throw new ErroValidacao('O estudante não pertence à turma.', { campo: 'estudanteId' })
+    if (!(await this.academico.estudantesDaCadeira(cadeira)).some((e) => e.id === id)) throw new ErroValidacao('O estudante não pertence à turma.', { campo: 'estudanteId' })
     if (prazo === null) {
       await this.academico.definirProrrogacao(t.id, id, null)
       return { estudanteId: id, prorrogacao: null }
@@ -163,7 +163,7 @@ export class ServicoTrabalhos {
     if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
     const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, t.cadeiraId)
     const [estudantes, porEstudante, prorrogacoes, grupos] = await Promise.all([
-      this.academico.estudantesAtivosDaTurma(cadeira.turmaId), this.academico.entregasPorEstudante(t.id), this.academico.prorrogacoes(t.id),
+      this.academico.estudantesDaCadeira(cadeira), this.academico.entregasPorEstudante(t.id), this.academico.prorrogacoes(t.id),
       t.emGrupo ? this.grupos.grupos(cadeira.id) : [],
     ])
     const grupoDe = Object.fromEntries(grupos.flatMap((g) => g.membros.map((m) => [m.id, { id: g.id, nome: g.nome }])))

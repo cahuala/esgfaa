@@ -64,7 +64,7 @@ export class ServicoPautas {
   async sincronizar(cadeira) {
     const composicoes = await this.academico.composicoes(cadeira.id)
     if (!Object.keys(composicoes).length) return composicoes
-    const estudantes = (await this.academico.estudantesDaPauta(cadeira.turmaId)).map((e) => e.id)
+    const estudantes = (await this.academico.estudantesDaPautaDaCadeira(cadeira)).map((e) => e.id)
     for (const [componente, itens] of Object.entries(composicoes)) {
       const porAtividade = await this.#notasDasAtividades(cadeira, estudantes, itens)
       const valores = Object.fromEntries(estudantes.map((e) => [e, notaComposta(itens, Object.fromEntries(itens.map((i) => [`${i.tipo}-${i.id}`, porAtividade[`${i.tipo}-${i.id}`]?.[e] ?? null])))]))
@@ -99,7 +99,7 @@ export class ServicoPautas {
       ...workshops.map((w) => ({ tipo: 'workshop', id: w.id, titulo: w.titulo })),
     ]
     const [estudantes, notas] = await Promise.all([
-      this.academico.estudantesDaPauta(cadeira.turmaId),
+      this.academico.estudantesDaPautaDaCadeira(cadeira),
       this.academico.pautaDaCadeira(cadeira.id),
     ])
     return {
@@ -112,7 +112,7 @@ export class ServicoPautas {
   }
 
   async gravar(ctx, cadeira, linhas, utilizador) {
-    const validos = new Set((await this.academico.estudantesDaPauta(cadeira.turmaId)).map((e) => e.id))
+    const validos = new Set((await this.academico.estudantesDaPautaDaCadeira(cadeira)).map((e) => e.id))
     const vistos = new Set()
     const notas = linhas.map((l) => {
       const estudanteId = Number(l.estudanteId)

@@ -222,6 +222,9 @@ model ContaPortal {
   avaliacoesPares     AvaliacaoPar[]
   termosGlossario     TermoGlossario[]
   versoesWiki         VersaoWiki[]
+  inscricoes          InscricaoCadeira[]
+  tfcs                TrabalhoFimCurso[]
+  diplomas            CertificadoCurso[]
 
   @@index([tipo])
   @@map("contas_portal")
@@ -235,12 +238,15 @@ model Turma {
   anoCurricular Int      @default(1) @map("ano_curricular") // 1.º ano, 2.º ano, …
   nome          String
   ativa         Boolean  @default(true)
+  anoFinal      Boolean  @default(false) @map("ano_final") // turma de finalistas (último ano: trabalho de fim de curso)
   criadaEm      DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
   cadeiras   UnidadeCurricular[]
   matriculas Matricula[]
   avisos     AvisoGeral[]
   eventos    EventoAcademico[]
+  tfcs       TrabalhoFimCurso[]
+  diplomas   CertificadoCurso[]
 
   @@unique([curso, anoLetivo, nome])
   @@map("turmas")
@@ -274,7 +280,7 @@ model UnidadeCurricular {
   programaFicheiroId String?  @map("programa_ficheiro_id") // ou em documento (PDF, Word)
   notasPublicadas    String[] @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
 
-  turma            Turma             @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  turma            Turma              @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   docentes         Docencia[]
   materiais        Material[]
   avisos           AvisoCadeira[]
@@ -296,6 +302,7 @@ model UnidadeCurricular {
   workshops        Workshop[]
   glossario        TermoGlossario[]
   paginasWiki      PaginaWiki[]
+  inscricoes       InscricaoCadeira[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -1062,4 +1069,59 @@ model VersaoWiki {
 
   @@index([paginaId, id])
   @@map("versoes_wiki")
+}
+
+// inscrição de um estudante numa cadeira fora da sua turma (atraso, repetição, equivalência)
+model InscricaoCadeira {
+  id          Int      @id @default(autoincrement())
+  estudanteId Int      @map("estudante_id")
+  cadeiraId   Int      @map("cadeira_id")
+  motivo      String // atraso | repeticao | equivalencia | outro
+  observacao  String   @default("")
+  estado      String   @default("ativa") // ativa | anulada
+  criadaEm    DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  cadeira   UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@unique([estudanteId, cadeiraId])
+  @@index([cadeiraId])
+  @@map("inscricoes_cadeiras")
+}
+
+// trabalho de fim de curso (monografia/TFC) de um estudante finalista, lançado pela Administração Escolar
+model TrabalhoFimCurso {
+  id           Int      @id @default(autoincrement())
+  estudanteId  Int      @map("estudante_id")
+  turmaId      Int      @map("turma_id")
+  tema         String
+  orientador   String   @default("")
+  juri         String   @default("")
+  dataDefesa   String?  @map("data_defesa") // AAAA-MM-DD
+  nota         Decimal? @db.Decimal(4, 2)
+  observacao   String   @default("")
+  atualizadoEm DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
+
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  turma     Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  @@unique([estudanteId, turmaId])
+  @@map("trabalhos_fim_curso")
+}
+
+// certificado de conclusão do curso (documento final), com código de verificação
+model CertificadoCurso {
+  codigo      String   @id
+  estudanteId Int      @map("estudante_id")
+  turmaId     Int      @map("turma_id")
+  curso       String
+  media       Decimal  @db.Decimal(4, 2)
+  notaTfc     Decimal? @map("nota_tfc") @db.Decimal(4, 2)
+  emitidoEm   DateTime @default(now()) @map("emitido_em") @db.Timestamptz(3)
+
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  turma     Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  @@unique([estudanteId, turmaId])
+  @@map("certificados_curso")
 }

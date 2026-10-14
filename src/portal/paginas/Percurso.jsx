@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
-import { Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
+import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
@@ -110,6 +110,30 @@ function Percurso() {
             )
           })}
         </div>
+      )}
+      {p.inscricoes?.length > 0 && (
+        <Cartao titulo={<><i className="fa fa-user-plus me-2" />Cadeiras por inscrição (fora da turma)</>} corpo={false}>
+          <div className="table-responsive">
+            <table className="table table-striped align-middle mb-0">
+              <thead><tr><th>Cadeira</th><th>Turma</th><th className="text-center">Nota final</th><th>Situação</th></tr></thead>
+              <tbody>{p.inscricoes.map((d) => <tr key={d.cadeira.id}><td><Link to={`/cadeiras/${d.cadeira.id}`}><b>{d.cadeira.codigo}</b> {d.cadeira.nome}</Link></td><td className="small">{d.cadeira.turma} · {d.cadeira.anoLetivo}</td><td className="text-center"><Nota valor={d.final} /></td><td><Situacao situacao={d.situacao} /></td></tr>)}</tbody>
+            </table>
+          </div>
+        </Cartao>
+      )}
+      {(p.tfc || p.conclusao?.concluido) && (
+        <Cartao titulo={<><i className="fa fa-graduation-cap me-2" />Conclusão do curso</>}>
+          {p.tfc && (
+            <div className="mb-2">
+              <div className="small text-muted">Trabalho de fim de curso</div>
+              <b>{p.tfc.tema}</b>
+              <div className="small">{p.tfc.orientador && `Orientador: ${p.tfc.orientador} · `}{p.tfc.nota !== null ? `Nota: ${nota(p.tfc.nota)} valores (${p.tfc.classificacao})` : 'Por defender'}</div>
+            </div>
+          )}
+          {p.conclusao?.concluido
+            ? <div className="alert alert-success mb-0"><i className="fa fa-award me-1" />Curso concluído com <b>{nota(p.conclusao.mediaFinal)} valores</b> ({p.conclusao.classificacaoFinal}).{p.certificado && <> Certificado emitido em {new Date(p.certificado.emitidoEm).toLocaleDateString('pt-PT')} — código <span className="font-monospace">{p.certificado.codigo}</span>.</>}</div>
+            : p.conclusao?.emFalta?.length > 0 && <div className="small text-muted">Falta para concluir: {p.conclusao.emFalta.join('; ')}.</div>}
+        </Cartao>
       )}
       <p className="p-legenda">{REGRA} Só contam as notas já publicadas.</p>
     </>

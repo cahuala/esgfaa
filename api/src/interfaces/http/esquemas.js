@@ -68,7 +68,7 @@ export const conta = z.object({
   dados: z.record(z.string(), z.union([z.string().max(200), z.number()])).optional(),
 })
 export const filtrosContas = z.object({ tipo: texto(20).optional(), q: texto(200).optional() })
-export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), anoCurricular: textoLivre(2), nome: texto(120).optional(), ativa: z.boolean().optional() })
+export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), anoCurricular: textoLivre(2), nome: texto(120).optional(), ativa: z.boolean().optional(), anoFinal: z.boolean().optional() })
 export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: texto(20).optional() })
 export const cadeira = z.object({
   codigo: texto(40).optional(), nome: texto(200).optional(), periodo: texto(10).optional(), horas: textoLivre(6), descricao: texto(3000).optional(),
@@ -213,3 +213,5 @@ export const termo = z.object({ termo: texto(200).optional(), definicao: texto(6
 export const paginaWiki = z.object({ titulo: texto(200).optional(), conteudo: texto(200_000).optional(), base: idNumerico.optional(), resumo: texto(300).optional() })
 export const versaoWiki = z.object({ versao: idNumerico.optional() })
 export const restaurarWiki = z.object({ versaoId: idNumerico })
+export const inscricao = z.object({ estudanteId: idNumerico, motivo: texto(20).optional(), observacao: texto(400).optional() })
+export const tfc = z.object({ tema: texto(400).optional(), orientador: texto(200).optional(), juri: texto(600).optional(), dataDefesa: z.union([texto(20), z.null()]).optional(), nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), observacao: texto(600).optional() })

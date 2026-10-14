@@ -1,9 +1,6 @@
 import { Conflito, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { quem } from '../partilhado/autor.js'
-
-// código de verificação legível (sem letras que se confundem: 0/O, 1/I)
-const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const novoCodigo = () => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => ALFABETO[b % ALFABETO.length]).join('')
+import { normalizarCodigo, novoCodigo } from '../../../dominio/academico/conclusao/codigo.js'
 
 // Progresso das atividades, conclusão da cadeira e certificado de conclusão da cadeira.
 export class ServicoProgresso {
@@ -75,7 +72,7 @@ export class ServicoProgresso {
       const itens = await this.#feitasPor(ctx.conta.id, atividades)
       return { itens, ...resumo(itens) }
     }
-    const estudantes = await this.academico.estudantesAtivosDaTurma(c.turmaId)
+    const estudantes = await this.academico.estudantesDaCadeira(c)
     const linhas = await Promise.all(estudantes.map(async (e) => {
       const itens = await this.#feitasPor(e.id, atividades)
       return { estudante: e, concluidas: itens.filter((i) => i.feita).map((i) => `${i.tipo}-${i.id}`), ...resumo(itens) }
@@ -102,10 +99,19 @@ export class ServicoProgresso {
   }
 
   // verificação pública de um certificado pelo código (sem sessão)
+  // (de uma cadeira ou do curso)
   async verificarCertificado(codigo) {
-    const c = await this.recursos.certificado(String(codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
-    if (!c) throw new NaoEncontrado('Certificado não encontrado. Confirme o código.')
-    return c
+    const n = normalizarCodigo(codigo)
+    const c = await this.recursos.certificado(n)
+    if (c) return { tipo: 'cadeira', ...c }
+    const curso = await this.certificadosCurso?.certificado(n)
+    if (curso) {
+      return {
+        tipo: 'curso', codigo: curso.codigo, emitidoEm: curso.emitidoEm, estudante: curso.estudante.nome, numero: curso.estudante.numero,
+        curso: curso.curso, media: curso.media, notaTfc: curso.notaTfc, turma: curso.turma?.nome, anoLetivo: curso.turma?.anoLetivo,
+      }
+    }
+    throw new NaoEncontrado('Certificado não encontrado. Confirme o código.')
   }
 
   // percentagem de cada cadeira do estudante (para o painel e a lista de cadeiras)

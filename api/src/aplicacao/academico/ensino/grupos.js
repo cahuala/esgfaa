@@ -30,7 +30,7 @@ export class ServicoGrupos {
   }
 
   async #estudantes(cadeira) {
-    return this.academico.estudantesAtivosDaTurma(cadeira.turmaId)
+    return this.academico.estudantesDaCadeira(cadeira)
   }
 
   // docente: todos os grupos e quem está sem grupo; estudante: o seu grupo
