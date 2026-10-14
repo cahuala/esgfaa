@@ -121,6 +121,15 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   // ---------- portal: estudante ----------
   await primeiraEntrada(page, estudante)
   await expect(page.getByText('Primeira aula')).toBeVisible() // avisos das cadeiras na página inicial
+  // o aviso do docente chegou como notificação (sino do cabeçalho)
+  await page.getByRole('button', { name: /Notificações \(\d+ por ler\)/ }).click()
+  await expect(page.locator('.p-notif-menu').getByText(/Aviso em Estratégia Militar: Primeira aula/)).toBeVisible()
+  // mensagem privada ao docente da cadeira
+  await page.goto('/portal/#/mensagens')
+  await page.locator('.p-lista-conversas').getByText('Cor. Docente Teste').click()
+  await page.getByLabel('Mensagem').fill('Bom dia, professor.')
+  await page.getByRole('button', { name: 'Enviar' }).click()
+  await expect(page.locator('.p-balao').getByText('Bom dia, professor.')).toBeVisible()
   await page.goto('/portal/#/cadeiras')
   await page.locator('#content').getByText('Estratégia Militar').first().click()
   await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()

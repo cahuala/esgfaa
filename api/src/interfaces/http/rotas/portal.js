@@ -89,6 +89,18 @@ export function rotasPortal({ servicos, config, privados }) {
   r.delete('/aulas/:id', validar({ params: pId }), async (req, res) => { await s.apagarAula(ctx(req), req.dados.params.id); res.status(204).end() })
 
 
+  // ---------- notificações e mensagens ----------
+  const n = servicos.comunicacao
+  r.get('/notificacoes', validar({ query: E.paginaNotificacoes }), async (req, res) => res.json(await n.listar(ctx(req), req.dados.query)))
+  r.put('/notificacoes/lidas', validar({ body: E.lerNotificacoes }), async (req, res) => res.json(await n.marcarLidas(ctx(req), req.dados.body)))
+  r.get('/eu/avisos', async (req, res) => res.json(await n.resumo(ctx(req))))
+  r.get('/eu/preferencias', async (req, res) => res.json(await n.preferencias(ctx(req))))
+  r.put('/eu/preferencias', validar({ body: E.preferencias }), async (req, res) => res.json(await n.definirPreferencias(ctx(req), req.dados.body)))
+  r.get('/contactos', async (req, res) => res.json(await n.contactos(ctx(req))))
+  r.get('/mensagens', async (req, res) => res.json(await n.conversas(ctx(req))))
+  r.get('/mensagens/:id', validar({ params: pId }), async (req, res) => res.json(await n.conversa(ctx(req), req.dados.params.id)))
+  r.post('/mensagens/:id', limitar(L.mensagens, { mensagem: 'Demasiadas mensagens seguidas. Aguarde um minuto.', chave: (req) => req.contexto?.conta?.id ?? '' }), validar({ params: pId, body: E.mensagem }), async (req, res) => res.status(201).json(await n.enviar(ctx(req), req.dados.params.id, req.dados.body)))
+
   // ---------- capítulos e participantes ----------
   r.post('/cadeiras/:id/secoes', validar({ params: pId, body: E.secao }), async (req, res) => res.status(201).json(await s.criarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await s.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))

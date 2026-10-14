@@ -85,6 +85,12 @@ export class RepositorioAcademico {
     return linhas.map((l) => l.turmaId)
   }
 
+  // todos os estudantes com alguma matrícula ativa (avisos gerais da Escola)
+  async idsEstudantesAtivos() {
+    const linhas = await this.prisma.matricula.findMany({ where: { estado: 'ativa', estudante: { ativo: true } }, distinct: ['estudanteId'], select: { estudanteId: true } })
+    return linhas.map((l) => l.estudanteId)
+  }
+
   // estudantes que entram na pauta: matrícula ativa ou já concluída (notas de anos anteriores)
   async estudantesDaPauta(turmaId) {
     const linhas = await this.prisma.matricula.findMany({

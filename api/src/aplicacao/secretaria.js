@@ -13,8 +13,8 @@ const ANO_LETIVO = /^\d{4}\/\d{4}$/
   na primeira entrada.
 */
 export class ServicoSecretaria {
-  constructor({ contas, academico, recursos, conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml }) {
-    Object.assign(this, { contas, academico, recursos, conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml })
+  constructor({ contas, academico, recursos, conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml }) {
+    Object.assign(this, { contas, academico, recursos, conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail, filtroHtml })
   }
 
   // ---------- contas do portal ----------
@@ -393,6 +393,10 @@ export class ServicoSecretaria {
       ...(ficheiroId ? { ficheiroId } : {}),
     })
     await this.auditoria.registar(ctx, { acao: 'tratar_pedido', colecao: 'pedidos', alvoId: p.id, alvoTitulo: p.tipo, detalhes: { de: p.estado, para: r.estado } })
+    if (r.estado !== p.estado && ['pronto', 'recusado', 'em_tratamento'].includes(r.estado)) {
+      const frase = { pronto: 'está pronto', recusado: 'foi recusado', em_tratamento: 'está a ser tratado' }[r.estado]
+      await this.notificacoes?.notificar([p.estudanteId], { tipo: 'pedido', titulo: `O seu pedido "${p.tipo}" ${frase}`, texto: r.resposta || '', ligacao: '/pedidos' })
+    }
     return r
   }
 
@@ -423,6 +427,8 @@ export class ServicoSecretaria {
       texto: texto(corpo, 'texto', 'Texto', { min: 2, max: 5000 }),
     })
     await this.auditoria.registar(ctx, { acao: 'aviso_geral', colecao: 'avisos_gerais', alvoId: a.id, alvoTitulo: a.titulo })
+    const para = turma ? (await this.academico.estudantesAtivosDaTurma(turma.id)).map((e) => e.id) : await this.academico.idsEstudantesAtivos()
+    await this.notificacoes?.notificar(para, { tipo: 'aviso', titulo: `Administração Escolar: ${a.titulo}`, texto: a.texto.slice(0, 300), ligacao: '/avisos' })
     return a
   }
 

@@ -125,3 +125,8 @@ export const respostasQuestionario = z.object({
 export const secao = z.object({ titulo: texto(300).optional(), resumo: texto(4000).optional(), visivel: z.boolean().optional() })
 export const ordemSecoes = z.object({ ids: z.array(idNumerico).max(200) })
 export const moverAtividade = z.object({ tipo: texto(20), id: idNumerico, secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional() })
+// ---------- notificações e mensagens ----------
+export const lerNotificacoes = z.object({ ids: z.array(idNumerico).max(200).optional(), todas: z.boolean().optional() })
+export const paginaNotificacoes = z.object({ antesDe: idNumerico.optional() })
+export const preferencias = z.object({ notificarEmail: z.boolean() })
+export const mensagem = z.object({ texto: texto(6000) })

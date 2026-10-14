@@ -20,8 +20,14 @@ const data = (v) => {
   O acesso segue a regra do portal (AcessoCadeiras).
 */
 export class ServicoRecursos {
-  constructor({ academico, recursos, acesso, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, acesso, auditoria, relogio })
+  constructor({ academico, recursos, acesso, notificacoes, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, acesso, notificacoes, auditoria, relogio })
+  }
+
+  async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
+    if (!this.notificacoes) return
+    if (secaoId && !(await this.academico.secao(secaoId))?.visivel) return
+    await this.notificacoes.notificar(await this.notificacoes.estudantesDaCadeira(cadeira), dados, { excepto: ctx.conta.id })
   }
 
   // ======================= fórum =======================
@@ -53,9 +59,15 @@ export class ServicoRecursos {
   }
 
   async responder(ctx, topicoId, { texto: corpo }) {
-    const { t, docente } = await this.#topico(ctx, topicoId)
+    const { t, cadeira, docente } = await this.#topico(ctx, topicoId)
     if (t.fechado && !docente) throw new Conflito('Este tópico está fechado a novas respostas.')
-    await this.recursos.responder({ topicoId: t.id, autorId: ctx.conta.id, texto: texto(corpo, 'texto', 'Resposta', { min: 1, max: 10_000 }) })
+    const resposta = texto(corpo, 'texto', 'Resposta', { min: 1, max: 10_000 })
+    await this.recursos.responder({ topicoId: t.id, autorId: ctx.conta.id, texto: resposta })
+    // avisa quem abriu o tópico e quem já respondeu (como a subscrição de discussões do Moodle)
+    await this.notificacoes?.notificar([t.autor.id, ...t.respostas.map((r) => r.autor.id)], {
+      tipo: 'forum', titulo: `${ctx.conta.nome} respondeu em "${t.titulo}"`, texto: `${cadeira.nome}: ${resposta.slice(0, 200)}`,
+      ligacao: `/cadeiras/${cadeira.id}?separador=forum`,
+    }, { excepto: ctx.conta.id })
     return this.recursos.topico(t.id)
   }
 
@@ -135,6 +147,10 @@ export class ServicoRecursos {
     const c = await this.acesso.doDocente(ctx.conta, cadeiraId)
     const e = await this.recursos.criarEvento({ cadeiraId: c.id, ...validarEvento(dados, TIPOS_EVENTO_CADEIRA) })
     await this.auditoria.registar(ctx, { acao: 'marcar_evento', colecao: 'calendario', alvoId: e.id, alvoTitulo: `${e.titulo} — ${c.nome} (${e.data})`, utilizador: quem(ctx.conta) })
+    await this.#avisarEstudantes(ctx, c, null, {
+      tipo: 'geral', titulo: `${e.titulo} de ${c.nome} marcada`, texto: `${e.data.split('-').reverse().join('/')}${e.inicio ? `, ${e.inicio}` : ''}${e.local ? ` · ${e.local}` : ''}`,
+      ligacao: `/cadeiras/${c.id}?separador=horario`,
+    })
     return e
   }
 
@@ -296,6 +312,11 @@ export class ServicoRecursos {
     const r = await this.recursos.atualizarQuestionario(q.id, mudanca)
     if (mudanca.publicado && !q.publicado) {
       await this.auditoria.registar(ctx, { acao: 'publicar_questionario', colecao: 'questionarios', alvoId: q.id, alvoTitulo: q.titulo, utilizador: quem(ctx.conta) })
+      const cadeira = await this.academico.cadeira(q.cadeiraId)
+      await this.#avisarEstudantes(ctx, cadeira, q.secaoId, {
+        tipo: 'questionario', titulo: `Novo questionário em ${cadeira.nome}: ${q.titulo}`, texto: r.fecha ? `Fecha em ${new Date(r.fecha).toLocaleString('pt-PT', { timeZone: 'Africa/Luanda', dateStyle: 'short', timeStyle: 'short' })}` : '',
+        ligacao: `/cadeiras/${cadeira.id}?atividade=questionario-${q.id}`,
+      })
     }
     return r
   }

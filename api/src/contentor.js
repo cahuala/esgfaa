@@ -21,6 +21,9 @@ import { ServicoPautas } from './aplicacao/pautas.js'
 import { AcessoCadeiras } from './aplicacao/portal/acesso.js'
 import { ServicoRecursos } from './aplicacao/portal/recursos.js'
 import { RepositorioRecursosCadeira } from './infraestrutura/repositorios/recursosCadeira.js'
+import { RepositorioComunicacao } from './infraestrutura/repositorios/comunicacao.js'
+import { ServicoComunicacao } from './aplicacao/portal/comunicacao.js'
+import { criarCorreio } from './infraestrutura/correio/correio.js'
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
@@ -58,6 +61,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     contasPortal: new RepositorioContasPortal({ prisma }),
     academico: new RepositorioAcademico({ prisma }),
     recursos: new RepositorioRecursosCadeira({ prisma }),
+    comunicacao: new RepositorioComunicacao({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -72,8 +76,12 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     conteudos: r.conteudos, interacoes: r.interacoes, publicidade: r.publicidade, auditoria, filtroHtml: filtrarCamposHtml, relogio,
   })
   const titulos = () => conteudos.titulosInterativos()
-  const pautas = new ServicoPautas({ academico: r.academico, auditoria })
   const acesso = new AcessoCadeiras({ academico: r.academico })
+  const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
+  const notificacoes = new ServicoComunicacao({
+    comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
+  })
+  const pautas = new ServicoPautas({ academico: r.academico, auditoria, notificacoes })
 
   const servicos = {
     auditoria,
@@ -89,14 +97,15 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
     candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
-    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, privados, auditoria, relogio }),
-    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, auditoria, relogio }),
+    portal: new ServicoPortal({ academico: r.academico, recursos: r.recursos, pautas, notificacoes, privados, auditoria, relogio }),
+    recursos: new ServicoRecursos({ academico: r.academico, recursos: r.recursos, acesso, notificacoes, auditoria, relogio }),
+    comunicacao: notificacoes,
     secretaria: new ServicoSecretaria({
-      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
+      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail,
       filtroHtml: filtrarHtml,
     }),
   }
 
   const fechar = () => prisma.$disconnect()
-  return { config, prisma, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados }
+  return { config, prisma, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
 }

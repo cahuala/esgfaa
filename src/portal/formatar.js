@@ -49,3 +49,21 @@ const ICONES = [
   [/zip/, 'fa-file-archive text-gray-600'],
 ]
 export const iconeFicheiro = (tipo = '') => ICONES.find(([re]) => re.test(tipo))?.[1] || 'fa-file-alt text-gray-600'
+
+// "há 5 min", "há 2 h", "ontem", ou a data (notificações e mensagens)
+export function ha(v, agora = new Date()) {
+  const s = Math.round((agora - new Date(v)) / 1000)
+  if (s < 60) return 'agora mesmo'
+  if (s < 3600) return `há ${Math.floor(s / 60)} min`
+  if (s < 86_400) return `há ${Math.floor(s / 3600)} h`
+  if (s < 2 * 86_400) return 'ontem'
+  return new Date(v).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+}
+
+// ícone e cor de cada tipo de notificação
+export const ICONES_NOTIFICACAO = {
+  material: ['fa-file-alt', 'bg-primary'], aviso: ['fa-bullhorn', 'bg-dark'], trabalho: ['fa-file-signature', 'bg-orange'],
+  correcao: ['fa-check-double', 'bg-success'], notas: ['fa-clipboard-list', 'bg-red'], questionario: ['fa-question', 'bg-purple'],
+  forum: ['fa-comments', 'bg-teal'], mensagem: ['fa-envelope', 'bg-blue'], prazo: ['fa-hourglass-half', 'bg-warning'],
+  pedido: ['fa-file-signature', 'bg-gray-600'], geral: ['fa-calendar-alt', 'bg-indigo'],
+}

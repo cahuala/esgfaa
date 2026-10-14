@@ -408,3 +408,24 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .p-mini-hoje { background: var(--p-marca) !important; color: #fff; font-weight: 700; }
 .p-mini-ponto { position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; }
 .p-mini-hoje .p-mini-ponto { background: #fff !important; }
+
+/* ---------- notificações (cabeçalho) ---------- */
+.p-notif-menu { width: 360px; max-width: calc(100vw - 20px); max-height: 70vh; overflow-y: auto; }
+.p-notif-menu .dropdown-item.media { white-space: normal; text-align: left; border: 0; width: 100%; }
+.p-notif-nova { background: var(--p-tinte); }
+.p-notif-nova .media-heading::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: var(--p-marca); vertical-align: middle; }
+
+/* ---------- mensagens ---------- */
+.p-mensageiro { overflow: hidden; }
+.p-mensageiro .row { min-height: 560px; }
+.p-lista-conversas { max-height: 640px; overflow-y: auto; }
+.p-lista-conversas .list-group-item { border-left: 0; border-right: 0; }
+.p-conversa { overflow-y: auto; max-height: 470px; min-height: 300px; background: var(--p-fundo); }
+.p-balao-linha { display: flex; margin-bottom: 8px; }
+.p-balao-linha.p-minha { justify-content: flex-end; }
+.p-balao { max-width: 75%; padding: 8px 12px; border-radius: 12px 12px 12px 3px; background: var(--bs-component-bg, #fff); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); font-size: 13.5px; }
+.p-minha .p-balao { background: var(--p-marca); color: #fff; border-radius: 12px 12px 3px 12px; }
+.p-balao-hora { font-size: 10.5px; opacity: 0.7; text-align: right; margin-top: 2px; }
+.app-header .navbar-nav .navbar-item.dropdown { position: relative; }
+.app-header .navbar-nav .navbar-item .p-notif-menu { position: absolute !important; top: 52px !important; right: 0 !important; left: auto !important; margin-top: 0; }
+.app-header .navbar-item button.navbar-link { height: 100%; }

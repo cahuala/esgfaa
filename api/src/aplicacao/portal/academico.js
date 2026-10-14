@@ -20,8 +20,15 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
   o docente só as cadeiras que lhe estão atribuídas. Tudo o resto responde "não encontrado".
 */
 export class ServicoPortal {
-  constructor({ academico, recursos, pautas, privados, auditoria, relogio }) {
-    Object.assign(this, { academico, recursos, pautas, privados, auditoria, relogio })
+  constructor({ academico, recursos, pautas, notificacoes, privados, auditoria, relogio }) {
+    Object.assign(this, { academico, recursos, pautas, notificacoes, privados, auditoria, relogio })
+  }
+
+  // avisa os estudantes da turma de algo novo na cadeira (não se o capítulo estiver escondido)
+  async #avisarEstudantes(ctx, cadeira, secaoId, dados) {
+    if (!this.notificacoes) return
+    if (secaoId && !(await this.academico.secao(secaoId))?.visivel) return
+    await this.notificacoes.notificar(await this.notificacoes.estudantesDaCadeira(cadeira), dados, { excepto: ctx.conta.id })
   }
 
   // ---------- acesso ----------
@@ -349,14 +356,18 @@ export class ServicoPortal {
       descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
       secaoId: await this.#secaoDaCadeira(cadeira.id, dados.secaoId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e }),
     }
+    let m
     if (tipo === 'ficheiro') {
       if (!ficheiro) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
-      return this.academico.criarMaterial({ ...base, ficheiroId: await this.#registarFicheiro(ficheiro, ctx.conta.id) })
+      m = await this.academico.criarMaterial({ ...base, ficheiroId: await this.#registarFicheiro(ficheiro, ctx.conta.id) })
+    } else {
+      if (ficheiro) this.privados.apagar(ficheiro.caminho)
+      const url = String(dados.url || '').trim()
+      if (!/^https?:\/\//.test(url) || !urlSegura(url)) throw new ErroValidacao('Indique um endereço começado por https://', { campo: 'url' })
+      m = await this.academico.criarMaterial({ ...base, url })
     }
-    if (ficheiro) this.privados.apagar(ficheiro.caminho)
-    const url = String(dados.url || '').trim()
-    if (!/^https?:\/\//.test(url) || !urlSegura(url)) throw new ErroValidacao('Indique um endereço começado por https://', { campo: 'url' })
-    return this.academico.criarMaterial({ ...base, url })
+    await this.#avisarEstudantes(ctx, cadeira, m.secaoId, { tipo: 'material', titulo: `Novo material em ${cadeira.nome}`, texto: m.titulo, ligacao: `/cadeiras/${cadeira.id}` })
+    return m
   }
 
   async apagarMaterial(ctx, id) {
@@ -368,11 +379,13 @@ export class ServicoPortal {
 
   async criarAviso(ctx, cadeiraId, { titulo, texto: corpo }) {
     const cadeira = await this.#cadeiraDoDocente(ctx.conta, cadeiraId)
-    return this.academico.criarAvisoCadeira({
+    const a = await this.academico.criarAvisoCadeira({
       cadeiraId: cadeira.id, autorId: ctx.conta.id,
       titulo: texto(titulo, 'titulo', 'Título', { min: 2, max: 200 }),
       texto: texto(corpo, 'texto', 'Texto', { min: 2, max: 5000 }),
     })
+    await this.#avisarEstudantes(ctx, cadeira, null, { tipo: 'aviso', titulo: `Aviso em ${cadeira.nome}: ${a.titulo}`, texto: a.texto.slice(0, 300), ligacao: `/cadeiras/${cadeira.id}?separador=avisos` })
+    return a
   }
 
   async apagarAviso(ctx, id) {
@@ -422,7 +435,12 @@ export class ServicoPortal {
     }
     const secaoId = await this.#secaoDaCadeira(cadeira.id, dados.secaoId).catch((e) => { if (ficheiro) this.privados.apagar(ficheiro.caminho); throw e })
     const ficheiroId = ficheiro ? await this.#registarFicheiro(ficheiro, ctx.conta.id) : null
-    return this.academico.criarTrabalho({ cadeiraId: cadeira.id, ...campos, secaoId, ficheiroId })
+    const t = await this.academico.criarTrabalho({ cadeiraId: cadeira.id, ...campos, secaoId, ficheiroId })
+    await this.#avisarEstudantes(ctx, cadeira, secaoId, {
+      tipo: 'trabalho', titulo: `Novo trabalho em ${cadeira.nome}: ${t.titulo}`, texto: `Prazo de entrega: ${new Date(t.prazo).toLocaleString('pt-PT', { timeZone: 'Africa/Luanda', dateStyle: 'short', timeStyle: 'short' })}`,
+      ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,
+    })
+    return t
   }
 
   async apagarTrabalho(ctx, id) {
@@ -452,11 +470,16 @@ export class ServicoPortal {
     const e = await this.academico.entrega(entregaId)
     if (!e) throw new NaoEncontrado('Entrega não encontrada.')
     const t = await this.academico.trabalho(e.trabalhoId)
-    await this.#cadeiraDoDocente(ctx.conta, t.cadeiraId)
-    return this.academico.corrigirEntrega(e.id, {
+    const cadeira = await this.#cadeiraDoDocente(ctx.conta, t.cadeiraId)
+    const r = await this.academico.corrigirEntrega(e.id, {
       nota: validarNota(nota),
       correcao: texto(correcao, 'correcao', 'Comentário de correção', { max: 5000, obrigatorio: false }),
     })
+    await this.notificacoes?.notificar([e.estudanteId], {
+      tipo: 'correcao', titulo: `Trabalho corrigido: ${t.titulo}`, texto: `${cadeira.nome}${r.nota !== null ? ` — nota ${r.nota} valores` : ''}`,
+      ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,
+    })
+    return r
   }
 
   // ---------- docente: aulas e presenças ----------

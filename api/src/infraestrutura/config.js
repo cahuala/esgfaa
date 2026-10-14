@@ -28,6 +28,9 @@ const ESQUEMA = z.object({
   ADMIN_EMAIL: z.string().default('admin@esgfaa.gov.ao'),
   ADMIN_PASSWORD: z.string().default(''),
   LOG: z.enum(['json', 'nenhum']).optional(),
+  SMTP_URL: z.union([z.literal(''), z.string().regex(/^smtps?:\/\//, 'SMTP_URL deve ser smtp://… ou smtps://…')]).default(''),
+  EMAIL_REMETENTE: z.string().default('Portal Académico ESG <portal@esgfaa.gov.ao>'),
+  PORTAL_URL: z.union([z.literal(''), z.url()]).default(''),
 })
 
 // "1" -> 1 (n.º de proxies), "loopback" -> 'loopback', "" -> false
@@ -77,6 +80,11 @@ export function criarConfig(env = process.env, extras = {}) {
     confiarProxy: proxy(e.TRUST_PROXY),
     administrador: { nome: e.ADMIN_NAME, email: e.ADMIN_EMAIL, senha: e.ADMIN_PASSWORD },
     registos: e.LOG ?? (e.NODE_ENV === 'test' ? 'nenhum' : 'json'),
+    // e-mails das notificações; sem SMTP_URL ficam só no portal
+    smtp: e.SMTP_URL,
+    remetente: e.EMAIL_REMETENTE,
+    // endereço do portal usado nas ligações dos e-mails (ex.: https://escola.ao/portal/)
+    urlPortal: e.PORTAL_URL.replace(/\/$/, ''),
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },
@@ -91,6 +99,8 @@ export function criarConfig(env = process.env, extras = {}) {
       clique: { janelaMs: 60_000, maximo: 30 },
       // candidaturas por IP (uma pessoa raramente envia mais de uma ou duas)
       candidatura: { janelaMs: 60 * 60_000, maximo: 5 },
+      // mensagens privadas por IP e por conta (contra abusos)
+      mensagens: { janelaMs: 60_000, maximo: 30 },
       entrarPortal: { janelaMs: 15 * 60_000, maximo: 10 },
       entrarPortalIp: { janelaMs: 15 * 60_000, maximo: 60 },
       portal: { janelaMs: 60_000, maximo: 600 },

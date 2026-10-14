@@ -5,6 +5,7 @@ import Sede from '../assets/Escola De Guerra.png'
 import { useTema } from '../tema/useTema'
 import { useSessao } from './sessaoContexto'
 import { iniciais } from './formatar'
+import CabecalhoAvisos from './CabecalhoAvisos'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -78,7 +79,8 @@ function Layout({ children }) {
               <i className={`fa ${tema === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
             </button>
           </div>
-          <div className="navbar-item">
+          <CabecalhoAvisos />
+          <div className="navbar-item d-none d-md-block">
             <a href={SITE} target="_blank" rel="noreferrer" className="navbar-link icon" title="Site da Escola">
               <i className="fa fa-globe" />
             </a>
@@ -146,6 +148,10 @@ function Layout({ children }) {
                 <ItemMenu para="/pedidos" icone="fa-file-signature" texto="Pedidos de documentos" />
               </>
             )}
+
+            <div className="menu-header">Comunicação</div>
+            <ItemMenu para="/mensagens" icone="fa-envelope" texto="Mensagens" />
+            <ItemMenu para="/notificacoes" icone="fa-bell" texto="Notificações" />
 
             <div className="menu-header">Conta</div>
             <ItemMenu para="/perfil" icone="fa-user-circle" texto="O meu perfil" />

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, Cartao } from '../componentes'
 import { dataHora, iniciais } from '../formatar'
@@ -10,6 +11,11 @@ const ESTADOS = { ativa: 'Ativa', suspensa: 'Suspensa', concluida: 'Concluída',
 function Perfil() {
   const { conta, eDocente } = useSessao()
   const [aviso, setAviso] = useState(null)
+  const [pref, setPref] = useState(null)
+  useEffect(() => { api('/eu/preferencias').then(setPref).catch(() => {}) }, [])
+  const mudarEmail = (v) => api('/eu/preferencias', { metodo: 'PUT', corpo: { notificarEmail: v } })
+    .then((r) => { setPref(r); setAviso({ texto: v ? 'Vai receber as notificações também por e-mail.' : 'As notificações ficam só no portal.' }) })
+    .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   const d = conta.dados || {}
   return (
     <>
@@ -45,6 +51,18 @@ function Perfil() {
           </Cartao>
         </div>
         <div className="col-xl-5">
+          {pref && (
+            <Cartao titulo={<><i className="fa fa-bell me-2" />Notificações</>}>
+              <div className="form-check form-switch">
+                <input id="pref-email" className="form-check-input" type="checkbox" checked={pref.notificarEmail} onChange={(e) => mudarEmail(e.target.checked)} />
+                <label className="form-check-label" htmlFor="pref-email">Receber as notificações também por e-mail ({conta.email})</label>
+              </div>
+              <p className="small text-muted mt-2 mb-0">
+                Materiais novos, avisos, trabalhos, correções, notas publicadas, respostas no fórum, mensagens e lembretes de prazo.
+                {!pref.emailAtivo && ' (O envio de e-mails ainda não está configurado no servidor: por agora as notificações aparecem só no portal.)'}
+              </p>
+            </Cartao>
+          )}
           <Cartao titulo={<><i className="fa fa-key me-2" />Mudar a palavra-passe</>}>
             <MudarSenha aoTerminar={() => setAviso({ texto: 'Palavra-passe alterada. As outras sessões foram terminadas.' })} />
           </Cartao>

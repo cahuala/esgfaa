@@ -7,8 +7,8 @@ import { COMPONENTES_NOTA, NOMES_COMPONENTES, resultadoDisciplina, texto, valida
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, auditoria }) {
-    Object.assign(this, { academico, auditoria })
+  constructor({ academico, auditoria, notificacoes }) {
+    Object.assign(this, { academico, auditoria, notificacoes })
   }
 
   // matriz: estudantes × componentes, com MAC, nota final, situação e classificação
@@ -57,7 +57,11 @@ export class ServicoPautas {
     await this.academico.publicarNotas(cadeira.id, ordenada)
     const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
     if (novas.length) {
-      await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${novas.map((k) => NOMES_COMPONENTES[k]).join(', ')} — ${cadeira.nome}`, utilizador })
+      const quais = novas.map((k) => NOMES_COMPONENTES[k]).join(', ')
+      await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${quais} — ${cadeira.nome}`, utilizador })
+      await this.notificacoes?.notificar(await this.notificacoes.estudantesDaCadeira(cadeira), {
+        tipo: 'notas', titulo: `Notas publicadas: ${quais}`, texto: cadeira.nome, ligacao: '/notas',
+      })
     }
     return this.pauta(await this.academico.cadeira(cadeira.id))
   }
