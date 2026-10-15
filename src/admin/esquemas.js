@@ -407,7 +407,7 @@ export const POSICOES_BANNER = [
 // nomes legíveis para a grelha de permissões
 export const NOMES_RECURSOS = {
   noticias: 'Notícias', artigos: 'Artigos', eventos: 'Eventos', cursos: 'Cursos', pessoas: 'Corpo docente',
-  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', academico: 'Gestão académica (portal)', pessoal: 'Pessoal e Quadros', biblioteca: 'Biblioteca', estatisticas: 'Estatísticas',
+  publicidade: 'Publicidade', paginas: 'Páginas do site', comentarios: 'Comentários', candidaturas: 'Candidaturas', academico: 'Gestão académica (portal)', pessoal: 'Pessoal e Quadros', biblioteca: 'Biblioteca', integridade: 'Integridade académica (anti-plágio)', estatisticas: 'Estatísticas',
   utilizadores: 'Utilizadores', papeis: 'Papéis e permissões', atividades: 'Registo de atividades',
 }
 export const NOMES_PERMISSOES = { ver: 'Ver', criar: 'Criar', editar: 'Editar', apagar: 'Apagar', publicar: 'Publicar', gerir: 'Gerir', notas: 'Notas', registar: 'Registar' }
@@ -433,6 +433,10 @@ export const NOMES_ACOES = {
   emprestar_livro: 'Emprestou um livro',
   devolver_livro: 'Registou uma devolução',
   avisar_atrasos_biblioteca: 'Avisou leitores em atraso',
+  preparar_reserva: 'Separou um livro reservado',
+  verificar_originalidade: 'Verificou a originalidade de um documento',
+  adicionar_referencia: 'Juntou um documento ao repositório anti-plágio',
+  apagar_referencia: 'Retirou um documento do repositório anti-plágio',
   editar_conta_portal: 'Editou uma conta do portal',
   repor_senha_portal: 'Repôs a palavra-passe de uma conta do portal',
   criar_turma: 'Criou uma turma',

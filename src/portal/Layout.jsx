@@ -149,6 +149,7 @@ function Layout({ children }) {
             <ItemMenu para="/cadeiras" icone="fa-book" texto={eDocente ? 'As minhas cadeiras' : 'As minhas cadeiras'} />
             <ItemMenu para="/horario" icone="fa-clock" texto="Horário" />
             {eDocente && <ItemMenu para="/banco" icone="fa-archive" texto="Banco de perguntas" />}
+            {eDocente && <ItemMenu para="/integridade" icone="fa-fingerprint" texto="Originalidade" />}
 
             {!eDocente && (
               <>

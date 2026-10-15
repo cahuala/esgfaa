@@ -19,6 +19,9 @@ if (admin) {
   if (admin.gerada) console.log(`Palavra-passe gerada (mostrada só agora): ${admin.senha}\nTerá de a mudar ao entrar.\n`)
 }
 
+// análises de originalidade que ficaram a meio
+await contentor.servicos.integridade.retomar()
+
 const app = criarApp(contentor)
 const servidor = app.listen(config.porta, () => {
   console.log(`API ESGFAA a correr em http://localhost:${config.porta}`)
@@ -43,6 +46,7 @@ function desligar(sinal) {
   console.log(`\n${sinal} recebido — a desligar…`)
   servidor.close(async () => {
     await comunicacao.esvaziar()
+    await contentor.servicos.integridade.esvaziar()
     await contentor.fechar()
     process.exit(0)
   })

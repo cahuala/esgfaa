@@ -54,6 +54,14 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/horario', async (req, res) => res.json(await e.estudante.horario(ctx(req))))
   r.get('/ficheiros/:id', validar({ params: pFicheiro }), async (req, res) => enviarFicheiro(req, res, await e.ficheiros.ficheiro(ctx(req), req.dados.params.id)))
 
+  // ---------- originalidade (docentes) ----------
+  const o = servicos.integridade
+  r.get('/integridade', async (req, res) => res.json(await o.minhas(ctx(req))))
+  r.post('/integridade', ficheiro, validar({ body: E.verificarDocumento }), async (req, res) => res.status(201).json(await o.verificarPortal(ctx(req), req.ficheiro, req.dados.body)))
+  r.get('/integridade/:id', validar({ params: pId }), async (req, res) => res.json(await o.relatorioPortal(ctx(req), req.dados.params.id)))
+  r.get('/trabalhos/:id/integridade', validar({ params: pId }), async (req, res) => res.json(await o.doTrabalho(ctx(req), req.dados.params.id)))
+  r.post('/entregas/:id/integridade', validar({ params: pId }), async (req, res) => res.status(202).json(await o.reanalisarEntrega(ctx(req), req.dados.params.id)))
+
   // ---------- biblioteca ----------
   const b = servicos.biblioteca
   r.get('/biblioteca', validar({ query: E.filtrosObras }), async (req, res) => res.json(await b.catalogo.pesquisar(ctx(req), req.dados.query)))

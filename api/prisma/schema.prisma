@@ -1258,3 +1258,59 @@ model Reserva {
   @@index([contaId])
   @@map("biblioteca_reservas")
 }
+
+// ---------- Integridade académica (anti-plágio) ----------
+
+// texto de um documento: trabalho entregue, obra digital da biblioteca, documento de referência ou verificação avulsa
+model DocumentoIntegridade {
+  id        Int      @id @default(autoincrement())
+  origem    String // entrega | biblioteca | repositorio | verificacao
+  origemId  String?  @map("origem_id")
+  titulo    String
+  autor     String   @default("")
+  contexto  String   @default("") // cadeira e trabalho, coleção, …
+  texto     String
+  palavras  Int      @default(0)
+  fonte     Boolean  @default(true) // serve de comparação para outros documentos
+  contaId   Int?     @map("conta_id") // docente que pediu a verificação
+  pedidoPor String   @default("") @map("pedido_por")
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  impressoes ImpressaoIntegridade[]
+  analises   AnaliseIntegridade[]
+
+  @@unique([origem, origemId])
+  @@index([contaId])
+  @@map("integridade_documentos")
+}
+
+model ImpressaoIntegridade {
+  documentoId Int @map("documento_id")
+  posicao     Int
+  hash        Int
+
+  documento DocumentoIntegridade @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@id([documentoId, posicao])
+  @@index([hash])
+  @@map("integridade_impressoes")
+}
+
+model AnaliseIntegridade {
+  id          Int       @id @default(autoincrement())
+  documentoId Int       @map("documento_id")
+  estado      String    @default("pendente") // pendente | concluida | erro
+  percentagem Decimal?  @db.Decimal(5, 1)
+  fontes      Json      @default("[]")
+  trechos     Json      @default("[]")
+  opcoes      Json      @default("{}")
+  erro        String    @default("")
+  criadaEm    DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
+  concluidaEm DateTime? @map("concluida_em") @db.Timestamptz(3)
+
+  documento DocumentoIntegridade @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@index([documentoId])
+  @@index([estado])
+  @@map("integridade_analises")
+}

@@ -62,6 +62,7 @@ export class ServicoTrabalhos {
         ligacao: `/cadeiras/${trabalho.cadeiraId}?atividade=trabalho-${trabalho.id}`,
       }, { excepto: conta.id })
     }
+    this.originalidade?.entregaFeita(entrega.id) // verificação de originalidade, em segundo plano
     const prazo = prazoDe(trabalho, await this.academico.prorrogacao(trabalho.id, conta.id))
     return { ...entrega, atrasada: entregaAtrasada(entrega.entregueEm, prazo) }
   }

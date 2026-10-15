@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import ZonaUpload from '../ZonaUpload'
 import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
 import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
 import { confirmar } from '../dialogos'
+import { ChipOriginalidade } from '../integridade/Relatorio'
 
 const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
 const TIPOS_ENTREGA = { ficheiro: 'Ficheiros', texto: 'Texto escrito no portal', ambos: 'Ficheiros e texto' }
@@ -199,8 +201,19 @@ function Definicoes({ t, avisar, guardado }) {
 function Entregas({ trabalho, avisar, baixar }) {
   const [d, setD] = useState(null)
   const [aberta, setAberta] = useState(null) // estudante cuja entrega está aberta
-  const carregar = useCallback(() => api(`/trabalhos/${trabalho.id}/entregas`).then(setD).catch((e) => avisar({ tipo: 'erro', texto: e.message })), [trabalho.id, avisar])
+  const [originalidade, setOriginalidade] = useState({})
+  const verOriginalidade = useCallback(() => api(`/trabalhos/${trabalho.id}/integridade`).then(setOriginalidade).catch(() => {}), [trabalho.id])
+  const carregar = useCallback(() => {
+    verOriginalidade()
+    return api(`/trabalhos/${trabalho.id}/entregas`).then(setD).catch((e) => avisar({ tipo: 'erro', texto: e.message }))
+  }, [trabalho.id, avisar, verOriginalidade])
   useEffect(() => { carregar() }, [carregar])
+  // verificações a correr: atualiza dentro de pouco
+  useEffect(() => {
+    if (!Object.values(originalidade).some((a) => a?.estado === 'pendente')) return undefined
+    const t = setTimeout(verOriginalidade, 3000)
+    return () => clearTimeout(t)
+  }, [originalidade, verOriginalidade])
   if (!d) return <Cartao titulo="Entregas"><p className="p-texto-suave mb-0">A carregar entregas…</p></Cartao>
 
   const entregues = d.linhas.filter((l) => l.entrega).length
@@ -214,10 +227,10 @@ function Entregas({ trabalho, avisar, baixar }) {
       <div className="progress rounded-0" style={{ height: 4 }}><div className="progress-bar bg-success" style={{ width: `${d.linhas.length ? (entregues / d.linhas.length) * 100 : 0}%` }} /></div>
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0">
-          <thead><tr><th>Estudante</th><th>Entrega</th><th className="text-center">Nota</th><th /></tr></thead>
+          <thead><tr><th>Estudante</th><th>Entrega</th><th className="text-center" title="Texto coincidente com outros trabalhos, a biblioteca e o repositório">Originalidade</th><th className="text-center">Nota</th><th /></tr></thead>
           <tbody>
             {(trabalho.emGrupo ? [...d.linhas].sort((a, b) => (a.grupo?.nome ?? '\uffff').localeCompare(b.grupo?.nome ?? '\uffff', 'pt', { numeric: true })) : d.linhas).map(({ estudante, entrega, prorrogacao, grupo }) => (
-              <LinhaEntrega key={estudante.id} t={trabalho} estudante={estudante} entrega={entrega} prorrogacao={prorrogacao} grupo={grupo}
+              <LinhaEntrega key={estudante.id} t={trabalho} estudante={estudante} entrega={entrega} prorrogacao={prorrogacao} grupo={grupo} analise={entrega ? originalidade[entrega.id] : null} reverificar={verOriginalidade}
                 aberta={aberta === estudante.id} alternar={() => setAberta(aberta === estudante.id ? null : estudante.id)} baixar={baixar} avisar={avisar} recarregar={carregar} />
             ))}
           </tbody>
@@ -227,7 +240,7 @@ function Entregas({ trabalho, avisar, baixar }) {
   )
 }
 
-function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, aberta, alternar, baixar, avisar, recarregar }) {
+function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reverificar, aberta, alternar, baixar, avisar, recarregar }) {
   const [notaManual, setNotaManual] = useState(entrega?.nota ?? '')
   const [pontos, setPontos] = useState(entrega?.grelha || {})
   const [correcao, setCorrecao] = useState(entrega?.correcao || '')
@@ -278,12 +291,13 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, aberta, alter
           {entrega ? <><Etiqueta cor={entrega.atrasada ? 'dourado' : 'verde'}>{entrega.atrasada ? 'Atrasada' : 'Entregue'}</Etiqueta> <span className="text-muted">{dataHora(entrega.entregueEm)}</span>
             <div className="text-muted">{entrega.ficheiros.length} ficheiro(s){entrega.texto && ' · texto'}{entrega.grupo && entrega.estudante && entrega.estudanteId !== estudante.id ? ` · entregue por ${entrega.estudante.nome}` : ''}</div></> : <span className="text-muted">Não entregou</span>}
         </td>
+        <td className="text-center">{entrega && (analise?.estado === 'concluida' ? <Link to={`/integridade/${analise.id}`} title="Ver o relatório de originalidade"><ChipOriginalidade a={analise} /></Link> : <ChipOriginalidade a={analise} />)}</td>
         <td className="text-center fw-bold">{entrega?.nota !== null && entrega?.nota !== undefined ? nota(entrega.nota) : '—'}</td>
         <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? 'Fechar' : 'Ver e corrigir') : (aberta ? 'Fechar' : 'Prazo')}</button></td>
       </tr>
       {aberta && (
         <tr>
-          <td colSpan={4} className="bg-light">
+          <td colSpan={5} className="bg-light">
             <div className="row g-3 py-2">
               {entrega && (
                 <div className="col-lg-6">
@@ -291,6 +305,11 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, aberta, alter
                   {entrega.ficheiros.length > 0 && <ListaFicheiros ficheiros={entrega.ficheiros} baixar={baixar} />}
                   {entrega.texto && <div className="p-texto-entregue mb-2">{entrega.texto}</div>}
                   {entrega.comentario && <div className="small"><b>Comentário do estudante:</b> “{entrega.comentario}”</div>}
+                  <div className="d-flex align-items-center gap-2 mt-2 small">
+                    <span className="text-muted">Originalidade:</span><ChipOriginalidade a={analise} />
+                    {analise?.estado === 'concluida' && <Link to={`/integridade/${analise.id}`}>Ver relatório</Link>}
+                    {analise?.estado !== 'pendente' && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => api(`/entregas/${entrega.id}/integridade`, { metodo: 'POST' }).then(() => { avisar({ texto: 'A verificar de novo, com o repositório atual.' }); reverificar() }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>{analise ? 'Verificar de novo' : 'Verificar'}</button>}
+                  </div>
                 </div>
               )}
               <div className={entrega ? 'col-lg-6' : 'col-12'}>

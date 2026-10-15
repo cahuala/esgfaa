@@ -81,6 +81,9 @@ import { RepositorioConclusao } from './infraestrutura/repositorios/conclusao.js
 import { RepositorioBiblioteca } from './infraestrutura/repositorios/biblioteca.js'
 import { ServicoCatalogo } from './aplicacao/biblioteca/catalogo.js'
 import { ServicoCirculacao } from './aplicacao/biblioteca/circulacao.js'
+import { RepositorioIntegridade } from './infraestrutura/repositorios/integridade.js'
+import { ServicoOriginalidade } from './aplicacao/integridade/originalidade.js'
+import { extrairTexto } from './infraestrutura/texto/extrair.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -115,6 +118,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     conclusao: new RepositorioConclusao({ prisma }),
     qualidade: new RepositorioQualidade({ prisma }),
     biblioteca: new RepositorioBiblioteca({ prisma }),
+    integridade: new RepositorioIntegridade({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -141,11 +145,16 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
+  // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
+  const originalidade = new ServicoOriginalidade({
+    integridade: r.integridade, academico: r.academico, contas: r.contasPortal, biblioteca: r.biblioteca, privados, extrair: extrairTexto, apoio, auditoria, relogio,
+    registarErro: (x) => console.error(JSON.stringify(x)),
+  })
   // casos de uso do portal académico (estudantes e docentes)
   const ensino = () => {
     const d = {
       academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
-      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml,
+      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade,
     }
     return {
       painel: new ServicoPainel(d),
@@ -207,9 +216,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     administracaoEscolar: administracaoEscolar(),
     // qualidade: inquéritos institucionais de satisfação
     qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },
+    integridade: originalidade,
     // biblioteca: catálogo e circulação
     biblioteca: {
-      catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio }),
+      catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio, originalidade }),
       circulacao: new ServicoCirculacao({ biblioteca: r.biblioteca, contas: r.contasPortal, notificacoes, auditoria, relogio }),
     },
     // Repartição de Pessoal e Quadros: registo de estudantes e docentes

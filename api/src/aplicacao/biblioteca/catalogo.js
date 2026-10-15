@@ -9,8 +9,8 @@ import { REGRAS_EMPRESTIMO } from '../../dominio/biblioteca/emprestimo.js'
   estudantes e docentes pesquisam no portal, veem o que está disponível e leem o digital.
 */
 export class ServicoCatalogo {
-  constructor({ biblioteca, academico, privados, auditoria, relogio }) {
-    Object.assign(this, { biblioteca, academico, privados, auditoria, relogio })
+  constructor({ biblioteca, academico, privados, auditoria, relogio, originalidade }) {
+    Object.assign(this, { biblioteca, academico, privados, auditoria, relogio, originalidade })
   }
 
   async #obra(id) {
@@ -53,6 +53,7 @@ export class ServicoCatalogo {
       const limpo = validarObra(dados)
       if (ficheiro) limpo.ficheiroId = await this.#digital(ficheiro)
       const o = await this.biblioteca.criarObra(limpo)
+      if (o.ficheiroId) this.originalidade?.obraMudou(o)
       await this.auditoria.registar(ctx, { acao: 'criar_obra', colecao: 'biblioteca', alvoId: o.id, alvoTitulo: o.titulo })
       return o
     } catch (e) {
@@ -74,6 +75,7 @@ export class ServicoCatalogo {
     if (ficheiro) mudanca.ficheiroId = await this.#digital(ficheiro)
     else if (removerDigital === true || removerDigital === 'true') mudanca.ficheiroId = null
     const g = await this.biblioteca.guardarObra(o.id, mudanca)
+    if (mudanca.ficheiroId !== undefined || mudanca.titulo !== undefined) this.originalidade?.obraMudou(g)
     await this.auditoria.registar(ctx, { acao: 'editar_obra', colecao: 'biblioteca', alvoId: o.id, alvoTitulo: g.titulo })
     return g
   }
@@ -83,6 +85,7 @@ export class ServicoCatalogo {
     const o = await this.#obra(id)
     if (await this.biblioteca.contarEmprestimosAtivosDaObra(o.id)) throw new Conflito('Há exemplares desta obra emprestados: registe primeiro a devolução.')
     await this.biblioteca.apagarObra(o.id)
+    this.originalidade?.obraApagada(o.id)
     await this.auditoria.registar(ctx, { acao: 'apagar_obra', colecao: 'biblioteca', alvoId: o.id, alvoTitulo: o.titulo })
   }
 

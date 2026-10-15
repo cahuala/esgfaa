@@ -240,3 +240,6 @@ export const emprestar = z.object({ codigo: texto(60).default(''), contaId: idNu
 export const devolver = z.object({ codigo: texto(60).optional(), id: idNumerico.optional() })
 export const filtrosEmprestimos = z.object({ estado: z.enum(['ativos', 'atrasados', 'historico']).default('ativos').catch('ativos') })
 export const procurarLeitor = z.object({ q: texto(200).default('') })
+
+// ---------- integridade (anti-plágio) ----------
+export const verificarDocumento = z.object({ titulo: texto(300).optional(), autor: texto(300).optional(), contexto: texto(200).optional(), guardar: z.union([z.boolean(), texto(5)]).optional() })

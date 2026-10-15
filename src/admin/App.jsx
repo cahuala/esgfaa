@@ -27,6 +27,7 @@ import Satisfacao from './paginas/academico/Satisfacao'
 import Catalogo from './paginas/biblioteca/Catalogo'
 import Obra from './paginas/biblioteca/Obra'
 import Circulacao from './paginas/biblioteca/Circulacao'
+import Integridade from './paginas/integridade/Integridade'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
 import Utilizadores from './paginas/Utilizadores'
@@ -68,6 +69,8 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
         {pode('academico.ver') && <Route path="/academico/satisfacao" element={<Satisfacao />} />}
+        {pode('integridade.ver') && <Route path="/integridade" element={<Integridade />} />}
+        {pode('integridade.ver') && <Route path="/integridade/analises/:id" element={<Integridade />} />}
         {pode('biblioteca.ver') && <Route path="/biblioteca" element={<Catalogo />} />}
         {pode('biblioteca.ver') && <Route path="/biblioteca/obras/:id" element={<Obra />} />}
         {pode('biblioteca.ver') && <Route path="/biblioteca/emprestimos" element={<Circulacao />} />}

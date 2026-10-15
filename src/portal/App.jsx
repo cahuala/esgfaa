@@ -22,6 +22,7 @@ import Verificar from './paginas/Verificar'
 import Pesquisa from './paginas/Pesquisa'
 import Inqueritos from './paginas/Inqueritos'
 import Biblioteca, { MeusEmprestimos } from './paginas/Biblioteca'
+import Originalidade from './paginas/Originalidade'
 import JanelaDialogo from './JanelaDialogo'
 
 function App() {
@@ -57,6 +58,8 @@ function App() {
         <Route path="/pesquisa" element={<Pesquisa />} />
         <Route path="/inqueritos" element={<Inqueritos />} />
         <Route path="/inqueritos/:id" element={<Inqueritos />} />
+        <Route path="/integridade" element={<Originalidade />} />
+        <Route path="/integridade/:id" element={<Originalidade />} />
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/biblioteca/emprestimos" element={<MeusEmprestimos />} />
         <Route path="/biblioteca/:id" element={<Biblioteca />} />
