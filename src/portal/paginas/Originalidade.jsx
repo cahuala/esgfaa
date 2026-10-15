@@ -4,7 +4,7 @@ import { api, enviarComProgresso } from '../api'
 import { Aviso, Cartao, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { dataHora } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
-import Relatorio, { ChipOriginalidade } from '../integridade/Relatorio'
+import Relatorio, { ChipIA, ChipOriginalidade } from '../integridade/Relatorio'
 
 const MIGALHA = { rotulo: 'Originalidade', para: '/integridade' }
 
@@ -80,7 +80,7 @@ function Lista() {
                       <b className="d-block text-truncate">{a.documento.titulo}</b>
                       <span className="small text-muted">{dataHora(a.criadaEm)}{a.fontes?.[0] ? ` · maior fonte: ${a.fontes[0].titulo}` : ''}</span>
                     </span>
-                    <ChipOriginalidade a={a} />
+                    <ChipOriginalidade a={a} /><ChipIA a={a} />
                   </Link>
                 ))}
               </div>

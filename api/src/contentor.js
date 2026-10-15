@@ -84,12 +84,15 @@ import { ServicoCirculacao } from './aplicacao/biblioteca/circulacao.js'
 import { RepositorioIntegridade } from './infraestrutura/repositorios/integridade.js'
 import { ServicoOriginalidade } from './aplicacao/integridade/originalidade.js'
 import { extrairTexto } from './infraestrutura/texto/extrair.js'
+import { PesquisaBrave } from './infraestrutura/web/pesquisaBrave.js'
+import { obterPagina } from './infraestrutura/web/paginas.js'
+import { ClienteClaude } from './infraestrutura/ia/claude.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
   esquema próprio no PostgreSQL e uma pasta de uploads temporária.
 */
-export function criarContentor(config, { relogio = relogioSistema, esquema = null } = {}) {
+export function criarContentor(config, { relogio = relogioSistema, esquema = null, externos = {} } = {}) {
   const prisma = criarPrisma(config.urlBaseDados, { esquema })
   const fuso = config.fuso
 
@@ -145,8 +148,15 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
+  // serviços externos opcionais: sem chave ficam desligados (os testes substituem-nos)
+  const claude = config.ia?.chave ? new ClienteClaude({ chave: config.ia.chave, modelo: config.ia.modelo }) : null
+  const ext = {
+    pesquisaWeb: config.pesquisaWeb?.chave ? new PesquisaBrave({ chave: config.pesquisaWeb.chave }) : null,
+    obterPagina, claude, ...externos,
+  }
   // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
   const originalidade = new ServicoOriginalidade({
+    pesquisaWeb: ext.pesquisaWeb, obterPagina: ext.obterPagina, claude: ext.claude, pesquisasPorDocumento: config.pesquisaWeb?.porDocumento ?? 8,
     integridade: r.integridade, academico: r.academico, contas: r.contasPortal, biblioteca: r.biblioteca, privados, extrair: extrairTexto, apoio, auditoria, relogio,
     registarErro: (x) => console.error(JSON.stringify(x)),
   })

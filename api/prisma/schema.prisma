@@ -1305,6 +1305,8 @@ model AnaliseIntegridade {
   trechos     Json      @default("[]")
   opcoes      Json      @default("{}")
   erro        String    @default("")
+  internet    Json      @default("{}") // pesquisa na web: { estado, frases, paginas, erro }
+  ia          Json      @default("{}") // utilização de IA: { local, claude }
   criadaEm    DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
   concluidaEm DateTime? @map("concluida_em") @db.Timestamptz(3)
 

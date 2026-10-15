@@ -25,7 +25,7 @@ export function relogioFalso(inicio = '2026-10-10T12:00:00Z') {
   API completa com um esquema PostgreSQL próprio e uma pasta de uploads temporária.
   Cada teste cria o seu ambiente: nada é partilhado entre testes.
 */
-export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
+export async function criarAmbiente({ limites = {}, relogio, env = {}, externos = {} } = {}) {
   const pastaUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-teste-'))
   const pastaPrivada = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-privado-'))
   const config = criarConfig({
@@ -36,7 +36,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {} } = {}) {
   for (const k of Object.keys(config.limites)) config.limites[k] = { janelaMs: 60_000, maximo: 10_000, ...limites[k] }
 
   const esquema = await criarEsquema()
-  const contentor = criarContentor(config, { esquema, ...(relogio ? { relogio } : {}) })
+  const contentor = criarContentor(config, { esquema, externos, ...(relogio ? { relogio } : {}) })
   await prepararSistema(contentor)
   const erros = []
   const app = criarApp(contentor, { registarErro: (e) => erros.push(e) })

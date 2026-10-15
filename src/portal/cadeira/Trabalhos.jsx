@@ -6,7 +6,7 @@ import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
 import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
 import { confirmar } from '../dialogos'
-import { ChipOriginalidade } from '../integridade/Relatorio'
+import { ChipIA, ChipOriginalidade } from '../integridade/Relatorio'
 
 const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
 const TIPOS_ENTREGA = { ficheiro: 'Ficheiros', texto: 'Texto escrito no portal', ambos: 'Ficheiros e texto' }
@@ -291,7 +291,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
           {entrega ? <><Etiqueta cor={entrega.atrasada ? 'dourado' : 'verde'}>{entrega.atrasada ? 'Atrasada' : 'Entregue'}</Etiqueta> <span className="text-muted">{dataHora(entrega.entregueEm)}</span>
             <div className="text-muted">{entrega.ficheiros.length} ficheiro(s){entrega.texto && ' · texto'}{entrega.grupo && entrega.estudante && entrega.estudanteId !== estudante.id ? ` · entregue por ${entrega.estudante.nome}` : ''}</div></> : <span className="text-muted">Não entregou</span>}
         </td>
-        <td className="text-center">{entrega && (analise?.estado === 'concluida' ? <Link to={`/integridade/${analise.id}`} title="Ver o relatório de originalidade"><ChipOriginalidade a={analise} /></Link> : <ChipOriginalidade a={analise} />)}</td>
+        <td className="text-center">{entrega && (analise?.estado === 'concluida' ? <Link to={`/integridade/${analise.id}`} title="Ver o relatório de originalidade" className="d-inline-flex gap-1"><ChipOriginalidade a={analise} /><ChipIA a={analise} /></Link> : <ChipOriginalidade a={analise} />)}</td>
         <td className="text-center fw-bold">{entrega?.nota !== null && entrega?.nota !== undefined ? nota(entrega.nota) : '—'}</td>
         <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? 'Fechar' : 'Ver e corrigir') : (aberta ? 'Fechar' : 'Prazo')}</button></td>
       </tr>

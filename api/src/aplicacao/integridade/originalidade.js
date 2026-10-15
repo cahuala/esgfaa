@@ -1,10 +1,15 @@
 import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { limparTexto } from '../../dominio/comum/texto.js'
 import { MINIMO_PALAVRAS, comparar, impressoes, nivelDe, tokenizar } from '../../dominio/integridade/semelhanca.js'
+import { frasesParaPesquisa, indicadoresIA } from '../../dominio/integridade/ia.js'
+import { avaliarComClaude } from './avaliacaoIA.js'
 
-export const ORIGENS = { entrega: 'Trabalho entregue', biblioteca: 'Biblioteca digital', repositorio: 'Repositório de referência', verificacao: 'Verificação avulsa' }
-const PADRAO = { excluirCitacoes: true, excluirReferencias: true }
+export const ORIGENS = { entrega: 'Trabalho entregue', biblioteca: 'Biblioteca digital', repositorio: 'Repositório de referência', verificacao: 'Verificação avulsa', internet: 'Internet' }
+const PADRAO = { excluirCitacoes: true, excluirReferencias: true, internet: true, ia: true }
+const MAX_PAGINAS = 15
 const FORMATOS = 'PDF ou Word (.docx)'
+// probabilidade de IA a mostrar: a do Claude, se houver; senão a dos indicadores locais
+const pontuacaoIA = (ia) => ia?.claude?.probabilidade ?? ia?.local?.pontuacao ?? null
 
 /*
   Integridade académica (anti-plágio): cada trabalho entregue, obra digital da biblioteca e documento
@@ -14,8 +19,8 @@ const FORMATOS = 'PDF ou Word (.docx)'
 export class ServicoOriginalidade {
   #fila = Promise.resolve()
 
-  constructor({ integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro }) {
-    Object.assign(this, { integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro })
+  constructor({ integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb = null, obterPagina = null, claude = null, pesquisasPorDocumento = 8 }) {
+    Object.assign(this, { integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb, obterPagina, claude, pesquisasPorDocumento })
   }
 
   #agendar(nome, f) {
@@ -68,12 +73,61 @@ export class ServicoOriginalidade {
     }
     const ids = await this.integridade.candidatos(impressoes(tokens).map((x) => x.h), doc.id)
     const docs = await this.integridade.documentosComTexto(ids)
-    const r = comparar({ texto: doc.texto, tokens }, docs.map((f) => ({ id: f.id, texto: f.texto, tokens: tokenizar(f.texto) })))
-    const info = Object.fromEntries(docs.map((f) => [f.id, { titulo: f.titulo, autor: f.autor, origem: f.origem, contexto: f.contexto }]))
+    const web = await this.#internet(doc.texto, a.opcoes)
+    const r = comparar({ texto: doc.texto, tokens }, [
+      ...docs.map((f) => ({ id: f.id, texto: f.texto, tokens: tokenizar(f.texto) })),
+      ...web.paginas.map((p) => ({ id: p.id, texto: p.texto, tokens: tokenizar(p.texto) })),
+    ])
+    const info = Object.fromEntries([
+      ...docs.map((f) => [f.id, { titulo: f.titulo, autor: f.autor, origem: f.origem, contexto: f.contexto }]),
+      ...web.paginas.map((p) => [p.id, { titulo: p.titulo || new URL(p.url).hostname, autor: new URL(p.url).hostname, origem: 'internet', contexto: '', url: p.url }]),
+    ])
     await this.integridade.concluirAnalise(id, {
       estado: 'concluida', percentagem: r.percentagem, concluidaEm: this.relogio.agora(),
       fontes: r.fontes.map((f) => ({ ...f, ...info[f.id] })), trechos: r.trechos,
+      internet: web.info, ia: a.opcoes.ia === false ? {} : await this.#ia(doc.texto),
     })
+  }
+
+  // pesquisa frases do documento na internet e lê as páginas encontradas (só com chave do Brave Search)
+  async #internet(texto, opcoes) {
+    if (!this.pesquisaWeb || !this.obterPagina) return { paginas: [], info: { estado: 'sem-servico' } }
+    if (opcoes.internet === false) return { paginas: [], info: { estado: 'desligada' } }
+    const frases = frasesParaPesquisa(texto, this.pesquisasPorDocumento)
+    const urls = new Map()
+    let erro = ''
+    for (const f of frases) {
+      try {
+        for (const x of await this.pesquisaWeb.pesquisar(f, { resultados: 3 })) if (x.url && !urls.has(x.url)) urls.set(x.url, x)
+      } catch (e) {
+        erro = e.message
+        break
+      }
+    }
+    const lista = [...urls.values()].slice(0, MAX_PAGINAS)
+    const paginas = []
+    for (let k = 0; k < lista.length; k += 4) {
+      const lidas = await Promise.all(lista.slice(k, k + 4).map((x) => this.obterPagina(x.url).catch(() => null)))
+      lidas.forEach((p, j) => {
+        if (p?.texto && p.texto.length > 200) paginas.push({ id: `web${k + j}`, url: p.url, titulo: p.titulo || lista[k + j].titulo, texto: p.texto.slice(0, 400_000) })
+      })
+    }
+    return { paginas, info: { estado: erro && !frases.length ? 'erro' : 'feita', frases: frases.length, resultados: urls.size, paginas: paginas.length, erro } }
+  }
+
+  // utilização de IA: indicadores locais sempre; avaliação do Claude se houver chave
+  async #ia(texto) {
+    const local = indicadoresIA(texto)
+    let claude = null
+    let erro = ''
+    if (this.claude) {
+      try {
+        claude = await avaliarComClaude(this.claude, texto)
+      } catch (e) {
+        erro = e.message
+      }
+    }
+    return { local, claude, erro, servico: Boolean(this.claude) }
   }
 
   // ---------- ligações a outros contextos ----------
@@ -140,12 +194,12 @@ export class ServicoOriginalidade {
       id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, opcoes: a.opcoes,
       criadaEm: a.criadaEm, concluidaEm: a.concluidaEm, origens: ORIGENS,
       documento: { id: d.id, titulo: d.titulo, autor: d.autor, contexto: d.contexto, origem: d.origem, palavras: d.palavras, pedidoPor: d.pedidoPor },
-      texto: d.texto, fontes: a.fontes, trechos: a.trechos,
+      texto: d.texto, fontes: a.fontes, trechos: a.trechos, internet: a.internet, ia: a.ia, iaPontuacao: pontuacaoIA(a.ia),
     }
   }
 
   #resumoAnalise(a) {
-    return { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, criadaEm: a.criadaEm, documento: a.documento, fontes: (a.fontes || []).slice(0, 3) }
+    return { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, criadaEm: a.criadaEm, documento: a.documento, fontes: (a.fontes || []).slice(0, 3), iaPontuacao: pontuacaoIA(a.ia) }
   }
 
   async #analise(id) {
@@ -169,7 +223,7 @@ export class ServicoOriginalidade {
     const ultimas = await this.integridade.ultimasAnalises('entrega', entregas.map((e) => e.id))
     return Object.fromEntries(entregas.map((e) => {
       const a = ultimas[e.id]
-      return [e.id, a ? { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro } : null]
+      return [e.id, a ? { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, iaPontuacao: pontuacaoIA(a.ia) } : null]
     }))
   }
 

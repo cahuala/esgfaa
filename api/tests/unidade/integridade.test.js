@@ -72,3 +72,44 @@ describe('anti-plágio: extração de texto', () => {
     assert.equal(limparTextoExtraido('estraté-\ngia   militar\r\n\n\n\nfim'), 'estratégia militar\n\nfim')
   })
 })
+
+import { frasesParaPesquisa, indicadoresIA, paragrafos } from '../../src/dominio/integridade/ia.js'
+import { enderecoPublico, htmlParaTexto } from '../../src/infraestrutura/web/paginas.js'
+
+const IA = `A liderança militar desempenha um papel crucial no sucesso das operações modernas. É importante notar que os comandantes devem equilibrar a disciplina com a motivação das tropas. Além disso, a comunicação eficaz permite alinhar os objetivos estratégicos com a execução tática. Nesse sentido, a formação contínua assume uma importância fundamental para todos os oficiais.
+
+No cenário atual, as forças armadas enfrentam desafios cada vez mais complexos e multifacetados. Por outro lado, a tecnologia oferece novas oportunidades para melhorar a coordenação entre as unidades. Além disso, a cooperação internacional permite partilhar boas práticas e experiências relevantes. Desta forma, é crucial promover uma cultura de inovação em todas as estruturas.
+
+Em suma, a liderança eficaz depende de múltiplos fatores interligados e complementares. É fundamental que os líderes desenvolvam competências técnicas e humanas de forma equilibrada. Além disso, a avaliação regular do desempenho contribui para a melhoria contínua das organizações. Em última análise, o sucesso depende da capacidade de adaptação às mudanças do ambiente.`
+const HUMANO = `Comandei a companhia durante dois anos no Cunene. Foi duro. Logo na primeira semana perdemos um camião numa picada que nenhum mapa mostrava, e percebi que a informação que vinha de Luanda estava atrasada meses.
+
+O sargento Muteka, que conhecia a zona desde miúdo, passou a acompanhar todas as patrulhas; foi ele quem sugeriu trocarmos os horários de abastecimento para a madrugada, quando o calor ainda deixava os motores trabalhar sem aquecer. Resultou? Em parte. Os furos continuaram, mas deixámos de ter viaturas paradas mais de um dia.
+
+Aprendi ali que a doutrina ajuda, claro, mas o que decide é ouvir quem está no terreno há mais tempo do que nós, mesmo quando tem menos galões no ombro. Hoje, ao preparar os oficiais mais novos, conto-lhes sempre a história do camião.`
+
+describe('anti-plágio: utilização de IA e pesquisa na internet', () => {
+  it('os indicadores locais distinguem texto "de assistente" de escrita pessoal', () => {
+    const a = indicadoresIA(IA)
+    const h = indicadoresIA(HUMANO)
+    assert.ok(a.pontuacao >= 60, `IA: ${a.pontuacao} ${JSON.stringify(a.sinais)}`)
+    assert.ok(h.pontuacao <= 35, `humano: ${h.pontuacao} ${JSON.stringify(h.sinais)}`)
+    assert.ok(a.sinais.some((s) => /fórmulas/.test(s.sinal)))
+    assert.ok(a.paragrafos.length >= 2)
+    assert.equal(indicadoresIA('Texto curto.').pontuacao, null)
+    assert.equal(paragrafos(HUMANO).length, 3)
+  })
+
+  it('escolhe frases com conteúdo espalhadas pelo texto, para pesquisar', () => {
+    const f = frasesParaPesquisa(`${IA}\n\n${HUMANO}`, 4)
+    assert.equal(f.length, 4)
+    assert.ok(f.every((x) => x.split(' ').length >= 8))
+    assert.ok(f.some((x) => /liderança|comunicação|cooperação/.test(x)) && f.some((x) => /camião|sargento|doutrina|Comandei/.test(x)))
+  })
+
+  it('só lê páginas públicas e tira o que não é texto', async () => {
+    for (const u of ['http://127.0.0.1/', 'http://10.0.0.5/', 'http://192.168.1.1/admin', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/', 'http://localhost/', 'file:///etc/passwd', 'http://exemplo.ao:8080/']) {
+      assert.equal(await enderecoPublico(u), false, u)
+    }
+    assert.deepEqual(htmlParaTexto('<html><head><title>Título</title><style>x{}</style></head><body><nav>menu</nav><p>Olá &amp; adeus</p><script>alert(1)</script></body></html>'), { titulo: 'Título', texto: 'Olá & adeus' })
+  })
+})

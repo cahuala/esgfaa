@@ -31,6 +31,11 @@ const ESQUEMA = z.object({
   SMTP_URL: z.union([z.literal(''), z.string().regex(/^smtps?:\/\//, 'SMTP_URL deve ser smtp://… ou smtps://…')]).default(''),
   EMAIL_REMETENTE: z.string().default('Portal Académico ESG <portal@esgfaa.gov.ao>'),
   PORTAL_URL: z.union([z.literal(''), z.url()]).default(''),
+  // anti-plágio: pesquisa na internet (Brave Search) e avaliação de IA / traduções (Claude)
+  BRAVE_API_KEY: z.string().default(''),
+  PESQUISAS_WEB_POR_DOCUMENTO: inteiro(8, 0, 40),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  ANTHROPIC_MODELO: z.string().regex(/^[a-z0-9.-]+$/).default('claude-sonnet-5-5'),
 })
 
 // "1" -> 1 (n.º de proxies), "loopback" -> 'loopback', "" -> false
@@ -85,6 +90,9 @@ export function criarConfig(env = process.env, extras = {}) {
     remetente: e.EMAIL_REMETENTE,
     // endereço do portal usado nas ligações dos e-mails (ex.: https://escola.ao/portal/)
     urlPortal: e.PORTAL_URL.replace(/\/$/, ''),
+    // serviços externos opcionais (sem chave ficam desligados)
+    pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },
+    ia: { chave: e.ANTHROPIC_API_KEY, modelo: e.ANTHROPIC_MODELO },
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },

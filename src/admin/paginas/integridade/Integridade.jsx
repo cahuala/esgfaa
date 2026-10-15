@@ -3,10 +3,10 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
-import Relatorio, { ChipOriginalidade } from '../../../portal/integridade/Relatorio'
+import Relatorio, { ChipIA, ChipOriginalidade } from '../../../portal/integridade/Relatorio'
 
 const dia = (iso) => (iso ? new Date(iso).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '')
-const FILTROS = { todas: 'Todas', alto: 'Elevada (35 % ou mais)', medio: 'A rever (15 a 35 %)', baixo: 'Baixa', erro: 'Sem texto' }
+const FILTROS = { todas: 'Todas', alto: 'Elevada (35 % ou mais)', medio: 'A rever (15 a 35 %)', baixo: 'Baixa', ia: 'Indícios de IA (50 % ou mais)', erro: 'Sem texto' }
 const ACEITAR = 'application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 // Integridade académica (anti-plágio): análises, verificação avulsa e repositório de referência
@@ -34,7 +34,7 @@ function PainelIntegridade() {
     return () => clearTimeout(t)
   }, [d, carregar])
   const lista = useMemo(() => (d?.analises || []).filter((a) => {
-    if (filtro === 'erro' ? a.estado !== 'erro' : filtro !== 'todas' && a.nivel?.nivel !== filtro) return false
+    if (filtro === 'ia') { if (!(a.iaPontuacao >= 50)) return false } else if (filtro === 'erro' ? a.estado !== 'erro' : filtro !== 'todas' && a.nivel?.nivel !== filtro) return false
     const t = `${a.documento.titulo} ${a.documento.autor} ${a.documento.contexto}`.toLowerCase()
     return !q.trim() || t.includes(q.trim().toLowerCase())
   }), [d, filtro, q])
@@ -82,7 +82,7 @@ function PainelIntegridade() {
                       </td>
                       <td className="small">{d.origens[a.documento.origem]}</td>
                       <td className="small">{a.fontes?.[0] ? <>{a.fontes[0].titulo}<span className="text-muted"> · {String(a.fontes[0].percentagem).replace('.', ',')}%</span></> : <span className="text-muted">—</span>}</td>
-                      <td className="text-center"><Link to={`/integridade/analises/${a.id}`}><ChipOriginalidade a={a} /></Link></td>
+                      <td className="text-center"><Link to={`/integridade/analises/${a.id}`} className="d-inline-flex gap-1"><ChipOriginalidade a={a} /><ChipIA a={a} /></Link></td>
                     </tr>
                   ))}
                 </tbody>

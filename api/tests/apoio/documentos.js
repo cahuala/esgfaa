@@ -19,9 +19,9 @@ export function pdfComTexto(texto) {
   return Buffer.from(out)
 }
 
-// .docx mínimo (um ZIP com word/document.xml), um parágrafo por frase
+// .docx mínimo (um ZIP com word/document.xml): parágrafos separados por linha em branco (ou um por frase)
 export function docxComTexto(texto) {
-  const corpo = texto.split(/(?<=\.)\s+/).map((p) => `<w:p><w:r><w:t>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</w:t></w:r></w:p>`).join('')
+  const corpo = (texto.includes('\n\n') ? texto.split(/\n{2,}/) : texto.split(/(?<=\.)\s+/)).map((p) => `<w:p><w:r><w:t>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</w:t></w:r></w:p>`).join('')
   const ficheiros = [
     ['[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>'],
     ['word/document.xml', `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${corpo}</w:body></w:document>`],

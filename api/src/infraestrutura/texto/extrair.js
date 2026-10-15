@@ -45,7 +45,7 @@ export function lerDoZip(buffer, nome) {
 // XML do Word/ODT -> texto, com parágrafos em linhas próprias
 function xmlParaTexto(xml, { paragrafo, tab, quebra }) {
   return descodificar(xml
-    .replace(paragrafo, '\n')
+    .replace(paragrafo, '\n\n') // cada parágrafo do Word/ODT separado por uma linha em branco
     .replace(tab, '\t')
     .replace(quebra, '\n')
     .replace(/<[^>]+>/g, ''))
@@ -78,7 +78,11 @@ export const TIPOS_COM_TEXTO = {
 
 export async function extrairTexto(caminho, tipo) {
   if (!TIPOS_COM_TEXTO[tipo]) return ''
-  const buffer = fs.readFileSync(caminho)
+  return extrairDeBuffer(fs.readFileSync(caminho), tipo)
+}
+
+export async function extrairDeBuffer(buffer, tipo) {
+  if (!TIPOS_COM_TEXTO[tipo]) return ''
   let t
   if (tipo === 'application/pdf') t = await textoPdf(buffer)
   else if (tipo === 'text/plain') t = buffer.toString('utf8')
