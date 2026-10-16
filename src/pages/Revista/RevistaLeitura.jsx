@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import AvisoLingua from '../../components/AvisoLingua/AvisoLingua'
@@ -18,6 +18,8 @@ function RevistaLeitura() {
   const r = revistaPorSlug(slug)
   const leitor = useRef(null)
   const pagina = Number(procura.get('pagina')) || 0
+  // a barra do leitor fica presa logo abaixo do cabeçalho do site (que também está preso)
+  const [topo] = useState(() => Math.round(document.querySelector('header')?.getBoundingClientRect().height ?? 0))
 
   // vindo do sumário da página da revista: abre já na página do artigo
   useEffect(() => {
@@ -43,7 +45,7 @@ function RevistaLeitura() {
         <AvisoLingua item={r} />
         <div id="leitor" className={styles.ancora}>
           {r.pdf
-            ? <LeitorPdf key={r.slug} ref={leitor} fonte={r.pdf} titulo={`${r.numero} — ${r.titulo}`} descarregar={r.pdf} nomeFicheiro={nomeFicheiro} duplaPorOmissao />
+            ? <LeitorPdf key={r.slug} ref={leitor} fonte={r.pdf} titulo={`${r.numero} — ${r.titulo}`} descarregar={r.pdf} nomeFicheiro={nomeFicheiro} topo={topo} />
             : <p className={styles.vazio}>{t('Este número ainda não tem o PDF.')}</p>}
         </div>
 

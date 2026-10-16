@@ -44,8 +44,9 @@ export function receberFicheiro({ privados, config, maximo = 1 }) {
 const INLINE = /^(application\/pdf|image\/|video\/)/
 
 // envia um ficheiro privado (descarregar, ou ver no navegador com ?ver=1 para PDF/imagens/vídeo)
-export function enviarFicheiro(req, res, { caminho, nome, tipo }) {
-  const disposicao = req.query.ver === '1' && INLINE.test(tipo) ? 'inline' : 'attachment'
+// soLeitura: só para ler no portal (ex.: os livros da biblioteca) — nunca como descarga
+export function enviarFicheiro(req, res, { caminho, nome, tipo }, { soLeitura = false } = {}) {
+  const disposicao = (soLeitura || req.query.ver === '1') && INLINE.test(tipo) ? 'inline' : 'attachment'
   const ascii = nome.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
   res.set({
     'Content-Type': tipo,

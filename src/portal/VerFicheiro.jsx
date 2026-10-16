@@ -57,7 +57,7 @@ function VerFicheiro({ ficheiro, titulo, falhou }) {
       </div>
     )
   }
-  if (especie === 'pdf') return <LeitorPdf key={url} fonte={url} titulo={titulo || ficheiro.nome} descarregar={descarregar} altura="min(80vh, 1000px)" />
+  if (especie === 'pdf') return <LeitorPdf key={url} fonte={url} titulo={titulo || ficheiro.nome} descarregar={descarregar} />
   return (
     <>
       {cabecalho}

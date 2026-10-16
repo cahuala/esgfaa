@@ -1,66 +1,58 @@
-/* Leitor de PDF: moldura escura (como uma mesa de leitura), páginas brancas com sombra */
+/* Leitor de PDF com aspeto de página web: sem moldura, as páginas correm na página */
 .leitor {
-  --altura: min(82vh, 1100px);
-  --leitor-fundo: #2b2d31;
-  --leitor-barra: #1c1d20;
-  --leitor-texto: #e9e9ea;
-  --leitor-suave: #a7a9ad;
+  --leitor-texto: var(--texto, var(--bs-body-color, #2d353c));
+  --leitor-suave: var(--texto-suave, var(--bs-secondary-color, #6c757d));
+  --leitor-linha: var(--linha, var(--bs-border-color, #e4e7ea));
+  --leitor-fundo: var(--superficie, var(--bs-component-bg, #fff));
   --leitor-destaque: #e53917;
-  display: flex;
-  flex-direction: column;
-  height: var(--altura);
-  background: var(--leitor-fundo);
-  border-radius: 10px;
-  overflow: hidden;
+  position: relative;
   color: var(--leitor-texto);
-  font-family: inherit;
-  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.6);
 }
 .inteiro {
   height: 100vh;
-  border-radius: 0;
+  overflow: auto;
+  background: var(--leitor-fundo);
+  --leitor-topo: 0px;
 }
 
+/* barra discreta, presa por baixo do cabeçalho da página */
 .barra {
+  position: sticky;
+  top: var(--leitor-topo, 0px);
+  z-index: 5;
   display: flex;
   align-items: center;
-  gap: 10px 16px;
+  gap: 6px 14px;
   flex-wrap: wrap;
-  padding: 8px 12px;
-  background: var(--leitor-barra);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 8px;
+  margin-bottom: 14px;
+  background: color-mix(in srgb, var(--leitor-fundo) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--leitor-linha);
 }
 .titulo {
-  flex: 1 1 200px;
+  flex: 1 1 180px;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-}
-.titulo span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.titulo svg {
-  flex: none;
-  color: var(--leitor-destaque);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--leitor-suave);
 }
 .grupo {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 .botao {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 9px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -71,11 +63,11 @@
   cursor: pointer;
 }
 .botao:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--leitor-texto) 8%, transparent);
+  color: var(--leitor-texto);
 }
 .botao:focus-visible,
-.paginaAtual input:focus-visible,
-.area:focus-visible {
+.paginaAtual input:focus-visible {
   outline: 2px solid var(--leitor-destaque);
   outline-offset: 2px;
 }
@@ -83,11 +75,8 @@
   opacity: 0.35;
   cursor: default;
 }
-.ativo {
-  background: rgba(255, 255, 255, 0.14);
-}
 .zoom {
-  min-width: 54px;
+  min-width: 50px;
   font-variant-numeric: tabular-nums;
 }
 .paginaAtual {
@@ -99,37 +88,34 @@
 }
 .paginaAtual input {
   width: 42px;
-  height: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  height: 28px;
+  border: 1px solid var(--leitor-linha);
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--leitor-fundo);
   color: var(--leitor-texto);
   text-align: center;
   font: inherit;
 }
 
+/* as páginas: à largura do texto, coladas umas às outras como uma página web comprida */
 .area {
-  position: relative; /* as posições das páginas (offsetTop) contam a partir daqui */
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 16px;
+  width: 100%;
+  overflow-x: auto;
+}
+.paginas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  overscroll-behavior: contain;
-}
-.linha {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
+  width: max-content;
+  min-width: 100%;
 }
 .pagina {
   position: relative;
   flex: none;
   background: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+.pagina + .pagina {
+  border-top: 1px solid var(--leitor-linha);
 }
 .tela {
   display: block;
@@ -144,18 +130,86 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #d4d4d6;
 }
 
+/* o texto da página (pdf.js), invisível por cima do desenho: seleciona-se e pesquisa-se */
+.texto {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  transform-origin: 0 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.texto :global(span),
+.texto :global(br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.texto > :global(:not(.markedContent)),
+.texto :global(.markedContent span:not(.markedContent)) {
+  --font-height: 0;
+  --scale-x: 1;
+  --rotate: 0deg;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.texto :global(.markedContent) {
+  display: contents;
+}
+.texto :global(.endOfContent) {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+.texto ::selection {
+  background: rgba(47, 95, 168, 0.3);
+}
+
+/* leitura protegida (biblioteca): sem selecionar, e com a marca de quem lê */
+.protegido .pagina {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.marca {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+}
+.marca span {
+  transform: rotate(-30deg);
+  white-space: nowrap;
+  font-size: clamp(11px, 1.6vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(120, 120, 120, 0.16);
+}
+
 .aviso {
-  margin: auto;
+  margin: 40px auto;
   max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   text-align: center;
   color: var(--leitor-suave);
   font-size: 14px;
@@ -164,7 +218,7 @@
   width: 220px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--leitor-linha);
   overflow: hidden;
 }
 .barraProgresso span {
@@ -175,14 +229,6 @@
 }
 
 @media (max-width: 640px) {
-  .leitor {
-    --altura: 78vh;
-    border-radius: 8px;
-  }
-  .barra {
-    gap: 6px 10px;
-    padding: 6px 8px;
-  }
   .titulo {
     flex-basis: 100%;
   }
@@ -190,15 +236,11 @@
   .zoom {
     display: none;
   }
-  .botao {
-    min-width: 30px;
-    padding: 0 6px;
-  }
-  .grupo {
-    gap: 2px;
-  }
-  .area {
-    padding: 10px;
-    gap: 10px;
+}
+
+/* a impressão de uma página com uma obra protegida sai sem a obra */
+@media print {
+  :global(body.leitura-protegida) .leitor {
+    display: none !important;
   }
 }

@@ -22,7 +22,7 @@ import Certificado from './cadeira/Certificado'
 import Verificar from './paginas/Verificar'
 import Pesquisa from './paginas/Pesquisa'
 import Inqueritos from './paginas/Inqueritos'
-import Biblioteca, { MeusEmprestimos } from './paginas/Biblioteca'
+import Biblioteca, { LerObra, MeusEmprestimos } from './paginas/Biblioteca'
 import Originalidade from './paginas/Originalidade'
 import JanelaDialogo from './JanelaDialogo'
 
@@ -66,6 +66,7 @@ function App() {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/biblioteca/emprestimos" element={<MeusEmprestimos />} />
         <Route path="/biblioteca/:id" element={<Biblioteca />} />
+        <Route path="/biblioteca/:id/ler" element={<LerObra />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

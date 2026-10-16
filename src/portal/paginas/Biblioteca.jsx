@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, urlFicheiro } from '../api'
 import { Aviso, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data, tamanho } from '../formatar'
 import { confirmar } from '../dialogos'
 import Capa from '../biblioteca/Capa'
+import LeitorPdf from '../../leitor/LeitorPdf'
+import { useSessao } from '../sessaoContexto'
 import { t as tx } from '../../i18n/linguas'
 
 const MIGALHA = { rotulo: tx('Biblioteca'), para: '/biblioteca' }
@@ -167,43 +169,18 @@ function Sala() {
   )
 }
 
-// leitor de PDF dentro do portal (o ficheiro vem com a sessão e mostra-se a partir da memória)
-function Leitor({ o, fechar }) {
-  const [url, setUrl] = useState(null)
-  const [erro, setErro] = useState('')
-  useEffect(() => {
-    let feito = null
-    urlFicheiro(`/biblioteca/obras/${o.id}/digital`).then((u) => { feito = u; setUrl(u) }).catch((e) => setErro(e.message))
-    const tecla = (e) => e.key === 'Escape' && fechar()
-    window.addEventListener('keydown', tecla)
-    return () => { window.removeEventListener('keydown', tecla); if (feito) URL.revokeObjectURL(feito) }
-  }, [o.id, fechar])
-  return (
-    <div className="b-leitor" role="dialog" aria-modal="true" aria-label={tx('A ler: {0}', { 0: o.titulo })}>
-      <div className="b-leitor-barra">
-        <i className="fa fa-book-open" />
-        <b>{o.titulo}</b>
-        {url && <a className="btn btn-sm btn-outline-light" href={url} download={`${o.titulo}.pdf`}><i className="fa fa-download me-1" />{tx('Guardar')}</a>}
-        <button type="button" className="btn btn-sm btn-light" onClick={fechar}><i className="fa fa-times me-1" />{tx('Fechar')}</button>
-      </div>
-      {erro ? <div className="text-white p-4">{erro}</div> : url ? <iframe src={url} title={o.titulo} /> : <div className="text-white p-4">{tx('A abrir…')}</div>}
-    </div>
-  )
-}
-
 function FichaObra({ id }) {
   const [o, setO] = useState(null)
   const [relacionadas, setRelacionadas] = useState([])
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
-  const [aLer, setALer] = useState(false)
+  const navegar = useNavigate()
   const [aEnviar, setAEnviar] = useState(false)
   const carregar = useCallback(() => api(`/biblioteca/obras/${id}`).then((x) => {
     setO(x)
     if (x.assuntos[0]) api(`/biblioteca?${new URLSearchParams({ q: x.assuntos[0] })}`).then((r) => setRelacionadas(r.obras.filter((y) => y.id !== x.id))).catch(() => {})
   }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
-  const fecharLeitor = useCallback(() => setALer(false), [])
   if (erro) return <Erro texto={erro} />
   if (!o) return <Carregando />
 
@@ -252,7 +229,7 @@ function FichaObra({ id }) {
             <div><b className="d-block">{estado}</b><span className="small text-muted">{nota}</span></div>
           </div>
           <div className="b-ficha-acoes">
-            {o.digital?.podeLer && <button type="button" className="btn btn-lg btn-theme" onClick={() => setALer(true)}><i className="fa fa-book-open me-2" />{tx('Ler agora')}{o.digital.tamanho ? <small className="ms-2 opacity-75">{tx('PDF ·')} {tamanho(o.digital.tamanho)}</small> : null}</button>}
+            {o.digital?.podeLer && <button type="button" className="btn btn-lg btn-theme" onClick={() => navegar(`/biblioteca/${o.id}/ler`)}><i className="fa fa-book-open me-2" />{tx('Ler agora')}{o.digital.tamanho ? <small className="ms-2 opacity-75">{tx('PDF ·')} {tamanho(o.digital.tamanho)}</small> : null}</button>}
             {o.exemplares > 0 && !o.comigo && !r && <button type="button" className={`btn btn-lg ${o.digital?.podeLer ? 'btn-white' : 'btn-theme'}`} onClick={reservar} disabled={aEnviar}><i className="fa fa-bookmark me-2" />{aEnviar ? tx('A reservar…') : o.disponiveis ? tx('Reservar para levantar') : tx('Reservar (ser o próximo)')}</button>}
             {r && <button type="button" className="btn btn-white" onClick={cancelar}><i className="fa fa-times me-1" />{tx('Cancelar reserva')}</button>}
             {o.digital && !o.digital.podeLer && <span className="small text-muted"><i className="fa fa-lock me-1" />{tx('A versão digital é só para docentes.')}</span>}
@@ -270,13 +247,41 @@ function FichaObra({ id }) {
         </div>
       </div>
       {relacionadas.length > 0 && <div className="mt-5"><Estante titulo={tx('Na mesma estante')} nota={o.assuntos[0]} obras={relacionadas} /></div>}
-      {aLer && <Leitor o={o} fechar={fecharLeitor} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </div>
   )
 }
 
 const ESTADO_RESERVA = { pendente: ['bg-warning text-dark', tx('À espera')], pronta: ['bg-danger', tx('Pronto a levantar')] }
+
+/*
+  Ler uma obra da biblioteca no portal, como uma página web: as páginas seguem-se no ecrã.
+  Lê-se e não se leva — sem descarregar, imprimir nem copiar, com o nome de quem lê em cada página.
+*/
+export function LerObra() {
+  const { id } = useParams()
+  const { conta } = useSessao()
+  const [o, setO] = useState(null)
+  const [url, setUrl] = useState(null)
+  const [erro, setErro] = useState('')
+  useEffect(() => {
+    let criado = null
+    api(`/biblioteca/obras/${id}`).then(setO).catch((e) => setErro(e.message))
+    urlFicheiro(`/biblioteca/obras/${id}/digital`).then((u) => { criado = u; setUrl(u) }).catch((e) => setErro(e.message))
+    return () => { if (criado) URL.revokeObjectURL(criado) }
+  }, [id])
+  if (erro) return <Erro texto={erro} />
+  if (!o || !url) return <Carregando />
+  return (
+    <div className="b-ler">
+      <Titulo migalhas={[MIGALHA, { rotulo: o.titulo, para: `/biblioteca/${o.id}` }]} rotulo={tx('A ler')} titulo={o.titulo} sub={o.autores?.join(', ')}>
+        <Link to={`/biblioteca/${o.id}`} className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Voltar à ficha')}</Link>
+      </Titulo>
+      <p className="small text-muted"><i className="fa fa-lock me-1" />{tx('Esta obra lê-se aqui, no portal: não se descarrega, não se imprime nem se copia.')}</p>
+      <LeitorPdf key={url} fonte={url} titulo={o.titulo} protegido marca={`${conta.nome} · ${tx('Biblioteca da Escola Superior de Guerra')}`} />
+    </div>
+  )
+}
 
 export function MeusEmprestimos() {
   const [d, setD] = useState(null)
