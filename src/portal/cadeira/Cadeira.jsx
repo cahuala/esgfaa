@@ -79,7 +79,9 @@ function Cadeira() {
   const props = { c, eDocente, recarregar: carregar, avisar: setAviso, progresso, setProgresso, irPara }
   // o estudante entra na sala de aula (capítulos à direita, a aula ao meio)
   const separadores = SEPARADORES.filter((s) => !s.docente || eDocente).map((s) => (s.id === 'curso' && !eDocente ? { ...s, texto: tx('Sala de aula'), icone: 'fa-chalkboard' } : s))
-  const naSala = !eDocente && (especie || separador === 'curso')
+  // o docente pode ver a sala como os estudantes a veem (?ver=estudante)
+  const previsualizar = eDocente && params.get('ver') === 'estudante'
+  const naSala = (!eDocente || previsualizar) && (especie || separador === 'curso')
   const contagem = { avisos: c.avisos.length, forum: c.forum.topicos }
 
   return (
@@ -124,7 +126,9 @@ function Cadeira() {
 
 
       <div role="tabpanel">
-        {naSala && <SalaAula {...props} especie={especie} atividadeId={atividadeId} capitulo={capitulo} />}
+        {naSala && (previsualizar
+          ? <SalaAula {...props} eDocente={false} progresso={null} setProgresso={() => {}} previsualizar especie={especie} atividadeId={atividadeId} capitulo={capitulo} />
+          : <SalaAula {...props} especie={especie} atividadeId={atividadeId} capitulo={capitulo} />)}
         {!naSala && especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
         {!naSala && especie === 'material' && <><Voltar irPara={irPara} /><VerMaterial {...props} so={Number(atividadeId)} /></>}
         {!naSala && especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}

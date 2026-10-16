@@ -16,21 +16,23 @@ import { t as tx } from '../../i18n/linguas'
   e, ao meio, o que se escolheu — a entrada da sala, um capítulo ou a aula aberta
   (PDF no leitor, vídeo, página, pasta, trabalho, questionário…), com "anterior / seguinte".
   Endereços: ?capitulo=ID (ou "geral") e ?atividade=material-5, como na página da cadeira.
+  O docente pode pré-visualizá-la (?ver=estudante): vê o que os estudantes veem, sem entregar nem responder.
 */
 const chaveGrupo = (g) => (g.id === null ? 'geral' : String(g.id))
 
 function SalaAula(props) {
-  const { c, progresso, irPara, especie, atividadeId, capitulo } = props
+  const { c, progresso, irPara, especie, atividadeId, capitulo, previsualizar } = props
   const { conta } = useSessao()
   const topo = useRef(null)
   const [alternados, setAlternados] = useState({}) // capítulos abertos/fechados à mão no índice
 
   // só o que o estudante pode ver (os questionários por publicar não contam)
-  const atividades = useMemo(() => listarAtividades(c).filter((a) => !(a.especie === 'questionario' && a.publicado === false)), [c])
+  // (na pré-visualização do docente tiram-se também as atividades e os capítulos escondidos)
+  const atividades = useMemo(() => listarAtividades(c).filter((a) => !(a.especie === 'questionario' && a.publicado === false) && !(previsualizar && a.visivel === false)), [c, previsualizar])
   const grupos = useMemo(() => [
     { id: null, titulo: tx('Geral'), resumo: '', itens: atividades.filter((a) => (a.secaoId ?? null) === null) },
-    ...c.secoes.map((s) => ({ ...s, itens: atividades.filter((a) => a.secaoId === s.id) })),
-  ].filter((g) => g.id !== null || g.itens.length > 0), [c.secoes, atividades])
+    ...c.secoes.filter((s) => !previsualizar || s.visivel !== false).map((s) => ({ ...s, itens: atividades.filter((a) => a.secaoId === s.id) })),
+  ].filter((g) => g.id !== null || g.itens.length > 0), [c.secoes, atividades, previsualizar])
   const ordem = grupos.flatMap((g) => g.itens)
   const atual = especie ? ordem.find((a) => a.chave === `${especie}-${atividadeId}`) : null
   const grupoAtual = atual ? grupos.find((g) => g.itens.includes(atual)) : capitulo ? grupos.find((g) => chaveGrupo(g) === capitulo) : null
@@ -43,12 +45,12 @@ function SalaAula(props) {
 
   // "Continuar onde parou" na página da turma
   useEffect(() => {
-    if (atual) registarContinuar(conta.id, { cadeiraId: c.id, cadeira: c.nome, chave: atual.chave, titulo: atual.titulo })
-  }, [atual, conta.id, c.id, c.nome])
+    if (atual && !previsualizar) registarContinuar(conta.id, { cadeiraId: c.id, cadeira: c.nome, chave: atual.chave, titulo: atual.titulo })
+  }, [atual, conta.id, c.id, c.nome, previsualizar])
 
   // ir para outro sítio da sala e mostrar o topo da sala (não o da página)
   function ir(destino) {
-    irPara(destino)
+    irPara(previsualizar ? { ...destino, ver: 'estudante' } : destino)
     requestAnimationFrame(() => {
       const y = (topo.current?.getBoundingClientRect().top || 0) + window.scrollY - 80
       window.scrollTo({ top: Math.max(0, y) })
@@ -68,13 +70,22 @@ function SalaAula(props) {
   }
 
   let meio
-  if (atual) meio = <Aula {...props} a={atual} grupo={grupoAtual} ordem={ordem} feita={feita} abrirItem={abrirItem} abrirGrupo={abrirGrupo} />
+  if (atual) meio = <Aula {...props} irPara={ir} abrirComoDocente={(a) => irPara({ atividade: a.chave })} a={atual} grupo={grupoAtual} ordem={ordem} feita={feita} abrirItem={abrirItem} abrirGrupo={abrirGrupo} />
   else if (grupoAtual) meio = <Capitulo g={grupoAtual} feita={feita} abrirItem={abrirItem} />
   else if (capitulo || especie) meio = <Vazio>{tx('Este conteúdo já não está disponível.')}</Vazio>
   else meio = <Entrada c={c} grupos={grupos} feita={feita} feitas={feitas} total={ordem.length} proxima={proxima} abrirItem={abrirItem} abrirGrupo={abrirGrupo} conta={conta} />
 
   return (
     <div className="row p-sala" ref={topo}>
+      {previsualizar && (
+        <div className="col-12">
+          <div className="alert alert-info d-flex flex-wrap align-items-center gap-2 p-sala-previa">
+            <i className="fa fa-user-graduate fa-lg" />
+            <span className="flex-grow-1">{tx('Está a ver a sala de aula como os estudantes a veem. Não aparecem as atividades escondidas; as datas de abertura e as condições não se aplicam a si.')}</span>
+            <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({})}><i className="fa fa-pen me-1" />{tx('Voltar ao modo de docente')}</button>
+          </div>
+        </div>
+      )}
       <div className="col-lg-8 col-xxl-9 p-sala-meio">{meio}</div>
       <aside className="col-lg-4 col-xxl-3" aria-label={tx('Capítulos da cadeira')}>
         <div className="p-sala-indice">
@@ -283,6 +294,24 @@ function Capitulo({ g, feita, abrirItem }) {
   )
 }
 
+// pré-visualização: trabalhos, questionários e inquéritos respondem-se só como estudante
+function Previa({ a, abrirComoDocente }) {
+  const t = tipoVisual(a)
+  return (
+    <div className="panel panel-inverse">
+      <div className="panel-heading"><h2 className="panel-title"><i className={`fa ${t.icone} me-2`} />{a.titulo}</h2></div>
+      <div className="panel-body">
+        <p className="text-muted mb-2">{meta(a)}</p>
+        {a.descricao && <p>{a.descricao}</p>}
+        <div className="alert alert-light border d-flex flex-wrap align-items-center gap-2 mb-0">
+          <span className="flex-grow-1">{tx('Aqui o estudante entrega ou responde. Na pré-visualização não se entrega nem se responde.')}</span>
+          <button type="button" className="btn btn-sm btn-theme" onClick={() => abrirComoDocente(a)}><i className="fa fa-pen me-1" />{tx('Abrir como docente')}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // a aula aberta: o conteúdo do item e a navegação para o anterior e o seguinte
 function Aula(props) {
   const { a, grupo, ordem, abrirItem, abrirGrupo, irPara } = props
@@ -300,10 +329,14 @@ function Aula(props) {
       </nav>
 
       {a.especie === 'material' && <VerMaterial {...props} so={a.id} />}
-      {a.especie === 'trabalho' && <Trabalhos {...props} so={a.id} />}
-      {a.especie === 'questionario' && <Questionarios {...props} so={a.id} semVoltar voltar={() => (grupo ? abrirGrupo(grupo) : irPara({}))} />}
-      {a.especie === 'inquerito' && <Inquerito {...props} so={a.id} />}
-      {a.especie === 'workshop' && <Workshop {...props} so={a.id} />}
+      {props.previsualizar && a.especie !== 'material' ? <Previa a={a} abrirComoDocente={props.abrirComoDocente} /> : (
+        <>
+          {a.especie === 'trabalho' && <Trabalhos {...props} so={a.id} />}
+          {a.especie === 'questionario' && <Questionarios {...props} so={a.id} semVoltar voltar={() => (grupo ? abrirGrupo(grupo) : irPara({}))} />}
+          {a.especie === 'inquerito' && <Inquerito {...props} so={a.id} />}
+          {a.especie === 'workshop' && <Workshop {...props} so={a.id} />}
+        </>
+      )}
 
       <div className="p-sala-navegar">
         {anterior ? (

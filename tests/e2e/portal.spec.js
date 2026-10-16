@@ -108,6 +108,13 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Guardar e publicar' }).click()
   await expect(page.getByText('Recurso publicado.')).toBeVisible()
   await expect(page.locator('#content').getByText('Leitura obrigatória')).toBeVisible()
+  // o docente vê a sala como os estudantes a veem e volta ao seu modo
+  await page.getByLabel('Modo de edição').uncheck()
+  await page.getByRole('button', { name: 'Ver como estudante' }).click()
+  await expect(page.getByText('Está a ver a sala de aula como os estudantes a veem.', { exact: false })).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Capítulos da cadeira' }).getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Voltar ao modo de docente' }).click()
+  await expect(page.getByLabel('Modo de edição')).toBeVisible()
 
   // pauta: 1.ª e 2.ª prova; MAC 15 sem negativas = dispensado; publica só as provas
   await page.getByRole('tab', { name: 'Notas' }).click()

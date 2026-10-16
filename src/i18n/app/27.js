@@ -36,4 +36,9 @@ export default [
   ["Não tem trabalhos por entregar.", "You have no assignments to submit.", "Vous n'avez aucun travail à rendre.", "No tiene trabajos por entregar."],
   ["até {0}", "by {0}", "avant le {0}", "hasta {0}"],
   ["Entrar na sala de aula", "Enter the classroom", "Entrer dans la salle de classe", "Entrar en el aula"],
+  ["Ver como estudante", "View as student", "Voir en tant qu'étudiant", "Ver como estudiante"],
+  ["Está a ver a sala de aula como os estudantes a veem. Não aparecem as atividades escondidas; as datas de abertura e as condições não se aplicam a si.", "You are viewing the classroom as students see it. Hidden activities do not appear; opening dates and conditions do not apply to you.", "Vous voyez la salle de classe telle que les étudiants la voient. Les activités masquées n'apparaissent pas ; les dates d'ouverture et les conditions ne s'appliquent pas à vous.", "Está viendo el aula como la ven los estudiantes. No aparecen las actividades ocultas; las fechas de apertura y las condiciones no se le aplican."],
+  ["Voltar ao modo de docente", "Back to faculty mode", "Revenir au mode enseignant", "Volver al modo docente"],
+  ["Aqui o estudante entrega ou responde. Na pré-visualização não se entrega nem se responde.", "Here the student submits or answers. Nothing can be submitted or answered in the preview.", "Ici, l'étudiant rend ou répond. Dans l'aperçu, on ne rend ni ne répond.", "Aquí el estudiante entrega o responde. En la vista previa no se entrega ni se responde."],
+  ["Abrir como docente", "Open as faculty", "Ouvrir en tant qu'enseignant", "Abrir como docente"],
 ]
