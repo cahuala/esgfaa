@@ -16,7 +16,8 @@
     "migrar": "prisma migrate deploy",
     "importar-sqlite": "node --env-file-if-exists=.env scripts/importar-sqlite.js",
     "postinstall": "prisma generate",
-    "semear-portal": "node --env-file-if-exists=.env scripts/semear-portal.js"
+    "semear-portal": "node --env-file-if-exists=.env scripts/semear-portal.js",
+    "carga": "node --env-file-if-exists=.env scripts/carga.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
@@ -36,6 +37,11 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "autocannon": "8.0.0",
     "supertest": "^7.3.1"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.6"
   }
 }

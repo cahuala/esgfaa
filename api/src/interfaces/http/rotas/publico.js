@@ -9,7 +9,7 @@ const pItem = z.object({ colecao: z.string().max(40), id: E.id })
 const pBanner = z.object({ id: E.id })
 
 // Rotas do site público: /api/publico/…
-export function rotasPublicas({ servicos, config }) {
+export function rotasPublicas({ servicos, config, cache }) {
   const r = Router()
   const L = config.limites
   r.use(limitar(L.publico))
@@ -24,14 +24,15 @@ export function rotasPublicas({ servicos, config }) {
 
   // todo o conteúdo do site num só pedido (o site é pequeno e assim abre mais depressa)
   r.get('/conteudo', async (req, res) => {
-    const conteudo = {
+    const base = baseUrl(req, config)
+    const montar = async () => JSON.stringify(absolutizar({
       paginas: await servicos.paginas.todas(),
       traducoes: await servicos.traducoes.publicas(),
       estatisticas: await servicos.interacoes.contagens(),
       ...(await servicos.conteudos.todosPublicados()),
-    }
-    res.set('Cache-Control', 'no-cache')
-    res.json(absolutizar(conteudo, baseUrl(req, config)))
+    }, base))
+    const json = cache ? await cache.obter(base, montar) : await montar()
+    res.set({ 'Cache-Control': 'no-cache', 'Content-Type': 'application/json; charset=utf-8' }).send(json)
   })
 
   r.get('/interacoes/:colecao/:id', validar({ params: pItem, query: E.consultaVisitante }), async (req, res) => {

@@ -1,22 +1,14 @@
-import { useId, useRef, useState } from 'react'
+import { Suspense, lazy, useId, useRef, useState } from 'react'
 import { api } from '../api'
 import { avaliarImagem, dicaTamanho, medirImagem } from '../imagens'
-import ReactQuill from 'react-quill-new'
-import 'react-quill-new/dist/quill.snow.css'
 import { POSICOES_BANNER, TIPOS_BLOCO } from '../esquemas'
 import { escrever, ler } from '../caminhos'
 import { t as tx } from '../../i18n/linguas'
 
 const LARGURAS = { metade: 'col-md-6', terco: 'col-md-4', doisTercos: 'col-md-8', sexto: 'col-md-2' }
 
-// barra do editor de texto rico (Quill, o editor usado pelo Color Admin)
-const BARRA_TEXTO = [
-  [{ header: [2, 3, false] }],
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ list: 'ordered' }, { list: 'bullet' }, 'blockquote'],
-  [{ align: [] }],
-  ['link', 'clean'],
-]
+// texto formatado: o mesmo editor das páginas (carregado só quando é preciso)
+const EditorTexto = lazy(() => import('../editor/EditorTexto'))
 
 /*
   Formulário de um objeto.
@@ -104,8 +96,10 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
 
     case 'textoRico':
       return (
-        <div className="editor-texto">
-          <ReactQuill id={id} theme="snow" value={valor || ''} onChange={onChange} modules={{ toolbar: BARRA_TEXTO }} placeholder={tx('Escreva aqui o texto…')} />
+        <div className="editor-texto" id={id}>
+          <Suspense fallback={<div className="text-muted small p-2">{tx('A carregar o editor…')}</div>}>
+            <EditorTexto html={valor || ''} onChange={onChange} placeholder={tx('Escreva aqui o texto…')} semImagens />
+          </Suspense>
         </div>
       )
 

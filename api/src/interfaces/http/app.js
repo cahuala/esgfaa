@@ -6,6 +6,7 @@ import { naoEncontrado, tratarErros } from './middlewares/erros.js'
 import { rotasAdmin } from './rotas/admin.js'
 import { rotasPublicas } from './rotas/publico.js'
 import { rotasPortal } from './rotas/portal.js'
+import { criarCacheConteudo } from './cacheConteudo.js'
 
 // Aplicação Express (sem arrancar o servidor: os testes usam-na diretamente)
 export function criarApp(contentor, { registarErro } = {}) {
@@ -29,7 +30,7 @@ export function criarApp(contentor, { registarErro } = {}) {
 
   app.use(cors({
     origin: (origem, cb) => cb(null, !origem || config.origens.includes(origem)),
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
     exposedHeaders: ['X-Request-Id', 'Retry-After'],
     maxAge: 600,
@@ -42,8 +43,14 @@ export function criarApp(contentor, { registarErro } = {}) {
   }
 
   app.get('/api/saude', (req, res) => res.json({ ok: true }))
-  app.use('/api/publico', rotasPublicas({ servicos, config }))
-  app.use('/api/admin', semCache, rotasAdmin({ servicos, config, armazenamento, privados }))
+  // o conteúdo do site fica alguns segundos em memória; uma alteração no painel apaga-o (e os comentários e gostos também)
+  const cache = criarCacheConteudo()
+  const apagarSeMudou = (req, res, next) => {
+    if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) cache.limpar() })
+    next()
+  }
+  app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
+  app.use('/api/admin', semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
   app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))
 
   app.use(naoEncontrado)

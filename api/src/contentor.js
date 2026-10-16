@@ -100,7 +100,7 @@ import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
   esquema próprio no PostgreSQL e uma pasta de uploads temporária.
 */
 export function criarContentor(config, { relogio = relogioSistema, esquema = null, externos = {} } = {}) {
-  const prisma = criarPrisma(config.urlBaseDados, { esquema })
+  const prisma = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBaseDados })
   const fuso = config.fuso
 
   const repositorios = {

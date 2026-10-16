@@ -23,6 +23,8 @@ const ESQUEMA = z.object({
   JWT_SECRET: z.string().default(''),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/, 'SESSION_TTL deve ser como 8h, 30m ou 1d').default('8h'),
   MAX_UPLOAD_MB: inteiro(80, 1, 1024),
+  // ligações simultâneas à base de dados (suba com o número de pessoas ao mesmo tempo e o que o PostgreSQL aguentar)
+  DB_POOL: inteiro(10, 2, 200),
   TRUST_PROXY: z.string().default(''),
   ADMIN_NAME: z.string().default('Administrador'),
   ADMIN_EMAIL: z.string().default('admin@esgfaa.gov.ao'),
@@ -92,6 +94,7 @@ export function criarConfig(env = process.env, extras = {}) {
     segredoDesenvolvimento: segredoJwt === SEGREDO_DESENVOLVIMENTO,
     duracaoSessao: e.SESSION_TTL,
     tamanhoMaximoUpload: e.MAX_UPLOAD_MB * 1024 * 1024,
+    ligacoesBaseDados: e.DB_POOL,
     confiarProxy: proxy(e.TRUST_PROXY),
     administrador: { nome: e.ADMIN_NAME, email: e.ADMIN_EMAIL, senha: e.ADMIN_PASSWORD },
     registos: e.LOG ?? (e.NODE_ENV === 'test' ? 'nenhum' : 'json'),

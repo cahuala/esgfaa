@@ -588,31 +588,6 @@ fieldset:disabled .bloco-topo .btn-group {
   display: none;
 }
 
-/* editor de texto rico (Quill) */
-.editor-texto .ql-toolbar.ql-snow {
-  border-color: var(--bs-border-color);
-  border-radius: 4px 4px 0 0;
-  background: var(--bs-gray-100);
-  font-family: inherit;
-}
-
-.editor-texto .ql-container.ql-snow {
-  border-color: var(--bs-border-color);
-  border-radius: 0 0 4px 4px;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.editor-texto .ql-editor {
-  min-height: 220px;
-  line-height: 1.7;
-}
-
-.editor-texto .ql-editor.ql-blank::before {
-  font-style: normal;
-  color: var(--bs-gray-500);
-}
-
 /* painel lateral de publicação */
 .publicacao-lateral {
   position: sticky;

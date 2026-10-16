@@ -14,4 +14,5 @@ export default [
   ["Por ganhar", "Still to earn", "À obtenir", "Por obtener"],
   ["Faça a primeira atividade de uma cadeira para ganhar o primeiro emblema.", "Do the first activity of a course to earn your first badge.", "Faites la première activité d'un cours pour obtenir votre premier badge.", "Haga la primera actividad de una asignatura para obtener su primera insignia."],
   ["Próximo:", "Next:", "Prochain :", "Siguiente:"],
+  ["A carregar o editor…", "Loading the editor…", "Chargement de l'éditeur…", "Cargando el editor…"],
 ]

@@ -112,6 +112,32 @@ Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-port
 
 Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
 
+## Segurança e acessos simultâneos
+
+**Testes de intrusão** (`api/tests/integracao/ataques.test.js`, `seguranca.test.js`, `sessao.test.js`, `rbac.test.js`, `ficheiros.test.js`), que correm em cada publicação. Cada ataque tem de ser recusado:
+- **sessões falsificadas:** token sem assinatura (`alg: none`), assinado com outra chave, com o utilizador trocado, do painel usado no portal e vice-versa, e depois de sair;
+- **ver o que é de outros (IDOR):** cadeira de outra turma, ficheiros e entregas de colegas, pautas e relatórios por estudantes ou por docentes de outras cadeiras;
+- **subir de privilégios:** estudante a dar-se nota, a criar atividades ou a mexer na pauta; docente a mexer na cadeira de outro;
+- **injeção:** SQL na pesquisa e nos parâmetros; scripts, eventos (`onerror`), ligações `javascript:` e `iframe` estranhos nas páginas (retirados); caminhos fora da pasta (`../../`);
+- **ficheiros perigosos:** página web ou programa com nome de PDF, SVG com script;
+- **palavras-passe à força:** a conta bloqueia ao fim de 5 falhas (15 minutos), há limites por endereço, e a mensagem é a mesma para e-mail inexistente e palavra-passe errada;
+- **cabeçalhos de segurança** (helmet), CORS só para os sites autorizados, corpos grandes recusados, erros sem detalhes internos.
+
+**Dependências:** `npm audit` sem vulnerabilidades no site/painel e na API (a ferramenta do Prisma trazia versões com falhas do `deepmerge-ts` e do `mysql2`, que o `package.json` da API força para versões corrigidas).
+
+**Teste de carga** (`cd api && npm run carga`; `ESTUDANTES=300 SEGUNDOS=30 npm run carga` para mais): monta uma Escola de teste numa base temporária (não toca na real), com uma turma de 100 estudantes, e mede cada cenário durante 15 s. Resultados num Mac (M-series), API e PostgreSQL no mesmo computador:
+
+| Cenário | Ligações ao mesmo tempo | Pedidos por segundo | Tempo médio | Erros |
+|---|---|---|---|---|
+| Site: página inicial | 120 | ≈ 16 700 | 0,14 s | 0 |
+| Portal: estudantes a abrir a cadeira | 100 | ≈ 280 | 0,35 s | 0 |
+| Portal: "A minha turma" | 100 | ≈ 650 | 0,15 s | 0 |
+| Portal: notificações | 100 | ≈ 2 400 | 0,04 s | 0 |
+| Docente: lista de entregas | 20 | ≈ 450 | 0,04 s | 0 |
+| Entrar no portal (palavra-passe) | 50 | ≈ 120 | 0,41 s | 0 |
+
+Cada ligação pede sem parar; uma pessoa real abre uma página a cada poucos segundos, por isso estes números correspondem a milhares de pessoas a usar o sistema ao mesmo tempo. Entrar é de propósito mais lento (a palavra-passe é verificada com scrypt, o que também atrasa quem tenta adivinhá-la). O conteúdo do site fica 10 segundos em memória (e é apagado a cada alteração no painel): antes disso, a página inicial aguentava ≈ 800 pedidos por segundo e falhava com 200 visitantes ao mesmo tempo. Com os limites ligados, 2000 pedidos seguidos de um só endereço dão 300 respostas e 1700 recusas (429). Em produção, suba `DB_POOL` (ligações à base de dados, 10 por omissão) se houver muitos docentes e estudantes ao mesmo tempo.
+
 ## Pôr a API online
 
 A API precisa de uma base **PostgreSQL** (gerida, como Neon, Supabase ou Render, ou num VPS) e de um **disco persistente** para as imagens carregadas (`api/dados/uploads`). No arranque, `npm start` aplica as migrações pendentes.
@@ -129,6 +155,7 @@ Variáveis de ambiente obrigatórias em produção (ver `api/.env.example`):
 | `DATA_DIR` | pasta persistente para os ficheiros carregados |
 | `CONTACTOS_EMAIL` | e-mail que recebe um aviso de cada mensagem do formulário de contacto do site (precisa do `SMTP_URL`; sem ele, as mensagens ficam só no painel, em **Mensagens do site**) |
 | `JITSI_URL` | servidor Jitsi das salas de videoconferência do portal (por omissão `https://meet.jit.si`, gratuito, mas que limita as salas dentro de outros sites e pede a quem abre a sala que entre com uma conta; para uso real, instale um servidor Jitsi da Escola — é gratuito — e ponha aqui o endereço) |
+| `DB_POOL` | ligações simultâneas ao PostgreSQL (10 por omissão; ex.: 30 num servidor com muitos utilizadores) |
 | `SMTP_URL` | servidor de e-mail para as notificações, ex.: `smtps://portal%40esgfaa.gov.ao:SENHA@smtp.servidor.ao:465` (sem ele, as notificações ficam só no portal) |
 | `EMAIL_REMETENTE` | remetente dos e-mails, ex.: `Portal Académico ESG <portal@esgfaa.gov.ao>` |
 | `PORTAL_URL` | endereço do portal, para as ligações nos e-mails, ex.: `https://cahuala.github.io/esgfaa/portal/` |
