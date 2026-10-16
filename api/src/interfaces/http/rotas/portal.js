@@ -4,7 +4,7 @@ import { SenhaPorMudar } from '../../../dominio/comum/erros.js'
 import { limitar } from '../middlewares/limites.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
 import { validar } from '../middlewares/validar.js'
-import { enviarFicheiro, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
+import { enviarFicheiro, receberCopia, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
 import * as E from '../esquemas.js'
 
 const pId = z.object({ id: E.idNumerico })
@@ -188,6 +188,12 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await e.organizacao.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await e.organizacao.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
+  // cópia de segurança da cadeira num ficheiro, e restauração (desse ficheiro ou de um curso do Moodle)
+  r.get('/cadeiras/:id/copia-seguranca', validar({ params: pId }), async (req, res) => {
+    const { nome, dados } = await e.copiaSeguranca.exportar(ctx(req), req.dados.params.id)
+    res.set({ 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="copia.zip"; filename*=UTF-8''${encodeURIComponent(nome)}`, 'Cache-Control': 'private, no-store' }).send(dados)
+  })
+  r.post('/cadeiras/:id/restaurar', limitar(L.mensagens), receberCopia({ config }), validar({ params: pId }), async (req, res) => res.json(await e.copiaSeguranca.restaurar(ctx(req), req.dados.params.id, req.copia)))
   r.post('/cadeiras/:id/importar', validar({ params: pId, body: E.copiarCadeira }), async (req, res) => res.json(await e.organizacao.importar(ctx(req), req.dados.params.id, req.dados.body)))
   r.get('/cadeiras/:id/participantes', validar({ params: pId }), async (req, res) => res.json(await e.organizacao.participantes(ctx(req), req.dados.params.id)))
 

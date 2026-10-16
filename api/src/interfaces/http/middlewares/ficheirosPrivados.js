@@ -41,6 +41,23 @@ export function receberFicheiro({ privados, config, maximo = 1 }) {
   }
 }
 
+/*
+  Recebe uma cópia de segurança (.zip do ESGFAA ou .mbz do Moodle) em memória: o tipo declarado pelo navegador
+  não conta (o .mbz chega como "application/octet-stream"); o conteúdo é verificado ao ler o arquivo.
+  Põe em req.copia { nome, dados } (ou null).
+*/
+export function receberCopia({ config }) {
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.tamanhoMaximoUpload, files: 1, fields: 5 } }).single('ficheiro')
+  return (req, res, next) => {
+    req.limiteUpload = config.tamanhoMaximoUpload
+    upload(req, res, (erro) => {
+      if (erro) return next(erro)
+      req.copia = req.file ? { nome: nomeOriginal(req.file.originalname), dados: req.file.buffer } : null
+      next()
+    })
+  }
+}
+
 const INLINE = /^(application\/pdf|image\/|video\/)/
 
 // envia um ficheiro privado (descarregar, ou ver no navegador com ?ver=1 para PDF/imagens/vídeo)

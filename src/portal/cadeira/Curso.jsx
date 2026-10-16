@@ -223,7 +223,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
             </div>
             {edicao && <span className="small text-muted d-none d-xl-inline"><i className="fa fa-grip-vertical me-1" />{tx('Arraste as atividades entre capítulos e os capítulos para mudar a ordem.')}</span>}
             <div className="ms-auto d-flex gap-2">
-              {edicao && <button type="button" className="btn btn-sm btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />{tx('Importar de outra cadeira')}</button>}
+              {edicao && <button type="button" className="btn btn-sm btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />{tx('Importar e cópias')}</button>}
               <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({ ver: 'estudante' })}><i className="fa fa-user-graduate me-1" />{tx('Ver como estudante')}</button>
             </div>
           </div>

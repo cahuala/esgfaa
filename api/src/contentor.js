@@ -57,6 +57,7 @@ import { ServicoEstudante } from './aplicacao/academico/ensino/estudante.js'
 import { ServicoFicheirosPortal } from './aplicacao/academico/ensino/ficheiros.js'
 import { ServicoOrganizacao } from './aplicacao/academico/ensino/organizacao.js'
 import { ServicoMateriais } from './aplicacao/academico/ensino/materiais.js'
+import { ServicoCopiaSeguranca } from './aplicacao/academico/ensino/copiaSeguranca.js'
 import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
@@ -195,6 +196,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       progresso: new ServicoProgresso(d),
       questionarios: new ServicoQuestionarios(d),
       licoes: new ServicoLicoes(d),
+      copiaSeguranca: new ServicoCopiaSeguranca({ copiasRepo: r.copias, academico: r.academico, privados, apoio, auditoria, filtroHtml: filtrarHtml, relogio, config }),
     }
   }
   // casos de uso da Administração Escolar (painel)

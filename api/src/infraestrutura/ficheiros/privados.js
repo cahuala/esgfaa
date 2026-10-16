@@ -78,6 +78,18 @@ export class ArmazenamentoPrivado {
     fs.rmSync(caminho, { force: true })
   }
 
+  // guarda um ficheiro que chegou em memória (ex.: de dentro de uma cópia de segurança); devolve { id, caminho } relativos
+  guardar(dados, tipo) {
+    const nome = this.nomeNovo(tipo)
+    const destino = path.join(this.pastaDoMes(), nome)
+    fs.writeFileSync(destino, dados, { flag: 'wx', mode: 0o640 })
+    return { id: nome.split('.')[0], caminho: this.relativo(destino) }
+  }
+
+  ler(relativo) {
+    return fs.readFileSync(this.absoluto(relativo))
+  }
+
   // cópia independente de um ficheiro (ao copiar uma cadeira para o novo ano); devolve { id, caminho } relativos
   copiar(relativo, tipo) {
     const origem = this.absoluto(relativo)
