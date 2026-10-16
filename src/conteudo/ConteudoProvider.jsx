@@ -17,7 +17,16 @@ const LOCAL = { noticias, artigos, eventos, cursos, pessoas, paginas, publicidad
 function ConteudoProvider({ children }) {
   const [dados, setDados] = useState(LOCAL)
   const [online, setOnline] = useState(false)
+  // traduções que vêm com o site (src/data/traducoes.json): só se carregam fora do português
+  const [traducoesLocais, setTraducoesLocais] = useState(null)
   const { lingua } = useIdioma()
+
+  useEffect(() => {
+    if (lingua === 'pt') return undefined
+    let ativo = true
+    import('../data/traducoes.json').then((m) => { if (ativo) setTraducoesLocais(m.default) }).catch(() => {})
+    return () => { ativo = false }
+  }, [lingua])
 
   useEffect(() => {
     let ativo = true
@@ -38,9 +47,11 @@ function ConteudoProvider({ children }) {
   // conteúdos na língua escolhida: a tradução publicada (se houver) por cima do original;
   // cada item fica com _lingua (a língua em que realmente está) para o site poder avisar
   const traduzidos = useMemo(() => {
-    const itens = dados.traducoes?.itens || {}
-    const automaticas = dados.traducoes?.automaticas || {}
     if (lingua === 'pt') return dados
+    // as da API, se houver; sem API (ou enquanto não responde), as que vêm com o site
+    const fonte = dados.traducoes || traducoesLocais
+    const itens = fonte?.itens || {}
+    const automaticas = fonte?.automaticas || {}
     const traduzir = (colecao, x, chave) => {
       const tr = itens[`${colecao}/${chave}`]?.[lingua]
       return tr ? { ...aplicarTextos(x, tr), _lingua: lingua, _automatica: Boolean(automaticas[`${colecao}/${chave}`]?.includes(lingua)) } : { ...x, _lingua: 'pt' }
@@ -51,7 +62,7 @@ function ConteudoProvider({ children }) {
     }
     r.paginas = Object.fromEntries(Object.entries(dados.paginas || {}).map(([k, v]) => [k, aplicarTextos(v, itens[`paginas/${k}`]?.[lingua])]))
     return r
-  }, [dados, lingua])
+  }, [dados, lingua, traducoesLocais])
 
   const valor = useMemo(() => {
     const dados = traduzidos

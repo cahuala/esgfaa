@@ -6,8 +6,10 @@ import IdiomaProvider from './i18n/IdiomaProvider'
 import { prepararLingua } from './i18n/linguas'
 import './index.css'
 
-// a aplicação só é carregada depois do dicionário da língua (fora do português)
-const [{ default: App }] = await Promise.all([import('./App.jsx'), prepararLingua()])
+// a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
+// traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
+await prepararLingua()
+const { default: App } = await import('./App.jsx')
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

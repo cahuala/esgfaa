@@ -13,6 +13,7 @@
     "test:cobertura": "vitest run --coverage",
     "test:api": "npm --prefix api test",
     "test:e2e": "playwright test",
+    "traducoes:exportar": "node scripts/exportar-traducoes.mjs",
     "test:tudo": "npm run lint && npm run test:api && npm test && npm run test:e2e"
   },
   "dependencies": {

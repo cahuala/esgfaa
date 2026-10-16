@@ -8,8 +8,10 @@ import './identidade.css'
 import './editor/editor.css'
 import { prepararLingua } from '../i18n/linguas'
 
-// a aplicação só é carregada depois do dicionário da língua (fora do português)
-const [{ SessaoProvider }, { default: App }] = await Promise.all([import('./sessao'), import('./App'), prepararLingua()])
+// a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
+// traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
+await prepararLingua()
+const [{ SessaoProvider }, { default: App }] = await Promise.all([import('./sessao'), import('./App')])
 
 // O painel usa endereços com # (ex.: /admin/#/colecao/noticias) para funcionar no GitHub Pages
 // sem configuração extra. Router "de dados" para poder avisar antes de sair com alterações por guardar.
