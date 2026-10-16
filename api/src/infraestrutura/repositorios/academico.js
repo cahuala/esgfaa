@@ -475,7 +475,7 @@ export class RepositorioAcademico {
     id: e.id, trabalhoId: e.trabalhoId, estudanteId: e.estudanteId, texto: e.texto, comentario: e.comentario,
     ficheiros: (e.ficheiros || []).sort((x, y) => x.ordem - y.ordem).map((f) => ({ id: f.ficheiro.id, nome: f.ficheiro.nome, tipo: f.ficheiro.tipo, tamanho: f.ficheiro.tamanho })),
     entregueEm: iso(e.entregueEm), nota: num(e.nota), correcao: e.correcao, corrigidaEm: iso(e.corrigidaEm),
-    correcaoFicheiroId: e.correcaoFicheiroId, grelha: e.grelha || {},
+    correcaoFicheiroId: e.correcaoFicheiroId, grelha: e.grelha || {}, anotacoes: e.anotacoes || {},
     ...(e.estudante ? { estudante: e.estudante } : {}),
     grupoId: e.grupoId ?? null,
     ...(e.grupo ? { grupo: { id: e.grupo.id, nome: e.grupo.nome, membros: e.grupo.membros.map((m) => m.estudanteId) } } : {}),

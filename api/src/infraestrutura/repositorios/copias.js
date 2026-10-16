@@ -77,6 +77,8 @@ export class RepositorioCopias {
           ...restricoes(q), cadeiraId: destinoId, secaoId: secao(q.secaoId), titulo: q.titulo, descricao: q.descricao,
           abre: q.abre ? data(q.abre) : null, fecha: q.fecha ? data(q.fecha) : null, duracao: q.duracao, tentativas: q.tentativas,
           publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
+          // a palavra-passe não passa para o ano seguinte (cada prova tem a sua)
+          porPagina: q.porPagina, sequencial: q.sequencial, comentarios: q.comentarios ?? [],
         } })
         questionarios[q.id] = novo.id
         if (q.perguntas.length) {

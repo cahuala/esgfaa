@@ -177,11 +177,13 @@ export class RepositorioRecursosCadeira {
 
   // ---------- questionários ----------
 
-  #questionario(q) {
+  // a palavra-passe só sai na leitura de um questionário (para o docente e para a verificação); as listas dizem só se pede
+  #questionario(q, { comSenha = false } = {}) {
     return q && {
       id: q.id, cadeiraId: q.cadeiraId, titulo: q.titulo, descricao: q.descricao, abre: iso(q.abre), fecha: iso(q.fecha),
       duracao: q.duracao, tentativas: q.tentativas, publicado: q.publicado, mostrarRespostas: q.mostrarRespostas, secaoId: q.secaoId, criadoEm: iso(q.criadoEm),
       baralhar: q.baralhar, perguntasPorTentativa: q.perguntasPorTentativa,
+      ...(comSenha ? { senha: q.senha || '' } : {}), pedeSenha: Boolean(q.senha), porPagina: q.porPagina || 0, sequencial: Boolean(q.sequencial), comentarios: q.comentarios || [],
       visivel: q.visivel, disponivelDe: iso(q.disponivelDe), requisitos: q.requisitos || [],
       ...(q.perguntas ? { perguntas: q.perguntas.map((p) => ({ id: p.id, ordem: p.ordem, enunciado: p.enunciado, tipo: p.tipo, opcoes: p.opcoes, pontos: num(p.pontos) })) } : {}),
       ...(q._count ? { numeroPerguntas: q._count.perguntas } : {}),
@@ -198,15 +200,15 @@ export class RepositorioRecursosCadeira {
   }
 
   async questionario(id) {
-    return this.#questionario(await this.prisma.questionario.findUnique({ where: { id: Number(id) }, include: { perguntas: { orderBy: [{ ordem: 'asc' }, { id: 'asc' }] } } }))
+    return this.#questionario(await this.prisma.questionario.findUnique({ where: { id: Number(id) }, include: { perguntas: { orderBy: [{ ordem: 'asc' }, { id: 'asc' }] } } }), { comSenha: true })
   }
 
   async criarQuestionario(dados) {
-    return this.#questionario(await this.prisma.questionario.create({ data: dados }))
+    return this.#questionario(await this.prisma.questionario.create({ data: dados }), { comSenha: true })
   }
 
   async atualizarQuestionario(id, dados) {
-    return this.#questionario(await this.prisma.questionario.update({ where: { id }, data: dados }))
+    return this.#questionario(await this.prisma.questionario.update({ where: { id }, data: dados }), { comSenha: true })
   }
 
   apagarQuestionario(id) {
@@ -234,7 +236,7 @@ export class RepositorioRecursosCadeira {
     return t && {
       id: t.id, questionarioId: t.questionarioId, estudanteId: t.estudanteId, numero: t.numero,
       iniciadaEm: iso(t.iniciadaEm), limite: iso(t.limite), entregueEm: iso(t.entregueEm), respostas: t.respostas || {}, nota: num(t.nota),
-      ordem: t.ordem || [], permutacoes: t.permutacoes || {}, manuais: t.manuais || {}, porCorrigir: t.porCorrigir, comentario: t.comentario,
+      ordem: t.ordem || [], permutacoes: t.permutacoes || {}, manuais: t.manuais || {}, porCorrigir: t.porCorrigir, comentario: t.comentario, pagina: t.pagina || 0,
       ...(t.estudante ? { estudante: t.estudante } : {}),
     }
   }
@@ -260,6 +262,42 @@ export class RepositorioRecursosCadeira {
 
   async guardarRespostas(id, respostas) {
     return this.#tentativa(await this.prisma.tentativa.update({ where: { id }, data: { respostas } }))
+  }
+
+  // navegação sequencial: só avança se ainda estiver na página esperada (duas janelas não saltam páginas)
+  async avancarPagina(id, de, para) {
+    const r = await this.prisma.tentativa.updateMany({ where: { id, pagina: de, entregueEm: null }, data: { pagina: para } })
+    return r.count === 1
+  }
+
+  // ---------- exceções de estudantes nos questionários ----------
+
+  #excecao(e) {
+    return e && { id: e.id, questionarioId: e.questionarioId, estudanteId: e.estudanteId, fecha: iso(e.fecha), duracao: e.duracao, tentativas: e.tentativas, motivo: e.motivo, ...(e.estudante ? { estudante: e.estudante } : {}) }
+  }
+
+  async excecoes(questionarioId) {
+    const linhas = await this.prisma.excecaoQuestionario.findMany({ where: { questionarioId }, include: { estudante: { select: { id: true, nome: true, numero: true } } }, orderBy: { id: 'asc' } })
+    return linhas.map((e) => this.#excecao(e))
+  }
+
+  async excecao(questionarioId, estudanteId) {
+    return this.#excecao(await this.prisma.excecaoQuestionario.findUnique({ where: { questionarioId_estudanteId: { questionarioId, estudanteId } } }))
+  }
+
+  // { questionarioId: exceção } de um estudante (para a lista e o progresso)
+  async excecoesDoEstudante(estudanteId, questionarioIds) {
+    const linhas = await this.prisma.excecaoQuestionario.findMany({ where: { estudanteId, questionarioId: { in: questionarioIds } } })
+    return Object.fromEntries(linhas.map((e) => [e.questionarioId, this.#excecao(e)]))
+  }
+
+  async guardarExcecao(dados) {
+    const { questionarioId, estudanteId, ...resto } = dados
+    return this.#excecao(await this.prisma.excecaoQuestionario.upsert({ where: { questionarioId_estudanteId: { questionarioId, estudanteId } }, create: dados, update: resto }))
+  }
+
+  apagarExcecao(questionarioId, estudanteId) {
+    return this.prisma.excecaoQuestionario.deleteMany({ where: { questionarioId, estudanteId } })
   }
 
   // só fecha se ainda estiver aberta (duas entregas ao mesmo tempo não contam duas vezes)

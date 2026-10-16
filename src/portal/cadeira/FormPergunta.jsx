@@ -7,6 +7,7 @@ const VAZIA = {
   tipo: 'unica', enunciado: '', pontos: 1, categoria: '',
   opcoes: [{ texto: '', correta: true }, { texto: '', correta: false }], correta: 'verdadeiro',
   respostas: [''], valor: '', tolerancia: '0', pares: [{ a: '', b: '' }, { a: '', b: '' }], orientacao: '',
+  textoLacunas: '', itens: ['', '', ''],
 }
 
 // converte o formulário no corpo que a API espera, conforme o tipo
@@ -17,6 +18,8 @@ function corpo(f) {
   if (f.tipo === 'curta') return { ...base, opcoes: { respostas: f.respostas.filter((r) => r.trim()) } }
   if (f.tipo === 'numerica') return { ...base, opcoes: { valor: f.valor, tolerancia: f.tolerancia || '0' } }
   if (f.tipo === 'correspondencia') return { ...base, opcoes: { pares: f.pares } }
+  if (f.tipo === 'lacunas') return { ...base, opcoes: { texto: f.textoLacunas } }
+  if (f.tipo === 'ordenar') return { ...base, opcoes: { itens: f.itens.filter((x) => x.trim()) } }
   return { ...base, opcoes: { orientacao: f.orientacao } }
 }
 
@@ -115,6 +118,24 @@ function FormPergunta({ guardar, botao = tx('Juntar pergunta'), comCategoria = f
           {f.pares.length < 8 && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, pares: [...f.pares, { a: '', b: '' }] })}><i className="fa fa-plus me-1" />{tx('Par')}</button>}
         </div>
       )}
+      {f.tipo === 'lacunas' && (
+        <Campo id="fp-lacunas" rotulo={tx('Texto com as lacunas')} ajuda={tx('Escreva a resposta de cada lacuna entre [[ ]]. Várias respostas aceites separam-se por |. Ex.: A capital de Angola é [[Luanda]] e o rio mais longo é o [[Kwanza|Cuanza]].')}>
+          <textarea id="fp-lacunas" rows={4} value={f.textoLacunas} onChange={(e) => setF({ ...f, textoLacunas: e.target.value })} required />
+        </Campo>
+      )}
+      {f.tipo === 'ordenar' && (
+        <div>
+          <span className="form-label fw-bold d-block mb-1">{tx('Itens pela ordem certa')} <small className="text-muted fw-normal">{tx('(o estudante vê-os baralhados; cada item no lugar certo vale uma parte dos pontos)')}</small></span>
+          {f.itens.map((x, i) => (
+            <div key={i} className="d-flex gap-2 align-items-center mb-1">
+              <span className="text-muted small fw-bold" style={{ width: 18 }}>{i + 1}.</span>
+              <input className="form-control form-control-sm" value={x} onChange={(e) => lista('itens', i, e.target.value)} placeholder={tx('Ex.: Análise da missão')} aria-label={tx('Item {0}', { 0: i + 1 })} required={i < 2} />
+              {f.itens.length > 2 && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, itens: f.itens.filter((_, j) => j !== i) })} aria-label={tx('Retirar item')}><i className="fa fa-times" /></button>}
+            </div>
+          ))}
+          {f.itens.length < 10 && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, itens: [...f.itens, ''] })}><i className="fa fa-plus me-1" />{tx('Item')}</button>}
+        </div>
+      )}
       {f.tipo === 'dissertacao' && (
         <Campo id="fp-orient" rotulo={tx('Orientações para o estudante (opcional)')} ajuda={tx('A resposta é corrigida por si; a nota sai quando a corrigir.')}>
           <textarea id="fp-orient" rows={2} value={f.orientacao} onChange={(e) => setF({ ...f, orientacao: e.target.value })} />
@@ -130,6 +151,8 @@ export function SolucaoPergunta({ p }) {
   if (p.tipo === 'curta') return <div className="small text-success"><i className="fa fa-check-circle me-1" />{tx('Aceites:')} {p.opcoes.respostas.join(' · ')}</div>
   if (p.tipo === 'numerica') return <div className="small text-success"><i className="fa fa-check-circle me-1" />{p.opcoes.valor}{p.opcoes.tolerancia ? ` (± ${p.opcoes.tolerancia})` : ''}</div>
   if (p.tipo === 'correspondencia') return <ul className="list-unstyled small mb-0">{p.opcoes.pares.map((x, i) => <li key={i} className="text-success"><i className="fa fa-arrows-alt-h me-1" />{x.a} → {x.b}</li>)}</ul>
+  if (p.tipo === 'lacunas') return <div className="small text-success"><i className="fa fa-check-circle me-1" />{p.opcoes.lacunas.map((l) => l.join(' / ')).join(' · ')}</div>
+  if (p.tipo === 'ordenar') return <ol className="small mb-0 text-success">{p.opcoes.itens.map((x, i) => <li key={i}>{x}</li>)}</ol>
   if (p.tipo === 'dissertacao') return <div className="small text-muted"><i className="fa fa-pen me-1" />{tx('Correção manual')}{p.opcoes.orientacao ? ` · ${p.opcoes.orientacao}` : ''}</div>
   return (
     <ul className="list-unstyled small mb-0 mt-1">

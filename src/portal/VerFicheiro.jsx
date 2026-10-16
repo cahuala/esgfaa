@@ -9,37 +9,41 @@ import { t as tx } from '../i18n/linguas'
   leitor do navegador, imagens na página. Word, PowerPoint, Excel e outros descarregam-se.
 */
 function VerFicheiro({ ficheiro, titulo, falhou }) {
-  const especie = tipoVisivel(ficheiro?.tipo)
+  // sem o tipo (ex.: o ficheiro de correção), carrega-se e o tipo vem com o ficheiro
+  const [tipoReal, setTipoReal] = useState('')
+  const carregar = ficheiro.tipo ? Boolean(tipoVisivel(ficheiro.tipo)) : true
+  const tipo = ficheiro.tipo || tipoReal
+  const especie = tipoVisivel(tipo)
   const [url, setUrl] = useState(null)
   const [progresso, setProgresso] = useState(0)
   const [erro, setErro] = useState(null)
   const descarregar = () => abrirFicheiro(ficheiro.id, { nome: ficheiro.nome }).catch(falhou)
 
   useEffect(() => {
-    if (!especie) return undefined
+    if (!carregar) return undefined
     let ativo = true
     let criado = null
     carregarFicheiro(ficheiro.id, (p) => { if (ativo) setProgresso(p) })
-      .then((u) => { criado = u; if (ativo) setUrl(u); else URL.revokeObjectURL(u) })
+      .then((f) => { criado = f.url; if (ativo) { setUrl(f.url); setTipoReal(f.tipo) } else URL.revokeObjectURL(f.url) })
       .catch((e) => { if (ativo) setErro(e.message) })
     return () => { ativo = false; if (criado) URL.revokeObjectURL(criado) }
-  }, [ficheiro.id, especie])
+  }, [ficheiro.id, carregar])
 
   const cabecalho = (
     <div className="d-flex align-items-center gap-2 mb-2 small text-muted">
-      <i className={`fa ${iconeFicheiro(ficheiro.tipo)}`} />
+      <i className={`fa ${iconeFicheiro(tipo)}`} />
       <span className="text-truncate">{ficheiro.nome}</span>
-      <span className="text-nowrap">· {tamanho(ficheiro.tamanho)}</span>
+      {ficheiro.tamanho > 0 && <span className="text-nowrap">· {tamanho(ficheiro.tamanho)}</span>}
       {especie !== 'pdf' && <button type="button" className="btn btn-xs btn-white ms-auto" onClick={descarregar}><i className="fa fa-download me-1" />{tx('Descarregar')}</button>}
     </div>
   )
 
-  if (!especie) {
+  if (!especie && (!carregar || url || erro)) {
     return (
       <div className="p-ficheiro-outro">
-        <i className={`fa ${iconeFicheiro(ficheiro.tipo)} fa-3x mb-3`} />
+        <i className={`fa ${iconeFicheiro(tipo)} fa-3x mb-3`} />
         <div className="fw-bold">{ficheiro.nome}</div>
-        <div className="small text-muted mb-3">{tamanho(ficheiro.tamanho)} · {tx('Este tipo de ficheiro abre-se no computador (Word, PowerPoint, Excel…).')}</div>
+        <div className="small text-muted mb-3">{ficheiro.tamanho > 0 && `${tamanho(ficheiro.tamanho)} · `}{tx('Este tipo de ficheiro abre-se no computador (Word, PowerPoint, Excel…).')}</div>
         <button type="button" className="btn btn-theme" onClick={descarregar}><i className="fa fa-download me-1" />{tx('Descarregar')}</button>
       </div>
     )

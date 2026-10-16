@@ -95,7 +95,7 @@ export const trabalho = z.object({
   tipoEntrega: texto(10).optional(), maxFicheiros: z.union([z.number(), z.string().max(3)]).optional(), grelha: grelhaLivre,
   emGrupo: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
 })
-export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional(), grelha: pontosLivres, removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional() })
+export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional(), grelha: pontosLivres, removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(), anotacoes: z.string().max(1_500_000).optional() })
 export const prorrogacao = z.object({ estudanteId: idNumerico, prazo: z.union([texto(40), z.null()]), motivo: texto(500).optional() })
 export const aula = z.object({
   data: texto(10).optional(), sumario: texto(3000).optional(),
@@ -123,6 +123,19 @@ export const questionario = z.object({
   duracao: z.union([z.number(), z.string().max(4)]).optional(), tentativas: z.union([z.number(), z.string().max(3)]).optional(),
   publicado: z.boolean().optional(), mostrarRespostas: z.boolean().optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
   baralhar: z.boolean().optional(), perguntasPorTentativa: z.union([z.number(), z.string().max(4)]).optional(),
+  senha: texto(60).optional(), porPagina: z.union([z.number(), z.string().max(4)]).optional(), sequencial: z.boolean().optional(),
+  comentarios: z.array(z.object({ minimo: z.union([z.number(), z.string().max(8)]), texto: texto(600) })).max(10).optional(),
+})
+export const iniciarQuestionario = z.object({ senha: texto(60).optional() })
+export const avancarPagina = z.object({
+  pagina: z.number().int().min(0).max(500),
+  respostas: z.record(z.string().regex(/^\d{1,10}$/), z.union([
+    z.array(z.union([z.number().int().min(0).max(20), z.null(), z.string().max(300)])).max(20), z.string().max(20_000), z.number(),
+  ])).optional(),
+})
+export const excecaoQuestionario = z.object({
+  estudanteId: z.union([z.number().int().positive(), z.string().regex(/^\d{1,10}$/)]), fecha: z.union([texto(40), z.null()]).optional(),
+  duracao: z.union([z.number(), z.string().max(4), z.null()]).optional(), tentativas: z.union([z.number(), z.string().max(3), z.null()]).optional(), motivo: texto(400).optional(),
 })
 const valorLivre = z.union([z.number(), z.string().max(40)])
 export const pergunta = z.object({
@@ -132,14 +145,16 @@ export const pergunta = z.object({
     z.object({
       respostas: z.array(texto(300)).max(10).optional(), valor: valorLivre.optional(), tolerancia: valorLivre.optional(),
       pares: z.array(z.object({ a: texto(400).optional(), b: texto(400).optional() })).max(8).optional(), orientacao: texto(1200).optional(),
+      texto: texto(3200).optional(), itens: z.array(texto(400)).max(10).optional(),
     }),
   ]).optional(),
   correta: z.union([z.boolean(), z.literal('verdadeiro'), z.literal('falso')]).optional(),
 })
 // resposta de cada pergunta: índices (escolha, correspondência), texto (curta, dissertação) ou número
+// (lacunas: lista de textos; ordenar: lista de posições)
 export const respostasQuestionario = z.object({
   respostas: z.record(z.string().regex(/^\d{1,10}$/), z.union([
-    z.array(z.union([z.number().int().min(0).max(20), z.null()])).max(8), z.string().max(20_000), z.number(),
+    z.array(z.union([z.number().int().min(0).max(20), z.null(), z.string().max(300)])).max(20), z.string().max(20_000), z.number(),
   ])).optional(),
 })
 export const correcaoTentativa = z.object({ pontos: z.record(z.string().regex(/^\d{1,10}$/), z.union([z.number(), z.string().max(8)])).optional(), comentario: texto(3500).optional() })

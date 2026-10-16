@@ -203,6 +203,7 @@ model ContaPortal {
   respostas                   ForumResposta[]
   conclusoes                  Conclusao[]
   tentativas                  Tentativa[]
+  excecoesQuestionario        ExcecaoQuestionario[]
   notificacoes                Notificacao[]
   mensagensEnviadas           Mensagem[]                  @relation("enviadas")
   mensagensRecebidas          Mensagem[]                  @relation("recebidas")
@@ -460,6 +461,7 @@ model Entrega {
   nota               Decimal?  @db.Decimal(4, 2)
   correcao           String    @default("")
   corrigidaEm        DateTime? @map("corrigida_em") @db.Timestamptz(3)
+  anotacoes          Json      @default("{}") // anotações do docente nos PDF entregues { ficheiroId: [ … ] }, para voltar a editar
 
   trabalho  Trabalho          @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
   estudante ContaPortal       @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
@@ -627,16 +629,21 @@ model Questionario {
   mostrarRespostas      Boolean   @default(true) @map("mostrar_respostas") // mostrar as corretas depois de entregar
   baralhar              Boolean   @default(false) // baralhar perguntas e opções em cada tentativa
   perguntasPorTentativa Int       @default(0) @map("perguntas_por_tentativa") // sorteia N perguntas (0 = todas)
+  senha                 String    @default("") // palavra-passe para começar (dada na sala, no dia da prova)
+  porPagina             Int       @default(0) @map("por_pagina") // perguntas por página (0 = todas numa página)
+  sequencial            Boolean   @default(false) // navegação só para a frente (não se volta às páginas anteriores)
+  comentarios           Json      @default("[]") // comentário conforme a nota: [{ minimo, texto }]
   secaoId               Int?      @map("secao_id")
   visivel               Boolean   @default(true) // escondida dos estudantes
   disponivelDe          DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
   requisitos            Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
   criadoEm              DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
-  cadeira    UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
-  secao      SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
+  cadeira    UnidadeCurricular     @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  secao      SecaoCadeira?         @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   perguntas  Pergunta[]
   realizadas Tentativa[]
+  excecoes   ExcecaoQuestionario[]
 
   @@index([cadeiraId])
   @@map("questionarios")
@@ -672,6 +679,7 @@ model Tentativa {
   manuais        Json      @default("{}") // pontos dados pelo docente às dissertações { perguntaId: pontos }
   porCorrigir    Boolean   @default(false) @map("por_corrigir")
   comentario     String    @default("") // comentário do docente à tentativa
+  pagina         Int       @default(0) // página em que vai (navegação sequencial)
 
   questionario Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
   estudante    ContaPortal  @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
@@ -1334,4 +1342,22 @@ model Traducao {
   @@id([colecao, alvoId, lingua])
   @@index([estado])
   @@map("traducoes")
+}
+
+// exceção de um estudante num questionário: outro fecho, mais tempo ou mais tentativas (ex.: em missão de serviço)
+model ExcecaoQuestionario {
+  id             Int       @id @default(autoincrement())
+  questionarioId Int       @map("questionario_id")
+  estudanteId    Int       @map("estudante_id")
+  fecha          DateTime? @db.Timestamptz(3)
+  duracao        Int? // minutos por tentativa
+  tentativas     Int?
+  motivo         String    @default("")
+  criadaEm       DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  questionario Questionario @relation(fields: [questionarioId], references: [id], onDelete: Cascade)
+  estudante    ContaPortal  @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@unique([questionarioId, estudanteId])
+  @@map("excecoes_questionario")
 }

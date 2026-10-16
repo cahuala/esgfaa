@@ -10,6 +10,8 @@ export const TIPOS_PERGUNTA = {
   curta: 'Resposta curta',
   numerica: 'Numérica',
   correspondencia: 'Correspondência',
+  lacunas: 'Preencher lacunas',
+  ordenar: 'Ordenar',
   dissertacao: 'Dissertação (correção manual)',
 }
 export const TIPOS_COM_OPCOES = ['unica', 'multipla', 'vf']
@@ -32,6 +34,8 @@ const numero = (v) => {
   - curta: { respostas: ["Clausewitz", …] }      (aceites, sem contar maiúsculas nem acentos)
   - numerica: { valor, tolerancia }
   - correspondencia: { pares: [{ a, b }] }       (2 a 8 pares)
+  - lacunas: { texto: "A capital é [[Luanda]] e o rio é o [[Kwanza|Cuanza]]." }   (respostas aceites entre [[ ]], separadas por |)
+  - ordenar: { itens: ["primeiro", "segundo", …] } (2 a 10, pela ordem certa; o estudante vê-os baralhados)
   - dissertacao: { orientacao }                  (corrigida à mão)
 */
 export function validarPergunta(p = {}) {
@@ -72,10 +76,37 @@ export function validarPergunta(p = {}) {
     if (pares.some((x) => !x.a || !x.b || x.a.length > 300 || x.b.length > 300)) throw erro('opcoes', 'Cada par tem os dois lados preenchidos (até 300 caracteres).')
     if (new Set(pares.map((x) => normalizar(x.b))).size !== pares.length) throw erro('opcoes', 'As respostas da direita têm de ser diferentes.')
     opcoes = { pares }
+  } else if (tipo === 'lacunas') {
+    const textoLacunas = String(o?.texto ?? '').replace(/\s+/g, ' ').trim()
+    if (textoLacunas.length > 3000) throw erro('opcoes', 'O texto tem no máximo 3000 caracteres.')
+    const lacunas = [...textoLacunas.matchAll(/\[\[([^\]]*)\]\]/g)].map((m) => m[1].split('|').map((x) => limparTexto(x)).filter(Boolean))
+    if (lacunas.length < 1 || lacunas.length > 20) throw erro('opcoes', 'Marque de 1 a 20 lacunas com [[resposta]] no texto.')
+    if (lacunas.some((l) => !l.length || l.some((x) => x.length > 200))) throw erro('opcoes', 'Cada lacuna tem pelo menos uma resposta aceite (até 200 caracteres).')
+    opcoes = { texto: textoLacunas, lacunas }
+  } else if (tipo === 'ordenar') {
+    const itens = (Array.isArray(o?.itens) ? o.itens : []).map((x) => limparTexto(x)).filter(Boolean)
+    if (itens.length < 2 || itens.length > 10) throw erro('opcoes', 'Indique de 2 a 10 itens, pela ordem certa.')
+    if (itens.some((x) => x.length > 300)) throw erro('opcoes', 'Cada item tem até 300 caracteres.')
+    if (new Set(itens.map(normalizar)).size !== itens.length) throw erro('opcoes', 'Os itens têm de ser diferentes.')
+    opcoes = { itens }
   } else {
     opcoes = { orientacao: limparTexto(o?.orientacao).slice(0, 1000) }
   }
   return { tipo, enunciado, pontos: Math.round(pontos * 100) / 100, opcoes }
+}
+
+// texto de uma pergunta de lacunas em partes: [{ texto }, { lacuna: 0 }, { texto }, …] (sem as respostas)
+export function partesLacunas(texto) {
+  const partes = []
+  let n = 0
+  let ultimo = 0
+  for (const m of String(texto || '').matchAll(/\[\[([^\]]*)\]\]/g)) {
+    if (m.index > ultimo) partes.push({ texto: texto.slice(ultimo, m.index) })
+    partes.push({ lacuna: n++ })
+    ultimo = m.index + m[0].length
+  }
+  if (ultimo < String(texto || '').length) partes.push({ texto: texto.slice(ultimo) })
+  return partes
 }
 
 /*
@@ -101,6 +132,17 @@ export function limparRespostas(respostas, perguntas) {
         return Number.isInteger(x) && x >= 0 && x < n ? x : null
       })
       if (mapa.some((x) => x !== null)) limpas[p.id] = mapa
+    } else if (p.tipo === 'lacunas') {
+      if (!Array.isArray(v)) continue
+      const n = p.opcoes.lacunas.length
+      const textos = Array.from({ length: n }, (_, i) => String(v[i] ?? '').slice(0, 200))
+      if (textos.some((x) => x.trim())) limpas[p.id] = textos
+    } else if (p.tipo === 'ordenar') {
+      // a ordem dada: índices originais dos itens, do primeiro ao último (tem de ser uma permutação completa)
+      const n = p.opcoes.itens.length
+      if (!Array.isArray(v) || v.length !== n) continue
+      const ordem = v.map(Number)
+      if (ordem.every((x) => Number.isInteger(x) && x >= 0 && x < n) && new Set(ordem).size === n) limpas[p.id] = ordem
     } else {
       const t = String(Array.isArray(v) ? v[0] ?? '' : v).slice(0, p.tipo === 'dissertacao' ? 20_000 : 300)
       if (t.trim()) limpas[p.id] = t
@@ -123,6 +165,13 @@ function pontuar(p, dada) {
     const n = numero(dada)
     return n !== null && Math.abs(n - p.opcoes.valor) <= p.opcoes.tolerancia + 1e-9 ? pts : 0
   }
+  // lacunas: crédito parcial por lacuna certa (sem contar maiúsculas nem acentos)
+  if (p.tipo === 'lacunas') {
+    const certas = p.opcoes.lacunas.filter((aceites, i) => aceites.some((a) => normalizar(a) === normalizar(dada[i]))).length
+    return arred((pts * certas) / p.opcoes.lacunas.length)
+  }
+  // ordenar: crédito parcial por item no lugar certo
+  if (p.tipo === 'ordenar') return arred((pts * dada.filter((x, i) => x === i).length) / p.opcoes.itens.length)
   // correspondência: crédito parcial por par certo
   const n = p.opcoes.pares.length
   const certos = dada.filter((x, i) => x === i).length
@@ -162,7 +211,37 @@ function solucao(p) {
   if (p.tipo === 'curta') return p.opcoes.respostas
   if (p.tipo === 'numerica') return { valor: p.opcoes.valor, tolerancia: p.opcoes.tolerancia }
   if (p.tipo === 'correspondencia') return p.opcoes.pares.map((_, i) => i)
+  if (p.tipo === 'lacunas') return p.opcoes.lacunas
+  if (p.tipo === 'ordenar') return p.opcoes.itens
   return null
+}
+
+// comentário conforme a nota: o do maior mínimo que a nota atinge ([{ minimo: 0, texto }, { minimo: 14, texto }])
+export function comentarioDaNota(comentarios, nota) {
+  if (nota === null || nota === undefined || !Array.isArray(comentarios)) return ''
+  const aplicaveis = comentarios.filter((c) => Number(c.minimo) <= nota + 1e-9).sort((a, b) => b.minimo - a.minimo)
+  return aplicaveis[0]?.texto || ''
+}
+
+export function validarComentarios(lista) {
+  if (!Array.isArray(lista)) throw erro('comentarios', 'Comentários inválidos.')
+  if (lista.length > 10) throw erro('comentarios', 'No máximo 10 comentários por nota.')
+  return lista.map((c) => {
+    const minimo = Number(String(c?.minimo ?? '').replace(',', '.'))
+    const texto = limparTexto(c?.texto).slice(0, 500)
+    if (!Number.isFinite(minimo) || minimo < 0 || minimo > 20) throw erro('comentarios', 'A nota mínima de cada comentário vai de 0 a 20.')
+    if (!texto) throw erro('comentarios', 'Cada comentário tem texto.')
+    return { minimo: Math.round(minimo * 100) / 100, texto }
+  }).sort((a, b) => a.minimo - b.minimo)
+}
+
+// perguntas de uma tentativa divididas em páginas ([[ids da página 1], [ids da página 2], …])
+export function paginasDaTentativa(perguntas, porPagina) {
+  const ids = perguntas.map((p) => p.id)
+  if (!porPagina || porPagina <= 0) return [ids]
+  const r = []
+  for (let i = 0; i < ids.length; i += porPagina) r.push(ids.slice(i, i + porPagina))
+  return r.length ? r : [[]]
 }
 
 // ---------- ordem aleatória (perguntas, opções e um subconjunto por tentativa) ----------
@@ -190,9 +269,15 @@ export function sortearTentativa(q, perguntas, aleatorio = Math.random) {
   const permutacoes = {}
   for (const p of perguntas) {
     if (!lista.includes(p.id)) continue
-    const n = TIPOS_COM_OPCOES.includes(p.tipo) && p.tipo !== 'vf' ? p.opcoes.length : p.tipo === 'correspondencia' ? p.opcoes.pares.length : 0
-    // a correspondência baralha sempre a coluna da direita (senão a resposta seria óbvia)
-    if (n && (q.baralhar || p.tipo === 'correspondencia')) permutacoes[p.id] = baralhar([...Array(n).keys()], aleatorio)
+    const n = TIPOS_COM_OPCOES.includes(p.tipo) && p.tipo !== 'vf' ? p.opcoes.length : p.tipo === 'correspondencia' ? p.opcoes.pares.length : p.tipo === 'ordenar' ? p.opcoes.itens.length : 0
+    // a correspondência baralha sempre a coluna da direita e o ordenar os itens (senão a resposta seria óbvia)
+    const sempre = p.tipo === 'correspondencia' || p.tipo === 'ordenar'
+    if (n && (q.baralhar || sempre)) {
+      let perm = baralhar([...Array(n).keys()], aleatorio)
+      for (let k = 0; sempre && n > 1 && k < 5 && perm.every((x, i) => x === i); k++) perm = baralhar([...Array(n).keys()], aleatorio)
+      if (sempre && n > 1 && perm.every((x, i) => x === i)) perm = [...perm.slice(1), perm[0]] // nunca já pela ordem certa
+      permutacoes[p.id] = perm
+    }
   }
   return { ordem: lista, permutacoes }
 }
@@ -211,6 +296,14 @@ export function estadoQuestionario(q, agora) {
   if (q.fecha && agora > new Date(q.fecha)) return 'fechado'
   return 'aberto'
 }
+
+// o questionário para um estudante, com a sua exceção (outro fecho, mais tempo, mais tentativas)
+export const comExcecao = (q, excecao) => (excecao ? {
+  ...q,
+  fecha: excecao.fecha ?? q.fecha,
+  duracao: excecao.duracao ?? q.duracao,
+  tentativas: excecao.tentativas ?? q.tentativas,
+} : q)
 
 // fim da tentativa: o que acontecer primeiro entre a duração e o fecho do questionário
 export function limiteTentativa(q, inicio) {

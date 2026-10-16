@@ -220,6 +220,8 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/perguntas/:id', validar({ params: pId, body: E.pergunta }), async (req, res) => res.json(await e.questionarios.atualizarPergunta(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/perguntas/:id', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.apagarPergunta(ctx(req), req.dados.params.id)))
 
+  r.put('/questionarios/:id/excecoes', validar({ params: pId, body: E.excecaoQuestionario }), async (req, res) => res.json(await e.questionarios.guardarExcecao(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/questionarios/:id/excecoes/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }) }), async (req, res) => { await e.questionarios.apagarExcecao(ctx(req), req.dados.params.id, req.dados.params.estudanteId); res.status(204).end() })
   r.get('/questionarios/:id/estatisticas', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.estatisticas(ctx(req), req.dados.params.id)))
   r.get('/tentativas/:id/correcao', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.tentativaParaCorrigir(ctx(req), req.dados.params.id)))
   r.put('/tentativas/:id/correcao', validar({ params: pId, body: E.correcaoTentativa }), async (req, res) => res.json(await e.questionarios.corrigirTentativa(ctx(req), req.dados.params.id, req.dados.body)))
@@ -230,7 +232,8 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/questionarios/:id/do-banco', validar({ params: pId, body: E.doBanco }), async (req, res) => res.json(await e.questionarios.juntarDoBanco(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.get('/questionarios/:id', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.verQuestionario(ctx(req), req.dados.params.id)))
-  r.post('/questionarios/:id/tentativas', validar({ params: pId }), async (req, res) => res.status(201).json(await e.questionarios.iniciar(ctx(req), req.dados.params.id)))
+  r.post('/questionarios/:id/tentativas', validar({ params: pId, body: E.iniciarQuestionario }), async (req, res) => res.status(201).json(await e.questionarios.iniciar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/tentativas/:id/pagina', validar({ params: pId, body: E.avancarPagina }), async (req, res) => res.json(await e.questionarios.avancar(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/tentativas/:id/respostas', validar({ params: pId, body: E.respostasQuestionario }), async (req, res) => res.json(await e.questionarios.guardarRespostas(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.post('/tentativas/:id/entrega', validar({ params: pId, body: E.respostasQuestionario }), async (req, res) => res.json(await e.questionarios.entregar(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.get('/tentativas/:id', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.revisao(ctx(req), req.dados.params.id)))

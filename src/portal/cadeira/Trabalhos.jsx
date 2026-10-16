@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { abrirFicheiro, api, enviarComProgresso } from '../api'
+import { abrirFicheiro, api, carregarFicheiro, enviarComProgresso } from '../api'
 import ZonaUpload from '../ZonaUpload'
+import VerFicheiro from '../VerFicheiro'
+import AnotarPdf from '../corrigir/AnotarPdf'
+import { gerarPdfCorrigido } from '../corrigir/gerarPdf'
 import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
 import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
@@ -127,7 +130,7 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
               <div className="d-flex align-items-center gap-2 mb-1"><i className="fa fa-check-double text-success" /><b>{tx('Correção')}</b>{e.nota !== null && <span className="badge bg-success fs-12px">{nota(e.nota)} {tx('valores')}</span>}</div>
               {t.grelha?.length > 0 && Object.keys(e.grelha || {}).length > 0 && <div className="my-2"><TabelaGrelha grelha={t.grelha} pontos={e.grelha} /></div>}
               {e.correcao && <p className="p-texto-pre mb-1">{e.correcao}</p>}
-              {e.correcaoFicheiroId && <button type="button" className="btn btn-sm btn-white" onClick={() => baixar(e.correcaoFicheiroId, `Correção - ${t.titulo}`)}><i className="fa fa-download me-1" />{tx('Ficheiro corrigido pelo docente')}</button>}
+              {e.correcaoFicheiroId && <CorrecaoDoDocente id={e.correcaoFicheiroId} nome={tx('Correção - {0}', { 0: t.titulo })} baixar={baixar} />}
             </div>
           ) : null}
         </div>
@@ -241,11 +244,28 @@ function Entregas({ trabalho, avisar, baixar }) {
   )
 }
 
+// estudante: o ficheiro corrigido pelo docente, visto no portal (o PDF anotado abre no leitor)
+function CorrecaoDoDocente({ id, nome, baixar }) {
+  const [ver, setVer] = useState(false)
+  return (
+    <div className="mt-2">
+      <div className="d-flex gap-2 flex-wrap">
+        <button type="button" className={`btn btn-sm ${ver ? 'btn-dark' : 'btn-theme'}`} onClick={() => setVer(!ver)} aria-expanded={ver}><i className={`fa ${ver ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{ver ? tx('Esconder a correção') : tx('Ver o trabalho corrigido')}</button>
+        <button type="button" className="btn btn-sm btn-white" onClick={() => baixar(id, nome)}><i className="fa fa-download me-1" />{tx('Descarregar')}</button>
+      </div>
+      {ver && <div className="mt-2"><VerFicheiro ficheiro={{ id, nome }} titulo={nome} falhou={() => {}} /></div>}
+    </div>
+  )
+}
+
 function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reverificar, aberta, alternar, baixar, avisar, recarregar }) {
   const [notaManual, setNotaManual] = useState(entrega?.nota ?? '')
   const [pontos, setPontos] = useState(entrega?.grelha || {})
   const [correcao, setCorrecao] = useState(entrega?.correcao || '')
   const [ficheiroCorrecao, setFicheiroCorrecao] = useState([])
+  // correção no navegador: anotações por ficheiro PDF e o ficheiro aberto no editor
+  const [anotacoes, setAnotacoes] = useState(entrega?.anotacoes || {})
+  const [aAnotar, setAAnotar] = useState(null)
   const [prazo, setPrazo] = useState(paraLocal(prorrogacao?.prazo))
   const [motivo, setMotivo] = useState(prorrogacao?.motivo || '')
   const [aGuardar, setAGuardar] = useState(false)
@@ -259,6 +279,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
       if (comGrelha) fd.append('grelha', JSON.stringify(pontos))
       else fd.append('nota', String(notaManual))
       if (ficheiroCorrecao[0]) fd.append('ficheiro', ficheiroCorrecao[0].ficheiro)
+      fd.append('anotacoes', JSON.stringify(anotacoes))
       await enviarComProgresso(`/entregas/${entrega.id}`, fd, { metodo: 'PUT' })
       avisar({ texto: tx('Correção de {0} guardada. O estudante foi avisado.', { 0: estudante.nome }) })
       setFicheiroCorrecao([])
@@ -268,6 +289,24 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
     } finally {
       setAGuardar(false)
     }
+  }
+
+  // gera o PDF corrigido com as anotações de todos os PDF da entrega e junta-o à correção
+  async function concluirAnotacoes(ficheiro, lista) {
+    const todas = { ...anotacoes, [ficheiro.id]: lista }
+    const pdfs = entrega.ficheiros.filter((f) => f.tipo === 'application/pdf' && todas[f.id]?.length)
+    const partes = []
+    for (const f of pdfs) partes.push({ bytes: await (await carregarFicheiro(f.id)).bytes(), anotacoes: todas[f.id] })
+    setAnotacoes(todas)
+    if (partes.length) {
+      const pdf = await gerarPdfCorrigido(partes)
+      const nome = pdfs.length === 1 ? `Correção - ${pdfs[0].nome.replace(/\.pdf$/i, '')}.pdf` : `Correção - ${estudante.nome}.pdf`
+      setFicheiroCorrecao([{ ficheiro: new File([pdf], nome, { type: 'application/pdf' }), progresso: 0, erro: '' }])
+      avisar({ texto: tx('PDF corrigido pronto. Guarde a correção para o enviar a {0}.', { 0: estudante.nome }) })
+    } else {
+      setFicheiroCorrecao([])
+    }
+    setAAnotar(null)
   }
 
   async function prorrogar(retirar) {
@@ -296,6 +335,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
         <td className="text-center fw-bold">{entrega?.nota !== null && entrega?.nota !== undefined ? nota(entrega.nota) : '—'}</td>
         <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? tx('Fechar') : tx('Ver e corrigir')) : (aberta ? tx('Fechar') : tx('Prazo'))}</button></td>
       </tr>
+      {aAnotar && <tr className="d-none"><td><AnotarPdf ficheiro={aAnotar} iniciais={anotacoes[aAnotar.id] || []} guardar={(lista) => concluirAnotacoes(aAnotar, lista)} fechar={() => setAAnotar(null)} /></td></tr>}
       {aberta && (
         <tr>
           <td colSpan={5} className="bg-light">
@@ -304,6 +344,12 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
                 <div className="col-lg-6">
                   <h4 className="h6 fw-bold">{tx('Entrega')}</h4>
                   {entrega.ficheiros.length > 0 && <ListaFicheiros ficheiros={entrega.ficheiros} baixar={baixar} />}
+                  {entrega.ficheiros.filter((f) => f.tipo === 'application/pdf').map((f) => (
+                    <button key={f.id} type="button" className="btn btn-sm btn-theme me-2 mb-2" onClick={() => setAAnotar(f)}>
+                      <i className="fa fa-pen-fancy me-1" />{tx('Corrigir no PDF')}{entrega.ficheiros.length > 1 && `: ${f.nome}`}
+                      {anotacoes[f.id]?.length > 0 && <span className="badge bg-white text-dark ms-2">{anotacoes[f.id].length}</span>}
+                    </button>
+                  ))}
                   {entrega.texto && <div className="p-texto-entregue mb-2">{entrega.texto}</div>}
                   {entrega.comentario && <div className="small"><b>{tx('Comentário do estudante:')}</b> “{entrega.comentario}”</div>}
                   <div className="d-flex align-items-center gap-2 mt-2 small">

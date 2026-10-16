@@ -1,4 +1,5 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
+import { validarAnotacoes } from '../../../dominio/academico/atividades/anotacoes.js'
 import { entregaAtrasada, estadoPrazo, prazoDe, TIPOS_ENTREGA } from '../../../dominio/academico/atividades/trabalhos.js'
 import { avaliarGrelha, validarGrelha } from '../../../dominio/academico/avaliacao/grelha.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
@@ -179,7 +180,7 @@ export class ServicoTrabalhos {
   }
 
   // correção: nota (ou pontos da grelha), comentário e, se quiser, um ficheiro corrigido para o estudante
-  async corrigir(ctx, entregaId, { nota, correcao, grelha, removerFicheiro }, ficheiro) {
+  async corrigir(ctx, entregaId, { nota, correcao, grelha, removerFicheiro, anotacoes }, ficheiro) {
     let e
     let t
     let cadeira
@@ -201,6 +202,8 @@ export class ServicoTrabalhos {
       } else {
         dados.nota = validarNota(nota)
       }
+      // anotações feitas no navegador sobre os PDF entregues (o PDF anotado chega como ficheiro de correção)
+      if (anotacoes !== undefined) dados.anotacoes = validarAnotacoes(anotacoes, e.ficheiros.map((f) => f.id))
     } catch (erro) {
       if (ficheiro) this.privados.apagar(ficheiro.caminho)
       throw erro

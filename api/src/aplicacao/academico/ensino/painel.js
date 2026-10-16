@@ -1,5 +1,5 @@
 import { assiduidade } from '../../../dominio/academico/atividades/presencas.js'
-import { estadoQuestionario } from '../../../dominio/academico/atividades/questionarios.js'
+import { comExcecao, estadoQuestionario } from '../../../dominio/academico/atividades/questionarios.js'
 import { entregaAtrasada, estadoPrazo, prazoDe } from '../../../dominio/academico/atividades/trabalhos.js'
 import { faseWorkshop } from '../../../dominio/academico/atividades/workshops.js'
 import { notasVisiveis } from '../../../dominio/academico/avaliacao/resultado.js'
@@ -63,7 +63,9 @@ export class ServicoPainel {
     const visivel = (tipo) => (a) => eDocente || (acessos[`${tipo}-${a.id}`] && !acessos[`${tipo}-${a.id}`].escondida)
     const materiais = todosMateriais.filter(visivel('material')).map(comAcesso('material'))
     const trabalhos = todosTrabalhos.filter(visivel('trabalho')).map(comAcesso('trabalho'))
-    const questionarios = todosQuestionarios.filter(visivel('questionario')).map(comAcesso('questionario')).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
+    // com a exceção do estudante (outro fecho, mais tempo ou tentativas), se a tiver
+    const excecoes = eDocente ? {} : await this.recursos.excecoesDoEstudante(conta.id, todosQuestionarios.map((q) => q.id))
+    const questionarios = todosQuestionarios.filter(visivel('questionario')).map(comAcesso('questionario')).map((q) => comExcecao(q, excecoes[q.id])).map((q) => ({ ...q, estado: estadoQuestionario(q, agora) }))
     // inquéritos: sem as perguntas na lista; o estudante não vê quantos responderam
     const respondidos = eDocente ? new Set() : await this.inqueritos.respondidos(conta.id, todosInqueritos.map((i) => i.id))
     const inqueritos = todosInqueritos.filter(visivel('inquerito')).map(comAcesso('inquerito')).map(({ perguntas, respostas, ...i }) => ({

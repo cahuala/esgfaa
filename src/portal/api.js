@@ -65,12 +65,17 @@ export async function urlFicheiro(caminho, { ver = true } = {}) {
   return URL.createObjectURL(await r.blob())
 }
 
-// ficheiro de um material para o mostrar na página (blob:), com o progresso da descarga (0 a 1)
+// ficheiro para o mostrar na página: { url (blob:), tipo, bytes() }, com o progresso da descarga (0 a 1)
 export async function carregarFicheiro(id, aoProgresso) {
+  const blob = await blobDoFicheiro(id, aoProgresso)
+  return { url: URL.createObjectURL(blob), tipo: blob.type, bytes: async () => new Uint8Array(await blob.arrayBuffer()) }
+}
+
+async function blobDoFicheiro(id, aoProgresso) {
   const r = await fetch(`${API_URL}/api/portal/ficheiros/${id}?ver=1`, { headers: { Authorization: `Bearer ${lerToken()}` } })
   if (!r.ok) throw new Error(r.status === 404 ? tx('Ficheiro não encontrado.') : tx('Erro {0}', { 0: r.status }))
   const total = Number(r.headers.get('content-length')) || 0
-  if (!r.body || !total || !aoProgresso) return URL.createObjectURL(await r.blob())
+  if (!r.body || !total || !aoProgresso) return r.blob()
   const leitor = r.body.getReader()
   const partes = []
   let recebidos = 0
@@ -81,7 +86,7 @@ export async function carregarFicheiro(id, aoProgresso) {
     recebidos += value.length
     aoProgresso(Math.min(1, recebidos / total))
   }
-  return URL.createObjectURL(new Blob(partes, { type: r.headers.get('content-type') || '' }))
+  return new Blob(partes, { type: r.headers.get('content-type') || '' })
 }
 
 export async function abrirCaminho(caminho, { nome = 'ficheiro', ver = false } = {}) {

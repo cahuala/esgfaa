@@ -1,5 +1,5 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
-import { corrigir, dentroDoTempo, estadoQuestionario, estatisticas, limiteTentativa, limparRespostas, perguntasDaTentativa, sortearTentativa, TIPOS_COM_OPCOES, validarPergunta } from '../../../dominio/academico/atividades/questionarios.js'
+import { comentarioDaNota, comExcecao, corrigir, dentroDoTempo, estadoQuestionario, estatisticas, limiteTentativa, limparRespostas, paginasDaTentativa, partesLacunas, perguntasDaTentativa, sortearTentativa, TIPOS_COM_OPCOES, validarComentarios, validarPergunta } from '../../../dominio/academico/atividades/questionarios.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { quem } from '../partilhado/autor.js'
 
@@ -39,6 +39,16 @@ export class ServicoQuestionarios {
       if (!Number.isInteger(n) || n < 0 || n > 200) throw new ErroValidacao('Perguntas por tentativa de 0 a 200 (0 = todas).', { campo: 'perguntasPorTentativa' })
       r.perguntasPorTentativa = n
     }
+    // provas: palavra-passe, páginas, navegação só para a frente e comentário conforme a nota
+    if (d.senha !== undefined) r.senha = texto(d.senha, 'senha', 'Palavra-passe', { max: 40, obrigatorio: false })
+    if (d.porPagina !== undefined) {
+      const n = Number(d.porPagina || 0)
+      if (!Number.isInteger(n) || n < 0 || n > 50) throw new ErroValidacao('Perguntas por página de 0 a 50 (0 = todas numa página).', { campo: 'porPagina' })
+      r.porPagina = n
+    }
+    if (d.sequencial !== undefined) r.sequencial = Boolean(d.sequencial)
+    if (d.comentarios !== undefined) r.comentarios = validarComentarios(d.comentarios)
+    if ((r.sequencial ?? atual.sequencial) && !(r.porPagina ?? atual.porPagina)) throw new ErroValidacao('A navegação só para a frente precisa de perguntas por página (por exemplo, 1).', { campo: 'porPagina' })
     const abre = r.abre !== undefined ? r.abre : atual.abre && new Date(atual.abre)
     const fecha = r.fecha !== undefined ? r.fecha : atual.fecha && new Date(atual.fecha)
     if (abre && fecha && abre >= fecha) throw new ErroValidacao('O fecho tem de ser depois da abertura.', { campo: 'fecha' })
@@ -63,8 +73,11 @@ export class ServicoQuestionarios {
     const c = await this.acesso.acessivel(ctx.conta, cadeiraId)
     const agora = this.relogio.agora()
     if (ctx.conta.tipo === 'docente') return this.recursos.questionarios(c.id)
-    const lista = await this.recursos.questionarios(c.id, { soPublicados: true })
-    const minhas = await this.recursos.tentativasDoEstudante(ctx.conta.id, lista.map((q) => q.id))
+    const publicados = await this.recursos.questionarios(c.id, { soPublicados: true })
+    const minhas = await this.recursos.tentativasDoEstudante(ctx.conta.id, publicados.map((q) => q.id))
+    const excecoes = await this.recursos.excecoesDoEstudante(ctx.conta.id, publicados.map((q) => q.id))
+    // (a lista nunca traz a palavra-passe, só se o questionário a pede)
+    const lista = publicados.map((q) => comExcecao(q, excecoes[q.id]))
     return lista.map((q) => {
       const t = minhas.filter((x) => x.questionarioId === q.id && x.entregueEm)
       const notas = t.map((x) => x.nota).filter((n) => n !== null)
@@ -108,8 +121,45 @@ export class ServicoQuestionarios {
     const tentativas = await this.recursos.tentativas(q.id)
     return {
       ...q,
+      excecoes: await this.recursos.excecoes(q.id),
       resultados: tentativas.filter((t) => t.entregueEm).map((t) => ({ id: t.id, estudante: t.estudante, numero: t.numero, nota: t.nota, entregueEm: t.entregueEm, porCorrigir: t.porCorrigir })),
     }
+  }
+
+  /*
+    Exceção para um estudante (como as "substituições" do Moodle): outro fecho, mais tempo por
+    tentativa ou mais tentativas — por exemplo, para quem estava em missão de serviço.
+  */
+  async guardarExcecao(ctx, questionarioId, { estudanteId, fecha, duracao, tentativas, motivo }) {
+    const q = await this.#questionarioDoDocente(ctx, questionarioId)
+    const id = Number(estudanteId)
+    if (!(await this.academico.estudantesDaCadeira(q.cadeira)).some((e) => e.id === id)) throw new ErroValidacao('O estudante não pertence à turma.', { campo: 'estudanteId' })
+    const dados = { questionarioId: q.id, estudanteId: id, fecha: data(fecha), duracao: null, tentativas: null, motivo: texto(motivo, 'motivo', 'Motivo', { max: 300, obrigatorio: false }) }
+    if (duracao !== undefined && duracao !== null && duracao !== '') {
+      const n = Number(duracao)
+      if (!Number.isInteger(n) || n < 0 || n > 600) throw new ErroValidacao('Duração de 0 a 600 minutos (0 = sem limite).', { campo: 'duracao' })
+      dados.duracao = n
+    }
+    if (tentativas !== undefined && tentativas !== null && tentativas !== '') {
+      const n = Number(tentativas)
+      if (!Number.isInteger(n) || n < 1 || n > 10) throw new ErroValidacao('Tentativas de 1 a 10.', { campo: 'tentativas' })
+      dados.tentativas = n
+    }
+    if (!dados.fecha && dados.duracao === null && dados.tentativas === null) throw new ErroValidacao('Indique outro fecho, outra duração ou mais tentativas.', { campo: 'fecha' })
+    if (dados.fecha && q.abre && dados.fecha <= new Date(q.abre)) throw new ErroValidacao('O fecho tem de ser depois da abertura.', { campo: 'fecha' })
+    const e = await this.recursos.guardarExcecao(dados)
+    await this.auditoria.registar(ctx, { acao: 'excecao_questionario', colecao: 'questionarios', alvoId: q.id, alvoTitulo: q.titulo, detalhes: { estudanteId: id }, utilizador: quem(ctx.conta) })
+    await this.notificacoes?.notificar([id], {
+      tipo: 'questionario', titulo: `Condições especiais: ${q.titulo}`,
+      texto: [dados.fecha && `fecha ${dados.fecha.toLocaleString('pt-PT', { timeZone: 'Africa/Luanda', dateStyle: 'short', timeStyle: 'short' })}`, dados.duracao !== null && `${dados.duracao || 'sem limite de'} min`, dados.tentativas && `${dados.tentativas} tentativa(s)`].filter(Boolean).join(' · '),
+      ligacao: `/cadeiras/${q.cadeira.id}?atividade=questionario-${q.id}`,
+    })
+    return e
+  }
+
+  async apagarExcecao(ctx, questionarioId, estudanteId) {
+    const q = await this.#questionarioDoDocente(ctx, questionarioId)
+    await this.recursos.apagarExcecao(q.id, Number(estudanteId))
   }
 
   async criarPergunta(ctx, questionarioId, dados) {
@@ -226,7 +276,7 @@ export class ServicoQuestionarios {
     if (!q || !q.publicado) throw new NaoEncontrado('Questionário não encontrado.')
     const cadeira = await this.acesso.acessivel(ctx.conta, q.cadeiraId).catch(() => { throw new NaoEncontrado('Questionário não encontrado.') })
     await this.disponibilidade?.exigir(cadeira.id, ctx.conta.id, 'questionario', q.id)
-    return { ...q, cadeira }
+    return { ...comExcecao(q, await this.recursos.excecao(q.id, ctx.conta.id)), cadeira }
   }
 
   /*
@@ -242,6 +292,9 @@ export class ServicoQuestionarios {
       // correspondência: as escolhas vão numeradas pela posição mostrada (o índice original revelaria a solução)
       if (p.tipo === 'correspondencia') return { ...base, itens: p.opcoes.pares.map((x) => x.a), escolhas: ordenar(p.opcoes.pares.map((x) => x.b), p.id).map((texto, j) => ({ i: j, texto })) }
       if (p.tipo === 'dissertacao') return { ...base, orientacao: p.opcoes.orientacao || '' }
+      if (p.tipo === 'lacunas') return { ...base, partes: partesLacunas(p.opcoes.texto) }
+      // ordenar: os itens baralhados, numerados pela posição mostrada
+      if (p.tipo === 'ordenar') return { ...base, itens: ordenar(p.opcoes.itens, p.id).map((texto, j) => ({ i: j, texto })) }
       return base
     })
   }
@@ -251,7 +304,7 @@ export class ServicoQuestionarios {
     const r = { ...(respostas || {}) }
     for (const p of q.perguntas) {
       const perm = t.permutacoes?.[p.id]
-      if (p.tipo === 'correspondencia' && perm && Array.isArray(r[p.id])) r[p.id] = r[p.id].map((j) => (j === null || j === undefined ? null : perm[j] ?? null))
+      if ((p.tipo === 'correspondencia' || p.tipo === 'ordenar') && perm && Array.isArray(r[p.id])) r[p.id] = r[p.id].map((j) => (j === null || j === undefined ? null : perm[j] ?? null))
     }
     return r
   }
@@ -260,7 +313,7 @@ export class ServicoQuestionarios {
     const r = { ...(respostas || {}) }
     for (const p of q.perguntas) {
       const perm = t.permutacoes?.[p.id]
-      if (p.tipo === 'correspondencia' && perm && Array.isArray(r[p.id])) r[p.id] = r[p.id].map((i) => (i === null || i === undefined ? null : perm.indexOf(i)))
+      if ((p.tipo === 'correspondencia' || p.tipo === 'ordenar') && perm && Array.isArray(r[p.id])) r[p.id] = r[p.id].map((i) => (i === null || i === undefined ? null : perm.indexOf(i)))
     }
     return r
   }
@@ -271,11 +324,13 @@ export class ServicoQuestionarios {
     // na correspondência, a revisão mostra os textos (as escolhas apareciam baralhadas)
     const detalhe = r.detalhe.map((d) => {
       const p = perguntas.find((x) => x.id === d.perguntaId)
+      if (p?.tipo === 'ordenar') return { ...d, textos: { certas: p.opcoes.itens, dadas: (d.dada || []).map((i) => p.opcoes.itens[i] ?? null) } }
       if (p?.tipo !== 'correspondencia') return d
       return { ...d, textos: { certas: p.opcoes.pares.map((x) => x.b), dadas: (d.dada || []).map((i) => (i === null ? null : p.opcoes.pares[i]?.b ?? null)) } }
     })
     return {
       nota: r.nota, obtidos: r.obtidos, total: r.total, porCorrigir: r.porCorrigir, comentario: t.comentario || '',
+      comentarioNota: comentarioDaNota(q.comentarios, r.nota),
       ...(q.mostrarRespostas && !r.porCorrigir ? { correcao: detalhe } : {}),
     }
   }
@@ -303,21 +358,31 @@ export class ServicoQuestionarios {
       id: q.id, titulo: q.titulo, descricao: q.descricao, abre: q.abre, fecha: q.fecha, duracao: q.duracao, tentativas: q.tentativas,
       numeroPerguntas: nPerguntas, pontos: q.perguntasPorTentativa > 0 ? null : q.perguntas.reduce((s, p) => s + p.pontos, 0),
       estado: estadoQuestionario(q, this.relogio.agora()),
+      pedeSenha: Boolean(q.senha), porPagina: q.porPagina, sequencial: q.sequencial,
       feitas: feitas.map((t) => ({ id: t.id, numero: t.numero, nota: t.nota, entregueEm: t.entregueEm, porCorrigir: t.porCorrigir })),
-      emCurso: emCurso ? { ...emCurso, respostas: this.#paraMostrado(q, emCurso, emCurso.respostas), perguntas: this.#semSolucao(q, emCurso) } : null,
+      emCurso: emCurso ? this.#emCurso(q, emCurso) : null,
     }
   }
 
-  async iniciar(ctx, id) {
+  // a tentativa em curso como o estudante a vê: perguntas sem solução, páginas e a página onde vai
+  #emCurso(q, t) {
+    const { respostas, ordem, permutacoes, manuais, ...resto } = t
+    void ordem; void permutacoes; void manuais
+    const paginas = paginasDaTentativa(perguntasDaTentativa(q.perguntas, t), q.porPagina)
+    return { ...resto, respostas: this.#paraMostrado(q, t, respostas), perguntas: this.#semSolucao(q, t), paginas, porPagina: q.porPagina, sequencial: q.sequencial }
+  }
+
+  async iniciar(ctx, id, { senha } = {}) {
     const q = await this.#questionarioDoEstudante(ctx, id)
     const agora = this.relogio.agora()
     await this.#fecharExpiradas(q, await this.recursos.tentativas(q.id, ctx.conta.id))
     const tentativas = await this.recursos.tentativas(q.id, ctx.conta.id)
     const emCurso = tentativas.find((t) => !t.entregueEm)
-    if (emCurso) return { ...emCurso, respostas: this.#paraMostrado(q, emCurso, emCurso.respostas), perguntas: this.#semSolucao(q, emCurso) }
+    if (emCurso) return this.#emCurso(q, emCurso)
     const estado = estadoQuestionario(q, agora)
     if (estado !== 'aberto') throw new Conflito(estado === 'em_breve' ? 'O questionário ainda não abriu.' : 'O questionário já fechou.')
     if (tentativas.length >= q.tentativas) throw new Conflito('Já usou todas as tentativas.')
+    if (q.senha && String(senha ?? '') !== q.senha) throw new ErroValidacao(senha ? 'A palavra-passe não está certa.' : 'Este questionário pede a palavra-passe dada pelo docente.', { campo: 'senha' })
     let t
     try {
       t = await this.recursos.iniciarTentativa({
@@ -327,7 +392,7 @@ export class ServicoQuestionarios {
     } catch {
       throw new Conflito('A tentativa já foi iniciada noutra janela. Recarregue a página.')
     }
-    return { ...t, perguntas: this.#semSolucao(q, t) }
+    return this.#emCurso(q, t)
   }
 
   async #minhaTentativa(ctx, tentativaId) {
@@ -343,8 +408,40 @@ export class ServicoQuestionarios {
     const { t, q } = await this.#minhaTentativa(ctx, tentativaId)
     if (t.entregueEm) throw new Conflito('Esta tentativa já foi entregue.')
     if (!dentroDoTempo(t, this.relogio.agora())) throw new Conflito('O tempo terminou.')
-    await this.recursos.guardarRespostas(t.id, limparRespostas(this.#paraOriginal(q, t, respostas), perguntasDaTentativa(q.perguntas, t)))
+    await this.recursos.guardarRespostas(t.id, this.#respostasPermitidas(q, t, respostas))
     return { guardado: true }
+  }
+
+  /*
+    Respostas que se aceitam agora: todas; na navegação só para a frente, só as da página atual
+    (as das páginas anteriores ficam como estavam quando o estudante avançou).
+  */
+  #respostasPermitidas(q, t, respostas) {
+    const perguntas = perguntasDaTentativa(q.perguntas, t)
+    const novas = limparRespostas(this.#paraOriginal(q, t, respostas), perguntas)
+    if (!q.sequencial) return novas
+    const daPagina = new Set(paginasDaTentativa(perguntas, q.porPagina)[t.pagina] || [])
+    const r = { ...t.respostas }
+    for (const p of perguntas) {
+      if (!daPagina.has(p.id)) continue
+      if (p.id in novas) r[p.id] = novas[p.id]
+      else delete r[p.id]
+    }
+    return r
+  }
+
+  // navegação sequencial: passa à página seguinte (grava as respostas da atual) e não volta atrás
+  async avancar(ctx, tentativaId, { pagina, respostas }) {
+    const { t, q } = await this.#minhaTentativa(ctx, tentativaId)
+    if (t.entregueEm) throw new Conflito('Esta tentativa já foi entregue.')
+    if (!dentroDoTempo(t, this.relogio.agora())) throw new Conflito('O tempo terminou.')
+    const total = paginasDaTentativa(perguntasDaTentativa(q.perguntas, t), q.porPagina).length
+    const para = Number(pagina)
+    if (!Number.isInteger(para) || para < 0 || para >= total) throw new ErroValidacao('Página inválida.', { campo: 'pagina' })
+    if (q.sequencial && para !== t.pagina + 1) throw new Conflito('Neste questionário não se volta às páginas anteriores.')
+    if (respostas) await this.recursos.guardarRespostas(t.id, this.#respostasPermitidas(q, t, respostas))
+    if (q.sequencial && !(await this.recursos.avancarPagina(t.id, t.pagina, para))) throw new Conflito('A página mudou noutra janela. Recarregue a página.')
+    return { pagina: para }
   }
 
   /*
@@ -358,7 +455,7 @@ export class ServicoQuestionarios {
     const agora = this.relogio.agora()
     const noTempo = dentroDoTempo(t, agora)
     const perguntas = perguntasDaTentativa(q.perguntas, t)
-    const finais = noTempo && respostas ? limparRespostas(this.#paraOriginal(q, t, respostas), perguntas) : t.respostas
+    const finais = noTempo && respostas ? this.#respostasPermitidas(q, t, respostas) : t.respostas
     const r = corrigir(perguntas, finais)
     const entregueEm = noTempo ? agora : new Date(t.limite)
     if (!(await this.recursos.entregarTentativa(t.id, { respostas: finais, nota: r.nota, porCorrigir: r.porCorrigir, entregueEm }))) throw new Conflito('Esta tentativa já foi entregue.')

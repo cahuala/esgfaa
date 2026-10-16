@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { carregarPdfjs } from './pdfjs'
 
 /*
   Capa de um PDF: a imagem indicada ou, sem ela, a primeira página desenhada pelo pdf.js
@@ -12,8 +13,7 @@ function CapaPdf({ capa, pdf, alt = '', className }) {
     if (capa || !pdf || !tela.current) return undefined
     let tarefa = null
     let ativo = true
-    Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]).then(async ([lib, worker]) => {
-      lib.GlobalWorkerOptions.workerSrc = worker.default
+    carregarPdfjs().then(async (lib) => {
       tarefa = lib.getDocument({ url: pdf })
       const doc = await tarefa.promise
       const p = await doc.getPage(1)

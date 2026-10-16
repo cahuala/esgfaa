@@ -17,7 +17,7 @@ export function receberFicheiro({ privados, config, maximo = 1 }) {
       destination: (req, f, cb) => cb(null, privados.pastaDoMes()),
       filename: (req, f, cb) => cb(null, privados.nomeNovo(f.mimetype)),
     }),
-    limits: { fileSize: config.tamanhoMaximoUpload, files: maximo, fields: 30 },
+    limits: { fileSize: config.tamanhoMaximoUpload, files: maximo, fields: 30, fieldSize: 2 * 1024 * 1024 }, // campos até 2 MB (anotações da correção)
     fileFilter: (req, f, cb) => {
       if (TIPOS_PRIVADOS[f.mimetype]) return cb(null, true)
       cb(new ErroValidacao('Tipo de ficheiro não permitido (aceites: PDF, Word, PowerPoint, Excel, imagens, vídeo MP4/WebM e ZIP).', { campo: 'ficheiro' }))

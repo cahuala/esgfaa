@@ -79,13 +79,18 @@ function Definicoes({ inicial, guardar, botao }) {
     titulo: inicial?.titulo || '', descricao: inicial?.descricao || '', abre: paraLocal(inicial?.abre), fecha: paraLocal(inicial?.fecha),
     duracao: inicial?.duracao ?? 30, tentativas: inicial?.tentativas ?? 1, mostrarRespostas: inicial?.mostrarRespostas ?? true,
     baralhar: inicial?.baralhar ?? false, perguntasPorTentativa: inicial?.perguntasPorTentativa ?? 0,
+    senha: inicial?.senha || '', porPagina: inicial?.porPagina ?? 0, sequencial: inicial?.sequencial ?? false, comentarios: inicial?.comentarios ?? [],
   })
+  const comentario = (i, campo, v) => setF({ ...f, comentarios: f.comentarios.map((c, j) => (i === j ? { ...c, [campo]: v } : c)) })
   const [erro, setErro] = useState('')
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     try {
-      await guardar({ ...f, abre: f.abre ? localParaIso(f.abre) : null, fecha: f.fecha ? localParaIso(f.fecha) : null, duracao: Number(f.duracao || 0), tentativas: Number(f.tentativas || 1), perguntasPorTentativa: Number(f.perguntasPorTentativa || 0) })
+      await guardar({
+        ...f, abre: f.abre ? localParaIso(f.abre) : null, fecha: f.fecha ? localParaIso(f.fecha) : null, duracao: Number(f.duracao || 0), tentativas: Number(f.tentativas || 1),
+        perguntasPorTentativa: Number(f.perguntasPorTentativa || 0), porPagina: Number(f.porPagina || 0), comentarios: f.comentarios.filter((c) => String(c.texto).trim()),
+      })
     } catch (falha) {
       setErro(falha.message)
     }
@@ -106,6 +111,34 @@ function Definicoes({ inicial, guardar, botao }) {
       <Campo id="q-sorteio" rotulo={tx('Perguntas sorteadas por tentativa (0 = todas)')} ajuda={tx('Com um conjunto grande de perguntas, cada estudante recebe só algumas, ao acaso.')}>
         <input id="q-sorteio" type="number" min={0} max={200} value={f.perguntasPorTentativa} onChange={(e) => setF({ ...f, perguntasPorTentativa: e.target.value })} />
       </Campo>
+
+      <h4 className="h6 fw-bold mt-3 mb-0"><i className="fa fa-user-shield me-1" />{tx('Prova')}</h4>
+      <div className="row g-2">
+        <div className="col-sm-6">
+          <Campo id="q-senha" rotulo={tx('Palavra-passe (opcional)')} ajuda={tx('Diga-a na sala no dia da prova: sem ela não se começa.')}>
+            <input id="q-senha" value={f.senha} onChange={(e) => setF({ ...f, senha: e.target.value })} maxLength={40} autoComplete="off" />
+          </Campo>
+        </div>
+        <div className="col-sm-6">
+          <Campo id="q-pagina" rotulo={tx('Perguntas por página (0 = todas)')}>
+            <input id="q-pagina" type="number" min={0} max={50} value={f.porPagina} onChange={(e) => setF({ ...f, porPagina: e.target.value })} />
+          </Campo>
+        </div>
+      </div>
+      <label className="p-caixa"><input type="checkbox" checked={f.sequencial} onChange={(e) => setF({ ...f, sequencial: e.target.checked, porPagina: e.target.checked && !Number(f.porPagina) ? 1 : f.porPagina })} /> {tx('Só para a frente: depois de passar à página seguinte não se volta atrás')}</label>
+
+      <div>
+        <span className="form-label fw-bold d-block mb-1">{tx('Comentário conforme a nota')} <small className="text-muted fw-normal">{tx('(aparece ao estudante depois de entregar)')}</small></span>
+        {f.comentarios.map((c, i) => (
+          <div key={i} className="d-flex gap-2 align-items-center mb-1">
+            <span className="small text-muted text-nowrap">{tx('a partir de')}</span>
+            <input className="form-control form-control-sm" style={{ width: 80 }} inputMode="decimal" value={c.minimo} onChange={(e) => comentario(i, 'minimo', e.target.value)} aria-label={tx('Nota mínima do comentário {0}', { 0: i + 1 })} />
+            <input className="form-control form-control-sm" value={c.texto} onChange={(e) => comentario(i, 'texto', e.target.value)} placeholder={tx('Ex.: Reveja o capítulo 2 antes do exame.')} aria-label={tx('Comentário {0}', { 0: i + 1 })} />
+            <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, comentarios: f.comentarios.filter((_, j) => j !== i) })} aria-label={tx('Retirar comentário')}><i className="fa fa-times" /></button>
+          </div>
+        ))}
+        {f.comentarios.length < 10 && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, comentarios: [...f.comentarios, { minimo: f.comentarios.length ? 14 : 0, texto: '' }] })}><i className="fa fa-plus me-1" />{tx('Comentário')}</button>}
+      </div>
       <div><button type="submit" className="btn btn-theme">{botao}</button></div>
     </form>
   )
@@ -143,7 +176,7 @@ function EditorQuestionario({ id, avisar, voltar }) {
     api(`/perguntas/${p.id}/banco`, { metodo: 'POST', corpo: { categoria } }).then(() => avisar({ texto: tx('Pergunta guardada no seu banco.') })).catch(falhou)
   }
   const total = q.perguntas.reduce((s, p) => s + p.pontos, 0)
-  const separadores = [['perguntas', 'fa-list-ol', tx('Perguntas ({0})', { 0: q.perguntas.length })], ['resultados', 'fa-poll', tx('Resultados ({0})', { 0: q.resultados.length })], ['estatisticas', 'fa-chart-bar', tx('Estatísticas')], ['definicoes', 'fa-cog', tx('Definições')]]
+  const separadores = [['perguntas', 'fa-list-ol', tx('Perguntas ({0})', { 0: q.perguntas.length })], ['resultados', 'fa-poll', tx('Resultados ({0})', { 0: q.resultados.length })], ['estatisticas', 'fa-chart-bar', tx('Estatísticas')], ['excecoes', 'fa-user-clock', tx('Exceções ({0})', { 0: q.excecoes?.length || 0 })], ['definicoes', 'fa-cog', tx('Definições')]]
 
   return (
     <>
@@ -215,6 +248,7 @@ function EditorQuestionario({ id, avisar, voltar }) {
           )
         )}
         {vista === 'estatisticas' && <Estatisticas id={q.id} perguntas={q.perguntas} falhou={falhou} />}
+        {vista === 'excecoes' && <Excecoes q={q} avisar={avisar} falhou={falhou} recarregar={carregar} />}
         {vista === 'definicoes' && <Definicoes inicial={q} botao={tx('Guardar definições')} guardar={async (dados) => { await api(`/questionarios/${id}`, { metodo: 'PUT', corpo: dados }); avisar({ texto: tx('Definições guardadas.') }); carregar() }} />}
       </div>
       {banco && <BancoJanela fechar={() => setBanco(false)} juntar={async (ids) => { await api(`/questionarios/${q.id}/do-banco`, { metodo: 'POST', corpo: { ids } }); avisar({ texto: tx('{0} pergunta(s) juntada(s) do banco.', { 0: ids.length }) }); setBanco(false); carregar() }} />}
@@ -223,11 +257,78 @@ function EditorQuestionario({ id, avisar, voltar }) {
   )
 }
 
+/*
+  Exceções de estudantes (como as "substituições" do Moodle): outro fecho, mais tempo por tentativa
+  ou mais tentativas — por exemplo, para quem estava em missão de serviço no dia da prova.
+*/
+const EXCECAO_VAZIA = { estudanteId: '', fecha: '', duracao: '', tentativas: '', motivo: '' }
+function Excecoes({ q, avisar, falhou, recarregar }) {
+  const [estudantes, setEstudantes] = useState(null)
+  const [f, setF] = useState(EXCECAO_VAZIA)
+  useEffect(() => { api(`/cadeiras/${q.cadeiraId}/participantes`).then((p) => setEstudantes(p.estudantes)).catch(falhou) }, [q.cadeiraId, falhou])
+  async function guardar(e) {
+    e.preventDefault()
+    try {
+      await api(`/questionarios/${q.id}/excecoes`, { metodo: 'PUT', corpo: { ...f, estudanteId: Number(f.estudanteId), fecha: f.fecha ? localParaIso(f.fecha) : null } })
+      avisar({ texto: tx('Exceção guardada. O estudante foi avisado.') })
+      setF(EXCECAO_VAZIA)
+      recarregar()
+    } catch (falha) {
+      falhou(falha)
+    }
+  }
+  const retirar = async (x) => (await perguntar(tx('Retirar a exceção de {0}?', { 0: x.estudante.nome }), { titulo: tx('Retirar exceção'), botao: tx('Retirar'), perigo: true }))
+    && api(`/questionarios/${q.id}/excecoes/${x.estudanteId}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
+  return (
+    <div className="row g-4">
+      <div className="col-xl-7">
+        <p className="text-muted small">{tx('Para quem precisa de condições diferentes das da turma: outra data de fecho, mais tempo ou mais tentativas. O que deixar em branco fica como para os outros.')}</p>
+        {!q.excecoes?.length ? <Vazio>{tx('Sem exceções: todos têm as mesmas condições.')}</Vazio> : (
+          <table className="table table-sm align-middle">
+            <thead><tr><th>{tx('Estudante')}</th><th>{tx('Fecha')}</th><th className="text-center">{tx('Duração')}</th><th className="text-center">{tx('Tentativas')}</th><th>{tx('Motivo')}</th><th /></tr></thead>
+            <tbody>
+              {q.excecoes.map((x) => (
+                <tr key={x.id}>
+                  <td className="fw-bold">{x.estudante.nome}</td>
+                  <td className="small">{x.fecha ? dataHora(x.fecha) : '—'}</td>
+                  <td className="text-center small">{x.duracao === null ? '—' : x.duracao ? tx('{0} min', { 0: x.duracao }) : tx('Livre')}</td>
+                  <td className="text-center small">{x.tentativas ?? '—'}</td>
+                  <td className="small text-muted">{x.motivo}</td>
+                  <td className="text-end"><button type="button" className="btn btn-xs btn-white text-danger" onClick={() => retirar(x)} aria-label={tx('Retirar a exceção de {0}', { 0: x.estudante.nome })}><i className="fa fa-times" /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="col-xl-5">
+        <form onSubmit={guardar} className="p-formulario">
+          <Campo id="ex-est" rotulo={tx('Estudante')}>
+            <select id="ex-est" value={f.estudanteId} onChange={(e) => setF({ ...f, estudanteId: e.target.value })} required>
+              <option value="">{tx('Escolha…')}</option>
+              {(estudantes || []).map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+            </select>
+          </Campo>
+          <Campo id="ex-fecha" rotulo={tx('Fecha em (para este estudante)')}><input id="ex-fecha" type="datetime-local" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Campo>
+          <div className="row g-2">
+            <div className="col-6"><Campo id="ex-dur" rotulo={tx('Duração (min)')}><input id="ex-dur" type="number" min={0} max={600} value={f.duracao} onChange={(e) => setF({ ...f, duracao: e.target.value })} placeholder={String(q.duracao)} /></Campo></div>
+            <div className="col-6"><Campo id="ex-tent" rotulo={tx('Tentativas')}><input id="ex-tent" type="number" min={1} max={10} value={f.tentativas} onChange={(e) => setF({ ...f, tentativas: e.target.value })} placeholder={String(q.tentativas)} /></Campo></div>
+          </div>
+          <Campo id="ex-motivo" rotulo={tx('Motivo (opcional)')}><input id="ex-motivo" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder={tx('Ex.: missão de serviço')} maxLength={300} /></Campo>
+          <div><button type="submit" className="btn btn-theme"><i className="fa fa-user-clock me-1" />{tx('Guardar exceção')}</button></div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // a resposta dada a uma pergunta, em texto legível (correção do docente)
 function RespostaDada({ p, x }) {
   const dada = x?.dada
   if (dada === null || dada === undefined) return <span className="text-muted fst-italic">{tx('Sem resposta')}</span>
   if (p.tipo === 'correspondencia') return <span>{p.opcoes.pares.map((par, i) => <span key={i} className="d-block">{par.a} → {dada[i] === null || dada[i] === undefined ? '—' : p.opcoes.pares[dada[i]]?.b}</span>)}</span>
+  if (p.tipo === 'lacunas') return <span>{dada.map((x) => x || '—').join(' · ')}</span>
+  if (p.tipo === 'ordenar') return <span>{dada.map((i) => p.opcoes.itens[i]).join(' → ')}</span>
   if (Array.isArray(dada)) return <span>{dada.map((i) => p.opcoes[i]?.texto ?? i).join(' · ')}</span>
   return <span className="p-texto-pre">{String(dada)}</span>
 }
@@ -357,13 +458,14 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
   const [respostas, setRespostas] = useState({})
   const [resultado, setResultado] = useState(null)
   const [resta, setResta] = useState(null)
+  const [pagina, setPagina] = useState(0)
   const guardarT = useRef(null)
   const entregando = useRef(false)
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
   const [erroCarga, setErroCarga] = useState('')
   const carregar = useCallback(() => api(`/questionarios/${id}`).then((r) => {
     setQ(r)
-    if (r.emCurso) { setTentativa(r.emCurso); setRespostas(r.emCurso.respostas || {}) }
+    if (r.emCurso) { setTentativa(r.emCurso); setRespostas(r.emCurso.respostas || {}); setPagina(r.emCurso.pagina || 0) }
   }).catch((e) => setErroCarga(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
 
@@ -410,7 +512,37 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
   }
   const respondida = (p) => {
     const v = respostas[p.id]
-    return Array.isArray(v) ? v.some((x) => x !== null && x !== undefined) : v !== undefined && String(v).trim() !== ''
+    return Array.isArray(v) ? v.some((x) => x !== null && x !== undefined && String(x).trim() !== '') : v !== undefined && String(v).trim() !== ''
+  }
+
+  // páginas: anterior (se se puder voltar) e seguinte (só para a frente: o servidor regista a passagem)
+  const paginas = tentativa?.paginas?.length ? tentativa.paginas : [tentativa?.perguntas.map((p) => p.id) || []]
+  async function irPagina(nova) {
+    clearTimeout(guardarT.current)
+    if (tentativa.sequencial) {
+      if (!(await perguntar(tx('Passar à página seguinte? Depois não pode voltar a esta página.'), { titulo: tx('Página seguinte'), botao: tx('Continuar') }))) return
+      try {
+        await api(`/tentativas/${tentativa.id}/pagina`, { metodo: 'PUT', corpo: { pagina: nova, respostas } })
+      } catch (e) {
+        falhou(e)
+        return
+      }
+    } else {
+      api(`/tentativas/${tentativa.id}/respostas`, { metodo: 'PUT', corpo: { respostas } }).catch(() => {})
+    }
+    setPagina(nova)
+    window.scrollTo({ top: 0 })
+  }
+
+  async function comecar() {
+    let senha
+    if (q.pedeSenha) {
+      senha = await pedir(tx('Palavra-passe do questionário (dada pelo docente)'), '', { botao: tx('Começar') })
+      if (senha === null) return
+    }
+    api(`/questionarios/${id}/tentativas`, { metodo: 'POST', corpo: senha ? { senha } : {} })
+      .then((t) => { setResultado(null); setTentativa(t); setRespostas(t.respostas || {}); setPagina(t.pagina || 0) })
+      .catch(falhou)
   }
 
   if (erroCarga) return <><Erro texto={erroCarga} /><button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</button></>
@@ -426,7 +558,8 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
           {resta !== null && <span className={`badge fs-14px ${resta < 60 ? 'bg-danger' : 'bg-dark'}`}><i className="fa fa-clock me-1" />{String(Math.floor(resta / 60)).padStart(2, '0')}:{String(resta % 60).padStart(2, '0')}</span>}
           <button type="button" className="btn btn-theme" onClick={() => entregar(true)}><i className="fa fa-paper-plane me-1" /> {tx('Entregar')}</button>
         </div>
-        {tentativa.perguntas.map((p, n) => (
+        {paginas.length > 1 && <div className="small text-muted mb-2">{tx('Página {0} de {1}', { 0: pagina + 1, 1: paginas.length })}{tentativa.sequencial && <span className="ms-2 badge bg-light text-dark border"><i className="fa fa-arrow-right me-1" />{tx('só para a frente')}</span>}</div>}
+        {tentativa.perguntas.filter((p) => (paginas[pagina] || []).includes(p.id)).map((p) => ({ p, n: tentativa.perguntas.indexOf(p) })).map(({ p, n }) => (
           <Cartao key={p.id} titulo={tx('Pergunta {0}', { 0: n + 1 })} acoes={<span className="text-white small">{p.pontos} {tx('pt ·')} {TIPOS[p.tipo]}</span>}>
             <p className="fw-bold">{p.enunciado}</p>
             {p.opcoes && p.opcoes.map((o) => (
@@ -455,6 +588,8 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
                 </tbody>
               </table>
             )}
+            {p.tipo === 'lacunas' && <Lacunas p={p} valor={respostas[p.id]} mudar={(v) => responder(p, v)} numero={n + 1} />}
+            {p.tipo === 'ordenar' && <Ordenar p={p} valor={respostas[p.id]} mudar={(v) => responder(p, v)} numero={n + 1} />}
             {p.tipo === 'dissertacao' && (
               <>
                 {p.orientacao && <p className="small text-muted">{p.orientacao}</p>}
@@ -464,6 +599,14 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
             )}
           </Cartao>
         ))}
+        {paginas.length > 1 && (
+          <div className="d-flex justify-content-between gap-2 mb-3">
+            {!tentativa.sequencial && pagina > 0 ? <button type="button" className="btn btn-white" onClick={() => irPagina(pagina - 1)}><i className="fa fa-arrow-left me-1" />{tx('Página anterior')}</button> : <span />}
+            {pagina < paginas.length - 1
+              ? <button type="button" className="btn btn-theme" onClick={() => irPagina(pagina + 1)}>{tx('Página seguinte')} <i className="fa fa-arrow-right ms-1" /></button>
+              : <button type="button" className="btn btn-theme" onClick={() => entregar(true)}><i className="fa fa-paper-plane me-1" />{tx('Entregar')}</button>}
+          </div>
+        )}
         <p className="p-legenda">{tx('As respostas são gravadas automaticamente. No fim do tempo o questionário é entregue sozinho.')}</p>
       </>
     )
@@ -483,6 +626,7 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
         <div className={`alert ${resultado.nota >= 10 ? 'alert-success' : 'alert-danger'}`}>
           <h4 className="alert-heading mb-1">{tx('Nota:')} {nota(resultado.nota)} {tx('valores')}</h4>
           {nota(resultado.obtidos)} {tx('de')} {nota(resultado.total)} {tx('pontos.')}{resultado.foraDeTempo && tx(' O tempo terminou: contaram as respostas gravadas até ao fim.')}
+          {resultado.comentarioNota && <p className="mb-0 mt-2"><i className="fa fa-comment-dots me-1" />{resultado.comentarioNota}</p>}
         </div>
       ))}
       <Cartao titulo={q.titulo}>
@@ -492,6 +636,7 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
           <div><dt>{tx('Duração')}</dt><dd>{q.duracao ? tx('{0} minutos', { 0: q.duracao }) : tx('Sem limite')}</dd></div>
           <div><dt>{tx('Abre / fecha')}</dt><dd>{q.abre ? dataHora(q.abre) : '—'} / {q.fecha ? dataHora(q.fecha) : tx('sem prazo')}</dd></div>
           <div><dt>{tx('Tentativas')}</dt><dd>{q.feitas.length} {tx('de')} {q.tentativas}</dd></div>
+          {(q.porPagina > 0 || q.pedeSenha) && <div><dt>{tx('Regras')}</dt><dd>{[q.pedeSenha && tx('pede a palavra-passe do docente'), q.porPagina > 0 && tx('{0} pergunta(s) por página', { 0: q.porPagina }), q.sequencial && tx('não se volta atrás')].filter(Boolean).join(' · ')}</dd></div>}
         </dl>
         {q.feitas.length > 0 && (
           <table className="table table-sm mt-3 mb-0">
@@ -501,11 +646,54 @@ function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
         )}
         <div className="mt-3">
           {podeComecar
-            ? <button type="button" className="btn btn-theme" onClick={() => api(`/questionarios/${id}/tentativas`, { metodo: 'POST' }).then((t) => { setResultado(null); setTentativa(t); setRespostas(t.respostas || {}) }).catch(falhou)}><i className="fa fa-play me-1" /> {q.feitas.length ? tx('Nova tentativa') : tx('Começar')}</button>
+            ? <button type="button" className="btn btn-theme" onClick={comecar}><i className={`fa ${q.pedeSenha ? 'fa-key' : 'fa-play'} me-1`} /> {q.feitas.length ? tx('Nova tentativa') : tx('Começar')}</button>
             : <span className="text-muted">{q.estado === 'em_breve' ? tx('Ainda não abriu.') : q.estado === 'fechado' ? tx('O questionário fechou.') : tx('Já usou todas as tentativas.')}</span>}
         </div>
       </Cartao>
     </>
+  )
+}
+
+// sem acentos nem maiúsculas (como a correção do servidor)
+const normalizarTexto = (x) => String(x ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+// preencher lacunas: o texto com uma caixa em cada lacuna
+function Lacunas({ p, valor, mudar, numero }) {
+  const n = p.partes.filter((x) => x.lacuna !== undefined).length
+  const atual = Array.isArray(valor) ? valor : Array(n).fill('')
+  return (
+    <p className="p-lacunas">
+      {p.partes.map((x, k) => (x.lacuna === undefined ? <span key={k}>{x.texto}</span> : (
+        <input key={k} className="form-control form-control-sm p-lacuna" value={atual[x.lacuna] ?? ''} aria-label={tx('Lacuna {0} da pergunta {1}', { 0: x.lacuna + 1, 1: numero })}
+          onChange={(e) => { const novo = [...atual]; novo[x.lacuna] = e.target.value; mudar(novo) }} />
+      )))}
+    </p>
+  )
+}
+
+// ordenar: arrastar os itens (ou usar as setas) até ficarem pela ordem certa
+function Ordenar({ p, valor, mudar, numero }) {
+  const ordem = Array.isArray(valor) && valor.length === p.itens.length ? valor : p.itens.map((x) => x.i)
+  const [arrasto, setArrasto] = useState(null)
+  const mover = (de, para) => {
+    if (para < 0 || para >= ordem.length || de === para) return
+    const nova = [...ordem]
+    const [x] = nova.splice(de, 1)
+    nova.splice(para, 0, x)
+    mudar(nova)
+  }
+  return (
+    <ol className="p-ordenar" aria-label={tx('Itens a ordenar da pergunta {0}', { 0: numero })}>
+      {ordem.map((j, k) => (
+        <li key={j} draggable onDragStart={() => setArrasto(k)} onDragOver={(e) => e.preventDefault()} onDrop={() => { mover(arrasto, k); setArrasto(null) }} onDragEnd={() => setArrasto(null)} className={arrasto === k ? 'a-arrastar' : ''}>
+          <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
+          <span className="fw-bold text-muted">{k + 1}.</span>
+          <span className="flex-grow-1">{p.itens.find((x) => x.i === j)?.texto}</span>
+          <button type="button" className="btn btn-xs btn-white" onClick={() => mover(k, k - 1)} disabled={k === 0} aria-label={tx('Subir')}><i className="fa fa-arrow-up" /></button>
+          <button type="button" className="btn btn-xs btn-white" onClick={() => mover(k, k + 1)} disabled={k === ordem.length - 1} aria-label={tx('Descer')}><i className="fa fa-arrow-down" /></button>
+        </li>
+      ))}
+    </ol>
   )
 }
 
@@ -520,6 +708,7 @@ function LinhaTentativa({ t, falhou }) {
       </tr>
       {rev && (
         <tr><td colSpan={4}>
+          {rev.comentarioNota && <div className="alert alert-light border py-2"><i className="fa fa-comment-dots me-1" />{rev.comentarioNota}</div>}
           {rev.comentario && <div className="alert alert-secondary py-2"><b>{tx('Comentário do docente:')}</b> {rev.comentario}</div>}
           {rev.perguntas.map((p, n) => {
             const c = rev.correcao?.find((x) => x.perguntaId === p.id)
@@ -542,6 +731,23 @@ function LinhaTentativa({ t, falhou }) {
                     {c && p.tipo === 'numerica' && <div className="text-success">{tx('Certa:')} {c.solucao.valor}{c.solucao.tolerancia ? ` (± ${c.solucao.tolerancia})` : ''}</div>}
                     {c && p.tipo === 'dissertacao' && <div className="text-muted">{nota(c.obtidos)} {tx('de')} {nota(c.pontos)} {tx('pontos')}</div>}
                   </div>
+                )}
+                {p.tipo === 'lacunas' && (
+                  <p className="small mb-0">
+                    {p.partes.map((x, k) => (x.lacuna === undefined ? <span key={k}>{x.texto}</span> : (() => {
+                      const dada = (minha || [])[x.lacuna] || ''
+                      const aceites = c?.solucao?.[x.lacuna]
+                      const certa = aceites?.some((a) => normalizarTexto(a) === normalizarTexto(dada))
+                      return <span key={k} className={`p-lacuna-rev ${aceites ? (certa ? 'certa' : 'errada') : ''}`}>{dada || '___'}{aceites && !certa && <small> ({aceites.join(' / ')})</small>}</span>
+                    })()))}
+                  </p>
+                )}
+                {p.tipo === 'ordenar' && (
+                  <ol className="small mb-0">
+                    {(c?.textos?.dadas || (minha || []).map((j) => p.itens.find((x) => x.i === j)?.texto)).map((texto, k) => (
+                      <li key={k} className={c ? (texto === c.textos.certas[k] ? 'text-success' : 'text-danger') : ''}>{texto}{c && texto !== c.textos.certas[k] && <span className="text-success"> — {tx('certo:')} {c.textos.certas[k]}</span>}</li>
+                    ))}
+                  </ol>
                 )}
                 {p.tipo === 'correspondencia' && (
                   <table className="table table-sm mb-0 small" style={{ maxWidth: 640 }}>

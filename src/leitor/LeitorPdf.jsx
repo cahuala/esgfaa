@@ -2,6 +2,7 @@ import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState 
 import { FaChevronLeft, FaChevronRight, FaColumns, FaCompress, FaDownload, FaExpand, FaMinus, FaPlus, FaRegFile } from 'react-icons/fa'
 import { t } from '../i18n/linguas'
 import styles from './LeitorPdf.module.css'
+import { carregarPdfjs } from './pdfjs'
 
 /*
   Leitor de PDF dentro da página (pdf.js), usado pela revista no site e pelos materiais no portal.
@@ -16,15 +17,6 @@ import styles from './LeitorPdf.module.css'
 const ZOOMS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 3]
 const PIXEIS = () => Math.min(window.devicePixelRatio || 1, 2)
 
-let pdfjs = null
-async function carregarPdfjs() {
-  if (!pdfjs) {
-    const [lib, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')])
-    lib.GlobalWorkerOptions.workerSrc = worker.default
-    pdfjs = lib
-  }
-  return pdfjs
-}
 
 // uma página: só se desenha quando está perto do ecrã (e apaga-se quando fica longe, para poupar memória)
 function Pagina({ doc, numero, largura, proporcao, raiz, registar }) {
