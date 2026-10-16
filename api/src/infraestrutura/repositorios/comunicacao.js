@@ -46,6 +46,27 @@ export class RepositorioComunicacao {
     return this.prisma.contaPortal.update({ where: { id: contaId }, data: { notificarEmail: valor } })
   }
 
+  // ---------- avisos no telemóvel (subscrições Web Push) ----------
+
+  async guardarSubscricao(contaId, { endpoint, p256dh, auth, aparelho = '' }) {
+    // o mesmo aparelho pode mudar de conta (ex.: telemóvel partilhado): fica com a última
+    return this.prisma.subscricaoPush.upsert({ where: { endpoint }, create: { contaId, endpoint, p256dh, auth, aparelho }, update: { contaId, p256dh, auth, aparelho } })
+  }
+
+  apagarSubscricao(endpoint, contaId) {
+    return this.prisma.subscricaoPush.deleteMany({ where: { endpoint, ...(contaId ? { contaId } : {}) } })
+  }
+
+  // subscrições das contas ativas
+  subscricoesDe(contaIds) {
+    if (!contaIds.length) return []
+    return this.prisma.subscricaoPush.findMany({ where: { contaId: { in: contaIds }, conta: { ativo: true } } })
+  }
+
+  contarSubscricoes(contaId) {
+    return this.prisma.subscricaoPush.count({ where: { contaId } })
+  }
+
   async notificarEmail(contaId) {
     return (await this.prisma.contaPortal.findUnique({ where: { id: contaId }, select: { notificarEmail: true } }))?.notificarEmail ?? true
   }

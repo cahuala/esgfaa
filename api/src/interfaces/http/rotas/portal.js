@@ -118,6 +118,10 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/notificacoes', validar({ query: E.paginaNotificacoes }), async (req, res) => res.json(await n.listar(ctx(req), req.dados.query)))
   r.put('/notificacoes/lidas', validar({ body: E.lerNotificacoes }), async (req, res) => res.json(await n.marcarLidas(ctx(req), req.dados.body)))
   r.get('/eu/avisos', async (req, res) => res.json(await n.resumo(ctx(req))))
+  // avisos no telemóvel: a chave pública do servidor e a subscrição deste aparelho
+  r.get('/push/chave', async (req, res) => res.json(n.chavePush()))
+  r.post('/push/subscricao', validar({ body: E.subscricaoPush }), async (req, res) => res.status(201).json(await n.subscrever(ctx(req), req.dados.body)))
+  r.delete('/push/subscricao', validar({ body: E.cancelarPush }), async (req, res) => res.json(await n.cancelarSubscricao(ctx(req), req.dados.body)))
   r.get('/eu/preferencias', async (req, res) => res.json(await n.preferencias(ctx(req))))
   r.put('/eu/preferencias', validar({ body: E.preferencias }), async (req, res) => res.json(await n.definirPreferencias(ctx(req), req.dados.body)))
   r.get('/contactos', async (req, res) => res.json(await n.contactos(ctx(req))))

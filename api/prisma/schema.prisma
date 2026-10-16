@@ -205,6 +205,7 @@ model ContaPortal {
   tentativas                  Tentativa[]
   excecoesQuestionario        ExcecaoQuestionario[]
   licoes                      ProgressoLicao[]
+  subscricoesPush             SubscricaoPush[]
   notificacoes                Notificacao[]
   mensagensEnviadas           Mensagem[]                  @relation("enviadas")
   mensagensRecebidas          Mensagem[]                  @relation("recebidas")
@@ -1383,4 +1384,20 @@ model ProgressoLicao {
 
   @@unique([materialId, estudanteId])
   @@map("progresso_licoes")
+}
+
+// aparelhos onde a conta quer receber os avisos do portal (Web Push)
+model SubscricaoPush {
+  id       Int      @id @default(autoincrement())
+  contaId  Int      @map("conta_id")
+  endpoint String   @unique
+  p256dh   String
+  auth     String
+  aparelho String   @default("") // descrição curta (ex.: "Android · Chrome")
+  criadaEm DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  conta ContaPortal @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([contaId])
+  @@map("subscricoes_push")
 }

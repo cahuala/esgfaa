@@ -36,7 +36,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
   for (const k of Object.keys(config.limites)) config.limites[k] = { janelaMs: 60_000, maximo: 10_000, ...limites[k] }
 
   const esquema = await criarEsquema()
-  const contentor = criarContentor(config, { esquema, externos, ...(relogio ? { relogio } : {}) })
+  const contentor = criarContentor(config, { esquema, externos: { push: null, ...externos }, ...(relogio ? { relogio } : {}) })
   await prepararSistema(contentor)
   const erros = []
   const app = criarApp(contentor, { registarErro: (e) => erros.push(e) })

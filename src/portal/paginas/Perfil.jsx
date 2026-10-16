@@ -4,6 +4,7 @@ import { useSessao } from '../sessaoContexto'
 import { Aviso, Cartao } from '../componentes'
 import { dataHora, iniciais } from '../formatar'
 import MudarSenha from './MudarSenha'
+import AvisosAparelho from '../AvisosAparelho'
 import { t as tx } from '../../i18n/linguas'
 
 const ESTADOS = { ativa: tx('Ativa'), suspensa: tx('Suspensa'), concluida: tx('Concluída'), anulada: tx('Anulada') }
@@ -62,6 +63,7 @@ function Perfil() {
                 {tx('Materiais novos, avisos, trabalhos, correções, notas publicadas, respostas no fórum, mensagens e lembretes de prazo.')}
                 {!pref.emailAtivo && tx(' (O envio de e-mails ainda não está configurado no servidor: por agora as notificações aparecem só no portal.)')}
               </p>
+              <AvisosAparelho />
             </Cartao>
           )}
           <Cartao titulo={<><i className="fa fa-key me-2" />{tx('Mudar a palavra-passe')}</>}>

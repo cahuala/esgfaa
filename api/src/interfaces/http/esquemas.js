@@ -84,6 +84,12 @@ export const material = z.object({
   retirarFicheiros: listaTexto(z.string().max(40), 50).optional(),
   estrutura: z.array(z.record(z.string(), z.unknown())).max(100).optional(), // livro (capítulos) ou lição (páginas)
 })
+export const subscricaoPush = z.object({
+  endpoint: z.string().url().max(1000),
+  keys: z.object({ p256dh: z.string().min(10).max(200), auth: z.string().min(8).max(100) }),
+  aparelho: texto(120).optional(),
+})
+export const cancelarPush = z.object({ endpoint: z.string().max(1000) })
 export const passoLicao = z.object({ paginaId: texto(12), opcao: z.number().int().min(0).max(5).optional() })
 const notaLivre = z.union([z.string().max(6), z.number(), z.null()]).optional()
 export const pauta = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, p1: notaLivre, p2: notaLivre, exame: notaLivre, recurso: notaLivre, observacao: texto(400).optional() })).max(500) })

@@ -10,8 +10,8 @@ const LEMBRETE_HORAS = 24
   Os e-mails saem em segundo plano: uma falha de envio nunca estraga a ação que os originou.
 */
 export class ServicoComunicacao {
-  constructor({ comunicacao, academico, acesso, correio, relogio, urlPortal = '', registar = () => {} }) {
-    Object.assign(this, { comunicacao, academico, acesso, correio, relogio, urlPortal, registar })
+  constructor({ comunicacao, academico, acesso, correio, push = null, relogio, urlPortal = '', registar = () => {} }) {
+    Object.assign(this, { comunicacao, academico, acesso, correio, push, relogio, urlPortal, registar })
     this.emCurso = new Set()
   }
 
@@ -29,6 +29,41 @@ export class ServicoComunicacao {
     const envio = this.#enviarEmails(ids, limpo).catch((e) => this.registar({ nivel: 'erro', mensagem: 'Falha nas notificações por e-mail', erro: e.message }))
     this.emCurso.add(envio)
     envio.finally(() => this.emCurso.delete(envio))
+    if (this.push) {
+      const aviso = this.#enviarPush(ids, limpo).catch((e) => this.registar({ nivel: 'erro', mensagem: 'Falha nos avisos no telemóvel', erro: e.message }))
+      this.emCurso.add(aviso)
+      aviso.finally(() => this.emCurso.delete(aviso))
+    }
+  }
+
+  // avisos no telemóvel: um por aparelho; os aparelhos que já não aceitam saem da lista
+  async #enviarPush(ids, n) {
+    for (const s of await this.comunicacao.subscricoesDe(ids)) {
+      const r = await this.push.enviar(s, { titulo: n.titulo, texto: n.texto, ligacao: n.ligacao }).catch((e) => {
+        this.registar({ nivel: 'aviso', mensagem: 'Aviso no telemóvel não entregue', erro: e.message })
+        return 'falhou'
+      })
+      if (r === 'expirada') await this.comunicacao.apagarSubscricao(s.endpoint)
+    }
+  }
+
+  // ---------- avisos no telemóvel: ligar e desligar neste aparelho ----------
+
+  chavePush() {
+    if (!this.push) throw new NaoEncontrado('Os avisos no telemóvel não estão disponíveis neste servidor.')
+    return { chave: this.push.chavePublica }
+  }
+
+  async subscrever(ctx, { endpoint, keys, aparelho }) {
+    if (!this.push) throw new NaoEncontrado('Os avisos no telemóvel não estão disponíveis neste servidor.')
+    if (!/^https:\/\//.test(String(endpoint || ''))) throw new ErroValidacao('Subscrição inválida.', { campo: 'endpoint' })
+    await this.comunicacao.guardarSubscricao(ctx.conta.id, { endpoint, p256dh: keys.p256dh, auth: keys.auth, aparelho: String(aparelho || '').slice(0, 80) })
+    return { ativo: true, aparelhos: await this.comunicacao.contarSubscricoes(ctx.conta.id) }
+  }
+
+  async cancelarSubscricao(ctx, { endpoint }) {
+    await this.comunicacao.apagarSubscricao(endpoint, ctx.conta.id)
+    return { ativo: false, aparelhos: await this.comunicacao.contarSubscricoes(ctx.conta.id) }
   }
 
   // espera pelos e-mails em curso (testes e encerramento do servidor)

@@ -5,6 +5,7 @@ import { useSessao } from '../sessaoContexto'
 import { Cartao, Carregando, Erro, Vazio } from '../componentes'
 import { capaCadeira, dataHora, faltam, iniciais, maiusculaInicial, primeiroNome } from '../formatar'
 import { lerContinuar } from '../recentes'
+import CartaoTelemovel from '../CartaoTelemovel'
 import { PERIODOS } from '../regraAvaliacao'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
@@ -66,6 +67,8 @@ function MinhaTurma() {
           </div>
         )}
       </section>
+
+      <CartaoTelemovel />
 
       {continuar && d.cadeiras.some((c) => c.id === continuar.cadeiraId) && (
         <Link to={`/cadeiras/${continuar.cadeiraId}?atividade=${continuar.chave}`} className="p-turma-continuar">

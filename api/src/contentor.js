@@ -22,6 +22,7 @@ import { RepositorioRecursosCadeira } from './infraestrutura/repositorios/recurs
 import { RepositorioComunicacao } from './infraestrutura/repositorios/comunicacao.js'
 import { ServicoComunicacao } from './aplicacao/academico/partilhado/comunicacao.js'
 import { criarCorreio } from './infraestrutura/correio/correio.js'
+import { criarPush } from './infraestrutura/push/webPush.js'
 import { RepositorioCopias } from './infraestrutura/repositorios/copias.js'
 import { RepositorioInqueritos } from './infraestrutura/repositorios/inqueritos.js'
 import { RepositorioGrupos } from './infraestrutura/repositorios/grupos.js'
@@ -146,6 +147,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
     comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
+    // avisos no telemóvel (os testes trazem um falso; null desliga)
+    push: 'push' in externos ? externos.push : criarPush(config),
   })
   const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, auditoria, notificacoes, relogio })
 

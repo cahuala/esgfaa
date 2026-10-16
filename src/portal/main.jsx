@@ -7,6 +7,7 @@ import '../admin/admin.css'
 import '../admin/identidade.css'
 import './portal.css'
 import { prepararLingua } from '../i18n/linguas'
+import { registarServico } from './telemovel'
 
 // a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
 // traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
@@ -24,3 +25,6 @@ ReactDOM.createRoot(document.getElementById('raiz-portal')).render(
     </HashRouter>
   </React.StrictMode>,
 )
+
+// a aplicação no telemóvel (abre mais depressa e recebe os avisos); em desenvolvimento só quando se ligam os avisos
+if (import.meta.env.PROD) registarServico()

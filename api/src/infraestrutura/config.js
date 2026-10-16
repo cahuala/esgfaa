@@ -39,6 +39,9 @@ const ESQUEMA = z.object({
   // tradutor automático gratuito (LibreTranslate no servidor da Escola), usado se não houver chave da IA
   LIBRETRANSLATE_URL: z.union([z.literal(''), z.url()]).default(''),
   LIBRETRANSLATE_CHAVE: z.string().default(''),
+  VAPID_PUBLIC_KEY: z.string().default(''),
+  VAPID_PRIVATE_KEY: z.string().default(''),
+  VAPID_SUBJECT: z.string().default('mailto:geral@esgfaa.gov.ao'),
 })
 
 // "1" -> 1 (n.º de proxies), "loopback" -> 'loopback', "" -> false
@@ -97,6 +100,8 @@ export function criarConfig(env = process.env, extras = {}) {
     pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },
     ia: { chave: e.ANTHROPIC_API_KEY, modelo: e.ANTHROPIC_MODELO },
     tradutor: { url: e.LIBRETRANSLATE_URL, chave: e.LIBRETRANSLATE_CHAVE },
+    // avisos no telemóvel (Web Push): sem chaves, o servidor cria-as e guarda-as na pasta de dados
+    push: { publica: e.VAPID_PUBLIC_KEY, privada: e.VAPID_PRIVATE_KEY, assunto: e.VAPID_SUBJECT },
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },
