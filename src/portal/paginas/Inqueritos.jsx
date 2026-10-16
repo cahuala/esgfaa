@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Aviso, Cartao, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data } from '../formatar'
-import FormularioOpiniao from '../FormularioOpiniao'
+import FormularioInquerito from '../inquerito/FormularioInquerito'
 import { t as tx } from '../../i18n/linguas'
 
 // inquéritos da Escola (satisfação com os serviços, o curso…): lista e resposta anónima
@@ -50,12 +50,12 @@ function Responder({ id }) {
   if (erro) return <Erro texto={erro} />
   if (!i) return <Carregando />
 
-  async function enviar(e) {
-    e.preventDefault()
+  async function enviar() {
     setAEnviar(true)
     try {
       setI(await api(`/inqueritos-escola/${id}/respostas`, { metodo: 'POST', corpo: { respostas } }))
       setAviso({ texto: tx('Obrigado: a sua resposta foi registada de forma anónima.') })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
     } finally {
@@ -64,18 +64,31 @@ function Responder({ id }) {
   }
   return (
     <>
-      <Titulo rotulo={tx('Inquéritos')} titulo={i.titulo} sub={tx('responder até {0}', { 0: data(i.fecha) })} migalhas={[{ rotulo: tx('Inquéritos'), para: '/inqueritos' }, { rotulo: i.titulo }]} />
-      <Cartao titulo={<><i className="fa fa-user-secret me-2" />{tx('Respostas anónimas')}</>}>
-        {i.descricao && <p className="text-muted">{i.descricao}</p>}
-        {i.respondido ? <div className="alert alert-success mb-0"><i className="fa fa-check-circle me-1" />{tx('Já respondeu a este inquérito. Obrigado.')}</div>
-          : !i.podeResponder ? <div className="alert alert-secondary mb-0">{tx('Este inquérito já fechou.')}</div> : (
-            <form onSubmit={enviar} className="p-formulario">
-              <FormularioOpiniao perguntas={i.perguntas} respostas={respostas} definir={(k, v) => setRespostas((r) => ({ ...r, [k]: v }))} numerar />
-              <div><button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? tx('A enviar…') : tx('Enviar')}</button></div>
-            </form>
-          )}
-      </Cartao>
-      <Link to="/inqueritos" className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Todos os inquéritos')}</Link>
+      <Titulo rotulo={tx('Inquéritos')} titulo={tx('Inquéritos da Escola')} migalhas={[{ rotulo: tx('Inquéritos'), para: '/inqueritos' }, { rotulo: i.titulo }]} />
+      <FormularioInquerito
+        titulo={i.titulo}
+        descricao={i.descricao}
+        anonimo
+        rodape={<div className="gf-notas pt-0 border-0 mt-2"><span><i className="fa fa-calendar-alt me-2" />{tx('responder até {0}', { 0: data(i.fecha) })}</span></div>}
+        perguntas={i.perguntas}
+        respostas={respostas}
+        definir={(k, v) => setRespostas((r) => ({ ...r, [k]: v }))}
+        limpar={() => setRespostas({})}
+        aoEnviar={enviar}
+        aEnviar={aEnviar}
+        estado={i.respondido ? (
+          <div className="gf-feito">
+            <b><i className="fa fa-check-circle text-success me-2" />{tx('A sua resposta foi registada.')}</b>
+            <span className="text-muted">{tx('Já respondeu a este inquérito. Obrigado.')}</span>
+            <Link to="/inqueritos">{tx('Todos os inquéritos')}</Link>
+          </div>
+        ) : !i.podeResponder ? (
+          <div className="gf-feito">
+            <b><i className="fa fa-lock text-muted me-2" />{tx('Este inquérito já fechou.')}</b>
+            <Link to="/inqueritos">{tx('Todos os inquéritos')}</Link>
+          </div>
+        ) : null}
+      />
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

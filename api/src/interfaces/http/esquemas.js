@@ -7,6 +7,9 @@ export const idNumerico = z.coerce.number().int().positive()
 export const colecao = z.enum(NOMES_COLECOES, { error: 'Coleção desconhecida.' })
 const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
+// textos dos painéis para o tradutor automático
+export const traduzirTextos = z.object({ lingua: z.enum(['en', 'fr', 'es']), textos: z.array(z.string().max(2000)).max(300) })
+
 export const entrar = z.object({ email: texto(254).default(''), senha: texto(200).default('') })
 export const mudarSenha = z.object({ atual: texto(200).default(''), nova: texto(200).default('') })
 

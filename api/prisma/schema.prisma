@@ -1332,6 +1332,18 @@ model AnaliseIntegridade {
 // ---------- Traduções do site ----------
 
 // tradução de um conteúdo (item de uma coleção ou página) para uma língua; o original fica em português
+// memória das traduções automáticas dos textos dos painéis (portal e painel de gestão)
+model TextoTraduzido {
+  lingua   String // en | fr | es
+  chave    String // sha256 do original
+  original String
+  texto    String
+  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@id([lingua, chave])
+  @@map("textos_traduzidos")
+}
+
 model Traducao {
   colecao       String // noticias, artigos, … ou "paginas"
   alvoId        String   @map("alvo_id")

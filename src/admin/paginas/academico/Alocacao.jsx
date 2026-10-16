@@ -22,7 +22,7 @@ function Alocacao() {
   const maxHoras = Math.max(1, ...d.docentes.map((x) => x.horas))
 
   const widgets = [
-    ['bg-dark', 'fa-chalkboard-teacher', 'DOCENTES', d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
+    ['bg-dark', 'fa-chalkboard-teacher', tx('DOCENTES'), d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
     ['bg-red', 'fa-book', tx('CADEIRAS (TURMAS ATIVAS)'), d.cadeiras.length, tx('{0} sem docentes', { 0: semDocentes.length })],
     ['bg-orange', 'fa-user-clock', tx('SEM REGENTE'), semRegente.length, tx('precisam de alocação')],
     ['bg-teal', 'fa-clock', tx('HORAS ALOCADAS'), horasTotal, tx('em todas as cadeiras')],

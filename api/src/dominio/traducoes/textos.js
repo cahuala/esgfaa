@@ -23,6 +23,9 @@ const NAO_TEXTO = [
 const traduzivel = (chave, v) => typeof v === 'string' && v.trim().length > 1 && !CHAVES_FIXAS.has(chave) && !chave.startsWith('_')
   && /\p{L}/u.test(v) && !NAO_TEXTO.some((re) => re.test(v.trim()))
 
+// um texto solto (dos painéis) que vale a pena traduzir
+export const textoTraduzivel = (v) => traduzivel('texto', v)
+
 // { caminho: texto } com todos os textos traduzíveis
 export function extrairTextos(dados) {
   const r = {}

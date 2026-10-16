@@ -16,6 +16,6 @@ export const SITUACOES = {
 
 // texto da regra, para as legendas
 export const REGRA = tx('MAC = média da 1.ª e 2.ª prova. MAC ≥ {0} sem prova negativa dispensa do exame. ', { 0: AVALIACAO.macDispensa })
-  + `Nota final = ${AVALIACAO.pesoMac * 100} % MAC + ${AVALIACAO.pesoExame * 100} % exame (ou recurso), arredondada às unidades; aprovação com ${NOTA_MINIMA_APROVACAO}.`
+  + tx('Nota final = {0} % MAC + {1} % exame (ou recurso), arredondada às unidades; aprovação com {2}.', { 0: AVALIACAO.pesoMac * 100, 1: AVALIACAO.pesoExame * 100, 2: NOTA_MINIMA_APROVACAO })
 
 export const PERIODOS = { 1: tx('1.º semestre'), 2: tx('2.º semestre'), anual: tx('Anual') }

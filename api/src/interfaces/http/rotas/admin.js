@@ -49,6 +49,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.use(autenticar(servicos.sessao))
 
   r.get('/eu', async (req, res) => res.json(await servicos.sessao.eu(ctx(req))))
+  r.post('/traduzir', validar({ body: E.traduzirTextos }), async (req, res) => res.json(await servicos.traducaoDados.traduzir(ctx(req), req.dados.body)))
 
   r.post('/sair', async (req, res) => {
     await servicos.sessao.sair(ctx(req))

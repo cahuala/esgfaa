@@ -111,7 +111,7 @@ function Utilizadores() {
                             </div>
                           </div>
                         </td>
-                        <td><span className={`badge ${CORES_PAPEIS[u.papel] || 'bg-secondary'}`}>{papel(u.papel)?.nome || u.papel}</span></td>
+                        <td><span className={`badge ${CORES_PAPEIS[u.papel] || 'bg-secondary'}`}>{tx(papel(u.papel)?.nome || u.papel)}</span></td>
                         <td>{u.ativo ? <span className="text-success"><i className="fa fa-circle fs-8px me-1" />{tx('Ativo')}</span> : <span><i className="fa fa-circle fs-8px me-1" />{tx('Desativado')}</span>}</td>
                         <td className="text-nowrap">{u.ultimoAcesso ? dataHora(u.ultimoAcesso) : tx('Nunca entrou')}</td>
                         <td className="text-center"><Link to={`/atividades?utilizador=${u.id}`}>{u.atividades}</Link></td>

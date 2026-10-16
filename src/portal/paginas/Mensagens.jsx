@@ -57,7 +57,7 @@ function Mensagens() {
                 {contactos.filter((p) => !comConversa.has(p.id) && filtro(p.nome)).map((p) => (
                   <Link key={p.id} to={`/mensagens/${p.id}`} className={`list-group-item list-group-item-action d-flex gap-2 align-items-center ${Number(id) === p.id ? 'active' : ''}`}>
                     <span className={`admin-avatar flex-shrink-0 ${p.tipo === 'docente' ? 'bg-dark' : ''}`}>{iniciais(p.nome)}</span>
-                    <span className="min-w-0"><b className="d-block text-truncate">{p.nome}</b><small className="opacity-75">{p.papel}{p.cadeiras?.length ? ` · ${p.cadeiras.join(', ')}` : ''}</small></span>
+                    <span className="min-w-0"><b className="d-block text-truncate">{p.nome}</b><small className="opacity-75">{tx(p.papel)}{p.cadeiras?.length ? ` · ${p.cadeiras.join(', ')}` : ''}</small></span>
                   </Link>
                 ))}
               </div>
@@ -119,7 +119,7 @@ function Conversa({ id, aoEnviar, voltar }) {
       <div className="d-flex align-items-center gap-2 p-3 border-bottom">
         <button type="button" className="btn btn-white btn-sm d-lg-none" onClick={voltar} aria-label={tx('Voltar às conversas')}><i className="fa fa-arrow-left" /></button>
         <span className={`admin-avatar ${d.pessoa.tipo === 'docente' ? 'bg-dark' : ''}`}>{iniciais(d.pessoa.nome)}</span>
-        <div><b>{d.pessoa.nome}</b><div className="small text-muted">{d.pessoa.papel}</div></div>
+        <div><b>{d.pessoa.nome}</b><div className="small text-muted">{tx(d.pessoa.papel)}</div></div>
       </div>
       <div className="p-conversa flex-grow-1 p-3">
         {d.mensagens.length === 0 && <div className="text-center text-muted small py-5">{tx('Ainda não há mensagens. Escreva a primeira.')}</div>}

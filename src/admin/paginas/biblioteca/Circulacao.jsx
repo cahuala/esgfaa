@@ -63,7 +63,7 @@ function Circulacao() {
                 {lista.map((e) => (
                   <tr key={e.id} className={e.emAtraso ? 'table-danger' : ''}>
                     <td><Link to={`/biblioteca/obras/${e.exemplar.obra.id}`} className="fw-bold text-body">{e.exemplar.obra.titulo}</Link><div className="small text-muted font-monospace">{e.exemplar.codigo}</div></td>
-                    <td>{e.leitor.nome}<div className="small text-muted">{e.leitor.numero} · {e.leitor.tipo}</div></td>
+                    <td>{e.leitor.nome}<div className="small text-muted">{e.leitor.numero} · {tx(e.leitor.tipo)}</div></td>
                     <td className="small">{dia(e.emprestadoEm)}</td>
                     <td className="small">
                       {estado === 'historico' ? (e.devolvidoEm ? dia(e.devolvidoEm) : <span className="badge bg-info">{tx('Emprestado')}</span>) : <>{dia(e.prazo)}{e.renovacoes > 0 && <span className="text-muted"> {tx('· renovado')} {e.renovacoes}×</span>}</>}
@@ -182,7 +182,7 @@ function Emprestar({ feito, falhou }) {
               <div className="list-group position-absolute w-100 shadow" style={{ zIndex: 10 }}>
                 {leitores.map((l) => (
                   <button key={l.id} type="button" className="list-group-item list-group-item-action d-flex align-items-center gap-2" disabled={!l.ativo} onClick={() => setLeitor(l)}>
-                    <span className="flex-grow-1">{l.nome}<span className="d-block small text-muted">{l.numero} · {l.tipo}</span></span>
+                    <span className="flex-grow-1">{l.nome}<span className="d-block small text-muted">{l.numero} · {tx(l.tipo)}</span></span>
                     <span className={`badge ${l.atrasados ? 'bg-danger' : l.emprestados >= l.maximo ? 'bg-warning text-dark' : 'bg-light text-dark border'}`}>{l.atrasados ? tx('{0} em atraso', { 0: l.atrasados }) : `${l.emprestados}/${l.maximo}`}</span>
                   </button>
                 ))}

@@ -138,7 +138,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       else estado = feita(a) ? <span className="badge bg-success"><i className="fa fa-check me-1" />{tx('Feito')}</span> : <span className="badge bg-light text-dark border">{a.estado === 'fechado' ? tx('Fechado') : tx('Por fazer')}</span>
     } else if (a.especie === 'inquerito') {
       meta = a.tipo === 'avaliacao' ? tx('Inquérito anónimo · {0} perguntas', { 0: a.numeroPerguntas }) : `Sondagem${a.anonimo ? tx(' anónima') : ''}`
-      if (a.fecha) meta += ` · ${a.fechado ? 'fechou' : 'fecha'} ${dataHora(a.fecha)}`
+      if (a.fecha) meta += ` · ${a.fechado ? tx('fechou') : tx('fecha')} ${dataHora(a.fecha)}`
       if (eDocente) estado = <span className="badge bg-gray-500">{a.respostas} {tx('resposta(s)')}</span>
       else estado = a.respondido ? <span className="badge bg-success"><i className="fa fa-check me-1" />{tx('Respondido')}</span> : <span className="badge bg-light text-dark border">{a.fechado ? tx('Fechado') : tx('Por responder')}</span>
     } else if (a.especie === 'workshop') {

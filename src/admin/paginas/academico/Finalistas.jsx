@@ -19,7 +19,7 @@ function Finalistas({ turma, gerir, avisar }) {
 
   const concluidos = d ? d.linhas.filter((l) => l.conclusao.concluido).length : 0
   return (
-    <Painel titulo={tx('Finalistas: trabalho de fim de curso e conclusão{0}', { 0: d ? ` (${concluidos} de ${d.linhas.length} concluídos)` : '' })} corpo={false}>
+    <Painel titulo={tx('Finalistas: trabalho de fim de curso e conclusão{0}', { 0: d ? tx(' ({0} de {1} concluídos)', { 0: concluidos, 1: d.linhas.length }) : '' })} corpo={false}>
       <div className="table-responsive">
         <table className="table table-striped align-middle mb-0">
           <thead><tr><th>{tx('Estudante')}</th><th>{tx('Trabalho de fim de curso')}</th><th className="text-center">{tx('Nota TFC')}</th><th className="text-center">{tx('Cadeiras')}</th><th>{tx('Conclusão')}</th><th /></tr></thead>

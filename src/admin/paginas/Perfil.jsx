@@ -37,7 +37,7 @@ function Perfil() {
             <dl className="row mb-0">
               <dt className="col-4">{tx('Nome')}</dt><dd className="col-8">{utilizador.nome}</dd>
               <dt className="col-4">{tx('E-mail')}</dt><dd className="col-8">{utilizador.email}</dd>
-              <dt className="col-4">{tx('Papel')}</dt><dd className="col-8">{utilizador.nomePapel}</dd>
+              <dt className="col-4">{tx('Papel')}</dt><dd className="col-8">{tx(utilizador.nomePapel)}</dd>
               <dt className="col-4">{tx('Criada em')}</dt><dd className="col-8 mb-0">{dataHora(utilizador.criadoEm)}</dd>
             </dl>
           </Painel>

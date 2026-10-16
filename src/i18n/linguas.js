@@ -25,8 +25,11 @@ export function linguaInicial() {
 
 let atual = typeof window === 'undefined' ? 'pt' : linguaInicial()
 let dicionario = {}
+let daInterface = new Set()
 
 export const linguaAtual = () => atual
+// texto que já é uma tradução da interface (não vai ao tradutor automático)
+export const eTextoDaInterface = (s) => daInterface.has(s)
 export const localAtual = () => LINGUAS.find((l) => l.codigo === atual).local
 
 export function definirLingua(codigo) {
@@ -41,12 +44,15 @@ export async function prepararLingua() {
   if (atual === 'pt') { dicionario = {}; return }
   const { dicionarioDe } = await import('./dicionarios')
   dicionario = dicionarioDe(atual)
+  daInterface = new Set(Object.values(dicionario))
 }
 
 // muda de língua e recarrega (sem o ?lang= do endereço, que mandaria na escolha)
 export function mudarLingua(codigo) {
   definirLingua(codigo)
   const url = new URL(window.location.href)
+  if (!url.searchParams.has('lang')) { window.location.reload(); return }
+  // nos painéis (endereços com #) um replace() só com o # igual não recarrega a página
   url.searchParams.delete('lang')
   window.location.replace(url.toString())
 }

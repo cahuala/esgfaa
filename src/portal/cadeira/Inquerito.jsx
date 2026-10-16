@@ -3,7 +3,7 @@ import { api } from '../api'
 import { Bloqueio, Carregando, Cartao, Erro } from '../componentes'
 import { dataHora } from '../formatar'
 import ResultadosInquerito from './ResultadosInquerito'
-import FormularioOpiniao from '../FormularioOpiniao'
+import FormularioInquerito from '../inquerito/FormularioInquerito'
 import { t as tx } from '../../i18n/linguas'
 
 const MOSTRAR = { apos_responder: tx('Os estudantes veem os resultados depois de responderem.'), apos_fecho: tx('Os estudantes veem os resultados depois do fecho.'), nunca: tx('Só o docente vê os resultados.') }
@@ -26,8 +26,7 @@ function Inquerito({ c, eDocente, recarregar, avisar, so }) {
   if (!i) return <Carregando />
 
   const definir = (k, v) => setRespostas((r) => ({ ...r, [k]: v }))
-  async function enviar(e) {
-    e.preventDefault()
+  async function enviar() {
     setAEnviar(true)
     try {
       const r = await api(`/inqueritos/${i.id}/respostas`, { metodo: 'POST', corpo: { respostas } })
@@ -42,25 +41,34 @@ function Inquerito({ c, eDocente, recarregar, avisar, so }) {
   }
 
   const icone = i.tipo === 'avaliacao' ? 'fa-user-check' : 'fa-poll'
+  const feito = (texto, icon = 'fa-check-circle text-success') => <div className="gf-feito"><b><i className={`fa ${icon} me-2`} />{texto}</b></div>
+  let estado = null
+  if (eDocente) {
+    estado = (
+      <div className="gf-feito">
+        <b><i className={`fa ${icone} text-muted me-2`} />{tx('{0} pergunta(s)', { 0: i.perguntas.length })}</b>
+        {i.tipo === 'sondagem' && <span className="text-muted">{MOSTRAR[i.mostrarResultados]} {i.estudantes !== undefined && tx('Responderam {0} de {1} estudantes.', { 0: i.resultados?.total ?? 0, 1: i.estudantes })}</span>}
+      </div>
+    )
+  } else if (i.respondido && !i.podeResponder) estado = feito(i.tipo === 'avaliacao' ? tx('Já respondeu. Obrigado pela sua avaliação.') : tx('Já respondeu.'))
+  else if (!i.podeResponder) estado = feito(i.fechado ? tx('Este inquérito já fechou.') : tx('Ainda não abriu.'), 'fa-lock text-muted')
+
   return (
     <div className="p-coluna">
-      <Cartao
-        titulo={<><i className={`fa ${icone} me-2`} />{i.titulo}</>}
-        acoes={i.fecha && <span className={`badge ${i.fechado ? 'bg-gray-500' : 'bg-light text-dark'}`}>{i.fechado ? tx('Fechou') : tx('Fecha')} {dataHora(i.fecha)}</span>}
-      >
-        {i.descricao && <p className="text-muted">{i.descricao}</p>}
-        {i.anonimo && <p className="small"><i className="fa fa-user-secret me-1 text-muted" />{tx('Respostas anónimas: não fica registado quem respondeu o quê.')}</p>}
-        {eDocente && i.tipo === 'sondagem' && <p className="small text-muted mb-0">{MOSTRAR[i.mostrarResultados]} {i.estudantes !== undefined && tx('Responderam {0} de {1} estudantes.', { 0: i.resultados?.total ?? 0, 1: i.estudantes })}</p>}
-
-        {!eDocente && i.respondido && !i.podeResponder && <div className="alert alert-success mb-0"><i className="fa fa-check-circle me-1" />{tx('Já respondeu')}{i.tipo === 'avaliacao' ? '. Obrigado pela sua avaliação.' : '.'}</div>}
-        {!eDocente && !i.respondido && i.fechado && <div className="alert alert-secondary mb-0">{tx('Este inquérito já fechou.')}</div>}
-        {!eDocente && i.podeResponder && (
-          <form onSubmit={enviar} className="p-formulario">
-            <FormularioOpiniao perguntas={i.perguntas} respostas={respostas} definir={definir} numerar={i.tipo === 'avaliacao'} />
-            <div><button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? tx('A enviar…') : i.respondido ? tx('Mudar a resposta') : tx('Enviar')}</button></div>
-          </form>
-        )}
-      </Cartao>
+      <FormularioInquerito
+        titulo={i.titulo}
+        descricao={i.descricao}
+        anonimo={i.anonimo}
+        rodape={i.fecha && <div className="gf-notas pt-0 border-0 mt-2"><span><i className="fa fa-calendar-alt me-2" />{i.fechado ? tx('Fechou') : tx('Fecha')} {dataHora(i.fecha)}</span></div>}
+        perguntas={i.perguntas}
+        respostas={respostas}
+        definir={definir}
+        limpar={() => setRespostas({})}
+        aoEnviar={enviar}
+        aEnviar={aEnviar}
+        textoEnviar={i.respondido ? tx('Mudar a resposta') : tx('Enviar')}
+        estado={estado}
+      />
 
       {i.aviso && <div className="alert alert-info"><i className="fa fa-info-circle me-1" />{i.aviso}</div>}
       {i.resultados && (

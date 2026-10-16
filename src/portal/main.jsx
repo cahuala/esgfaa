@@ -7,6 +7,9 @@ import '../admin/admin.css'
 import '../admin/identidade.css'
 import './portal.css'
 import { prepararLingua } from '../i18n/linguas'
+import { ligarTraducaoDosDados } from '../i18n/tradutorPainel'
+import { API_URL } from '../conteudo/api'
+import { lerToken } from './api'
 import { registarServico } from './telemovel'
 
 // a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
@@ -28,3 +31,12 @@ ReactDOM.createRoot(document.getElementById('raiz-portal')).render(
 
 // a aplicação no telemóvel (abre mais depressa e recebe os avisos); em desenvolvimento só quando se ligam os avisos
 if (import.meta.env.PROD) registarServico()
+
+// fora do português, os dados que aparecem no ecrã (cadeiras, avisos, notificações…) vão ao tradutor do servidor
+ligarTraducaoDosDados(async (corpo) => {
+  const token = lerToken()
+  if (!API_URL || !token) throw new Error('sem sessão')
+  const r = await fetch(`${API_URL}/api/portal/traduzir`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(corpo) })
+  if (!r.ok) throw new Error(String(r.status))
+  return r.json()
+})

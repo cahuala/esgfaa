@@ -7,6 +7,9 @@ import './admin.css'
 import './identidade.css'
 import './editor/editor.css'
 import { prepararLingua } from '../i18n/linguas'
+import { ligarTraducaoDosDados } from '../i18n/tradutorPainel'
+import { API_URL } from '../conteudo/api'
+import { lerToken } from './api'
 
 // a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
 // traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
@@ -24,3 +27,12 @@ ReactDOM.createRoot(document.getElementById('raiz-admin')).render(
     <RouterProvider router={router} />
   </React.StrictMode>,
 )
+
+// fora do português, os dados que aparecem no ecrã (cadeiras, avisos, notificações…) vão ao tradutor do servidor
+ligarTraducaoDosDados(async (corpo) => {
+  const token = lerToken()
+  if (!API_URL || !token) throw new Error('sem sessão')
+  const r = await fetch(`${API_URL}/api/admin/traduzir`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(corpo) })
+  if (!r.ok) throw new Error(String(r.status))
+  return r.json()
+})

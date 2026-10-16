@@ -1,0 +1,22 @@
+// [português, inglês, francês, espanhol] — inquéritos com o aspeto de um formulário do Google
+export default [
+  ["Escala linear (1 a 5)", "Linear scale (1 to 5)", "Échelle linéaire (1 à 5)", "Escala lineal (1 a 5)"],
+  ["Resposta aberta", "Open answer", "Réponse libre", "Respuesta abierta"],
+  ["Assim vê o inquérito quem responde. As respostas daqui não são guardadas.", "This is how respondents see the survey. Answers given here are not saved.", "Voici le questionnaire tel que le voient les répondants. Les réponses données ici ne sont pas enregistrées.", "Así ven la encuesta quienes responden. Las respuestas dadas aquí no se guardan."],
+  ["Inquérito sem título", "Untitled survey", "Questionnaire sans titre", "Encuesta sin título"],
+  ["Enviar (teste)", "Submit (test)", "Envoyer (test)", "Enviar (prueba)"],
+  ["Título do inquérito", "Survey title", "Titre du questionnaire", "Título de la encuesta"],
+  ["Texto da resposta (opcional para quem responde)", "Answer text (optional for respondents)", "Texte de la réponse (facultatif pour les répondants)", "Texto de la respuesta (opcional para quien responde)"],
+  ["Adicionar opção", "Add option", "Ajouter une option", "Añadir opción"],
+  ["obrigatória", "required", "obligatoire", "obligatoria"],
+  ["Duplicar", "Duplicate", "Dupliquer", "Duplicar"],
+  ["Adicionar pergunta", "Add question", "Ajouter une question", "Añadir pregunta"],
+  ["{0} pergunta(s)", "{0} question(s)", "{0} question(s)", "{0} pregunta(s)"],
+  ["Já respondeu. Obrigado pela sua avaliação.", "You have already answered. Thank you for your evaluation.", "Vous avez déjà répondu. Merci pour votre évaluation.", "Ya ha respondido. Gracias por su evaluación."],
+  ["Já respondeu.", "You have already answered.", "Vous avez déjà répondu.", "Ya ha respondido."],
+  ["Indica uma pergunta obrigatória", "Indicates a required question", "Indique une question obligatoire", "Indica una pregunta obligatoria"],
+  ["Pode escolher mais do que uma.", "You can choose more than one.", "Vous pouvez en choisir plusieurs.", "Puede elegir más de una."],
+  ["Esta pergunta é obrigatória", "This question is required", "Cette question est obligatoire", "Esta pregunta es obligatoria"],
+  ["Limpar formulário", "Clear form", "Effacer le formulaire", "Borrar formulario"],
+  ["A sua resposta foi registada.", "Your response has been recorded.", "Votre réponse a été enregistrée.", "Su respuesta ha sido registrada."],
+]

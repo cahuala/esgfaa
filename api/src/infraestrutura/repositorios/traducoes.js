@@ -29,6 +29,16 @@ export class RepositorioTraducoes {
     return (await this.prisma.traducao.findMany({ where: { estado: 'publicada' }, select: { colecao: true, alvoId: true, lingua: true, textos: true, automatica: true } }))
   }
 
+  // memória dos textos soltos dos painéis: { chave: texto } das chaves já traduzidas
+  async textosGuardados(lingua, chaves) {
+    const l = await this.prisma.textoTraduzido.findMany({ where: { lingua, chave: { in: chaves } }, select: { chave: true, texto: true } })
+    return Object.fromEntries(l.map((x) => [x.chave, x.texto]))
+  }
+
+  async guardarTextos(lingua, linhas) {
+    if (linhas.length) await this.prisma.textoTraduzido.createMany({ data: linhas.map((x) => ({ lingua, ...x })), skipDuplicates: true })
+  }
+
   // resumo para as listas do painel: { "noticias/slug": { en: "publicada", fr: "rascunho" } }
   async estados(colecao) {
     const l = await this.prisma.traducao.findMany({ where: { colecao }, select: { alvoId: true, lingua: true, estado: true } })

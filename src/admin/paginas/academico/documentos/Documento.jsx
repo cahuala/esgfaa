@@ -26,7 +26,8 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, assinat
           <button type="button" className="btn btn-theme" onClick={() => window.print()}><i className="fa fa-print me-1" />{tx('Imprimir / guardar em PDF')}</button>
         </div>
       </div>
-      <article className={`of-folha ${paisagem ? 'of-folha-larga' : ''}`}>
+      {/* documento oficial: fica sempre em português */}
+      <article translate="no" className={`of-folha ${paisagem ? 'of-folha-larga' : ''}`}>
         <header className="of-cabecalho">
           <img src={Brasao} alt="" />
           <div>

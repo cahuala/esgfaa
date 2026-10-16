@@ -1,6 +1,7 @@
 import Brasao from '../../assets/Logo.png'
 import Sede from '../../assets/Escola De Guerra.png'
 import { t as tx } from '../../i18n/linguas'
+import LinguasEntrada from '../../i18n/LinguasEntrada'
 
 // ecrã de entrada no estilo do painel (login com fotografia, do Color Admin)
 function MolduraEntrada({ sobretitulo, titulo, subtitulo, children }) {
@@ -17,6 +18,7 @@ function MolduraEntrada({ sobretitulo, titulo, subtitulo, children }) {
           </div>
         </div>
         <div className="login-container entrada-painel">
+          <LinguasEntrada />
           <div className="entrada-cabecalho">
             <img src={Brasao} alt={tx('Brasão da Escola Superior de Guerra')} className="entrada-brasao" />
             <div>

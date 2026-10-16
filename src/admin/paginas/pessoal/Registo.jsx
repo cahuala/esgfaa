@@ -152,7 +152,7 @@ function Registo() {
                 </div>
                 {!editar && <div className="form-text mb-3">{tx('A palavra-passe inicial é o próprio e-mail; o portal obriga a mudá-la na primeira entrada.')}</div>}
                 <div className="d-flex gap-2 mt-2">
-                  <button type="submit" className="btn btn-theme flex-grow-1"><i className={`fa ${editar ? 'fa-save' : 'fa-user-plus'} me-1`} />{editar ? tx('Guardar') : tx('Registar {0}', { 0: f.tipo === 'docente' ? 'docente' : 'estudante' })}</button>
+                  <button type="submit" className="btn btn-theme flex-grow-1"><i className={`fa ${editar ? 'fa-save' : 'fa-user-plus'} me-1`} />{editar ? tx('Guardar') : (f.tipo === 'docente' ? tx('Registar docente') : tx('Registar estudante'))}</button>
                   {editar && <button type="button" className="btn btn-white" onClick={() => { setEditar(null); setF(VAZIO) }}>{tx('Cancelar')}</button>}
                 </div>
               </form>

@@ -4,6 +4,7 @@ import Brasao from '../../assets/Logo.png'
 import Sede from '../../assets/Escola De Guerra.png'
 import { API_URL } from '../../conteudo/api'
 import { t as tx } from '../../i18n/linguas'
+import LinguasEntrada from '../../i18n/LinguasEntrada'
 
 // Página de entrada: base "login with news feed" do Color Admin, com a identidade da Escola
 function Entrar() {
@@ -42,6 +43,7 @@ function Entrar() {
 
         {/* Formulário */}
         <div className="login-container entrada-painel">
+          <LinguasEntrada />
           <div className="entrada-cabecalho">
             <img src={Brasao} alt={tx('Brasão da Escola Superior de Guerra')} className="entrada-brasao" />
             <div>

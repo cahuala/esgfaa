@@ -94,7 +94,7 @@ function Layout({ children }) {
                   <div>
                     <strong>{utilizador.nome}</strong>
                     <small>{utilizador.email}</small>
-                    <span className="esg-menu-papel">{utilizador.nomePapel}</span>
+                    <span className="esg-menu-papel">{tx(utilizador.nomePapel)}</span>
                   </div>
                 </div>
                 <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />{tx('O meu perfil')}</Link>
@@ -120,7 +120,7 @@ function Layout({ children }) {
                 <span className="admin-avatar admin-avatar-grande">{iniciais}</span>
                 <span>
                   <strong>{utilizador.nome}</strong>
-                  <small>{utilizador.nomePapel}</small>
+                  <small>{tx(utilizador.nomePapel)}</small>
                 </span>
               </Link>
             </div>

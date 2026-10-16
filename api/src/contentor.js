@@ -89,6 +89,7 @@ import { obterPagina } from './infraestrutura/web/paginas.js'
 import { ClienteClaude } from './infraestrutura/ia/claude.js'
 import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js'
 import { ServicoTraducoes } from './aplicacao/traducoes/traducoes.js'
+import { ServicoTraducaoDados } from './aplicacao/traducoes/traducaoDados.js'
 import { traduzirComClaude } from './aplicacao/traducoes/traducaoIA.js'
 import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
 
@@ -243,6 +244,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     integridade: originalidade,
     // traduções do site (redação, com rascunho da IA se houver chave)
     traducoes,
+    traducaoDados: new ServicoTraducaoDados({ traducoes: r.traducoes, tradutor: ext.tradutor, registarErro: (x) => console.error(JSON.stringify(x)) }),
     // biblioteca: catálogo e circulação
     biblioteca: {
       catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio, originalidade }),

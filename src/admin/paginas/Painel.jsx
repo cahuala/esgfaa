@@ -102,7 +102,7 @@ function Painel() {
         <div>
           <div className="esg-boas-vindas-data">{hojePorExtenso()}</div>
           <h1>{saudacao()}, {utilizador.nome.split(' ')[0]}.</h1>
-          <p>{tx('Painel de gestão do site da Escola Superior de Guerra ·')} {utilizador.nomePapel}</p>
+          <p>{tx('Painel de gestão do site da Escola Superior de Guerra ·')} {tx(utilizador.nomePapel)}</p>
         </div>
         <div className="esg-atalhos">
           {ATALHOS.filter((a) => pode(a.perm)).slice(0, 4).map((a) => (
