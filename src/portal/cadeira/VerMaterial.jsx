@@ -24,8 +24,10 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
   useEffect(() => {
     if (eDocente || !m || m.bloqueio || marcado.current || feito || !progresso || m.tipo === 'videoconferencia') return
     marcado.current = true
-    api(`/materiais/${m.id}/conclusao`, { metodo: 'PUT', corpo: { concluido: true } }).then(setProgresso).catch(() => {})
-  }, [eDocente, m, feito, progresso, setProgresso])
+    // concluir pode abrir atividades que dependiam desta: então a cadeira volta a carregar
+    const haFechadas = [...c.materiais, ...c.trabalhos, ...c.questionarios, ...(c.inqueritos || []), ...(c.workshops || [])].some((x) => x.bloqueio)
+    api(`/materiais/${m.id}/conclusao`, { metodo: 'PUT', corpo: { concluido: true } }).then((p) => { setProgresso(p); if (haFechadas) recarregar() }).catch(() => {})
+  }, [eDocente, m, feito, progresso, setProgresso, c, recarregar])
 
   if (!m) return <Vazio>{tx('Material não encontrado.')}</Vazio>
   if (m.bloqueio) return <Cartao titulo={m.titulo}><Bloqueio motivos={m.bloqueio} /></Cartao>
@@ -33,6 +35,7 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
     <div className="p-coluna">
       {m.tipo === 'ficheiro' && <Ficheiro m={m} falhou={falhou} />}
       {m.tipo === 'video' && <Video m={m} />}
+      {m.tipo === 'ligacao' && <Ligacao m={m} />}
       {m.tipo === 'pagina' && <Pagina m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
       {m.tipo === 'pasta' && <Pasta m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} falhou={falhou} />}
       {m.tipo === 'videoconferencia' && <Sessao m={m} eDocente={eDocente} feito={feito} setProgresso={setProgresso} falhou={falhou} />}
@@ -62,6 +65,25 @@ function Video({ m }) {
       ) : (
         <a className="btn btn-theme" href={m.url} target="_blank" rel="noopener noreferrer"><i className="fa fa-external-link-alt me-1" />{tx('Abrir o vídeo')}</a>
       )}
+    </Cartao>
+  )
+}
+
+// ligação para outro site: abre num separador novo (a sala de aula fica aberta)
+function Ligacao({ m }) {
+  let site = ''
+  try { site = new URL(m.url).hostname.replace(/^www\./, '') } catch { /* endereço inválido */ }
+  return (
+    <Cartao titulo={<><i className="fa fa-link me-2" />{m.titulo}</>}>
+      {m.descricao && <p className="text-muted">{m.descricao}</p>}
+      <div className="p-ligacao">
+        <i className="fa fa-globe-africa fa-2x text-muted" />
+        <div className="flex-grow-1 min-w-0">
+          <div className="fw-bold text-truncate">{site || m.url}</div>
+          <div className="small text-muted text-truncate">{m.url}</div>
+        </div>
+        <a className="btn btn-theme" href={m.url} target="_blank" rel="noopener noreferrer"><i className="fa fa-external-link-alt me-1" />{tx('Abrir a ligação')}</a>
+      </div>
     </Cartao>
   )
 }

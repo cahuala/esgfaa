@@ -112,3 +112,10 @@ export const tipoVisivel = (tipo = '') => {
 
 // identificador de um vídeo do YouTube num endereço (watch, youtu.be, shorts, embed)
 export const idYoutube = (url = '') => url.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/)?.[1] || null
+
+// capa gerada a partir do código (cada cadeira tem a sua cor, como as imagens das disciplinas no Moodle)
+const CAPAS = [
+  ['#14100e', '#b42a10'], ['#1f2a44', '#2f5fa8'], ['#1d3b2a', '#2f7d4f'], ['#3a2f12', '#c9a227'],
+  ['#2b1d3b', '#6c4fb0'], ['#0f3036', '#13838f'], ['#3b1d1d', '#a8322f'], ['#22262b', '#5d6a76'],
+]
+export const capaCadeira = (codigo = '') => CAPAS[[...codigo].reduce((s, ch) => s + ch.charCodeAt(0), 0) % CAPAS.length]

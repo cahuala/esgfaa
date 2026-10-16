@@ -13,7 +13,7 @@ async function primeiraEntrada(page, email) {
   await page.getByLabel('Nova palavra-passe', { exact: true }).fill(NOVA)
   await page.getByLabel('Repetir a nova palavra-passe').fill(NOVA)
   await page.getByRole('button', { name: 'Guardar nova palavra-passe' }).click()
-  await expect(page.locator('#content .page-header')).toContainText(/Bom dia|Boa tarde|Boa noite/)
+  await expect(page.locator('#content .page-header, #content .p-turma-topo').first()).toContainText(/Bom dia|Boa tarde|Boa noite/)
 }
 
 test('verificação pública de certificados, sem entrar no portal', async ({ page }) => {
@@ -166,24 +166,31 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Mensagem').fill('Bom dia, professor.')
   await page.getByRole('button', { name: 'Enviar' }).click()
   await expect(page.locator('.p-balao').getByText('Bom dia, professor.')).toBeVisible()
-  await page.goto('/portal/#/cadeiras')
-  await page.locator('#content').getByText('Estratégia Militar').first().click()
-  await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Leitura obrigatória' })).toBeVisible()
+  // a entrada do estudante é a sua turma; cada cadeira tem a sua sala de aula
+  await page.goto('/portal/#/')
+  await expect(page.getByRole('heading', { name: /CEM E2E/ })).toBeVisible()
+  await page.locator('.p-turma-cadeira', { hasText: 'Estratégia Militar' }).click()
+  const indice = page.getByRole('complementary', { name: 'Capítulos da cadeira' })
+  const meio = page.locator('.p-sala-meio')
+  await expect(indice.getByRole('button', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
+  await expect(indice.getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible() // o primeiro capítulo já está aberto
   // o estudante não tem o modo de edição
   await expect(page.getByLabel('Modo de edição')).toHaveCount(0)
-  // o questionário está fechado até concluir a leitura
-  await expect(page.getByText('Precisa de concluir "Leitura obrigatória"')).toBeVisible()
-  await page.getByRole('button', { name: 'Marcar como feito' }).click()
-  await expect(page.getByText('Precisa de concluir "Leitura obrigatória"')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Teste rápido' })).toBeVisible()
+  // o capítulo ao meio: o questionário está fechado até concluir a leitura
+  await meio.getByRole('button', { name: /Capítulo 1 — Introdução/ }).click()
+  await expect(meio.getByText('Precisa de concluir "Leitura obrigatória"')).toBeVisible()
+  // abrir a leitura na sala conta como feita e abre o questionário
+  await meio.getByRole('button', { name: /Leitura obrigatória/ }).first().click()
+  await expect(meio.getByRole('link', { name: 'Abrir a ligação' })).toHaveAttribute('href', 'https://example.org/leitura')
+  await page.locator('.p-sala-migalhas').getByRole('button', { name: /Capítulo 1 — Introdução/ }).click()
+  await expect(meio.getByText('Precisa de concluir "Leitura obrigatória"')).toHaveCount(0)
+  await expect(meio.getByRole('button', { name: /Teste rápido/ })).toBeVisible()
   // responde à sondagem e vê os resultados
-  await page.getByRole('button', { name: 'Visita de estudo' }).click()
+  await meio.getByRole('button', { name: /Visita de estudo/ }).click()
   await page.getByLabel('Sexta').check()
   await page.getByRole('button', { name: 'Enviar' }).click()
   await expect(page.getByText('Resposta registada.')).toBeVisible()
   await expect(page.getByText('1 resposta(s)')).toBeVisible()
-  await page.getByRole('button', { name: 'Voltar à cadeira' }).click()
   await page.getByRole('tab', { name: 'Programa' }).click()
   await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
 
@@ -196,9 +203,9 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByRole('button', { name: 'Todos os tópicos' })).toBeVisible() // o tópico novo já abriu
 
   // questionário: responde e recebe a nota logo
-  await page.getByRole('tab', { name: /Cadeira/ }).click()
-  await page.getByRole('button', { name: 'Teste rápido' }).click()
-  await page.getByRole('button', { name: 'Começar' }).click()
+  await page.getByRole('tab', { name: /Sala de aula/ }).click()
+  await indice.getByRole('button', { name: /Teste rápido/ }).click()
+  await meio.getByRole('button', { name: 'Começar', exact: true }).click()
   await page.getByLabel('Verdadeiro').check()
   await page.getByRole('button', { name: 'Entregar' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()

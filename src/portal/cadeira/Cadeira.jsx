@@ -7,6 +7,7 @@ import { PERIODOS } from '../regraAvaliacao'
 import { registarRecente } from '../recentes'
 import Programa from './Programa'
 import Curso from './Curso'
+import SalaAula from './SalaAula'
 import Participantes from './Participantes'
 import AvisosCadeira from './AvisosCadeira'
 import Trabalhos from './Trabalhos'
@@ -53,6 +54,7 @@ function Cadeira() {
   const separador = SEPARADORES.some((s) => s.id === pedido) ? pedido : 'curso'
   // atividade aberta a partir da página da cadeira: "trabalho-12", "questionario-3", "material-5", "inquerito-2"
   const [especie, atividadeId] = (params.get('atividade') || '').split('-')
+  const capitulo = params.get('capitulo')
   const irPara = useCallback((destino) => { setParams(destino, { replace: false }); window.scrollTo(0, 0) }, [setParams])
   const [c, setC] = useState(null)
   const [erro, setErro] = useState('')
@@ -75,7 +77,9 @@ function Cadeira() {
   if (!c) return <Carregando />
 
   const props = { c, eDocente, recarregar: carregar, avisar: setAviso, progresso, setProgresso, irPara }
-  const separadores = SEPARADORES.filter((s) => !s.docente || eDocente)
+  // o estudante entra na sala de aula (capítulos à direita, a aula ao meio)
+  const separadores = SEPARADORES.filter((s) => !s.docente || eDocente).map((s) => (s.id === 'curso' && !eDocente ? { ...s, texto: tx('Sala de aula'), icone: 'fa-chalkboard' } : s))
+  const naSala = !eDocente && (especie || separador === 'curso')
   const contagem = { avisos: c.avisos.length, forum: c.forum.topicos }
 
   return (
@@ -105,7 +109,7 @@ function Cadeira() {
                   type="button"
                   role="tab"
                   aria-selected={separador === s.id}
-                  className={`nav-link border-0 bg-transparent ${separador === s.id && !especie ? 'active' : ''}`}
+                  className={`nav-link border-0 bg-transparent ${separador === s.id && (!especie || naSala) ? 'active' : ''}`}
                   onClick={() => setParams({ separador: s.id }, { replace: true })}
                 >
                   <i className={`fa ${s.icone} me-1 d-none d-md-inline`} />{s.texto}{contagem[s.id] ? <span className="badge bg-gray-500 ms-1">{contagem[s.id]}</span> : null}
@@ -120,12 +124,13 @@ function Cadeira() {
 
 
       <div role="tabpanel">
-        {especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
-        {especie === 'material' && <><Voltar irPara={irPara} /><VerMaterial {...props} so={Number(atividadeId)} /></>}
-        {especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}
-        {especie === 'workshop' && <><Voltar irPara={irPara} /><Workshop {...props} so={Number(atividadeId)} /></>}
-        {especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
-        {!especie && separador === 'curso' && <Curso {...props} />}
+        {naSala && <SalaAula {...props} especie={especie} atividadeId={atividadeId} capitulo={capitulo} />}
+        {!naSala && especie === 'trabalho' && <><Voltar irPara={irPara} /><Trabalhos {...props} so={Number(atividadeId)} /></>}
+        {!naSala && especie === 'material' && <><Voltar irPara={irPara} /><VerMaterial {...props} so={Number(atividadeId)} /></>}
+        {!naSala && especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}
+        {!naSala && especie === 'workshop' && <><Voltar irPara={irPara} /><Workshop {...props} so={Number(atividadeId)} /></>}
+        {!naSala && especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
+        {!naSala && !especie && separador === 'curso' && <Curso {...props} />}
         {!especie && separador === 'participantes' && <Participantes {...props} />}
         {!especie && separador === 'grupos' && <Grupos {...props} />}
         {!especie && separador === 'programa' && <Programa {...props} />}

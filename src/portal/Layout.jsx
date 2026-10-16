@@ -147,9 +147,9 @@ function Layout({ children }) {
             </div>
 
             <div className="menu-header">{tx('Geral')}</div>
-            <ItemMenu para="/" fim icone="fa-th-large" texto={tx('Painel')} />
+            {eDocente ? <ItemMenu para="/" fim icone="fa-th-large" texto={tx('Painel')} /> : <ItemMenu para="/" fim icone="fa-users" texto={tx('A minha turma')} />}
+            {eDocente && <ItemMenu para="/cadeiras" icone="fa-book" texto={tx('As minhas cadeiras')} />}
             <ItemMenu para="/calendario" icone="fa-calendar-alt" texto={tx('Calendário')} />
-            <ItemMenu para="/cadeiras" icone="fa-book" texto={eDocente ? tx('As minhas cadeiras') : tx('As minhas cadeiras')} />
             <ItemMenu para="/horario" icone="fa-clock" texto={tx('Horário')} />
             {eDocente && <ItemMenu para="/banco" icone="fa-archive" texto={tx('Banco de perguntas')} />}
             {eDocente && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Originalidade')} />}

@@ -26,7 +26,7 @@ function Questionarios(props) {
     }
     return props.eDocente
       ? <EditorQuestionario id={aberto} avisar={props.avisar} voltar={voltar} />
-      : <Realizar id={aberto} avisar={props.avisar} recarregar={props.recarregar} voltar={voltar} />
+      : <Realizar id={aberto} avisar={props.avisar} recarregar={props.recarregar} voltar={voltar} semVoltar={props.semVoltar} />
   }
   return <Lista {...props} abrir={setAberto} />
 }
@@ -351,7 +351,7 @@ function Estatisticas({ id, perguntas, falhou }) {
 
 // ---------- estudante: responder com tempo e rever ----------
 
-function Realizar({ id, avisar, recarregar, voltar }) {
+function Realizar({ id, avisar, recarregar, voltar, semVoltar }) {
   const [q, setQ] = useState(null)
   const [tentativa, setTentativa] = useState(null)
   const [respostas, setRespostas] = useState({})
@@ -472,7 +472,8 @@ function Realizar({ id, avisar, recarregar, voltar }) {
   const podeComecar = q.estado === 'aberto' && q.feitas.length < q.tentativas
   return (
     <>
-      <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> {tx('Voltar à cadeira')}</button>
+      {/* na sala de aula a navegação já está à volta */}
+      {!semVoltar && <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> {tx('Voltar à cadeira')}</button>}
       {resultado && (resultado.porCorrigir ? (
         <div className="alert alert-info">
           <h4 className="alert-heading mb-1">{tx('Entregue')}</h4>

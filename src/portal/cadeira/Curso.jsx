@@ -8,22 +8,9 @@ import Importar from './Importar'
 import Restricoes from './Restricoes'
 import Conclusao from './Conclusao'
 import { confirmar, pedir } from '../dialogos'
+import { listarAtividades, tipoVisual } from './atividades'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
-// aspeto de cada tipo de atividade (como os ícones coloridos do Moodle)
-const TIPOS = {
-  ficheiro: { icone: 'fa-file-alt', cor: 'bg-primary', nome: 'Ficheiro' },
-  ligacao: { icone: 'fa-link', cor: 'bg-info', nome: 'Ligação' },
-  video: { icone: 'fa-play', cor: 'bg-danger', nome: 'Vídeo' },
-  trabalho: { icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho' },
-  questionario: { icone: 'fa-question', cor: 'bg-purple', nome: 'Questionário' },
-  pagina: { icone: 'fa-align-left', cor: 'bg-teal', nome: 'Página' },
-  pasta: { icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta' },
-  videoconferencia: { icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência' },
-  sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem' },
-  avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: 'Avaliação do docente' },
-  workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares' },
-}
 // tipos de dados do arrasto (atividade para outro capítulo, capítulo para outra posição)
 const MIME = { atividade: 'application/x-esg-atividade', capitulo: 'application/x-esg-capitulo' }
 const SESSAO = { em_breve: ['bg-light text-dark border', tx('Em breve')], abre: ['bg-success', tx('Abre já')], a_decorrer: ['bg-danger', tx('A decorrer')], terminou: ['bg-gray-500', tx('Terminou')] }
@@ -45,13 +32,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
 
   // atividades de cada capítulo, por ordem de publicação
-  const atividades = [
-    ...c.materiais.map((m) => ({ ...m, chave: `material-${m.id}`, especie: 'material', visual: m.tipo, quando: m.publicadoEm })),
-    ...c.trabalhos.map((t) => ({ ...t, chave: `trabalho-${t.id}`, especie: 'trabalho', visual: 'trabalho', quando: t.criadoEm })),
-    ...c.questionarios.map((q) => ({ ...q, chave: `questionario-${q.id}`, especie: 'questionario', visual: 'questionario', quando: q.criadoEm })),
-    ...(c.inqueritos || []).map((i) => ({ ...i, chave: `inquerito-${i.id}`, especie: 'inquerito', visual: i.tipo, quando: i.criadoEm })),
-    ...(c.workshops || []).map((w) => ({ ...w, chave: `workshop-${w.id}`, especie: 'workshop', visual: 'workshop', quando: w.criadoEm })),
-  ].sort((a, b) => String(a.quando).localeCompare(String(b.quando)))
+  const atividades = listarAtividades(c)
   const condicoes = new Set(atividades.flatMap((a) => (a.requisitos || []).map((r) => `${r.tipo}-${r.id}`)))
   const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
   const feita = (a) => progresso?.itens.find((i) => i.tipo === a.especie && i.id === a.id)?.feita
@@ -142,7 +123,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
 
   // ---------- desenho ----------
   const linhaAtividade = (a) => {
-    const t = TIPOS[a.visual] || TIPOS.ficheiro
+    const t = tipoVisual(a)
     let meta = t.nome
     let estado = null
     if (a.tipo === 'pasta') meta = tx('Pasta · {0} ficheiro(s)', { 0: a.ficheiros.length })

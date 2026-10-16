@@ -5,6 +5,7 @@ import Layout from './Layout'
 import Entrar from './paginas/Entrar'
 import MudarSenha from './paginas/MudarSenha'
 import Inicio from './paginas/Inicio'
+import MinhaTurma from './paginas/MinhaTurma'
 import Cadeiras from './paginas/Cadeiras'
 import Cadeira from './cadeira/Cadeira'
 import Notas from './paginas/Notas'
@@ -41,7 +42,9 @@ function App() {
     <Layout>
       <JanelaDialogo />
       <Routes>
-        <Route path="/" element={<Inicio />} />
+        {/* o estudante entra na sua turma; o docente no painel */}
+        <Route path="/" element={eDocente ? <Inicio /> : <MinhaTurma />} />
+        {!eDocente && <Route path="/painel" element={<Inicio />} />}
         <Route path="/cadeiras" element={<Cadeiras />} />
         <Route path="/cadeiras/:id" element={<Cadeira />} />
         <Route path="/horario" element={<Horario />} />

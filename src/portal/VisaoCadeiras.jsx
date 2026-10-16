@@ -3,14 +3,8 @@ import { Link } from 'react-router-dom'
 import { Vazio } from './componentes'
 import { PERIODOS } from './regraAvaliacao'
 import { BarraProgresso } from './cadeira/Progresso'
+import { capaCadeira as capa } from './formatar'
 import { t as tx } from '../i18n/linguas'
-
-// capa gerada a partir do código (cada cadeira tem a sua cor, como as imagens das disciplinas no Moodle)
-const CAPAS = [
-  ['#14100e', '#b42a10'], ['#1f2a44', '#2f5fa8'], ['#1d3b2a', '#2f7d4f'], ['#3a2f12', '#c9a227'],
-  ['#2b1d3b', '#6c4fb0'], ['#0f3036', '#13838f'], ['#3b1d1d', '#a8322f'], ['#22262b', '#5d6a76'],
-]
-const capa = (codigo) => CAPAS[[...codigo].reduce((s, ch) => s + ch.charCodeAt(0), 0) % CAPAS.length]
 
 /*
   As minhas cadeiras (como o "Course overview" do Moodle): cartões com capa e progresso,
