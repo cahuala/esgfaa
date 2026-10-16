@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import styles from './CabecalhoEditorial.module.css'
+import { t } from '../../i18n/linguas'
 
 /*
   Cabeçalho das páginas interiores sem fotografia: faixa cinzenta clara com migalhas,
@@ -12,8 +13,8 @@ function CabecalhoEditorial({ migalhas, sobretitulo, titulo, entrada, children }
       <div className={`contentor ${styles.interior}`}>
         <div className={styles.texto}>
           {migalhas && (
-            <nav aria-label="Localização" className={styles.migalhas}>
-              <Link to="/">Início</Link>
+            <nav aria-label={t('Localização')} className={styles.migalhas}>
+              <Link to="/">{t('Início')}</Link>
               {migalhas.map((m) => (
                 <span key={m.label}>
                   <span aria-hidden="true">/</span>

@@ -1,5 +1,6 @@
 import { useTema } from '../../tema/useTema'
 import styles from './AlternarTema.module.css'
+import { t } from '../../i18n/linguas'
 
 /** Botão do menu para trocar entre o modo claro e o escuro. */
 function AlternarTema() {
@@ -10,9 +11,9 @@ function AlternarTema() {
       type="button"
       className={styles.botao}
       onClick={alternar}
-      aria-label={escuro ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
+      aria-label={escuro ? t('Mudar para o modo claro') : t('Mudar para o modo escuro')}
       aria-pressed={escuro}
-      title={escuro ? 'Modo claro' : 'Modo escuro'}
+      title={escuro ? t('Modo claro') : t('Modo escuro')}
     >
       {escuro ? (
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

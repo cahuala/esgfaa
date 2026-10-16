@@ -6,12 +6,14 @@ import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Contagem from './Contagem'
 import LinhaAgenda from './LinhaAgenda'
 import Interacoes from '../../components/Interacoes/Interacoes'
+import AvisoLingua from '../../components/AvisoLingua/AvisoLingua'
 import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import { useConteudo } from '../../conteudo/contexto'
 import { diaDaSemana, diaDoMes, hoje, mesLongo, paraData } from '../../utils/datas'
 import { descarregarCalendario } from '../../utils/calendario'
 import ed from '../../styles/editorial.module.css'
 import styles from './Eventos.module.css'
+import { t } from '../../i18n/linguas'
 
 function EventoDetalhe() {
   const { id } = useParams()
@@ -19,7 +21,7 @@ function EventoDetalhe() {
   const evento = eventoPorId(id)
 
   if (!evento) {
-    return <NaoEncontrado titulo="Evento não encontrado" voltarPara="/Eventos" voltarTexto="Ver a agenda" />
+    return <NaoEncontrado titulo={t('Evento não encontrado')} voltarPara="/Eventos" voltarTexto={t('Ver a agenda')} />
   }
 
   const realizado = paraData(evento.data) < hoje()
@@ -31,8 +33,9 @@ function EventoDetalhe() {
       <div className={`contentor ${styles.evento}`}>
         <article>
           <Link to="/Eventos" className={styles.voltar}>
-            <span><FaArrowLeft aria-hidden="true" /></span> Voltar à agenda
+            <span><FaArrowLeft aria-hidden="true" /></span> {t('Voltar à agenda')}
           </Link>
+          <AvisoLingua item={evento} />
           <Etiqueta>{evento.categoria}</Etiqueta>
           <h1>{evento.titulo}</h1>
           {evento.resumo && <p className={styles.entrada}>{evento.resumo}</p>}
@@ -47,7 +50,7 @@ function EventoDetalhe() {
 
           {evento.programa?.length > 0 && (
             <>
-              <h2 className={styles.subtitulo}>Programa</h2>
+              <h2 className={styles.subtitulo}>{t('Programa')}</h2>
               <ol className={styles.programa}>
                 {evento.programa.map((p) => (
                   <li key={`${p.hora}-${p.atividade}`}>
@@ -63,7 +66,7 @@ function EventoDetalhe() {
         </article>
 
         {/* ficha com a informação essencial */}
-        <aside className={styles.bilhete} aria-label="Informação do evento">
+        <aside className={styles.bilhete} aria-label={t('Informação do evento')}>
           <div className={styles.bilheteData}>
             <strong>{diaDoMes(evento.data)}</strong>
             <span>
@@ -72,18 +75,18 @@ function EventoDetalhe() {
             </span>
           </div>
           <dl className={styles.bilheteFactos}>
-            <div><dt>Horário</dt><dd>{evento.horaInicio}{evento.horaFim ? ` – ${evento.horaFim}` : ''}</dd></div>
-            <div><dt>Local</dt><dd>{evento.local}</dd></div>
+            <div><dt>{t('Horário')}</dt><dd>{evento.horaInicio}{evento.horaFim ? ` – ${evento.horaFim}` : ''}</dd></div>
+            <div><dt>{t('Local')}</dt><dd>{evento.local}</dd></div>
             <div>
-              <dt>{realizado ? 'Estado' : 'Começa dentro de'}</dt>
-              <dd>{realizado ? 'Realizado' : <Contagem data={evento.data} hora={evento.horaInicio} compacta />}</dd>
+              <dt>{realizado ? t('Estado') : t('Começa dentro de')}</dt>
+              <dd>{realizado ? t('Realizado') : <Contagem data={evento.data} hora={evento.horaInicio} compacta />}</dd>
             </div>
           </dl>
           {!realizado && (
             <div className={styles.bilheteAcoes}>
-              {evento.inscricoes && <Link to="/Contactos#formulario" className={ed.botao}>Inscrever-me</Link>}
+              {evento.inscricoes && <Link to="/Contactos#formulario" className={ed.botao}>{t('Inscrever-me')}</Link>}
               <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={() => descarregarCalendario(evento)}>
-                <FaRegCalendarPlus aria-hidden="true" /> Adicionar ao calendário
+                <FaRegCalendarPlus aria-hidden="true" /> {t('Adicionar ao calendário')}
               </button>
             </div>
           )}
@@ -94,8 +97,8 @@ function EventoDetalhe() {
       {outros.length > 0 && (
         <section className={styles.outros}>
           <div className="contentor">
-            <span className={ed.rotulo}>Agenda</span>
-            <h2 className={styles.outrosTitulo}>Outros eventos</h2>
+            <span className={ed.rotulo}>{t('Agenda')}</span>
+            <h2 className={styles.outrosTitulo}>{t('Outros eventos')}</h2>
             <ul className={styles.lista}>
               {outros.map((e) => <li key={e.id}><LinhaAgenda evento={e} /></li>)}
             </ul>

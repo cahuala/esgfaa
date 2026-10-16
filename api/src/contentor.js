@@ -87,6 +87,8 @@ import { extrairTexto } from './infraestrutura/texto/extrair.js'
 import { PesquisaBrave } from './infraestrutura/web/pesquisaBrave.js'
 import { obterPagina } from './infraestrutura/web/paginas.js'
 import { ClienteClaude } from './infraestrutura/ia/claude.js'
+import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js'
+import { ServicoTraducoes } from './aplicacao/traducoes/traducoes.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -122,6 +124,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     qualidade: new RepositorioQualidade({ prisma }),
     biblioteca: new RepositorioBiblioteca({ prisma }),
     integridade: new RepositorioIntegridade({ prisma }),
+    traducoes: new RepositorioTraducoes({ prisma }),
   }
 
   const cifra = new CifraSenhas()
@@ -227,6 +230,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     // qualidade: inquéritos institucionais de satisfação
     qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },
     integridade: originalidade,
+    // traduções do site (redação, com rascunho da IA se houver chave)
+    traducoes: new ServicoTraducoes({ traducoes: r.traducoes, conteudos: r.conteudos, paginas: r.paginas, claude: ext.claude, auditoria }),
     // biblioteca: catálogo e circulação
     biblioteca: {
       catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio, originalidade }),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Brasao from '../../assets/Logo.png'
 import styles from './Carregamento.module.css'
+import { t } from '../../i18n/linguas'
 
 // tempo total do ecrã: barra a encher (0,75 s) + desvanecer (0,35 s)
 const DURACAO_MS = 1100
@@ -27,7 +28,7 @@ function Carregamento() {
     <div key={pathname} className={styles.ecra} aria-hidden="true">
       <div className={styles.centro}>
         <img src={Brasao} alt="" className={styles.brasao} />
-        <span className={styles.nome}>Escola Superior de Guerra</span>
+        <span className={styles.nome}>{t('Escola Superior de Guerra')}</span>
         <span className={styles.barra}><span /></span>
       </div>
     </div>

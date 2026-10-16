@@ -14,6 +14,7 @@ import { descarregarAgenda, descarregarCalendario } from '../../utils/calendario
 import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Eventos.module.css'
+import { t } from '../../i18n/linguas'
 
 const TODOS = 'Todos'
 
@@ -53,41 +54,41 @@ function Eventos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Eventos' }]}
-        sobretitulo="Agenda"
-        titulo="Eventos"
-        entrada="Cerimónias, conferências, seminários e visitas oficiais da Escola."
+        migalhas={[{ label: t('Eventos') }]}
+        sobretitulo={t('Agenda')}
+        titulo={t('Eventos')}
+        entrada={t('Cerimónias, conferências, seminários e visitas oficiais da Escola.')}
       >
         <dl className={styles.numeros}>
-          <div><dt>Próximos</dt><dd>{proximos.length}</dd></div>
-          <div><dt>Este mês</dt><dd>{esteMes}</dd></div>
-          <div><dt>Realizados</dt><dd>{realizados.length}</dd></div>
+          <div><dt>{t('Próximos')}</dt><dd>{proximos.length}</dd></div>
+          <div><dt>{t('Este mês')}</dt><dd>{esteMes}</dd></div>
+          <div><dt>{t('Realizados')}</dt><dd>{realizados.length}</dd></div>
         </dl>
       </CabecalhoEditorial>
 
       {/* Próximo evento em destaque: cartão branco com a fotografia ao lado */}
       {seguinte && (
-        <section className={`contentor ${styles.destaque}`} aria-label="Próximo evento">
+        <section className={`contentor ${styles.destaque}`} aria-label={t('Próximo evento')}>
           <div className={styles.destaqueInterior}>
             <Link to={`/Eventos/${seguinte.id}`} className={styles.destaqueFoto} tabIndex={-1} aria-hidden="true">
               <img src={seguinte.capa} alt="" />
             </Link>
             <div className={styles.destaqueTexto}>
               <div className={styles.destaqueRotulo}>
-                <span>Próximo evento</span>
+                <span>{t('Próximo evento')}</span>
                 <Etiqueta>{seguinte.categoria}</Etiqueta>
               </div>
               <h2><Link to={`/Eventos/${seguinte.id}`}>{seguinte.titulo}</Link></h2>
               <ul className={styles.destaqueFactos}>
-                <li><FaRegCalendarPlus aria-hidden="true" /> {diaDaSemana(seguinte.data)}, {diaDoMes(seguinte.data)} de {mesLongo(seguinte.data)}</li>
+                <li><FaRegCalendarPlus aria-hidden="true" /> {t('{semana}, {dia} de {mes}', { semana: diaDaSemana(seguinte.data), dia: diaDoMes(seguinte.data), mes: mesLongo(seguinte.data) })}</li>
                 <li><FaRegClock aria-hidden="true" /> {seguinte.horaInicio}{seguinte.horaFim ? ` – ${seguinte.horaFim}` : ''}</li>
                 <li><FaMapMarkerAlt aria-hidden="true" /> {seguinte.local}</li>
               </ul>
               <Contagem data={seguinte.data} hora={seguinte.horaInicio} />
               <div className={styles.destaqueAcoes}>
-                <Link to={`/Eventos/${seguinte.id}`} className={ed.botao}>Ver programa</Link>
+                <Link to={`/Eventos/${seguinte.id}`} className={ed.botao}>{t('Ver programa')}</Link>
                 <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={() => descarregarCalendario(seguinte)}>
-                  <FaRegCalendarPlus aria-hidden="true" /> Adicionar ao calendário
+                  <FaRegCalendarPlus aria-hidden="true" /> {t('Adicionar ao calendário')}
                 </button>
               </div>
             </div>
@@ -97,8 +98,8 @@ function Eventos() {
 
       <div className={`contentor ${styles.grelha}`}>
         {/* Esquerda: calendário e filtros */}
-        <aside className={styles.lateral} aria-label="Calendário e filtros">
-          <h2 className={styles.lateralTitulo}>Calendário</h2>
+        <aside className={styles.lateral} aria-label={t('Calendário e filtros')}>
+          <h2 className={styles.lateralTitulo}>{t('Calendário')}</h2>
           <Calendario
             mes={mes}
             onMudarMes={setMes}
@@ -109,14 +110,14 @@ function Eventos() {
           />
 
           <div className={styles.filtro}>
-            <h2 className={styles.lateralTitulo}>Tipo de evento</h2>
+            <h2 className={styles.lateralTitulo}>{t('Tipo de evento')}</h2>
             <ul>
-              {[TODOS, ...tipos].map((t) => {
-                const total = t === TODOS ? proximos.length : proximos.filter((e) => e.categoria === t).length
+              {[TODOS, ...tipos].map((x) => {
+                const total = x === TODOS ? proximos.length : proximos.filter((e) => e.categoria === x).length
                 return (
-                  <li key={t}>
-                    <button className={tipo === t ? styles.filtroAtivo : ''} onClick={() => setTipo(t)} aria-pressed={tipo === t}>
-                      <span>{t}</span>
+                  <li key={x}>
+                    <button className={tipo === x ? styles.filtroAtivo : ''} onClick={() => setTipo(x)} aria-pressed={tipo === x}>
+                      <span>{x === TODOS ? t('Todos') : x}</span>
                       <span className={styles.total}>{total}</span>
                     </button>
                   </li>
@@ -127,28 +128,28 @@ function Eventos() {
 
           {proximos.length > 0 && (
             <div className={ed.caixaLateral}>
-              <h2 className={styles.lateralTitulo}>Subscrever</h2>
-              <p>Descarregue todos os próximos eventos para o seu calendário (Google, Outlook ou iPhone).</p>
+              <h2 className={styles.lateralTitulo}>{t('Subscrever')}</h2>
+              <p>{t('Descarregue todos os próximos eventos para o seu calendário (Google, Outlook ou iPhone).')}</p>
               <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={() => descarregarAgenda(proximos)}>
-                <FaRegCalendarPlus aria-hidden="true" /> Agenda completa
+                <FaRegCalendarPlus aria-hidden="true" /> {t('Agenda completa')}
               </button>
             </div>
           )}
         </aside>
 
         {/* Centro: agenda */}
-        <section className={styles.centro} aria-label="Agenda">
+        <section className={styles.centro} aria-label={t('Agenda')}>
           <div className={styles.centroTopo}>
-            <h2>{dia ? `Eventos de ${formatarDataLonga(dia)}` : 'Próximos eventos'}</h2>
+            <h2>{dia ? t('Eventos de {data}', { data: formatarDataLonga(dia) }) : t('Próximos eventos')}</h2>
             {(dia || tipo !== TODOS) && (
-              <button className={styles.limpar} onClick={() => { setDia(null); setTipo(TODOS) }}>Ver toda a agenda</button>
+              <button className={styles.limpar} onClick={() => { setDia(null); setTipo(TODOS) }}>{t('Ver toda a agenda')}</button>
             )}
           </div>
 
           {grupos.length === 0 ? (
             <div className={styles.vazio}>
-              <strong>Sem eventos para esta seleção.</strong>
-              <button onClick={() => { setDia(null); setTipo(TODOS) }}>Ver toda a agenda</button>
+              <strong>{t('Sem eventos para esta seleção.')}</strong>
+              <button onClick={() => { setDia(null); setTipo(TODOS) }}>{t('Ver toda a agenda')}</button>
             </div>
           ) : (
             grupos.map((g) => (
@@ -165,10 +166,10 @@ function Eventos() {
         </section>
 
         {/* Direita: realizados */}
-        <aside className={styles.arquivo} aria-label="Eventos realizados">
-          <h2 className={styles.arquivoTitulo}>Eventos realizados</h2>
+        <aside className={styles.arquivo} aria-label={t('Eventos realizados')}>
+          <h2 className={styles.arquivoTitulo}>{t('Eventos realizados')}</h2>
           {realizados.length === 0 ? (
-            <p className={styles.arquivoVazio}>Ainda não há eventos realizados.</p>
+            <p className={styles.arquivoVazio}>{t('Ainda não há eventos realizados.')}</p>
           ) : (
             realizados.map((e) => <MiniaturaEvento key={e.id} evento={e} />)
           )}

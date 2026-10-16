@@ -4,6 +4,7 @@ import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/f
 import Logo from '../../assets/Logo.png'
 import { useConteudo } from '../../conteudo/contexto'
 import styles from './Footer.module.css'
+import { t } from '../../i18n/linguas'
 
 const colunas = [
   {
@@ -52,13 +53,12 @@ function Footer() {
         <div className={styles.bloco}>
           <div className={styles.marca}>
             <img src={Logo} alt="" className={styles.logo} />
-            <strong>Escola Superior de Guerra</strong>
+            <strong>{t('Escola Superior de Guerra')}</strong>
           </div>
           <p className={styles.descricao}>
-            Escola Superior de Guerra das Forças Armadas Angolanas — formação, investigação
-            e cooperação ao serviço da defesa nacional.
+            {t('Escola Superior de Guerra das Forças Armadas Angolanas — formação, investigação e cooperação ao serviço da defesa nacional.')}
           </p>
-          <span className={styles.redesTitulo}>Siga-nos</span>
+          <span className={styles.redesTitulo}>{t('Siga-nos')}</span>
           <div className={styles.redes}>
             <a href="#" aria-label="Facebook" className={styles.redeIcone}>
                  <FaFacebookF />
@@ -77,11 +77,11 @@ function Footer() {
 
         {colunas.map((coluna) => (
           <div className={styles.bloco} key={coluna.titulo}>
-            <h4>{coluna.titulo}</h4>
+            <h4>{t(coluna.titulo)}</h4>
             <ul>
               {coluna.links.map((link) => (
                 <li key={link.label}>
-                  {link.href ? <a href={link.href}>{link.label}</a> : <Link to={link.to}>{link.label}</Link>}
+                  {link.href ? <a href={link.href}>{t(link.label)}</a> : <Link to={link.to}>{t(link.label)}</Link>}
                 </li>
               ))}
             </ul>
@@ -90,9 +90,9 @@ function Footer() {
       </div>
 
       <div className={styles.base}>
-        <p>© {ano} Escola Superior de Guerra das Forças Armadas Angolanas. Todos os direitos reservados.</p>
+        <p>© {ano} {t('Escola Superior de Guerra das Forças Armadas Angolanas. Todos os direitos reservados.')}</p>
         <div className={styles.baseLinks}>
-          <Link to="/Contactos">Localização</Link>
+          <Link to="/Contactos">{t('Localização')}</Link>
           <a href={`mailto:${email}`}>{email}</a>
         </div>
       </div>

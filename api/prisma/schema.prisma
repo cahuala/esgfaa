@@ -1316,3 +1316,22 @@ model AnaliseIntegridade {
   @@index([estado])
   @@map("integridade_analises")
 }
+
+// ---------- Traduções do site ----------
+
+// tradução de um conteúdo (item de uma coleção ou página) para uma língua; o original fica em português
+model Traducao {
+  colecao       String // noticias, artigos, … ou "paginas"
+  alvoId        String   @map("alvo_id")
+  lingua        String // en | fr | es
+  textos        Json     @default("{}") // caminho -> texto traduzido
+  originais     Json     @default("{}") // caminho -> texto original no momento da tradução (para saber o que mudou)
+  estado        String   @default("rascunho") // rascunho | publicada
+  automatica    Boolean  @default(false) // feita (ou começada) pela IA
+  atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  atualizadoPor String   @default("") @map("atualizado_por")
+
+  @@id([colecao, alvoId, lingua])
+  @@index([estado])
+  @@map("traducoes")
+}

@@ -10,7 +10,7 @@ function Rastreio() {
     if (!API_URL) return
     pedido('/api/publico/visita', {
       method: 'POST',
-      body: JSON.stringify({ visitante: idVisitante(), caminho: pathname, origem: document.referrer || null }),
+      body: JSON.stringify({ visitante: idVisitante(), caminho: pathname, origem: document.referrer || undefined }),
       keepalive: true,
     }).catch(() => {})
   }, [pathname])

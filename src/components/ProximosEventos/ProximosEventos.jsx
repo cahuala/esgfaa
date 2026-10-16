@@ -4,6 +4,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { paraData, hoje as inicioDoDia, diaDoMes, mesCurto } from '../../utils/datas'
 import { Etiqueta, LigacaoMais, TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './ProximosEventos.module.css'
+import { t } from '../../i18n/linguas'
 
 function ProximosEventos() {
   const { eventos, paginas } = useConteudo()
@@ -19,10 +20,10 @@ function ProximosEventos() {
   return (
     <section className="seccao seccao-cinza">
       <div className="contentor">
-        <TituloSeccao rotulo={textos.etiqueta || 'Agenda'} titulo={textos.titulo} />
+        <TituloSeccao rotulo={textos.etiqueta || t('Agenda')} titulo={textos.titulo} />
 
         {proximos.length === 0 ? (
-          <p className={styles.vazio}>Não há eventos agendados neste momento.</p>
+          <p className={styles.vazio}>{t('Não há eventos agendados neste momento.')}</p>
         ) : (
           <ul className={styles.lista}>
             {proximos.map((e) => (
@@ -47,7 +48,7 @@ function ProximosEventos() {
         )}
 
         <div className={styles.rodape}>
-          <LigacaoMais para="/Eventos">Ver todos os eventos</LigacaoMais>
+          <LigacaoMais para="/Eventos">{t('Ver todos os eventos')}</LigacaoMais>
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
+import AvisoLingua from '../../components/AvisoLingua/AvisoLingua'
 import { totalHoras } from '../../data/cursos'
 import { useConteudo } from '../../conteudo/contexto'
 import { iniciais } from '../../utils/texto'
@@ -8,6 +9,7 @@ import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import ed from '../../styles/editorial.module.css'
 import { Cartao, TituloSeccao } from '../../components/Corporativo/Corporativo'
 import detalhe from './CursoDetalhe.module.css'
+import { t } from '../../i18n/linguas'
 
 const seccoes = [
   { id: 'apresentacao', label: 'Apresentação' },
@@ -31,7 +33,7 @@ function CursoDetalhe() {
   const ativa = useSeccaoAtiva(ids)
 
   if (!curso) {
-    return <NaoEncontrado titulo="Curso não encontrado" voltarPara="/Cursos" voltarTexto="Ver todos os cursos" />
+    return <NaoEncontrado titulo={t('Curso não encontrado')} voltarPara="/Cursos" voltarTexto={t('Ver todos os cursos')} />
   }
 
   const coordenador = pessoaPorId(curso.coordenador)
@@ -41,27 +43,28 @@ function CursoDetalhe() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Cursos', to: '/Cursos' }, { label: curso.sigla }]}
+        migalhas={[{ label: t('Cursos'), to: '/Cursos' }, { label: curso.sigla }]}
         sobretitulo={`${curso.sigla} · ${curso.duracao}`}
         titulo={curso.nome}
         entrada={curso.resumo}
       />
 
+      <div className="contentor"><AvisoLingua item={curso} /></div>
       <figure className={`contentor ${detalhe.imagem}`}>
         <img src={curso.imagem} alt="" />
       </figure>
 
       <dl className={ed.factos}>
-        <div><dt>Duração</dt><dd>{curso.duracao}</dd></div>
-        <div><dt>Regime</dt><dd>{curso.regime}</dd></div>
-        <div><dt>Vagas</dt><dd>{curso.vagas}</dd></div>
-        <div><dt>Carga horária</dt><dd>{totalHoras(curso)} horas</dd></div>
+        <div><dt>{t('Duração')}</dt><dd>{curso.duracao}</dd></div>
+        <div><dt>{t('Regime')}</dt><dd>{curso.regime}</dd></div>
+        <div><dt>{t('Vagas')}</dt><dd>{curso.vagas}</dd></div>
+        <div><dt>{t('Carga horária')}</dt><dd>{t('{n} horas', { n: totalHoras(curso) })}</dd></div>
       </dl>
 
       <div className={`${ed.grelha} ${detalhe.grelha}`}>
         <aside className={ed.indice}>
-          <h2 className={detalhe.indiceTitulo}>Neste curso</h2>
-          <nav aria-label="Secções do curso">
+          <h2 className={detalhe.indiceTitulo}>{t('Neste curso')}</h2>
+          <nav aria-label={t('Secções do curso')}>
             <ol>
               {seccoes.map((s) => (
                 <li key={s.id}>
@@ -71,7 +74,7 @@ function CursoDetalhe() {
                     aria-current={ativa === s.id ? 'true' : undefined}
                   >
                     <span className={ed.indiceNumero}>{numero(s.id)}</span>
-                    {s.label}
+                    {t(s.label)}
                   </Link>
                 </li>
               ))}
@@ -79,30 +82,30 @@ function CursoDetalhe() {
           </nav>
 
           <div className={ed.caixaLateral}>
-            <h3 className={detalhe.caixaTitulo}>Candidaturas</h3>
-            <p>{pagina.candidaturasAbertas && prazo ? `Abertas até ${prazo}.` : 'Consulte o calendário de admissão.'}</p>
-            <Link to={`/Candidatura?curso=${curso.id}`} className={ed.botao}>Candidatar-me a este curso</Link>
+            <h3 className={detalhe.caixaTitulo}>{t('Candidaturas')}</h3>
+            <p>{pagina.candidaturasAbertas && prazo ? t('Abertas até {prazo}.', { prazo }) : t('Consulte o calendário de admissão.')}</p>
+            <Link to={`/Candidatura?curso=${curso.id}`} className={ed.botao}>{t('Candidatar-me a este curso')}</Link>
           </div>
         </aside>
 
         <div className={ed.conteudo}>
-          <Seccao id="apresentacao" numero={numero('apresentacao')} rotulo="Apresentação" titulo="Sobre o curso">
+          <Seccao id="apresentacao" numero={numero('apresentacao')} rotulo={t('Apresentação')} titulo={t('Sobre o curso')}>
             <div className={ed.texto}>
               {curso.apresentacao.map((p) => <p key={p}>{p}</p>)}
             </div>
             <dl className={detalhe.destinatarios}>
-              <dt>Destinatários</dt>
+              <dt>{t('Destinatários')}</dt>
               <dd>{curso.destinatarios}</dd>
             </dl>
           </Seccao>
 
-          <Seccao id="objetivos" numero={numero('objetivos')} rotulo="Objetivos" titulo="No final do curso, o oficial é capaz de:">
+          <Seccao id="objetivos" numero={numero('objetivos')} rotulo={t('Objetivos')} titulo={t('No final do curso, o oficial é capaz de:')}>
             <ol className={ed.listaNumerada}>
               {curso.objetivos.map((o) => <li key={o}>{o}</li>)}
             </ol>
           </Seccao>
 
-          <Seccao id="plano" numero={numero('plano')} rotulo="Plano curricular" titulo="Unidades curriculares por semestre">
+          <Seccao id="plano" numero={numero('plano')} rotulo={t('Plano curricular')} titulo={t('Unidades curriculares por semestre')}>
             <div className={detalhe.semestres}>
               {curso.plano.map((p) => {
                 const horas = p.unidades.reduce((s, u) => s + u.horas, 0)
@@ -111,8 +114,8 @@ function CursoDetalhe() {
                     <caption>{p.periodo}</caption>
                     <thead>
                       <tr>
-                        <th scope="col">Unidade curricular</th>
-                        <th scope="col" className={ed.numero}>Horas</th>
+                        <th scope="col">{t('Unidade curricular')}</th>
+                        <th scope="col" className={ed.numero}>{t('Horas')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -124,23 +127,23 @@ function CursoDetalhe() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr><th scope="row">Total do semestre</th><td className={ed.numero}>{horas}</td></tr>
+                      <tr><th scope="row">{t('Total do semestre')}</th><td className={ed.numero}>{horas}</td></tr>
                     </tfoot>
                   </table>
                 )
               })}
             </div>
             <p className={detalhe.total}>
-              Carga horária total do curso: <strong>{totalHoras(curso)} horas</strong>
+              {t('Carga horária total do curso:')} <strong>{t('{n} horas', { n: totalHoras(curso) })}</strong>
             </p>
           </Seccao>
 
-          <Seccao id="admissao" numero={numero('admissao')} rotulo="Admissão" titulo="Requisitos e processo de candidatura">
-            <h3 className={detalhe.subtitulo}>Requisitos</h3>
+          <Seccao id="admissao" numero={numero('admissao')} rotulo={t('Admissão')} titulo={t('Requisitos e processo de candidatura')}>
+            <h3 className={detalhe.subtitulo}>{t('Requisitos')}</h3>
             <ol className={ed.listaNumerada}>
               {curso.requisitos.map((r) => <li key={r}>{r}</li>)}
             </ol>
-            <h3 className={detalhe.subtitulo}>Processo</h3>
+            <h3 className={detalhe.subtitulo}>{t('Processo')}</h3>
             <ol className={ed.passos} style={{ '--colunas': processoAdmissao.length }}>
               {processoAdmissao.map((p, i) => (
                 <li key={p.titulo}>
@@ -152,10 +155,10 @@ function CursoDetalhe() {
             </ol>
           </Seccao>
 
-          <Seccao id="calendario" numero={numero('calendario')} rotulo="Calendário" titulo={`Datas da admissão ${pagina.anoAcademico}`}>
+          <Seccao id="calendario" numero={numero('calendario')} rotulo={t('Calendário')} titulo={t('Datas da admissão {ano}', { ano: pagina.anoAcademico })}>
             <table className={ed.tabela}>
               <thead>
-                <tr><th scope="col">Fase</th><th scope="col">Data</th></tr>
+                <tr><th scope="col">{t('Fase')}</th><th scope="col">{t('Data')}</th></tr>
               </thead>
               <tbody>
                 {calendarioAdmissao.map((f) => (
@@ -165,13 +168,13 @@ function CursoDetalhe() {
             </table>
           </Seccao>
 
-          <Seccao id="saidas" numero={numero('saidas')} rotulo="Saídas profissionais" titulo="Funções para que o curso prepara">
+          <Seccao id="saidas" numero={numero('saidas')} rotulo={t('Saídas profissionais')} titulo={t('Funções para que o curso prepara')}>
             <ol className={ed.listaNumerada}>
               {curso.saidas.map((s) => <li key={s}>{s}</li>)}
             </ol>
           </Seccao>
 
-          <Seccao id="coordenacao" numero={numero('coordenacao')} rotulo="Coordenação" titulo="Quem coordena o curso">
+          <Seccao id="coordenacao" numero={numero('coordenacao')} rotulo={t('Coordenação')} titulo={t('Quem coordena o curso')}>
             {coordenador && (
               <div className={detalhe.coordenacao}>
                 <div className={ed.pessoa}>
@@ -180,11 +183,11 @@ function CursoDetalhe() {
                   </span>
                   <div>
                     <strong>{coordenador.nome}</strong>
-                    <span>Coordenação do {curso.sigla}</span>
+                    <span>{t('Coordenação do {sigla}', { sigla: curso.sigla })}</span>
                   </div>
                 </div>
                 <p>{coordenador.destaque}.</p>
-                <Link to="/Contactos#formulario" className={ed.ligacao}>Contactar a coordenação</Link>
+                <Link to="/Contactos#formulario" className={ed.ligacao}>{t('Contactar a coordenação')}</Link>
               </div>
             )}
           </Seccao>
@@ -195,7 +198,7 @@ function CursoDetalhe() {
       {outros.length > 0 && (
         <section className="seccao seccao-cinza">
           <div className="contentor">
-            <TituloSeccao rotulo="Formação" titulo="Outros cursos" />
+            <TituloSeccao rotulo={t('Formação')} titulo={t('Outros cursos')} />
             <div className={detalhe.outros}>
               {outros.map((c) => (
                 <Cartao key={c.id} para={`/Cursos/${c.id}`} imagem={c.imagem} etiqueta={c.duracao} titulo={c.nome} resumo={c.resumo} elevado />

@@ -5,6 +5,7 @@ import FAQ from '../../components/FAQ/Faq'
 import { useConteudo } from '../../conteudo/contexto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Contactos.module.css'
+import { t } from '../../i18n/linguas'
 
 const VAZIO = { nome: '', email: '', telefone: '', assunto: '', mensagem: '', consentimento: false }
 
@@ -33,27 +34,27 @@ function Contactos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Contactos' }]}
-        sobretitulo="Contactos"
-        titulo="Fale connosco"
-        entrada="Candidaturas, pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis."
+        migalhas={[{ label: t('Contactos') }]}
+        sobretitulo={t('Contactos')}
+        titulo={t('Fale connosco')}
+        entrada={t('Candidaturas, pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis.')}
       />
 
       <dl className={ed.factos}>
         <div>
-          <dt>Telefone</dt>
-          <dd>{contactos.telefones.map((t) => <a key={t} href={`tel:${t.replace(/\s/g, '')}`} className={styles.factoLigacao}>{t}</a>)}</dd>
+          <dt>{t('Telefone')}</dt>
+          <dd>{contactos.telefones.map((tel) => <a key={tel} href={`tel:${tel.replace(/\s/g, '')}`} className={styles.factoLigacao}>{tel}</a>)}</dd>
         </div>
         <div>
-          <dt>E-mail geral</dt>
+          <dt>{t('E-mail geral')}</dt>
           <dd><a href={`mailto:${contactos.email}`} className={styles.factoLigacao}>{contactos.email}</a></dd>
         </div>
         <div>
-          <dt>Atendimento</dt>
+          <dt>{t('Atendimento')}</dt>
           <dd>{contactos.horario.map((h) => <span key={h.dias} className={styles.factoLinha}>{h.dias} <small>{h.horas}</small></span>)}</dd>
         </div>
         <div>
-          <dt>Morada</dt>
+          <dt>{t('Morada')}</dt>
           <dd>{contactos.morada.map((l) => <span key={l} className={styles.factoLinha}>{l}</span>)}</dd>
         </div>
       </dl>
@@ -62,24 +63,21 @@ function Contactos() {
         {/* Formulário */}
         <section id="formulario" className={styles.formularioCaixa}>
           <div className={ed.tituloSeccao}>
-            <span className={ed.rotulo}>Formulário de contacto</span>
-            <h2>Envie-nos uma mensagem</h2>
+            <span className={ed.rotulo}>{t('Formulário de contacto')}</span>
+            <h2>{t('Envie-nos uma mensagem')}</h2>
           </div>
 
           {enviado ? (
             <div className={styles.sucesso} role="status">
               <span className={styles.sucessoIcone}><FaCheck /></span>
-              <h3>Mensagem enviada</h3>
-              <p>
-                Obrigado, {form.nome.split(' ')[0]}. Vamos responder para <strong>{form.email}</strong> sobre
-                “{form.assunto}” com a maior brevidade possível.
-              </p>
-              <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={novaMensagem}>Enviar outra mensagem</button>
+              <h3>{t('Mensagem enviada')}</h3>
+              <p>{t('Obrigado, {nome}. Vamos responder para {email} sobre “{assunto}” com a maior brevidade possível.', { nome: form.nome.split(' ')[0], email: form.email, assunto: form.assunto })}</p>
+              <button className={`${ed.botao} ${ed.botaoContorno}`} onClick={novaMensagem}>{t('Enviar outra mensagem')}</button>
             </div>
           ) : (
             <form className={styles.formulario} onSubmit={handleSubmit}>
               <fieldset className={styles.assuntos}>
-                <legend>Assunto</legend>
+                <legend>{t('Assunto')}</legend>
                 <div>
                   {contactos.assuntos.map((a) => (
                     <label key={a} className={form.assunto === a ? styles.assuntoAtivo : ''}>
@@ -92,30 +90,30 @@ function Contactos() {
 
               <div className={styles.campos}>
                 <label className={styles.campo}>
-                  <span>Nome completo</span>
+                  <span>{t('Nome completo')}</span>
                   <input type="text" name="nome" value={form.nome} onChange={handleChange} autoComplete="name" required />
                 </label>
                 <label className={styles.campo}>
-                  <span>E-mail</span>
+                  <span>{t('E-mail')}</span>
                   <input type="email" name="email" value={form.email} onChange={handleChange} autoComplete="email" required />
                 </label>
                 <label className={styles.campo}>
-                  <span>Telefone <em>(opcional)</em></span>
+                  <span>{t('Telefone')} <em>({t('opcional')})</em></span>
                   <input type="tel" name="telefone" value={form.telefone} onChange={handleChange} autoComplete="tel" />
                 </label>
               </div>
 
               <label className={`${styles.campo} ${styles.campoMensagem}`}>
-                <span>Mensagem</span>
+                <span>{t('Mensagem')}</span>
                 <textarea name="mensagem" rows={6} value={form.mensagem} onChange={handleChange} required />
               </label>
 
               <div className={styles.enviarLinha}>
                 <label className={styles.consentimento}>
                   <input type="checkbox" name="consentimento" checked={form.consentimento} onChange={handleChange} required />
-                  <span>Autorizo a utilização dos meus dados apenas para responder a este pedido.</span>
+                  <span>{t('Autorizo a utilização dos meus dados apenas para responder a este pedido.')}</span>
                 </label>
-                <button type="submit" className={ed.botao}>Enviar mensagem</button>
+                <button type="submit" className={ed.botao}>{t('Enviar mensagem')}</button>
               </div>
             </form>
           )}
@@ -124,8 +122,8 @@ function Contactos() {
         {/* Diretório */}
         <section className={styles.diretorio}>
           <div className={ed.tituloSeccao}>
-            <span className={ed.rotulo}>Diretório</span>
-            <h2>Contactos por área</h2>
+            <span className={ed.rotulo}>{t('Diretório')}</span>
+            <h2>{t('Contactos por área')}</h2>
           </div>
 
           <ul className={styles.areas}>
@@ -139,7 +137,7 @@ function Contactos() {
           </ul>
 
           <div className={styles.redes}>
-            <h3>Redes sociais</h3>
+            <h3>{t('Redes sociais')}</h3>
             <div>
               <a href="#" aria-label="Facebook"><FaFacebookF /></a>
               <a href="#" aria-label="Instagram"><FaInstagram /></a>
@@ -151,15 +149,15 @@ function Contactos() {
       </div>
 
       {/* Mapa */}
-      <section className={`contentor ${styles.mapa}`} aria-label="Localização">
+      <section className={`contentor ${styles.mapa}`} aria-label={t('Localização')}>
         <iframe
-          title="Localização da Escola Superior de Guerra"
+          title={t('Localização da Escola Superior de Guerra')}
           src={`https://maps.google.com/maps?q=${encodeURIComponent(contactos.mapa)}&z=15&output=embed`}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
         />
         <div className={styles.mapaCartao}>
-          <h3><FaMapMarkerAlt aria-hidden="true" /> Como chegar</h3>
+          <h3><FaMapMarkerAlt aria-hidden="true" /> {t('Como chegar')}</h3>
           {contactos.morada.map((l) => <p key={l}>{l}</p>)}
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactos.mapa)}`}
@@ -167,7 +165,7 @@ function Contactos() {
             rel="noopener noreferrer"
             className={ed.ligacao}
           >
-            Abrir no Google Maps
+            {t('Abrir no Google Maps')}
           </a>
         </div>
       </section>

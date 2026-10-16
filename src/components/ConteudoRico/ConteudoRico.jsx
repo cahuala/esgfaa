@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify'
 import { FaChevronLeft, FaChevronRight, FaTimes } from 'react-icons/fa'
 import { ancora } from '../../utils/texto'
 import styles from './ConteudoRico.module.css'
+import { t } from '../../i18n/linguas'
 
 /*
   Mostra o corpo de uma notícia, evento ou artigo a partir de uma lista de blocos.
@@ -94,12 +95,12 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
             const posicao = bloco.posicao || (bloco.larga ? 'larga' : 'centro')
             return (
               <figure key={i} className={`${styles.figura} ${styles[posicao] || ''}`}>
-                <button className={styles.ampliar} onClick={() => setAberta(indice)} aria-label="Ampliar imagem">
+                <button className={styles.ampliar} onClick={() => setAberta(indice)} aria-label={t('Ampliar imagem')}>
                   <img src={bloco.src} alt={bloco.legenda || ''} loading="lazy" />
                 </button>
                 {bloco.legenda && (
                   <figcaption className={styles.legendaNumerada}>
-                    <span>Figura {numeroFigura[i]}</span>{bloco.legenda}
+                    <span>{t('Figura {n}', { n: numeroFigura[i] })}</span>{bloco.legenda}
                   </figcaption>
                 )}
               </figure>
@@ -116,7 +117,7 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
                   {bloco.imagens.map((img, j) => {
                     const indice = inicioImagens[i] + j
                     return (
-                      <button key={indice} className={styles.ampliar} onClick={() => setAberta(indice)} aria-label="Ampliar imagem">
+                      <button key={indice} className={styles.ampliar} onClick={() => setAberta(indice)} aria-label={t('Ampliar imagem')}>
                         <img src={img.src} alt={img.legenda || ''} loading="lazy" />
                       </button>
                     )
@@ -133,7 +134,7 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
                   {bloco.youtube ? (
                     <iframe
                       src={`https://www.youtube-nocookie.com/embed/${bloco.youtube}`}
-                      title={bloco.legenda || 'Vídeo'}
+                      title={bloco.legenda || t('Vídeo')}
                       loading="lazy"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
@@ -174,7 +175,7 @@ function ConteudoRico({ blocos = [], centrado = false, capitular = false }) {
           case 'referencias':
             return (
               <section key={i} id="referencias" className={styles.referencias}>
-                <h3>Referências</h3>
+                <h3>{t('Referências')}</h3>
                 <ol>
                   {bloco.itens.map((item) => <li key={item}>{item}</li>)}
                 </ol>
@@ -236,8 +237,8 @@ function Visualizador({ imagens, indice, onMudar, onFechar }) {
   const img = imagens[indice]
 
   return (
-    <div className={styles.visualizador} role="dialog" aria-modal="true" aria-label="Visualizador de imagens" onClick={onFechar}>
-      <button className={`${styles.controlo} ${styles.fechar}`} onClick={onFechar} aria-label="Fechar">
+    <div className={styles.visualizador} role="dialog" aria-modal="true" aria-label={t('Visualizador de imagens')} onClick={onFechar}>
+      <button className={`${styles.controlo} ${styles.fechar}`} onClick={onFechar} aria-label={t('Fechar')}>
         <FaTimes />
       </button>
 
@@ -245,7 +246,7 @@ function Visualizador({ imagens, indice, onMudar, onFechar }) {
         <button
           className={`${styles.controlo} ${styles.anterior}`}
           onClick={(e) => { e.stopPropagation(); anterior() }}
-          aria-label="Imagem anterior"
+          aria-label={t('Imagem anterior')}
         >
           <FaChevronLeft />
         </button>
@@ -263,7 +264,7 @@ function Visualizador({ imagens, indice, onMudar, onFechar }) {
         <button
           className={`${styles.controlo} ${styles.seguinte}`}
           onClick={(e) => { e.stopPropagation(); seguinte() }}
-          aria-label="Imagem seguinte"
+          aria-label={t('Imagem seguinte')}
         >
           <FaChevronRight />
         </button>

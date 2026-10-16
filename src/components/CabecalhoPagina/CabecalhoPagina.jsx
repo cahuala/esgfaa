@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import styles from './CabecalhoPagina.module.css'
+import { t } from '../../i18n/linguas'
 
 /*
   Cabeçalho das páginas interiores com fotografia (como o "Newsroom" do modelo):
@@ -12,8 +13,8 @@ function CabecalhoPagina({ etiqueta, titulo, descricao, imagem, migalhas = [], c
       <div className={styles.sombra} />
       <div className={`contentor ${styles.conteudo}`}>
         {migalhas.length > 0 && (
-          <nav className={styles.migalhas} aria-label="Localização">
-            <Link to="/">Início</Link>
+          <nav className={styles.migalhas} aria-label={t('Localização')}>
+            <Link to="/">{t('Início')}</Link>
             {migalhas.map((m) => (
               <span key={m.label}>
                 <span aria-hidden="true">/</span>

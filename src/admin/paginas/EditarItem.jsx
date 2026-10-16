@@ -7,6 +7,7 @@ import { Formulario } from '../componentes/Campo'
 import { ler } from '../caminhos'
 import { dataHora } from '../formatar'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
+import Traducoes from '../componentes/Traducoes'
 import Documento from '../editor/Documento'
 import { PainelGoogle, PainelTexto, PreVisualizacao } from '../editor/Laterais'
 import { limparCorpo, prepararCorpo } from '../editor/normalizar'
@@ -18,6 +19,8 @@ const CAMPOS_SUGESTOES = ['categoria', 'area', 'tipo']
 
 // os blocos "conteudo" ficam num painel próprio, por baixo dos dados principais
 const separar = (campos) => [campos.filter((c) => c.tipo !== 'blocos'), campos.filter((c) => c.tipo === 'blocos')]
+
+const TRADUZIVEIS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas']
 
 function EditarItem() {
   const { colecao, id } = useParams()
@@ -229,6 +232,7 @@ function EditarItem() {
                   </div>
                   <div className="small text-muted mt-2"><kbd>Ctrl</kbd> + <kbd>S</kbd> para guardar</div>
                 </Painel>
+                {!novo && TRADUZIVEIS.includes(colecao) && <Traducoes colecao={colecao} id={id} />}
 
                 {doc && (
                   <>

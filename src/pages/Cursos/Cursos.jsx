@@ -5,6 +5,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { TituloSeccao } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Cursos.module.css'
+import { t } from '../../i18n/linguas'
 
 function Cursos() {
   const { cursos, paginas, pessoaPorId } = useConteudo()
@@ -16,9 +17,9 @@ function Cursos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Cursos' }]}
-        sobretitulo="Formação"
-        titulo="Cursos"
+        migalhas={[{ label: t('Cursos') }]}
+        sobretitulo={t('Formação')}
+        titulo={t('Cursos')}
         entrada={pagina.entrada}
       />
 
@@ -26,17 +27,17 @@ function Cursos() {
       {pagina.candidaturasAbertas && (
       <div className={`contentor ${styles.faixa}`}>
         <div className={styles.faixaInterior}>
-          <span className={styles.faixaSelo}>Candidaturas abertas</span>
+          <span className={styles.faixaSelo}>{t('Candidaturas abertas')}</span>
           <p>
-            Ano académico {pagina.anoAcademico}{prazo && <> · prazo até <strong>{prazo}</strong></>}
+            {t('Ano académico {ano}', { ano: pagina.anoAcademico })}{prazo && <> · {t('prazo até')} <strong>{prazo}</strong></>}
           </p>
-          <a href="#calendario" className={styles.faixaLigacao}>Ver calendário</a>
+          <a href="#calendario" className={styles.faixaLigacao}>{t('Ver calendário')}</a>
         </div>
       </div>
       )}
 
       {/* Os cursos */}
-      <section className={`contentor ${styles.lista}`} aria-label="Cursos disponíveis">
+      <section className={`contentor ${styles.lista}`} aria-label={t('Cursos disponíveis')}>
         {cursos.map((c, i) => (
           <article key={c.id} className={`${styles.curso} ${i % 2 ? styles.cursoInvertido : ''}`}>
             <Link to={`/Cursos/${c.id}`} className={styles.cursoFoto} tabIndex={-1} aria-hidden="true">
@@ -49,13 +50,13 @@ function Cursos() {
               <p className={styles.cursoResumo}>{c.resumo}</p>
 
               <dl className={styles.ficha}>
-                <div><dt>Duração</dt><dd>{c.duracao}</dd></div>
-                <div><dt>Regime</dt><dd>{c.regime}</dd></div>
-                <div><dt>Vagas</dt><dd>{c.vagas}</dd></div>
-                <div><dt>Destinatários</dt><dd>{c.destinatarios}</dd></div>
+                <div><dt>{t('Duração')}</dt><dd>{c.duracao}</dd></div>
+                <div><dt>{t('Regime')}</dt><dd>{c.regime}</dd></div>
+                <div><dt>{t('Vagas')}</dt><dd>{c.vagas}</dd></div>
+                <div><dt>{t('Destinatários')}</dt><dd>{c.destinatarios}</dd></div>
               </dl>
 
-              <Link to={`/Cursos/${c.id}`} className={ed.ligacao}>Conhecer o curso</Link>
+              <Link to={`/Cursos/${c.id}`} className={ed.ligacao}>{t('Conhecer o curso')}</Link>
             </div>
           </article>
         ))}
@@ -63,13 +64,13 @@ function Cursos() {
 
       {/* Comparação */}
       <section className={`contentor ${styles.bloco}`}>
-        <TituloSeccao rotulo="Comparar" titulo="Os cursos lado a lado" />
+        <TituloSeccao rotulo={t('Comparar')} titulo={t('Os cursos lado a lado')} />
 
         <div className={styles.tabelaRolavel}>
           <table className={`${ed.tabela} ${styles.comparacao}`}>
             <thead>
               <tr>
-                <th scope="col"><span className="sr-only">Característica</span></th>
+                <th scope="col"><span className="sr-only">{t('Característica')}</span></th>
                 {cursos.map((c) => (
                   <th key={c.id} scope="col">
                     <Link to={`/Cursos/${c.id}`}>{c.sigla}</Link>
@@ -79,12 +80,12 @@ function Cursos() {
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">Duração</th>{cursos.map((c) => <td key={c.id}>{c.duracao}</td>)}</tr>
-              <tr><th scope="row">Regime</th>{cursos.map((c) => <td key={c.id}>{c.regime}</td>)}</tr>
-              <tr><th scope="row">Vagas</th>{cursos.map((c) => <td key={c.id}>{c.vagas}</td>)}</tr>
-              <tr><th scope="row">Destinatários</th>{cursos.map((c) => <td key={c.id}>{c.destinatarios}</td>)}</tr>
-              <tr><th scope="row">Carga horária</th>{cursos.map((c) => <td key={c.id}>{totalHoras(c)} horas</td>)}</tr>
-              <tr><th scope="row">Coordenação</th>{cursos.map((c) => <td key={c.id}>{pessoaPorId(c.coordenador)?.nome}</td>)}</tr>
+              <tr><th scope="row">{t('Duração')}</th>{cursos.map((c) => <td key={c.id}>{c.duracao}</td>)}</tr>
+              <tr><th scope="row">{t('Regime')}</th>{cursos.map((c) => <td key={c.id}>{c.regime}</td>)}</tr>
+              <tr><th scope="row">{t('Vagas')}</th>{cursos.map((c) => <td key={c.id}>{c.vagas}</td>)}</tr>
+              <tr><th scope="row">{t('Destinatários')}</th>{cursos.map((c) => <td key={c.id}>{c.destinatarios}</td>)}</tr>
+              <tr><th scope="row">{t('Carga horária')}</th>{cursos.map((c) => <td key={c.id}>{t('{n} horas', { n: totalHoras(c) })}</td>)}</tr>
+              <tr><th scope="row">{t('Coordenação')}</th>{cursos.map((c) => <td key={c.id}>{pessoaPorId(c.coordenador)?.nome}</td>)}</tr>
             </tbody>
           </table>
         </div>
@@ -92,7 +93,7 @@ function Cursos() {
 
       {/* Admissão */}
       <section id="admissao" className={`contentor ${styles.bloco}`}>
-        <TituloSeccao rotulo="Admissão" titulo="Como se candidatar" />
+        <TituloSeccao rotulo={t('Admissão')} titulo={t('Como se candidatar')} />
         <ol className={ed.passos} style={{ '--colunas': processoAdmissao.length }}>
           {processoAdmissao.map((p, i) => (
             <li key={p.titulo}>
@@ -103,17 +104,17 @@ function Cursos() {
           ))}
         </ol>
         <p className={styles.nota}>
-          Os requisitos específicos de cada curso estão na respetiva página.
+          {t('Os requisitos específicos de cada curso estão na respetiva página.')}
         </p>
       </section>
 
       {/* Calendário */}
       <section id="calendario" className={`contentor ${styles.bloco}`}>
-        <TituloSeccao rotulo="Calendário académico" titulo={`Datas da admissão ${pagina.anoAcademico}`} />
+        <TituloSeccao rotulo={t('Calendário académico')} titulo={t('Datas da admissão {ano}', { ano: pagina.anoAcademico })} />
         <div className={styles.calendario}>
           <table className={ed.tabela}>
             <thead>
-              <tr><th scope="col">Fase</th><th scope="col">Data</th></tr>
+              <tr><th scope="col">{t('Fase')}</th><th scope="col">{t('Data')}</th></tr>
             </thead>
             <tbody>
               {calendarioAdmissao.map((f) => (
@@ -122,10 +123,10 @@ function Cursos() {
             </tbody>
           </table>
           <aside className={styles.candidatar}>
-            <h3>Pronto para avançar?</h3>
-            <p>Preencha o formulário e a Secretaria Académica entra em contacto com os próximos passos.</p>
-            <Link to="/Candidatura" className={ed.botao}>Candidatar-me</Link>
-            <Link to="/Contactos#formulario" className={`${ed.botao} ${ed.botaoContorno}`}>Pedir informações</Link>
+            <h3>{t('Pronto para avançar?')}</h3>
+            <p>{t('Preencha o formulário e a Secretaria Académica entra em contacto com os próximos passos.')}</p>
+            <Link to="/Candidatura" className={ed.botao}>{t('Candidatar-me')}</Link>
+            <Link to="/Contactos#formulario" className={`${ed.botao} ${ed.botaoContorno}`}>{t('Pedir informações')}</Link>
           </aside>
         </div>
       </section>

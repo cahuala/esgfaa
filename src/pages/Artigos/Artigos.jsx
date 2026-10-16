@@ -9,6 +9,7 @@ import { iniciais, normalizar } from '../../utils/texto'
 import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
+import { t } from '../../i18n/linguas'
 
 // [[valor, total], ...]
 const contar = (lista, chave) =>
@@ -82,23 +83,23 @@ function Artigos() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Artigos' }]}
-        sobretitulo="Investigação"
-        titulo="Artigos científicos"
-        entrada="Artigos, ensaios e notas de investigação do corpo docente e dos oficiais alunos."
+        migalhas={[{ label: t('Artigos') }]}
+        sobretitulo={t('Investigação')}
+        titulo={t('Artigos científicos')}
+        entrada={t('Artigos, ensaios e notas de investigação do corpo docente e dos oficiais alunos.')}
       >
         <dl className={styles.numeros}>
-          <div><dt>Publicações</dt><dd>{artigos.length}</dd></div>
-          <div><dt>Autores</dt><dd>{autores.length}</dd></div>
-          <div><dt>Áreas</dt><dd>{areas.length}</dd></div>
+          <div><dt>{t('Publicações')}</dt><dd>{artigos.length}</dd></div>
+          <div><dt>{t('Autores')}</dt><dd>{autores.length}</dd></div>
+          <div><dt>{t('Áreas')}</dt><dd>{areas.length}</dd></div>
         </dl>
       </CabecalhoEditorial>
 
       {destaque && (
-        <section className={`contentor ${styles.destaque}`} aria-label="Publicação em destaque">
+        <section className={`contentor ${styles.destaque}`} aria-label={t('Publicação em destaque')}>
           <div className={styles.destaqueInterior}>
             <div className={styles.destaqueTexto}>
-              <div className={styles.destaqueRotulo}><span>Publicação mais recente</span><Etiqueta>{destaque.tipo}</Etiqueta></div>
+              <div className={styles.destaqueRotulo}><span>{t('Publicação mais recente')}</span><Etiqueta>{destaque.tipo}</Etiqueta></div>
               <h2><Link to={`/Artigos/${destaque.slug}`}>{destaque.titulo}</Link></h2>
               {autorDestaque && (
                 <div className={ed.pessoa}>
@@ -110,7 +111,7 @@ function Artigos() {
                 </div>
               )}
               <p className={styles.destaqueResumo}>{destaque.resumo}</p>
-              <Link to={`/Artigos/${destaque.slug}`} className={ed.ligacao}>Ler o artigo</Link>
+              <Link to={`/Artigos/${destaque.slug}`} className={ed.ligacao}>{t('Ler o artigo')}</Link>
             </div>
             {destaque.capa && (
               <Link to={`/Artigos/${destaque.slug}`} className={styles.destaqueFoto} tabIndex={-1} aria-hidden="true">
@@ -123,35 +124,35 @@ function Artigos() {
 
       <div className={`contentor ${styles.grelha}`}>
         {/* Esquerda: pesquisa e filtros */}
-        <aside className={styles.filtros} aria-label="Pesquisa e filtros">
+        <aside className={styles.filtros} aria-label={t('Pesquisa e filtros')}>
           <div className={styles.bloco}>
             <label className={styles.campoPesquisa}>
               <FaSearch aria-hidden="true" />
               <input
                 type="search"
-                placeholder="Título, autor ou tema"
+                placeholder={t('Título, autor ou tema')}
                 value={pesquisa}
                 onChange={(e) => setPesquisa(e.target.value)}
-                aria-label="Pesquisar artigos"
+                aria-label={t('Pesquisar artigos')}
               />
             </label>
           </div>
-          <Filtro titulo="Tipo de publicação" opcoes={tipos} valor={tipo} definir={setTipo} />
-          <Filtro titulo="Área de investigação" opcoes={areas} valor={area} definir={setArea} />
-          <Filtro titulo="Ano" opcoes={anos} valor={ano} definir={setAno} />
-          {aFiltrar && <button className={styles.limpar} onClick={limpar}>Limpar todos os filtros</button>}
+          <Filtro titulo={t('Tipo de publicação')} opcoes={tipos} valor={tipo} definir={setTipo} />
+          <Filtro titulo={t('Área de investigação')} opcoes={areas} valor={area} definir={setArea} />
+          <Filtro titulo={t('Ano')} opcoes={anos} valor={ano} definir={setAno} />
+          {aFiltrar && <button className={styles.limpar} onClick={limpar}>{t('Limpar todos os filtros')}</button>}
         </aside>
 
         {/* Centro: índice */}
-        <section className={styles.centro} aria-label="Índice de publicações">
+        <section className={styles.centro} aria-label={t('Índice de publicações')}>
           <div className={styles.centroTopo}>
-            <h2>Índice de publicações</h2>
-            <span>{filtrados.length} {filtrados.length === 1 ? 'resultado' : 'resultados'}</span>
+            <h2>{t('Índice de publicações')}</h2>
+            <span>{filtrados.length === 1 ? t('1 resultado') : t('{n} resultados', { n: filtrados.length })}</span>
           </div>
           {lista.length === 0 && !destaque ? (
             <div className={styles.vazio}>
-              <strong>Nenhuma publicação corresponde à pesquisa.</strong>
-              <button onClick={limpar}>Limpar filtros</button>
+              <strong>{t('Nenhuma publicação corresponde à pesquisa.')}</strong>
+              <button onClick={limpar}>{t('Limpar filtros')}</button>
             </div>
           ) : (
             lista.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)
@@ -160,7 +161,7 @@ function Artigos() {
 
         {/* Direita: autores e submissão */}
         <aside className={styles.direita}>
-          <h2 className={styles.direitaTitulo}>Investigadores</h2>
+          <h2 className={styles.direitaTitulo}>{t('Investigadores')}</h2>
           <ul className={styles.autores}>
             {autores.map((p) => (
               <li key={p.id}>
@@ -172,7 +173,7 @@ function Artigos() {
                   <span className={styles.autorAvatar}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>
                   <span>
                     <strong>{p.nome}</strong>
-                    <small>{p.total} {p.total === 1 ? 'publicação' : 'publicações'}</small>
+                    <small>{p.total === 1 ? t('1 publicação') : t('{n} publicações', { n: p.total })}</small>
                   </span>
                 </button>
               </li>
@@ -180,12 +181,12 @@ function Artigos() {
           </ul>
 
           <div className={styles.submeter}>
-            <h3>Submeter um artigo</h3>
-            <span className={styles.submeterSub}>Normas de publicação</span>
+            <h3>{t('Submeter um artigo')}</h3>
+            <span className={styles.submeterSub}>{t('Normas de publicação')}</span>
             <ol className={ed.listaNumerada}>
-              {normas.map((n) => <li key={n}>{n}</li>)}
+              {normas.map((n) => <li key={n}>{t(n)}</li>)}
             </ol>
-            <Link to="/Contactos#formulario" className={ed.botao}>Propor um artigo</Link>
+            <Link to="/Contactos#formulario" className={ed.botao}>{t('Propor um artigo')}</Link>
           </div>
         </aside>
       </div>

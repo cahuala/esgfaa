@@ -1,8 +1,10 @@
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import styles from './Eventos.module.css'
+import { localAtual, t } from '../../i18n/linguas'
 
-const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-const SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D']
+// nomes dos meses e iniciais dos dias da semana (a começar à segunda) na língua do site
+const nomeMes = (m) => { const n = new Intl.DateTimeFormat(localAtual(), { month: 'long' }).format(new Date(2026, m, 1)); return n[0].toUpperCase() + n.slice(1) }
+const semana = () => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(localAtual(), { weekday: 'narrow' }).format(new Date(2026, 0, 5 + i)).toUpperCase())
 
 const iso = (ano, mes, dia) => `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
 
@@ -24,12 +26,12 @@ function Calendario({ mes, onMudarMes, datas, selecionado, onSelecionar, hojeIso
   return (
     <div className={styles.calendario}>
       <div className={styles.calendarioTopo}>
-        <button onClick={() => mudar(-1)} aria-label="Mês anterior"><FaChevronLeft /></button>
-        <strong>{MESES[mes.mes]} {mes.ano}</strong>
-        <button onClick={() => mudar(1)} aria-label="Mês seguinte"><FaChevronRight /></button>
+        <button onClick={() => mudar(-1)} aria-label={t('Mês anterior')}><FaChevronLeft /></button>
+        <strong>{nomeMes(mes.mes)} {mes.ano}</strong>
+        <button onClick={() => mudar(1)} aria-label={t('Mês seguinte')}><FaChevronRight /></button>
       </div>
       <div className={styles.calendarioGrelha}>
-        {SEMANA.map((d, i) => <span key={i} className={styles.calendarioSemana}>{d}</span>)}
+        {semana().map((d, i) => <span key={i} className={styles.calendarioSemana}>{d}</span>)}
         {celulas.map((dia, i) => {
           if (!dia) return <span key={`v${i}`} />
           const data = iso(mes.ano, mes.mes, dia)
@@ -47,7 +49,7 @@ function Calendario({ mes, onMudarMes, datas, selecionado, onSelecionar, hojeIso
               className={classes}
               onClick={() => onSelecionar(data === selecionado ? null : data)}
               aria-pressed={data === selecionado}
-              aria-label={`${dia} de ${MESES[mes.mes]}, com eventos`}
+              aria-label={t('{dia} de {mes}, com eventos', { dia, mes: nomeMes(mes.mes) })}
             >
               {dia}
             </button>

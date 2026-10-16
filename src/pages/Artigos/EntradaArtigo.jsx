@@ -5,6 +5,7 @@ import { formatarData } from '../../utils/datas'
 import { tempoLeitura } from '../../utils/texto'
 import { Etiqueta } from '../../components/Corporativo/Corporativo'
 import styles from './Artigos.module.css'
+import { t } from '../../i18n/linguas'
 
 // Uma entrada do índice de publicações
 function EntradaArtigo({ artigo }) {
@@ -22,7 +23,7 @@ function EntradaArtigo({ artigo }) {
         <span className={styles.entradaResumo}>{artigo.resumo}</span>
         <span className={styles.entradaRodape}>
           <time dateTime={artigo.data}>{formatarData(artigo.data)}</time>
-          <span>{tempoLeitura(artigo.conteudo)} min de leitura</span>
+          <span>{t('{n} min de leitura', { n: tempoLeitura(artigo.conteudo) })}</span>
           <ResumoInteracoes colecao="artigos" id={artigo.slug} />
           {artigo.palavrasChave.slice(0, 3).map((p) => <span key={p} className={styles.palavra}>{p}</span>)}
         </span>

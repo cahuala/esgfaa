@@ -1,6 +1,7 @@
 import { useConteudo } from '../../conteudo/contexto'
 import { iniciais } from '../../utils/texto'
 import styles from './CorpoDestaque.module.css'
+import { t } from '../../i18n/linguas'
 
 // Comando e corpo docente: cartões que vão passando (o rato por cima faz parar)
 function CorpoDestaque() {
@@ -13,7 +14,7 @@ function CorpoDestaque() {
   return (
     <section className={styles.secao}>
       <div className={`contentor ${styles.cabecalho}`}>
-        <span className={styles.etiqueta}>{textos.etiqueta || 'Comando e corpo docente'}</span>
+        <span className={styles.etiqueta}>{textos.etiqueta || t('Comando e corpo docente')}</span>
         <h2>{textos.titulo}</h2>
       </div>
 

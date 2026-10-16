@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useConteudo } from '../../conteudo/contexto'
 import { TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './Faq.module.css'
+import { t } from '../../i18n/linguas'
 
 function Faq() {
   const { paginas } = useConteudo()
@@ -17,7 +18,7 @@ function Faq() {
   return (
     <section className="seccao seccao-cinza">
       <div className="contentor">
-        <TituloSeccao rotulo={etiqueta || 'Ajuda'} titulo={titulo} centrada />
+        <TituloSeccao rotulo={etiqueta || t('Ajuda')} titulo={titulo} centrada />
 
         <div className={styles.lista}>
           {perguntas.map((p) => {

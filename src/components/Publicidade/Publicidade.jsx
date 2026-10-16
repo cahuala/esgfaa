@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useConteudo } from '../../conteudo/contexto'
 import { API_URL, pedido } from '../../conteudo/api'
 import styles from './Publicidade.module.css'
+import { t } from '../../i18n/linguas'
 
 const contar = (id, tipo) => {
   if (API_URL) pedido(`/api/publico/publicidade/${id}/${tipo}`, { method: 'POST', keepalive: true }).catch(() => {})
@@ -49,8 +50,8 @@ function Publicidade({ posicao, variante }) {
   const props = { className: styles.ligacao, onClick: () => contar(banner.id, 'clique') }
 
   return (
-    <aside ref={ref} className={`${styles.banner} ${styles[variante] || ''}`} aria-label="Publicidade">
-      <span className={styles.rotulo}>Publicidade</span>
+    <aside ref={ref} className={`${styles.banner} ${styles[variante] || ''}`} aria-label={t('Publicidade')}>
+      <span className={styles.rotulo}>{t('Publicidade')}</span>
       {!banner.ligacao ? <div className={styles.ligacao}>{conteudo}</div>
         : externa ? <a href={banner.ligacao} target="_blank" rel="noopener sponsored" {...props}>{conteudo}</a>
           : <Link to={banner.ligacao} {...props}>{conteudo}</Link>}

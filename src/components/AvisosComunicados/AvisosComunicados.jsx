@@ -2,6 +2,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga, paraData } from '../../utils/datas'
 import { Etiqueta, TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './AvisosComunicados.module.css'
+import { t } from '../../i18n/linguas'
 
 function AvisosComunicados() {
   const { paginas } = useConteudo()
@@ -11,16 +12,16 @@ function AvisosComunicados() {
   return (
     <section className="seccao">
       <div className="contentor">
-        <TituloSeccao rotulo={etiqueta || 'Comunicados'} titulo={titulo} />
+        <TituloSeccao rotulo={etiqueta || t('Comunicados')} titulo={titulo} />
         {ordenados.length === 0 ? (
-          <p className={styles.vazio}>Não há comunicados publicados neste momento.</p>
+          <p className={styles.vazio}>{t('Não há comunicados publicados neste momento.')}</p>
         ) : (
           <ul className={styles.lista}>
             {ordenados.map((a) => (
               <li key={`${a.data}-${a.titulo}`} className={styles.item}>
                 <div className={styles.etiquetas}>
                   {a.tipo && <Etiqueta cor="cinzento">{a.tipo}</Etiqueta>}
-                  {a.importante && <Etiqueta cor="vermelho">Importante</Etiqueta>}
+                  {a.importante && <Etiqueta cor="vermelho">{t('Importante')}</Etiqueta>}
                 </div>
                 <div className={styles.texto}>
                   <h3>{a.titulo}</h3>

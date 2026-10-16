@@ -2,6 +2,7 @@ import { FaBullseye, FaEye, FaShieldAlt } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import { LigacaoMais } from '../Corporativo/Corporativo'
 import styles from './MissaoVisaoValores.module.css'
+import { t } from '../../i18n/linguas'
 
 const PILARES = [
   { id: 'missao', titulo: 'Missão', Icone: FaBullseye },
@@ -18,20 +19,20 @@ function MissaoVisaoValores() {
     <section className="seccao">
       <div className={`contentor ${styles.grelha}`}>
         <div>
-          <span className={styles.rotulo}>A Escola</span>
-          <h2>Missão, visão e valores</h2>
+          <span className={styles.rotulo}>{t('A Escola')}</span>
+          <h2>{t('Missão, visão e valores')}</h2>
           <ul className={styles.pilares}>
             {PILARES.map(({ id, titulo, Icone }) => (
               <li key={id}>
                 <span className={styles.icone}><Icone aria-hidden="true" /></span>
                 <div>
-                  <h3>{titulo}</h3>
+                  <h3>{t(titulo)}</h3>
                   <p>{textos[id]}</p>
                 </div>
               </li>
             ))}
           </ul>
-          <LigacaoMais para="/Institucional">Conhecer a instituição</LigacaoMais>
+          <LigacaoMais para="/Institucional">{t('Conhecer a instituição')}</LigacaoMais>
         </div>
         {textos.imagem && <img className={styles.imagem} src={textos.imagem} alt="" loading="lazy" />}
       </div>

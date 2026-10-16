@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { paraData } from '../../utils/datas'
 import styles from './Eventos.module.css'
+import { t } from '../../i18n/linguas'
 
 // Contagem decrescente ao segundo até ao início de um evento
 function Contagem({ data, hora = '00:00', compacta = false }) {
@@ -15,17 +16,17 @@ function Contagem({ data, hora = '00:00', compacta = false }) {
   const [h, m] = hora.split(':').map(Number)
   alvo.setHours(h, m, 0, 0)
   const falta = Math.max(0, alvo - agora)
-  if (falta === 0) return <p className={styles.aDecorrer}>Em curso ou já realizado</p>
+  if (falta === 0) return <p className={styles.aDecorrer}>{t('Em curso ou já realizado')}</p>
 
   const partes = [
-    { valor: Math.floor(falta / 86400000), rotulo: 'dias' },
-    { valor: Math.floor(falta / 3600000) % 24, rotulo: 'horas' },
-    { valor: Math.floor(falta / 60000) % 60, rotulo: 'min' },
-    { valor: Math.floor(falta / 1000) % 60, rotulo: 'seg' },
+    { valor: Math.floor(falta / 86400000), rotulo: t('dias') },
+    { valor: Math.floor(falta / 3600000) % 24, rotulo: t('horas') },
+    { valor: Math.floor(falta / 60000) % 60, rotulo: t('min') },
+    { valor: Math.floor(falta / 1000) % 60, rotulo: t('seg') },
   ]
 
   return (
-    <div className={`${styles.contagem} ${compacta ? styles.contagemCompacta : ''}`} role="timer" aria-label="Tempo até ao início">
+    <div className={`${styles.contagem} ${compacta ? styles.contagemCompacta : ''}`} role="timer" aria-label={t('Tempo até ao início')}>
       {partes.map((p) => (
         <span key={p.rotulo}>
           <strong>{p.valor}</strong>

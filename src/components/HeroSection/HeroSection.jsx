@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { FaArrowRight } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import styles from './HeroSection.module.css'
+import { t } from '../../i18n/linguas'
 
 // Abertura da página inicial: fotografia, título, números e um só convite à candidatura
 function HeroSection() {
@@ -26,10 +27,10 @@ function HeroSection() {
           </div>
 
           <div className={styles.acoes}>
-            <Link to="/Candidatura" className={styles.botao}>Candidatar-me <span aria-hidden="true">→</span></Link>
+            <Link to="/Candidatura" className={styles.botao}>{t('Candidatar-me')} <span aria-hidden="true">→</span></Link>
             <Link to="/Cursos" className={styles.mais}>
               <span><FaArrowRight size={12} aria-hidden="true" /></span>
-              Conhecer os cursos
+              {t('Conhecer os cursos')}
             </Link>
           </div>
         </div>

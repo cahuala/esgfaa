@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import Logo from '../../assets/Logo.png'
 import AlternarTema from '../AlternarTema/AlternarTema'
+import SeletorLingua from '../SeletorLingua/SeletorLingua'
 import style from './NavBar.module.css'
+import { t } from '../../i18n/linguas'
 
 // o portal académico é uma aplicação à parte, em /portal/
 const PORTAL = `${import.meta.env.BASE_URL}portal/`
@@ -34,17 +36,17 @@ function NavBar() {
       {/* faixa institucional */}
       <div className={style.faixa}>
         <div className={style.faixaConteudo}>
-          <span>Forças Armadas Angolanas</span>
-          <span className={style.faixaDireita}>Estabelecimento de Ensino Superior Militar</span>
+          <span>{t('Forças Armadas Angolanas')}</span>
+          <span className={style.faixaDireita}>{t('Estabelecimento de Ensino Superior Militar')}</span>
         </div>
       </div>
 
-      <nav className={style.nav} aria-label="Navegação principal">
+      <nav className={style.nav} aria-label={t('Navegação principal')}>
         <Link to="/" className={style.marca} onClick={fecharMenu}>
           <img src={Logo} alt="" className={style.logo} />
           <span className={style.nome}>
-            <small>Forças Armadas Angolanas</small>
-            Escola Superior de Guerra
+            <small>{t('Forças Armadas Angolanas')}</small>
+            {t('Escola Superior de Guerra')}
           </span>
         </Link>
 
@@ -52,22 +54,23 @@ function NavBar() {
           {LIGACOES.map((l) => (
             <li key={l.para}>
               <NavLink to={l.para} onClick={fecharMenu} className={({ isActive }) => (isActive || pathname.startsWith(`${l.para}/`) ? style.ativo : undefined)}>
-                {l.texto}
+                {t(l.texto)}
               </NavLink>
             </li>
           ))}
           <li className={style.portalMovel}>
-            <a href={PORTAL} className={style.botao}>Portal Académico</a>
+            <a href={PORTAL} className={style.botao}>{t('Portal Académico')}</a>
           </li>
         </ul>
 
         <div className={style.acoes}>
           <AlternarTema />
-          <a href={PORTAL} className={`${style.botao} ${style.portalDesktop}`}>Portal Académico <span aria-hidden="true">→</span></a>
+          <SeletorLingua />
+          <a href={PORTAL} className={`${style.botao} ${style.portalDesktop}`}>{t('Portal Académico')} <span aria-hidden="true">→</span></a>
           <button
             className={`${style.hamburguer} ${menuAberto ? style.hamburguerAberto : ''}`}
             onClick={() => setMenuAberto(!menuAberto)}
-            aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
+            aria-label={menuAberto ? t('Fechar menu') : t('Abrir menu')}
             aria-expanded={menuAberto}
           >
             <span></span>

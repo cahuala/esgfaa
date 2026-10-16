@@ -12,6 +12,7 @@ import * as E from '../esquemas.js'
 import { rotasSecretaria } from './secretaria.js'
 import { rotasBiblioteca } from './biblioteca.js'
 import { rotasIntegridade } from './integridade.js'
+import { rotasTraducoes } from './traducoes.js'
 
 const pColecao = z.object({ colecao: E.colecao })
 const pItem = z.object({ colecao: E.colecao, id: E.id })
@@ -151,6 +152,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.use('/academico', rotasSecretaria({ servicos, config, privados }))
   r.use('/biblioteca', rotasBiblioteca({ servicos, config, privados }))
   r.use('/integridade', rotasIntegridade({ servicos, config, privados }))
+  r.use('/traducoes', rotasTraducoes({ servicos }))
 
   // ---------- candidaturas ----------
 

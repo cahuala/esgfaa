@@ -6,11 +6,13 @@ import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import Publicidade from '../../components/Publicidade/Publicidade'
 import Interacoes from '../../components/Interacoes/Interacoes'
+import AvisoLingua from '../../components/AvisoLingua/AvisoLingua'
 import { Cartao, Etiqueta, Foto } from '../../components/Corporativo/Corporativo'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga } from '../../utils/datas'
 import { ancora, subtitulosDe, tempoLeitura } from '../../utils/texto'
 import styles from './NoticiaDetalhe.module.css'
+import { t } from '../../i18n/linguas'
 
 // Notícia completa, como o "news detail" do modelo Corporate
 function NoticiaDetalhe() {
@@ -19,7 +21,7 @@ function NoticiaDetalhe() {
   const noticia = noticiaPorSlug(slug)
 
   if (!noticia) {
-    return <NaoEncontrado titulo="Notícia não encontrada" voltarPara="/Noticias" voltarTexto="Ver todas as notícias" />
+    return <NaoEncontrado titulo={t('Notícia não encontrada')} voltarPara="/Noticias" voltarTexto={t('Ver todas as notícias')} />
   }
 
   const subtitulos = subtitulosDe(noticia.conteudo)
@@ -38,9 +40,10 @@ function NoticiaDetalhe() {
       <div className={`contentor ${styles.grelha}`}>
         <article className={styles.principal}>
           <Link to="/Noticias" className={styles.voltar}>
-            <span><FaArrowLeft aria-hidden="true" /></span> Voltar às notícias
+            <span><FaArrowLeft aria-hidden="true" /></span> {t('Voltar às notícias')}
           </Link>
 
+          <AvisoLingua item={noticia} />
           <Etiqueta>{noticia.categoria}</Etiqueta>
           <h1>{noticia.titulo}</h1>
           <p className={styles.entrada}>{noticia.resumo}</p>
@@ -48,7 +51,7 @@ function NoticiaDetalhe() {
           <div className={styles.meta}>
             {noticia.autor && <span><FaRegUser aria-hidden="true" /> {noticia.autor}</span>}
             <span><FaRegCalendar aria-hidden="true" /> <time dateTime={noticia.data}>{formatarDataLonga(noticia.data)}</time></span>
-            <span><FaRegClock aria-hidden="true" /> {minutos} min de leitura</span>
+            <span><FaRegClock aria-hidden="true" /> {t('{n} min de leitura', { n: minutos })}</span>
           </div>
 
           <div className={styles.partilha}>
@@ -62,8 +65,8 @@ function NoticiaDetalhe() {
           )}
 
           {subtitulos.length > 1 && (
-            <nav className={styles.indice} aria-label="Nesta notícia">
-              <strong>Nesta notícia</strong>
+            <nav className={styles.indice} aria-label={t('Nesta notícia')}>
+              <strong>{t('Nesta notícia')}</strong>
               <ol>
                 {subtitulos.map((s) => <li key={s}><a href={`#${ancora(s)}`}>{s}</a></li>)}
               </ol>
@@ -80,7 +83,7 @@ function NoticiaDetalhe() {
         <aside className={styles.lateral}>
           {destaques.length > 0 && (
             <section>
-              <h2>Em destaque</h2>
+              <h2>{t('Em destaque')}</h2>
               <div className={styles.destaques}>
                 {destaques.map((n) => (
                   <Cartao key={n.slug} para={`/Noticias/${n.slug}`} imagem={n.capa} titulo={n.titulo} data={n.data} className={styles.pequeno} />
@@ -90,7 +93,7 @@ function NoticiaDetalhe() {
           )}
 
           <section>
-            <h2>Secções</h2>
+            <h2>{t('Secções')}</h2>
             <ul className={styles.seccoes}>
               {seccoes.map((s) => <li key={s}><Link to="/Noticias">{s}</Link></li>)}
             </ul>
@@ -101,7 +104,7 @@ function NoticiaDetalhe() {
       {maisNoticias.length > 0 && (
         <section className={`seccao ${styles.mais}`}>
           <div className="contentor">
-            <span className={styles.maisRotulo}>Mais notícias</span>
+            <span className={styles.maisRotulo}>{t('Mais notícias')}</span>
             <div className={styles.maisGrelha}>
               {maisNoticias.map((n) => (
                 <Cartao key={n.slug} para={`/Noticias/${n.slug}`} imagem={n.capa} etiqueta={n.categoria} titulo={n.titulo} data={n.data} />

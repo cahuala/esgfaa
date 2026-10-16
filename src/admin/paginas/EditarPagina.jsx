@@ -5,6 +5,7 @@ import { useSessao } from '../sessaoContexto'
 import { PAGINAS } from '../esquemas'
 import { Formulario } from '../componentes/Campo'
 import { Aviso, CabecalhoPagina, Carregando, Erro } from '../componentes/Ui'
+import Traducoes from '../componentes/Traducoes'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -62,6 +63,7 @@ function EditarPagina() {
       </CabecalhoPagina>
 
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
+      {dados && <Traducoes colecao="paginas" id={chave} horizontal />}
       {!dados && !erro && <Carregando />}
 
       {dados && (

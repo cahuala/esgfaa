@@ -4,6 +4,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { API_URL, idVisitante, pedido } from '../../conteudo/api'
 import { tempoRelativo } from '../../utils/datas'
 import styles from './Interacoes.module.css'
+import { t } from '../../i18n/linguas'
 
 /*
   Gostos, partilha, visualizações e comentários de uma notícia, evento ou artigo.
@@ -84,11 +85,11 @@ function Interacoes({ colecao, id, titulo }) {
   }
 
   const url = typeof window !== 'undefined' ? encodeURIComponent(window.location.href) : ''
-  const t = encodeURIComponent(titulo)
+  const tit = encodeURIComponent(titulo)
   const total = estado?.comentarios.length || 0
 
   return (
-    <section className={styles.interacoes} aria-label="Reações e comentários">
+    <section className={styles.interacoes} aria-label={t('Reações e comentários')}>
       <div className={styles.barra}>
         {!indisponivel && (
           <button
@@ -98,7 +99,7 @@ function Interacoes({ colecao, id, titulo }) {
             disabled={!estado}
           >
             {estado?.gostei ? <FaHeart aria-hidden="true" /> : <FaRegHeart aria-hidden="true" />}
-            <span>{estado?.gostei ? 'Gostei' : 'Gosto'}</span>
+            <span>{estado?.gostei ? t('Gostei') : t('Gosto')}</span>
             <strong>{estado?.gostos ?? '–'}</strong>
           </button>
         )}
@@ -106,38 +107,38 @@ function Interacoes({ colecao, id, titulo }) {
         {!indisponivel && (
           <a href="#comentarios" className={styles.botaoBarra}>
             <FaRegComment aria-hidden="true" />
-            <span>{total} {total === 1 ? 'comentário' : 'comentários'}</span>
+            <span>{total === 1 ? t('1 comentário') : t('{n} comentários', { n: total })}</span>
           </a>
         )}
 
         <button className={styles.botaoBarra} onClick={partilhar}>
           {copiado ? <FaCheck aria-hidden="true" /> : <FaShareAlt aria-hidden="true" />}
-          <span>{copiado ? 'Ligação copiada' : 'Partilhar'}</span>
+          <span>{copiado ? t('Ligação copiada') : t('Partilhar')}</span>
         </button>
 
         <div className={styles.redes}>
-          <a href={`https://www.facebook.com/sharer/sharer.php?u=${url}`} target="_blank" rel="noopener noreferrer" aria-label="Partilhar no Facebook"><FaFacebookF /></a>
-          <a href={`https://wa.me/?text=${t}%20${url}`} target="_blank" rel="noopener noreferrer" aria-label="Partilhar no WhatsApp"><FaWhatsapp /></a>
-          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${url}`} target="_blank" rel="noopener noreferrer" aria-label="Partilhar no LinkedIn"><FaLinkedinIn /></a>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${url}`} target="_blank" rel="noopener noreferrer" aria-label={t('Partilhar no {rede}', { rede: 'Facebook' })}><FaFacebookF /></a>
+          <a href={`https://wa.me/?text=${tit}%20${url}`} target="_blank" rel="noopener noreferrer" aria-label={t('Partilhar no {rede}', { rede: 'WhatsApp' })}><FaWhatsapp /></a>
+          <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${url}`} target="_blank" rel="noopener noreferrer" aria-label={t('Partilhar no {rede}', { rede: 'LinkedIn' })}><FaLinkedinIn /></a>
         </div>
 
         {estado && estado.visualizacoes > 0 && (
-          <span className={styles.vistas}><FaEye aria-hidden="true" /> {estado.visualizacoes} {estado.visualizacoes === 1 ? 'visualização' : 'visualizações'}</span>
+          <span className={styles.vistas}><FaEye aria-hidden="true" /> {estado.visualizacoes === 1 ? t('1 visualização') : t('{n} visualizações', { n: estado.visualizacoes })}</span>
         )}
       </div>
 
       {indisponivel ? (
-        API_URL && <p className={styles.aviso}>Os gostos e comentários estão temporariamente indisponíveis.</p>
+        API_URL && <p className={styles.aviso}>{t('Os gostos e comentários estão temporariamente indisponíveis.')}</p>
       ) : (
         <div id="comentarios" className={styles.comentarios}>
           <h2>
-            Comentários <span>{total}</span>
+            {t('Comentários')} <span>{total}</span>
           </h2>
 
           <form className={styles.formulario} onSubmit={comentar}>
             <div className={styles.linha}>
               <label>
-                <span>Nome</span>
+                <span>{t('Nome')}</span>
                 <input
                   value={form.nome}
                   onChange={(e) => setForm({ ...form, nome: e.target.value })}
@@ -153,7 +154,7 @@ function Interacoes({ colecao, id, titulo }) {
               </label>
             </div>
             <label>
-              <span>Comentário</span>
+              <span>{t('Comentário')}</span>
               <textarea
                 value={form.texto}
                 onChange={(e) => setForm({ ...form, texto: e.target.value })}
@@ -163,14 +164,14 @@ function Interacoes({ colecao, id, titulo }) {
               />
             </label>
             <div className={styles.enviar}>
-              <small>Os comentários são públicos. Seja respeitoso: comentários ofensivos são removidos.</small>
-              <button type="submit" disabled={enviando}>{enviando ? 'A publicar…' : 'Publicar comentário'}</button>
+              <small>{t('Os comentários são públicos. Seja respeitoso: comentários ofensivos são removidos.')}</small>
+              <button type="submit" disabled={enviando}>{enviando ? t('A publicar…') : t('Publicar comentário')}</button>
             </div>
             {erro && <p className={styles.erro} role="alert">{erro}</p>}
           </form>
 
           {total === 0 ? (
-            <p className={styles.semComentarios}>Ainda não há comentários. Seja o primeiro a comentar.</p>
+            <p className={styles.semComentarios}>{t('Ainda não há comentários. Seja o primeiro a comentar.')}</p>
           ) : (
             <ol className={styles.lista}>
               {estado.comentarios.map((c) => (

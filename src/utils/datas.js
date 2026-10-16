@@ -1,3 +1,5 @@
+import { linguaAtual, localAtual, t } from '../i18n/linguas'
+
 const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const MESES_LONGOS = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -17,20 +19,27 @@ export function hoje() {
 }
 
 // "12 Set 2026"
+// noutras línguas, o formato habitual dessa língua
+const intl = (d, opcoes) => new Intl.DateTimeFormat(localAtual(), opcoes).format(d)
+const maiuscula = (x) => x.charAt(0).toUpperCase() + x.slice(1)
+
 export function formatarData(iso) {
   const d = paraData(iso)
+  if (linguaAtual() !== 'pt') return intl(d, { day: '2-digit', month: 'short', year: 'numeric' })
   return `${String(d.getDate()).padStart(2, '0')} ${MESES_CURTOS[d.getMonth()]} ${d.getFullYear()}`
 }
 
 // "12 de setembro de 2026"
 export function formatarDataLonga(iso) {
   const d = paraData(iso)
+  if (linguaAtual() !== 'pt') return intl(d, { day: 'numeric', month: 'long', year: 'numeric' })
   return `${d.getDate()} de ${MESES_LONGOS[d.getMonth()]} de ${d.getFullYear()}`
 }
 
 // "Outubro de 2026" — usado para agrupar eventos por mês
 export function formatarMesAno(iso) {
   const d = paraData(iso)
+  if (linguaAtual() !== 'pt') return maiuscula(intl(d, { month: 'long', year: 'numeric' }))
   const mes = MESES_LONGOS[d.getMonth()]
   return `${mes[0].toUpperCase()}${mes.slice(1)} de ${d.getFullYear()}`
 }
@@ -40,6 +49,7 @@ export function diaDoMes(iso) {
 }
 
 export function mesCurto(iso) {
+  if (linguaAtual() !== 'pt') return intl(paraData(iso), { month: 'short' }).replace('.', '').toUpperCase()
   return MESES_CURTOS[paraData(iso).getMonth()].toUpperCase()
 }
 
@@ -50,25 +60,28 @@ export function diasAte(iso) {
 // "Hoje", "Amanhã" ou "Faltam 6 dias"
 export function contagem(iso) {
   const dias = diasAte(iso)
-  if (dias === 0) return 'Hoje'
-  if (dias === 1) return 'Amanhã'
-  return `Faltam ${dias} dias`
+  if (dias === 0) return t('Hoje')
+  if (dias === 1) return t('Amanhã')
+  return t('Faltam {n} dias', { n: dias })
 }
 
 const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
 // "Sexta-feira, 9 de outubro de 2026"
 export function dataPorExtenso(data = new Date()) {
+  if (linguaAtual() !== 'pt') return maiuscula(intl(data, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
   return `${DIAS_SEMANA[data.getDay()]}, ${data.getDate()} de ${MESES_LONGOS[data.getMonth()]} de ${data.getFullYear()}`
 }
 
 // "Quinta-feira"
 export function diaDaSemana(iso) {
+  if (linguaAtual() !== 'pt') return maiuscula(intl(paraData(iso), { weekday: 'long' }))
   return DIAS_SEMANA[paraData(iso).getDay()]
 }
 
 // "outubro" (nome do mês por extenso, minúsculas)
 export function mesLongo(iso) {
+  if (linguaAtual() !== 'pt') return intl(paraData(iso), { month: 'long' })
   return MESES_LONGOS[paraData(iso).getMonth()]
 }
 
@@ -83,12 +96,13 @@ export function tempoRelativo(valor) {
   const d = dataUtc(valor)
   if (Number.isNaN(d.getTime())) return ''
   const seg = Math.max(0, Math.round((Date.now() - d) / 1000))
-  if (seg < 60) return 'agora mesmo'
-  if (seg < 3600) return `há ${Math.floor(seg / 60)} min`
-  if (seg < 86400) return `há ${Math.floor(seg / 3600)} h`
+  if (seg < 60) return t('agora mesmo')
+  if (seg < 3600) return t('há {n} min', { n: Math.floor(seg / 60) })
+  if (seg < 86400) return t('há {n} h', { n: Math.floor(seg / 3600) })
   if (seg < 7 * 86400) {
     const dias = Math.floor(seg / 86400)
-    return `há ${dias} ${dias === 1 ? 'dia' : 'dias'}`
+    return dias === 1 ? t('há 1 dia') : t('há {n} dias', { n: dias })
   }
+  if (linguaAtual() !== 'pt') return intl(d, { day: '2-digit', month: 'short', year: 'numeric' })
   return `${String(d.getDate()).padStart(2, '0')} ${MESES_CURTOS[d.getMonth()]} ${d.getFullYear()}`
 }

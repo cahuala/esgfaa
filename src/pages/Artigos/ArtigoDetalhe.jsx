@@ -8,11 +8,13 @@ import BarraLeitura from '../../components/BarraLeitura/BarraLeitura'
 import NaoEncontrado from '../NaoEncontrado/NaoEncontrado'
 import EntradaArtigo from './EntradaArtigo'
 import Interacoes from '../../components/Interacoes/Interacoes'
+import AvisoLingua from '../../components/AvisoLingua/AvisoLingua'
 import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga, paraData } from '../../utils/datas'
 import { ancora, subtitulosDe, iniciais, tempoLeitura } from '../../utils/texto'
 import ed from '../../styles/editorial.module.css'
 import styles from './Artigos.module.css'
+import { t } from '../../i18n/linguas'
 
 function ArtigoDetalhe() {
   const { slug } = useParams()
@@ -21,7 +23,7 @@ function ArtigoDetalhe() {
   const [citacaoCopiada, setCitacaoCopiada] = useState(false)
 
   if (!artigo) {
-    return <NaoEncontrado titulo="Artigo não encontrado" voltarPara="/Artigos" voltarTexto="Ver todos os artigos" />
+    return <NaoEncontrado titulo={t('Artigo não encontrado')} voltarPara="/Artigos" voltarTexto={t('Ver todos os artigos')} />
   }
 
   const autor = pessoaPorId(artigo.autor)
@@ -30,7 +32,7 @@ function ArtigoDetalhe() {
   // estilo académico: "Santos, M. (2026). Título. Escola…" (sem a patente)
   const nomes = autor ? autor.nome.split(' ').filter((p) => !p.endsWith('.')) : []
   const autorCitacao = nomes.length ? `${nomes[nomes.length - 1]}, ${nomes[0][0]}. ` : ''
-  const citacao = `${autorCitacao}(${ano}). ${artigo.titulo}. Escola Superior de Guerra das Forças Armadas Angolanas.`
+  const citacao = `${autorCitacao}(${ano}). ${artigo.titulo}. ${t('Escola Superior de Guerra das Forças Armadas Angolanas')}.`
   const seccoes = subtitulosDe(artigo.conteudo)
   const temReferencias = artigo.conteudo.some((b) => b.tipo === 'referencias')
   const relacionados = artigos
@@ -53,7 +55,7 @@ function ArtigoDetalhe() {
       <BarraLeitura />
 
       <CabecalhoEditorial
-        migalhas={[{ label: 'Artigos', to: '/Artigos' }, { label: artigo.tipo }]}
+        migalhas={[{ label: t('Artigos'), to: '/Artigos' }, { label: artigo.tipo }]}
         sobretitulo={artigo.tipo}
         titulo={artigo.titulo}
       >
@@ -70,20 +72,20 @@ function ArtigoDetalhe() {
 
       {/* Ficha da publicação */}
       <dl className={ed.factos}>
-        <div><dt>Publicado</dt><dd>{formatarDataLonga(artigo.data)}</dd></div>
-        <div><dt>Tipo</dt><dd>{artigo.tipo}</dd></div>
-        <div><dt>Área</dt><dd>{artigo.area}</dd></div>
-        <div><dt>Leitura</dt><dd>{minutos} {minutos === 1 ? 'minuto' : 'minutos'}</dd></div>
+        <div><dt>{t('Publicado')}</dt><dd>{formatarDataLonga(artigo.data)}</dd></div>
+        <div><dt>{t('Tipo')}</dt><dd>{artigo.tipo}</dd></div>
+        <div><dt>{t('Área')}</dt><dd>{artigo.area}</dd></div>
+        <div><dt>{t('Leitura')}</dt><dd>{minutos === 1 ? t('1 minuto') : t('{n} minutos', { n: minutos })}</dd></div>
       </dl>
 
       <div className={`contentor ${styles.grelhaDetalhe}`}>
         {/* Esquerda: índice e partilha */}
         <aside className={styles.fichaLateral}>
-          <h2 className={styles.fichaTitulo}>Neste artigo</h2>
+          <h2 className={styles.fichaTitulo}>{t('Neste artigo')}</h2>
           <ol className={styles.indiceArtigo}>
-            <li><a href="#resumo">Resumo</a></li>
+            <li><a href="#resumo">{t('Resumo')}</a></li>
             {seccoes.map((s) => <li key={s}><a href={`#${ancora(s)}`}>{s}</a></li>)}
-            {temReferencias && <li><a href="#referencias">Referências</a></li>}
+            {temReferencias && <li><a href="#referencias">{t('Referências')}</a></li>}
           </ol>
           <div className={styles.partilha}><Partilhar titulo={artigo.titulo} /></div>
         </aside>
@@ -91,10 +93,11 @@ function ArtigoDetalhe() {
         {/* Centro: o artigo */}
         <article className={styles.texto}>
           <section id="resumo" className={styles.resumo}>
-            <h2>Resumo</h2>
+            <AvisoLingua item={artigo} />
+            <h2>{t('Resumo')}</h2>
             <p>{artigo.resumo}</p>
             <div className={styles.palavras}>
-              <span>Palavras-chave</span>
+              <span>{t('Palavras-chave')}</span>
               {artigo.palavrasChave.map((p) => <span key={p} className={styles.palavra}>{p}</span>)}
             </div>
           </section>
@@ -107,7 +110,7 @@ function ArtigoDetalhe() {
             <div className={styles.sobreAutor}>
               <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
               <div>
-                <span className={styles.sobreRotulo}>Sobre o autor</span>
+                <span className={styles.sobreRotulo}>{t('Sobre o autor')}</span>
                 <h3>{autor.nome}</h3>
                 <p>{autor.cargo}. {autor.destaque}.</p>
               </div>
@@ -118,20 +121,20 @@ function ArtigoDetalhe() {
         {/* Direita: citar, PDF, relacionados */}
         <aside className={styles.direitaDetalhe}>
           <div className={styles.caixa}>
-            <h2 className={styles.fichaTitulo}>Como citar</h2>
+            <h2 className={styles.fichaTitulo}>{t('Como citar')}</h2>
             <p className={styles.citacao}>{citacao}</p>
             <button className={styles.copiar} onClick={copiarCitacao}>
-              {citacaoCopiada ? <><FaCheck aria-hidden="true" /> Citação copiada</> : <><FaRegCopy aria-hidden="true" /> Copiar citação</>}
+              {citacaoCopiada ? <><FaCheck aria-hidden="true" /> {t('Citação copiada')}</> : <><FaRegCopy aria-hidden="true" /> {t('Copiar citação')}</>}
             </button>
           </div>
 
           {artigo.pdf && (
             <a href={artigo.pdf} className={`${ed.botao} ${styles.pdf}`} download>
-              <FaFilePdf aria-hidden="true" /> Descarregar PDF
+              <FaFilePdf aria-hidden="true" /> {t('Descarregar PDF')}
             </a>
           )}
 
-          <h2 className={styles.direitaTitulo}>Publicações relacionadas</h2>
+          <h2 className={styles.direitaTitulo}>{t('Publicações relacionadas')}</h2>
           <div className={styles.relacionados}>
             {relacionados.map((a) => <EntradaArtigo key={a.slug} artigo={a} />)}
           </div>

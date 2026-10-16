@@ -1,4 +1,5 @@
 // Passos e regras do formulário de candidatura (as mesmas da API, para avisar antes de enviar)
+import { t as tr } from '../../i18n/linguas'
 
 export const RAMOS = ['Exército', 'Força Aérea Nacional', 'Marinha de Guerra Angolana']
 export const POSTOS = [
@@ -39,35 +40,35 @@ export function errosDoPasso(indice, f, { cursos = [], hoje = new Date() } = {})
   const t = (v) => String(v ?? '').trim()
   switch (PASSOS[indice]?.id) {
     case 'curso':
-      if (!cursos.includes(f.curso)) e.curso = 'Escolha o curso a que se quer candidatar.'
+      if (!cursos.includes(f.curso)) e.curso = tr('Escolha o curso a que se quer candidatar.')
       break
     case 'pessoais': {
-      if (t(f.nome).split(/\s+/).length < 2 || t(f.nome).length < 5) e.nome = 'Indique o nome completo (nome e apelido).'
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(f.dataNascimento)) e.dataNascimento = 'Indique a data de nascimento.'
+      if (t(f.nome).split(/\s+/).length < 2 || t(f.nome).length < 5) e.nome = tr('Indique o nome completo (nome e apelido).')
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f.dataNascimento)) e.dataNascimento = tr('Indique a data de nascimento.')
       else {
         const anos = idade(f.dataNascimento, hoje)
-        if (anos < 21 || anos > 70) e.dataNascimento = 'A idade deve estar entre 21 e 70 anos.'
+        if (anos < 21 || anos > 70) e.dataNascimento = tr('A idade deve estar entre 21 e 70 anos.')
       }
-      if (!/^[0-9A-Za-z]{6,20}$/.test(t(f.bi))) e.bi = 'Número do bilhete de identidade inválido.'
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t(f.email))) e.email = 'E-mail inválido.'
-      if (!/^\+?\d[\d\s-]{7,19}$/.test(t(f.telefone))) e.telefone = 'Número de telefone inválido.'
-      if (t(f.provincia).length < 2) e.provincia = 'Indique a província.'
+      if (!/^[0-9A-Za-z]{6,20}$/.test(t(f.bi))) e.bi = tr('Número do bilhete de identidade inválido.')
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(t(f.email))) e.email = tr('E-mail inválido.')
+      if (!/^\+?\d[\d\s-]{7,19}$/.test(t(f.telefone))) e.telefone = tr('Número de telefone inválido.')
+      if (t(f.provincia).length < 2) e.provincia = tr('Indique a província.')
       break
     }
     case 'militares': {
-      if (!RAMOS.includes(f.ramo)) e.ramo = 'Escolha o ramo.'
-      if (!POSTOS.includes(f.posto)) e.posto = 'Escolha o posto.'
-      if (!/^[0-9A-Za-z-]{4,20}$/.test(t(f.nip))) e.nip = 'NIP inválido (4 a 20 letras ou números).'
-      if (t(f.unidade).length < 2) e.unidade = 'Indique a unidade ou órgão onde presta serviço.'
+      if (!RAMOS.includes(f.ramo)) e.ramo = tr('Escolha o ramo.')
+      if (!POSTOS.includes(f.posto)) e.posto = tr('Escolha o posto.')
+      if (!/^[0-9A-Za-z-]{4,20}$/.test(t(f.nip))) e.nip = tr('NIP inválido (4 a 20 letras ou números).')
+      if (t(f.unidade).length < 2) e.unidade = tr('Indique a unidade ou órgão onde presta serviço.')
       const anos = Number(f.anosServico)
-      if (f.anosServico === '' || !Number.isInteger(anos) || anos < 0 || anos > 45) e.anosServico = 'Número entre 0 e 45.'
-      if (!HABILITACOES.includes(f.habilitacoes)) e.habilitacoes = 'Escolha as habilitações.'
-      if (t(f.motivacao).length < 30) e.motivacao = 'Escreva pelo menos 30 caracteres.'
+      if (f.anosServico === '' || !Number.isInteger(anos) || anos < 0 || anos > 45) e.anosServico = tr('Número entre 0 e 45.')
+      if (!HABILITACOES.includes(f.habilitacoes)) e.habilitacoes = tr('Escolha as habilitações.')
+      if (t(f.motivacao).length < 30) e.motivacao = tr('Escreva pelo menos 30 caracteres.')
       break
     }
     case 'confirmacao':
-      if (f.declaracao !== true) e.declaracao = 'Confirme que as informações são verdadeiras.'
-      if (f.consentimento !== true) e.consentimento = 'Autorize o tratamento dos dados.'
+      if (f.declaracao !== true) e.declaracao = tr('Confirme que as informações são verdadeiras.')
+      if (f.consentimento !== true) e.consentimento = tr('Autorize o tratamento dos dados.')
       break
     default:
   }

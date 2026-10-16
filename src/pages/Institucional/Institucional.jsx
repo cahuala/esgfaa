@@ -7,6 +7,7 @@ import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import { iniciais } from '../../utils/texto'
 import Brasao from '../../assets/Logo.png'
 import styles from './Institucional.module.css'
+import { t } from '../../i18n/linguas'
 
 const seccoes = [
   { id: 'historia', label: 'História' },
@@ -32,16 +33,16 @@ function Institucional() {
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Institucional' }]}
-        sobretitulo="Institucional"
-        titulo="A Escola"
+        migalhas={[{ label: t('Institucional') }]}
+        sobretitulo={t('Institucional')}
+        titulo={t('A Escola')}
         entrada={pagina.entrada}
       />
 
       <figure className={`contentor ${styles.sede}`}>
-        <img src={pagina.imagemSede} alt="Fachada da Escola Superior de Guerra" />
+        <img src={pagina.imagemSede} alt={t('Fachada da Escola Superior de Guerra')} />
         <figcaption>
-          <span>Sede</span> {pagina.legendaSede}
+          <span>{t('Sede')}</span> {pagina.legendaSede}
         </figcaption>
       </figure>
 
@@ -57,8 +58,8 @@ function Institucional() {
       <div className={`contentor ${styles.grelha}`}>
         {/* Índice */}
         <aside className={styles.indice}>
-          <h2 className={styles.indiceTitulo}>Nesta página</h2>
-          <nav aria-label="Secções da página">
+          <h2 className={styles.indiceTitulo}>{t('Nesta página')}</h2>
+          <nav aria-label={t('Secções da página')}>
             <ol>
               {seccoes.map((s) => (
                 <li key={s.id}>
@@ -67,7 +68,7 @@ function Institucional() {
                     className={ativa === s.id ? styles.indiceAtivo : ''}
                     aria-current={ativa === s.id ? 'true' : undefined}
                   >
-                    {s.label}
+                    {t(s.label)}
                   </Link>
                 </li>
               ))}
@@ -75,7 +76,7 @@ function Institucional() {
           </nav>
 
           <div className={styles.contactoInstitucional}>
-            <h3>Contacto institucional</h3>
+            <h3>{t('Contacto institucional')}</h3>
             <p>{contactos.morada.join(', ')}</p>
             <a href={`mailto:${contactos.email}`}>{contactos.email}</a>
           </div>
@@ -84,22 +85,22 @@ function Institucional() {
         <div className={styles.conteudo}>
           {/* I. História */}
           <section id="historia" className={styles.seccao}>
-            <TituloSeccao rotulo="História">{pagina.historia.titulo}</TituloSeccao>
+            <TituloSeccao rotulo={t('História')}>{pagina.historia.titulo}</TituloSeccao>
 
             <div className={styles.textoColunas}>
               {pagina.historia.imagem && (
                 <figure className={styles.figuraTexto}>
                   <img src={pagina.historia.imagem} alt={pagina.historia.legenda || ''} />
-                  {pagina.historia.legenda && <figcaption><span>Figura 1</span> {pagina.historia.legenda}</figcaption>}
+                  {pagina.historia.legenda && <figcaption><span>{t('Figura {n}', { n: 1 })}</span> {pagina.historia.legenda}</figcaption>}
                 </figure>
               )}
-              {pagina.historia.paragrafos.map((t, i) => (
-                <p key={i}>{t}</p>
+              {pagina.historia.paragrafos.map((p, i) => (
+                <p key={i}>{p}</p>
               ))}
             </div>
 
             <table className={styles.cronologia}>
-              <caption>Cronologia</caption>
+              <caption>{t('Cronologia')}</caption>
               <tbody>
                 {marcos.map((m) => (
                   <tr key={m.ano}>
@@ -114,21 +115,21 @@ function Institucional() {
 
           {/* II. Missão, Visão e Valores */}
           <section id="missao" className={styles.seccao}>
-            <TituloSeccao rotulo="Missão, Visão e Valores">O que nos orienta</TituloSeccao>
+            <TituloSeccao rotulo={t('Missão, Visão e Valores')}>{t('O que nos orienta')}</TituloSeccao>
 
             <div className={styles.declaracoes}>
               <article>
-                <span className={styles.rotulo}>Missão</span>
+                <span className={styles.rotulo}>{t('Missão')}</span>
                 <p>{pagina.missao}</p>
               </article>
               <article>
-                <span className={styles.rotulo}>Visão</span>
+                <span className={styles.rotulo}>{t('Visão')}</span>
                 <p>{pagina.visao}</p>
               </article>
             </div>
 
             <div className={styles.valores}>
-              <h3 className={styles.subtitulo}>Valores</h3>
+              <h3 className={styles.subtitulo}>{t('Valores')}</h3>
               <ol>
                 {valores.map((v) => (
                   <li key={v.nome}>
@@ -142,15 +143,15 @@ function Institucional() {
 
           {/* III. Organização e Estrutura */}
           <section id="estrutura" className={styles.seccao}>
-            <TituloSeccao rotulo="Organização e Estrutura">Como a Escola está organizada</TituloSeccao>
+            <TituloSeccao rotulo={t('Organização e Estrutura')}>{t('Como a Escola está organizada')}</TituloSeccao>
             <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
             <div className={styles.organograma}>
               <div className={styles.topo}>
                 <img src={Brasao} alt="" className={styles.topoBrasao} />
                 <div>
-                  <span className={styles.rotulo}>Órgão de direção</span>
-                  <h3>Comando da Escola</h3>
+                  <span className={styles.rotulo}>{t('Órgão de direção')}</span>
+                  <h3>{t('Comando da Escola')}</h3>
                   <p>
                     {comandante.nome} · {comandante.cargo}
                     {subdiretora && <><br />{subdiretora.nome} · {subdiretora.cargo}</>}
@@ -178,7 +179,7 @@ function Institucional() {
 
           {/* IV. Direção / Comando */}
           <section id="comando" className={styles.seccao}>
-            <TituloSeccao rotulo="Direção / Comando">Mensagem do Comandante</TituloSeccao>
+            <TituloSeccao rotulo={t('Direção / Comando')}>{t('Mensagem do Comandante')}</TituloSeccao>
 
             <div className={styles.mensagem}>
               <figure className={styles.retrato}>
@@ -195,7 +196,7 @@ function Institucional() {
             </div>
 
             <div className={styles.diretorio}>
-              <h3 className={styles.subtitulo}>Equipa de direção</h3>
+              <h3 className={styles.subtitulo}>{t('Equipa de direção')}</h3>
               <ul>
                 {direcao.map((p) => (
                   <li key={p.id}>
@@ -209,7 +210,7 @@ function Institucional() {
             </div>
 
             <Link to="/Contactos#formulario" className={styles.ligacao}>
-              Contactar a Escola <FaArrowRight aria-hidden="true" />
+              {t('Contactar a Escola')} <FaArrowRight aria-hidden="true" />
             </Link>
           </section>
         </div>

@@ -3,6 +3,7 @@ import { FaMapMarkerAlt } from 'react-icons/fa'
 import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { diaDaSemana, diaDoMes, mesCurto } from '../../utils/datas'
 import styles from './Eventos.module.css'
+import { t } from '../../i18n/linguas'
 
 // Uma entrada da agenda: data em grande, hora, título e local
 function LinhaAgenda({ evento, realizado = false }) {
@@ -15,12 +16,12 @@ function LinhaAgenda({ evento, realizado = false }) {
       </span>
       <span className={styles.linhaHora}>
         {evento.horaInicio}
-        {evento.horaFim && <small>até {evento.horaFim}</small>}
+        {evento.horaFim && <small>{t('até {hora}', { hora: evento.horaFim })}</small>}
       </span>
       <span className={styles.linhaCorpo}>
         <span className={styles.linhaTipo}>
           {evento.categoria}
-          {evento.inscricoes && !realizado && <em>Inscrições abertas</em>}
+          {evento.inscricoes && !realizado && <em>{t('Inscrições abertas')}</em>}
         </span>
         <span className={styles.linhaTitulo}>{evento.titulo}</span>
         <span className={styles.linhaLocal}>

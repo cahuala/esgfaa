@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ConteudoContexto } from './contexto'
 import { pedido } from './api'
+import { useIdioma } from '../i18n/contexto'
+import { aplicarTextos } from '../i18n/aplicar'
 import noticias from '../data/noticias'
 import artigos from '../data/artigos'
 import eventos from '../data/eventos'
@@ -15,6 +17,7 @@ const LOCAL = { noticias, artigos, eventos, cursos, pessoas, paginas, publicidad
 function ConteudoProvider({ children }) {
   const [dados, setDados] = useState(LOCAL)
   const [online, setOnline] = useState(false)
+  const { lingua } = useIdioma()
 
   useEffect(() => {
     let ativo = true
@@ -32,7 +35,25 @@ function ConteudoProvider({ children }) {
     return () => { ativo = false }
   }, [])
 
+  // conteúdos na língua escolhida: a tradução publicada (se houver) por cima do original;
+  // cada item fica com _lingua (a língua em que realmente está) para o site poder avisar
+  const traduzidos = useMemo(() => {
+    const itens = dados.traducoes?.itens || {}
+    if (lingua === 'pt') return dados
+    const traduzir = (colecao, x, chave) => {
+      const tr = itens[`${colecao}/${chave}`]?.[lingua]
+      return tr ? { ...aplicarTextos(x, tr), _lingua: lingua } : { ...x, _lingua: 'pt' }
+    }
+    const r = { ...dados }
+    for (const [colecao, campo] of [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id']]) {
+      r[colecao] = (dados[colecao] || []).map((x) => traduzir(colecao, x, x[campo]))
+    }
+    r.paginas = Object.fromEntries(Object.entries(dados.paginas || {}).map(([k, v]) => [k, aplicarTextos(v, itens[`paginas/${k}`]?.[lingua])]))
+    return r
+  }, [dados, lingua])
+
   const valor = useMemo(() => {
+    const dados = traduzidos
     const procurar = (lista, campo) => (v) => lista.find((x) => x[campo] === v)
     return {
       ...dados,
@@ -49,7 +70,7 @@ function ConteudoProvider({ children }) {
         estatisticas: { ...d.estatisticas, [`${colecao}/${id}`]: { ...d.estatisticas?.[`${colecao}/${id}`], ...est } },
       })),
     }
-  }, [dados, online])
+  }, [traduzidos, online])
 
   return <ConteudoContexto.Provider value={valor}>{children}</ConteudoContexto.Provider>
 }

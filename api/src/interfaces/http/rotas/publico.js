@@ -26,6 +26,7 @@ export function rotasPublicas({ servicos, config }) {
   r.get('/conteudo', async (req, res) => {
     const conteudo = {
       paginas: await servicos.paginas.todas(),
+      traducoes: await servicos.traducoes.publicas(),
       estatisticas: await servicos.interacoes.contagens(),
       ...(await servicos.conteudos.todosPublicados()),
     }

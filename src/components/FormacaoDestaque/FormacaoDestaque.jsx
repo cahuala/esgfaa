@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useConteudo } from '../../conteudo/contexto'
 import { Etiqueta, TituloSeccao } from '../Corporativo/Corporativo'
 import styles from './FormacaoDestaque.module.css'
+import { t } from '../../i18n/linguas'
 
 const INTERVALO_MS = 7000
 
@@ -45,7 +46,7 @@ function FormacaoDestaque() {
         <TituloSeccao titulo={textos.titulo} texto={textos.texto} centrada />
 
         <div className={styles.corpo}>
-          <div className={styles.abas} role="tablist" aria-label="Cursos">
+          <div className={styles.abas} role="tablist" aria-label={t('Cursos')}>
             {cursos.map((c, i) => (
               <button
                 key={c.id}
@@ -77,19 +78,19 @@ function FormacaoDestaque() {
               <div className={styles.etiquetas}>
                 {curso.sigla && <Etiqueta cor="vermelho">{curso.sigla}</Etiqueta>}
                 {curso.duracao && <Etiqueta cor="cinzento">{curso.duracao}</Etiqueta>}
-                {curso.vagas && <Etiqueta cor="azul">{curso.vagas} vagas</Etiqueta>}
+                {curso.vagas && <Etiqueta cor="azul">{t('{n} vagas', { n: curso.vagas })}</Etiqueta>}
               </div>
               <h3>{curso.nome}</h3>
               <p>{curso.resumo}</p>
               {unidades.length > 0 && (
                 <>
-                  <span className={styles.subtitulo}>Plano curricular</span>
+                  <span className={styles.subtitulo}>{t('Plano curricular')}</span>
                   <ul className={styles.plano}>
                     {unidades.map((u) => <li key={u.nome}>{u.nome}</li>)}
                   </ul>
                 </>
               )}
-              <Link to={`/Cursos/${curso.id}`} className={styles.ligacao}>Conhecer o curso →</Link>
+              <Link to={`/Cursos/${curso.id}`} className={styles.ligacao}>{t('Conhecer o curso')} →</Link>
             </div>
           </article>
         </div>

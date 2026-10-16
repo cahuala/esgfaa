@@ -11,6 +11,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { formatarDataLonga, formatarMesAno } from '../../utils/datas'
 import { normalizar, tempoLeitura } from '../../utils/texto'
 import styles from './Noticias.module.css'
+import { t } from '../../i18n/linguas'
 
 const POR_PAGINA = 6
 const TODAS = 'Todas'
@@ -69,8 +70,8 @@ function Noticias() {
     termo && { label: `“${pesquisa.trim()}”`, limpar: () => filtro(setPesquisa)('') },
     categoria !== TODAS && { label: categoria, limpar: () => filtro(setCategoria)(TODAS) },
     mes && { label: formatarMesAno(`${mes}-01`), limpar: () => filtro(setMes)(null) },
-    soVideo && { label: 'Com vídeo', limpar: () => filtro(setSoVideo)(false) },
-    soGaleria && { label: 'Com galeria', limpar: () => filtro(setSoGaleria)(false) },
+    soVideo && { label: t('Com vídeo'), limpar: () => filtro(setSoVideo)(false) },
+    soGaleria && { label: t('Com galeria'), limpar: () => filtro(setSoGaleria)(false) },
   ].filter(Boolean)
 
   function limparTudo() {
@@ -85,38 +86,38 @@ function Noticias() {
   return (
     <main className={styles.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: 'Notícias' }]}
-        sobretitulo="Boletim informativo"
-        titulo="Notícias"
-        entrada="Atividade da Escola: cerimónias, cooperação, formação e investigação."
+        migalhas={[{ label: t('Notícias') }]}
+        sobretitulo={t('Boletim informativo')}
+        titulo={t('Notícias')}
+        entrada={t('Atividade da Escola: cerimónias, cooperação, formação e investigação.')}
       />
 
       <div className={`contentor ${styles.grelha}`}>
         {/* Coluna esquerda — pesquisa e filtros */}
-        <aside className={`${styles.lateral} ${filtrosAbertos ? styles.lateralAberta : ''}`} aria-label="Pesquisa e filtros">
+        <aside className={`${styles.lateral} ${filtrosAbertos ? styles.lateralAberta : ''}`} aria-label={t('Pesquisa e filtros')}>
           <div className={styles.lateralTopo}>
-            <strong>Pesquisa e filtros</strong>
-            <button className={styles.fechar} onClick={() => setFiltrosAbertos(false)} aria-label="Fechar filtros"><FaTimes /></button>
+            <strong>{t('Pesquisa e filtros')}</strong>
+            <button className={styles.fechar} onClick={() => setFiltrosAbertos(false)} aria-label={t('Fechar filtros')}><FaTimes /></button>
           </div>
 
           <label className={styles.campoPesquisa}>
             <FaSearch aria-hidden="true" />
             <input
               type="search"
-              placeholder="Pesquisar notícias"
+              placeholder={t('Pesquisar notícias')}
               value={pesquisa}
               onChange={(e) => filtro(setPesquisa)(e.target.value)}
-              aria-label="Pesquisar notícias"
+              aria-label={t('Pesquisar notícias')}
             />
           </label>
 
           <div className={styles.bloco}>
-            <h2>Secções</h2>
+            <h2>{t('Secções')}</h2>
             <ul>
               {[[TODAS, noticias.length], ...categorias].map(([nome, total]) => (
                 <li key={nome}>
                   <button className={categoria === nome ? styles.opcaoAtiva : ''} onClick={() => filtro(setCategoria)(nome)} aria-pressed={categoria === nome}>
-                    {nome} <span>{total}</span>
+                    {nome === TODAS ? t('Todas') : nome} <span>{total}</span>
                   </button>
                 </li>
               ))}
@@ -124,7 +125,7 @@ function Noticias() {
           </div>
 
           <div className={styles.bloco}>
-            <h2>Arquivo</h2>
+            <h2>{t('Arquivo')}</h2>
             <ul>
               {meses.map(([chave, total]) => (
                 <li key={chave}>
@@ -137,23 +138,23 @@ function Noticias() {
           </div>
 
           <div className={styles.bloco}>
-            <h2>Multimédia</h2>
+            <h2>{t('Multimédia')}</h2>
             <label className={styles.caixa}>
               <input type="checkbox" checked={soVideo} onChange={(e) => filtro(setSoVideo)(e.target.checked)} />
-              <FaPlay aria-hidden="true" /> Com vídeo
+              <FaPlay aria-hidden="true" /> {t('Com vídeo')}
             </label>
             <label className={styles.caixa}>
               <input type="checkbox" checked={soGaleria} onChange={(e) => filtro(setSoGaleria)(e.target.checked)} />
-              <FaImages aria-hidden="true" /> Com galeria de fotos
+              <FaImages aria-hidden="true" /> {t('Com galeria de fotos')}
             </label>
           </div>
 
-          {ativos.length > 0 && <button className={styles.limpar} onClick={limparTudo}>Limpar todos os filtros</button>}
+          {ativos.length > 0 && <button className={styles.limpar} onClick={limparTudo}>{t('Limpar todos os filtros')}</button>}
 
           {emComunicacao && (
             <div className={styles.bloco}>
-              <h2>Imprensa</h2>
-              <p className={styles.imprensa}>Pedidos de informação, entrevistas e acreditação para eventos.</p>
+              <h2>{t('Imprensa')}</h2>
+              <p className={styles.imprensa}>{t('Pedidos de informação, entrevistas e acreditação para eventos.')}</p>
               <a className={styles.email} href={`mailto:${emComunicacao.email}`}><FaEnvelope aria-hidden="true" /> {emComunicacao.email}</a>
             </div>
           )}
@@ -161,11 +162,11 @@ function Noticias() {
         {filtrosAbertos && <div className={styles.veu} onClick={() => setFiltrosAbertos(false)} aria-hidden="true" />}
 
         {/* Coluna central — notícias */}
-        <section className={styles.centro} aria-label="Notícias">
+        <section className={styles.centro} aria-label={t('Notícias')}>
           <div className={styles.resultados}>
-            <p>{filtradas.length} {filtradas.length === 1 ? 'notícia' : 'notícias'}{ativos.length > 0 ? ' encontradas' : ''}</p>
+            <p>{filtradas.length === 1 ? t('1 notícia') : t('{n} notícias', { n: filtradas.length })}{ativos.length > 0 ? ` ${t('encontradas')}` : ''}</p>
             <button className={styles.abrirFiltros} onClick={() => setFiltrosAbertos(true)}>
-              <FaSlidersH aria-hidden="true" /> Filtros {ativos.length > 0 && <span>{ativos.length}</span>}
+              <FaSlidersH aria-hidden="true" /> {t('Filtros')} {ativos.length > 0 && <span>{ativos.length}</span>}
             </button>
           </div>
 
@@ -179,8 +180,8 @@ function Noticias() {
 
           {!principal ? (
             <div className={styles.vazio}>
-              <strong>Nenhuma notícia corresponde à pesquisa.</strong>
-              <button onClick={limparTudo}>Limpar filtros</button>
+              <strong>{t('Nenhuma notícia corresponde à pesquisa.')}</strong>
+              <button onClick={limparTudo}>{t('Limpar filtros')}</button>
             </div>
           ) : (
             <>
@@ -191,7 +192,7 @@ function Noticias() {
                 <div className={styles.destaqueTexto}>
                   <div className={styles.meta}>
                     <Etiqueta>{principal.categoria}</Etiqueta>
-                    <span>{tempoLeitura(principal.conteudo)} min de leitura</span>
+                    <span>{t('{n} min de leitura', { n: tempoLeitura(principal.conteudo) })}</span>
                     <ResumoInteracoes colecao="noticias" id={principal.slug} />
                   </div>
                   <h2><Link to={`/Noticias/${principal.slug}`}>{principal.titulo}</Link></h2>
@@ -212,8 +213,8 @@ function Noticias() {
                     data={n.data}
                     extra={(temVideo(n) || temGaleria(n)) && (
                       <span className={styles.midia}>
-                        {temVideo(n) && <span><FaPlay aria-hidden="true" /> Vídeo</span>}
-                        {temGaleria(n) && <span><FaImages aria-hidden="true" /> Galeria</span>}
+                        {temVideo(n) && <span><FaPlay aria-hidden="true" /> {t('Vídeo')}</span>}
+                        {temGaleria(n) && <span><FaImages aria-hidden="true" /> {t('Galeria')}</span>}
                       </span>
                     )}
                   />
@@ -222,7 +223,7 @@ function Noticias() {
 
               {totalArquivo > 0 && (
                 <button className={styles.verMais} onClick={() => setVisiveis((v) => v + POR_PAGINA)}>
-                  Mostrar mais {Math.min(POR_PAGINA, totalArquivo)} notícias
+                  {t('Mostrar mais {n} notícias', { n: Math.min(POR_PAGINA, totalArquivo) })}
                 </button>
               )}
             </>
@@ -230,10 +231,10 @@ function Noticias() {
         </section>
 
         {/* Coluna direita — notícias anteriores em miniatura */}
-        <aside className={styles.arquivo} aria-label="Notícias anteriores">
-          <h2>Notícias anteriores</h2>
+        <aside className={styles.arquivo} aria-label={t('Notícias anteriores')}>
+          <h2>{t('Notícias anteriores')}</h2>
           {arquivo.length === 0 ? (
-            <p className={styles.arquivoVazio}>Todas as notícias desta seleção estão na coluna principal.</p>
+            <p className={styles.arquivoVazio}>{t('Todas as notícias desta seleção estão na coluna principal.')}</p>
           ) : (
             arquivo.map((g) => (
               <div key={g.mes} className={styles.arquivoGrupo}>

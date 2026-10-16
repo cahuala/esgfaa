@@ -18,10 +18,13 @@ import Cursos from './pages/Cursos/Cursos'
 import CursoDetalhe from './pages/Cursos/CursoDetalhe'
 import Candidatura from './pages/Candidatura/Candidatura'
 import NaoEncontrado from './pages/NaoEncontrado/NaoEncontrado'
+import { useIdioma } from './i18n/contexto'
 
 function App() {
+  // a língua como "key": ao mudar, tudo é desenhado de novo na nova língua
+  const { lingua } = useIdioma()
   return (
-    <div>
+    <div key={lingua}>
       <GestorScroll />
       <Carregamento />
       <Rastreio />

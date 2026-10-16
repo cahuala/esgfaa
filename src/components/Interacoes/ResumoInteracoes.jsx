@@ -1,6 +1,7 @@
 import { FaHeart, FaRegComment } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import styles from './Interacoes.module.css'
+import { t } from '../../i18n/linguas'
 
 // "♥ 12  💬 3" — contagens pequenas para listagens (só aparece se houver algo a mostrar)
 function ResumoInteracoes({ colecao, id }) {
@@ -10,8 +11,8 @@ function ResumoInteracoes({ colecao, id }) {
 
   return (
     <span className={styles.resumo}>
-      {gostos > 0 && <span title="Gostos"><FaHeart aria-hidden="true" /> {gostos}</span>}
-      {comentarios > 0 && <span title="Comentários"><FaRegComment aria-hidden="true" /> {comentarios}</span>}
+      {gostos > 0 && <span title={t('Gostos')}><FaHeart aria-hidden="true" /> {gostos}</span>}
+      {comentarios > 0 && <span title={t('Comentários')}><FaRegComment aria-hidden="true" /> {comentarios}</span>}
     </span>
   )
 }
