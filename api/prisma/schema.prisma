@@ -204,6 +204,7 @@ model ContaPortal {
   conclusoes                  Conclusao[]
   tentativas                  Tentativa[]
   excecoesQuestionario        ExcecaoQuestionario[]
+  licoes                      ProgressoLicao[]
   notificacoes                Notificacao[]
   mensagensEnviadas           Mensagem[]                  @relation("enviadas")
   mensagensRecebidas          Mensagem[]                  @relation("recebidas")
@@ -359,6 +360,7 @@ model Material {
   ficheiroId   String?   @map("ficheiro_id")
   url          String    @default("")
   conteudo     String    @default("") // página: texto (HTML filtrado)
+  estrutura    Json      @default("[]") // livro: [{ titulo, conteudo, sub }]; lição: [{ id, titulo, conteudo, pergunta? }]
   inicio       DateTime? @db.Timestamptz(3) // videoconferência: início da sessão
   duracao      Int? // videoconferência: minutos
   autorId      Int?      @map("autor_id")
@@ -368,6 +370,7 @@ model Material {
   secao      SecaoCadeira?      @relation(fields: [secaoId], references: [id], onDelete: SetNull)
   conclusoes Conclusao[]
   ficheiros  MaterialFicheiro[]
+  licoes     ProgressoLicao[]
 
   @@index([cadeiraId])
   @@map("materiais")
@@ -1360,4 +1363,24 @@ model ExcecaoQuestionario {
 
   @@unique([questionarioId, estudanteId])
   @@map("excecoes_questionario")
+}
+
+// o caminho de um estudante numa lição: onde vai, o que respondeu (a primeira resposta de cada pergunta conta) e a nota
+model ProgressoLicao {
+  id           Int      @id @default(autoincrement())
+  materialId   Int      @map("material_id")
+  estudanteId  Int      @map("estudante_id")
+  pagina       String   @default("") // página onde está
+  respostas    Json     @default("{}") // { paginaId: { opcao, certa } } — a primeira resposta de cada pergunta
+  visitas      Int      @default(1) // vezes que começou a lição
+  concluida    Boolean  @default(false)
+  nota         Decimal? @db.Decimal(4, 2) // da última vez que chegou ao fim
+  melhorNota   Decimal? @map("melhor_nota") @db.Decimal(4, 2)
+  atualizadaEm DateTime @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz(3)
+
+  material  Material    @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, estudanteId])
+  @@map("progresso_licoes")
 }

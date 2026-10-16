@@ -10,6 +10,8 @@ export const TIPOS = {
   pagina: { icone: 'fa-align-left', cor: 'bg-teal', nome: tx('Página') },
   pasta: { icone: 'fa-folder-open', cor: 'bg-warning', nome: tx('Pasta') },
   videoconferencia: { icone: 'fa-video', cor: 'bg-success', nome: tx('Videoconferência') },
+  livro: { icone: 'fa-book', cor: 'bg-indigo', nome: tx('Livro') },
+  licao: { icone: 'fa-route', cor: 'bg-pink', nome: tx('Lição') },
   sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: tx('Sondagem') },
   avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: tx('Avaliação do docente') },
   workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: tx('Avaliação por pares') },

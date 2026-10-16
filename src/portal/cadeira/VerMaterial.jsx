@@ -4,6 +4,8 @@ import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import { Bloqueio, Cartao, Vazio } from '../componentes'
 import { dataHora, estadoSessao, iconeFicheiro, idYoutube, tamanho, tipoVisivel } from '../formatar'
 import VerFicheiro from '../VerFicheiro'
+import Livro from './Livro'
+import Licao from './Licao'
 import ZonaUpload from '../ZonaUpload'
 import { confirmar } from '../dialogos'
 import { t as tx } from '../../i18n/linguas'
@@ -22,7 +24,8 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
   const feito = progresso?.itens.find((i) => i.tipo === 'material' && i.id === so)?.feita
   // abrir uma página ou pasta conta como visto
   useEffect(() => {
-    if (eDocente || !m || m.bloqueio || marcado.current || feito || !progresso || m.tipo === 'videoconferencia') return
+    // (a videoconferência conta ao entrar na sessão; a lição, ao chegar ao fim)
+    if (eDocente || !m || m.bloqueio || marcado.current || feito || !progresso || m.tipo === 'videoconferencia' || m.tipo === 'licao') return
     marcado.current = true
     // concluir pode abrir atividades que dependiam desta: então a cadeira volta a carregar
     const haFechadas = [...c.materiais, ...c.trabalhos, ...c.questionarios, ...(c.inqueritos || []), ...(c.workshops || [])].some((x) => x.bloqueio)
@@ -36,6 +39,8 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
       {m.tipo === 'ficheiro' && <Ficheiro m={m} falhou={falhou} />}
       {m.tipo === 'video' && <Video m={m} />}
       {m.tipo === 'ligacao' && <Ligacao m={m} />}
+      {m.tipo === 'livro' && <Livro m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
+      {m.tipo === 'licao' && <Licao m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} setProgresso={setProgresso} cadeiraId={c.id} />}
       {m.tipo === 'pagina' && <Pagina m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
       {m.tipo === 'pasta' && <Pasta m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} falhou={falhou} />}
       {m.tipo === 'videoconferencia' && <Sessao m={m} eDocente={eDocente} feito={feito} setProgresso={setProgresso} falhou={falhou} />}

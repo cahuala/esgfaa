@@ -59,7 +59,7 @@ export class RepositorioCopias {
           ...restricoes(m),
           cadeiraId: destinoId, secaoId: secao(m.secaoId), titulo: m.titulo, descricao: m.descricao, tipo: m.tipo,
           ficheiroId: m.ficheiroId ? ficheiros[m.ficheiroId] ?? null : null, url: m.url, autorId: m.autorId,
-          conteudo: m.conteudo, inicio: m.inicio ? data(m.inicio) : null, duracao: m.duracao,
+          conteudo: m.conteudo, estrutura: m.estrutura ?? [], inicio: m.inicio ? data(m.inicio) : null, duracao: m.duracao,
           ficheiros: { create: m.ficheiros.filter((f) => ficheiros[f.ficheiroId]).map((f) => ({ ficheiroId: ficheiros[f.ficheiroId], ordem: f.ordem })) },
         } })).id
       }

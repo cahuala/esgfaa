@@ -16,6 +16,8 @@ const OPCOES = [
   { id: 'questionario', icone: 'fa-question', cor: 'bg-purple', nome: 'Questionário', texto: tx('Teste com correção automática') },
   { id: 'pagina', icone: 'fa-align-left', cor: 'bg-teal', nome: 'Página', texto: tx('Texto escrito no portal, com títulos, tabelas e vídeos') },
   { id: 'pasta', icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta', texto: tx('Vários ficheiros juntos num só recurso') },
+  { id: 'livro', icone: 'fa-book', cor: 'bg-indigo', nome: 'Livro', texto: tx('Vários capítulos com índice, para ler e imprimir') },
+  { id: 'licao', icone: 'fa-route', cor: 'bg-pink', nome: 'Lição', texto: tx('Aula guiada: páginas e perguntas que levam a outras páginas') },
   { id: 'videoconferencia', icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência', texto: tx('Aula à distância: ligação, dia e hora') },
   { id: 'sondagem', icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem', texto: tx('Uma pergunta de escolha aos estudantes') },
   { id: 'workshop', icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares', texto: tx('Os estudantes entregam e avaliam trabalhos uns dos outros') },
@@ -57,6 +59,12 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
           progresso(i, 100)
         }
         avisar({ texto: ficheiros.length > 1 ? tx('{0} ficheiros publicados.', { 0: ficheiros.length }) : tx('Ficheiro publicado.') })
+        return criada()
+      }
+      // livro e lição: criam-se com uma página; os capítulos e as perguntas escrevem-se ao abrir
+      if (tipo === 'livro' || tipo === 'licao') {
+        await api(`/cadeiras/${c.id}/materiais`, { metodo: 'POST', corpo: { tipo, titulo: f.titulo, descricao: f.descricao, secaoId } })
+        avisar({ texto: tipo === 'livro' ? tx('Livro criado. Abra-o para escrever os capítulos.') : tx('Lição criada. Abra-a para escrever as páginas e as perguntas.') })
         return criada()
       }
       if (tipo === 'pagina' || tipo === 'videoconferencia') {

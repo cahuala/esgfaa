@@ -200,8 +200,9 @@ function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = tx
         podeRefazer: ed.can().redo(),
         podeAvancar: ed.can().sinkListItem('listItem'),
         podeRecuar: ed.can().liftListItem('listItem'),
-        palavras: ed.storage.characterCount.words(),
-        caracteres: ed.storage.characterCount.characters(),
+        // (o editor pode estar a ser trocado por outro, ao mudar de capítulo ou de página)
+        palavras: ed.storage.characterCount?.words() ?? 0,
+        caracteres: ed.storage.characterCount?.characters() ?? 0,
       }
     },
   })

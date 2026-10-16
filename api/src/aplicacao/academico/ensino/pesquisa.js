@@ -36,7 +36,7 @@ export class ServicoPesquisa {
     const ate = (l) => l.slice(0, 8)
     const resultados = [
       ...r.cadeiras.map((c) => item('cadeira', c, `${c.codigo} · ${c.nome}`, c.descricao, `/cadeiras/${c.id}`)),
-      ...ate(r.materiais.filter((m) => ve('material', m))).map((m) => item('material', m, m.titulo, m.descricao || m.conteudo, ['pagina', 'pasta', 'videoconferencia'].includes(m.tipo) ? `/cadeiras/${m.cadeiraId}?atividade=material-${m.id}` : `/cadeiras/${m.cadeiraId}`)),
+      ...ate(r.materiais.filter((m) => ve('material', m))).map((m) => item('material', m, m.titulo, m.descricao || m.conteudo, `/cadeiras/${m.cadeiraId}?atividade=material-${m.id}`)), // todos os materiais abrem na sala de aula
       ...ate(r.trabalhos.filter((t) => ve('trabalho', t))).map((t) => item('trabalho', t, t.titulo, t.enunciado, `/cadeiras/${t.cadeiraId}?atividade=trabalho-${t.id}`)),
       ...ate(r.questionarios.filter((x) => ve('questionario', x))).map((x) => item('questionario', x, x.titulo, x.descricao, `/cadeiras/${x.cadeiraId}?atividade=questionario-${x.id}`)),
       ...r.topicos.map((x) => item('forum', x, x.titulo, x.texto, `/cadeiras/${x.cadeiraId}?separador=forum&topico=${x.id}`)),

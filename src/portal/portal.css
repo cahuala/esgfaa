@@ -596,3 +596,22 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .p-anotar-svg.ferramenta-borracha .p-anotacao:hover { opacity: 0.45; }
 .p-anotar-comentario { position: absolute; z-index: 2; width: 240px; padding: 6px; background: #fff; border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
 .p-anotar-comentario textarea { width: 100%; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; padding: 6px; resize: vertical; }
+
+/* livro: índice com capítulos e subcapítulos */
+.p-livro-indice { list-style: none; margin: 0; padding: 0; border: 1px solid var(--p-linha); border-radius: 8px; overflow: hidden; }
+.p-livro-indice li { display: flex; align-items: center; border-bottom: 1px solid var(--p-linha); }
+.p-livro-indice li:last-child { border-bottom: 0; }
+.p-livro-indice li > button { flex: 1; display: flex; gap: 8px; align-items: baseline; padding: 9px 12px; border: 0; background: none; color: var(--p-texto); font-size: 13.5px; text-align: left; }
+.p-livro-indice li.sub > button { padding-left: 30px; font-size: 13px; }
+.p-livro-indice li > button:hover { background: var(--p-fundo); }
+.p-livro-indice li > button.ativo { background: rgba(229, 57, 23, 0.08); color: #e53917; font-weight: 700; box-shadow: inset 3px 0 0 #e53917; }
+.p-livro-num { flex: none; min-width: 24px; font-weight: 700; color: var(--p-fraco); font-variant-numeric: tabular-nums; }
+.p-livro-indice.editar li > button { padding-right: 6px; }
+.p-livro-acoes { display: flex; gap: 2px; padding-right: 8px; }
+.p-livro-texto { max-width: 75ch; font-size: 15px; }
+
+/* lição: pergunta, opções do editor e fim */
+.p-licao-pergunta { margin-top: 8px; padding: 14px 16px; border: 1px solid var(--p-linha); border-left: 4px solid #e83e8c; border-radius: 8px; background: var(--p-fundo); }
+.p-licao-editor-pergunta { padding: 12px; border: 1px dashed var(--p-linha); border-radius: 8px; display: flex; flex-direction: column; gap: 8px; }
+.p-licao-opcao { padding: 8px; border-radius: 6px; background: var(--p-fundo); }
+.p-licao-fim { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 12px; }

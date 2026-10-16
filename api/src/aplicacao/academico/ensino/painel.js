@@ -1,4 +1,5 @@
 import { assiduidade } from '../../../dominio/academico/atividades/presencas.js'
+import { licaoSemRespostas } from '../../../dominio/academico/atividades/livroLicao.js'
 import { comExcecao, estadoQuestionario } from '../../../dominio/academico/atividades/questionarios.js'
 import { entregaAtrasada, estadoPrazo, prazoDe } from '../../../dominio/academico/atividades/trabalhos.js'
 import { faseWorkshop } from '../../../dominio/academico/atividades/workshops.js'
@@ -61,7 +62,8 @@ export class ServicoPainel {
       return { ...a, bloqueio: x && !x.aberta ? x.motivos : null }
     }
     const visivel = (tipo) => (a) => eDocente || (acessos[`${tipo}-${a.id}`] && !acessos[`${tipo}-${a.id}`].escondida)
-    const materiais = todosMateriais.filter(visivel('material')).map(comAcesso('material'))
+    // lições: o estudante não recebe as respostas certas, os comentários nem os saltos
+    const materiais = todosMateriais.filter(visivel('material')).map(comAcesso('material')).map((m) => (m.tipo === 'licao' && !eDocente ? { ...m, estrutura: licaoSemRespostas(m.estrutura) } : m))
     const trabalhos = todosTrabalhos.filter(visivel('trabalho')).map(comAcesso('trabalho'))
     // com a exceção do estudante (outro fecho, mais tempo ou tentativas), se a tiver
     const excecoes = eDocente ? {} : await this.recursos.excecoesDoEstudante(conta.id, todosQuestionarios.map((q) => q.id))

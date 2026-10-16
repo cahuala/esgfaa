@@ -82,7 +82,9 @@ export const material = z.object({
   titulo: texto(300).optional(), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(), tipo: texto(20).optional(), url: texto(2000).optional(),
   conteudo: texto(200_000).optional(), inicio: z.union([texto(40), z.null()]).optional(), duracao: z.union([z.number(), z.string().max(6)]).optional(),
   retirarFicheiros: listaTexto(z.string().max(40), 50).optional(),
+  estrutura: z.array(z.record(z.string(), z.unknown())).max(100).optional(), // livro (capítulos) ou lição (páginas)
 })
+export const passoLicao = z.object({ paginaId: texto(12), opcao: z.number().int().min(0).max(5).optional() })
 const notaLivre = z.union([z.string().max(6), z.number(), z.null()]).optional()
 export const pauta = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, p1: notaLivre, p2: notaLivre, exame: notaLivre, recurso: notaLivre, observacao: texto(400).optional() })).max(500) })
 export const publicacaoNotas = z.object({ publicadas: z.array(z.enum(['p1', 'p2', 'exame', 'recurso'])).max(4) })

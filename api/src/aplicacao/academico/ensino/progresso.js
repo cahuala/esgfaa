@@ -14,6 +14,7 @@ export class ServicoProgresso {
     if (!m) throw new NaoEncontrado('Material não encontrado.')
     await this.acesso.acessivel(ctx.conta, m.cadeiraId).catch(() => { throw new NaoEncontrado('Material não encontrado.') })
     await this.disponibilidade?.exigir(m.cadeiraId, ctx.conta.id, 'material', m.id)
+    if (m.tipo === 'licao') throw new Conflito('A lição fica concluída quando chegar ao fim.')
     await this.recursos.marcarConclusao(m.id, ctx.conta.id, Boolean(concluido))
     if (concluido) await this.registos?.registar(ctx.conta, m.cadeiraId, 'material', m.id)
     return this.progresso(ctx, m.cadeiraId)

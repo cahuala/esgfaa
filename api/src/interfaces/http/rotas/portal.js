@@ -209,6 +209,12 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/cadeiras/:id/certificado', validar({ params: pId }), async (req, res) => res.status(201).json(await e.progresso.emitirCertificado(ctx(req), req.dados.params.id)))
   r.get('/progresso', async (req, res) => res.json(await e.progresso.progressoGeral(ctx(req))))
   r.get('/cadeiras/:id/progresso', validar({ params: pId }), async (req, res) => res.json(await e.progresso.progresso(ctx(req), req.dados.params.id)))
+  // lições: o caminho do estudante (o servidor decide a página seguinte) e os resultados para o docente
+  r.get('/materiais/:id/licao', validar({ params: pId }), async (req, res) => res.json(await e.licoes.estado(ctx(req), req.dados.params.id)))
+  r.post('/materiais/:id/licao/avancar', validar({ params: pId, body: E.passoLicao }), async (req, res) => res.json(await e.licoes.avancar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/materiais/:id/licao/resposta', validar({ params: pId, body: E.passoLicao }), async (req, res) => res.json(await e.licoes.responder(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/materiais/:id/licao/recomecar', validar({ params: pId }), async (req, res) => res.json(await e.licoes.recomecar(ctx(req), req.dados.params.id)))
+  r.get('/materiais/:id/licao/resultados', validar({ params: pId }), async (req, res) => res.json(await e.licoes.resultados(ctx(req), req.dados.params.id)))
   r.put('/materiais/:id/conclusao', validar({ params: pId, body: E.conclusao }), async (req, res) => res.json(await e.progresso.marcarConclusao(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.get('/cadeiras/:id/questionarios', validar({ params: pId }), async (req, res) => res.json(await e.questionarios.questionarios(ctx(req), req.dados.params.id)))

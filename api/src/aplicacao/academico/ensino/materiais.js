@@ -1,4 +1,5 @@
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
+import { validarLicao, validarLivro } from '../../../dominio/academico/atividades/livroLicao.js'
 import { urlSegura } from '../../../dominio/comum/urls.js'
 import { TIPOS_MATERIAL } from '../../../dominio/academico/atividades/materiais.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
@@ -58,6 +59,9 @@ export class ServicoMateriais {
       r.conteudo = this.filtroHtml(html)
       if (!r.conteudo.replace(/<[^>]*>/g, '').trim() && !/<img|<iframe|<video/i.test(r.conteudo)) throw new ErroValidacao('Escreva o conteúdo da página.', { campo: 'conteudo' })
     }
+    // livro (capítulos) e lição (páginas com perguntas): começam com uma página, que o docente depois escreve
+    if (tipo === 'livro' && (novo || d.estrutura !== undefined)) r.estrutura = validarLivro(d.estrutura ?? [{ titulo: 'Introdução', conteudo: '' }], this.filtroHtml)
+    if (tipo === 'licao' && (novo || d.estrutura !== undefined)) r.estrutura = validarLicao(d.estrutura ?? [{ id: 'p1', titulo: 'Introdução', conteudo: '' }], this.filtroHtml)
     if (tipo === 'videoconferencia') {
       if (novo || d.inicio !== undefined) {
         r.inicio = this.apoio.dataValida(d.inicio, 'inicio')

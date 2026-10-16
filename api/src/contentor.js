@@ -61,6 +61,7 @@ import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
 import { ServicoCalendario } from './aplicacao/academico/ensino/calendario.js'
 import { ServicoProgresso } from './aplicacao/academico/ensino/progresso.js'
 import { ServicoQuestionarios } from './aplicacao/academico/ensino/questionarios.js'
+import { ServicoLicoes } from './aplicacao/academico/ensino/licoes.js'
 import { ServicoRegistoPessoal } from './aplicacao/academico/pessoal/registo.js'
 import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
 import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
@@ -186,6 +187,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       calendario: new ServicoCalendario(d),
       progresso: new ServicoProgresso(d),
       questionarios: new ServicoQuestionarios(d),
+      licoes: new ServicoLicoes(d),
     }
   }
   // casos de uso da Administração Escolar (painel)

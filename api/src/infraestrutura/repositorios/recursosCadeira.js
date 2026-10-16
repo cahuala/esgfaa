@@ -175,6 +175,25 @@ export class RepositorioRecursosCadeira {
     }
   }
 
+  // ---------- lições (o caminho de cada estudante) ----------
+
+  #progressoLicao(p) {
+    return p && { materialId: p.materialId, estudanteId: p.estudanteId, pagina: p.pagina, respostas: p.respostas || {}, visitas: p.visitas, concluida: p.concluida, nota: num(p.nota), melhorNota: num(p.melhorNota), atualizadaEm: iso(p.atualizadaEm), ...(p.estudante ? { estudante: p.estudante } : {}) }
+  }
+
+  async progressoLicao(materialId, estudanteId) {
+    return this.#progressoLicao(await this.prisma.progressoLicao.findUnique({ where: { materialId_estudanteId: { materialId, estudanteId } } }))
+  }
+
+  async guardarProgressoLicao(materialId, estudanteId, dados) {
+    return this.#progressoLicao(await this.prisma.progressoLicao.upsert({ where: { materialId_estudanteId: { materialId, estudanteId } }, create: { materialId, estudanteId, ...dados }, update: dados }))
+  }
+
+  async progressosLicao(materialId) {
+    const linhas = await this.prisma.progressoLicao.findMany({ where: { materialId }, include: { estudante: { select: { id: true, nome: true, numero: true } } }, orderBy: { id: 'asc' } })
+    return linhas.map((p) => this.#progressoLicao(p))
+  }
+
   // ---------- questionários ----------
 
   // a palavra-passe só sai na leitura de um questionário (para o docente e para a verificação); as listas dizem só se pede
