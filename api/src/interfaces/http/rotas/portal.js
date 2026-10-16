@@ -107,6 +107,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/trabalhos/:id/entregas', validar({ params: pId }), async (req, res) => res.json(await e.trabalhos.entregas(ctx(req), req.dados.params.id)))
   r.put('/entregas/:id', ficheiro, validar({ params: pId, body: E.correcao }), async (req, res) => res.json(await e.trabalhos.corrigir(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.put('/trabalhos/:id', validar({ params: pId, body: E.trabalho }), async (req, res) => res.json(await e.trabalhos.editarTrabalho(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/trabalhos/:id/libertar-notas', validar({ params: pId }), async (req, res) => res.json(await e.trabalhos.libertarNotas(ctx(req), req.dados.params.id)))
   r.put('/trabalhos/:id/prorrogacao', validar({ params: pId, body: E.prorrogacao }), async (req, res) => res.json(await e.trabalhos.prorrogar(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.get('/cadeiras/:id/aulas', validar({ params: pId }), async (req, res) => res.json(await e.presencas.aulas(ctx(req), req.dados.params.id)))

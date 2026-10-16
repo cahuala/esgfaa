@@ -49,6 +49,11 @@ export const dias = z.object({ dias: z.coerce.number().int().min(1).max(365).def
 const visitante = texto(64).optional()
 export const consultaVisitante = z.object({ visitante })
 export const corpoVisitante = z.object({ visitante }).loose()
+export const contacto = z.object({
+  nome: texto(200).default(''), email: texto(300).default(''), telefone: texto(60).default(''), assunto: texto(300).default(''),
+  mensagem: texto(6000).default(''), consentimento: z.boolean().default(false), website: texto(500).optional(),
+})
+export const atualizarContacto = z.object({ estado: z.enum(['nova', 'lida', 'respondida']).optional(), notas: texto(3000).optional() })
 export const comentario = z.object({ nome: texto(200).default(''), texto: texto(5000).default(''), website: texto(500).optional(), visitante })
 export const visita = z.object({ visitante, caminho: texto(500).optional(), origem: texto(2000).optional() })
 
@@ -86,6 +91,7 @@ export const material = z.object({
   conteudo: texto(200_000).optional(), inicio: z.union([texto(40), z.null()]).optional(), duracao: z.union([z.number(), z.string().max(6)]).optional(),
   retirarFicheiros: listaTexto(z.string().max(40), 50).optional(),
   estrutura: z.array(z.record(z.string(), z.unknown())).max(100).optional(), // livro (capítulos) ou lição (páginas)
+  salaPortal: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(), // videoconferência numa sala Jitsi criada pelo portal
 })
 export const subscricaoPush = z.object({
   endpoint: z.string().url().max(1000),
@@ -105,6 +111,8 @@ export const trabalho = z.object({
   aceitaAtraso: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
   tipoEntrega: texto(10).optional(), maxFicheiros: z.union([z.number(), z.string().max(3)]).optional(), grelha: grelhaLivre,
   emGrupo: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
+  anonimo: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
+  notasOcultas: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(),
 })
 export const correcao = z.object({ nota: z.union([z.string().max(6), z.number(), z.null()]).optional(), correcao: texto(6000).optional(), grelha: pontosLivres, removerFicheiro: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(), anotacoes: z.string().max(1_500_000).optional() })
 export const prorrogacao = z.object({ estudanteId: idNumerico, prazo: z.union([texto(40), z.null()]), motivo: texto(500).optional() })

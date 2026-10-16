@@ -9,6 +9,7 @@ import Licao from './Licao'
 import ZonaUpload from '../ZonaUpload'
 import { confirmar } from '../dialogos'
 import { t as tx } from '../../i18n/linguas'
+import { useSessao } from '../sessaoContexto'
 
 const EditorPagina = lazy(() => import('./EditorPagina'))
 
@@ -191,7 +192,13 @@ const SESSAO = {
   terminou: ['alert-secondary', tx('A sessão terminou.')],
 }
 
+// sala criada pelo portal (Jitsi): abre dentro da página
+const eSalaPortal = (url) => /\/ESGFAA-[0-9a-f]{18}$/.test(url || '')
+
 function Sessao({ m, eDocente, feito, setProgresso, falhou }) {
+  const { conta } = useSessao()
+  const [naSala, setNaSala] = useState(false)
+  const moldura = useRef(null)
   const [, atualizar] = useState(0)
   // o estado muda com o relógio: refaz-se a cada 30 segundos
   useEffect(() => { const t = setInterval(() => atualizar((n) => n + 1), 30_000); return () => clearInterval(t) }, [])
@@ -199,8 +206,11 @@ function Sessao({ m, eDocente, feito, setProgresso, falhou }) {
   const pode = eDocente || e === 'abre' || e === 'a_decorrer'
   function entrar() {
     if (!eDocente && !feito) api(`/materiais/${m.id}/conclusao`, { metodo: 'PUT', corpo: { concluido: true } }).then(setProgresso).catch(falhou)
-    window.open(m.url, '_blank', 'noopener')
+    if (eSalaPortal(m.url)) setNaSala(true)
+    else window.open(m.url, '_blank', 'noopener')
   }
+  // na sala do portal: entra já com o nome, sem o ecrã de "antes de entrar" nem o convite para instalar a aplicação
+  const endereco = `${m.url}#userInfo.displayName=${encodeURIComponent(JSON.stringify(conta?.nome || ''))}&config.subject=${encodeURIComponent(JSON.stringify(m.titulo))}&config.prejoinPageEnabled=false&config.disableDeepLinking=true&interfaceConfig.MOBILE_APP_PROMO=false`
   return (
     <Cartao titulo={<><i className="fa fa-video me-2" />{m.titulo}</>}>
       <div className="d-flex flex-wrap gap-4 mb-3">
@@ -213,6 +223,17 @@ function Sessao({ m, eDocente, feito, setProgresso, falhou }) {
         {pode && e !== 'terminou' && <button type="button" className="btn btn-success" onClick={entrar}><i className="fa fa-sign-in-alt me-1" />{tx('Entrar na sessão')}</button>}
         {eDocente && e === 'terminou' && <button type="button" className="btn btn-white" onClick={entrar}>{tx('Abrir a ligação')}</button>}
       </div>
+      {naSala && (
+        <div className="p-sala-video mt-3" ref={moldura}>
+          <div className="p-sala-video-barra">
+            <span className="flex-grow-1"><span className="p-ao-vivo" />{tx('Na sala: {0}', { 0: m.titulo })}</span>
+            <button type="button" className="btn btn-sm btn-white" onClick={() => moldura.current?.requestFullscreen?.()}><i className="fa fa-expand me-1" />{tx('Ecrã inteiro')}</button>
+            <a className="btn btn-sm btn-white" href={endereco} target="_blank" rel="noopener noreferrer" onClick={() => setNaSala(false)}><i className="fa fa-external-link-alt me-1" />{tx('Abrir noutra janela')}</a>
+            <button type="button" className="btn btn-sm btn-danger" onClick={() => setNaSala(false)}><i className="fa fa-phone-slash me-1" />{tx('Sair da sala')}</button>
+          </div>
+          <iframe title={m.titulo} src={endereco} allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write" allowFullScreen />
+        </div>
+      )}
     </Cartao>
   )
 }

@@ -425,23 +425,26 @@ model NotaPauta {
 }
 
 model Trabalho {
-  id           Int       @id @default(autoincrement())
-  cadeiraId    Int       @map("cadeira_id")
-  titulo       String
-  enunciado    String    @default("")
-  prazo        DateTime  @db.Timestamptz(3)
-  aceitaAtraso Boolean   @default(false) @map("aceita_atraso")
-  ficheiroId   String?   @map("ficheiro_id") // enunciado em ficheiro (opcional)
-  lembreteEm   DateTime? @map("lembrete_em") @db.Timestamptz(3) // quando se lembrou o prazo aos estudantes
-  tipoEntrega  String    @default("ficheiro") @map("tipo_entrega") // ficheiro | texto | ambos
-  maxFicheiros Int       @default(1) @map("max_ficheiros")
-  grelha       Json      @default("[]") // grelha de avaliação: [{ criterio, descricao, pontos }]
-  emGrupo      Boolean   @default(false) @map("em_grupo") // uma entrega por grupo, a nota vale para todos
-  secaoId      Int?      @map("secao_id")
-  visivel      Boolean   @default(true) // escondida dos estudantes
-  disponivelDe DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
-  requisitos   Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
-  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id                Int       @id @default(autoincrement())
+  cadeiraId         Int       @map("cadeira_id")
+  titulo            String
+  enunciado         String    @default("")
+  prazo             DateTime  @db.Timestamptz(3)
+  aceitaAtraso      Boolean   @default(false) @map("aceita_atraso")
+  ficheiroId        String?   @map("ficheiro_id") // enunciado em ficheiro (opcional)
+  lembreteEm        DateTime? @map("lembrete_em") @db.Timestamptz(3) // quando se lembrou o prazo aos estudantes
+  tipoEntrega       String    @default("ficheiro") @map("tipo_entrega") // ficheiro | texto | ambos
+  maxFicheiros      Int       @default(1) @map("max_ficheiros")
+  grelha            Json      @default("[]") // grelha de avaliação: [{ criterio, descricao, pontos }]
+  emGrupo           Boolean   @default(false) @map("em_grupo") // uma entrega por grupo, a nota vale para todos
+  anonimo           Boolean   @default(false) // correção anónima: o docente não vê os nomes até libertar as notas
+  notasOcultas      Boolean   @default(false) @map("notas_ocultas") // as notas só aparecem aos estudantes quando o docente as liberta
+  notasLibertadasEm DateTime? @map("notas_libertadas_em") @db.Timestamptz(3)
+  secaoId           Int?      @map("secao_id")
+  visivel           Boolean   @default(true) // escondida dos estudantes
+  disponivelDe      DateTime? @map("disponivel_de") @db.Timestamptz(3) // só abre a partir desta data
+  requisitos        Json      @default("[]") // [{ tipo, id, notaMinima? }]: só abre depois de concluir estas
+  criadoEm          DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   cadeira      UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   secao        SecaoCadeira?     @relation(fields: [secaoId], references: [id], onDelete: SetNull)
@@ -1332,6 +1335,24 @@ model AnaliseIntegridade {
 // ---------- Traduções do site ----------
 
 // tradução de um conteúdo (item de uma coleção ou página) para uma língua; o original fica em português
+// mensagens do formulário de contacto do site
+model MensagemContacto {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String
+  telefone     String   @default("")
+  assunto      String
+  mensagem     String
+  estado       String   @default("nova") // nova | lida | respondida
+  notas        String   @default("") // notas internas de quem tratou
+  tratadoPor   String   @default("") @map("tratado_por")
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@index([estado, criadoEm])
+  @@map("mensagens_contacto")
+}
+
 // memória das traduções automáticas dos textos dos painéis (portal e painel de gestão)
 model TextoTraduzido {
   lingua   String // en | fr | es

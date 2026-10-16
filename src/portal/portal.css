@@ -619,3 +619,21 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 /* portal no telemóvel: o cartão de instalar e receber avisos */
 .p-telemovel { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 18px; padding: 14px 16px; border: 1px solid var(--p-linha); border-left: 4px solid #2f5fa8; border-radius: 8px; background: var(--p-superficie); }
 .p-telemovel-icone { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: #2f5fa8; color: #fff; font-size: 20px; }
+
+/* trabalho com notas por publicar (ou correção anónima), na lista de entregas do docente */
+.p-por-publicar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 15px; background: rgba(255, 193, 7, .12); border-bottom: 1px solid rgba(255, 193, 7, .35); }
+.p-por-publicar > .fa { color: #b8860b; }
+.p-opcoes-correcao { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+
+/* videoconferência: escolher a sala do portal ou outra ligação, e a sala aberta dentro da página */
+.p-escolha-sala { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.p-escolha-sala label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 8px; cursor: pointer; }
+.p-escolha-sala label.ativa { border-color: var(--p-marca); box-shadow: 0 0 0 1px var(--p-marca); background: rgba(229, 57, 23, .05); }
+.p-escolha-sala input { margin-top: 4px; accent-color: var(--p-marca); }
+.p-escolha-sala b { display: block; font-size: 13.5px; }
+.p-escolha-sala small { display: block; color: var(--bs-secondary-color, #6c757d); }
+.p-sala-video { border-radius: 10px; overflow: hidden; background: #111; }
+.p-sala-video-barra { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; background: #1c1c1c; color: #fff; font-size: 13px; }
+.p-sala-video iframe { display: block; width: 100%; height: min(72vh, 720px); border: 0; }
+.p-sala-video:fullscreen iframe { height: calc(100vh - 48px); }
+.p-ao-vivo { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #e53935; box-shadow: 0 0 0 3px rgba(229, 57, 35, .3); vertical-align: middle; }

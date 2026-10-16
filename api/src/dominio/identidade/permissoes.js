@@ -11,6 +11,7 @@ export const RECURSOS = [
   ...CONTEUDOS.map((r) => ({ id: r, acoes: ['ver', 'criar', 'editar', 'apagar', 'publicar'] })),
   { id: 'paginas', acoes: ['ver', 'editar'] },
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
+  { id: 'contactos', acoes: ['ver', 'gerir'] },
   { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
   { id: 'pessoal', acoes: ['ver', 'registar'] },
   { id: 'biblioteca', acoes: ['ver', 'gerir'] },
@@ -40,7 +41,7 @@ export const PAPEIS_PADRAO = [
     sistema: 0,
     permissoes: [
       ...conteudo(CONTEUDOS, ['ver', 'criar', 'editar', 'apagar', 'publicar']),
-      'paginas.ver', 'paginas.editar', 'comentarios.ver', 'comentarios.apagar', 'estatisticas.ver',
+      'paginas.ver', 'paginas.editar', 'comentarios.ver', 'comentarios.apagar', 'contactos.ver', 'contactos.gerir', 'estatisticas.ver',
     ],
   },
   {

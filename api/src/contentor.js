@@ -4,6 +4,7 @@ import { RepositorioPapeis } from './infraestrutura/repositorios/papeis.js'
 import { RepositorioConteudos } from './infraestrutura/repositorios/conteudos.js'
 import { RepositorioPaginas } from './infraestrutura/repositorios/paginas.js'
 import { RepositorioInteracoes } from './infraestrutura/repositorios/interacoes.js'
+import { RepositorioContactos } from './infraestrutura/repositorios/contactos.js'
 import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
 import { RepositorioPublicidade } from './infraestrutura/repositorios/publicidade.js'
 import { RepositorioAtividades } from './infraestrutura/repositorios/atividades.js'
@@ -47,6 +48,7 @@ import { ServicoPapeis } from './aplicacao/papeis.js'
 import { ServicoConteudos } from './aplicacao/conteudos.js'
 import { ServicoPaginas } from './aplicacao/paginas.js'
 import { ServicoInteracoes } from './aplicacao/interacoes.js'
+import { ServicoContactos } from './aplicacao/contactos.js'
 import { ServicoEstatisticas } from './aplicacao/estatisticas.js'
 import { ServicoFicheiros } from './aplicacao/ficheiros.js'
 import { ServicoSessaoPortal } from './aplicacao/academico/ensino/sessao.js'
@@ -107,6 +109,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     conteudos: new RepositorioConteudos({ prisma }),
     paginas: new RepositorioPaginas({ prisma }),
     interacoes: new RepositorioInteracoes({ prisma, fuso }),
+    contactos: new RepositorioContactos({ prisma }),
     visitas: new RepositorioVisitas({ prisma, fuso }),
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
@@ -176,7 +179,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const ensino = () => {
     const d = {
       academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
-      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade,
+      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade, jitsiUrl: config.jitsiUrl,
     }
     return {
       painel: new ServicoPainel(d),
@@ -223,6 +226,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
+    contactos: new ServicoContactos({ contactos: r.contactos, correio, emailDestino: config.emailContactos, auditoria, registar: (x) => console.error(JSON.stringify(x)) }),
     interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
     estatisticas: new ServicoEstatisticas({
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,

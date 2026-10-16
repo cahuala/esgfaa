@@ -4,6 +4,7 @@ import { notaComposta, validarComposicao } from '../../../dominio/academico/aval
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, resultadoDisciplina } from '../../../dominio/academico/avaliacao/resultado.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
+import { notasDoTrabalhoVisiveis } from '../../../dominio/academico/atividades/trabalhos.js'
 
 /*
   Pauta de uma cadeira (1.ª e 2.ª prova, exame, recurso), partilhada pelo portal (docentes alocados)
@@ -31,6 +32,7 @@ export class ServicoPautas {
       if (i.tipo === 'trabalho') {
         const t = await this.academico.trabalho(i.id)
         if (!t || t.cadeiraId !== cadeira.id) continue
+        if (!notasDoTrabalhoVisiveis(t)) continue // notas ainda por libertar: não contam (nem aparecem) na pauta
         const entregas = await this.academico.entregasPorEstudante(t.id) // a do grupo vale para todos
         const prorrogacoes = await this.academico.prorrogacoes(t.id)
         // cada estudante tem o seu prazo (pode ter uma prorrogação)

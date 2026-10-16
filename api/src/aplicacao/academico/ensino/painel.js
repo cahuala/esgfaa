@@ -4,6 +4,7 @@ import { comExcecao, estadoQuestionario } from '../../../dominio/academico/ativi
 import { entregaAtrasada, estadoPrazo, prazoDe } from '../../../dominio/academico/atividades/trabalhos.js'
 import { faseWorkshop } from '../../../dominio/academico/atividades/workshops.js'
 import { notasVisiveis } from '../../../dominio/academico/avaliacao/resultado.js'
+import { notasDoTrabalhoVisiveis, semCorrecao } from '../../../dominio/academico/atividades/trabalhos.js'
 
 // Página inicial do portal e página de cada cadeira (vista do estudante ou do docente).
 export class ServicoPainel {
@@ -100,13 +101,15 @@ export class ServicoPainel {
     return {
       ...base,
       trabalhos: trabalhos.map((t) => {
-        const e = minhasEntregas[t.id]
+        const visivel = notasDoTrabalhoVisiveis(t)
+        const e = visivel ? minhasEntregas[t.id] : semCorrecao(minhasEntregas[t.id])
         const prazo = prazoDe(t, minhasProrrogacoes[t.id])
         return {
-          ...t, prazo, prazoOriginal: t.prazo, prorrogado: Boolean(minhasProrrogacoes[t.id]), estado: estadoPrazo(prazo, agora, t.aceitaAtraso),
+          ...t, aguardaNotas: !visivel, prazo, prazoOriginal: t.prazo, prorrogado: Boolean(minhasProrrogacoes[t.id]), estado: estadoPrazo(prazo, agora, t.aceitaAtraso),
           entrega: e ? {
             entregueEm: e.entregueEm, atrasada: entregaAtrasada(e.entregueEm, prazo), ficheiros: e.ficheiros, texto: e.texto, comentario: e.comentario,
             nota: e.nota, correcao: e.correcao, correcaoFicheiroId: e.correcaoFicheiroId, grelha: e.grelha, corrigidaEm: e.corrigidaEm,
+            corrigida: Boolean(minhasEntregas[t.id]?.corrigidaEm),
           } : null,
         }
       }),

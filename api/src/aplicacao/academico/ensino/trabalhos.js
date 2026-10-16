@@ -1,6 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { validarAnotacoes } from '../../../dominio/academico/atividades/anotacoes.js'
-import { entregaAtrasada, estadoPrazo, prazoDe, TIPOS_ENTREGA } from '../../../dominio/academico/atividades/trabalhos.js'
+import { createHash } from 'node:crypto'
+import { entregaAtrasada, estadoPrazo, notasDoTrabalhoVisiveis, prazoDe, TIPOS_ENTREGA } from '../../../dominio/academico/atividades/trabalhos.js'
 import { avaliarGrelha, validarGrelha } from '../../../dominio/academico/avaliacao/grelha.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
@@ -32,6 +33,9 @@ export class ServicoTrabalhos {
         if (!grupo) throw new Conflito('Este trabalho é em grupo e ainda não está em nenhum grupo. Fale com o docente.')
         const atual = await this.academico.entregaDoGrupo(trabalho.id, grupo.id)
         if (atual?.nota !== null && atual?.nota !== undefined) throw new Conflito('A entrega do grupo já foi corrigida.')
+      } else if (!notasDoTrabalhoVisiveis(trabalho) && (await this.academico.entregaDoEstudante(trabalho.id, conta.id))?.corrigidaEm) {
+        // com as notas por libertar, o estudante não sabe que já foi corrigido: não pode apagar a correção ao substituir
+        throw new Conflito('O docente já corrigiu a sua entrega; a nota aparece quando forem publicadas as notas.')
       }
       corpo = texto(escrito, 'texto', 'Texto', { max: 50_000, obrigatorio: false })
       const querFicheiros = trabalho.tipoEntrega !== 'texto'
@@ -93,7 +97,15 @@ export class ServicoTrabalhos {
       r.grelha = validarGrelha(g)
     }
     if (!parcial || dados.emGrupo !== undefined) r.emGrupo = dados.emGrupo === true || dados.emGrupo === 'true'
+    if (!parcial || dados.anonimo !== undefined) r.anonimo = dados.anonimo === true || dados.anonimo === 'true'
+    if (!parcial || dados.notasOcultas !== undefined) r.notasOcultas = dados.notasOcultas === true || dados.notasOcultas === 'true'
+    if (r.anonimo) r.notasOcultas = true // na correção anónima as notas saem todas de uma vez (e só então se veem os nomes)
     return r
+  }
+
+  // correção anónima e trabalho de grupo não se juntam (o grupo identifica quem entregou)
+  #verificarAnonimo(campos) {
+    if (campos.anonimo && campos.emGrupo) throw new ErroValidacao('A correção anónima não se usa em trabalhos de grupo.', { campo: 'anonimo' })
   }
 
   async editarTrabalho(ctx, id, dados) {
@@ -101,6 +113,7 @@ export class ServicoTrabalhos {
     if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
     await this.apoio.cadeiraDoDocente(ctx.conta, t.cadeiraId)
     const mudanca = this.#dadosTrabalho(dados, true)
+    this.#verificarAnonimo({ ...t, ...mudanca })
     if (mudanca.emGrupo !== undefined && mudanca.emGrupo !== t.emGrupo && (await this.academico.entregasDoTrabalho(t.id)).length) {
       throw new Conflito('Já há entregas: o trabalho já não passa a ser (ou deixa de ser) em grupo.')
     }
@@ -138,6 +151,7 @@ export class ServicoTrabalhos {
     try {
       cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, cadeiraId)
       campos = this.#dadosTrabalho(dados)
+      this.#verificarAnonimo(campos)
     } catch (e) {
       if (ficheiro) this.privados.apagar(ficheiro.caminho)
       throw e
@@ -169,12 +183,17 @@ export class ServicoTrabalhos {
       t.emGrupo ? this.grupos.grupos(cadeira.id) : [],
     ])
     const grupoDe = Object.fromEntries(grupos.flatMap((g) => g.membros.map((m) => [m.id, { id: g.id, nome: g.nome }])))
+    // correção anónima: até libertar as notas, cada estudante é "Participante n" (numeração baralhada, mas sempre a mesma)
+    const anonimo = t.anonimo && !t.notasLibertadasEm
+    const codigo = (e) => createHash('sha256').update(`${t.id}:${e.id}`).digest('hex')
+    const lista = anonimo ? [...estudantes].sort((a, b) => codigo(a).localeCompare(codigo(b))).map((e, i) => ({ id: e.id, nome: `Participante ${i + 1}`, numero: '', email: '' })) : estudantes
     return {
-      trabalho: t,
-      linhas: estudantes.map((e) => {
+      trabalho: { ...t, notasVisiveis: notasDoTrabalhoVisiveis(t) },
+      anonimo,
+      linhas: lista.map((e) => {
         const x = porEstudante[e.id]
         const prazo = prazoDe(t, prorrogacoes[x?.estudanteId ?? e.id])
-        return { estudante: e, grupo: grupoDe[e.id] || null, prorrogacao: prorrogacoes[e.id] || null, entrega: x ? { ...x, atrasada: entregaAtrasada(x.entregueEm, prazo) } : null }
+        return { estudante: e, grupo: grupoDe[e.id] || null, prorrogacao: prorrogacoes[e.id] || null, entrega: x ? { ...x, ...(anonimo ? { estudante: undefined } : {}), atrasada: entregaAtrasada(x.entregueEm, prazo) } : null }
       }),
     }
   }
@@ -212,10 +231,30 @@ export class ServicoTrabalhos {
     else if (removerFicheiro === true || removerFicheiro === 'true') dados.correcaoFicheiroId = null
     const r = await this.academico.corrigirEntrega(e.id, dados)
     await this.pautas.sincronizar(cadeira) // a nota pode contar para uma componente da pauta
+    if (!notasDoTrabalhoVisiveis(t)) return r // o estudante é avisado quando o docente libertar as notas
     await this.notificacoes?.notificar(e.grupo ? e.grupo.membros : [e.estudanteId], {
       tipo: 'correcao', titulo: `Trabalho corrigido: ${t.titulo}`, texto: `${cadeira.nome}${r.nota !== null ? ` — nota ${r.nota} valores` : ''}`,
       ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,
     })
     return r
+  }
+
+  // liberta as notas de um trabalho com notas ocultas: todos as veem ao mesmo tempo (e acaba o anonimato)
+  async libertarNotas(ctx, trabalhoId) {
+    const t = await this.academico.trabalho(trabalhoId)
+    if (!t) throw new NaoEncontrado('Trabalho não encontrado.')
+    const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, t.cadeiraId)
+    if (notasDoTrabalhoVisiveis(t)) throw new Conflito('As notas deste trabalho já estão visíveis para os estudantes.')
+    await this.academico.atualizarTrabalho(t.id, { notasLibertadasEm: new Date() })
+    await this.pautas.sincronizar(cadeira)
+    const corrigidas = (await this.academico.entregasDoTrabalho(t.id)).filter((e) => e.corrigidaEm)
+    for (const e of corrigidas) {
+      await this.notificacoes?.notificar(e.grupo ? e.grupo.membros : [e.estudanteId], {
+        tipo: 'correcao', titulo: `Notas publicadas: ${t.titulo}`, texto: `${cadeira.nome}${e.nota !== null ? ` — nota ${e.nota} valores` : ''}`,
+        ligacao: `/cadeiras/${cadeira.id}?atividade=trabalho-${t.id}`,
+      })
+    }
+    await this.auditoria.registar(ctx, { acao: 'libertar_notas', colecao: 'trabalhos', alvoId: t.id, alvoTitulo: t.titulo, detalhes: { corrigidas: corrigidas.length }, utilizador: quem(ctx.conta) })
+    return { ...(await this.academico.trabalho(t.id)), corrigidas: corrigidas.length }
   }
 }

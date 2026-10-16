@@ -72,6 +72,11 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     const r = await criar({ url: 'https://meet.example.org/abc', inicio: '2026-11-12T14:00:00Z', duracao: 90 })
     assert.equal(r.status, 201, r.body.erro)
     assert.deepEqual([r.body.inicio, r.body.duracao], ['2026-11-12T14:00:00.000Z', 90])
+    // sala do portal: sem ligação, o portal cria uma sala Jitsi com um nome difícil de adivinhar
+    const sala = await criar({ salaPortal: true, inicio: '2026-11-12T14:00:00Z' })
+    assert.equal(sala.status, 201, sala.body.erro)
+    assert.match(sala.body.url, /^https:\/\/meet\.jit\.si\/ESGFAA-[0-9a-f]{18}$/)
+    assert.notEqual((await criar({ salaPortal: 'true', inicio: '2026-11-12T14:00:00Z' })).body.url, sala.body.url)
   })
 
   it('sondagem: responder, mudar a resposta, resultados e restrições', async () => {

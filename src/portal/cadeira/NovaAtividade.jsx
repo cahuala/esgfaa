@@ -5,6 +5,8 @@ import { localParaIso } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
 import { EditorGrelha } from './Grelha'
 import { t as tx } from '../../i18n/linguas'
+import OpcoesCorrecao from './OpcoesCorrecao'
+import { camposCorrecao } from './correcao'
 
 const EditorPagina = lazy(() => import('./EditorPagina'))
 
@@ -29,7 +31,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
   const [tipo, setTipo] = useState(null)
   const [f, setF] = useState({
     titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1, tipoEntrega: 'ficheiro', maxFicheiros: 1,
-    emGrupo: false, fimSubmissao: '', fimAvaliacao: '', avaliacoesPorPar: 3, anonimoPares: true, conteudo: '', inicio: '', duracaoSessao: 90, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
+    emGrupo: false, fimSubmissao: '', fimAvaliacao: '', avaliacoesPorPar: 3, anonimoPares: true, conteudo: '', inicio: '', duracaoSessao: 90, salaPortal: true, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
   })
   const [grelha, setGrelha] = useState([])
   const [ficheiros, setFicheiros] = useState([])
@@ -68,7 +70,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         return criada()
       }
       if (tipo === 'pagina' || tipo === 'videoconferencia') {
-        const corpo = tipo === 'pagina' ? { conteudo: f.conteudo } : { url: f.url, inicio: localParaIso(f.inicio), duracao: Number(f.duracaoSessao) }
+        const corpo = tipo === 'pagina' ? { conteudo: f.conteudo } : { ...(f.salaPortal ? { salaPortal: true } : { url: f.url }), inicio: localParaIso(f.inicio), duracao: Number(f.duracaoSessao) }
         await api(`/cadeiras/${c.id}/materiais`, { metodo: 'POST', corpo: { tipo, titulo: f.titulo, descricao: f.descricao, secaoId, ...corpo } })
         avisar({ texto: tipo === 'pagina' ? tx('Página publicada.') : tx('Videoconferência marcada. Os estudantes foram avisados.') })
         return criada()
@@ -113,6 +115,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         fd.append('prazo', localParaIso(f.prazo))
         fd.append('aceitaAtraso', String(f.aceitaAtraso))
         fd.append('emGrupo', String(f.emGrupo))
+        for (const [k, v] of Object.entries(camposCorrecao(f))) fd.append(k, String(v))
         fd.append('tipoEntrega', f.tipoEntrega)
         fd.append('maxFicheiros', String(f.maxFicheiros || 1))
         fd.append('grelha', JSON.stringify(grelha.map((c) => ({ ...c, pontos: Number(c.pontos) }))))
@@ -179,7 +182,17 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                   {tipo === 'pasta' && <ZonaUpload id="na-pasta" multiplos ficheiros={ficheiros} aoMudar={(l) => setFicheiros(l.slice(0, 20))} desativado={aEnviar} nota={tx('Até 20 ficheiros de cada vez; pode juntar mais depois.')} />}
                   {tipo === 'videoconferencia' && (
                     <>
-                      <Campo id="na-url" rotulo={tx('Ligação da sessão')} ajuda={tx('Zoom, Microsoft Teams, Google Meet, Jitsi…')}><input id="na-url" type="url" placeholder={tx('https://…')} value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} required /></Campo>
+                      <div className="p-escolha-sala" role="radiogroup" aria-label={tx('Onde decorre a sessão')}>
+                        <label className={f.salaPortal ? 'ativa' : ''}>
+                          <input type="radio" name="na-sala" checked={f.salaPortal} onChange={() => setF({ ...f, salaPortal: true })} />
+                          <span><b><i className="fa fa-video me-1" />{tx('Sala do portal')}</b><small>{tx('O portal cria a sala; todos entram aqui, sem instalar nada.')}</small></span>
+                        </label>
+                        <label className={!f.salaPortal ? 'ativa' : ''}>
+                          <input type="radio" name="na-sala" checked={!f.salaPortal} onChange={() => setF({ ...f, salaPortal: false })} />
+                          <span><b><i className="fa fa-link me-1" />{tx('Ligação de outro serviço')}</b><small>{tx('Zoom, Microsoft Teams, Google Meet…')}</small></span>
+                        </label>
+                      </div>
+                      {!f.salaPortal && <Campo id="na-url" rotulo={tx('Ligação da sessão')}><input id="na-url" type="url" placeholder={tx('https://…')} value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} required /></Campo>}
                       <div className="row g-2">
                         <div className="col-sm-7"><Campo id="na-inicio" rotulo={tx('Dia e hora')}><input id="na-inicio" type="datetime-local" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} required /></Campo></div>
                         <div className="col-sm-5"><Campo id="na-dursessao" rotulo={tx('Duração (minutos)')}><input id="na-dursessao" type="number" min={5} max={600} value={f.duracaoSessao} onChange={(e) => setF({ ...f, duracaoSessao: e.target.value })} /></Campo></div>
@@ -234,6 +247,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                         <div className="col-sm-6"><Campo id="na-max" rotulo={tx('Máximo de ficheiros')}><input id="na-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
                       </div>
                       <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> {tx('Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)')}</label>
+                      <OpcoesCorrecao f={f} setF={setF} />
                       <div><span className="form-label fw-bold d-block mb-1">{tx('Grelha de avaliação (opcional)')}</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
                       <span className="form-label fw-bold mb-0">{tx('Enunciado em ficheiro (opcional)')}</span>
                       <ZonaUpload id="na-enunciado-f" ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} />

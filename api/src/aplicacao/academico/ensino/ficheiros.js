@@ -28,7 +28,7 @@ export class ServicoFicheirosPortal {
       if (conta.tipo === 'estudante' && !uso.estudantes.includes(conta.id)) negar()
       if (conta.tipo === 'docente') await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'entrega') {
-      if (conta.tipo === 'estudante' && !uso.estudantes.includes(conta.id)) negar()
+      if (conta.tipo === 'estudante' && (!uso.estudantes.includes(conta.id) || uso.correcaoPorLibertar)) negar()
       if (conta.tipo === 'docente') await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'pedido' && uso.estudanteId !== conta.id) negar()
     return { caminho: this.privados.absoluto(f.caminho), nome: f.nome, tipo: f.tipo }

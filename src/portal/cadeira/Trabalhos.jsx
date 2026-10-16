@@ -11,6 +11,8 @@ import { EditorGrelha, TabelaGrelha } from './Grelha'
 import { confirmar } from '../dialogos'
 import { ChipIA, ChipOriginalidade } from '../integridade/Relatorio'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import OpcoesCorrecao from './OpcoesCorrecao'
+import { camposCorrecao } from './correcao'
 
 const ESTADO = { aberto: ['verde', tx('Aberto')], atrasado: ['dourado', tx('Fora de prazo (aceita atrasos)')], fechado: ['cinzento', tx('Fechado')] }
 const TIPOS_ENTREGA = { ficheiro: tx('Ficheiros'), texto: tx('Texto escrito no portal'), ambos: tx('Ficheiros e texto') }
@@ -49,6 +51,8 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
               <span><i className="fa fa-inbox me-1" />{TIPOS_ENTREGA[t.tipoEntrega]}{t.tipoEntrega !== 'texto' && tx(' · até {0} ficheiro(s)', { 0: t.maxFicheiros })}</span>
               {t.aceitaAtraso && <span className="text-warning"><i className="fa fa-exclamation-triangle me-1" />{tx('Aceita entregas fora de prazo')}</span>}
               {t.emGrupo && <span className="badge bg-indigo"><i className="fa fa-users me-1" />{tx('Trabalho em grupo')}</span>}
+              {t.anonimo ? <span className="badge bg-dark"><i className="fa fa-user-secret me-1" />{tx('Correção anónima')}</span>
+                : t.notasOcultas && <span className="badge bg-secondary"><i className="fa fa-eye-slash me-1" />{tx('Notas publicadas todas de uma vez')}</span>}
             </div>
             {t.enunciado && <p className="p-texto-pre">{t.enunciado}</p>}
             {t.ficheiroId && <button type="button" className="btn btn-white btn-sm mb-2" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><i className="fa fa-download me-1" />{tx('Enunciado')}</button>}
@@ -69,7 +73,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
             ) : t.bloqueio ? <Bloqueio motivos={t.bloqueio} /> : <MinhaEntrega t={t} grupo={c.meuGrupo} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
           </Cartao>
           {eDocente && definicoes && <Definicoes t={t} avisar={avisar} guardado={() => { setDefinicoes(false); recarregar() }} />}
-          {eDocente && <Entregas trabalho={t} avisar={avisar} baixar={baixar} />}
+          {eDocente && <Entregas trabalho={t} avisar={avisar} baixar={baixar} recarregar={recarregar} />}
         </div>
       ))}
     </div>
@@ -86,7 +90,7 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
   const [aEnviar, setAEnviar] = useState(false)
   const [erro, setErro] = useState('')
   const [editar, setEditar] = useState(!e)
-  const podeEntregar = t.estado !== 'fechado' && !(e && e.nota !== null) && (!t.emGrupo || Boolean(grupo))
+  const podeEntregar = t.estado !== 'fechado' && !(e && (e.nota !== null || e.corrigida)) && (!t.emGrupo || Boolean(grupo))
   const querFicheiros = t.tipoEntrega !== 'texto'
   const querTexto = t.tipoEntrega !== 'ficheiro'
 
@@ -132,6 +136,8 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
               {e.correcao && <p className="p-texto-pre mb-1">{e.correcao}</p>}
               {e.correcaoFicheiroId && <CorrecaoDoDocente id={e.correcaoFicheiroId} nome={tx('Correção - {0}', { 0: t.titulo })} baixar={baixar} />}
             </div>
+          ) : t.aguardaNotas && e.corrigida ? (
+            <div className="alert alert-info py-2 small mb-0"><i className="fa fa-hourglass-half me-1" />{tx('A sua entrega já foi corrigida. A nota aparece quando o docente publicar as notas de todos.')}</div>
           ) : null}
         </div>
       ) : <Etiqueta cor={t.estado === 'fechado' ? 'vermelho' : 'cinzento'}>{t.estado === 'fechado' ? tx('Não entregue') : tx('Por entregar')}</Etiqueta>}
@@ -167,14 +173,14 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
 // ---------- docente ----------
 
 function Definicoes({ t, avisar, guardado }) {
-  const [f, setF] = useState({ titulo: t.titulo, enunciado: t.enunciado, prazo: paraLocal(t.prazo), aceitaAtraso: t.aceitaAtraso, tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros, emGrupo: t.emGrupo })
+  const [f, setF] = useState({ titulo: t.titulo, enunciado: t.enunciado, prazo: paraLocal(t.prazo), aceitaAtraso: t.aceitaAtraso, tipoEntrega: t.tipoEntrega, maxFicheiros: t.maxFicheiros, emGrupo: t.emGrupo, correcaoAnonima: t.anonimo, notasOcultas: t.notasOcultas })
   const [grelha, setGrelha] = useState(t.grelha || [])
   const [erro, setErro] = useState('')
   async function guardar(e) {
     e.preventDefault()
     setErro('')
     try {
-      await api(`/trabalhos/${t.id}`, { metodo: 'PUT', corpo: { ...f, prazo: localParaIso(f.prazo), maxFicheiros: Number(f.maxFicheiros), grelha: grelha.map((c) => ({ ...c, pontos: Number(c.pontos) })) } })
+      await api(`/trabalhos/${t.id}`, { metodo: 'PUT', corpo: { ...f, ...camposCorrecao(f), prazo: localParaIso(f.prazo), maxFicheiros: Number(f.maxFicheiros), grelha: grelha.map((c) => ({ ...c, pontos: Number(c.pontos) })) } })
       avisar({ texto: tx('Definições do trabalho guardadas.') })
       guardado()
     } catch (falha) {
@@ -194,6 +200,7 @@ function Definicoes({ t, avisar, guardado }) {
         </div>
         <label className="p-caixa"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> {tx('Aceitar entregas depois do prazo (ficam marcadas como atrasadas)')}</label>
         <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> {tx('Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)')}</label>
+        <OpcoesCorrecao f={f} setF={setF} />
         <div><span className="form-label fw-bold d-block mb-1">{tx('Grelha de avaliação')}</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
         <div><button type="submit" className="btn btn-theme">{tx('Guardar definições')}</button></div>
       </form>
@@ -202,7 +209,7 @@ function Definicoes({ t, avisar, guardado }) {
 }
 
 // docente: estudantes, entregas, correção (nota ou grelha, comentário, ficheiro) e prorrogações
-function Entregas({ trabalho, avisar, baixar }) {
+function Entregas({ trabalho, avisar, baixar, recarregar }) {
   const [d, setD] = useState(null)
   const [aberta, setAberta] = useState(null) // estudante cuja entrega está aberta
   const [originalidade, setOriginalidade] = useState({})
@@ -222,6 +229,21 @@ function Entregas({ trabalho, avisar, baixar }) {
 
   const entregues = d.linhas.filter((l) => l.entrega).length
   const corrigidas = d.linhas.filter((l) => l.entrega?.nota !== null && l.entrega?.nota !== undefined).length
+  async function publicar() {
+    const falta = entregues - corrigidas
+    const texto = falta > 0
+      ? tx('Ainda há {0} entrega(s) por corrigir. Publicar já as notas? Os estudantes passam a ver a nota, o comentário e a correção{1}.', { 0: falta, 1: d.anonimo ? tx(', e a correção deixa de ser anónima') : '' })
+      : tx('Os estudantes passam a ver a nota, o comentário e a correção{0}. Cada um recebe um aviso.', { 0: d.anonimo ? tx(', e a correção deixa de ser anónima') : '' })
+    if (!(await confirmar(texto, { titulo: tx('Publicar as notas'), botao: tx('Publicar') }))) return
+    try {
+      await api(`/trabalhos/${trabalho.id}/libertar-notas`, { metodo: 'POST' })
+      avisar({ texto: tx('Notas publicadas: os estudantes já as veem.') })
+      carregar()
+      recarregar?.()
+    } catch (e) {
+      avisar({ tipo: 'erro', texto: e.message })
+    }
+  }
   return (
     <Cartao
       titulo={<><i className="fa fa-inbox me-2" />{tx('Entregas')}</>}
@@ -229,6 +251,16 @@ function Entregas({ trabalho, avisar, baixar }) {
       corpo={false}
     >
       <div className="progress rounded-0" style={{ height: 4 }}><div className="progress-bar bg-success" style={{ width: `${d.linhas.length ? (entregues / d.linhas.length) * 100 : 0}%` }} /></div>
+      {!d.trabalho.notasVisiveis && (
+        <div className="p-por-publicar">
+          <i className={`fa ${d.anonimo ? 'fa-user-secret' : 'fa-eye-slash'} fa-lg`} />
+          <div className="flex-grow-1 small">
+            <b className="d-block">{d.anonimo ? tx('Correção anónima') : tx('Notas por publicar')}</b>
+            {d.anonimo ? tx('Os nomes aparecem como «Participante 1, 2…». ') : ''}{tx('Os estudantes ainda não veem as notas: corrija todas as entregas e publique-as de uma vez.')}
+          </div>
+          <button type="button" className="btn btn-sm btn-theme" onClick={publicar} disabled={!corrigidas}><i className="fa fa-bullhorn me-1" />{tx('Publicar as notas ({0})', { 0: corrigidas })}</button>
+        </div>
+      )}
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0">
           <thead><tr><th>{tx('Estudante')}</th><th>{tx('Entrega')}</th><th className="text-center" title={tx('Texto coincidente com outros trabalhos, a biblioteca e o repositório')}>{tx('Originalidade')}</th><th className="text-center">{tx('Nota')}</th><th /></tr></thead>

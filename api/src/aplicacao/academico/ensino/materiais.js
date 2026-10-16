@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { validarLicao, validarLivro } from '../../../dominio/academico/atividades/livroLicao.js'
 import { urlSegura } from '../../../dominio/comum/urls.js'
@@ -48,7 +49,10 @@ export class ServicoMateriais {
   // campos próprios de cada tipo: endereço, texto da página, hora da videoconferência
   #camposMaterial(tipo, d, { novo = false } = {}) {
     const r = {}
-    if (['ligacao', 'video', 'videoconferencia'].includes(tipo) && (novo || d.url !== undefined)) {
+    // videoconferência na sala do portal: o portal cria uma sala Jitsi com um nome difícil de adivinhar
+    const salaPortal = tipo === 'videoconferencia' && (d.salaPortal === true || d.salaPortal === 'true')
+    if (salaPortal) r.url = `${this.jitsiUrl || 'https://meet.jit.si'}/ESGFAA-${randomBytes(9).toString('hex')}`
+    else if (['ligacao', 'video', 'videoconferencia'].includes(tipo) && (novo || d.url !== undefined)) {
       const url = String(d.url || '').trim()
       if (!/^https?:\/\//.test(url) || !urlSegura(url)) throw new ErroValidacao('Indique um endereço começado por https://', { campo: 'url' })
       r.url = url

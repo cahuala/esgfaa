@@ -1,6 +1,7 @@
 import { Conflito, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { avaliarAcesso, chave, explicarMotivos } from '../../../dominio/academico/atividades/disponibilidade.js'
 import { notaDosPares } from '../../../dominio/academico/atividades/workshops.js'
+import { notasDoTrabalhoVisiveis } from '../../../dominio/academico/atividades/trabalhos.js'
 
 /*
   O que um estudante já fez numa cadeira e que atividades tem abertas (restrições de acesso).
@@ -40,7 +41,8 @@ export class ServicoDisponibilidade {
     ])
     const estado = {}
     for (const id of ids('material')) estado[chave('material', id)] = { feita: concluidos.has(id), nota: null }
-    for (const id of ids('trabalho')) estado[chave('trabalho', id)] = { feita: Boolean(entregas[id]), nota: entregas[id]?.nota ?? null }
+    const trabalhoDe = Object.fromEntries(lista.filter((a) => a.tipoAtividade === 'trabalho').map((a) => [a.id, a]))
+    for (const id of ids('trabalho')) estado[chave('trabalho', id)] = { feita: Boolean(entregas[id]), nota: notasDoTrabalhoVisiveis(trabalhoDe[id]) ? entregas[id]?.nota ?? null : null }
     for (const id of ids('questionario')) {
       const feitas = tentativas.filter((t) => t.questionarioId === id && t.entregueEm)
       const notas = feitas.map((t) => t.nota).filter((n) => n !== null)

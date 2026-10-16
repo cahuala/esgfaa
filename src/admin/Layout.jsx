@@ -6,17 +6,19 @@ import Brasao from '../assets/Logo.png'
 import Sede from '../assets/Escola De Guerra.png'
 import { t as tx } from '../i18n/linguas'
 import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
+import { api } from './api'
 
 const SITE = import.meta.env.BASE_URL
 
 // o Color Admin destaca o item ativo pela classe "active" no menu-item
-function ItemMenu({ para, icone, texto, fim }) {
+function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
   const ativo = useMatch({ path: para, end: Boolean(fim) })
   return (
     <div className={`menu-item ${ativo ? 'active' : ''}`}>
       <NavLink to={para} end={fim} className="menu-link">
         <div className="menu-icon"><i className={`fa ${icone}`} /></div>
         <div className="menu-text">{texto}</div>
+        {contador > 0 && <div className="menu-badge"><span className="badge bg-danger">{contador}</span></div>}
       </NavLink>
     </div>
   )
@@ -47,6 +49,17 @@ function Layout({ children }) {
       document.removeEventListener('keydown', esc)
     }
   }, [menuUtilizador])
+  // mensagens novas do formulário de contacto (contador no menu)
+  const [contactosNovos, setContactosNovos] = useState(0)
+  const verContactos = pode('contactos.ver')
+  useEffect(() => {
+    if (!verContactos) return undefined
+    const contar = () => api('/contactos/novas').then((r) => setContactosNovos(r.novas)).catch(() => {})
+    contar()
+    const id = setInterval(contar, 120_000)
+    window.addEventListener('esg-contactos', contar)
+    return () => { clearInterval(id); window.removeEventListener('esg-contactos', contar) }
+  }, [verContactos])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -171,7 +184,8 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto={tx('Avisos do portal')} />}
 
-            {(pode('comentarios.ver') || pode('publicidade.ver')) && <div className="menu-header">{tx('Interação e publicidade')}</div>}
+            {(pode('comentarios.ver') || pode('publicidade.ver') || verContactos) && <div className="menu-header">{tx('Interação e publicidade')}</div>}
+            {verContactos && <ItemMenu para="/mensagens-site" icone="fa-envelope-open-text" texto={tx('Mensagens do site')} contador={contactosNovos} />}
             {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto={tx('Comentários')} />}
             {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto={tx('Publicidade')} />}
 

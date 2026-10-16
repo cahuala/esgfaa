@@ -140,6 +140,17 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     )
   }
 
+  // ---------- mensagens do formulário de contacto ----------
+
+  r.get('/contactos', async (req, res) => res.json(await servicos.contactos.listar(ctx(req))))
+  r.get('/contactos/novas', async (req, res) => res.json({ novas: await servicos.contactos.contarNovas(ctx(req)) }))
+  r.get('/contactos/:id', validar({ params: pNumero }), async (req, res) => res.json(await servicos.contactos.abrir(ctx(req), req.dados.params.id)))
+  r.patch('/contactos/:id', validar({ params: pNumero, body: E.atualizarContacto }), async (req, res) => res.json(await servicos.contactos.atualizar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/contactos/:id', validar({ params: pNumero }), async (req, res) => {
+    await servicos.contactos.apagar(ctx(req), req.dados.params.id)
+    res.status(204).end()
+  })
+
   // ---------- comentários ----------
 
   r.get('/comentarios', async (req, res) => res.json(await servicos.interacoes.listarComentarios(ctx(req))))

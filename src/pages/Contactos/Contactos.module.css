@@ -286,3 +286,20 @@
     border: 1px solid var(--linha);
   }
 }
+
+/* campo para os robôs: fora do ecrã */
+.escondido {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.erro {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid #c62828;
+  background: rgba(198, 40, 40, 0.07);
+  color: #b71c1c;
+  font-size: 14px;
+}

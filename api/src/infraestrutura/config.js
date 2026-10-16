@@ -30,6 +30,10 @@ const ESQUEMA = z.object({
   LOG: z.enum(['json', 'nenhum']).optional(),
   SMTP_URL: z.union([z.literal(''), z.string().regex(/^smtps?:\/\//, 'SMTP_URL deve ser smtp://… ou smtps://…')]).default(''),
   EMAIL_REMETENTE: z.string().default('Portal Académico ESG <portal@esgfaa.gov.ao>'),
+  // para onde vai o aviso de cada mensagem do formulário de contacto do site (vazio: só no painel)
+  CONTACTOS_EMAIL: z.union([z.literal(''), z.email()]).default(''),
+  // servidor Jitsi das salas de videoconferência do portal (o ideal é um servidor da Escola; meet.jit.si limita as salas incorporadas)
+  JITSI_URL: z.url().default('https://meet.jit.si'),
   PORTAL_URL: z.union([z.literal(''), z.url()]).default(''),
   // anti-plágio: pesquisa na internet (Brave Search) e avaliação de IA / traduções (Claude)
   BRAVE_API_KEY: z.string().default(''),
@@ -94,6 +98,8 @@ export function criarConfig(env = process.env, extras = {}) {
     // e-mails das notificações; sem SMTP_URL ficam só no portal
     smtp: e.SMTP_URL,
     remetente: e.EMAIL_REMETENTE,
+    emailContactos: e.CONTACTOS_EMAIL,
+    jitsiUrl: e.JITSI_URL.replace(/\/$/, ''),
     // endereço do portal usado nas ligações dos e-mails (ex.: https://escola.ao/portal/)
     urlPortal: e.PORTAL_URL.replace(/\/$/, ''),
     // serviços externos opcionais (sem chave ficam desligados)
@@ -111,6 +117,7 @@ export function criarConfig(env = process.env, extras = {}) {
       publico: { janelaMs: 60_000, maximo: 300 },
       gosto: { janelaMs: 60_000, maximo: 30 },
       comentario: { janelaMs: 60_000, maximo: 4 },
+      contacto: { janelaMs: 10 * 60_000, maximo: 3 },
       visita: { janelaMs: 60_000, maximo: 60 },
       impressao: { janelaMs: 60_000, maximo: 120 },
       clique: { janelaMs: 60_000, maximo: 30 },

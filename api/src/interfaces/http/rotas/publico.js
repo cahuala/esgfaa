@@ -62,6 +62,17 @@ export function rotasPublicas({ servicos, config }) {
   )
 
 
+  // formulário de contacto do site
+  r.post(
+    '/contactos',
+    limitar(L.contacto, { mensagem: 'Já enviou várias mensagens. Aguarde alguns minutos.' }),
+    validar({ body: E.contacto }),
+    async (req, res) => {
+      if (req.dados.body.website) return res.status(201).json({ ok: true }) // campo escondido: só robôs o preenchem
+      res.status(201).json(await servicos.contactos.enviar(req.dados.body))
+    },
+  )
+
   r.post('/visita', limitar(L.visita), validar({ body: E.visita }), async (req, res) => {
     await servicos.estatisticas.registarVisita(req.dados.body, { agente: req.get('user-agent') || '', origemPedido: req.get('origin') })
     res.status(204).end()

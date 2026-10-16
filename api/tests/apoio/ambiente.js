@@ -59,7 +59,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
   // pedido autenticado: com(token).get('/api/admin/eu')
   const com = (token) => {
     const ag = {}
-    for (const m of ['get', 'post', 'put', 'delete']) ag[m] = (url) => http()[m](url).set('Authorization', `Bearer ${token}`)
+    for (const m of ['get', 'post', 'put', 'patch', 'delete']) ag[m] = (url) => http()[m](url).set('Authorization', `Bearer ${token}`)
     return ag
   }
 
