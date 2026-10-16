@@ -215,6 +215,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/cadeiras/:id/conclusao', validar({ params: pId }), async (req, res) => res.json(await e.progresso.conclusao(ctx(req), req.dados.params.id)))
   r.post('/cadeiras/:id/certificado', validar({ params: pId }), async (req, res) => res.status(201).json(await e.progresso.emitirCertificado(ctx(req), req.dados.params.id)))
   r.get('/progresso', async (req, res) => res.json(await e.progresso.progressoGeral(ctx(req))))
+  r.get('/emblemas', async (req, res) => res.json(await e.progresso.emblemas(ctx(req))))
   r.get('/cadeiras/:id/progresso', validar({ params: pId }), async (req, res) => res.json(await e.progresso.progresso(ctx(req), req.dados.params.id)))
   // lições: o caminho do estudante (o servidor decide a página seguinte) e os resultados para o docente
   r.get('/materiais/:id/licao', validar({ params: pId }), async (req, res) => res.json(await e.licoes.estado(ctx(req), req.dados.params.id)))

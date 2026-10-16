@@ -1,6 +1,8 @@
 import { Conflito, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { quem } from '../partilhado/autor.js'
 import { normalizarCodigo, novoCodigo } from '../../../dominio/academico/conclusao/codigo.js'
+import { calcularEmblemas } from '../../../dominio/academico/conclusao/emblemas.js'
+import { entregaAtrasada, prazoDe } from '../../../dominio/academico/atividades/trabalhos.js'
 
 // Progresso das atividades, conclusão da cadeira e certificado de conclusão da cadeira.
 export class ServicoProgresso {
@@ -34,11 +36,11 @@ export class ServicoProgresso {
     const escondidos = new Set(secoes.filter((x) => !x.visivel).map((x) => x.id))
     const [materiais, trabalhos, questionarios, inqueritos, workshops] = [todos, trab, quest, inq, ws].map((l) => l.filter((a) => !escondidos.has(a.secaoId) && a.visivel !== false))
     return [
-      ...materiais.map((m) => ({ tipo: 'material', id: m.id, titulo: m.titulo })),
-      ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo })),
-      ...questionarios.map((q) => ({ tipo: 'questionario', id: q.id, titulo: q.titulo })),
-      ...inqueritos.map((i) => ({ tipo: 'inquerito', id: i.id, titulo: i.titulo })),
-      ...workshops.map((w) => ({ tipo: 'workshop', id: w.id, titulo: w.titulo })),
+      ...materiais.map((m) => ({ tipo: 'material', id: m.id, titulo: m.titulo, secaoId: m.secaoId ?? null })),
+      ...trabalhos.map((t) => ({ tipo: 'trabalho', id: t.id, titulo: t.titulo, secaoId: t.secaoId ?? null })),
+      ...questionarios.map((q) => ({ tipo: 'questionario', id: q.id, titulo: q.titulo, secaoId: q.secaoId ?? null })),
+      ...inqueritos.map((i) => ({ tipo: 'inquerito', id: i.id, titulo: i.titulo, secaoId: i.secaoId ?? null })),
+      ...workshops.map((w) => ({ tipo: 'workshop', id: w.id, titulo: w.titulo, secaoId: w.secaoId ?? null })),
     ]
   }
 
@@ -125,5 +127,26 @@ export class ServicoProgresso {
       return [c.id, { feitas, total: itens.length, percentagem: itens.length ? Math.round((feitas / itens.length) * 100) : null }]
     }))
     return Object.fromEntries(pares)
+  }
+
+  // emblemas do estudante em todas as suas cadeiras (calculados a partir do progresso; nada a configurar)
+  async emblemas(ctx) {
+    this.acesso.soEstudante(ctx.conta)
+    const cadeiras = await this.acesso.minhasCadeiras(ctx.conta)
+    const porCadeira = await Promise.all(cadeiras.map(async (c) => {
+      const atividades = await this.#atividades(c.id)
+      const [itens, secoes] = await Promise.all([this.#feitasPor(ctx.conta.id, atividades), this.academico.secoes(c.id)])
+      const ids = atividades.filter((a) => a.tipo === 'trabalho').map((a) => a.id)
+      const [trabalhos, entregas, prorrogacoes] = await Promise.all([
+        this.academico.trabalhos(c.id), this.academico.entregasDoEstudante(ctx.conta.id, ids), this.academico.prorrogacoesDoEstudante(ctx.conta.id, ids),
+      ])
+      const pontualidade = trabalhos.filter((t) => ids.includes(t.id)).map((t) => {
+        const e = entregas[t.id]
+        return { entregue: Boolean(e), aTempo: Boolean(e) && !entregaAtrasada(e.entregueEm, prazoDe(t, prorrogacoes[t.id])) }
+      })
+      return calcularEmblemas({ cadeira: { id: c.id, nome: c.nome, codigo: c.codigo }, secoes: secoes.filter((x) => x.visivel !== false), itens, pontualidade })
+    }))
+    const todos = porCadeira.flat()
+    return { ganhos: todos.filter((x) => x.ganho), porGanhar: todos.filter((x) => !x.ganho) }
   }
 }

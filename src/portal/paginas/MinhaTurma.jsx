@@ -6,6 +6,7 @@ import { Cartao, Carregando, Erro, Vazio } from '../componentes'
 import { capaCadeira, dataHora, faltam, iniciais, maiusculaInicial, primeiroNome } from '../formatar'
 import { lerContinuar } from '../recentes'
 import CartaoTelemovel from '../CartaoTelemovel'
+import { Emblema } from './Emblemas'
 import { PERIODOS } from '../regraAvaliacao'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
@@ -110,6 +111,8 @@ function MinhaTurma() {
             )}
           </Cartao>
 
+          <CartaoEmblemas />
+
           <Cartao titulo={<><i className="fa fa-tasks me-2" />{tx('Para fazer')}</>} acoes={<Link to="/calendario" className="btn btn-xs btn-white">{tx('Calendário')}</Link>} corpo={false}>
             {porFazer.length === 0 ? <div className="panel-body"><Vazio>{tx('Não tem trabalhos por entregar.')}</Vazio></div> : (
               <div className="list-group list-group-flush">
@@ -173,6 +176,22 @@ function CartaoCadeira({ c, p }) {
         </span>
       </Link>
     </div>
+  )
+}
+
+// os emblemas ganhos, em pequeno, com ligação para a página dos emblemas
+function CartaoEmblemas() {
+  const [d, setD] = useState(null)
+  useEffect(() => { api('/emblemas').then(setD).catch(() => setD(null)) }, [])
+  if (!d) return null
+  const proximo = d.porGanhar.filter((e) => !e.perdido).sort((a, b) => b.feitas / b.total - a.feitas / a.total)[0]
+  return (
+    <Cartao titulo={<><i className="fa fa-medal me-2" />{tx('Os meus emblemas')} ({d.ganhos.length})</>} acoes={<Link to="/emblemas" className="btn btn-xs btn-white">{tx('Ver todos')}</Link>}>
+      {d.ganhos.length > 0
+        ? <div className="p-emblemas-linha mb-2">{d.ganhos.slice(-10).map((e) => <Emblema key={e.id} e={e} pequeno />)}</div>
+        : <p className="small text-muted mb-2">{tx('Faça a primeira atividade de uma cadeira para ganhar o primeiro emblema.')}</p>}
+      {proximo && <div className="small"><span className="text-muted">{tx('Próximo:')}</span> <b>{proximo.titulo}</b> · {tx('{0} de {1}', { 0: proximo.feitas, 1: proximo.total })}</div>}
+    </Cartao>
   )
 }
 

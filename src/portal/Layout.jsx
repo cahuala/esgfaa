@@ -159,6 +159,7 @@ function Layout({ children }) {
                 <div className="menu-header">{tx('Avaliação')}</div>
                 <ItemMenu para="/notas" icone="fa-clipboard-list" texto={tx('Notas')} />
                 <ItemMenu para="/percurso" icone="fa-route" texto={tx('Percurso académico')} />
+                <ItemMenu para="/emblemas" icone="fa-medal" texto={tx('Os meus emblemas')} />
 
                 <div className="menu-header">{tx('Administração Escolar')}</div>
                 <ItemMenu para="/avisos" icone="fa-bullhorn" texto={tx('Avisos')} />

@@ -10,6 +10,7 @@ import Cadeiras from './paginas/Cadeiras'
 import Cadeira from './cadeira/Cadeira'
 import Notas from './paginas/Notas'
 import Percurso from './paginas/Percurso'
+import Emblemas from './paginas/Emblemas'
 import Calendario from './paginas/Calendario'
 import Notificacoes from './paginas/Notificacoes'
 import Mensagens from './paginas/Mensagens'
@@ -56,6 +57,7 @@ function App() {
         {!eDocente && <Route path="/cadeiras/:id/certificado" element={<Certificado />} />}
         {!eDocente && <Route path="/notas" element={<Notas />} />}
         {!eDocente && <Route path="/percurso" element={<Percurso />} />}
+        {!eDocente && <Route path="/emblemas" element={<Emblemas />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}
         {!eDocente && <Route path="/avisos" element={<Avisos />} />}
         <Route path="/pesquisa" element={<Pesquisa />} />
