@@ -4,6 +4,7 @@ import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
 import { confirmar } from '../../../portal/dialogos'
+import { t as tx } from '../../../i18n/linguas'
 
 // avisos da Secretaria no portal (para todos os estudantes ou só para uma turma)
 function AvisosGerais() {
@@ -25,7 +26,7 @@ function AvisosGerais() {
     try {
       await api('/academico/avisos', { metodo: 'POST', corpo: { ...f, turmaId: f.turmaId ? Number(f.turmaId) : null } })
       setF({ turmaId: '', titulo: '', texto: '' })
-      setAviso({ texto: 'Aviso publicado no portal.' })
+      setAviso({ texto: tx('Aviso publicado no portal.') })
       carregar()
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
@@ -34,34 +35,34 @@ function AvisosGerais() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Avisos do portal" subtitulo="da Administração Escolar" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Avisos' }]} />
+      <CabecalhoPagina titulo={tx('Avisos do portal')} subtitulo={tx('da Administração Escolar')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Avisos') }]} />
       <div className="row">
         <div className="col-xl-8">
           {erro && <Erro texto={erro} />}
           {!lista && !erro ? <Carregando /> : lista?.map((a) => (
             <Painel key={a.id} titulo={a.titulo} acoes={pode('academico.gerir') && (
-              <button type="button" className="btn btn-xs btn-icon btn-danger" title="Apagar" onClick={async () => { if (await confirmar('Apagar este aviso?', { titulo: 'Apagar aviso', botao: 'Apagar', perigo: true })) api(`/academico/avisos/${a.id}`, { metodo: 'DELETE' }).then(carregar) }}><i className="fa fa-times" /></button>
+              <button type="button" className="btn btn-xs btn-icon btn-danger" title={tx('Apagar')} onClick={async () => { if (await confirmar(tx('Apagar este aviso?'), { titulo: tx('Apagar aviso'), botao: tx('Apagar'), perigo: true })) api(`/academico/avisos/${a.id}`, { metodo: 'DELETE' }).then(carregar) }}><i className="fa fa-times" /></button>
             )}>
               <p style={{ whiteSpace: 'pre-wrap' }}>{a.texto}</p>
-              <div className="small text-muted">{a.turma ? `Turma ${a.turma}` : 'Todos os estudantes'} · {dataHora(a.criadoEm)}</div>
+              <div className="small text-muted">{a.turma ? tx('Turma {0}', { 0: a.turma }) : tx('Todos os estudantes')} · {dataHora(a.criadoEm)}</div>
             </Painel>
           ))}
-          {lista?.length === 0 && <div className="alert alert-info">Ainda não há avisos.</div>}
+          {lista?.length === 0 && <div className="alert alert-info">{tx('Ainda não há avisos.')}</div>}
         </div>
         {pode('academico.gerir') && (
           <div className="col-xl-4">
-            <Painel titulo="Novo aviso">
+            <Painel titulo={tx('Novo aviso')}>
               <form onSubmit={publicar}>
-                <label className="form-label fw-bold" htmlFor="ag-turma">Para</label>
+                <label className="form-label fw-bold" htmlFor="ag-turma">{tx('Para')}</label>
                 <select id="ag-turma" className="form-select mb-3" value={f.turmaId} onChange={(e) => setF({ ...f, turmaId: e.target.value })}>
-                  <option value="">Todos os estudantes</option>
+                  <option value="">{tx('Todos os estudantes')}</option>
                   {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
                 </select>
-                <label className="form-label fw-bold" htmlFor="ag-titulo">Título</label>
+                <label className="form-label fw-bold" htmlFor="ag-titulo">{tx('Título')}</label>
                 <input id="ag-titulo" className="form-control mb-3" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} required />
-                <label className="form-label fw-bold" htmlFor="ag-texto">Texto</label>
+                <label className="form-label fw-bold" htmlFor="ag-texto">{tx('Texto')}</label>
                 <textarea id="ag-texto" className="form-control mb-3" rows={5} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} required />
-                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-bullhorn me-1" /> Publicar</button>
+                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-bullhorn me-1" /> {tx('Publicar')}</button>
               </form>
             </Painel>
           </div>

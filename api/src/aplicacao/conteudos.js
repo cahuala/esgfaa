@@ -92,6 +92,7 @@ export class ServicoConteudos {
       try {
         const criado = await this.conteudos.criar(c, ctx.actor.id)
         await this.auditoria.registar(ctx, { acao: 'criar', colecao, alvoId: id, alvoTitulo: c.titulo, detalhes: { estado } })
+        if (estado === 'publicado') this.aoPublicar?.(colecao, id)
         return paraPainel(criado)
       } catch (erro) {
         if (!(erro instanceof Conflito)) throw erro
@@ -117,6 +118,7 @@ export class ServicoConteudos {
     const guardado = await this.conteudos.guardar(novo, ctx.actor.id)
     const acao = estado !== atual.estado ? (estado === 'publicado' ? 'publicar' : 'despublicar') : 'editar'
     await this.auditoria.registar(ctx, { acao, colecao, alvoId: id, alvoTitulo: novo.titulo, detalhes: { campos: alterados } })
+    if (estado === 'publicado') this.aoPublicar?.(colecao, id) // tradução automática do que mudou
     return paraPainel(guardado)
   }
 

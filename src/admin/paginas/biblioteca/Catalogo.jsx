@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import Capa from '../../../portal/biblioteca/Capa'
+import { t as tx } from '../../../i18n/linguas'
 
-const NUMEROS = [['obras', 'Obras', 'fa-book', 'bg-theme'], ['exemplares', 'Exemplares', 'fa-barcode', 'bg-dark'], ['ativos', 'Emprestados', 'fa-hand-holding', 'bg-info'], ['atrasados', 'Em atraso', 'fa-clock', 'bg-danger'], ['digitais', 'Digitais', 'fa-file-pdf', 'bg-success'], ['reservas', 'Reservas', 'fa-bookmark', 'bg-purple']]
+const NUMEROS = [['obras', tx('Obras'), 'fa-book', 'bg-theme'], ['exemplares', tx('Exemplares'), 'fa-barcode', 'bg-dark'], ['ativos', tx('Emprestados'), 'fa-hand-holding', 'bg-info'], ['atrasados', tx('Em atraso'), 'fa-clock', 'bg-danger'], ['digitais', tx('Digitais'), 'fa-file-pdf', 'bg-success'], ['reservas', tx('Reservas'), 'fa-bookmark', 'bg-purple']]
 
 // catálogo da biblioteca: números, pesquisa e lista de obras
 function Catalogo() {
@@ -22,10 +23,10 @@ function Catalogo() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Biblioteca" subtitulo="catálogo de obras, exemplares e versões digitais" migalhas={[{ rotulo: 'Biblioteca' }, { rotulo: 'Catálogo' }]}>
+      <CabecalhoPagina titulo={tx('Biblioteca')} subtitulo={tx('catálogo de obras, exemplares e versões digitais')} migalhas={[{ rotulo: tx('Biblioteca') }, { rotulo: tx('Catálogo') }]}>
         <div className="d-flex gap-2">
-          <button type="button" className="btn btn-white" onClick={() => obterFicheiro('/biblioteca/exportar', 'catalogo-dublin-core.xml').catch((e) => setAviso({ tipo: 'erro', texto: e.message }))} title="Registos Dublin Core (OAI-DC) para repositórios e catálogos coletivos"><i className="fa fa-file-code me-1" />Exportar Dublin Core</button>
-          <Link to="/biblioteca/obras/nova" className="btn btn-theme"><i className="fa fa-plus me-1" />Nova obra</Link>
+          <button type="button" className="btn btn-white" onClick={() => obterFicheiro('/biblioteca/exportar', 'catalogo-dublin-core.xml').catch((e) => setAviso({ tipo: 'erro', texto: e.message }))} title={tx('Registos Dublin Core (OAI-DC) para repositórios e catálogos coletivos')}><i className="fa fa-file-code me-1" />{tx('Exportar Dublin Core')}</button>
+          <Link to="/biblioteca/obras/nova" className="btn btn-theme"><i className="fa fa-plus me-1" />{tx('Nova obra')}</Link>
         </div>
       </CabecalhoPagina>
       <div className="row g-3 mb-3">
@@ -34,26 +35,26 @@ function Catalogo() {
             <div className={`widget widget-stats ${cor} mb-0`}>
               <div className="stats-icon"><i className={`fa ${icone}`} /></div>
               <div className="stats-info"><h4>{rotulo}</h4><p>{resumo[k]}</p></div>
-              {k === 'reservas' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=reservas">Atender <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
-              {k === 'atrasados' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=atrasados">Ver atrasos <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
+              {k === 'reservas' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=reservas">{tx('Atender')} <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
+              {k === 'atrasados' && resumo[k] > 0 && <div className="stats-link"><Link to="/biblioteca/emprestimos?estado=atrasados">{tx('Ver atrasos')} <i className="fa fa-arrow-alt-circle-right" /></Link></div>}
             </div>
           </div>
         ))}
       </div>
-      <Painel titulo={obras ? `Obras (${obras.length})` : 'Obras'} corpo={false}>
+      <Painel titulo={obras ? tx('Obras ({0})', { 0: obras.length }) : tx('Obras')} corpo={false}>
         <div className="p-3 d-flex flex-wrap gap-2 border-bottom">
-          <input type="search" className="form-control" style={{ maxWidth: 420 }} placeholder="Título, autor, assunto, ISBN, cota ou código do exemplar" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} aria-label="Pesquisar no catálogo" />
-          <select className="form-select" style={{ maxWidth: 240 }} value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })} aria-label="Tipo de obra">
-            <option value="">Todos os tipos</option>
+          <input type="search" className="form-control" style={{ maxWidth: 420 }} placeholder={tx('Título, autor, assunto, ISBN, cota ou código do exemplar')} value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} aria-label={tx('Pesquisar no catálogo')} />
+          <select className="form-select" style={{ maxWidth: 240 }} value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })} aria-label={tx('Tipo de obra')}>
+            <option value="">{tx('Todos os tipos')}</option>
             {Object.entries(resumo.tipos).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
         {!obras ? <Carregando /> : (
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead><tr><th>Obra</th><th>Tipo</th><th>Cota</th><th className="text-center">Disponíveis</th><th className="text-center">Digital</th></tr></thead>
+              <thead><tr><th>{tx('Obra')}</th><th>{tx('Tipo')}</th><th>{tx('Cota')}</th><th className="text-center">{tx('Disponíveis')}</th><th className="text-center">{tx('Digital')}</th></tr></thead>
               <tbody>
-                {obras.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">{f.q || f.tipo ? 'Nada encontrado.' : 'O catálogo está vazio. Registe a primeira obra.'}</td></tr>}
+                {obras.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">{f.q || f.tipo ? tx('Nada encontrado.') : tx('O catálogo está vazio. Registe a primeira obra.')}</td></tr>}
                 {obras.map((o) => {
                   const uteis = o.exemplares.filter((x) => x.estado === 'bom' || x.estado === 'danificado')
                   const livres = uteis.filter((x) => !x.emprestimo).length
@@ -71,7 +72,7 @@ function Catalogo() {
                       <td className="small">{resumo.tipos[o.tipo]}</td>
                       <td className="small text-nowrap">{o.cota || '—'}</td>
                       <td className="text-center">{uteis.length ? <span className={`badge ${livres ? 'bg-success' : 'bg-warning text-dark'}`}>{livres} / {uteis.length}</span> : <span className="text-muted small">—</span>}</td>
-                      <td className="text-center">{o.ficheiro ? <i className="fa fa-file-pdf text-danger" title={o.acesso === 'docentes' ? 'Só docentes' : 'Todos'} /> : ''}</td>
+                      <td className="text-center">{o.ficheiro ? <i className="fa fa-file-pdf text-danger" title={o.acesso === 'docentes' ? tx('Só docentes') : tx('Todos')} /> : ''}</td>
                     </tr>
                   )
                 })}

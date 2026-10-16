@@ -4,11 +4,12 @@ import { Bloqueio, Cartao, Carregando, Erro, Etiqueta } from '../componentes'
 import { dataHora, iconeFicheiro, nota } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
 import { TabelaGrelha } from './Grelha'
+import { t as tx } from '../../i18n/linguas'
 
 const FASES = [
-  ['submissao', 'Entrega'],
-  ['avaliacao', 'Avaliação dos colegas'],
-  ['encerrado', 'Resultados'],
+  ['submissao', tx('Entrega')],
+  ['avaliacao', tx('Avaliação dos colegas')],
+  ['encerrado', tx('Resultados')],
 ]
 
 // passos do workshop, com o atual em destaque
@@ -19,8 +20,8 @@ function Fases({ w }) {
       {FASES.map(([k, nome], i) => (
         <span key={k} className={`badge fs-12px ${i === atual ? 'bg-theme' : i < atual ? 'bg-success' : 'bg-light text-muted border'}`}>
           {i < atual ? <i className="fa fa-check me-1" /> : `${i + 1}. `}{nome}
-          {k === 'submissao' && ` · até ${dataHora(w.fimSubmissao)}`}
-          {k === 'avaliacao' && ` · até ${dataHora(w.fimAvaliacao)}`}
+          {k === 'submissao' && tx(' · até {0}', { 0: dataHora(w.fimSubmissao) })}
+          {k === 'avaliacao' && tx(' · até {0}', { 0: dataHora(w.fimAvaliacao) })}
         </span>
       ))}
     </div>
@@ -46,11 +47,11 @@ function Workshop({ c, eDocente, avisar, recarregar, so }) {
 
   return (
     <div className="p-coluna">
-      <Cartao titulo={<><i className="fa fa-people-arrows me-2" />{w.titulo}</>} acoes={w.anonimo && <span className="badge bg-light text-dark"><i className="fa fa-user-secret me-1" />Anónima</span>}>
+      <Cartao titulo={<><i className="fa fa-people-arrows me-2" />{w.titulo}</>} acoes={w.anonimo && <span className="badge bg-light text-dark"><i className="fa fa-user-secret me-1" />{tx('Anónima')}</span>}>
         <Fases w={w} />
         {w.enunciado && <p className="p-texto-pre">{w.enunciado}</p>}
         <details>
-          <summary className="small fw-bold">Grelha de avaliação ({w.grelha.length} critérios)</summary>
+          <summary className="small fw-bold">{tx('Grelha de avaliação (')}{w.grelha.length} {tx('critérios)')}</summary>
           <div className="mt-2"><TabelaGrelha grelha={w.grelha} /></div>
         </details>
       </Cartao>
@@ -73,7 +74,7 @@ function VistaEstudante({ w, avisar, carregar }) {
       fd.append('texto', texto)
       if (ficheiros[0]) fd.append('ficheiro', ficheiros[0].ficheiro)
       await enviarComProgresso(`/workshops/${w.id}/submissao`, fd, { aoProgresso: (p) => setFicheiros((l) => l.map((x) => ({ ...x, progresso: p }))) })
-      avisar({ texto: 'Trabalho entregue. Depois do prazo, vai avaliar trabalhos de colegas.' })
+      avisar({ texto: tx('Trabalho entregue. Depois do prazo, vai avaliar trabalhos de colegas.') })
       setFicheiros([])
       carregar()
     } catch (falha) {
@@ -85,22 +86,22 @@ function VistaEstudante({ w, avisar, carregar }) {
 
   return (
     <>
-      <Cartao titulo={<><i className="fa fa-upload me-2" />O meu trabalho</>}>
-        {w.minha && <div className="mb-2"><Etiqueta cor="verde">Entregue</Etiqueta> <span className="small text-muted">{dataHora(w.minha.entregueEm)}</span></div>}
+      <Cartao titulo={<><i className="fa fa-upload me-2" />{tx('O meu trabalho')}</>}>
+        {w.minha && <div className="mb-2"><Etiqueta cor="verde">{tx('Entregue')}</Etiqueta> <span className="small text-muted">{dataHora(w.minha.entregueEm)}</span></div>}
         {w.fase === 'submissao' ? (
           <form onSubmit={entregar} className="p-formulario">
-            <textarea className="form-control" rows={6} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escreva aqui o trabalho (ou junte um ficheiro)" aria-label="Texto do trabalho" />
-            {w.minha?.ficheiro && !ficheiros.length && <div className="small">Ficheiro entregue: <Ficheiro f={w.minha.ficheiro} /></div>}
-            <ZonaUpload id={`ws-${w.id}`} ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} nota="Um ficheiro (opcional): PDF, Word, imagens…" />
-            <div><button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? 'A enviar…' : w.minha ? 'Substituir a entrega' : 'Entregar'}</button></div>
+            <textarea className="form-control" rows={6} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={tx('Escreva aqui o trabalho (ou junte um ficheiro)')} aria-label={tx('Texto do trabalho')} />
+            {w.minha?.ficheiro && !ficheiros.length && <div className="small">{tx('Ficheiro entregue:')} <Ficheiro f={w.minha.ficheiro} /></div>}
+            <ZonaUpload id={`ws-${w.id}`} ficheiros={ficheiros} aoMudar={setFicheiros} desativado={aEnviar} nota={tx('Um ficheiro (opcional): PDF, Word, imagens…')} />
+            <div><button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? tx('A enviar…') : w.minha ? tx('Substituir a entrega') : tx('Entregar')}</button></div>
           </form>
         ) : w.minha ? (
           <>{w.minha.texto && <div className="p-texto-entregue">{w.minha.texto}</div>}<Ficheiro f={w.minha.ficheiro} /></>
-        ) : <div className="alert alert-secondary mb-0">Não entregou a tempo, por isso não participa na avaliação.</div>}
+        ) : <div className="alert alert-secondary mb-0">{tx('Não entregou a tempo, por isso não participa na avaliação.')}</div>}
       </Cartao>
 
       {w.fase !== 'submissao' && w.avaliacoes.length > 0 && (
-        <Cartao titulo={<><i className="fa fa-clipboard-check me-2" />Trabalhos para avaliar ({w.avaliacoes.filter((a) => a.feitaEm).length} de {w.avaliacoes.length})</>} corpo={false}>
+        <Cartao titulo={<><i className="fa fa-clipboard-check me-2" />{tx('Trabalhos para avaliar (')}{w.avaliacoes.filter((a) => a.feitaEm).length} {tx('de')} {w.avaliacoes.length})</>} corpo={false}>
           <div className="list-group list-group-flush">
             {w.avaliacoes.map((a, i) => <AvaliarPar key={a.id} a={a} n={i + 1} w={w} avisar={avisar} carregar={carregar} />)}
           </div>
@@ -108,16 +109,16 @@ function VistaEstudante({ w, avisar, carregar }) {
       )}
 
       {w.fase === 'encerrado' && w.minha && (
-        <Cartao titulo={<><i className="fa fa-star me-2" />Resultado</>}>
+        <Cartao titulo={<><i className="fa fa-star me-2" />{tx('Resultado')}</>}>
           <div className="d-flex align-items-center gap-3 mb-3">
             <div className="fs-24px fw-bold">{nota(w.nota)}</div>
-            <div className="small text-muted">valores · média das avaliações dos colegas{w.minha.notaFinal !== null ? ' (nota revista pelo docente)' : ''}</div>
+            <div className="small text-muted">{tx('valores · média das avaliações dos colegas')}{w.minha.notaFinal !== null ? tx(' (nota revista pelo docente)') : ''}</div>
           </div>
-          {w.minha.comentario && <div className="alert alert-info"><b>Comentário do docente:</b> {w.minha.comentario}</div>}
-          {w.recebidas.length === 0 && <div className="text-muted">Nenhum colega avaliou o seu trabalho.</div>}
+          {w.minha.comentario && <div className="alert alert-info"><b>{tx('Comentário do docente:')}</b> {w.minha.comentario}</div>}
+          {w.recebidas.length === 0 && <div className="text-muted">{tx('Nenhum colega avaliou o seu trabalho.')}</div>}
           {w.recebidas.map((r, i) => (
             <div key={i} className="border rounded p-3 mb-2">
-              <div className="d-flex justify-content-between mb-2"><b>Avaliação {i + 1}</b><span className="badge bg-success">{nota(r.nota)} valores</span></div>
+              <div className="d-flex justify-content-between mb-2"><b>{tx('Avaliação')} {i + 1}</b><span className="badge bg-success">{nota(r.nota)} {tx('valores')}</span></div>
               <TabelaGrelha grelha={w.grelha} pontos={r.pontos} />
               {r.comentario && <p className="p-texto-pre mb-0 mt-2">{r.comentario}</p>}
             </div>
@@ -138,7 +139,7 @@ function AvaliarPar({ a, n, w, avisar, carregar }) {
     setAGuardar(true)
     try {
       await api(`/avaliacoes-pares/${a.id}`, { metodo: 'PUT', corpo: { pontos, comentario } })
-      avisar({ texto: 'Avaliação guardada.' })
+      avisar({ texto: tx('Avaliação guardada.') })
       setAberto(false)
       carregar()
     } catch (e) {
@@ -150,17 +151,17 @@ function AvaliarPar({ a, n, w, avisar, carregar }) {
   return (
     <div className="list-group-item">
       <div className="d-flex align-items-center gap-2">
-        <b className="flex-grow-1">{a.submissao.estudante ? a.submissao.estudante.nome : `Trabalho ${n}`}</b>
-        {a.feitaEm ? <span className="badge bg-success">Avaliado · {nota(a.nota)}</span> : <span className="badge bg-warning text-dark">Por avaliar</span>}
-        <button type="button" className="btn btn-xs btn-white" onClick={() => setAberto(!aberto)}>{aberto ? 'Fechar' : editavel ? 'Avaliar' : 'Ver'}</button>
+        <b className="flex-grow-1">{a.submissao.estudante ? a.submissao.estudante.nome : tx('Trabalho {0}', { 0: n })}</b>
+        {a.feitaEm ? <span className="badge bg-success">{tx('Avaliado ·')} {nota(a.nota)}</span> : <span className="badge bg-warning text-dark">{tx('Por avaliar')}</span>}
+        <button type="button" className="btn btn-xs btn-white" onClick={() => setAberto(!aberto)}>{aberto ? tx('Fechar') : editavel ? tx('Avaliar') : tx('Ver')}</button>
       </div>
       {aberto && (
         <div className="mt-3">
           {a.submissao.texto && <div className="p-texto-entregue mb-2">{a.submissao.texto}</div>}
           <Ficheiro f={a.submissao.ficheiro} />
           <div className="mt-3"><TabelaGrelha grelha={w.grelha} pontos={pontos} editavel={editavel} aoMudar={setPontos} /></div>
-          <textarea className="form-control mt-2" rows={3} value={comentario} onChange={(e) => setComentario(e.target.value)} disabled={!editavel} placeholder="Comentário para o colega (o que está bem, o que melhorar)" aria-label={`Comentário do trabalho ${n}`} />
-          {editavel && <button type="button" className="btn btn-theme btn-sm mt-2" onClick={guardar} disabled={aGuardar}>{aGuardar ? 'A guardar…' : 'Guardar avaliação'}</button>}
+          <textarea className="form-control mt-2" rows={3} value={comentario} onChange={(e) => setComentario(e.target.value)} disabled={!editavel} placeholder={tx('Comentário para o colega (o que está bem, o que melhorar)')} aria-label={tx('Comentário do trabalho {0}', { 0: n })} />
+          {editavel && <button type="button" className="btn btn-theme btn-sm mt-2" onClick={guardar} disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar avaliação')}</button>}
         </div>
       )}
     </div>
@@ -173,19 +174,19 @@ function VistaDocente({ w, avisar, carregar }) {
   const total = w.submissoes.reduce((s, x) => s + x.avaliacoes.length, 0)
   return (
     <Cartao
-      titulo={<><i className="fa fa-inbox me-2" />Entregas e avaliações</>}
-      acoes={<span className="text-white small">{w.submissoes.length} de {w.totalEstudantes} entregaram{total ? ` · ${feitas}/${total} avaliações feitas` : ''}</span>}
+      titulo={<><i className="fa fa-inbox me-2" />{tx('Entregas e avaliações')}</>}
+      acoes={<span className="text-white small">{w.submissoes.length} {tx('de')} {w.totalEstudantes} {tx('entregaram')}{total ? tx(' · {0}/{1} avaliações feitas', { 0: feitas, 1: total }) : ''}</span>}
       corpo={false}
     >
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0">
-          <thead><tr><th>Estudante</th><th>Entrega</th><th className="text-center">Avaliações</th><th className="text-center">Média dos pares</th><th className="text-center">Nota</th><th /></tr></thead>
+          <thead><tr><th>{tx('Estudante')}</th><th>{tx('Entrega')}</th><th className="text-center">{tx('Avaliações')}</th><th className="text-center">{tx('Média dos pares')}</th><th className="text-center">{tx('Nota')}</th><th /></tr></thead>
           <tbody>
             {w.submissoes.map((s) => (
               <LinhaSubmissao key={s.id} s={s} w={w} aberta={aberta === s.id} alternar={() => setAberta(aberta === s.id ? null : s.id)} avisar={avisar} carregar={carregar} />
             ))}
             {w.semEntrega.map((e) => (
-              <tr key={`sem-${e.id}`} className="text-muted"><td>{e.nome}<div className="small">{e.numero}</div></td><td colSpan={5}>Não entregou{w.fase !== 'submissao' && ' (fica com 0 na pauta)'}</td></tr>
+              <tr key={`sem-${e.id}`} className="text-muted"><td>{e.nome}<div className="small">{e.numero}</div></td><td colSpan={5}>{tx('Não entregou')}{w.fase !== 'submissao' && tx(' (fica com 0 na pauta)')}</td></tr>
             ))}
           </tbody>
         </table>
@@ -200,7 +201,7 @@ function LinhaSubmissao({ s, w, aberta, alternar, avisar, carregar }) {
   async function guardar() {
     try {
       await api(`/submissoes-workshop/${s.id}`, { metodo: 'PUT', corpo: { nota: notaFinal === '' ? null : notaFinal, comentario } })
-      avisar({ texto: 'Nota guardada.' })
+      avisar({ texto: tx('Nota guardada.') })
       carregar()
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
@@ -213,31 +214,31 @@ function LinhaSubmissao({ s, w, aberta, alternar, avisar, carregar }) {
         <td className="small">{dataHora(s.entregueEm)}</td>
         <td className="text-center">{s.avaliacoes.filter((a) => a.feitaEm).length} / {s.avaliacoes.length}</td>
         <td className="text-center">{nota(s.notaPares)}</td>
-        <td className="text-center fw-bold">{nota(s.nota)}{s.notaFinal !== null && <i className="fa fa-user-edit text-muted ms-1" title="Nota dada pelo docente" />}</td>
-        <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{aberta ? 'Fechar' : 'Ver'}</button></td>
+        <td className="text-center fw-bold">{nota(s.nota)}{s.notaFinal !== null && <i className="fa fa-user-edit text-muted ms-1" title={tx('Nota dada pelo docente')} />}</td>
+        <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{aberta ? tx('Fechar') : tx('Ver')}</button></td>
       </tr>
       {aberta && (
         <tr>
           <td colSpan={6} className="bg-light">
             <div className="row g-3 py-2">
               <div className="col-lg-6">
-                <h4 className="h6 fw-bold">Trabalho</h4>
+                <h4 className="h6 fw-bold">{tx('Trabalho')}</h4>
                 {s.texto && <div className="p-texto-entregue mb-2">{s.texto}</div>}
                 <Ficheiro f={s.ficheiro} />
-                <h4 className="h6 fw-bold mt-3">Nota do docente</h4>
+                <h4 className="h6 fw-bold mt-3">{tx('Nota do docente')}</h4>
                 <div className="d-flex gap-2 align-items-center">
-                  <input className="form-control form-control-sm p-nota" inputMode="decimal" value={notaFinal} onChange={(e) => setNotaFinal(e.target.value)} placeholder={nota(s.notaPares)} aria-label={`Nota final de ${s.estudante.nome}`} />
-                  <span className="small text-muted">vazio = média dos pares</span>
+                  <input className="form-control form-control-sm p-nota" inputMode="decimal" value={notaFinal} onChange={(e) => setNotaFinal(e.target.value)} placeholder={nota(s.notaPares)} aria-label={tx('Nota final de {0}', { 0: s.estudante.nome })} />
+                  <span className="small text-muted">{tx('vazio = média dos pares')}</span>
                 </div>
-                <textarea className="form-control mt-2" rows={2} value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Comentário para o estudante" aria-label={`Comentário para ${s.estudante.nome}`} />
-                <button type="button" className="btn btn-theme btn-sm mt-2" onClick={guardar}>Guardar</button>
+                <textarea className="form-control mt-2" rows={2} value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder={tx('Comentário para o estudante')} aria-label={tx('Comentário para {0}', { 0: s.estudante.nome })} />
+                <button type="button" className="btn btn-theme btn-sm mt-2" onClick={guardar}>{tx('Guardar')}</button>
               </div>
               <div className="col-lg-6">
-                <h4 className="h6 fw-bold">Avaliações dos colegas</h4>
-                {s.avaliacoes.length === 0 && <div className="small text-muted">{w.fase === 'submissao' ? 'Distribuem-se quando terminar a entrega.' : 'Sem avaliações atribuídas.'}</div>}
+                <h4 className="h6 fw-bold">{tx('Avaliações dos colegas')}</h4>
+                {s.avaliacoes.length === 0 && <div className="small text-muted">{w.fase === 'submissao' ? tx('Distribuem-se quando terminar a entrega.') : tx('Sem avaliações atribuídas.')}</div>}
                 {s.avaliacoes.map((a) => (
                   <div key={a.id} className="border rounded p-2 mb-2 bg-white small">
-                    <div className="d-flex justify-content-between"><b>{a.avaliador.nome}</b>{a.feitaEm ? <span className="badge bg-success">{nota(a.nota)}</span> : <span className="badge bg-warning text-dark">Por fazer</span>}</div>
+                    <div className="d-flex justify-content-between"><b>{a.avaliador.nome}</b>{a.feitaEm ? <span className="badge bg-success">{nota(a.nota)}</span> : <span className="badge bg-warning text-dark">{tx('Por fazer')}</span>}</div>
                     {a.comentario && <div className="p-texto-pre mt-1">{a.comentario}</div>}
                   </div>
                 ))}

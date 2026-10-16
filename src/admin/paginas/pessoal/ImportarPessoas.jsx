@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { api } from '../../api'
 import { lerFolha } from '../academico/lerFolha'
+import { t as tx } from '../../../i18n/linguas'
 
 const ACOES = {
-  registar: ['bg-success', 'Registar'],
-  registado: ['bg-success', 'Registado'],
-  ja_registado: ['bg-gray-500', 'Já registado'],
-  erro: ['bg-danger', 'Erro'],
+  registar: ['bg-success', tx('Registar')],
+  registado: ['bg-success', tx('Registado')],
+  ja_registado: ['bg-gray-500', tx('Já registado')],
+  erro: ['bg-danger', tx('Erro')],
 }
-const NOMES = { nome: 'Nome', email: 'E-mail', posto: 'Posto', ramo: 'Ramo', nip: 'NIP', telefone: 'Telefone' }
+const NOMES = { nome: 'Nome', email: 'E-mail', posto: tx('Posto'), ramo: tx('Ramo'), nip: 'NIP', telefone: tx('Telefone') }
 
 /*
   Registar estudantes ou docentes de uma folha Excel (.xlsx) ou CSV (Pessoal e Quadros): lê no navegador,
@@ -32,8 +33,8 @@ function ImportarPessoas({ fechar, concluido }) {
     try {
       const f = await lerFolha(ficheiro)
       setFolha({ nome: ficheiro.name, ...f })
-      if (f.faltam.length) throw new Error(`A folha precisa das colunas: ${f.faltam.map((k) => NOMES[k]).join(' e ')} (na primeira linha).`)
-      if (!f.linhas.length) throw new Error('A folha não tem estudantes por baixo do cabeçalho.')
+      if (f.faltam.length) throw new Error(tx('A folha precisa das colunas: {0} (na primeira linha).', { 0: f.faltam.map((k) => NOMES[k]).join(' e ') }))
+      if (!f.linhas.length) throw new Error(tx('A folha não tem estudantes por baixo do cabeçalho.'))
       setPrevia(await api('/academico/contas/importar', { metodo: 'POST', corpo: { tipo, linhas: f.linhas, simular: true } }))
     } catch (e) {
       setErro(e.message)
@@ -63,29 +64,28 @@ function ImportarPessoas({ fechar, concluido }) {
         <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />Registar a partir de uma folha</h4>
-              <button type="button" className="btn-close" onClick={fechar} disabled={aTrabalhar} aria-label="Fechar" />
+              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />{tx('Registar a partir de uma folha')}</h4>
+              <button type="button" className="btn-close" onClick={fechar} disabled={aTrabalhar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">
               <p className="text-muted small mb-2">
-                Excel (.xlsx) ou CSV com uma linha de cabeçalho. Colunas obrigatórias: <b>Nome</b> e <b>E-mail</b> (da Escola); opcionais: Posto, Ramo, NIP, Telefone.
-                Cada pessoa nova recebe a conta do portal (a palavra-passe inicial é o e-mail); quem já está registado não se repete.
+                {tx('Excel (.xlsx) ou CSV com uma linha de cabeçalho. Colunas obrigatórias:')} <b>{tx('Nome')}</b> {tx('e')} <b>{tx('E-mail')}</b> {tx('(da Escola); opcionais: Posto, Ramo, NIP, Telefone. Cada pessoa nova recebe a conta do portal (a palavra-passe inicial é o e-mail); quem já está registado não se repete.')}
               </p>
               {!feito && (
-                <div className="btn-group mb-2" role="group" aria-label="Tipo de pessoa">
-                  {[['estudante', 'Estudantes'], ['docente', 'Docentes']].map(([k, t]) => <button key={k} type="button" className={`btn btn-sm ${tipo === k ? 'btn-theme' : 'btn-white'}`} onClick={() => { setTipo(k); setPrevia(null); setFolha(null) }}>{t}</button>)}
+                <div className="btn-group mb-2" role="group" aria-label={tx('Tipo de pessoa')}>
+                  {[['estudante', tx('Estudantes')], ['docente', tx('Docentes')]].map(([k, t]) => <button key={k} type="button" className={`btn btn-sm ${tipo === k ? 'btn-theme' : 'btn-white'}`} onClick={() => { setTipo(k); setPrevia(null); setFolha(null) }}>{t}</button>)}
                 </div>
               )}
               {!feito && (
                 <label className="d-block border border-2 border-dashed rounded p-4 text-center" style={{ cursor: 'pointer' }}>
                   <span className="d-block mb-2"><i className="fa fa-cloud-upload-alt fa-2x text-muted" /></span>
-                  <span className="fw-bold">{folha ? folha.nome : 'Escolher a folha'}</span>
-                  <input type="file" accept=".xlsx,.csv,.txt" className="d-none" onChange={(e) => escolher(e.target.files[0])} disabled={aTrabalhar} aria-label="Folha de estudantes" />
+                  <span className="fw-bold">{folha ? folha.nome : tx('Escolher a folha')}</span>
+                  <input type="file" accept=".xlsx,.csv,.txt" className="d-none" onChange={(e) => escolher(e.target.files[0])} disabled={aTrabalhar} aria-label={tx('Folha de estudantes')} />
                 </label>
               )}
-              {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />A tratar a folha…</p>}
+              {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />{tx('A tratar a folha…')}</p>}
               {erro && <div className="alert alert-danger mt-3 mb-0">{erro}</div>}
-              {feito && <div className="alert alert-success">Registo concluído: {feito.resumo.registar} pessoa(s) registada(s){feito.resumo.ja_registado ? `, ${feito.resumo.ja_registado} já estava(m) registada(s)` : ''}{feito.resumo.erro ? `, ${feito.resumo.erro} linha(s) com erro` : ''}.</div>}
+              {feito && <div className="alert alert-success">{tx('Registo concluído:')} {feito.resumo.registar} {tx('pessoa(s) registada(s)')}{feito.resumo.ja_registado ? tx(', {0} já estava(m) registada(s)', { 0: feito.resumo.ja_registado }) : ''}{feito.resumo.erro ? tx(', {0} linha(s) com erro', { 0: feito.resumo.erro }) : ''}.</div>}
               {previa && (
                 <>
                   <div className="d-flex flex-wrap gap-2 my-3">
@@ -93,7 +93,7 @@ function ImportarPessoas({ fechar, concluido }) {
                   </div>
                   <div className="table-responsive">
                     <table className="table table-sm table-striped align-middle mb-0">
-                      <thead><tr><th>Linha</th><th>Nome</th><th>E-mail</th><th>Resultado</th></tr></thead>
+                      <thead><tr><th>{tx('Linha')}</th><th>{tx('Nome')}</th><th>{tx('E-mail')}</th><th>{tx('Resultado')}</th></tr></thead>
                       <tbody>
                         {previa.linhas.map((l) => (
                           <tr key={l.linha} className={l.acao === 'erro' ? 'text-danger' : ''}>
@@ -110,8 +110,8 @@ function ImportarPessoas({ fechar, concluido }) {
               )}
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={fechar} disabled={aTrabalhar}>{feito ? 'Fechar' : 'Cancelar'}</button>
-              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? `Registar ${aGravar} ${tipo === 'docente' ? 'docente(s)' : 'estudante(s)'}` : 'Registar'}</button>}
+              <button type="button" className="btn btn-white" onClick={fechar} disabled={aTrabalhar}>{feito ? tx('Fechar') : tx('Cancelar')}</button>
+              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? tx('Registar {0} {1}', { 0: aGravar, 1: tipo === 'docente' ? 'docente(s)' : 'estudante(s)' }) : tx('Registar')}</button>}
             </div>
           </div>
         </div>

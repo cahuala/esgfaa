@@ -1,6 +1,7 @@
 import { Children, cloneElement, isValidElement, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { textoBloqueio } from './formatar'
+import { t as tx } from '../i18n/linguas'
 
 // peças comuns do portal, no markup do Color Admin (o mesmo tema do painel)
 
@@ -10,7 +11,7 @@ export function Titulo({ rotulo, titulo, sub, migalhas = [], children }) {
     <div className="d-flex align-items-start flex-wrap gap-2 mb-3">
       <div className="flex-grow-1 min-w-0">
         <ol className="breadcrumb mb-1">
-          <li className="breadcrumb-item"><Link to="/">Portal</Link></li>
+          <li className="breadcrumb-item"><Link to="/">{tx('Portal')}</Link></li>
           {rotulo && !migalhas.length && <li className="breadcrumb-item active">{rotulo}</li>}
           {migalhas.map((m) => (
             <li key={m.rotulo} className={`breadcrumb-item ${m.para ? '' : 'active'}`}>{m.para ? <Link to={m.para}>{m.rotulo}</Link> : m.rotulo}</li>
@@ -51,7 +52,7 @@ export function Widget({ cor = 'bg-dark', icone, titulo, valor, nota, para }) {
   )
 }
 
-export function Carregando({ texto = 'A carregar…' }) {
+export function Carregando({ texto = tx('A carregar…') }) {
   return <div className="d-flex align-items-center gap-2 text-muted py-3"><span className="spinner-border spinner-border-sm" /> {texto}</div>
 }
 
@@ -59,7 +60,7 @@ export function Erro({ texto, onRepetir }) {
   return (
     <div className="alert alert-danger d-flex align-items-center gap-2 flex-wrap" role="alert">
       <i className="fa fa-exclamation-circle" /> <span className="flex-grow-1">{texto}</span>
-      {onRepetir && <button type="button" className="btn btn-sm btn-white" onClick={onRepetir}>Tentar de novo</button>}
+      {onRepetir && <button type="button" className="btn btn-sm btn-white" onClick={onRepetir}>{tx('Tentar de novo')}</button>}
     </div>
   )
 }
@@ -81,7 +82,7 @@ export function Aviso({ aviso, onFechar }) {
       <div className={`alert ${aviso.tipo === 'erro' ? 'alert-danger' : 'alert-success'} d-flex align-items-center shadow mb-0`} role="status">
         <i className={`fa ${aviso.tipo === 'erro' ? 'fa-exclamation-circle' : 'fa-check-circle'} fa-lg me-2`} />
         <span className="flex-grow-1">{aviso.texto}</span>
-        <button type="button" className="btn-close ms-3" onClick={onFechar} aria-label="Fechar" />
+        <button type="button" className="btn-close ms-3" onClick={onFechar} aria-label={tx('Fechar')} />
       </div>
     </div>
   )
@@ -116,7 +117,7 @@ export function Bloqueio({ motivos, compacto = false }) {
   return (
     <div className="alert alert-secondary d-flex gap-2 mb-0" role="status">
       <i className="fa fa-lock mt-1" />
-      <div><b>Ainda não disponível.</b><ul className="mb-0 ps-3">{motivos.map((m, i) => <li key={i}>{textoBloqueio(m)}</li>)}</ul></div>
+      <div><b>{tx('Ainda não disponível.')}</b><ul className="mb-0 ps-3">{motivos.map((m, i) => <li key={i}>{textoBloqueio(m)}</li>)}</ul></div>
     </div>
   )
 }

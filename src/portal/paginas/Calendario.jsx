@@ -3,22 +3,23 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { API_URL } from '../../conteudo/api'
 import { Cartao, Carregando, Erro, Titulo, Vazio } from '../componentes'
-import { data as dataLonga, maiusculaInicial } from '../formatar'
+import { data as dataLonga, maiusculaInicial, tituloAgenda } from '../formatar'
 import { confirmar } from '../dialogos'
+import { t as tx, localAtual } from '../../i18n/linguas'
 
 const TIPOS = {
-  aula: ['bg-gray-500', 'Aula'],
-  prazo: ['bg-orange', 'Entrega de trabalho'],
-  questionario: ['bg-purple', 'Questionário'],
-  sessao: ['bg-success', 'Videoconferência'],
-  p1: ['bg-yellow text-dark', '1.ª Prova'],
-  p2: ['bg-yellow text-dark', '2.ª Prova'],
-  exame: ['bg-red', 'Exame'],
-  recurso: ['bg-dark', 'Recurso'],
-  geral: ['bg-blue', 'Evento'],
-  feriado: ['bg-teal', 'Feriado / sem aulas'],
+  aula: ['bg-gray-500', tx('Aula')],
+  prazo: ['bg-orange', tx('Entrega de trabalho')],
+  questionario: ['bg-purple', tx('Questionário')],
+  sessao: ['bg-success', tx('Videoconferência')],
+  p1: ['bg-yellow text-dark', tx('1.ª Prova')],
+  p2: ['bg-yellow text-dark', tx('2.ª Prova')],
+  exame: ['bg-red', tx('Exame')],
+  recurso: ['bg-dark', tx('Recurso')],
+  geral: ['bg-blue', tx('Evento')],
+  feriado: ['bg-teal', tx('Feriado / sem aulas')],
 }
-const SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+const SEMANA = [tx('Seg'), tx('Ter'), tx('Qua'), tx('Qui'), tx('Sex'), tx('Sáb'), tx('Dom')]
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 // grelha de 6 semanas (segunda a domingo) que contém o mês
@@ -37,20 +38,20 @@ function Assinar() {
   useEffect(() => { api('/eu/calendario-ical').then((r) => setToken(r.token)).catch((e) => setErro(e.message)) }, [])
   const url = token ? `${API_URL}/api/publico/calendario/${token}.ics` : ''
   const copiar = () => navigator.clipboard?.writeText(url).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2000) })
-  const renovar = async () => (await confirmar('Criar um endereço novo? O antigo deixa de funcionar nos aparelhos onde o assinou.', { titulo: 'Novo endereço', botao: 'Criar endereço novo', perigo: true }))
+  const renovar = async () => (await confirmar(tx('Criar um endereço novo? O antigo deixa de funcionar nos aparelhos onde o assinou.'), { titulo: tx('Novo endereço'), botao: tx('Criar endereço novo'), perigo: true }))
     && api('/eu/calendario-ical', { metodo: 'POST' }).then((r) => setToken(r.token)).catch((e) => setErro(e.message))
   return (
-    <Cartao titulo={<><i className="fa fa-mobile-alt me-2" />Assinar o calendário</>}>
+    <Cartao titulo={<><i className="fa fa-mobile-alt me-2" />{tx('Assinar o calendário')}</>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
-      <p className="mb-2">Copie este endereço e junte-o como <b>calendário por URL / assinatura</b> no Google Calendar, Outlook ou no calendário do telemóvel. As aulas, provas, entregas e videoconferências aparecem lá e atualizam-se sozinhas (algumas horas de atraso).</p>
+      <p className="mb-2">{tx('Copie este endereço e junte-o como')} <b>{tx('calendário por URL / assinatura')}</b> {tx('no Google Calendar, Outlook ou no calendário do telemóvel. As aulas, provas, entregas e videoconferências aparecem lá e atualizam-se sozinhas (algumas horas de atraso).')}</p>
       <div className="input-group mb-2">
-        <input className="form-control font-monospace small" value={url} readOnly aria-label="Endereço do calendário" onFocus={(e) => e.target.select()} />
-        <button type="button" className="btn btn-theme" onClick={copiar} disabled={!token}>{copiado ? 'Copiado' : 'Copiar'}</button>
+        <input className="form-control font-monospace small" value={url} readOnly aria-label={tx('Endereço do calendário')} onFocus={(e) => e.target.select()} />
+        <button type="button" className="btn btn-theme" onClick={copiar} disabled={!token}>{copiado ? tx('Copiado') : tx('Copiar')}</button>
       </div>
       <div className="d-flex flex-wrap gap-2 align-items-center">
-        {token && <a className="btn btn-sm btn-white" href={url.replace(/^https?:/, 'webcal:')}><i className="fa fa-calendar-plus me-1" />Abrir no calendário deste aparelho</a>}
-        <button type="button" className="btn btn-sm btn-white text-danger" onClick={renovar} disabled={!token}><i className="fa fa-sync me-1" />Criar endereço novo</button>
-        <span className="small text-muted">O endereço é pessoal: quem o tiver vê o seu calendário.</span>
+        {token && <a className="btn btn-sm btn-white" href={url.replace(/^https?:/, 'webcal:')}><i className="fa fa-calendar-plus me-1" />{tx('Abrir no calendário deste aparelho')}</a>}
+        <button type="button" className="btn btn-sm btn-white text-danger" onClick={renovar} disabled={!token}><i className="fa fa-sync me-1" />{tx('Criar endereço novo')}</button>
+        <span className="small text-muted">{tx('O endereço é pessoal: quem o tiver vê o seu calendário.')}</span>
       </div>
     </Cartao>
   )
@@ -75,17 +76,17 @@ function Calendario() {
   }, [dias])
 
   // prazos e questionários trazem o momento exato: dia e hora no fuso de quem vê
-  const locais = (itens || []).map((i) => (i.momento ? { ...i, data: iso(new Date(i.momento)), inicio: new Date(i.momento).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) } : i))
+  const locais = (itens || []).map((i) => (i.momento ? { ...i, data: iso(new Date(i.momento)), inicio: new Date(i.momento).toLocaleTimeString(localAtual(), { hour: '2-digit', minute: '2-digit' }) } : i))
   const visiveis = locais.filter((i) => comAulas || i.tipo !== 'aula')
   const porDia = visiveis.reduce((m, i) => ((m[i.data] ||= []).push(i), m), {})
   const mover = (n) => setMes(({ ano, mes: m }) => { const d = new Date(ano, m + n, 1); return { ano: d.getFullYear(), mes: d.getMonth() } })
-  const titulo = maiusculaInicial(new Date(mes.ano, mes.mes, 1).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }))
+  const titulo = maiusculaInicial(new Date(mes.ano, mes.mes, 1).toLocaleDateString(localAtual(), { month: 'long', year: 'numeric' }))
   const proximos = visiveis.filter((i) => i.data >= hoje && i.tipo !== 'aula').slice(0, 8)
 
   return (
     <>
-      <Titulo rotulo="Calendário" titulo="Calendário académico" sub="aulas, provas, exames, entregas e eventos">
-        <button type="button" className="btn btn-white" onClick={() => setAssinar(!assinar)}><i className="fa fa-mobile-alt me-1" />Ver no telemóvel ou Outlook</button>
+      <Titulo rotulo={tx('Calendário')} titulo={tx('Calendário académico')} sub={tx('aulas, provas, exames, entregas e eventos')}>
+        <button type="button" className="btn btn-white" onClick={() => setAssinar(!assinar)}><i className="fa fa-mobile-alt me-1" />{tx('Ver no telemóvel ou Outlook')}</button>
       </Titulo>
       {assinar && <Assinar />}
       {erro && <Erro texto={erro} />}
@@ -95,9 +96,9 @@ function Calendario() {
             titulo={<><i className="fa fa-calendar-alt me-2" />{titulo}</>}
             acoes={(
               <div className="d-flex gap-1">
-                <button type="button" className="btn btn-xs btn-white" onClick={() => mover(-1)} aria-label="Mês anterior"><i className="fa fa-chevron-left" /></button>
-                <button type="button" className="btn btn-xs btn-white" onClick={() => { const d = new Date(); setMes({ ano: d.getFullYear(), mes: d.getMonth() }); setDia(hoje) }}>Hoje</button>
-                <button type="button" className="btn btn-xs btn-white" onClick={() => mover(1)} aria-label="Mês seguinte"><i className="fa fa-chevron-right" /></button>
+                <button type="button" className="btn btn-xs btn-white" onClick={() => mover(-1)} aria-label={tx('Mês anterior')}><i className="fa fa-chevron-left" /></button>
+                <button type="button" className="btn btn-xs btn-white" onClick={() => { const d = new Date(); setMes({ ano: d.getFullYear(), mes: d.getMonth() }); setDia(hoje) }}>{tx('Hoje')}</button>
+                <button type="button" className="btn btn-xs btn-white" onClick={() => mover(1)} aria-label={tx('Mês seguinte')}><i className="fa fa-chevron-right" /></button>
               </div>
             )}
             corpo={false}
@@ -120,7 +121,7 @@ function Calendario() {
                     >
                       <span className="p-cal-numero">{d.getDate()}</span>
                       {lista.slice(0, 3).map((i) => (
-                        <span key={i.id} className={`p-cal-item badge ${TIPOS[i.tipo]?.[0] || 'bg-primary'}`}>{i.inicio && i.tipo !== 'feriado' ? `${i.inicio} ` : ''}{i.titulo}</span>
+                        <span key={i.id} className={`p-cal-item badge ${TIPOS[i.tipo]?.[0] || 'bg-primary'}`}>{i.inicio && i.tipo !== 'feriado' ? `${i.inicio} ` : ''}{tituloAgenda(i.titulo)}</span>
                       ))}
                       {lista.length > 3 && <span className="p-cal-mais">+{lista.length - 3}</span>}
                     </button>
@@ -133,16 +134,16 @@ function Calendario() {
             {Object.entries(TIPOS).map(([k, [cor, nome]]) => <span key={k} className={`badge ${cor}`}>{nome}</span>)}
             <label className="form-check form-switch ms-auto mb-0">
               <input className="form-check-input" type="checkbox" checked={comAulas} onChange={(e) => setComAulas(e.target.checked)} />
-              <span className="form-check-label">Mostrar as aulas</span>
+              <span className="form-check-label">{tx('Mostrar as aulas')}</span>
             </label>
           </div>
         </div>
         <div className="col-xl-3">
-          <Cartao titulo={<><i className="fa fa-calendar-day me-2" />{maiusculaInicial(new Date(`${dia}T12:00:00`).toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' }))}</>} corpo={false}>
-            {!(porDia[dia] || []).length ? <div className="panel-body"><Vazio>Nada marcado.</Vazio></div> : <ListaEventos itens={porDia[dia]} />}
+          <Cartao titulo={<><i className="fa fa-calendar-day me-2" />{maiusculaInicial(new Date(`${dia}T12:00:00`).toLocaleDateString(localAtual(), { weekday: 'long', day: 'numeric', month: 'long' }))}</>} corpo={false}>
+            {!(porDia[dia] || []).length ? <div className="panel-body"><Vazio>{tx('Nada marcado.')}</Vazio></div> : <ListaEventos itens={porDia[dia]} />}
           </Cartao>
-          <Cartao titulo={<><i className="fa fa-flag me-2" />Próximas datas</>} corpo={false}>
-            {!proximos.length ? <div className="panel-body"><Vazio>Nada nas próximas semanas.</Vazio></div> : <ListaEventos itens={proximos} comData />}
+          <Cartao titulo={<><i className="fa fa-flag me-2" />{tx('Próximas datas')}</>} corpo={false}>
+            {!proximos.length ? <div className="panel-body"><Vazio>{tx('Nada nas próximas semanas.')}</Vazio></div> : <ListaEventos itens={proximos} comData />}
           </Cartao>
         </div>
       </div>
@@ -156,7 +157,7 @@ function ListaEventos({ itens, comData }) {
       {itens.map((i) => (
         <div key={i.id} className="list-group-item">
           <span className={`badge ${TIPOS[i.tipo]?.[0] || 'bg-primary'} me-1`}>{TIPOS[i.tipo]?.[1] || i.tipo}</span>
-          <div className="fw-bold mt-1">{i.cadeiraId ? <Link to={`/cadeiras/${i.cadeiraId}`} className="text-decoration-none">{i.titulo}</Link> : i.titulo}</div>
+          <div className="fw-bold mt-1">{i.cadeiraId ? <Link to={`/cadeiras/${i.cadeiraId}`} className="text-decoration-none">{tituloAgenda(i.titulo)}</Link> : tituloAgenda(i.titulo)}</div>
           <div className="small text-muted">
             {comData && `${dataLonga(i.data)} · `}{i.inicio}{i.fim && `–${i.fim}`}{i.local && ` · ${i.local}`}
             {i.cadeira && i.tipo !== 'aula' && <div>{i.cadeira}</div>}

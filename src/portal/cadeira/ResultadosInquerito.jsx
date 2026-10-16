@@ -1,5 +1,6 @@
 import { nota } from '../formatar'
 import { ESCALA } from './escala'
+import { t as tx } from '../../i18n/linguas'
 
 // do vermelho (discordo totalmente) ao verde (concordo totalmente)
 const CORES = ['#d9534f', '#f0ad4e', '#adb5bd', '#5cb85c', '#2e7d32']
@@ -7,10 +8,10 @@ const CORES = ['#d9534f', '#f0ad4e', '#adb5bd', '#5cb85c', '#2e7d32']
 // resultados agregados de um inquérito (portal e painel)
 function ResultadosInquerito({ resultados, media }) {
   if (!resultados) return null
-  if (resultados.total === 0) return <div className="text-muted">Ainda ninguém respondeu.</div>
+  if (resultados.total === 0) return <div className="text-muted">{tx('Ainda ninguém respondeu.')}</div>
   return (
     <div className="d-flex flex-column gap-4">
-      <div className="small text-muted">{resultados.total} resposta(s){media !== undefined && media !== null ? <> · média global <b className="text-body">{nota(media)}</b> em 5</> : null}</div>
+      <div className="small text-muted">{resultados.total} {tx('resposta(s)')}{media !== undefined && media !== null ? <> {tx('· média global')} <b className="text-body">{nota(media)}</b> {tx('em 5')}</> : null}</div>
       {resultados.perguntas.map((p, i) => (
         <div key={i}>
           <div className="fw-bold mb-2">{p.texto}</div>
@@ -30,11 +31,11 @@ function ResultadosInquerito({ resultados, media }) {
                     return n ? <div key={j} className="progress-bar" style={{ width: `${(n / total) * 100}%`, background: CORES[j] }} title={`${ESCALA[j]}: ${n}`}>{n}</div> : null
                   })}
                 </div>
-                <div className="d-flex justify-content-between small text-muted mt-1"><span>Discordo totalmente</span><span>Concordo totalmente</span></div>
+                <div className="d-flex justify-content-between small text-muted mt-1"><span>{tx('Discordo totalmente')}</span><span>{tx('Concordo totalmente')}</span></div>
               </div>
             </div>
           )}
-          {p.tipo === 'aberta' && (p.comentarios.length === 0 ? <div className="small text-muted">Sem comentários.</div> : (
+          {p.tipo === 'aberta' && (p.comentarios.length === 0 ? <div className="small text-muted">{tx('Sem comentários.')}</div> : (
             <ul className="list-group">{p.comentarios.map((t, j) => <li key={j} className="list-group-item small p-texto-pre">{t}</li>)}</ul>
           ))}
         </div>

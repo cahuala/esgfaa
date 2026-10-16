@@ -2,12 +2,13 @@ import { useRef, useState } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import { carregar } from './carregar'
 import { TextoAuto } from './Elementos'
+import { t as tx } from '../../i18n/linguas'
 
 const POSICOES = [
-  ['esquerda', 'fa-align-left', 'Imagem à esquerda, com o texto à volta'],
-  ['centro', 'fa-align-center', 'Imagem ao centro, sem texto à volta'],
-  ['direita', 'fa-align-right', 'Imagem à direita, com o texto à volta'],
-  ['larga', 'fa-expand-alt', 'Imagem larga, sai da coluna do texto'],
+  ['esquerda', 'fa-align-left', tx('Imagem à esquerda, com o texto à volta')],
+  ['centro', 'fa-align-center', tx('Imagem ao centro, sem texto à volta')],
+  ['direita', 'fa-align-right', tx('Imagem à direita, com o texto à volta')],
+  ['larga', 'fa-expand-alt', tx('Imagem larga, sai da coluna do texto')],
 ]
 const TAMANHOS = [25, 33, 50, 75, 100]
 
@@ -96,32 +97,32 @@ export function VistaFigura({ node, updateAttributes, deleteNode, selected, exte
           ))}
           <span className="ed-sep" />
           {posicao !== 'larga' && TAMANHOS.map((t) => (
-            <button key={t} type="button" title={`Largura ${t}%`} className={`ed-tamanho ${Math.round(atual) === t ? 'ativo' : ''}`} onClick={() => updateAttributes({ largura: t === 100 ? null : t })}>{t}%</button>
+            <button key={t} type="button" title={tx('Largura {0}%', { 0: t })} className={`ed-tamanho ${Math.round(atual) === t ? 'ativo' : ''}`} onClick={() => updateAttributes({ largura: t === 100 ? null : t })}>{t}%</button>
           ))}
           {posicao !== 'larga' && <span className="ed-sep" />}
           <SeletorFicheiro aceitar="image/*" onFicheiros={async (f) => { const [url] = await enviar(f); if (url) updateAttributes({ src: url }) }}>
-            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`} title="Substituir imagem" />
+            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`} title={tx('Substituir imagem')} />
           </SeletorFicheiro>
-          <button type="button" title="Apagar imagem" className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
+          <button type="button" title={tx('Apagar imagem')} className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
         </div>
       )}
 
-      <div className="ed-figura-imagem" data-drag-handle="" title={editavel ? 'Arraste para mudar a imagem de sítio no texto' : undefined}>
+      <div className="ed-figura-imagem" data-drag-handle="" title={editavel ? tx('Arraste para mudar a imagem de sítio no texto') : undefined}>
         {src ? <img src={src} alt={legenda} draggable={false} /> : (
           <div className="ed-vazio">
             <i className="fa fa-image fa-2x" />
             <SeletorFicheiro className="btn btn-sm btn-white mt-2" aceitar="image/*" onFicheiros={async (f) => { const [url] = await enviar(f); if (url) updateAttributes({ src: url }) }}>
-              {aEnviar ? 'A carregar…' : 'Escolher imagem'}
+              {aEnviar ? tx('A carregar…') : tx('Escolher imagem')}
             </SeletorFicheiro>
           </div>
         )}
         {selected && editavel && posicao !== 'larga' && (
-          <span className={`ed-pega ${posicao === 'direita' ? 'ed-pega-esq' : ''}`} onMouseDown={redimensionar} title="Arraste para mudar o tamanho" />
+          <span className={`ed-pega ${posicao === 'direita' ? 'ed-pega-esq' : ''}`} onMouseDown={redimensionar} title={tx('Arraste para mudar o tamanho')} />
         )}
         {aRedimensionar && <span className="ed-medida">{aRedimensionar}%</span>}
       </div>
 
-      <TextoAuto className="ed-legenda" placeholder={editavel ? 'Escreva uma legenda…' : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
+      <TextoAuto className="ed-legenda" placeholder={editavel ? tx('Escreva uma legenda…') : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
     </NodeViewWrapper>
   )
 }
@@ -149,13 +150,13 @@ export function VistaGaleria({ node, updateAttributes, deleteNode, selected, ext
       {selected && editavel && (
         <div className="ed-barra-elemento" contentEditable={false}>
           <SeletorFicheiro aceitar="image/*" multiplos onFicheiros={acrescentar}>
-            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-plus'} me-1`} /> Fotografias
+            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-plus'} me-1`} /> {tx('Fotografias')}
           </SeletorFicheiro>
-          <button type="button" title="Apagar galeria" className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
+          <button type="button" title={tx('Apagar galeria')} className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
         </div>
       )}
-      <div className="ed-galeria-cabeca" data-drag-handle="" title="Arraste para mudar a galeria de sítio">
-        <i className="fa fa-grip-vertical me-2" /> Galeria · {imagens.length} {imagens.length === 1 ? 'fotografia' : 'fotografias'}
+      <div className="ed-galeria-cabeca" data-drag-handle="" title={tx('Arraste para mudar a galeria de sítio')}>
+        <i className="fa fa-grip-vertical me-2" /> {tx('Galeria ·')} {imagens.length} {imagens.length === 1 ? 'fotografia' : 'fotografias'}
       </div>
       <div className="ed-galeria-grelha" style={{ '--colunas': Math.min(3, Math.max(2, imagens.length)) }}>
         {imagens.map((img, i) => (
@@ -163,23 +164,23 @@ export function VistaGaleria({ node, updateAttributes, deleteNode, selected, ext
             <img src={img.src} alt="" draggable={false} />
             {editavel && (
               <div className="ed-galeria-acoes">
-                <button type="button" title="Para trás" onClick={() => mover(i, -1)}><i className="fa fa-arrow-left" /></button>
-                <button type="button" title="Para a frente" onClick={() => mover(i, 1)}><i className="fa fa-arrow-right" /></button>
-                <button type="button" title="Retirar" onClick={() => updateAttributes({ imagens: imagens.filter((_, j) => j !== i) })}><i className="fa fa-times" /></button>
+                <button type="button" title={tx('Para trás')} onClick={() => mover(i, -1)}><i className="fa fa-arrow-left" /></button>
+                <button type="button" title={tx('Para a frente')} onClick={() => mover(i, 1)}><i className="fa fa-arrow-right" /></button>
+                <button type="button" title={tx('Retirar')} onClick={() => updateAttributes({ imagens: imagens.filter((_, j) => j !== i) })}><i className="fa fa-times" /></button>
               </div>
             )}
-            <input className="ed-legenda ed-legenda-pequena" placeholder="Legenda" value={img.legenda || ''} readOnly={!editavel}
+            <input className="ed-legenda ed-legenda-pequena" placeholder={tx('Legenda')} value={img.legenda || ''} readOnly={!editavel}
               onChange={(e) => updateAttributes({ imagens: imagens.map((x, j) => (j === i ? { ...x, legenda: e.target.value } : x)) })} />
           </div>
         ))}
         {editavel && (
           <SeletorFicheiro className="ed-galeria-mais" aceitar="image/*" multiplos onFicheiros={acrescentar}>
             <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-plus'} fa-lg`} />
-            <span>{imagens.length ? 'Acrescentar' : 'Escolher fotografias'}</span>
+            <span>{imagens.length ? tx('Acrescentar') : tx('Escolher fotografias')}</span>
           </SeletorFicheiro>
         )}
       </div>
-      <TextoAuto className="ed-legenda" placeholder={editavel ? 'Legenda da galeria…' : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
+      <TextoAuto className="ed-legenda" placeholder={editavel ? tx('Legenda da galeria…') : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
     </NodeViewWrapper>
   )
 }
@@ -197,8 +198,8 @@ export function VistaVideo({ node, updateAttributes, deleteNode, selected, exten
     <NodeViewWrapper as="figure" className={`ed-video ${selected ? 'ed-selecionada' : ''}`}>
       {selected && editavel && tem && (
         <div className="ed-barra-elemento" contentEditable={false}>
-          <button type="button" title="Trocar vídeo" onClick={() => updateAttributes({ youtube: '', src: '' })}><i className="fa fa-sync-alt me-1" /> Trocar</button>
-          <button type="button" title="Apagar vídeo" className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
+          <button type="button" title={tx('Trocar vídeo')} onClick={() => updateAttributes({ youtube: '', src: '' })}><i className="fa fa-sync-alt me-1" /> {tx('Trocar')}</button>
+          <button type="button" title={tx('Apagar vídeo')} className="perigo" onClick={deleteNode}><i className="fa fa-trash-alt" /></button>
         </div>
       )}
       {tem ? (
@@ -213,7 +214,7 @@ export function VistaVideo({ node, updateAttributes, deleteNode, selected, exten
           <i className="fab fa-youtube fa-2x text-danger" />
           <input
             className="form-control"
-            placeholder="Cole o endereço do vídeo do YouTube e carregue Enter"
+            placeholder={tx('Cole o endereço do vídeo do YouTube e carregue Enter')}
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
             onKeyDown={(e) => {
@@ -221,19 +222,19 @@ export function VistaVideo({ node, updateAttributes, deleteNode, selected, exten
                 e.preventDefault()
                 const id = idYoutube(endereco)
                 if (id) updateAttributes({ youtube: id })
-                else extension.options.aoErro('Não reconheço esse endereço do YouTube.')
+                else extension.options.aoErro(tx('Não reconheço esse endereço do YouTube.'))
               }
             }}
           />
-          <button type="button" className="btn btn-sm btn-theme" onClick={() => { const id = idYoutube(endereco); if (id) updateAttributes({ youtube: id }); else extension.options.aoErro('Não reconheço esse endereço do YouTube.') }}>Inserir</button>
-          <span className="text-muted small">ou</span>
+          <button type="button" className="btn btn-sm btn-theme" onClick={() => { const id = idYoutube(endereco); if (id) updateAttributes({ youtube: id }); else extension.options.aoErro(tx('Não reconheço esse endereço do YouTube.')) }}>{tx('Inserir')}</button>
+          <span className="text-muted small">{tx('ou')}</span>
           <SeletorFicheiro className="btn btn-sm btn-white" aceitar="video/mp4,video/webm" onFicheiros={async (f) => { const [url] = await enviar(f); if (url) updateAttributes({ src: url }) }}>
-            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-upload'} me-1`} />Carregar MP4
+            <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : 'fa-upload'} me-1`} />{tx('Carregar MP4')}
           </SeletorFicheiro>
-          <button type="button" className="btn btn-sm btn-link text-danger" onClick={deleteNode} title="Cancelar">Cancelar</button>
+          <button type="button" className="btn btn-sm btn-link text-danger" onClick={deleteNode} title={tx('Cancelar')}>{tx('Cancelar')}</button>
         </div>
       )}
-      <TextoAuto className="ed-legenda" placeholder={editavel ? 'Legenda do vídeo…' : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
+      <TextoAuto className="ed-legenda" placeholder={editavel ? tx('Legenda do vídeo…') : ''} valor={legenda} onChange={(v) => editavel && updateAttributes({ legenda: v.replace(/\n/g, ' ') })} />
     </NodeViewWrapper>
   )
 }

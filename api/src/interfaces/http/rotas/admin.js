@@ -154,19 +154,6 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.use('/integridade', rotasIntegridade({ servicos, config, privados }))
   r.use('/traducoes', rotasTraducoes({ servicos }))
 
-  // ---------- candidaturas ----------
-
-  r.get('/candidaturas', validar({ query: E.filtrosCandidaturas }), async (req, res) => {
-    res.json(await servicos.candidaturas.listar(ctx(req), req.dados.query))
-  })
-
-  r.get('/candidaturas/:id', validar({ params: pNumero }), async (req, res) => {
-    res.json(await servicos.candidaturas.ler(ctx(req), req.dados.params.id))
-  })
-
-  r.put('/candidaturas/:id', validar({ params: pNumero, body: E.avaliacao }), async (req, res) => {
-    res.json(await servicos.candidaturas.avaliar(ctx(req), req.dados.params.id, req.dados.body))
-  })
 
   // ---------- papéis ----------
 

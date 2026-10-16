@@ -1,3 +1,4 @@
+import { t as tx, localAtual } from '../i18n/linguas'
 // datas e horas em português, a partir de ISO ("2026-10-13T10:00:00.000Z") ou "AAAA-MM-DD"
 
 const local = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(`${v}T12:00:00`) : new Date(v))
@@ -5,13 +6,13 @@ const local = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(`${v}T12:00
 export function data(v) {
   if (!v) return '—'
   const d = local(v)
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString(localAtual(), { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export function dataHora(v) {
   if (!v) return '—'
   const d = new Date(v)
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(localAtual(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 // "faltam 3 dias" / "termina hoje" / "terminou"
@@ -19,15 +20,15 @@ export function faltam(v, agora = new Date()) {
   const ms = new Date(v) - agora
   if (ms < 0) return 'terminou'
   const dias = Math.floor(ms / 86_400_000)
-  if (dias === 0) return `termina hoje às ${new Date(v).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}`
-  return dias === 1 ? 'falta 1 dia' : `faltam ${dias} dias`
+  if (dias === 0) return tx('termina hoje às {0}', { 0: new Date(v).toLocaleTimeString(localAtual(), { hour: '2-digit', minute: '2-digit' }) })
+  return dias === 1 ? tx('falta 1 dia') : tx('faltam {0} dias', { 0: dias })
 }
 
-export const DIAS = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+export const DIAS = ['', tx('Segunda'), tx('Terça'), tx('Quarta'), tx('Quinta'), tx('Sexta'), tx('Sábado')]
 
-export const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 }))
+export const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }))
 
-export const tamanho = (bytes) => (bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`)
+export const tamanho = (bytes) => (bytes > 1048576 ? tx('{0} MB', { 0: (bytes / 1048576).toFixed(1) }) : tx('{0} KB', { 0: Math.max(1, Math.round(bytes / 1024)) }))
 
 // valor de um <input type="datetime-local"> -> ISO (hora local)
 export const localParaIso = (v) => (v ? new Date(v).toISOString() : '')
@@ -53,11 +54,11 @@ export const iconeFicheiro = (tipo = '') => ICONES.find(([re]) => re.test(tipo))
 // "há 5 min", "há 2 h", "ontem", ou a data (notificações e mensagens)
 export function ha(v, agora = new Date()) {
   const s = Math.round((agora - new Date(v)) / 1000)
-  if (s < 60) return 'agora mesmo'
-  if (s < 3600) return `há ${Math.floor(s / 60)} min`
-  if (s < 86_400) return `há ${Math.floor(s / 3600)} h`
+  if (s < 60) return tx('agora mesmo')
+  if (s < 3600) return tx('há {0} min', { 0: Math.floor(s / 60) })
+  if (s < 86_400) return tx('há {0} h', { 0: Math.floor(s / 3600) })
   if (s < 2 * 86_400) return 'ontem'
-  return new Date(v).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+  return new Date(v).toLocaleDateString(localAtual(), { day: '2-digit', month: 'short' })
 }
 
 // ícone e cor de cada tipo de notificação
@@ -78,8 +79,8 @@ export const paraLocal = (iso) => {
 
 // motivos por que uma atividade ainda está fechada ao estudante (restrições de acesso)
 export const textoBloqueio = (m) => (m.tipo === 'data'
-  ? `Abre a ${dataHora(m.data)}`
-  : m.notaMinima !== null && m.notaMinima !== undefined ? `Precisa de pelo menos ${nota(m.notaMinima)} valores em "${m.titulo}"` : `Precisa de concluir "${m.titulo}"`)
+  ? tx('Abre a {0}', { 0: dataHora(m.data) })
+  : m.notaMinima !== null && m.notaMinima !== undefined ? tx('Precisa de pelo menos {0} valores em "{1}"', { 0: nota(m.notaMinima), 1: m.titulo }) : tx('Precisa de concluir "{0}"', { 0: m.titulo }))
 
 // videoconferência: 'em_breve' | 'abre' (15 min antes) | 'a_decorrer' | 'terminou'
 export function estadoSessao(m, agora = new Date()) {
@@ -90,4 +91,12 @@ export function estadoSessao(m, agora = new Date()) {
   if (t >= fim) return 'terminou'
   if (t >= inicio) return 'a_decorrer'
   return t >= inicio - 15 * 60_000 ? 'abre' : 'em_breve'
+}
+
+// títulos da agenda compostos pela API em português ("Entrega: Ensaio…", "1.ª Prova")
+const PREFIXOS_AGENDA = ['Entrega', 'Questionário', 'Videoconferência', 'Entrega (avaliação por pares)', 'Avaliar colegas']
+export function tituloAgenda(titulo = '') {
+  const m = /^([^:]+): ([\s\S]*)$/.exec(titulo)
+  if (m && PREFIXOS_AGENDA.includes(m[1])) return `${tx(m[1])}: ${m[2]}`
+  return tx(titulo)
 }

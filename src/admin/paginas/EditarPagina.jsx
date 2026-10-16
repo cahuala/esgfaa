@@ -6,6 +6,7 @@ import { PAGINAS } from '../esquemas'
 import { Formulario } from '../componentes/Campo'
 import { Aviso, CabecalhoPagina, Carregando, Erro } from '../componentes/Ui'
 import Traducoes from '../componentes/Traducoes'
+import { t as tx } from '../../i18n/linguas'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -46,7 +47,7 @@ function EditarPagina() {
       const guardado = await api(`/paginas/${chave}`, { metodo: 'PUT', corpo: dados })
       setDados(guardado)
       setOriginal(JSON.stringify(guardado))
-      setAviso({ texto: 'Página guardada e publicada.' })
+      setAviso({ texto: tx('Página guardada e publicada.') })
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
     } finally {
@@ -56,9 +57,9 @@ function EditarPagina() {
 
   return (
     <>
-      <CabecalhoPagina titulo={def.titulo} subtitulo="conteúdos da página" migalhas={[{ rotulo: 'Páginas do site' }, { rotulo: def.titulo }]}>
+      <CabecalhoPagina titulo={def.titulo} subtitulo={tx('conteúdos da página')} migalhas={[{ rotulo: tx('Páginas do site') }, { rotulo: def.titulo }]}>
         <a href={`${SITE}${def.rota}`} target="_blank" rel="noreferrer" className="btn btn-white">
-          <i className="fa fa-external-link-alt me-1" /> Ver no site
+          <i className="fa fa-external-link-alt me-1" /> {tx('Ver no site')}
         </a>
       </CabecalhoPagina>
 
@@ -83,10 +84,10 @@ function EditarPagina() {
 
           <div className="barra-guardar">
             <span className="text-muted">
-              {alterado ? <><i className="fa fa-circle text-warning fs-8px me-2" />Alterações por guardar</> : <><i className="fa fa-check text-success me-2" />Tudo guardado</>}
+              {alterado ? <><i className="fa fa-circle text-warning fs-8px me-2" />{tx('Alterações por guardar')}</> : <><i className="fa fa-check text-success me-2" />{tx('Tudo guardado')}</>}
             </span>
             <button type="submit" className="btn btn-theme" disabled={aGuardar || !alterado || !podeEditar}>
-              {aGuardar ? <><span className="spinner-border spinner-border-sm me-1" /> A guardar…</> : <><i className="fa fa-save me-1" /> Guardar e publicar</>}
+              {aGuardar ? <><span className="spinner-border spinner-border-sm me-1" /> {tx('A guardar…')}</> : <><i className="fa fa-save me-1" /> {tx('Guardar e publicar')}</>}
             </button>
           </div>
         </form>
@@ -97,11 +98,11 @@ function EditarPagina() {
           <div className="modal d-block" role="dialog" aria-modal="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
-                <div className="modal-header"><h4 className="modal-title">Alterações por guardar</h4></div>
-                <div className="modal-body">Se sair agora, perde as alterações que fez a esta página.</div>
+                <div className="modal-header"><h4 className="modal-title">{tx('Alterações por guardar')}</h4></div>
+                <div className="modal-body">{tx('Se sair agora, perde as alterações que fez a esta página.')}</div>
                 <div className="modal-footer">
-                  <button className="btn btn-white" onClick={() => bloqueio.reset()}>Continuar a editar</button>
-                  <button className="btn btn-danger" onClick={() => bloqueio.proceed()}>Sair sem guardar</button>
+                  <button className="btn btn-white" onClick={() => bloqueio.reset()}>{tx('Continuar a editar')}</button>
+                  <button className="btn btn-danger" onClick={() => bloqueio.proceed()}>{tx('Sair sem guardar')}</button>
                 </div>
               </div>
             </div>

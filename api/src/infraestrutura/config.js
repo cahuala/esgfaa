@@ -36,6 +36,9 @@ const ESQUEMA = z.object({
   PESQUISAS_WEB_POR_DOCUMENTO: inteiro(8, 0, 40),
   ANTHROPIC_API_KEY: z.string().default(''),
   ANTHROPIC_MODELO: z.string().regex(/^[a-z0-9.-]+$/).default('claude-sonnet-5-5'),
+  // tradutor automático gratuito (LibreTranslate no servidor da Escola), usado se não houver chave da IA
+  LIBRETRANSLATE_URL: z.union([z.literal(''), z.url()]).default(''),
+  LIBRETRANSLATE_CHAVE: z.string().default(''),
 })
 
 // "1" -> 1 (n.º de proxies), "loopback" -> 'loopback', "" -> false
@@ -93,6 +96,7 @@ export function criarConfig(env = process.env, extras = {}) {
     // serviços externos opcionais (sem chave ficam desligados)
     pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },
     ia: { chave: e.ANTHROPIC_API_KEY, modelo: e.ANTHROPIC_MODELO },
+    tradutor: { url: e.LIBRETRANSLATE_URL, chave: e.LIBRETRANSLATE_CHAVE },
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },
@@ -105,8 +109,6 @@ export function criarConfig(env = process.env, extras = {}) {
       visita: { janelaMs: 60_000, maximo: 60 },
       impressao: { janelaMs: 60_000, maximo: 120 },
       clique: { janelaMs: 60_000, maximo: 30 },
-      // candidaturas por IP (uma pessoa raramente envia mais de uma ou duas)
-      candidatura: { janelaMs: 60 * 60_000, maximo: 5 },
       // mensagens privadas por IP e por conta (contra abusos)
       mensagens: { janelaMs: 60_000, maximo: 30 },
       entrarPortal: { janelaMs: 15 * 60_000, maximo: 10 },

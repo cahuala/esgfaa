@@ -1,15 +1,71 @@
 import { ErroValidacao, NaoEncontrado } from '../../dominio/comum/erros.js'
 import { PAGINAS } from '../../dominio/conteudos/paginas.js'
 import { COLECOES_TRADUZIVEIS, ESTADOS_TRADUCAO, LINGUAS, desatualizados, extrairTextos, limparTextos } from '../../dominio/traducoes/textos.js'
-import { traduzirComClaude } from './traducaoIA.js'
 
 /*
   Traduções do site: a redação traduz (ou pede à IA um rascunho), revê e publica cada língua.
   O site mostra a tradução publicada; o que não estiver traduzido aparece em português.
 */
 export class ServicoTraducoes {
-  constructor({ traducoes, conteudos, paginas, claude = null, auditoria }) {
-    Object.assign(this, { traducoes, conteudos, paginas, claude, auditoria })
+  #fila = Promise.resolve()
+
+  // tradutor: { nome, traduzirMapa(mapa, lingua) } — o Claude ou o LibreTranslate (ou nenhum)
+  constructor({ traducoes, conteudos, paginas, tradutor = null, auditoria, registarErro }) {
+    Object.assign(this, { traducoes, conteudos, paginas, tradutor, auditoria, registarErro })
+  }
+
+  #agendarTarefa(nome, f) {
+    const p = this.#fila.then(f).catch((e) => this.registarErro?.({ nivel: 'erro', mensagem: `Traduções: ${nome}`, erro: e.message }))
+    this.#fila = p
+    return p
+  }
+
+  esvaziar() {
+    return this.#fila
+  }
+
+  // tradução automática de um conteúdo publicado: o que falta e o que mudou, em todas as línguas.
+  // Uma tradução nova fica logo publicada (marcada como automática); a revisão da redação mantém-se.
+  agendar(colecao, id) {
+    if (!this.tradutor) return Promise.resolve()
+    return this.#agendarTarefa('automática', () => this.#automatica(colecao, id))
+  }
+
+  async #automatica(colecao, id) {
+    const a = await this.#alvo(colecao, id).catch(() => null)
+    if (!a) return
+    const originais = extrairTextos(a.dados)
+    if (!Object.keys(originais).length) return
+    for (const lingua of Object.keys(LINGUAS)) {
+      const atual = await this.traducoes.ler(colecao, id, lingua)
+      const mudados = atual ? new Set(desatualizados(atual.originais, originais)) : null
+      const pedir = Object.fromEntries(Object.entries(originais).filter(([c]) => !atual || !atual.textos[c] || mudados.has(c)))
+      if (!Object.keys(pedir).length) continue
+      const novos = await this.tradutor.traduzirMapa(pedir, lingua)
+      await this.traducoes.guardar({
+        colecao, alvoId: id, lingua,
+        textos: limparTextos({ ...(atual?.textos || {}), ...novos }, originais),
+        originais: { ...(atual?.originais || {}), ...Object.fromEntries(Object.keys(novos).map((c) => [c, originais[c]])) },
+        estado: atual?.estado ?? 'publicada', automatica: atual?.automatica ?? true, atualizadoPor: this.tradutor.nome,
+      })
+    }
+  }
+
+  // completa as traduções de tudo o que está publicado (no arranque e a pedido no painel)
+  async completar() {
+    if (!this.tradutor) return { itens: 0 }
+    let n = 0
+    for (const colecao of COLECOES_TRADUZIVEIS) {
+      for (const c of await this.conteudos.listar(colecao, { soPublicados: true })) { this.agendar(colecao, c.id); n++ }
+    }
+    for (const p of PAGINAS) { this.agendar('paginas', p); n++ }
+    return { itens: n }
+  }
+
+  async traduzirTudo(ctx) {
+    ctx.actor.exigir('paginas.editar', 'noticias.publicar')
+    if (!this.tradutor) throw new ErroValidacao('Não há tradutor automático configurado (LIBRETRANSLATE_URL ou ANTHROPIC_API_KEY).')
+    return this.completar()
   }
 
   // o original e as permissões que se aplicam (coleção ou página)
@@ -36,7 +92,7 @@ export class ServicoTraducoes {
     const traducoes = Object.fromEntries(lista.map((t) => [t.lingua, {
       ...t, desatualizados: desatualizados(t.originais, originais).filter((c) => c in t.textos), emFalta: Object.keys(originais).filter((c) => !t.textos[c]),
     }]))
-    return { linguas: LINGUAS, estados: ESTADOS_TRADUCAO, originais, traducoes, ia: Boolean(this.claude), podeEditar: ctx.actor.pode(a.editar), podePublicar: ctx.actor.pode(a.publicar) }
+    return { linguas: LINGUAS, estados: ESTADOS_TRADUCAO, originais, traducoes, ia: Boolean(this.tradutor), tradutor: this.tradutor?.nome || '', podeEditar: ctx.actor.pode(a.editar), podePublicar: ctx.actor.pode(a.publicar) }
   }
 
   // rascunho feito pela IA: traduz o que falta e o que mudou no original (mantém o que a redação já reviu)
@@ -44,12 +100,12 @@ export class ServicoTraducoes {
     this.#lingua(lingua)
     const a = await this.#alvo(colecao, id)
     ctx.actor.exigir(a.editar)
-    if (!this.claude) throw new ErroValidacao('A tradução automática não está ativa (falta a chave ANTHROPIC_API_KEY no servidor). Pode traduzir à mão.')
+    if (!this.tradutor) throw new ErroValidacao('A tradução automática não está ativa (falta configurar LIBRETRANSLATE_URL ou ANTHROPIC_API_KEY no servidor). Pode traduzir à mão.')
     const originais = extrairTextos(a.dados)
     const atual = await this.traducoes.ler(colecao, id, lingua)
     const mudados = atual ? new Set(desatualizados(atual.originais, originais)) : null
     const pedir = Object.fromEntries(Object.entries(originais).filter(([c]) => !atual || !atual.textos[c] || mudados.has(c)))
-    const novos = Object.keys(pedir).length ? await traduzirComClaude(this.claude, pedir, lingua) : {}
+    const novos = Object.keys(pedir).length ? await this.tradutor.traduzirMapa(pedir, lingua) : {}
     const textos = limparTextos({ ...(atual?.textos || {}), ...novos }, originais)
     const t = await this.traducoes.guardar({
       colecao, alvoId: id, lingua, textos, originais: { ...(atual?.originais || {}), ...Object.fromEntries(Object.keys(novos).map((c) => [c, originais[c]])) },
@@ -70,10 +126,9 @@ export class ServicoTraducoes {
     // o título (ou nome) tem de estar traduzido para publicar
     const principal = ['titulo', 'nome'].find((c) => c in originais)
     if (estado === 'publicada' && principal && !limpos[principal]) throw new ErroValidacao('Traduza pelo menos o título antes de publicar.', { campo: principal })
-    const atual = await this.traducoes.ler(colecao, id, lingua)
     const t = await this.traducoes.guardar({
       colecao, alvoId: id, lingua, textos: limpos, originais: Object.fromEntries(Object.keys(limpos).map((c) => [c, originais[c]])),
-      estado, automatica: atual?.automatica ?? false, atualizadoPor: ctx.actor.nome || '',
+      estado, automatica: false, atualizadoPor: ctx.actor.nome || '', // revista pela redação
     })
     await this.auditoria.registar(ctx, { acao: estado === 'publicada' ? 'publicar_traducao' : 'guardar_traducao', colecao, alvoId: id, alvoTitulo: a.titulo, detalhes: { lingua } })
     return t
@@ -96,7 +151,12 @@ export class ServicoTraducoes {
   // para o site: { linguas, itens: { "noticias/slug": { en: {caminho: texto} } } } (só as publicadas)
   async publicas() {
     const itens = {}
-    for (const t of await this.traducoes.publicadas()) (itens[`${t.colecao}/${t.alvoId}`] ||= {})[t.lingua] = t.textos
-    return { linguas: LINGUAS, itens }
+    const automaticas = {}
+    for (const t of await this.traducoes.publicadas()) {
+      const k = `${t.colecao}/${t.alvoId}`;
+      (itens[k] ||= {})[t.lingua] = t.textos
+      if (t.automatica) (automaticas[k] ||= []).push(t.lingua)
+    }
+    return { linguas: LINGUAS, itens, automaticas }
   }
 }

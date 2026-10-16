@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api'
 import { ICONES_NOTIFICACAO, ha } from './formatar'
+import { t as tx } from '../i18n/linguas'
 
 const INTERVALO = 60_000
 
@@ -56,24 +57,24 @@ function CabecalhoAvisos() {
   return (
     <>
       <div className="navbar-item">
-        <Link to="/mensagens" className="navbar-link icon" title="Mensagens" aria-label={`Mensagens${resumo.mensagens ? ` (${resumo.mensagens} por ler)` : ''}`}>
+        <Link to="/mensagens" className="navbar-link icon" title={tx('Mensagens')} aria-label={`Mensagens${resumo.mensagens ? tx(' ({0} por ler)', { 0: resumo.mensagens }) : ''}`}>
           <i className="fa fa-envelope" />
           {resumo.mensagens > 0 && <span className="badge">{resumo.mensagens}</span>}
         </Link>
       </div>
       <div ref={caixa} className={`navbar-item dropdown ${aberto ? 'show' : ''}`}>
-        <button type="button" className="navbar-link dropdown-toggle icon border-0 bg-transparent" onClick={abrir} aria-expanded={aberto} aria-label={`Notificações${resumo.notificacoes ? ` (${resumo.notificacoes} por ler)` : ''}`}>
+        <button type="button" className="navbar-link dropdown-toggle icon border-0 bg-transparent" onClick={abrir} aria-expanded={aberto} aria-label={`Notificações${resumo.notificacoes ? tx(' ({0} por ler)', { 0: resumo.notificacoes }) : ''}`}>
           <i className="fa fa-bell" />
           {resumo.notificacoes > 0 && <span className="badge">{resumo.notificacoes > 99 ? '99+' : resumo.notificacoes}</span>}
         </button>
         {aberto && (
           <div className="dropdown-menu media-list dropdown-menu-end show p-notif-menu">
             <div className="dropdown-header d-flex justify-content-between align-items-center">
-              <span>NOTIFICAÇÕES ({resumo.notificacoes})</span>
-              {resumo.notificacoes > 0 && <button type="button" className="btn btn-link btn-sm p-0 text-decoration-none" onClick={lerTodas}>Marcar todas como lidas</button>}
+              <span>{tx('NOTIFICAÇÕES (')}{resumo.notificacoes})</span>
+              {resumo.notificacoes > 0 && <button type="button" className="btn btn-link btn-sm p-0 text-decoration-none" onClick={lerTodas}>{tx('Marcar todas como lidas')}</button>}
             </div>
-            {!lista && <div className="dropdown-item text-muted small">A carregar…</div>}
-            {lista?.length === 0 && <div className="dropdown-item text-center text-muted py-4"><i className="fa fa-bell-slash fa-2x d-block mb-2 opacity-50" />Sem notificações.</div>}
+            {!lista && <div className="dropdown-item text-muted small">{tx('A carregar…')}</div>}
+            {lista?.length === 0 && <div className="dropdown-item text-center text-muted py-4"><i className="fa fa-bell-slash fa-2x d-block mb-2 opacity-50" />{tx('Sem notificações.')}</div>}
             {lista?.map((n) => {
               const [icone, cor] = ICONES_NOTIFICACAO[n.tipo] || ICONES_NOTIFICACAO.geral
               return (
@@ -88,7 +89,7 @@ function CabecalhoAvisos() {
               )
             })}
             <div className="dropdown-footer text-center">
-              <Link to="/notificacoes" className="text-decoration-none" onClick={() => setAberto(false)}>Ver todas</Link>
+              <Link to="/notificacoes" className="text-decoration-none" onClick={() => setAberto(false)}>{tx('Ver todas')}</Link>
             </div>
           </div>
         )}

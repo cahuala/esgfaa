@@ -1,3 +1,4 @@
+import { t as tx } from '../../i18n/linguas'
 /*
   O corpo de uma notícia/artigo/evento é guardado como um único bloco de texto formatado
   ({ tipo: 'texto', html }), escrito no editor como num processador de texto.
@@ -23,7 +24,7 @@ export function galeriaHtml({ imagens = [], legenda = '' }) {
 
 export function videoHtml({ youtube = '', src = '', poster = '', legenda = '' }) {
   const meio = youtube
-    ? `<iframe src="https://www.youtube-nocookie.com/embed/${escapar(youtube)}" title="${escapar(legenda || 'Vídeo')}" allowfullscreen="true" loading="lazy"></iframe>`
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${escapar(youtube)}" title="${escapar(legenda || tx('Vídeo'))}" allowfullscreen="true" loading="lazy"></iframe>`
     : `<video src="${escapar(src)}"${poster ? ` poster="${escapar(poster)}"` : ''} controls="true" preload="metadata"></video>`
   return `<figure data-tipo="video" data-youtube="${escapar(youtube)}" data-src="${escapar(src)}" data-poster="${escapar(poster)}"><div class="video">${meio}</div>${legenda ? `<figcaption>${escapar(legenda)}</figcaption>` : ''}</figure>`
 }

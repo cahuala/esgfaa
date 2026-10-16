@@ -23,22 +23,23 @@ import Relatorios from './Relatorios'
 import Workshop from './Workshop'
 import Glossario from './Glossario'
 import Wiki from './Wiki'
+import { t as tx } from '../../i18n/linguas'
 
 const SEPARADORES = [
-  { id: 'curso', texto: 'Cadeira', icone: 'fa-book-open' },
-  { id: 'avisos', texto: 'Avisos', icone: 'fa-bullhorn' },
-  { id: 'forum', texto: 'Fórum', icone: 'fa-comments' },
-  { id: 'avaliacoes', texto: 'Notas', icone: 'fa-clipboard-list' },
-  { id: 'participantes', texto: 'Participantes', icone: 'fa-users' },
-  { id: 'programa', texto: 'Programa', icone: 'fa-file-alt' },
+  { id: 'curso', texto: tx('Cadeira'), icone: 'fa-book-open' },
+  { id: 'avisos', texto: tx('Avisos'), icone: 'fa-bullhorn' },
+  { id: 'forum', texto: tx('Fórum'), icone: 'fa-comments' },
+  { id: 'avaliacoes', texto: tx('Notas'), icone: 'fa-clipboard-list' },
+  { id: 'participantes', texto: tx('Participantes'), icone: 'fa-users' },
+  { id: 'programa', texto: tx('Programa'), icone: 'fa-file-alt' },
   // no menu "Mais"
-  { id: 'glossario', texto: 'Glossário', icone: 'fa-book', mais: true },
-  { id: 'wiki', texto: 'Wiki', icone: 'fa-sitemap', mais: true },
-  { id: 'grupos', texto: 'Grupos', icone: 'fa-user-friends', mais: true },
-  { id: 'presencas', texto: 'Presenças', icone: 'fa-user-check', mais: true },
-  { id: 'horario', texto: 'Datas e horário', icone: 'fa-calendar-alt', mais: true },
-  { id: 'progresso', texto: 'Progresso', icone: 'fa-tasks', docente: true, mais: true },
-  { id: 'relatorios', texto: 'Relatórios', icone: 'fa-chart-line', docente: true, mais: true },
+  { id: 'glossario', texto: tx('Glossário'), icone: 'fa-book', mais: true },
+  { id: 'wiki', texto: tx('Wiki'), icone: 'fa-sitemap', mais: true },
+  { id: 'grupos', texto: tx('Grupos'), icone: 'fa-user-friends', mais: true },
+  { id: 'presencas', texto: tx('Presenças'), icone: 'fa-user-check', mais: true },
+  { id: 'horario', texto: tx('Datas e horário'), icone: 'fa-calendar-alt', mais: true },
+  { id: 'progresso', texto: tx('Progresso'), icone: 'fa-tasks', docente: true, mais: true },
+  { id: 'relatorios', texto: tx('Relatórios'), icone: 'fa-chart-line', docente: true, mais: true },
 ]
 // endereços antigos (?separador=materiais|trabalhos|questionarios) abrem a página da cadeira
 const ANTIGOS = { materiais: 'curso', trabalhos: 'curso', questionarios: 'curso' }
@@ -80,8 +81,8 @@ function Cadeira() {
   return (
     <>
       <ol className="breadcrumb mb-2">
-        <li className="breadcrumb-item"><Link to="/">Portal</Link></li>
-        <li className="breadcrumb-item"><Link to="/cadeiras">Cadeiras</Link></li>
+        <li className="breadcrumb-item"><Link to="/">{tx('Portal')}</Link></li>
+        <li className="breadcrumb-item"><Link to="/cadeiras">{tx('Cadeiras')}</Link></li>
         <li className="breadcrumb-item active">{c.codigo}</li>
       </ol>
       <div className="profile p-perfil mb-3">
@@ -91,13 +92,13 @@ function Cadeira() {
             <div className="profile-header-img"><div className="p-perfil-avatar"><i className="fa fa-book-open" /></div></div>
             <div className="profile-header-info">
               <h1 className="h4 mt-0 mb-1">{c.nome}</h1>
-              <p className="mb-1">{c.codigo} · {PERIODOS[c.periodo]}{c.horas ? ` · ${c.horas} horas` : ''} · {c.turma?.nome}</p>
+              <p className="mb-1">{c.codigo} · {PERIODOS[c.periodo]}{c.horas ? tx(' · {0} horas', { 0: c.horas }) : ''} · {c.turma?.nome}</p>
               <p className="mb-0 small opacity-75">
-                {c.docentes.length ? c.docentes.map((d) => `${d.papel === 'regente' ? 'Regente' : 'Assistente'}: ${d.nome}`).join(' · ') : 'Docentes por alocar'}
+                {c.docentes.length ? c.docentes.map((d) => `${d.papel === 'regente' ? tx('Regente') : tx('Assistente')}: ${d.nome}`).join(' · ') : tx('Docentes por alocar')}
               </p>
             </div>
           </div>
-          <ul className="profile-header-tab nav nav-tabs" role="tablist" aria-label="Secções da cadeira">
+          <ul className="profile-header-tab nav nav-tabs" role="tablist" aria-label={tx('Secções da cadeira')}>
             {separadores.filter((s) => !s.mais).map((s) => (
               <li key={s.id} className="nav-item">
                 <button
@@ -162,7 +163,7 @@ function MenuMais({ itens, atual, escolher }) {
         const r = e.currentTarget.getBoundingClientRect()
         setAberto(aberto ? null : { top: r.bottom, right: Math.max(8, window.innerWidth - r.right) })
       }}>
-        {escolhido ? <><i className={`fa ${escolhido.icone} me-1 d-none d-md-inline`} />{escolhido.texto}</> : 'Mais'} <i className="fa fa-caret-down ms-1" />
+        {escolhido ? <><i className={`fa ${escolhido.icone} me-1 d-none d-md-inline`} />{escolhido.texto}</> : tx('Mais')} <i className="fa fa-caret-down ms-1" />
       </button>
       {aberto && (
         <div className="dropdown-menu show p-menu-mais" role="menu" style={{ top: aberto.top, right: aberto.right }}>
@@ -178,7 +179,7 @@ function MenuMais({ itens, atual, escolher }) {
 }
 
 function Voltar({ irPara }) {
-  return <button type="button" className="btn btn-white mb-3" onClick={() => irPara({ separador: 'curso' })}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
+  return <button type="button" className="btn btn-white mb-3" onClick={() => irPara({ separador: 'curso' })}><i className="fa fa-arrow-left me-1" /> {tx('Voltar à cadeira')}</button>
 }
 
 export default Cadeira

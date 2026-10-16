@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Brasao from '../../../../assets/Logo.png'
+import { t as tx } from '../../../../i18n/linguas'
 
 /*
   Moldura dos documentos oficiais da Administração Escolar (pautas, listas, histórico, certificado):
@@ -19,10 +20,10 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, assinat
   return (
     <div className="of-pagina">
       <div className="of-acoes d-flex flex-wrap gap-2 mb-3">
-        {voltar && <Link to={voltar} className="btn btn-white"><i className="fa fa-arrow-left me-1" />Voltar</Link>}
+        {voltar && <Link to={voltar} className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</Link>}
         <div className="ms-auto d-flex flex-wrap gap-2 align-items-center">
           {acoes}
-          <button type="button" className="btn btn-theme" onClick={() => window.print()}><i className="fa fa-print me-1" />Imprimir / guardar em PDF</button>
+          <button type="button" className="btn btn-theme" onClick={() => window.print()}><i className="fa fa-print me-1" />{tx('Imprimir / guardar em PDF')}</button>
         </div>
       </div>
       <article className={`of-folha ${paisagem ? 'of-folha-larga' : ''}`}>

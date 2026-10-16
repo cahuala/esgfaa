@@ -1,5 +1,6 @@
 import Brasao from '../../assets/Logo.png'
 import Sede from '../../assets/Escola De Guerra.png'
+import { t as tx } from '../../i18n/linguas'
 
 // ecrã de entrada no estilo do painel (login com fotografia, do Color Admin)
 function MolduraEntrada({ sobretitulo, titulo, subtitulo, children }) {
@@ -9,15 +10,15 @@ function MolduraEntrada({ sobretitulo, titulo, subtitulo, children }) {
         <div className="news-feed">
           <div className="news-image" style={{ backgroundImage: `url("${Sede}")` }} />
           <div className="news-caption entrada-legenda">
-            <span className="entrada-sobretitulo">Forças Armadas Angolanas</span>
-            <h4 className="caption-title">Escola Superior de Guerra</h4>
-            <p>Cadeiras, materiais, trabalhos, notas, percurso académico e horários num só lugar.</p>
+            <span className="entrada-sobretitulo">{tx('Forças Armadas Angolanas')}</span>
+            <h4 className="caption-title">{tx('Escola Superior de Guerra')}</h4>
+            <p>{tx('Cadeiras, materiais, trabalhos, notas, percurso académico e horários num só lugar.')}</p>
             <span className="entrada-bandeira" aria-hidden="true"><i /><i /><i /></span>
           </div>
         </div>
         <div className="login-container entrada-painel">
           <div className="entrada-cabecalho">
-            <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="entrada-brasao" />
+            <img src={Brasao} alt={tx('Brasão da Escola Superior de Guerra')} className="entrada-brasao" />
             <div>
               <span className="entrada-sobretitulo">{sobretitulo}</span>
               <h1>{titulo}</h1>

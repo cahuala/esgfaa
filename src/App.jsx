@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import NavBar from './components/NavBar/NavBar'
 import Footer from './components/Footer/Footer'
 import GestorScroll from './components/GestorScroll/GestorScroll'
@@ -16,7 +16,6 @@ import ArtigoDetalhe from './pages/Artigos/ArtigoDetalhe'
 import Contactos from './pages/Contactos/Contactos'
 import Cursos from './pages/Cursos/Cursos'
 import CursoDetalhe from './pages/Cursos/CursoDetalhe'
-import Candidatura from './pages/Candidatura/Candidatura'
 import NaoEncontrado from './pages/NaoEncontrado/NaoEncontrado'
 import { useIdioma } from './i18n/contexto'
 
@@ -41,7 +40,7 @@ function App() {
         <Route path="/Cursos" element={<Cursos />} />
         <Route path="/Cursos/:id" element={<CursoDetalhe />} />
         <Route path="/Contactos" element={<Contactos />} />
-        <Route path="/Candidatura" element={<Candidatura />} />
+        <Route path="/Candidatura" element={<Navigate to="/Cursos#admissao" replace />} />
         <Route path="*" element={<NaoEncontrado />} />
       </Routes>
       <Publicidade posicao="rodape" />

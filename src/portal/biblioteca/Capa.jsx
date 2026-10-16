@@ -1,4 +1,5 @@
 import './biblioteca.css'
+import { t as tx } from '../../i18n/linguas'
 
 // paletas sóbrias (fundo, texto, destaque), escolhidas pela obra: a mesma obra tem sempre a mesma capa
 const PALETAS = [
@@ -7,7 +8,7 @@ const PALETAS = [
   ['#6b3410', '#fdf6ec', '#e9c46a'], ['#e9e3d5', '#1b1b1b', '#9b2226'], ['#264653', '#f1faee', '#e9c46a'],
 ]
 const DESENHOS = ['classico', 'moderno', 'faixa', 'geometrico']
-const ACADEMICOS = { tese: 'Tese / dissertação', tfc: 'Trabalho de fim de curso', monografia: 'Monografia' }
+const ACADEMICOS = { tese: tx('Tese / dissertação'), tfc: tx('Trabalho de fim de curso'), monografia: tx('Monografia') }
 
 function hash(s) {
   let h = 2166136261
@@ -36,7 +37,7 @@ function Capa({ o, className = '' }) {
   const [fundo, texto, acento] = PALETAS[h % PALETAS.length]
   const autores = (o.autores || []).slice(0, 2)
   const estilo = { '--c-fundo': fundo, '--c-texto': texto, '--c-acento': acento, '--c-titulo': `${tamanho(o.titulo)}cqw` }
-  const rotulo = `${o.titulo}${autores.length ? `, de ${autores.join(' e ')}` : ''}`
+  const rotulo = `${o.titulo}${autores.length ? tx(', de {0}', { 0: autores.join(' e ') }) : ''}`
 
   if (o.capa) {
     return (
@@ -50,7 +51,7 @@ function Capa({ o, className = '' }) {
     return (
       <div className={`b-capa b-capa--academico ${className}`} style={estilo} role="img" aria-label={rotulo}>
         <div className="b-interior">
-        <div className="b-acad-topo"><img src="/Logo.png" alt="" /><span>Escola Superior de Guerra</span></div>
+        <div className="b-acad-topo"><img src="/Logo.png" alt="" /><span>{tx('Escola Superior de Guerra')}</span></div>
         <div className="b-acad-corpo">
           <div className="b-titulo">{o.titulo}</div>
           {o.subtitulo && <div className="b-subtitulo">{o.subtitulo}</div>}
@@ -67,7 +68,7 @@ function Capa({ o, className = '' }) {
     return (
       <div className={`b-capa b-capa--revista ${className}`} style={estilo} role="img" aria-label={rotulo}>
         <div className="b-interior">
-        <div className="b-rev-cabeca">{o.tipo === 'revista' ? 'Revista' : 'Artigo'}{o.ano ? <span>{o.ano}</span> : null}</div>
+        <div className="b-rev-cabeca">{o.tipo === 'revista' ? tx('Revista') : tx('Artigo')}{o.ano ? <span>{o.ano}</span> : null}</div>
         <div className="b-rev-arte" aria-hidden="true"><i /><i /><i /></div>
         <div className="b-titulo">{o.titulo}</div>
         <div className="b-autor">{autores.join(' · ')}</div>

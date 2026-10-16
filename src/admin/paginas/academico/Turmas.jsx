@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { t as tx } from '../../../i18n/linguas'
 
 const anoAtual = () => {
   const d = new Date()
@@ -34,7 +35,7 @@ function Turmas() {
     try {
       await api('/academico/turmas', { metodo: 'POST', corpo: f })
       setF({ ...f, nome: '' })
-      setAviso({ texto: 'Turma criada.' })
+      setAviso({ texto: tx('Turma criada.') })
       carregar()
     } catch (falha) {
       setErroForm(falha.message)
@@ -43,26 +44,26 @@ function Turmas() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Turmas" subtitulo="matrículas, cadeiras e horários" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Turmas' }]} />
+      <CabecalhoPagina titulo={tx('Turmas')} subtitulo={tx('matrículas, cadeiras e horários')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Turmas') }]} />
       <div className="row">
         <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
-          <Painel titulo="Turmas" corpo={false}>
+          <Painel titulo={tx('Turmas')} corpo={false}>
             {!lista && !erro ? <Carregando /> : (
               <div className="table-responsive">
                 <table className="table table-striped align-middle mb-0">
-                  <thead><tr><th>Turma</th><th>Curso</th><th>Ano letivo</th><th>Ano curricular</th><th className="text-end">Estudantes</th><th className="text-end">Cadeiras</th><th /></tr></thead>
+                  <thead><tr><th>{tx('Turma')}</th><th>{tx('Curso')}</th><th>{tx('Ano letivo')}</th><th>{tx('Ano curricular')}</th><th className="text-end">{tx('Estudantes')}</th><th className="text-end">{tx('Cadeiras')}</th><th /></tr></thead>
                   <tbody>
-                    {lista?.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">Ainda não há turmas.</td></tr>}
+                    {lista?.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">{tx('Ainda não há turmas.')}</td></tr>}
                     {lista?.map((t) => (
                       <tr key={t.id}>
-                        <td className="fw-bold">{t.nome} {!t.ativa && <span className="badge bg-secondary ms-1">Inativa</span>}</td>
+                        <td className="fw-bold">{t.nome} {!t.ativa && <span className="badge bg-secondary ms-1">{tx('Inativa')}</span>}</td>
                         <td>{nomeCurso(t.curso)}</td>
                         <td>{t.anoLetivo}</td>
-                        <td>{t.anoCurricular}.º ano</td>
+                        <td>{t.anoCurricular}{tx('.º ano')}</td>
                         <td className="text-end">{t.estudantes}</td>
                         <td className="text-end">{t.cadeiras}</td>
-                        <td className="text-end"><Link to={`/academico/turmas/${t.id}`} className="btn btn-sm btn-primary">Abrir</Link></td>
+                        <td className="text-end"><Link to={`/academico/turmas/${t.id}`} className="btn btn-sm btn-primary">{tx('Abrir')}</Link></td>
                       </tr>
                     ))}
                   </tbody>
@@ -73,22 +74,22 @@ function Turmas() {
         </div>
         {pode('academico.gerir') && (
           <div className="col-xl-4">
-            <Painel titulo="Nova turma">
+            <Painel titulo={tx('Nova turma')}>
               <form onSubmit={criar}>
                 {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
-                <label className="form-label fw-bold" htmlFor="t-curso">Curso</label>
+                <label className="form-label fw-bold" htmlFor="t-curso">{tx('Curso')}</label>
                 <select id="t-curso" className="form-select mb-3" value={f.curso} onChange={(e) => setF({ ...f, curso: e.target.value })} required>
                   {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
-                <label className="form-label fw-bold" htmlFor="t-ano">Ano letivo</label>
+                <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano letivo')}</label>
                 <input id="t-ano" className="form-control mb-3" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />
-                <label className="form-label fw-bold" htmlFor="t-anocur">Ano curricular</label>
+                <label className="form-label fw-bold" htmlFor="t-anocur">{tx('Ano curricular')}</label>
                 <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
-                  {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}.º ano</option>)}
+                  {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}
                 </select>
-                <label className="form-label fw-bold" htmlFor="t-nome">Nome da turma</label>
-                <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="CEM 2026/2027" required />
-                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> Criar turma</button>
+                <label className="form-label fw-bold" htmlFor="t-nome">{tx('Nome da turma')}</label>
+                <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('CEM 2026/2027')} required />
+                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> {tx('Criar turma')}</button>
               </form>
             </Painel>
           </div>

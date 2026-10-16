@@ -10,6 +10,7 @@ export function rotasTraducoes({ servicos }) {
   const ctx = (req) => req.contexto
   const p = (req) => req.dados.params
 
+  r.post('/completar', async (req, res) => res.status(202).json(await t.traduzirTudo(ctx(req))))
   r.get('/:colecao', validar({ params: z.object({ colecao: E.alvoTraducao.shape.colecao }) }), async (req, res) => res.json(await t.estadosDaColecao(ctx(req), p(req).colecao)))
   r.get('/:colecao/:id', validar({ params: E.alvoTraducao }), async (req, res) => res.json(await t.estado(ctx(req), p(req).colecao, p(req).id)))
   r.post('/:colecao/:id/:lingua/ia', validar({ params: E.alvoTraducaoLingua }), async (req, res) => res.json(await t.traduzirIA(ctx(req), p(req).colecao, p(req).id, p(req).lingua)))

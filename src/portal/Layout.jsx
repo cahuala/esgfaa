@@ -6,6 +6,8 @@ import { useTema } from '../tema/useTema'
 import { useSessao } from './sessaoContexto'
 import { iniciais } from './formatar'
 import CabecalhoAvisos from './CabecalhoAvisos'
+import { t as tx } from '../i18n/linguas'
+import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -50,7 +52,7 @@ function Layout({ children }) {
     }
   }, [menuConta])
 
-  const papel = eDocente ? 'Docente' : 'Estudante'
+  const papel = eDocente ? tx('Docente') : tx('Estudante')
   const turma = conta.matriculas?.find((m) => m.estado === 'ativa')?.turma?.nome
 
   return (
@@ -65,11 +67,11 @@ function Layout({ children }) {
           <Link to="/" className="navbar-brand">
             <img src={Brasao} alt="" className="admin-brasao" />
             <span className="esg-cabecalho-titulo">
-              <b>Portal Académico</b>
-              <small>Escola Superior de Guerra</small>
+              <b>{tx('Portal Académico')}</b>
+              <small>{tx('Escola Superior de Guerra')}</small>
             </span>
           </Link>
-          <button type="button" className="navbar-mobile-toggler" onClick={() => setMenuMovelEm(menuMovel ? null : pathname)} aria-label="Abrir menu">
+          <button type="button" className="navbar-mobile-toggler" onClick={() => setMenuMovelEm(menuMovel ? null : pathname)} aria-label={tx('Abrir menu')}>
             <span className="icon-bar" /><span className="icon-bar" /><span className="icon-bar" />
           </button>
         </div>
@@ -78,25 +80,26 @@ function Layout({ children }) {
           <div className="navbar-item navbar-form d-none d-md-block">
             <form onSubmit={(e) => { e.preventDefault(); const q = e.currentTarget.q.value.trim(); if (q) navegar(`/pesquisa?q=${encodeURIComponent(q)}`) }} role="search">
               <div className="form-group">
-                <input name="q" type="search" className="form-control" placeholder="Pesquisar no portal" aria-label="Pesquisar no portal" />
-                <button type="submit" className="btn btn-search" aria-label="Pesquisar"><i className="fa fa-search" /></button>
+                <input name="q" type="search" className="form-control" placeholder={tx('Pesquisar no portal')} aria-label={tx('Pesquisar no portal')} />
+                <button type="submit" className="btn btn-search" aria-label={tx('Pesquisar')}><i className="fa fa-search" /></button>
               </div>
             </form>
           </div>
           <div className="navbar-item d-md-none">
-            <Link to="/pesquisa" className="navbar-link icon" aria-label="Pesquisar"><i className="fa fa-search" /></Link>
+            <Link to="/pesquisa" className="navbar-link icon" aria-label={tx('Pesquisar')}><i className="fa fa-search" /></Link>
           </div>
           <div className="navbar-item">
-            <button type="button" className="navbar-link icon border-0 bg-transparent" onClick={alternar} title={tema === 'dark' ? 'Modo claro' : 'Modo escuro'} aria-label={tema === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}>
+            <button type="button" className="navbar-link icon border-0 bg-transparent" onClick={alternar} title={tema === 'dark' ? tx('Modo claro') : tx('Modo escuro')} aria-label={tema === 'dark' ? tx('Mudar para o modo claro') : tx('Mudar para o modo escuro')}>
               <i className={`fa ${tema === 'dark' ? 'fa-sun' : 'fa-moon'}`} />
             </button>
           </div>
           <CabecalhoAvisos />
           <div className="navbar-item d-none d-md-block">
-            <a href={SITE} target="_blank" rel="noreferrer" className="navbar-link icon" title="Site da Escola">
+            <a href={SITE} target="_blank" rel="noreferrer" className="navbar-link icon" title={tx('Site da Escola')}>
               <i className="fa fa-globe" />
             </a>
           </div>
+          <SeletorLinguaPainel />
           <div ref={caixa} className={`navbar-item navbar-user dropdown esg-menu-utilizador ${menuConta ? 'show' : ''}`}>
             <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center p-conta-botao" aria-expanded={menuConta} onClick={() => setContaEm(menuConta ? null : pathname)}>
               <span className="admin-avatar">{iniciais(conta.nome)}</span>
@@ -115,11 +118,11 @@ function Layout({ children }) {
                     <span className="esg-menu-papel">{papel} · {conta.numero}</span>
                   </div>
                 </div>
-                <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />O meu perfil</Link>
-                {!eDocente && <Link to="/percurso" className="dropdown-item"><i className="fa fa-route fa-fw me-2" />Percurso académico</Link>}
-                <a href={SITE} className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />Site da Escola</a>
+                <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />{tx('O meu perfil')}</Link>
+                {!eDocente && <Link to="/percurso" className="dropdown-item"><i className="fa fa-route fa-fw me-2" />{tx('Percurso académico')}</Link>}
+                <a href={SITE} className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />{tx('Site da Escola')}</a>
                 <div className="dropdown-divider" />
-                <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />Sair</button>
+                <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />{tx('Sair')}</button>
               </div>
             )}
           </div>
@@ -131,9 +134,9 @@ function Layout({ children }) {
         <div className="app-sidebar-content admin-sidebar-rolavel">
           <div className="menu">
             <div className="esg-marca">
-              <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="esg-marca-brasao" />
-              <div className="esg-marca-nome">Escola Superior de Guerra</div>
-              <div className="esg-marca-sub">Portal Académico</div>
+              <img src={Brasao} alt={tx('Brasão da Escola Superior de Guerra')} className="esg-marca-brasao" />
+              <div className="esg-marca-nome">{tx('Escola Superior de Guerra')}</div>
+              <div className="esg-marca-sub">{tx('Portal Académico')}</div>
               <Link to="/perfil" className="esg-marca-utilizador">
                 <span className="admin-avatar admin-avatar-grande">{iniciais(conta.nome)}</span>
                 <span>
@@ -143,41 +146,41 @@ function Layout({ children }) {
               </Link>
             </div>
 
-            <div className="menu-header">Geral</div>
-            <ItemMenu para="/" fim icone="fa-th-large" texto="Painel" />
-            <ItemMenu para="/calendario" icone="fa-calendar-alt" texto="Calendário" />
-            <ItemMenu para="/cadeiras" icone="fa-book" texto={eDocente ? 'As minhas cadeiras' : 'As minhas cadeiras'} />
-            <ItemMenu para="/horario" icone="fa-clock" texto="Horário" />
-            {eDocente && <ItemMenu para="/banco" icone="fa-archive" texto="Banco de perguntas" />}
-            {eDocente && <ItemMenu para="/integridade" icone="fa-fingerprint" texto="Originalidade" />}
+            <div className="menu-header">{tx('Geral')}</div>
+            <ItemMenu para="/" fim icone="fa-th-large" texto={tx('Painel')} />
+            <ItemMenu para="/calendario" icone="fa-calendar-alt" texto={tx('Calendário')} />
+            <ItemMenu para="/cadeiras" icone="fa-book" texto={eDocente ? tx('As minhas cadeiras') : tx('As minhas cadeiras')} />
+            <ItemMenu para="/horario" icone="fa-clock" texto={tx('Horário')} />
+            {eDocente && <ItemMenu para="/banco" icone="fa-archive" texto={tx('Banco de perguntas')} />}
+            {eDocente && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Originalidade')} />}
 
             {!eDocente && (
               <>
-                <div className="menu-header">Avaliação</div>
-                <ItemMenu para="/notas" icone="fa-clipboard-list" texto="Notas" />
-                <ItemMenu para="/percurso" icone="fa-route" texto="Percurso académico" />
+                <div className="menu-header">{tx('Avaliação')}</div>
+                <ItemMenu para="/notas" icone="fa-clipboard-list" texto={tx('Notas')} />
+                <ItemMenu para="/percurso" icone="fa-route" texto={tx('Percurso académico')} />
 
-                <div className="menu-header">Administração Escolar</div>
-                <ItemMenu para="/avisos" icone="fa-bullhorn" texto="Avisos" />
-                <ItemMenu para="/pedidos" icone="fa-file-signature" texto="Pedidos de documentos" />
+                <div className="menu-header">{tx('Administração Escolar')}</div>
+                <ItemMenu para="/avisos" icone="fa-bullhorn" texto={tx('Avisos')} />
+                <ItemMenu para="/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />
               </>
             )}
 
-            <div className="menu-header">Biblioteca</div>
-            <ItemMenu para="/biblioteca" fim icone="fa-book-reader" texto="Catálogo" />
-            <ItemMenu para="/biblioteca/emprestimos" icone="fa-hand-holding" texto="Os meus livros" />
+            <div className="menu-header">{tx('Biblioteca')}</div>
+            <ItemMenu para="/biblioteca" fim icone="fa-book-reader" texto={tx('Catálogo')} />
+            <ItemMenu para="/biblioteca/emprestimos" icone="fa-hand-holding" texto={tx('Os meus livros')} />
 
-            <div className="menu-header">Comunicação</div>
-            <ItemMenu para="/mensagens" icone="fa-envelope" texto="Mensagens" />
-            <ItemMenu para="/notificacoes" icone="fa-bell" texto="Notificações" />
-            <ItemMenu para="/inqueritos" icone="fa-poll" texto="Inquéritos" />
+            <div className="menu-header">{tx('Comunicação')}</div>
+            <ItemMenu para="/mensagens" icone="fa-envelope" texto={tx('Mensagens')} />
+            <ItemMenu para="/notificacoes" icone="fa-bell" texto={tx('Notificações')} />
+            <ItemMenu para="/inqueritos" icone="fa-poll" texto={tx('Inquéritos')} />
 
-            <div className="menu-header">Conta</div>
-            <ItemMenu para="/perfil" icone="fa-user-circle" texto="O meu perfil" />
+            <div className="menu-header">{tx('Conta')}</div>
+            <ItemMenu para="/perfil" icone="fa-user-circle" texto={tx('O meu perfil')} />
 
             <div className="menu-divider" />
             <div className="menu-item d-flex">
-              <button type="button" className="app-sidebar-minify-btn ms-auto border-0" onClick={() => setMinimizado(!minimizado)} aria-label="Minimizar menu">
+              <button type="button" className="app-sidebar-minify-btn ms-auto border-0" onClick={() => setMinimizado(!minimizado)} aria-label={tx('Minimizar menu')}>
                 <i className="fa fa-angle-double-left" />
               </button>
             </div>
@@ -185,7 +188,7 @@ function Layout({ children }) {
         </div>
       </div>
       <div className="app-sidebar-bg" data-bs-theme="dark" />
-      <div className="app-sidebar-mobile-backdrop"><button type="button" className="stretched-link border-0 bg-transparent w-100" onClick={() => setMenuMovelEm(null)} aria-label="Fechar menu" /></div>
+      <div className="app-sidebar-mobile-backdrop"><button type="button" className="stretched-link border-0 bg-transparent w-100" onClick={() => setMenuMovelEm(null)} aria-label={tx('Fechar menu')} /></div>
 
       {/* Conteúdo */}
       <div id="content" className="app-content">

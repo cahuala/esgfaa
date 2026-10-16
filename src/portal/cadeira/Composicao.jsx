@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NOMES_COMPONENTES } from '../regraAvaliacao'
+import { t as tx } from '../../i18n/linguas'
 
 /*
   Janela "Como se calcula a componente" (livro de notas): escolher trabalhos e questionários
@@ -34,27 +35,26 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
         <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="composicao-titulo"><i className="fa fa-calculator me-2" />Como se calcula: {NOMES_COMPONENTES[componente]}</h4>
-              <button type="button" className="btn-close" onClick={fechar} disabled={aGuardar} aria-label="Fechar" />
+              <h4 className="modal-title" id="composicao-titulo"><i className="fa fa-calculator me-2" />{tx('Como se calcula:')} {NOMES_COMPONENTES[componente]}</h4>
+              <button type="button" className="btn-close" onClick={fechar} disabled={aGuardar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">
               {erro && <div className="alert alert-danger py-2">{erro}</div>}
               <p className="text-muted small">
-                Escolha os trabalhos, questionários e avaliações por pares que contam e o peso de cada um. A nota é a média ponderada (0 a 20).
-                Quem não entregar depois do prazo, ou não fizer o questionário até fechar, fica com 0. Enquanto faltar a correção de alguma atividade, a nota fica por calcular.
+                {tx('Escolha os trabalhos, questionários e avaliações por pares que contam e o peso de cada um. A nota é a média ponderada (0 a 20). Quem não entregar depois do prazo, ou não fizer o questionário até fechar, fica com 0. Enquanto faltar a correção de alguma atividade, a nota fica por calcular.')}
               </p>
-              {atividades.length === 0 ? <div className="alert alert-info mb-0">Esta cadeira ainda não tem trabalhos nem questionários.</div> : (
+              {atividades.length === 0 ? <div className="alert alert-info mb-0">{tx('Esta cadeira ainda não tem trabalhos nem questionários.')}</div> : (
                 <table className="table table-hover align-middle mb-0">
-                  <thead><tr><th style={{ width: 40 }} /><th>Atividade</th><th style={{ width: 130 }}>Peso</th><th className="text-end" style={{ width: 80 }}>%</th></tr></thead>
+                  <thead><tr><th style={{ width: 40 }} /><th>{tx('Atividade')}</th><th style={{ width: 130 }}>{tx('Peso')}</th><th className="text-end" style={{ width: 80 }}>%</th></tr></thead>
                   <tbody>
                     {atividades.map((a) => {
                       const k = `${a.tipo}-${a.id}`
                       const marcado = itens[k] !== undefined
                       return (
                         <tr key={k} className={marcado ? '' : 'text-muted'}>
-                          <td><input type="checkbox" className="form-check-input" checked={marcado} onChange={() => alternar(k)} aria-label={`Contar ${a.titulo}`} /></td>
+                          <td><input type="checkbox" className="form-check-input" checked={marcado} onChange={() => alternar(k)} aria-label={tx('Contar {0}', { 0: a.titulo })} /></td>
                           <td><i className={`fa ${{ trabalho: 'fa-file-signature text-orange', questionario: 'fa-question-circle text-purple', workshop: 'fa-people-arrows text-success' }[a.tipo]} me-2`} />{a.titulo}</td>
-                          <td><input type="number" min={1} max={100} className="form-control form-control-sm" disabled={!marcado} value={itens[k] ?? ''} onChange={(e) => setItens({ ...itens, [k]: e.target.value })} aria-label={`Peso de ${a.titulo}`} /></td>
+                          <td><input type="number" min={1} max={100} className="form-control form-control-sm" disabled={!marcado} value={itens[k] ?? ''} onChange={(e) => setItens({ ...itens, [k]: e.target.value })} aria-label={tx('Peso de {0}', { 0: a.titulo })} /></td>
                           <td className="text-end">{marcado && total ? `${Math.round(((Number(itens[k]) || 0) / total) * 100)} %` : ''}</td>
                         </tr>
                       )
@@ -64,10 +64,10 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
               )}
             </div>
             <div className="modal-footer">
-              {atual && <button type="button" className="btn btn-white me-auto" disabled={aGuardar} onClick={() => submeter(null)}><i className="fa fa-pen me-1" />Voltar a lançar à mão</button>}
-              <button type="button" className="btn btn-white" onClick={fechar} disabled={aGuardar}>Cancelar</button>
+              {atual && <button type="button" className="btn btn-white me-auto" disabled={aGuardar} onClick={() => submeter(null)}><i className="fa fa-pen me-1" />{tx('Voltar a lançar à mão')}</button>}
+              <button type="button" className="btn btn-white" onClick={fechar} disabled={aGuardar}>{tx('Cancelar')}</button>
               <button type="button" className="btn btn-theme" disabled={aGuardar || !escolhidas.length} onClick={() => submeter(escolhidas.map((k) => { const [tipo, id] = k.split('-'); return { tipo, id: Number(id), peso: Number(itens[k]) || 1 } }))}>
-                <i className="fa fa-calculator me-1" />Calcular a partir destas atividades
+                <i className="fa fa-calculator me-1" />{tx('Calcular a partir destas atividades')}
               </button>
             </div>
           </div>

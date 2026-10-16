@@ -21,6 +21,8 @@ if (admin) {
 
 // análises de originalidade que ficaram a meio
 await contentor.servicos.integridade.retomar()
+// traduções automáticas que faltem (conteúdos publicados antes de haver tradutor)
+contentor.servicos.traducoes.completar().catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: 'Traduções', erro: e.message })))
 
 const app = criarApp(contentor)
 const servidor = app.listen(config.porta, () => {
@@ -47,6 +49,7 @@ function desligar(sinal) {
   servidor.close(async () => {
     await comunicacao.esvaziar()
     await contentor.servicos.integridade.esvaziar()
+    await contentor.servicos.traducoes.esvaziar()
     await contentor.fechar()
     process.exit(0)
   })

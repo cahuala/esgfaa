@@ -15,7 +15,7 @@ const publicidade = [
     anunciante: 'Escola Superior de Guerra',
     tipo: 'composto',
     texto: 'Curso de Estado-Maior, Promoção a Oficial General e Altos Estudos Militares. Prazo até 30 de novembro.',
-    botao: 'Candidatar-me',
+    botao: 'Saber mais',
     imagem: Curso2,
     ligacao: '/Cursos',
     posicao: 'home-meio',

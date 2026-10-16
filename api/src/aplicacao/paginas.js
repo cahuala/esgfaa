@@ -29,6 +29,7 @@ export class ServicoPaginas {
     const dados = relativizar(this.filtroHtml(validarPagina(chave, corpo)))
     await this.paginas.guardar(chave, dados, ctx.actor.id)
     await this.auditoria.registar(ctx, { acao: 'editar_pagina', colecao: 'paginas', alvoId: chave, alvoTitulo: `Página ${chave}` })
+    this.aoPublicar?.('paginas', chave) // tradução automática do que mudou
     return this.paginas.ler(chave)
   }
 }

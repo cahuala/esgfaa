@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Carregando, Erro, Titulo } from '../componentes'
 import VisaoCadeiras from '../VisaoCadeiras'
+import { t as tx } from '../../i18n/linguas'
 
 function Cadeiras() {
   const { eDocente } = useSessao()
@@ -15,7 +16,7 @@ function Cadeiras() {
   }, [eDocente])
   return (
     <>
-      <Titulo rotulo="As minhas cadeiras" titulo="As minhas cadeiras" sub={eDocente ? 'onde é regente ou assistente' : 'do ano letivo em curso'} />
+      <Titulo rotulo={tx('As minhas cadeiras')} titulo={tx('As minhas cadeiras')} sub={eDocente ? tx('onde é regente ou assistente') : tx('do ano letivo em curso')} />
       {erro && <Erro texto={erro} />}
       {!lista && !erro ? <Carregando /> : lista && <div className="panel panel-body"><VisaoCadeiras cadeiras={lista} progresso={progresso} /></div>}
     </>

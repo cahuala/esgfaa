@@ -50,7 +50,7 @@ const home = {
     etiqueta: 'Dúvidas frequentes',
     titulo: 'Perguntas frequentes',
     perguntas: [
-      { pergunta: 'Como posso candidatar-me a um curso?', resposta: 'As candidaturas são feitas através do formulário disponível na página inicial ou na secção de Cursos, durante o período de admissões anunciado no calendário académico. Após o envio, a nossa equipa entra em contacto com os próximos passos.' },
+      { pergunta: 'Como posso candidatar-me a um curso?', resposta: 'A candidatura é feita através do ramo de origem: a Repartição de Pessoal e Quadros regista os oficiais admitidos e a Secretaria Académica informa as datas das provas e o início do curso. O processo de admissão está descrito na página de Cursos.' },
       { pergunta: 'Quais são os requisitos de admissão?', resposta: 'Os requisitos variam consoante o curso pretendido — normalmente incluem posto militar mínimo, habilitações académicas e tempo de serviço. Consulte a página de cada curso, na secção "Requisitos de admissão", para os critérios específicos.' },
       { pergunta: 'Como aceder a documentos públicos da Escola?', resposta: 'Todos os documentos de acesso público — regulamentos, editais, relatórios e publicações — estão disponíveis na secção "Publicações e Documentos", com pesquisa por categoria, ano e tipo de documento.' },
       { pergunta: 'Como contactar um departamento específico?', resposta: 'Na página de Contactos encontra os meios de contacto gerais da Escola. Para departamentos específicos, consulte a secção "Organização e Estrutura" em Institucional, onde estão listados os responsáveis de cada área.' },
@@ -61,7 +61,7 @@ const home = {
   cta: {
     titulo: 'Pronto para dar o próximo passo na sua carreira militar?',
     texto: 'Candidate-se aos cursos da Escola Superior de Guerra e prepare-se para funções de comando e liderança.',
-    botao: 'Candidatar-me agora',
+    botao: 'Conhecer o processo de admissão',
   },
 }
 

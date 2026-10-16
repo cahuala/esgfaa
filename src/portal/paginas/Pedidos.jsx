@@ -3,13 +3,14 @@ import { FaDownload } from 'react-icons/fa'
 import { abrirFicheiro, api } from '../api'
 import { Aviso, Campo, Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio } from '../componentes'
 import { dataHora } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
-const TIPOS = ['Declaração de matrícula', 'Declaração de frequência', 'Certificado de notas', 'Certificado de conclusão', 'Segunda via do cartão de estudante', 'Outro']
+const TIPOS = [tx('Declaração de matrícula'), tx('Declaração de frequência'), tx('Certificado de notas'), tx('Certificado de conclusão'), tx('Segunda via do cartão de estudante'), tx('Outro')]
 const ESTADOS = {
-  pendente: { texto: 'Pendente', cor: 'cinzento' },
-  em_tratamento: { texto: 'Em tratamento', cor: 'dourado' },
-  pronto: { texto: 'Pronto', cor: 'verde' },
-  recusado: { texto: 'Recusado', cor: 'vermelho' },
+  pendente: { texto: tx('Pendente'), cor: 'cinzento' },
+  em_tratamento: { texto: tx('Em tratamento'), cor: 'dourado' },
+  pronto: { texto: tx('Pronto'), cor: 'verde' },
+  recusado: { texto: tx('Recusado'), cor: 'vermelho' },
 }
 
 // pedidos de documentos à Administração Escolar
@@ -30,7 +31,7 @@ function Pedidos() {
     try {
       await api('/pedidos', { metodo: 'POST', corpo: f })
       setF({ tipo: TIPOS[0], motivo: '' })
-      setAviso({ texto: 'Pedido enviado à Administração Escolar.' })
+      setAviso({ texto: tx('Pedido enviado à Administração Escolar.') })
       carregar()
     } catch (falha) {
       setErroForm(falha.message)
@@ -41,11 +42,11 @@ function Pedidos() {
 
   return (
     <>
-      <Titulo rotulo="Administração Escolar" titulo="Pedidos de documentos" />
+      <Titulo rotulo={tx('Administração Escolar')} titulo={tx('Pedidos de documentos')} />
       <div className="p-grelha-lado">
-        <Cartao titulo="Os meus pedidos">
+        <Cartao titulo={tx('Os meus pedidos')}>
           {erro && <Erro texto={erro} />}
-          {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Ainda não fez pedidos.</Vazio> : (
+          {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>{tx('Ainda não fez pedidos.')}</Vazio> : (
             <ul className="p-lista">
               {lista.map((p) => (
                 <li key={p.id}>
@@ -56,10 +57,10 @@ function Pedidos() {
                   {p.motivo && <div className="p-texto-suave">{p.motivo}</div>}
                   {p.resposta && <div className="p-resposta">{p.resposta}</div>}
                   <div className="p-linha-meta">
-                    Pedido em {dataHora(p.criadoEm)}
+                    {tx('Pedido em')} {dataHora(p.criadoEm)}
                     {p.ficheiroId && (
                       <button type="button" className="btn btn-theme btn-sm" onClick={() => abrirFicheiro(p.ficheiroId, { nome: `${p.tipo}.pdf` }).catch((x) => setAviso({ tipo: 'erro', texto: x.message }))}>
-                        <FaDownload aria-hidden="true" /> Descarregar
+                        <FaDownload aria-hidden="true" /> {tx('Descarregar')}
                       </button>
                     )}
                   </div>
@@ -68,18 +69,18 @@ function Pedidos() {
             </ul>
           ))}
         </Cartao>
-        <Cartao titulo="Novo pedido">
+        <Cartao titulo={tx('Novo pedido')}>
           <form onSubmit={pedir} className="p-formulario">
             {erroForm && <p className="p-erro" role="alert">{erroForm}</p>}
-            <Campo id="tipo" rotulo="Documento">
+            <Campo id="tipo" rotulo={tx('Documento')}>
               <select id="tipo" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
                 {TIPOS.map((t) => <option key={t}>{t}</option>)}
               </select>
             </Campo>
-            <Campo id="motivo" rotulo={f.tipo === 'Outro' ? 'Descreva o pedido' : 'Finalidade (opcional)'}>
+            <Campo id="motivo" rotulo={f.tipo === 'Outro' ? tx('Descreva o pedido') : tx('Finalidade (opcional)')}>
               <textarea id="motivo" rows={4} maxLength={1000} value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} />
             </Campo>
-            <button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? 'A enviar…' : 'Enviar pedido'}</button>
+            <button type="submit" className="btn btn-theme" disabled={aEnviar}>{aEnviar ? tx('A enviar…') : tx('Enviar pedido')}</button>
           </form>
         </Cartao>
       </div>

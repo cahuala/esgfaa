@@ -1,6 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { VistaFigura, VistaGaleria, VistaVideo } from './vistas'
+import { t as tx } from '../../i18n/linguas'
 
 /*
   Elementos que vivem dentro do texto. São "átomos" arrastáveis: podem ser colocados
@@ -123,7 +124,7 @@ export const Video = Node.create({
   renderHTML({ node }) {
     const { youtube, src, poster, legenda } = node.attrs
     const meio = youtube
-      ? ['iframe', { src: `https://www.youtube-nocookie.com/embed/${youtube}`, title: legenda || 'Vídeo', allowfullscreen: 'true', loading: 'lazy' }]
+      ? ['iframe', { src: `https://www.youtube-nocookie.com/embed/${youtube}`, title: legenda || tx('Vídeo'), allowfullscreen: 'true', loading: 'lazy' }]
       : ['video', { src, poster: poster || undefined, controls: 'true', preload: 'metadata' }]
     return [
       'figure',

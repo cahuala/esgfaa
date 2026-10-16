@@ -6,6 +6,7 @@ import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
+import { t as tx } from '../../i18n/linguas'
 
 /*
   Boletim em matriz: uma linha por disciplina e uma coluna por momento de avaliação
@@ -23,32 +24,32 @@ function Notas() {
 
   return (
     <>
-      <Titulo rotulo="Notas" titulo="Boletim de notas" sub="só as notas publicadas pelos docentes">
-        <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" className="me-1" /> Imprimir</button>
+      <Titulo rotulo={tx('Notas')} titulo={tx('Boletim de notas')} sub={tx('só as notas publicadas pelos docentes')}>
+        <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" className="me-1" /> {tx('Imprimir')}</button>
       </Titulo>
       {erro && <Erro texto={erro} />}
-      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>Sem disciplinas.</Vazio> : (
+      {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>{tx('Sem disciplinas.')}</Vazio> : (
         <>
           <div className="row p-sem-impressao">
-            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo="DISCIPLINAS" valor={lista.length} nota="este ano letivo" /></div>
-            <div className="col-xl-3 col-md-6"><Widget cor="bg-teal" icone="fa-check-circle" titulo="CONCLUÍDAS" valor={concluidas.length} nota="aprovadas ou dispensadas" /></div>
-            <div className="col-xl-3 col-md-6"><Widget cor="bg-red" icone="fa-star" titulo="MÉDIA DAS CONCLUÍDAS" valor={nota(media)} nota="escala de 0 a 20" /></div>
-            <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo="POR CONCLUIR" valor={lista.length - concluidas.length} nota="Ver percurso académico" para="/percurso" /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo={tx('DISCIPLINAS')} valor={lista.length} nota={tx('este ano letivo')} /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-teal" icone="fa-check-circle" titulo={tx('CONCLUÍDAS')} valor={concluidas.length} nota={tx('aprovadas ou dispensadas')} /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-red" icone="fa-star" titulo={tx('MÉDIA DAS CONCLUÍDAS')} valor={nota(media)} nota={tx('escala de 0 a 20')} /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo={tx('POR CONCLUIR')} valor={lista.length - concluidas.length} nota={tx('Ver percurso académico')} para="/percurso" /></div>
           </div>
 
-          <Cartao titulo={<><i className="fa fa-table me-2" />Boletim de notas</>} corpo={false}>
+          <Cartao titulo={<><i className="fa fa-table me-2" />{tx('Boletim de notas')}</>} corpo={false}>
             <div className="table-responsive">
               <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz">
                 <thead>
                   <tr>
-                    <th scope="col" className="p-matriz-nome">Disciplina</th>
-                    <th scope="col">1.ª Prova</th>
-                    <th scope="col">2.ª Prova</th>
-                    <th scope="col" className="p-matriz-mac">MAC</th>
-                    <th scope="col">Exame</th>
-                    <th scope="col">Recurso</th>
-                    <th scope="col" className="p-matriz-final">Nota final</th>
-                    <th scope="col">Situação</th>
+                    <th scope="col" className="p-matriz-nome">{tx('Disciplina')}</th>
+                    <th scope="col">{tx('1.ª Prova')}</th>
+                    <th scope="col">{tx('2.ª Prova')}</th>
+                    <th scope="col" className="p-matriz-mac">{tx('MAC')}</th>
+                    <th scope="col">{tx('Exame')}</th>
+                    <th scope="col">{tx('Recurso')}</th>
+                    <th scope="col" className="p-matriz-final">{tx('Nota final')}</th>
+                    <th scope="col">{tx('Situação')}</th>
                   </tr>
                 </thead>
                 {semestres.map((s) => (
@@ -63,7 +64,7 @@ function Notas() {
                         <td><Nota valor={l.p1} /></td>
                         <td><Nota valor={l.p2} /></td>
                         <td className="p-matriz-mac"><Nota valor={l.mac} /></td>
-                        <td>{l.situacao === 'dispensado' ? <span className="p-nota-vazia">dispensado</span> : <Nota valor={l.exame} />}</td>
+                        <td>{l.situacao === 'dispensado' ? <span className="p-nota-vazia">{tx('dispensado')}</span> : <Nota valor={l.exame} />}</td>
                         <td><Nota valor={l.recurso} /></td>
                         <td className="p-matriz-final"><Nota valor={l.situacao === 'recurso' ? null : l.final} forte /></td>
                         <td>
@@ -77,7 +78,7 @@ function Notas() {
               </table>
             </div>
           </Cartao>
-          <p className="p-legenda">{REGRA} Escala de 0 a 20. “—” = nota ainda não publicada.</p>
+          <p className="p-legenda">{REGRA} {tx('Escala de 0 a 20. “—” = nota ainda não publicada.')}</p>
         </>
       ))}
     </>

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Carregando, Erro, Titulo } from '../componentes'
 import { dataHora, ha, iniciais } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
 /*
   Mensagens privadas (como o "messenger" do Color Admin e as mensagens do Moodle):
@@ -28,14 +29,14 @@ function Mensagens() {
 
   return (
     <>
-      <Titulo rotulo="Mensagens" titulo="Mensagens" sub="com os docentes e colegas das suas cadeiras" />
+      <Titulo rotulo={tx('Mensagens')} titulo={tx('Mensagens')} sub={tx('com os docentes e colegas das suas cadeiras')} />
       <div className="panel panel-inverse p-mensageiro">
         <div className="row g-0">
           <div className={`col-lg-4 border-end p-lista-conversas ${id ? 'd-none d-lg-block' : ''}`}>
             <div className="p-2 border-bottom">
               <div className="input-group input-group-sm">
                 <span className="input-group-text"><i className="fa fa-search" /></span>
-                <input className="form-control" placeholder="Procurar pessoa" value={procura} onChange={(e) => setProcura(e.target.value)} aria-label="Procurar pessoa" />
+                <input className="form-control" placeholder={tx('Procurar pessoa')} value={procura} onChange={(e) => setProcura(e.target.value)} aria-label={tx('Procurar pessoa')} />
               </div>
             </div>
             {!conversas ? <div className="p-3"><Carregando /></div> : (
@@ -45,13 +46,13 @@ function Mensagens() {
                     <span className={`admin-avatar flex-shrink-0 ${c.pessoa.tipo === 'docente' ? 'bg-dark' : ''}`}>{iniciais(c.pessoa.nome)}</span>
                     <span className="flex-grow-1 min-w-0">
                       <span className="d-flex justify-content-between gap-2"><b className="text-truncate">{c.pessoa.nome}</b><small className="text-nowrap opacity-75">{ha(c.ultima.criadaEm)}</small></span>
-                      <span className="d-block small text-truncate opacity-75">{c.ultima.minha && 'Eu: '}{c.ultima.texto}</span>
+                      <span className="d-block small text-truncate opacity-75">{c.ultima.minha && tx('Eu: ')}{c.ultima.texto}</span>
                     </span>
                     {c.naoLidas > 0 && <span className="badge bg-danger rounded-pill">{c.naoLidas}</span>}
                   </Link>
                 ))}
                 {contactos.filter((p) => !comConversa.has(p.id) && filtro(p.nome)).length > 0 && (
-                  <div className="list-group-item p-dia-titulo">Pessoas das minhas cadeiras</div>
+                  <div className="list-group-item p-dia-titulo">{tx('Pessoas das minhas cadeiras')}</div>
                 )}
                 {contactos.filter((p) => !comConversa.has(p.id) && filtro(p.nome)).map((p) => (
                   <Link key={p.id} to={`/mensagens/${p.id}`} className={`list-group-item list-group-item-action d-flex gap-2 align-items-center ${Number(id) === p.id ? 'active' : ''}`}>
@@ -66,7 +67,7 @@ function Mensagens() {
             {id ? <Conversa key={id} id={id} aoEnviar={carregar} voltar={() => navegar('/mensagens')} /> : (
               <div className="h-100 d-flex flex-column align-items-center justify-content-center text-muted p-5">
                 <i className="fa fa-comments fa-3x mb-3 opacity-50" />
-                Escolha uma conversa ou uma pessoa à esquerda.
+                {tx('Escolha uma conversa ou uma pessoa à esquerda.')}
               </div>
             )}
           </div>
@@ -116,17 +117,17 @@ function Conversa({ id, aoEnviar, voltar }) {
   return (
     <div className="d-flex flex-column h-100">
       <div className="d-flex align-items-center gap-2 p-3 border-bottom">
-        <button type="button" className="btn btn-white btn-sm d-lg-none" onClick={voltar} aria-label="Voltar às conversas"><i className="fa fa-arrow-left" /></button>
+        <button type="button" className="btn btn-white btn-sm d-lg-none" onClick={voltar} aria-label={tx('Voltar às conversas')}><i className="fa fa-arrow-left" /></button>
         <span className={`admin-avatar ${d.pessoa.tipo === 'docente' ? 'bg-dark' : ''}`}>{iniciais(d.pessoa.nome)}</span>
         <div><b>{d.pessoa.nome}</b><div className="small text-muted">{d.pessoa.papel}</div></div>
       </div>
       <div className="p-conversa flex-grow-1 p-3">
-        {d.mensagens.length === 0 && <div className="text-center text-muted small py-5">Ainda não há mensagens. Escreva a primeira.</div>}
+        {d.mensagens.length === 0 && <div className="text-center text-muted small py-5">{tx('Ainda não há mensagens. Escreva a primeira.')}</div>}
         {d.mensagens.map((m) => (
           <div key={m.id} className={`p-balao-linha ${m.minha ? 'p-minha' : ''}`}>
             <div className="p-balao">
               <div className="p-texto-pre m-0">{m.texto}</div>
-              <div className="p-balao-hora" title={dataHora(m.criadaEm)}>{ha(m.criadaEm)}{m.minha && m.lidaEm && <i className="fa fa-check-double ms-1" title="Lida" />}</div>
+              <div className="p-balao-hora" title={dataHora(m.criadaEm)}>{ha(m.criadaEm)}{m.minha && m.lidaEm && <i className="fa fa-check-double ms-1" title={tx('Lida')} />}</div>
             </div>
           </div>
         ))}
@@ -139,13 +140,13 @@ function Conversa({ id, aoEnviar, voltar }) {
             className="form-control"
             rows={2}
             maxLength={5000}
-            placeholder="Escreva uma mensagem… (Enter envia, Shift+Enter muda de linha)"
+            placeholder={tx('Escreva uma mensagem… (Enter envia, Shift+Enter muda de linha)')}
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(e) } }}
-            aria-label="Mensagem"
+            aria-label={tx('Mensagem')}
           />
-          <button type="submit" className="btn btn-theme" disabled={aEnviar || !texto.trim()} aria-label="Enviar"><i className="fa fa-paper-plane" /></button>
+          <button type="submit" className="btn btn-theme" disabled={aEnviar || !texto.trim()} aria-label={tx('Enviar')}><i className="fa fa-paper-plane" /></button>
         </div>
       </form>
     </div>

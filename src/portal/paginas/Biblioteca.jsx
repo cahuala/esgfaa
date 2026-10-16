@@ -5,8 +5,9 @@ import { Aviso, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data, tamanho } from '../formatar'
 import { confirmar } from '../dialogos'
 import Capa from '../biblioteca/Capa'
+import { t as tx } from '../../i18n/linguas'
 
-const MIGALHA = { rotulo: 'Biblioteca', para: '/biblioteca' }
+const MIGALHA = { rotulo: tx('Biblioteca'), para: '/biblioteca' }
 const ACADEMICOS = ['tese', 'tfc', 'monografia']
 
 // biblioteca no portal: a sala com as estantes, a ficha de cada obra e os meus empréstimos
@@ -29,9 +30,9 @@ function useLargura() {
 }
 
 function fita(o) {
-  if (o.exemplares && o.disponiveis) return ['livre', 'Disponível']
-  if (o.exemplares) return ['fora', 'Emprestado']
-  if (o.digital) return ['digital', 'Digital']
+  if (o.exemplares && o.disponiveis) return ['livre', tx('Disponível')]
+  if (o.exemplares) return ['fora', tx('Emprestado')]
+  if (o.digital) return ['digital', tx('Digital')]
   return null
 }
 
@@ -67,8 +68,8 @@ function Estante({ titulo, nota, obras, grelha = false }) {
         <h2 className="b-placa mb-0">{titulo}{nota && <small>{nota}</small>}</h2>
         {!grelha && !(pontas[0] && pontas[1]) && (
           <div className="b-setas">
-            <button type="button" onClick={() => mover(-1)} disabled={pontas[0]} aria-label="Ver os anteriores"><i className="fa fa-chevron-left" /></button>
-            <button type="button" onClick={() => mover(1)} disabled={pontas[1]} aria-label="Ver mais"><i className="fa fa-chevron-right" /></button>
+            <button type="button" onClick={() => mover(-1)} disabled={pontas[0]} aria-label={tx('Ver os anteriores')}><i className="fa fa-chevron-left" /></button>
+            <button type="button" onClick={() => mover(1)} disabled={pontas[1]} aria-label={tx('Ver mais')}><i className="fa fa-chevron-right" /></button>
           </div>
         )}
       </div>
@@ -111,11 +112,11 @@ function Sala() {
     for (const o of l) for (const a of o.assuntos) porAssunto.set(a, [...(porAssunto.get(a) || []), o])
     const assuntos = [...porAssunto].filter(([, x]) => x.length >= 2).sort((a, b) => b[1].length - a[1].length).slice(0, 6)
     return [
-      ['Novidades', 'chegaram há pouco', [...l].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 14)],
-      ['Para ler já', 'versão digital no portal', l.filter((o) => o.digital?.podeLer)],
-      ['Teses e trabalhos de fim de curso', 'produção da Escola', l.filter((o) => ACADEMICOS.includes(o.tipo))],
-      ...assuntos.map(([a, x]) => [a, `${x.length} obras`, x]),
-      ['Todo o acervo', 'por ordem alfabética', l],
+      [tx('Novidades'), tx('chegaram há pouco'), [...l].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm)).slice(0, 14)],
+      [tx('Para ler já'), tx('versão digital no portal'), l.filter((o) => o.digital?.podeLer)],
+      [tx('Teses e trabalhos de fim de curso'), tx('produção da Escola'), l.filter((o) => ACADEMICOS.includes(o.tipo))],
+      ...assuntos.map(([a, x]) => [a, tx('{0} obras', { 0: x.length }), x]),
+      [tx('Todo o acervo'), tx('por ordem alfabética'), l],
     ].filter(([, , x]) => x.length)
   }, [todas])
   const assuntos = useMemo(() => {
@@ -130,22 +131,22 @@ function Sala() {
   return (
     <div className="b-sala">
       <header className="b-entrada">
-        <div className="b-entrada-rotulo">Biblioteca · Escola Superior de Guerra</div>
-        <h1>Escolha o seu próximo livro</h1>
-        <p>Percorra as estantes, abra a ficha de cada obra, leia no portal o que tem versão digital e reserve o que quer levantar no balcão.</p>
+        <div className="b-entrada-rotulo">{tx('Biblioteca · Escola Superior de Guerra')}</div>
+        <h1>{tx('Escolha o seu próximo livro')}</h1>
+        <p>{tx('Percorra as estantes, abra a ficha de cada obra, leia no portal o que tem versão digital e reserve o que quer levantar no balcão.')}</p>
         <form className="b-procura" role="search" onSubmit={(e) => { e.preventDefault(); definir({ assunto: '' }) }}>
           <i className="fa fa-search" />
-          <input type="search" value={q} onChange={(e) => { setQ(e.target.value); if (assunto) definir({ assunto: '', q: e.target.value }) }} placeholder="Título, autor, assunto ou ISBN" aria-label="Procurar no catálogo" />
-          <select value={tipo} onChange={(e) => definir({ tipo: e.target.value })} aria-label="Tipo de obra">
-            <option value="">Tudo</option>
+          <input type="search" value={q} onChange={(e) => { setQ(e.target.value); if (assunto) definir({ assunto: '', q: e.target.value }) }} placeholder={tx('Título, autor, assunto ou ISBN')} aria-label={tx('Procurar no catálogo')} />
+          <select value={tipo} onChange={(e) => definir({ tipo: e.target.value })} aria-label={tx('Tipo de obra')}>
+            <option value="">{tx('Tudo')}</option>
             {Object.entries(todas.tipos).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </form>
         <div className="b-numeros">
-          <div><b>{obras.length}</b>obras</div>
-          <div><b>{obras.reduce((t, o) => t + o.disponiveis, 0)}</b>exemplares na estante</div>
-          <div><b>{obras.filter((o) => o.digital?.podeLer).length}</b>para ler no portal</div>
-          <Link to="/biblioteca/emprestimos" className="ms-auto align-self-end btn btn-sm" style={{ background: '#e0b354', color: '#20160b', fontWeight: 600 }}><i className="fa fa-bookmark me-1" />Os meus empréstimos e reservas</Link>
+          <div><b>{obras.length}</b>{tx('obras')}</div>
+          <div><b>{obras.reduce((t, o) => t + o.disponiveis, 0)}</b>{tx('exemplares na estante')}</div>
+          <div><b>{obras.filter((o) => o.digital?.podeLer).length}</b>{tx('para ler no portal')}</div>
+          <Link to="/biblioteca/emprestimos" className="ms-auto align-self-end btn btn-sm" style={{ background: '#e0b354', color: '#20160b', fontWeight: 600 }}><i className="fa fa-bookmark me-1" />{tx('Os meus empréstimos e reservas')}</Link>
         </div>
         {assuntos.length > 0 && (
           <div className="b-assuntos">
@@ -156,12 +157,12 @@ function Sala() {
 
       {procura ? (
         !resultados ? <Carregando /> : resultados.obras.length === 0
-          ? <section className="b-estante"><div className="b-vazio-estante"><i className="fa fa-book-open me-2" />Nenhuma obra encontrada. Experimente outras palavras ou <button type="button" className="btn btn-link p-0 align-baseline" onClick={() => { setQ(''); setParams({}) }}>volte às estantes</button>.</div></section>
-          : <Estante grelha titulo={assunto || (q.trim() ? `«${q.trim()}»` : todas.tipos[tipo])} nota={`${resultados.obras.length} obra(s)`} obras={resultados.obras} />
-      ) : obras.length === 0 ? <Vazio>A biblioteca ainda não tem obras no catálogo.</Vazio> : (
+          ? <section className="b-estante"><div className="b-vazio-estante"><i className="fa fa-book-open me-2" />{tx('Nenhuma obra encontrada. Experimente outras palavras ou')} <button type="button" className="btn btn-link p-0 align-baseline" onClick={() => { setQ(''); setParams({}) }}>{tx('volte às estantes')}</button>.</div></section>
+          : <Estante grelha titulo={assunto || (q.trim() ? `«${q.trim()}»` : todas.tipos[tipo])} nota={tx('{0} obra(s)', { 0: resultados.obras.length })} obras={resultados.obras} />
+      ) : obras.length === 0 ? <Vazio>{tx('A biblioteca ainda não tem obras no catálogo.')}</Vazio> : (
         estantes.map(([t, n, l]) => <Estante key={t} titulo={t} nota={n} obras={l} />)
       )}
-      {todas.regras && <p className="small text-muted">Pode ter até {todas.regras.maximo} livros de cada vez, por {todas.regras.prazoDias} dias. Levanta-se e devolve-se no balcão da biblioteca.</p>}
+      {todas.regras && <p className="small text-muted">{tx('Pode ter até')} {todas.regras.maximo} {tx('livros de cada vez, por')} {todas.regras.prazoDias} {tx('dias. Levanta-se e devolve-se no balcão da biblioteca.')}</p>}
     </div>
   )
 }
@@ -178,14 +179,14 @@ function Leitor({ o, fechar }) {
     return () => { window.removeEventListener('keydown', tecla); if (feito) URL.revokeObjectURL(feito) }
   }, [o.id, fechar])
   return (
-    <div className="b-leitor" role="dialog" aria-modal="true" aria-label={`A ler: ${o.titulo}`}>
+    <div className="b-leitor" role="dialog" aria-modal="true" aria-label={tx('A ler: {0}', { 0: o.titulo })}>
       <div className="b-leitor-barra">
         <i className="fa fa-book-open" />
         <b>{o.titulo}</b>
-        {url && <a className="btn btn-sm btn-outline-light" href={url} download={`${o.titulo}.pdf`}><i className="fa fa-download me-1" />Guardar</a>}
-        <button type="button" className="btn btn-sm btn-light" onClick={fechar}><i className="fa fa-times me-1" />Fechar</button>
+        {url && <a className="btn btn-sm btn-outline-light" href={url} download={`${o.titulo}.pdf`}><i className="fa fa-download me-1" />{tx('Guardar')}</a>}
+        <button type="button" className="btn btn-sm btn-light" onClick={fechar}><i className="fa fa-times me-1" />{tx('Fechar')}</button>
       </div>
-      {erro ? <div className="text-white p-4">{erro}</div> : url ? <iframe src={url} title={o.titulo} /> : <div className="text-white p-4">A abrir…</div>}
+      {erro ? <div className="text-white p-4">{erro}</div> : url ? <iframe src={url} title={o.titulo} /> : <div className="text-white p-4">{tx('A abrir…')}</div>}
     </div>
   )
 }
@@ -210,7 +211,7 @@ function FichaObra({ id }) {
     setAEnviar(true)
     try {
       await api(`/biblioteca/obras/${o.id}/reserva`, { metodo: 'POST' })
-      setAviso({ texto: 'Reservado. A biblioteca avisa-o quando o livro estiver separado para levantar.' })
+      setAviso({ texto: tx('Reservado. A biblioteca avisa-o quando o livro estiver separado para levantar.') })
       carregar()
     } catch (e) {
       setAviso({ tipo: 'erro', texto: e.message })
@@ -219,24 +220,24 @@ function FichaObra({ id }) {
     }
   }
   async function cancelar() {
-    if (!(await confirmar(`Cancelar a reserva de "${o.titulo}"?`, { titulo: 'Cancelar reserva', botao: 'Cancelar reserva', perigo: true }))) return
-    await api(`/biblioteca/reservas/${o.minhaReserva.id}`, { metodo: 'DELETE' }).then(() => { setAviso({ texto: 'Reserva cancelada.' }); carregar() }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
+    if (!(await confirmar(tx('Cancelar a reserva de "{0}"?', { 0: o.titulo }), { titulo: tx('Cancelar reserva'), botao: tx('Cancelar reserva'), perigo: true }))) return
+    await api(`/biblioteca/reservas/${o.minhaReserva.id}`, { metodo: 'DELETE' }).then(() => { setAviso({ texto: tx('Reserva cancelada.') }); carregar() }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   }
 
   const r = o.minhaReserva
-  const [cor, estado, nota] = o.comigo ? ['#3d5a80', 'Está consigo', `Devolva até ${data(o.comigo.prazo)}.`]
-    : r?.estado === 'pronta' ? ['#9b2226', 'Pronto a levantar', `Separado para si: levante-o no balcão até ${data(r.levantarAte)}.`]
-      : r ? ['#b5651d', 'Reservado', 'A biblioteca vai separar um exemplar e avisá-lo no portal.']
-        : o.disponiveis ? ['#2a9d8f', `${o.disponiveis} de ${o.exemplares} na estante`, o.localizacoes.length ? `Onde está: ${o.localizacoes.join('; ')}${o.cota ? ` · cota ${o.cota}` : ''}` : `Cota ${o.cota || '—'}`]
-          : o.exemplares ? ['#b5651d', 'Todos os exemplares estão emprestados', o.devolucaoPrevista ? `Próxima devolução prevista a ${data(o.devolucaoPrevista)}. Reserve para ser o próximo.` : 'Reserve para ser o próximo.']
-            : ['#6c757d', 'Sem exemplares em papel', o.digital ? 'Esta obra existe só em versão digital.' : '']
-  const detalhes = [['Tipo', o.tipos[o.tipo]], ['Editora', o.editora], ['Ano', o.ano], ['Edição', o.edicao], ['ISBN', o.isbn], ['Idioma', o.idiomas[o.idioma]], ['Cota', o.cota]].filter(([, v]) => v)
+  const [cor, estado, nota] = o.comigo ? ['#3d5a80', tx('Está consigo'), tx('Devolva até {0}.', { 0: data(o.comigo.prazo) })]
+    : r?.estado === 'pronta' ? ['#9b2226', tx('Pronto a levantar'), tx('Separado para si: levante-o no balcão até {0}.', { 0: data(r.levantarAte) })]
+      : r ? ['#b5651d', tx('Reservado'), tx('A biblioteca vai separar um exemplar e avisá-lo no portal.')]
+        : o.disponiveis ? ['#2a9d8f', tx('{0} de {1} na estante', { 0: o.disponiveis, 1: o.exemplares }), o.localizacoes.length ? tx('Onde está: {0}{1}', { 0: o.localizacoes.join('; '), 1: o.cota ? ` · cota ${o.cota}` : '' }) : tx('Cota {0}', { 0: o.cota || '—' })]
+          : o.exemplares ? ['#b5651d', tx('Todos os exemplares estão emprestados'), o.devolucaoPrevista ? tx('Próxima devolução prevista a {0}. Reserve para ser o próximo.', { 0: data(o.devolucaoPrevista) }) : tx('Reserve para ser o próximo.')]
+            : ['#6c757d', tx('Sem exemplares em papel'), o.digital ? tx('Esta obra existe só em versão digital.') : '']
+  const detalhes = [[tx('Tipo'), o.tipos[o.tipo]], [tx('Editora'), o.editora], [tx('Ano'), o.ano], [tx('Edição'), o.edicao], ['ISBN', o.isbn], [tx('Idioma'), o.idiomas[o.idioma]], [tx('Cota'), o.cota]].filter(([, v]) => v)
 
   return (
     <div className="b-sala">
       <ol className="breadcrumb mb-3">
-        <li className="breadcrumb-item"><Link to="/">Portal</Link></li>
-        <li className="breadcrumb-item"><Link to="/biblioteca">Biblioteca</Link></li>
+        <li className="breadcrumb-item"><Link to="/">{tx('Portal')}</Link></li>
+        <li className="breadcrumb-item"><Link to="/biblioteca">{tx('Biblioteca')}</Link></li>
         <li className="breadcrumb-item active">{o.titulo}</li>
       </ol>
       <div className="b-ficha">
@@ -244,17 +245,17 @@ function FichaObra({ id }) {
         <div>
           <h1>{o.titulo}</h1>
           {o.subtitulo && <div className="b-ficha-sub">{o.subtitulo}</div>}
-          <div className="b-ficha-autores">{o.autores.length ? <>de <b>{o.autores.join(', ')}</b></> : <span className="text-muted">Autor não indicado</span>}</div>
+          <div className="b-ficha-autores">{o.autores.length ? <>{tx('de')} <b>{o.autores.join(', ')}</b></> : <span className="text-muted">{tx('Autor não indicado')}</span>}</div>
 
           <div className="b-estado">
             <span className="ponto" style={{ background: cor }} />
             <div><b className="d-block">{estado}</b><span className="small text-muted">{nota}</span></div>
           </div>
           <div className="b-ficha-acoes">
-            {o.digital?.podeLer && <button type="button" className="btn btn-lg btn-theme" onClick={() => setALer(true)}><i className="fa fa-book-open me-2" />Ler agora{o.digital.tamanho ? <small className="ms-2 opacity-75">PDF · {tamanho(o.digital.tamanho)}</small> : null}</button>}
-            {o.exemplares > 0 && !o.comigo && !r && <button type="button" className={`btn btn-lg ${o.digital?.podeLer ? 'btn-white' : 'btn-theme'}`} onClick={reservar} disabled={aEnviar}><i className="fa fa-bookmark me-2" />{aEnviar ? 'A reservar…' : o.disponiveis ? 'Reservar para levantar' : 'Reservar (ser o próximo)'}</button>}
-            {r && <button type="button" className="btn btn-white" onClick={cancelar}><i className="fa fa-times me-1" />Cancelar reserva</button>}
-            {o.digital && !o.digital.podeLer && <span className="small text-muted"><i className="fa fa-lock me-1" />A versão digital é só para docentes.</span>}
+            {o.digital?.podeLer && <button type="button" className="btn btn-lg btn-theme" onClick={() => setALer(true)}><i className="fa fa-book-open me-2" />{tx('Ler agora')}{o.digital.tamanho ? <small className="ms-2 opacity-75">{tx('PDF ·')} {tamanho(o.digital.tamanho)}</small> : null}</button>}
+            {o.exemplares > 0 && !o.comigo && !r && <button type="button" className={`btn btn-lg ${o.digital?.podeLer ? 'btn-white' : 'btn-theme'}`} onClick={reservar} disabled={aEnviar}><i className="fa fa-bookmark me-2" />{aEnviar ? tx('A reservar…') : o.disponiveis ? tx('Reservar para levantar') : tx('Reservar (ser o próximo)')}</button>}
+            {r && <button type="button" className="btn btn-white" onClick={cancelar}><i className="fa fa-times me-1" />{tx('Cancelar reserva')}</button>}
+            {o.digital && !o.digital.podeLer && <span className="small text-muted"><i className="fa fa-lock me-1" />{tx('A versão digital é só para docentes.')}</span>}
           </div>
 
           <dl className="b-detalhes mb-0">
@@ -268,14 +269,14 @@ function FichaObra({ id }) {
           )}
         </div>
       </div>
-      {relacionadas.length > 0 && <div className="mt-5"><Estante titulo="Na mesma estante" nota={o.assuntos[0]} obras={relacionadas} /></div>}
+      {relacionadas.length > 0 && <div className="mt-5"><Estante titulo={tx('Na mesma estante')} nota={o.assuntos[0]} obras={relacionadas} /></div>}
       {aLer && <Leitor o={o} fechar={fecharLeitor} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </div>
   )
 }
 
-const ESTADO_RESERVA = { pendente: ['bg-warning text-dark', 'À espera'], pronta: ['bg-danger', 'Pronto a levantar'] }
+const ESTADO_RESERVA = { pendente: ['bg-warning text-dark', tx('À espera')], pronta: ['bg-danger', tx('Pronto a levantar')] }
 
 export function MeusEmprestimos() {
   const [d, setD] = useState(null)
@@ -288,21 +289,21 @@ export function MeusEmprestimos() {
   if (!d) return <Carregando />
   const falhou = (falha) => setAviso({ tipo: 'erro', texto: falha.message })
   const renovar = (e) => api(`/biblioteca/emprestimos/${e.id}/renovar`, { metodo: 'POST' })
-    .then((r) => { setD(r); setAviso({ texto: `Renovado até ${data(r.ativos.find((x) => x.id === e.id).prazo)}.` }) }).catch(falhou)
+    .then((r) => { setD(r); setAviso({ texto: tx('Renovado até {0}.', { 0: data(r.ativos.find((x) => x.id === e.id).prazo) }) }) }).catch(falhou)
   async function cancelar(r) {
-    if (!(await confirmar(`Cancelar a reserva de "${r.obra.titulo}"?`, { titulo: 'Cancelar reserva', botao: 'Cancelar reserva', perigo: true }))) return
+    if (!(await confirmar(tx('Cancelar a reserva de "{0}"?', { 0: r.obra.titulo }), { titulo: tx('Cancelar reserva'), botao: tx('Cancelar reserva'), perigo: true }))) return
     await api(`/biblioteca/reservas/${r.id}`, { metodo: 'DELETE' }).then(setD).catch(falhou)
   }
   return (
     <div className="b-sala">
-      <Titulo rotulo="Biblioteca" titulo="Os meus livros" sub={`até ${d.regras.maximo} livros por ${d.regras.prazoDias} dias · ${d.regras.renovacoes} renovações · ${d.regras.reservas} reservas`} migalhas={[MIGALHA, { rotulo: 'Os meus livros' }]}>
-        <Link to="/biblioteca" className="btn btn-white"><i className="fa fa-book-reader me-1" />Ir às estantes</Link>
+      <Titulo rotulo={tx('Biblioteca')} titulo={tx('Os meus livros')} sub={tx('até {0} livros por {1} dias · {2} renovações · {3} reservas', { 0: d.regras.maximo, 1: d.regras.prazoDias, 2: d.regras.renovacoes, 3: d.regras.reservas })} migalhas={[MIGALHA, { rotulo: tx('Os meus livros') }]}>
+        <Link to="/biblioteca" className="btn btn-white"><i className="fa fa-book-reader me-1" />{tx('Ir às estantes')}</Link>
       </Titulo>
       <div className="row">
         <div className="col-xl-8">
           <div className="card mb-4">
-            <div className="card-header fw-bold"><i className="fa fa-book me-2" />Comigo ({d.ativos.length})</div>
-            {d.ativos.length === 0 ? <div className="card-body"><Vazio>Não tem livros emprestados. <Link to="/biblioteca">Escolha um nas estantes</Link>.</Vazio></div> : d.ativos.map((e) => {
+            <div className="card-header fw-bold"><i className="fa fa-book me-2" />{tx('Comigo (')}{d.ativos.length})</div>
+            {d.ativos.length === 0 ? <div className="card-body"><Vazio>{tx('Não tem livros emprestados.')} <Link to="/biblioteca">{tx('Escolha um nas estantes')}</Link>.</Vazio></div> : d.ativos.map((e) => {
               const total = new Date(e.prazo) - new Date(e.emprestadoEm)
               const passou = Math.min(1, Math.max(0, (agora - new Date(e.emprestadoEm)) / total))
               const dias = Math.ceil((new Date(e.prazo) - agora) / 86_400_000)
@@ -311,18 +312,18 @@ export function MeusEmprestimos() {
                   <Link to={`/biblioteca/${e.exemplar.obra.id}`}><Capa o={{ id: e.exemplar.obra.id, titulo: e.exemplar.obra.titulo, autores: e.exemplar.obra.autores, capa: e.exemplar.obra.capa, tipo: e.exemplar.obra.tipo }} /></Link>
                   <div>
                     <Link to={`/biblioteca/${e.exemplar.obra.id}`} className="fw-bold text-body fs-15px">{e.exemplar.obra.titulo}</Link>
-                    <div className="small text-muted">{e.exemplar.obra.autores.join(', ')} · exemplar {e.exemplar.codigo}{e.renovacoes ? ` · renovado ${e.renovacoes}×` : ''}</div>
+                    <div className="small text-muted">{e.exemplar.obra.autores.join(', ')} {tx('· exemplar')} {e.exemplar.codigo}{e.renovacoes ? tx(' · renovado {0}×', { 0: e.renovacoes }) : ''}</div>
                     <div className="b-prazo"><i style={{ width: `${passou * 100}%`, background: e.emAtraso ? '#9b2226' : dias <= 3 ? '#e09f3e' : '#2a9d8f' }} /></div>
-                    <div className={`small mt-1 ${e.emAtraso ? 'text-danger fw-bold' : ''}`}>{e.emAtraso ? `${e.diasAtraso} dia(s) de atraso: devolva na biblioteca` : `Devolver até ${data(e.prazo)} · faltam ${dias} dia(s)`}</div>
+                    <div className={`small mt-1 ${e.emAtraso ? 'text-danger fw-bold' : ''}`}>{e.emAtraso ? tx('{0} dia(s) de atraso: devolva na biblioteca', { 0: e.diasAtraso }) : tx('Devolver até {0} · faltam {1} dia(s)', { 0: data(e.prazo), 1: dias })}</div>
                   </div>
-                  <button type="button" className="btn btn-white" disabled={!e.podeRenovar} onClick={() => renovar(e)} title={e.podeRenovar ? 'Mais tempo, a contar de hoje' : e.emAtraso ? 'Fora do prazo: devolva na biblioteca' : 'Ainda não dá mais tempo, ou já renovou o máximo'}><i className="fa fa-redo me-1" />Renovar</button>
+                  <button type="button" className="btn btn-white" disabled={!e.podeRenovar} onClick={() => renovar(e)} title={e.podeRenovar ? tx('Mais tempo, a contar de hoje') : e.emAtraso ? tx('Fora do prazo: devolva na biblioteca') : tx('Ainda não dá mais tempo, ou já renovou o máximo')}><i className="fa fa-redo me-1" />{tx('Renovar')}</button>
                 </div>
               )
             })}
           </div>
           {d.historico.length > 0 && (
             <div className="card mb-4">
-              <div className="card-header fw-bold"><i className="fa fa-history me-2" />Já li</div>
+              <div className="card-header fw-bold"><i className="fa fa-history me-2" />{tx('Já li')}</div>
               <div className="list-group list-group-flush">
                 {d.historico.map((e) => (
                   <Link key={e.id} to={`/biblioteca/${e.exemplar.obra.id}`} className="list-group-item list-group-item-action d-flex gap-3">
@@ -336,15 +337,15 @@ export function MeusEmprestimos() {
         </div>
         <div className="col-xl-4">
           <div className="card mb-4">
-            <div className="card-header fw-bold"><i className="fa fa-bookmark me-2" />Reservas ({d.reservas.length})</div>
-            {d.reservas.length === 0 ? <div className="card-body small text-muted">Não tem reservas. Na ficha de cada livro pode reservá-lo para o levantar no balcão.</div> : d.reservas.map((r) => (
+            <div className="card-header fw-bold"><i className="fa fa-bookmark me-2" />{tx('Reservas (')}{d.reservas.length})</div>
+            {d.reservas.length === 0 ? <div className="card-body small text-muted">{tx('Não tem reservas. Na ficha de cada livro pode reservá-lo para o levantar no balcão.')}</div> : d.reservas.map((r) => (
               <div key={r.id} className="b-emprestimo" style={{ gridTemplateColumns: '56px 1fr' }}>
                 <Link to={`/biblioteca/${r.obra.id}`}><Capa o={r.obra} /></Link>
                 <div>
                   <Link to={`/biblioteca/${r.obra.id}`} className="fw-bold text-body">{r.obra.titulo}</Link>
                   <div className="my-1"><span className={`badge ${ESTADO_RESERVA[r.estado][0]}`}>{ESTADO_RESERVA[r.estado][1]}</span></div>
-                  <div className="small text-muted">{r.estado === 'pronta' ? `Levante no balcão até ${data(r.levantarAte)}.` : `Pedida a ${data(r.criadaEm)}.`}</div>
-                  <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => cancelar(r)}>Cancelar</button>
+                  <div className="small text-muted">{r.estado === 'pronta' ? tx('Levante no balcão até {0}.', { 0: data(r.levantarAte) }) : tx('Pedida a {0}.', { 0: data(r.criadaEm) })}</div>
+                  <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => cancelar(r)}>{tx('Cancelar')}</button>
                 </div>
               </div>
             ))}

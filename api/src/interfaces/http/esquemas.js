@@ -49,15 +49,6 @@ export const corpoVisitante = z.object({ visitante }).loose()
 export const comentario = z.object({ nome: texto(200).default(''), texto: texto(5000).default(''), website: texto(500).optional(), visitante })
 export const visita = z.object({ visitante, caminho: texto(500).optional(), origem: texto(2000).optional() })
 
-// candidatura: a forma do pedido (as regras ficam no domínio); "website" é a armadilha para robôs
-export const candidatura = z.looseObject({ website: texto(500).optional() })
-export const filtrosCandidaturas = z.object({
-  estado: texto(30).optional(),
-  curso: texto(120).optional(),
-  q: texto(200).optional(),
-})
-export const avaliacao = z.object({ estado: texto(30).optional(), notas: texto(4000).optional() })
-
 // ---------- portal académico ----------
 const textoLivre = (max) => z.union([z.string().max(max), z.number()]).optional()
 export const conta = z.object({

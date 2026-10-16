@@ -20,6 +20,8 @@ describe('anti-plágio com internet (Brave) e avaliação de IA (Claude), simula
       // a pesquisa encontra o site para as frases que lá estão; para as outras, só uma página sem relação
       pesquisaWeb: { pesquisar: async (frase) => { pesquisas.push(frase); return SITE.includes(frase.slice(0, 40)) ? [{ titulo: 'Defesa territorial', url: 'https://defesa.exemplo.ao/doutrina' }] : [{ titulo: 'Outra', url: 'https://outro.exemplo.ao/' }] } },
       obterPagina: async (url) => (url.includes('defesa') ? { url, titulo: 'Doutrina de defesa territorial', texto: `Menu Inicio\n${SITE}\nContactos` } : { url, titulo: 'Outra', texto: 'Pagina sem relacao nenhuma com o trabalho, apenas noticias desportivas e meteorologia para o fim de semana em varias provincias.'.repeat(3) }),
+      // sem tradução automática: aqui o Claude simulado só avalia a utilização de IA
+      tradutor: null,
       claude: { json: async ({ conteudo }) => { pedidosClaude.push(conteudo); return { probabilidade: 72, avaliacao: 'Texto genérico e muito regular.', paragrafos: [{ n: 1, probabilidade: 80, motivo: 'Fórmulas genéricas' }, { n: 9, probabilidade: 99, motivo: 'não existe' }] } } },
     }
     amb = await criarAmbiente({ relogio: relogioFalso('2026-11-09T09:00:00Z'), externos })

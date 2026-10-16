@@ -10,7 +10,7 @@ import Curso3 from '../assets/Curso3.png'
 
 // Processo e calendário de admissão comuns a todos os cursos
 export const processoAdmissao = [
-  { titulo: 'Candidatura', texto: 'Submissão do formulário e dos documentos através do ramo de origem ou da Secretaria Académica.' },
+  { titulo: 'Candidatura', texto: 'Proposta do ramo de origem, com os documentos, entregue na Repartição de Pessoal e Quadros.' },
   { titulo: 'Análise documental', texto: 'Verificação dos requisitos de posto, tempo de serviço e habilitações.' },
   { titulo: 'Provas e entrevista', texto: 'Prova escrita de conhecimentos gerais e entrevista perante um júri.' },
   { titulo: 'Resultados', texto: 'Publicação da lista de admitidos e convocação para matrícula.' },

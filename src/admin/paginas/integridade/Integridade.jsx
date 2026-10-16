@@ -4,9 +4,10 @@ import { api } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import Relatorio, { ChipIA, ChipOriginalidade } from '../../../portal/integridade/Relatorio'
+import { t as tx, localAtual } from '../../../i18n/linguas'
 
-const dia = (iso) => (iso ? new Date(iso).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '')
-const FILTROS = { todas: 'Todas', alto: 'Elevada (35 % ou mais)', medio: 'A rever (15 a 35 %)', baixo: 'Baixa', ia: 'Indícios de IA (50 % ou mais)', erro: 'Sem texto' }
+const dia = (iso) => (iso ? new Date(iso).toLocaleString(localAtual(), { dateStyle: 'short', timeStyle: 'short' }) : '')
+const FILTROS = { todas: tx('Todas'), alto: tx('Elevada (35 % ou mais)'), medio: tx('A rever (15 a 35 %)'), baixo: tx('Baixa'), ia: tx('Indícios de IA (50 % ou mais)'), erro: tx('Sem texto') }
 const ACEITAR = 'application/pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 // Integridade académica (anti-plágio): análises, verificação avulsa e repositório de referência
@@ -42,20 +43,20 @@ function PainelIntegridade() {
   if (!d) return <Carregando />
 
   async function reindexar() {
-    if (!(await confirmar('Indexar as obras digitais da biblioteca e verificar os trabalhos entregues antes de haver anti-plágio? Pode demorar alguns minutos, em segundo plano.', { titulo: 'Indexar o acervo', botao: 'Indexar' }))) return
-    await api('/integridade/reindexar', { metodo: 'POST' }).then((r) => { setAviso({ texto: `Em curso: ${r.obras} obra(s) da biblioteca e ${r.entregas} entrega(s).` }); setTimeout(carregar, 3000) }).catch(falhou)
+    if (!(await confirmar(tx('Indexar as obras digitais da biblioteca e verificar os trabalhos entregues antes de haver anti-plágio? Pode demorar alguns minutos, em segundo plano.'), { titulo: tx('Indexar o acervo'), botao: tx('Indexar') }))) return
+    await api('/integridade/reindexar', { metodo: 'POST' }).then((r) => { setAviso({ texto: tx('Em curso: {0} obra(s) da biblioteca e {1} entrega(s).', { 0: r.obras, 1: r.entregas }) }); setTimeout(carregar, 3000) }).catch(falhou)
   }
   const numeros = [
-    ['Análises', d.total, 'fa-fingerprint', 'bg-dark'],
-    ['Semelhança elevada', d.altas, 'fa-exclamation-triangle', 'bg-danger'],
-    ['Trabalhos indexados', d.fontes.entrega || 0, 'fa-inbox', 'bg-info'],
-    ['Obras da biblioteca', d.fontes.biblioteca || 0, 'fa-book', 'bg-success'],
-    ['Documentos de referência', d.fontes.repositorio || 0, 'fa-archive', 'bg-purple'],
+    [tx('Análises'), d.total, 'fa-fingerprint', 'bg-dark'],
+    [tx('Semelhança elevada'), d.altas, 'fa-exclamation-triangle', 'bg-danger'],
+    [tx('Trabalhos indexados'), d.fontes.entrega || 0, 'fa-inbox', 'bg-info'],
+    [tx('Obras da biblioteca'), d.fontes.biblioteca || 0, 'fa-book', 'bg-success'],
+    [tx('Documentos de referência'), d.fontes.repositorio || 0, 'fa-archive', 'bg-purple'],
   ]
   return (
     <>
-      <CabecalhoPagina titulo="Integridade académica" subtitulo="verificação de originalidade (anti-plágio)" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Integridade académica' }]}>
-        <button type="button" className="btn btn-white" onClick={reindexar}><i className="fa fa-sync me-1" />Indexar o acervo</button>
+      <CabecalhoPagina titulo={tx('Integridade académica')} subtitulo={tx('verificação de originalidade (anti-plágio)')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Integridade académica') }]}>
+        <button type="button" className="btn btn-white" onClick={reindexar}><i className="fa fa-sync me-1" />{tx('Indexar o acervo')}</button>
       </CabecalhoPagina>
       <div className="row g-3 mb-3">
         {numeros.map(([r, v, i, c]) => (
@@ -64,16 +65,16 @@ function PainelIntegridade() {
       </div>
       <div className="row">
         <div className="col-xl-8">
-          <Painel titulo={`Análises (${lista.length})`} corpo={false}>
+          <Painel titulo={tx('Análises ({0})', { 0: lista.length })} corpo={false}>
             <div className="p-3 d-flex flex-wrap gap-2 border-bottom">
-              <input type="search" className="form-control" style={{ maxWidth: 320 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Título, autor ou cadeira" aria-label="Procurar análises" />
-              <select className="form-select w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Filtrar por semelhança">{Object.entries(FILTROS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+              <input type="search" className="form-control" style={{ maxWidth: 320 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('Título, autor ou cadeira')} aria-label={tx('Procurar análises')} />
+              <select className="form-select w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label={tx('Filtrar por semelhança')}>{Object.entries(FILTROS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
             </div>
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
-                <thead><tr><th>Documento</th><th>Origem</th><th>Maior fonte</th><th className="text-center">Semelhança</th></tr></thead>
+                <thead><tr><th>{tx('Documento')}</th><th>{tx('Origem')}</th><th>{tx('Maior fonte')}</th><th className="text-center">{tx('Semelhança')}</th></tr></thead>
                 <tbody>
-                  {lista.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-4">Sem análises{filtro !== 'todas' || q ? ' com estes filtros' : ''}.</td></tr>}
+                  {lista.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-4">{tx('Sem análises')}{filtro !== 'todas' || q ? tx(' com estes filtros') : ''}.</td></tr>}
                   {lista.map((a) => (
                     <tr key={a.id}>
                       <td>
@@ -91,10 +92,10 @@ function PainelIntegridade() {
           </Painel>
         </div>
         <div className="col-xl-4">
-          <Enviar titulo="Verificar um documento" icone="fa-search" caminho="/integridade/verificar" botao="Verificar" guardar
-            nota="TFC, tese ou artigo a avaliar. O ficheiro não fica guardado: só o texto." feito={(r) => { setAviso({ texto: `"${r.documento.titulo}" em verificação.` }); carregar() }} falhou={falhou} />
-          <Enviar titulo="Repositório de referência" icone="fa-archive" caminho="/integridade/repositorio" botao="Juntar ao repositório" contexto
-            nota="Teses, TFC de anos anteriores e outros textos com que os trabalhos passam a ser comparados." feito={(r) => { setAviso({ texto: `"${r.titulo}" juntado ao repositório (${r.palavras} palavras).` }); carregar() }} falhou={falhou} />
+          <Enviar titulo={tx('Verificar um documento')} icone="fa-search" caminho="/integridade/verificar" botao={tx('Verificar')} guardar
+            nota={tx('TFC, tese ou artigo a avaliar. O ficheiro não fica guardado: só o texto.')} feito={(r) => { setAviso({ texto: tx('"{0}" em verificação.', { 0: r.documento.titulo }) }); carregar() }} falhou={falhou} />
+          <Enviar titulo={tx('Repositório de referência')} icone="fa-archive" caminho="/integridade/repositorio" botao={tx('Juntar ao repositório')} contexto
+            nota={tx('Teses, TFC de anos anteriores e outros textos com que os trabalhos passam a ser comparados.')} feito={(r) => { setAviso({ texto: tx('"{0}" juntado ao repositório ({1} palavras).', { 0: r.titulo, 1: r.palavras }) }); carregar() }} falhou={falhou} />
           <Repositorio l={repo} origens={d.origens} carregar={carregar} falhou={falhou} />
         </div>
       </div>
@@ -110,7 +111,7 @@ function Enviar({ titulo, icone, caminho, botao, nota, guardar, contexto, feito,
   const [chave, setChave] = useState(0)
   async function enviar(e) {
     e.preventDefault()
-    if (!ficheiro) return falhou(new Error('Escolha o documento (PDF ou Word).'))
+    if (!ficheiro) return falhou(new Error(tx('Escolha o documento (PDF ou Word).')))
     setAEnviar(true)
     try {
       const fd = new FormData()
@@ -131,14 +132,14 @@ function Enviar({ titulo, icone, caminho, botao, nota, guardar, contexto, feito,
   return (
     <Painel titulo={<><i className={`fa ${icone} me-2`} />{titulo}</>}>
       <form onSubmit={enviar}>
-        <input key={chave} type="file" accept={ACEITAR} className="form-control mb-2" onChange={(e) => setFicheiro(e.target.files[0] || null)} aria-label="Documento (PDF ou Word)" />
+        <input key={chave} type="file" accept={ACEITAR} className="form-control mb-2" onChange={(e) => setFicheiro(e.target.files[0] || null)} aria-label={tx('Documento (PDF ou Word)')} />
         <div className="row g-2">
-          <div className="col-7"><input className="form-control form-control-sm" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder="Título" aria-label="Título" id={`${id}-t`} /></div>
-          <div className="col-5"><input className="form-control form-control-sm" value={f.autor} onChange={(e) => setF({ ...f, autor: e.target.value })} placeholder="Autor" aria-label="Autor" /></div>
-          {contexto && <div className="col-12"><input className="form-control form-control-sm" value={f.contexto} onChange={(e) => setF({ ...f, contexto: e.target.value })} placeholder="Coleção (ex.: TFC CEM 2023/2024)" aria-label="Coleção" /></div>}
+          <div className="col-7"><input className="form-control form-control-sm" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder={tx('Título')} aria-label={tx('Título')} id={`${id}-t`} /></div>
+          <div className="col-5"><input className="form-control form-control-sm" value={f.autor} onChange={(e) => setF({ ...f, autor: e.target.value })} placeholder={tx('Autor')} aria-label={tx('Autor')} /></div>
+          {contexto && <div className="col-12"><input className="form-control form-control-sm" value={f.contexto} onChange={(e) => setF({ ...f, contexto: e.target.value })} placeholder={tx('Coleção (ex.: TFC CEM 2023/2024)')} aria-label={tx('Coleção')} /></div>}
         </div>
-        {guardar && <label className="small mt-2 d-block"><input type="checkbox" checked={f.guardar} onChange={(e) => setF({ ...f, guardar: e.target.checked })} /> Guardar também no repositório</label>}
-        <button type="submit" className="btn btn-sm btn-theme mt-2" disabled={aEnviar}>{aEnviar ? 'A ler o documento…' : botao}</button>
+        {guardar && <label className="small mt-2 d-block"><input type="checkbox" checked={f.guardar} onChange={(e) => setF({ ...f, guardar: e.target.checked })} /> {tx('Guardar também no repositório')}</label>}
+        <button type="submit" className="btn btn-sm btn-theme mt-2" disabled={aEnviar}>{aEnviar ? tx('A ler o documento…') : botao}</button>
         <div className="small text-muted mt-2">{nota}</div>
       </form>
     </Painel>
@@ -147,18 +148,18 @@ function Enviar({ titulo, icone, caminho, botao, nota, guardar, contexto, feito,
 
 function Repositorio({ l, origens, carregar, falhou }) {
   async function apagar(doc) {
-    if (!(await confirmar(`Retirar "${doc.titulo}" do repositório? Deixa de servir de comparação.`, { titulo: 'Retirar documento', botao: 'Retirar', perigo: true }))) return
+    if (!(await confirmar(tx('Retirar "{0}" do repositório? Deixa de servir de comparação.', { 0: doc.titulo }), { titulo: tx('Retirar documento'), botao: tx('Retirar'), perigo: true }))) return
     await api(`/integridade/documentos/${doc.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
   }
   return (
-    <Painel titulo={`Fontes de referência (${l?.length ?? '…'})`} corpo={false}>
+    <Painel titulo={tx('Fontes de referência ({0})', { 0: l?.length ?? '…' })} corpo={false}>
       <div className="list-group list-group-flush" style={{ maxHeight: 360, overflowY: 'auto' }}>
-        {l?.length === 0 && <div className="list-group-item small text-muted">Sem documentos de referência nem obras digitais indexadas.</div>}
+        {l?.length === 0 && <div className="list-group-item small text-muted">{tx('Sem documentos de referência nem obras digitais indexadas.')}</div>}
         {l?.map((doc) => (
           <div key={doc.id} className="list-group-item d-flex gap-2 align-items-center">
             <i className={`fa ${doc.origem === 'biblioteca' ? 'fa-book text-success' : 'fa-archive text-purple'}`} />
-            <span className="flex-grow-1 min-w-0 small"><b className="d-block text-truncate">{doc.titulo}</b><span className="text-muted">{[origens[doc.origem], doc.autor, `${doc.palavras} palavras`].filter(Boolean).join(' · ')}</span></span>
-            {doc.origem === 'repositorio' && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(doc)} aria-label={`Retirar ${doc.titulo}`}><i className="fa fa-times" /></button>}
+            <span className="flex-grow-1 min-w-0 small"><b className="d-block text-truncate">{doc.titulo}</b><span className="text-muted">{[origens[doc.origem], doc.autor, tx('{0} palavras', { 0: doc.palavras })].filter(Boolean).join(' · ')}</span></span>
+            {doc.origem === 'repositorio' && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(doc)} aria-label={tx('Retirar {0}', { 0: doc.titulo })}><i className="fa fa-times" /></button>}
           </div>
         ))}
       </div>
@@ -180,8 +181,8 @@ function VerAnalise({ id }) {
   if (!r) return <Carregando />
   return (
     <>
-      <CabecalhoPagina titulo="Relatório de originalidade" subtitulo={r.origens[r.documento.origem]} migalhas={[{ rotulo: 'Integridade académica', para: '/integridade' }, { rotulo: r.documento.titulo }]}>
-        <Link to="/integridade" className="btn btn-white"><i className="fa fa-arrow-left me-1" />Voltar</Link>
+      <CabecalhoPagina titulo={tx('Relatório de originalidade')} subtitulo={r.origens[r.documento.origem]} migalhas={[{ rotulo: tx('Integridade académica'), para: '/integridade' }, { rotulo: r.documento.titulo }]}>
+        <Link to="/integridade" className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</Link>
       </CabecalhoPagina>
       <Relatorio r={r} />
     </>

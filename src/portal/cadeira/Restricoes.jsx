@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { api } from '../api'
 import { Campo } from '../componentes'
 import { localParaIso, paraLocal } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
-const NOMES = { material: 'Material', trabalho: 'Trabalho', questionario: 'Questionário', inquerito: 'Inquérito', workshop: 'Avaliação por pares' }
+const NOMES = { material: tx('Material'), trabalho: tx('Trabalho'), questionario: tx('Questionário'), inquerito: tx('Inquérito'), workshop: tx('Avaliação por pares') }
 
 /*
   Restringir o acesso a uma atividade (como o "Restrict access" do Moodle): visível ou escondida,
@@ -38,7 +39,7 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
         })
         await api('/atividades/restricoes', { metodo: 'PUT', corpo: { tipo: alvo.especie, id: alvo.id, visivel: f.visivel, disponivelDe, requisitos } })
       }
-      avisar({ texto: 'Restrições guardadas.' })
+      avisar({ texto: tx('Restrições guardadas.') })
       guardado()
     } catch (falha) {
       setErro(falha.message)
@@ -52,49 +53,49 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
         <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
           <form className="modal-content" onSubmit={guardar}>
             <div className="modal-header">
-              <h4 className="modal-title" id="restricoes-titulo"><i className="fa fa-lock me-2" />Acesso: {(secao || alvo).titulo}</h4>
-              <button type="button" className="btn-close" onClick={fechar} disabled={aGuardar} aria-label="Fechar" />
+              <h4 className="modal-title" id="restricoes-titulo"><i className="fa fa-lock me-2" />{tx('Acesso:')} {(secao || alvo).titulo}</h4>
+              <button type="button" className="btn-close" onClick={fechar} disabled={aGuardar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body p-formulario">
               {erro && <p className="p-erro" role="alert">{erro}</p>}
               <div className="form-check form-switch">
                 <input id="r-visivel" className="form-check-input" type="checkbox" checked={f.visivel} onChange={(e) => setF({ ...f, visivel: e.target.checked })} />
-                <label className="form-check-label fw-bold" htmlFor="r-visivel">Visível para os estudantes</label>
-                <div className="small text-muted">{secao ? 'Um capítulo escondido esconde todas as suas atividades.' : 'Escondida, a atividade não aparece nem conta para o progresso.'}</div>
+                <label className="form-check-label fw-bold" htmlFor="r-visivel">{tx('Visível para os estudantes')}</label>
+                <div className="small text-muted">{secao ? tx('Um capítulo escondido esconde todas as suas atividades.') : tx('Escondida, a atividade não aparece nem conta para o progresso.')}</div>
               </div>
-              <Campo id="r-data" rotulo="Disponível a partir de (opcional)" ajuda={secao ? 'Até lá, as atividades do capítulo aparecem fechadas.' : 'Até lá aparece fechada, com a data de abertura.'}>
+              <Campo id="r-data" rotulo={tx('Disponível a partir de (opcional)')} ajuda={secao ? tx('Até lá, as atividades do capítulo aparecem fechadas.') : tx('Até lá aparece fechada, com a data de abertura.')}>
                 <input id="r-data" type="datetime-local" value={f.disponivelDe} onChange={(e) => setF({ ...f, disponivelDe: e.target.value })} />
               </Campo>
 
               {!secao && (
                 <div>
-                  <span className="form-label fw-bold d-block mb-1">Só abre depois de concluir</span>
-                  <p className="small text-muted mb-2">Material: marcado como feito. Trabalho: entregue. Questionário: feito. Inquérito: respondido. Com nota mínima, conta a nota do trabalho ou a melhor do questionário.</p>
-                  {f.requisitos.length === 0 && <div className="small text-muted mb-2">Sem condições.</div>}
+                  <span className="form-label fw-bold d-block mb-1">{tx('Só abre depois de concluir')}</span>
+                  <p className="small text-muted mb-2">{tx('Material: marcado como feito. Trabalho: entregue. Questionário: feito. Inquérito: respondido. Com nota mínima, conta a nota do trabalho ou a melhor do questionário.')}</p>
+                  {f.requisitos.length === 0 && <div className="small text-muted mb-2">{tx('Sem condições.')}</div>}
                   {f.requisitos.map((r, i) => {
                     const a = daChave(r.chave)
                     return (
                       <div key={i} className="d-flex gap-2 align-items-center mb-2">
-                        <select className="form-select form-select-sm" value={r.chave} onChange={(e) => requisito(i, 'chave', e.target.value)} aria-label={`Condição ${i + 1}`}>
+                        <select className="form-select form-select-sm" value={r.chave} onChange={(e) => requisito(i, 'chave', e.target.value)} aria-label={tx('Condição {0}', { 0: i + 1 })}>
                           {a && <option value={a.chave}>{NOMES[a.especie]}: {a.titulo}</option>}
                           {livres.map((x) => <option key={x.chave} value={x.chave}>{NOMES[x.especie]}: {x.titulo}</option>)}
                         </select>
                         {a && !['material', 'inquerito'].includes(a.especie) && (
-                          <input className="form-control form-control-sm" style={{ width: 130 }} inputMode="decimal" value={r.notaMinima} onChange={(e) => requisito(i, 'notaMinima', e.target.value)} placeholder="Nota mínima" aria-label={`Nota mínima da condição ${i + 1}`} />
+                          <input className="form-control form-control-sm" style={{ width: 130 }} inputMode="decimal" value={r.notaMinima} onChange={(e) => requisito(i, 'notaMinima', e.target.value)} placeholder={tx('Nota mínima')} aria-label={tx('Nota mínima da condição {0}', { 0: i + 1 })} />
                         )}
-                        <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, requisitos: f.requisitos.filter((_, j) => j !== i) })} aria-label="Retirar condição"><i className="fa fa-times" /></button>
+                        <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, requisitos: f.requisitos.filter((_, j) => j !== i) })} aria-label={tx('Retirar condição')}><i className="fa fa-times" /></button>
                       </div>
                     )
                   })}
                   {livres.length > 0 && f.requisitos.length < 10 && (
-                    <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, requisitos: [...f.requisitos, { chave: livres[0].chave, notaMinima: '' }] })}><i className="fa fa-plus me-1" />Condição</button>
+                    <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, requisitos: [...f.requisitos, { chave: livres[0].chave, notaMinima: '' }] })}><i className="fa fa-plus me-1" />{tx('Condição')}</button>
                   )}
                 </div>
               )}
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={fechar} disabled={aGuardar}>Cancelar</button>
-              <button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? 'A guardar…' : 'Guardar'}</button>
+              <button type="button" className="btn btn-white" onClick={fechar} disabled={aGuardar}>{tx('Cancelar')}</button>
+              <button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar')}</button>
             </div>
           </form>
         </div>

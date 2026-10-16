@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSessao } from '../sessaoContexto'
 import MolduraEntrada from './MolduraEntrada'
+import { t as tx } from '../../i18n/linguas'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -25,34 +26,34 @@ function Entrar() {
   }
 
   return (
-    <MolduraEntrada sobretitulo="Estudantes e docentes" titulo="Portal Académico" subtitulo="Entre com o seu e-mail da Escola">
+    <MolduraEntrada sobretitulo={tx('Estudantes e docentes')} titulo={tx('Portal Académico')} subtitulo={tx('Entre com o seu e-mail da Escola')}>
       <form onSubmit={submeter} className="fs-13px" noValidate>
         {erro && <div className="alert alert-danger d-flex align-items-center py-2 mb-20px" role="alert"><i className="fa fa-exclamation-circle me-2" />{erro}</div>}
 
-        <label className="entrada-rotulo" htmlFor="email">E-mail</label>
+        <label className="entrada-rotulo" htmlFor="email">{tx('E-mail')}</label>
         <div className="entrada-campo mb-20px">
           <i className="fa fa-envelope" aria-hidden="true" />
-          <input id="email" type="email" className="form-control" autoComplete="username" placeholder="nome@esgfaa.gov.ao" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input id="email" type="email" className="form-control" autoComplete="username" placeholder={tx('nome@esgfaa.gov.ao')} value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
-        <label className="entrada-rotulo" htmlFor="senha">Palavra-passe</label>
+        <label className="entrada-rotulo" htmlFor="senha">{tx('Palavra-passe')}</label>
         <div className="entrada-campo mb-30px">
           <i className="fa fa-lock" aria-hidden="true" />
           <input id="senha" type={ver ? 'text' : 'password'} className="form-control" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} required />
-          <button type="button" className="entrada-ver" onClick={() => setVer(!ver)} aria-label={ver ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'}>
+          <button type="button" className="entrada-ver" onClick={() => setVer(!ver)} aria-label={ver ? tx('Esconder palavra-passe') : tx('Mostrar palavra-passe')}>
             <i className={`fa ${ver ? 'fa-eye-slash' : 'fa-eye'}`} />
           </button>
         </div>
 
         <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar || !email || !senha}>
-          {aEntrar ? <><span className="spinner-border spinner-border-sm me-2" />A entrar…</> : <>Entrar <i className="fa fa-arrow-right ms-2" /></>}
+          {aEntrar ? <><span className="spinner-border spinner-border-sm me-2" />{tx('A entrar…')}</> : <>{tx('Entrar')} <i className="fa fa-arrow-right ms-2" /></>}
         </button>
 
         <div className="entrada-aviso">
           <i className="fa fa-info-circle" aria-hidden="true" />
-          <span>Primeira vez? A palavra-passe inicial é o seu e-mail da Escola; vai ser-lhe pedido que a mude. Problemas no acesso: Administração Escolar.</span>
+          <span>{tx('Primeira vez? A palavra-passe inicial é o seu e-mail da Escola; vai ser-lhe pedido que a mude. Problemas no acesso: Administração Escolar.')}</span>
         </div>
-        <a href={SITE} className="entrada-voltar"><i className="fa fa-arrow-left me-2" />Voltar ao site da Escola</a>
+        <a href={SITE} className="entrada-voltar"><i className="fa fa-arrow-left me-2" />{tx('Voltar ao site da Escola')}</a>
       </form>
     </MolduraEntrada>
   )

@@ -1,4 +1,5 @@
 import { ESCALA } from './cadeira/escala'
+import { t as tx } from '../i18n/linguas'
 
 /*
   Perguntas de opinião (escolha, escala de 1 a 5, resposta aberta) para responder:
@@ -27,7 +28,7 @@ function FormularioOpiniao({ perguntas, respostas, definir, numerar = false }) {
           ))}
         </div>
       )}
-      {p.tipo === 'aberta' && <textarea className="form-control" rows={3} maxLength={2000} value={respostas[k] || ''} onChange={(e) => definir(k, e.target.value)} aria-label={p.texto} placeholder="Opcional" />}
+      {p.tipo === 'aberta' && <textarea className="form-control" rows={3} maxLength={2000} value={respostas[k] || ''} onChange={(e) => definir(k, e.target.value)} aria-label={p.texto} placeholder={tx('Opcional')} />}
     </fieldset>
   ))
 }

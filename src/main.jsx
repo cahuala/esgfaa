@@ -1,10 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import App from './App.jsx'
 import ConteudoProvider from './conteudo/ConteudoProvider'
 import IdiomaProvider from './i18n/IdiomaProvider'
+import { prepararLingua } from './i18n/linguas'
 import './index.css'
+
+// a aplicação só é carregada depois do dicionário da língua (fora do português)
+const [{ default: App }] = await Promise.all([import('./App.jsx'), prepararLingua()])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { NOMES_PERMISSOES, NOMES_RECURSOS } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
+import { t as tx } from '../../i18n/linguas'
 
 const ACOES = ['ver', 'criar', 'editar', 'apagar', 'publicar', 'gerir', 'notas', 'registar']
 
@@ -54,7 +55,7 @@ function Papeis() {
     setAGuardar(true)
     try {
       await api(`/papeis/${selecionado.id}`, { metodo: 'PUT', corpo: selecionado })
-      setAviso({ texto: `Papel “${selecionado.nome}” guardado. As alterações aplicam-se de imediato.` })
+      setAviso({ texto: tx('Papel “{0}” guardado. As alterações aplicam-se de imediato.', { 0: selecionado.nome }) })
       carregar(selecionado.id)
     } catch (e) {
       setAviso({ tipo: 'erro', texto: e.message })
@@ -66,7 +67,7 @@ function Papeis() {
   async function novoPapel() {
     try {
       const { id } = await api('/papeis', { metodo: 'POST', corpo: { nome: 'Novo papel', descricao: '', permissoes: [] } })
-      setAviso({ texto: 'Papel criado. Dê-lhe um nome e escolha as permissões.' })
+      setAviso({ texto: tx('Papel criado. Dê-lhe um nome e escolha as permissões.') })
       carregar(id)
     } catch (e) {
       setAviso({ tipo: 'erro', texto: e.message })
@@ -75,15 +76,15 @@ function Papeis() {
 
   function apagar() {
     setConfirmar({
-      titulo: 'Apagar papel',
-      texto: <>Apagar o papel <b>{selecionado.nome}</b>? Só é possível se nenhum utilizador o tiver.</>,
-      botao: 'Apagar',
+      titulo: tx('Apagar papel'),
+      texto: <>{tx('Apagar o papel')} <b>{selecionado.nome}</b>{tx('? Só é possível se nenhum utilizador o tiver.')}</>,
+      botao: tx('Apagar'),
       perigo: true,
       confirmar: async () => {
         setConfirmar(null)
         try {
           await api(`/papeis/${selecionado.id}`, { metodo: 'DELETE' })
-          setAviso({ texto: 'Papel apagado.' })
+          setAviso({ texto: tx('Papel apagado.') })
           carregar()
         } catch (e) {
           setAviso({ tipo: 'erro', texto: e.message })
@@ -94,8 +95,8 @@ function Papeis() {
 
   return (
     <>
-      <CabecalhoPagina titulo="Papéis e permissões" subtitulo="controlo de acessos (RBAC)" migalhas={[{ rotulo: 'Papéis e permissões' }]}>
-        {gerir && <button className="btn btn-theme" onClick={novoPapel}><i className="fa fa-plus me-1" /> Novo papel</button>}
+      <CabecalhoPagina titulo={tx('Papéis e permissões')} subtitulo={tx('controlo de acessos (RBAC)')} migalhas={[{ rotulo: tx('Papéis e permissões') }]}>
+        {gerir && <button className="btn btn-theme" onClick={novoPapel}><i className="fa fa-plus me-1" /> {tx('Novo papel')}</button>}
       </CabecalhoPagina>
       {erro && <Erro texto={erro} onRepetir={() => carregar()} />}
       {!dados && !erro && <Carregando />}
@@ -103,7 +104,7 @@ function Papeis() {
       {dados && selecionado && (
         <div className="row">
           <div className="col-xl-3">
-            <Painel titulo="Papéis" corpo={false}>
+            <Painel titulo={tx('Papéis')} corpo={false}>
               <div className="list-group list-group-flush rounded-bottom">
                 {dados.papeis.map((p) => (
                   <button
@@ -114,10 +115,10 @@ function Papeis() {
                   >
                     <div className="d-flex align-items-center">
                       <span className="fw-bold flex-grow-1">{p.nome}</span>
-                      {p.sistema && <i className="fa fa-lock ms-2" title="Papel de sistema" />}
+                      {p.sistema && <i className="fa fa-lock ms-2" title={tx('Papel de sistema')} />}
                     </div>
                     <small className={p.id === selecionado.id ? '' : 'text-muted'}>
-                      {p.utilizadores} utilizador(es) · {p.permissoes.length} permissões
+                      {p.utilizadores} {tx('utilizador(es) ·')} {p.permissoes.length} {tx('permissões')}
                     </small>
                   </button>
                 ))}
@@ -126,23 +127,23 @@ function Papeis() {
           </div>
 
           <div className="col-xl-9">
-            <Painel titulo={`Permissões — ${selecionado.nome}`}>
+            <Painel titulo={tx('Permissões — {0}', { 0: selecionado.nome })}>
               {selecionado.sistema && (
-                <div className="alert alert-info py-2"><i className="fa fa-lock me-2" />O Administrador tem sempre acesso total. Este papel não pode ser alterado nem apagado.</div>
+                <div className="alert alert-info py-2"><i className="fa fa-lock me-2" />{tx('O Administrador tem sempre acesso total. Este papel não pode ser alterado nem apagado.')}</div>
               )}
               {!gerir && !selecionado.sistema && (
-                <div className="alert alert-warning py-2"><i className="fa fa-eye me-2" />Só pode consultar. Alterar papéis exige a permissão “Papéis e permissões → Gerir”.</div>
+                <div className="alert alert-warning py-2"><i className="fa fa-eye me-2" />{tx('Só pode consultar. Alterar papéis exige a permissão “Papéis e permissões → Gerir”.')}</div>
               )}
 
               <div className="form-horizontal">
                 <div className="row mb-15px">
-                  <label className="form-label col-form-label col-md-3" htmlFor="papel-nome">Nome do papel</label>
+                  <label className="form-label col-form-label col-md-3" htmlFor="papel-nome">{tx('Nome do papel')}</label>
                   <div className="col-md-9">
                     <input id="papel-nome" className="form-control" value={selecionado.nome} disabled={bloqueado} onChange={(e) => setSelecionado({ ...selecionado, nome: e.target.value })} />
                   </div>
                 </div>
                 <div className="row mb-15px">
-                  <label className="form-label col-form-label col-md-3" htmlFor="papel-desc">Descrição</label>
+                  <label className="form-label col-form-label col-md-3" htmlFor="papel-desc">{tx('Descrição')}</label>
                   <div className="col-md-9">
                     <input id="papel-desc" className="form-control" value={selecionado.descricao || ''} disabled={bloqueado} onChange={(e) => setSelecionado({ ...selecionado, descricao: e.target.value })} />
                   </div>
@@ -153,9 +154,9 @@ function Papeis() {
                 <table className="table table-bordered align-middle text-center mb-0 tabela-permissoes">
                   <thead>
                     <tr>
-                      <th className="text-start">Área</th>
+                      <th className="text-start">{tx('Área')}</th>
                       {ACOES.map((a) => <th key={a}>{NOMES_PERMISSOES[a]}</th>)}
-                      <th>Tudo</th>
+                      <th>{tx('Tudo')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -181,7 +182,7 @@ function Papeis() {
                             )
                           })}
                           <td>
-                            <input type="checkbox" className="form-check-input" checked={completas} disabled={bloqueado} onChange={() => alternarLinha(r)} aria-label={`${NOMES_RECURSOS[r.id]}: tudo`} />
+                            <input type="checkbox" className="form-check-input" checked={completas} disabled={bloqueado} onChange={() => alternarLinha(r)} aria-label={tx('{0}: tudo', { 0: NOMES_RECURSOS[r.id] })} />
                           </td>
                         </tr>
                       )
@@ -191,18 +192,17 @@ function Papeis() {
               </div>
 
               <div className="small text-muted mt-3">
-                <i className="fa fa-info-circle me-1" /><b>Publicar</b>: quem não a tem guarda só rascunhos e não altera conteúdos já publicados.
-                Qualquer ação marca automaticamente <b>Ver</b>.
+                <i className="fa fa-info-circle me-1" /><b>{tx('Publicar')}</b>{tx(': quem não a tem guarda só rascunhos e não altera conteúdos já publicados. Qualquer ação marca automaticamente')} <b>{tx('Ver')}</b>.
               </div>
 
               {!bloqueado && (
                 <div className="d-flex justify-content-between mt-4">
-                  <button className="btn btn-white text-danger" onClick={apagar} disabled={selecionado.utilizadores > 0} title={selecionado.utilizadores > 0 ? 'Há utilizadores com este papel' : ''}>
-                    <i className="fa fa-trash-alt me-1" /> Apagar papel
+                  <button className="btn btn-white text-danger" onClick={apagar} disabled={selecionado.utilizadores > 0} title={selecionado.utilizadores > 0 ? tx('Há utilizadores com este papel') : ''}>
+                    <i className="fa fa-trash-alt me-1" /> {tx('Apagar papel')}
                   </button>
                   <div className="d-flex gap-2">
-                    <button className="btn btn-white" disabled={!alterado} onClick={() => setSelecionado(structuredClone(original))}>Anular alterações</button>
-                    <button className="btn btn-theme" disabled={!alterado || aGuardar} onClick={guardar}><i className="fa fa-save me-1" /> Guardar papel</button>
+                    <button className="btn btn-white" disabled={!alterado} onClick={() => setSelecionado(structuredClone(original))}>{tx('Anular alterações')}</button>
+                    <button className="btn btn-theme" disabled={!alterado || aGuardar} onClick={guardar}><i className="fa fa-save me-1" /> {tx('Guardar papel')}</button>
                   </div>
                 </div>
               )}

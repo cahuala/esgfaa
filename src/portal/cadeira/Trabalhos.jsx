@@ -7,9 +7,10 @@ import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal
 import { EditorGrelha, TabelaGrelha } from './Grelha'
 import { confirmar } from '../dialogos'
 import { ChipIA, ChipOriginalidade } from '../integridade/Relatorio'
+import { t as tx, localAtual } from '../../i18n/linguas'
 
-const ESTADO = { aberto: ['verde', 'Aberto'], atrasado: ['dourado', 'Fora de prazo (aceita atrasos)'], fechado: ['cinzento', 'Fechado'] }
-const TIPOS_ENTREGA = { ficheiro: 'Ficheiros', texto: 'Texto escrito no portal', ambos: 'Ficheiros e texto' }
+const ESTADO = { aberto: ['verde', tx('Aberto')], atrasado: ['dourado', tx('Fora de prazo (aceita atrasos)')], fechado: ['cinzento', tx('Fechado')] }
+const TIPOS_ENTREGA = { ficheiro: tx('Ficheiros'), texto: tx('Texto escrito no portal'), ambos: tx('Ficheiros e texto') }
 
 // lista de ficheiros (entrega ou correção), cada um com descarregar
 function ListaFicheiros({ ficheiros, baixar }) {
@@ -35,32 +36,32 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
 
   return (
     <div className="p-coluna">
-      {lista.length === 0 && <Vazio>Trabalho não encontrado.</Vazio>}
+      {lista.length === 0 && <Vazio>{tx('Trabalho não encontrado.')}</Vazio>}
       {lista.map((t) => (
         <div key={t.id}>
           <Cartao titulo={<><i className="fa fa-file-signature me-2" />{t.titulo}</>} acoes={<Etiqueta cor={ESTADO[t.estado][0]}>{ESTADO[t.estado][1]}</Etiqueta>}>
             <div className="d-flex flex-wrap gap-3 small mb-2">
-              <span><i className="far fa-clock me-1" />Prazo: <b>{dataHora(t.prazo)}</b> · {faltam(t.prazo)}</span>
-              {t.prorrogado && <span className="badge bg-info">Prazo alargado para si (o geral era {dataHora(t.prazoOriginal)})</span>}
-              <span><i className="fa fa-inbox me-1" />{TIPOS_ENTREGA[t.tipoEntrega]}{t.tipoEntrega !== 'texto' && ` · até ${t.maxFicheiros} ficheiro(s)`}</span>
-              {t.aceitaAtraso && <span className="text-warning"><i className="fa fa-exclamation-triangle me-1" />Aceita entregas fora de prazo</span>}
-              {t.emGrupo && <span className="badge bg-indigo"><i className="fa fa-users me-1" />Trabalho em grupo</span>}
+              <span><i className="far fa-clock me-1" />{tx('Prazo:')} <b>{dataHora(t.prazo)}</b> · {faltam(t.prazo)}</span>
+              {t.prorrogado && <span className="badge bg-info">{tx('Prazo alargado para si (o geral era')} {dataHora(t.prazoOriginal)})</span>}
+              <span><i className="fa fa-inbox me-1" />{TIPOS_ENTREGA[t.tipoEntrega]}{t.tipoEntrega !== 'texto' && tx(' · até {0} ficheiro(s)', { 0: t.maxFicheiros })}</span>
+              {t.aceitaAtraso && <span className="text-warning"><i className="fa fa-exclamation-triangle me-1" />{tx('Aceita entregas fora de prazo')}</span>}
+              {t.emGrupo && <span className="badge bg-indigo"><i className="fa fa-users me-1" />{tx('Trabalho em grupo')}</span>}
             </div>
             {t.enunciado && <p className="p-texto-pre">{t.enunciado}</p>}
-            {t.ficheiroId && <button type="button" className="btn btn-white btn-sm mb-2" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><i className="fa fa-download me-1" />Enunciado</button>}
+            {t.ficheiroId && <button type="button" className="btn btn-white btn-sm mb-2" onClick={() => baixar(t.ficheiroId, `Enunciado - ${t.titulo}`)}><i className="fa fa-download me-1" />{tx('Enunciado')}</button>}
             {t.grelha?.length > 0 && (
               <details className="mb-2">
-                <summary className="small fw-bold">Grelha de avaliação ({t.grelha.length} critérios)</summary>
+                <summary className="small fw-bold">{tx('Grelha de avaliação (')}{t.grelha.length} {tx('critérios)')}</summary>
                 <div className="mt-2"><TabelaGrelha grelha={t.grelha} /></div>
               </details>
             )}
             {eDocente ? (
               <div className="p-acoes-linha">
-                <button type="button" className="btn btn-white btn-sm" onClick={() => setDefinicoes(!definicoes)}><i className="fa fa-cog me-1" />Definições</button>
+                <button type="button" className="btn btn-white btn-sm" onClick={() => setDefinicoes(!definicoes)}><i className="fa fa-cog me-1" />{tx('Definições')}</button>
                 <button type="button" className="btn btn-white btn-sm text-danger" onClick={async () => {
-                  if (!(await confirmar(`Apagar "${t.titulo}" e todas as entregas?`, { titulo: 'Apagar trabalho', botao: 'Apagar', perigo: true }))) return
+                  if (!(await confirmar(tx('Apagar "{0}" e todas as entregas?', { 0: t.titulo }), { titulo: tx('Apagar trabalho'), botao: tx('Apagar'), perigo: true }))) return
                   await api(`/trabalhos/${t.id}`, { metodo: 'DELETE' }).then(recarregar).catch((x) => avisar({ tipo: 'erro', texto: x.message }))
-                }}><i className="fa fa-trash-alt me-1" />Apagar</button>
+                }}><i className="fa fa-trash-alt me-1" />{tx('Apagar')}</button>
               </div>
             ) : t.bloqueio ? <Bloqueio motivos={t.bloqueio} /> : <MinhaEntrega t={t} grupo={c.meuGrupo} recarregar={recarregar} avisar={avisar} baixar={baixar} />}
           </Cartao>
@@ -96,7 +97,7 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
       if (querTexto) fd.append('texto', escrito)
       for (const x of ficheiros) fd.append('ficheiros', x.ficheiro)
       await enviarComProgresso(`/trabalhos/${t.id}/entrega`, fd, { aoProgresso: (p) => setFicheiros((l) => l.map((x) => ({ ...x, progresso: p }))) })
-      avisar({ texto: 'Trabalho entregue.' })
+      avisar({ texto: tx('Trabalho entregue.') })
       setEditar(false)
       setFicheiros([])
       recarregar()
@@ -109,50 +110,50 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
 
   return (
     <div className="p-entrega">
-      <h3 className="h6 fw-bold mb-2">{t.emGrupo ? `Entrega do grupo${grupo ? ` ${grupo.nome}` : ''}` : 'A minha entrega'}</h3>
+      <h3 className="h6 fw-bold mb-2">{t.emGrupo ? tx('Entrega do grupo{0}', { 0: grupo ? ` ${grupo.nome}` : '' }) : tx('A minha entrega')}</h3>
       {t.emGrupo && (grupo
-        ? <p className="small text-muted mb-2"><i className="fa fa-users me-1" />{grupo.membros.map((m) => m.nome).join(', ')}. Qualquer membro entrega pelo grupo; a nota vale para todos.{e?.estudante ? ` Última entrega: ${e.estudante.nome}.` : ''}</p>
-        : <div className="alert alert-warning py-2 small">Este trabalho é em grupo e ainda não está em nenhum grupo. Fale com o docente.</div>)}
+        ? <p className="small text-muted mb-2"><i className="fa fa-users me-1" />{grupo.membros.map((m) => m.nome).join(', ')}{tx('. Qualquer membro entrega pelo grupo; a nota vale para todos.')}{e?.estudante ? tx(' Última entrega: {0}.', { 0: e.estudante.nome }) : ''}</p>
+        : <div className="alert alert-warning py-2 small">{tx('Este trabalho é em grupo e ainda não está em nenhum grupo. Fale com o docente.')}</div>)}
       {e ? (
         <div className="mb-2">
           <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
-            <Etiqueta cor={e.atrasada ? 'dourado' : 'verde'}>{e.atrasada ? 'Entregue com atraso' : 'Entregue'}</Etiqueta>
+            <Etiqueta cor={e.atrasada ? 'dourado' : 'verde'}>{e.atrasada ? tx('Entregue com atraso') : tx('Entregue')}</Etiqueta>
             <span className="small text-muted">{dataHora(e.entregueEm)}</span>
           </div>
           {e.ficheiros.length > 0 && <ListaFicheiros ficheiros={e.ficheiros} baixar={baixar} />}
           {e.texto && <div className="p-texto-entregue mb-2">{e.texto}</div>}
           {e.nota !== null || e.correcao || e.correcaoFicheiroId ? (
             <div className="p-correcao">
-              <div className="d-flex align-items-center gap-2 mb-1"><i className="fa fa-check-double text-success" /><b>Correção</b>{e.nota !== null && <span className="badge bg-success fs-12px">{nota(e.nota)} valores</span>}</div>
+              <div className="d-flex align-items-center gap-2 mb-1"><i className="fa fa-check-double text-success" /><b>{tx('Correção')}</b>{e.nota !== null && <span className="badge bg-success fs-12px">{nota(e.nota)} {tx('valores')}</span>}</div>
               {t.grelha?.length > 0 && Object.keys(e.grelha || {}).length > 0 && <div className="my-2"><TabelaGrelha grelha={t.grelha} pontos={e.grelha} /></div>}
               {e.correcao && <p className="p-texto-pre mb-1">{e.correcao}</p>}
-              {e.correcaoFicheiroId && <button type="button" className="btn btn-sm btn-white" onClick={() => baixar(e.correcaoFicheiroId, `Correção - ${t.titulo}`)}><i className="fa fa-download me-1" />Ficheiro corrigido pelo docente</button>}
+              {e.correcaoFicheiroId && <button type="button" className="btn btn-sm btn-white" onClick={() => baixar(e.correcaoFicheiroId, `Correção - ${t.titulo}`)}><i className="fa fa-download me-1" />{tx('Ficheiro corrigido pelo docente')}</button>}
             </div>
           ) : null}
         </div>
-      ) : <Etiqueta cor={t.estado === 'fechado' ? 'vermelho' : 'cinzento'}>{t.estado === 'fechado' ? 'Não entregue' : 'Por entregar'}</Etiqueta>}
+      ) : <Etiqueta cor={t.estado === 'fechado' ? 'vermelho' : 'cinzento'}>{t.estado === 'fechado' ? tx('Não entregue') : tx('Por entregar')}</Etiqueta>}
 
-      {podeEntregar && !editar && <button type="button" className="btn btn-white btn-sm" onClick={() => setEditar(true)}><i className="fa fa-redo me-1" />Substituir a entrega</button>}
+      {podeEntregar && !editar && <button type="button" className="btn btn-white btn-sm" onClick={() => setEditar(true)}><i className="fa fa-redo me-1" />{tx('Substituir a entrega')}</button>}
       {podeEntregar && editar && (
         <form onSubmit={entregar} className="p-formulario p-entrega-form">
           {erro && <p className="p-erro" role="alert">{erro}</p>}
           {querFicheiros && (
             <ZonaUpload id={`f-${t.id}`} multiplos={t.maxFicheiros > 1} ficheiros={ficheiros} aoMudar={(l) => setFicheiros(l.slice(0, t.maxFicheiros))} desativado={aEnviar}
-              nota={`PDF, Word, PowerPoint, Excel, imagens ou ZIP — até ${t.maxFicheiros} ficheiro(s).`} />
+              nota={tx('PDF, Word, PowerPoint, Excel, imagens ou ZIP — até {0} ficheiro(s).', { 0: t.maxFicheiros })} />
           )}
           {querTexto && (
-            <Campo id={`txt-${t.id}`} rotulo="Texto do trabalho" ajuda={`${escrito.trim() ? escrito.trim().split(/\s+/).length : 0} palavras`}>
+            <Campo id={`txt-${t.id}`} rotulo={tx('Texto do trabalho')} ajuda={tx('{0} palavras', { 0: escrito.trim() ? escrito.trim().split(/\s+/).length : 0 })}>
               <textarea id={`txt-${t.id}`} rows={10} value={escrito} onChange={(x) => setEscrito(x.target.value)} maxLength={50000} />
             </Campo>
           )}
-          <Campo id={`c-${t.id}`} rotulo="Comentário para o docente (opcional)">
+          <Campo id={`c-${t.id}`} rotulo={tx('Comentário para o docente (opcional)')}>
             <textarea id={`c-${t.id}`} rows={2} maxLength={2000} value={comentario} onChange={(x) => setComentario(x.target.value)} />
           </Campo>
           <div className="d-flex gap-2">
             <button type="submit" className="btn btn-theme" disabled={aEnviar || (t.tipoEntrega === 'ficheiro' && !ficheiros.length) || (t.tipoEntrega === 'texto' && !escrito.trim())}>
-              <i className="fa fa-paper-plane me-1" />{aEnviar ? 'A enviar…' : 'Entregar'}
+              <i className="fa fa-paper-plane me-1" />{aEnviar ? tx('A enviar…') : tx('Entregar')}
             </button>
-            {e && <button type="button" className="btn btn-white" onClick={() => setEditar(false)} disabled={aEnviar}>Cancelar</button>}
+            {e && <button type="button" className="btn btn-white" onClick={() => setEditar(false)} disabled={aEnviar}>{tx('Cancelar')}</button>}
           </div>
         </form>
       )}
@@ -171,27 +172,27 @@ function Definicoes({ t, avisar, guardado }) {
     setErro('')
     try {
       await api(`/trabalhos/${t.id}`, { metodo: 'PUT', corpo: { ...f, prazo: localParaIso(f.prazo), maxFicheiros: Number(f.maxFicheiros), grelha: grelha.map((c) => ({ ...c, pontos: Number(c.pontos) })) } })
-      avisar({ texto: 'Definições do trabalho guardadas.' })
+      avisar({ texto: tx('Definições do trabalho guardadas.') })
       guardado()
     } catch (falha) {
       setErro(falha.message)
     }
   }
   return (
-    <Cartao titulo={<><i className="fa fa-cog me-2" />Definições do trabalho</>}>
+    <Cartao titulo={<><i className="fa fa-cog me-2" />{tx('Definições do trabalho')}</>}>
       <form onSubmit={guardar} className="p-formulario">
         {erro && <p className="p-erro" role="alert">{erro}</p>}
-        <Campo id="dt-titulo" rotulo="Título"><input id="dt-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} required /></Campo>
-        <Campo id="dt-enunciado" rotulo="Enunciado"><textarea id="dt-enunciado" rows={4} value={f.enunciado} onChange={(e) => setF({ ...f, enunciado: e.target.value })} /></Campo>
+        <Campo id="dt-titulo" rotulo={tx('Título')}><input id="dt-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} required /></Campo>
+        <Campo id="dt-enunciado" rotulo={tx('Enunciado')}><textarea id="dt-enunciado" rows={4} value={f.enunciado} onChange={(e) => setF({ ...f, enunciado: e.target.value })} /></Campo>
         <div className="row g-2">
-          <div className="col-md-4"><Campo id="dt-prazo" rotulo="Prazo"><input id="dt-prazo" type="datetime-local" value={f.prazo} onChange={(e) => setF({ ...f, prazo: e.target.value })} required /></Campo></div>
-          <div className="col-md-4"><Campo id="dt-tipo" rotulo="Forma de entrega"><select id="dt-tipo" value={f.tipoEntrega} onChange={(e) => setF({ ...f, tipoEntrega: e.target.value })}>{Object.entries(TIPOS_ENTREGA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo></div>
-          <div className="col-md-4"><Campo id="dt-max" rotulo="Máximo de ficheiros"><input id="dt-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
+          <div className="col-md-4"><Campo id="dt-prazo" rotulo={tx('Prazo')}><input id="dt-prazo" type="datetime-local" value={f.prazo} onChange={(e) => setF({ ...f, prazo: e.target.value })} required /></Campo></div>
+          <div className="col-md-4"><Campo id="dt-tipo" rotulo={tx('Forma de entrega')}><select id="dt-tipo" value={f.tipoEntrega} onChange={(e) => setF({ ...f, tipoEntrega: e.target.value })}>{Object.entries(TIPOS_ENTREGA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo></div>
+          <div className="col-md-4"><Campo id="dt-max" rotulo={tx('Máximo de ficheiros')}><input id="dt-max" type="number" min={1} max={10} value={f.maxFicheiros} disabled={f.tipoEntrega === 'texto'} onChange={(e) => setF({ ...f, maxFicheiros: e.target.value })} /></Campo></div>
         </div>
-        <label className="p-caixa"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> Aceitar entregas depois do prazo (ficam marcadas como atrasadas)</label>
-        <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)</label>
-        <div><span className="form-label fw-bold d-block mb-1">Grelha de avaliação</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
-        <div><button type="submit" className="btn btn-theme">Guardar definições</button></div>
+        <label className="p-caixa"><input type="checkbox" checked={f.aceitaAtraso} onChange={(e) => setF({ ...f, aceitaAtraso: e.target.checked })} /> {tx('Aceitar entregas depois do prazo (ficam marcadas como atrasadas)')}</label>
+        <label className="p-caixa"><input type="checkbox" checked={f.emGrupo} onChange={(e) => setF({ ...f, emGrupo: e.target.checked })} /> {tx('Trabalho em grupo (uma entrega por grupo; a nota vale para todos os membros)')}</label>
+        <div><span className="form-label fw-bold d-block mb-1">{tx('Grelha de avaliação')}</span><EditorGrelha grelha={grelha} aoMudar={setGrelha} /></div>
+        <div><button type="submit" className="btn btn-theme">{tx('Guardar definições')}</button></div>
       </form>
     </Cartao>
   )
@@ -214,22 +215,22 @@ function Entregas({ trabalho, avisar, baixar }) {
     const t = setTimeout(verOriginalidade, 3000)
     return () => clearTimeout(t)
   }, [originalidade, verOriginalidade])
-  if (!d) return <Cartao titulo="Entregas"><p className="p-texto-suave mb-0">A carregar entregas…</p></Cartao>
+  if (!d) return <Cartao titulo={tx('Entregas')}><p className="p-texto-suave mb-0">{tx('A carregar entregas…')}</p></Cartao>
 
   const entregues = d.linhas.filter((l) => l.entrega).length
   const corrigidas = d.linhas.filter((l) => l.entrega?.nota !== null && l.entrega?.nota !== undefined).length
   return (
     <Cartao
-      titulo={<><i className="fa fa-inbox me-2" />Entregas</>}
-      acoes={<span className="text-white small">{entregues} de {d.linhas.length} entregaram · {corrigidas} corrigida(s)</span>}
+      titulo={<><i className="fa fa-inbox me-2" />{tx('Entregas')}</>}
+      acoes={<span className="text-white small">{entregues} {tx('de')} {d.linhas.length} {tx('entregaram ·')} {corrigidas} {tx('corrigida(s)')}</span>}
       corpo={false}
     >
       <div className="progress rounded-0" style={{ height: 4 }}><div className="progress-bar bg-success" style={{ width: `${d.linhas.length ? (entregues / d.linhas.length) * 100 : 0}%` }} /></div>
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0">
-          <thead><tr><th>Estudante</th><th>Entrega</th><th className="text-center" title="Texto coincidente com outros trabalhos, a biblioteca e o repositório">Originalidade</th><th className="text-center">Nota</th><th /></tr></thead>
+          <thead><tr><th>{tx('Estudante')}</th><th>{tx('Entrega')}</th><th className="text-center" title={tx('Texto coincidente com outros trabalhos, a biblioteca e o repositório')}>{tx('Originalidade')}</th><th className="text-center">{tx('Nota')}</th><th /></tr></thead>
           <tbody>
-            {(trabalho.emGrupo ? [...d.linhas].sort((a, b) => (a.grupo?.nome ?? '\uffff').localeCompare(b.grupo?.nome ?? '\uffff', 'pt', { numeric: true })) : d.linhas).map(({ estudante, entrega, prorrogacao, grupo }) => (
+            {(trabalho.emGrupo ? [...d.linhas].sort((a, b) => (a.grupo?.nome ?? '\uffff').localeCompare(b.grupo?.nome ?? '\uffff', localAtual(), { numeric: true })) : d.linhas).map(({ estudante, entrega, prorrogacao, grupo }) => (
               <LinhaEntrega key={estudante.id} t={trabalho} estudante={estudante} entrega={entrega} prorrogacao={prorrogacao} grupo={grupo} analise={entrega ? originalidade[entrega.id] : null} reverificar={verOriginalidade}
                 aberta={aberta === estudante.id} alternar={() => setAberta(aberta === estudante.id ? null : estudante.id)} baixar={baixar} avisar={avisar} recarregar={carregar} />
             ))}
@@ -259,7 +260,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
       else fd.append('nota', String(notaManual))
       if (ficheiroCorrecao[0]) fd.append('ficheiro', ficheiroCorrecao[0].ficheiro)
       await enviarComProgresso(`/entregas/${entrega.id}`, fd, { metodo: 'PUT' })
-      avisar({ texto: `Correção de ${estudante.nome} guardada. O estudante foi avisado.` })
+      avisar({ texto: tx('Correção de {0} guardada. O estudante foi avisado.', { 0: estudante.nome }) })
       setFicheiroCorrecao([])
       recarregar()
     } catch (e) {
@@ -272,7 +273,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
   async function prorrogar(retirar) {
     try {
       await api(`/trabalhos/${t.id}/prorrogacao`, { metodo: 'PUT', corpo: { estudanteId: estudante.id, prazo: retirar ? null : localParaIso(prazo), motivo } })
-      avisar({ texto: retirar ? 'Prorrogação retirada.' : `Prazo alargado para ${estudante.nome}.` })
+      avisar({ texto: retirar ? tx('Prorrogação retirada.') : tx('Prazo alargado para {0}.', { 0: estudante.nome }) })
       recarregar()
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
@@ -284,16 +285,16 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
       <tr className={aberta ? 'table-active' : ''}>
         <td>
           <b>{estudante.nome}</b><div className="small text-muted">{estudante.numero}</div>
-          {t.emGrupo && (grupo ? <span className="badge bg-indigo me-1"><i className="fa fa-users me-1" />{grupo.nome}</span> : <span className="badge bg-warning text-dark me-1">Sem grupo</span>)}
-          {prorrogacao && <span className="badge bg-info">Prazo até {dataHora(prorrogacao.prazo)}</span>}
+          {t.emGrupo && (grupo ? <span className="badge bg-indigo me-1"><i className="fa fa-users me-1" />{grupo.nome}</span> : <span className="badge bg-warning text-dark me-1">{tx('Sem grupo')}</span>)}
+          {prorrogacao && <span className="badge bg-info">{tx('Prazo até')} {dataHora(prorrogacao.prazo)}</span>}
         </td>
         <td className="small">
-          {entrega ? <><Etiqueta cor={entrega.atrasada ? 'dourado' : 'verde'}>{entrega.atrasada ? 'Atrasada' : 'Entregue'}</Etiqueta> <span className="text-muted">{dataHora(entrega.entregueEm)}</span>
-            <div className="text-muted">{entrega.ficheiros.length} ficheiro(s){entrega.texto && ' · texto'}{entrega.grupo && entrega.estudante && entrega.estudanteId !== estudante.id ? ` · entregue por ${entrega.estudante.nome}` : ''}</div></> : <span className="text-muted">Não entregou</span>}
+          {entrega ? <><Etiqueta cor={entrega.atrasada ? 'dourado' : 'verde'}>{entrega.atrasada ? tx('Atrasada') : tx('Entregue')}</Etiqueta> <span className="text-muted">{dataHora(entrega.entregueEm)}</span>
+            <div className="text-muted">{entrega.ficheiros.length} {tx('ficheiro(s)')}{entrega.texto && tx(' · texto')}{entrega.grupo && entrega.estudante && entrega.estudanteId !== estudante.id ? tx(' · entregue por {0}', { 0: entrega.estudante.nome }) : ''}</div></> : <span className="text-muted">{tx('Não entregou')}</span>}
         </td>
-        <td className="text-center">{entrega && (analise?.estado === 'concluida' ? <Link to={`/integridade/${analise.id}`} title="Ver o relatório de originalidade" className="d-inline-flex gap-1"><ChipOriginalidade a={analise} /><ChipIA a={analise} /></Link> : <ChipOriginalidade a={analise} />)}</td>
+        <td className="text-center">{entrega && (analise?.estado === 'concluida' ? <Link to={`/integridade/${analise.id}`} title={tx('Ver o relatório de originalidade')} className="d-inline-flex gap-1"><ChipOriginalidade a={analise} /><ChipIA a={analise} /></Link> : <ChipOriginalidade a={analise} />)}</td>
         <td className="text-center fw-bold">{entrega?.nota !== null && entrega?.nota !== undefined ? nota(entrega.nota) : '—'}</td>
-        <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? 'Fechar' : 'Ver e corrigir') : (aberta ? 'Fechar' : 'Prazo')}</button></td>
+        <td className="text-end"><button type="button" className={`btn btn-sm ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{entrega ? (aberta ? tx('Fechar') : tx('Ver e corrigir')) : (aberta ? tx('Fechar') : tx('Prazo'))}</button></td>
       </tr>
       {aberta && (
         <tr>
@@ -301,36 +302,36 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
             <div className="row g-3 py-2">
               {entrega && (
                 <div className="col-lg-6">
-                  <h4 className="h6 fw-bold">Entrega</h4>
+                  <h4 className="h6 fw-bold">{tx('Entrega')}</h4>
                   {entrega.ficheiros.length > 0 && <ListaFicheiros ficheiros={entrega.ficheiros} baixar={baixar} />}
                   {entrega.texto && <div className="p-texto-entregue mb-2">{entrega.texto}</div>}
-                  {entrega.comentario && <div className="small"><b>Comentário do estudante:</b> “{entrega.comentario}”</div>}
+                  {entrega.comentario && <div className="small"><b>{tx('Comentário do estudante:')}</b> “{entrega.comentario}”</div>}
                   <div className="d-flex align-items-center gap-2 mt-2 small">
-                    <span className="text-muted">Originalidade:</span><ChipOriginalidade a={analise} />
-                    {analise?.estado === 'concluida' && <Link to={`/integridade/${analise.id}`}>Ver relatório</Link>}
-                    {analise?.estado !== 'pendente' && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => api(`/entregas/${entrega.id}/integridade`, { metodo: 'POST' }).then(() => { avisar({ texto: 'A verificar de novo, com o repositório atual.' }); reverificar() }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>{analise ? 'Verificar de novo' : 'Verificar'}</button>}
+                    <span className="text-muted">{tx('Originalidade:')}</span><ChipOriginalidade a={analise} />
+                    {analise?.estado === 'concluida' && <Link to={`/integridade/${analise.id}`}>{tx('Ver relatório')}</Link>}
+                    {analise?.estado !== 'pendente' && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => api(`/entregas/${entrega.id}/integridade`, { metodo: 'POST' }).then(() => { avisar({ texto: tx('A verificar de novo, com o repositório atual.') }); reverificar() }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>{analise ? tx('Verificar de novo') : tx('Verificar')}</button>}
                   </div>
                 </div>
               )}
               <div className={entrega ? 'col-lg-6' : 'col-12'}>
                 {entrega && (
                   <>
-                    <h4 className="h6 fw-bold">Correção</h4>
+                    <h4 className="h6 fw-bold">{tx('Correção')}</h4>
                     {comGrelha
                       ? <TabelaGrelha grelha={t.grelha} pontos={pontos} editavel aoMudar={setPontos} />
-                      : <div className="d-flex align-items-center gap-2 mb-2"><label htmlFor={`n-${estudante.id}`} className="fw-bold small">Nota (0 a 20)</label><input id={`n-${estudante.id}`} className="form-control form-control-sm p-nota" inputMode="decimal" value={notaManual} onChange={(e) => setNotaManual(e.target.value)} aria-label={`Nota de ${estudante.nome}`} /></div>}
-                    <textarea className="form-control my-2" rows={3} placeholder="Comentário para o estudante" value={correcao} onChange={(e) => setCorrecao(e.target.value)} aria-label={`Comentário para ${estudante.nome}`} />
-                    <ZonaUpload id={`fc-${entrega.id}`} ficheiros={ficheiroCorrecao} aoMudar={setFicheiroCorrecao} nota="Ficheiro corrigido para o estudante (opcional)." desativado={aGuardar} />
-                    {entrega.correcaoFicheiroId && !ficheiroCorrecao.length && <button type="button" className="btn btn-link btn-sm px-0" onClick={() => baixar(entrega.correcaoFicheiroId, 'Correção')}><i className="fa fa-paperclip me-1" />Ficheiro de correção já enviado</button>}
-                    <div className="mt-2"><button type="button" className="btn btn-theme btn-sm" onClick={corrigir} disabled={aGuardar}><i className="fa fa-save me-1" />{aGuardar ? 'A guardar…' : 'Guardar correção'}</button></div>
+                      : <div className="d-flex align-items-center gap-2 mb-2"><label htmlFor={`n-${estudante.id}`} className="fw-bold small">{tx('Nota (0 a 20)')}</label><input id={`n-${estudante.id}`} className="form-control form-control-sm p-nota" inputMode="decimal" value={notaManual} onChange={(e) => setNotaManual(e.target.value)} aria-label={tx('Nota de {0}', { 0: estudante.nome })} /></div>}
+                    <textarea className="form-control my-2" rows={3} placeholder={tx('Comentário para o estudante')} value={correcao} onChange={(e) => setCorrecao(e.target.value)} aria-label={tx('Comentário para {0}', { 0: estudante.nome })} />
+                    <ZonaUpload id={`fc-${entrega.id}`} ficheiros={ficheiroCorrecao} aoMudar={setFicheiroCorrecao} nota={tx('Ficheiro corrigido para o estudante (opcional).')} desativado={aGuardar} />
+                    {entrega.correcaoFicheiroId && !ficheiroCorrecao.length && <button type="button" className="btn btn-link btn-sm px-0" onClick={() => baixar(entrega.correcaoFicheiroId, 'Correção')}><i className="fa fa-paperclip me-1" />{tx('Ficheiro de correção já enviado')}</button>}
+                    <div className="mt-2"><button type="button" className="btn btn-theme btn-sm" onClick={corrigir} disabled={aGuardar}><i className="fa fa-save me-1" />{aGuardar ? tx('A guardar…') : tx('Guardar correção')}</button></div>
                   </>
                 )}
-                <h4 className="h6 fw-bold mt-3">Prorrogação do prazo só para este estudante</h4>
+                <h4 className="h6 fw-bold mt-3">{tx('Prorrogação do prazo só para este estudante')}</h4>
                 <div className="d-flex flex-wrap gap-2 align-items-center">
-                  <input type="datetime-local" className="form-control form-control-sm w-auto" value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label={`Novo prazo para ${estudante.nome}`} />
-                  <input className="form-control form-control-sm w-auto flex-grow-1" placeholder="Motivo (ex.: missão de serviço)" value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label="Motivo da prorrogação" />
-                  <button type="button" className="btn btn-white btn-sm" disabled={!prazo} onClick={() => prorrogar(false)}><i className="fa fa-calendar-plus me-1" />Alargar</button>
-                  {prorrogacao && <button type="button" className="btn btn-white btn-sm text-danger" onClick={() => prorrogar(true)}>Retirar</button>}
+                  <input type="datetime-local" className="form-control form-control-sm w-auto" value={prazo} onChange={(e) => setPrazo(e.target.value)} aria-label={tx('Novo prazo para {0}', { 0: estudante.nome })} />
+                  <input className="form-control form-control-sm w-auto flex-grow-1" placeholder={tx('Motivo (ex.: missão de serviço)')} value={motivo} onChange={(e) => setMotivo(e.target.value)} aria-label={tx('Motivo da prorrogação')} />
+                  <button type="button" className="btn btn-white btn-sm" disabled={!prazo} onClick={() => prorrogar(false)}><i className="fa fa-calendar-plus me-1" />{tx('Alargar')}</button>
+                  {prorrogacao && <button type="button" className="btn btn-white btn-sm text-danger" onClick={() => prorrogar(true)}>{tx('Retirar')}</button>}
                 </div>
               </div>
             </div>

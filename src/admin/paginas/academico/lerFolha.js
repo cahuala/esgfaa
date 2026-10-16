@@ -1,3 +1,4 @@
+import { t as tx } from '../../../i18n/linguas'
 /*
   Leitura de folhas de estudantes no navegador, sem bibliotecas: CSV (separador ";" ou ",",
   como o Excel em português grava) e XLSX (um ZIP com XML: lê-se a primeira folha).
@@ -43,7 +44,7 @@ async function abrirZip(buffer, querer) {
   const v = new DataView(buffer)
   let fim = -1
   for (let i = b.length - 22; i >= Math.max(0, b.length - 65_557); i -= 1) if (v.getUint32(i, true) === 0x06054b50) { fim = i; break }
-  if (fim < 0) throw new Error('O ficheiro não é um Excel (.xlsx) válido.')
+  if (fim < 0) throw new Error(tx('O ficheiro não é um Excel (.xlsx) válido.'))
   const total = v.getUint16(fim + 10, true)
   let p = v.getUint32(fim + 16, true)
   const r = {}
@@ -74,7 +75,7 @@ export async function lerXlsx(buffer) {
   const dec = new TextDecoder()
   const xml = (bytes) => new DOMParser().parseFromString(dec.decode(bytes), 'application/xml')
   const folhas = Object.keys(zip).filter((n) => n.startsWith('xl/worksheets/')).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
-  if (!folhas.length) throw new Error('O Excel não tem nenhuma folha.')
+  if (!folhas.length) throw new Error(tx('O Excel não tem nenhuma folha.'))
   const partilhadas = zip['xl/sharedStrings.xml']
     ? [...xml(zip['xl/sharedStrings.xml']).getElementsByTagName('si')].map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent).join(''))
     : []
@@ -126,5 +127,5 @@ export function mapearColunas(tabela) {
 export async function lerFolha(ficheiro) {
   if (/\.xlsx$/i.test(ficheiro.name)) return mapearColunas(await lerXlsx(await ficheiro.arrayBuffer()))
   if (/\.(csv|txt)$/i.test(ficheiro.name)) return mapearColunas(lerCsv(await ficheiro.text()))
-  throw new Error('Use um ficheiro Excel (.xlsx) ou CSV. Os .xls antigos: grave primeiro como .xlsx.')
+  throw new Error(tx('Use um ficheiro Excel (.xlsx) ou CSV. Os .xls antigos: grave primeiro como .xlsx.'))
 }

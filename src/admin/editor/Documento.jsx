@@ -3,6 +3,7 @@ import EditorTexto from './EditorTexto'
 import { TextoAuto, ZonaFicheiro } from './Elementos'
 import { carregar } from './carregar'
 import { TAMANHOS, avaliarImagem, dicaTamanho, medirImagem } from '../imagens'
+import { t as tx } from '../../i18n/linguas'
 
 /*
   Notícia/artigo/evento editado como um documento:
@@ -35,14 +36,14 @@ function Documento({ item, setItem, doc, aoErro, editavel = true }) {
   const cabeca = (
     <>
       <div className="doc-cabeca">
-        {doc.etiqueta && <span className="doc-etiqueta">{item[doc.etiqueta] || 'Sem secção'}</span>}
+        {doc.etiqueta && <span className="doc-etiqueta">{item[doc.etiqueta] || tx('Sem secção')}</span>}
 
-        <TextoAuto className="doc-titulo" placeholder={doc.placeholderTitulo || 'Título'} valor={item[doc.titulo]} onChange={(v) => definir(doc.titulo, v)} maxLength={180} />
+        <TextoAuto className="doc-titulo" placeholder={doc.placeholderTitulo || tx('Título')} valor={item[doc.titulo]} onChange={(v) => definir(doc.titulo, v)} maxLength={180} />
 
         {doc.entrada && (
           <TextoAuto
             className="doc-entrada"
-            placeholder="Entrada: uma ou duas frases que resumem o essencial (aparece nas listagens e no topo)."
+            placeholder={tx('Entrada: uma ou duas frases que resumem o essencial (aparece nas listagens e no topo).')}
             valor={item[doc.entrada]}
             onChange={(v) => definir(doc.entrada, v)}
             maxLength={320}
@@ -57,17 +58,17 @@ function Documento({ item, setItem, doc, aoErro, editavel = true }) {
             {editavel && (
               <div className="doc-ferramentas">
                 <ZonaFicheiro aceitar="image/*" className="doc-botao-zona" onFicheiros={trocarCapa}>
-                  <span title="Substituir a imagem de capa"><i className={`fa ${capaACarregar ? 'fa-spinner fa-spin' : 'fa-sync-alt'} me-1`} />Substituir capa</span>
+                  <span title={tx('Substituir a imagem de capa')}><i className={`fa ${capaACarregar ? 'fa-spinner fa-spin' : 'fa-sync-alt'} me-1`} />{tx('Substituir capa')}</span>
                 </ZonaFicheiro>
-                <button type="button" title="Retirar a imagem de capa" onClick={() => { definir(doc.capa, ''); setAvisosCapa([]) }}><i className="fa fa-trash-alt" /></button>
+                <button type="button" title={tx('Retirar a imagem de capa')} onClick={() => { definir(doc.capa, ''); setAvisosCapa([]) }}><i className="fa fa-trash-alt" /></button>
               </div>
             )}
           </figure>
         ) : (
           <ZonaFicheiro aceitar="image/*" className="doc-capa-vazia" onFicheiros={trocarCapa}>
             <i className="fa fa-camera fa-2x mb-2" />
-            <strong>{capaACarregar ? 'A carregar…' : 'Adicionar imagem de capa'}</strong>
-            <span>a fotografia principal — clique ou arraste para aqui</span>
+            <strong>{capaACarregar ? tx('A carregar…') : tx('Adicionar imagem de capa')}</strong>
+            <span>{tx('a fotografia principal — clique ou arraste para aqui')}</span>
             <small className="doc-capa-dica"><i className="fa fa-ruler-combined me-1" />{dicaTamanho(TAMANHOS.capa)}</small>
           </ZonaFicheiro>
         )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { Cartao, Carregando } from '../componentes'
 import { iniciais } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
 // participantes da cadeira (docentes e estudantes da turma), como no Moodle
 function Participantes({ c, avisar }) {
@@ -10,20 +11,20 @@ function Participantes({ c, avisar }) {
   useEffect(() => { api(`/cadeiras/${c.id}/participantes`).then(setP).catch((e) => avisar({ tipo: 'erro', texto: e.message })) }, [c.id, avisar])
   if (!p) return <Carregando />
   const todos = [
-    ...p.docentes.map((d) => ({ ...d, funcao: d.papel === 'regente' ? 'Regente' : 'Assistente', cor: 'bg-dark' })),
-    ...p.estudantes.map((e) => ({ ...e, funcao: 'Estudante', cor: 'bg-gray-500' })),
+    ...p.docentes.map((d) => ({ ...d, funcao: d.papel === 'regente' ? tx('Regente') : tx('Assistente'), cor: 'bg-dark' })),
+    ...p.estudantes.map((e) => ({ ...e, funcao: tx('Estudante'), cor: 'bg-gray-500' })),
   ].filter((x) => !filtro || `${x.nome} ${x.numero || ''} ${x.email}`.toLowerCase().includes(filtro.toLowerCase()))
   return (
-    <Cartao titulo={<><i className="fa fa-users me-2" />Participantes ({p.docentes.length + p.estudantes.length})</>} corpo={false}>
+    <Cartao titulo={<><i className="fa fa-users me-2" />{tx('Participantes (')}{p.docentes.length + p.estudantes.length})</>} corpo={false}>
       <div className="panel-body pb-2">
         <div className="input-group" style={{ maxWidth: 360 }}>
           <span className="input-group-text"><i className="fa fa-search" /></span>
-          <input className="form-control" placeholder="Procurar por nome, número ou e-mail" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label="Procurar participantes" />
+          <input className="form-control" placeholder={tx('Procurar por nome, número ou e-mail')} value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label={tx('Procurar participantes')} />
         </div>
       </div>
       <div className="table-responsive">
         <table className="table table-hover table-panel align-middle mb-0">
-          <thead><tr><th>Nome</th><th>Número</th><th>E-mail</th><th>Papel</th></tr></thead>
+          <thead><tr><th>{tx('Nome')}</th><th>{tx('Número')}</th><th>{tx('E-mail')}</th><th>{tx('Papel')}</th></tr></thead>
           <tbody>
             {todos.map((x) => (
               <tr key={`${x.funcao}-${x.id}`}>

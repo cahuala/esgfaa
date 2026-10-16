@@ -2,15 +2,16 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { Cartao, Carregando } from '../componentes'
 import { dataHora } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
 const ICONES = { cadeira: 'fa-book-open', material: 'fa-file-alt', trabalho: 'fa-file-signature', questionario: 'fa-question-circle', inquerito: 'fa-poll', forum: 'fa-comments' }
 const csv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
 
 // "há 3 dias", "hoje", "nunca"
 function ultimo(dias) {
-  if (dias === null) return <span className="badge bg-danger">Nunca entrou</span>
+  if (dias === null) return <span className="badge bg-danger">{tx('Nunca entrou')}</span>
   if (dias === 0) return 'hoje'
-  const t = dias === 1 ? 'ontem' : `há ${dias} dias`
+  const t = dias === 1 ? 'ontem' : tx('há {0} dias', { 0: dias })
   return dias >= 7 ? <span className="badge bg-warning text-dark">{t}</span> : t
 }
 
@@ -36,9 +37,9 @@ function Relatorios({ c, avisar }) {
   if (!p) return <Carregando />
 
   function exportar() {
-    const cab = ['Estudante', 'Número', 'Acessos', 'Último acesso', 'Atividades abertas', 'Entregas', 'Questionários', 'Fórum']
-    const linhas = p.estudantes.map((e) => [e.estudante.nome, e.estudante.numero, e.acessos, e.ultimoAcesso ? dataHora(e.ultimoAcesso) : 'Nunca', e.atividadesVistas, e.entregas, e.questionarios, e.forum])
-    const texto = [[`Participação — ${c.codigo} ${c.nome}`], [], cab, ...linhas].map((l) => l.map(csv).join(';')).join('\r\n')
+    const cab = [tx('Estudante'), tx('Número'), tx('Acessos'), tx('Último acesso'), tx('Atividades abertas'), tx('Entregas'), tx('Questionários'), tx('Fórum')]
+    const linhas = p.estudantes.map((e) => [e.estudante.nome, e.estudante.numero, e.acessos, e.ultimoAcesso ? dataHora(e.ultimoAcesso) : tx('Nunca'), e.atividadesVistas, e.entregas, e.questionarios, e.forum])
+    const texto = [[tx('Participação — {0} {1}', { 0: c.codigo, 1: c.nome })], [], cab, ...linhas].map((l) => l.map(csv).join(';')).join('\r\n')
     const url = URL.createObjectURL(new Blob(['\uFEFF', texto], { type: 'text/csv;charset=utf-8' }))
     const a = document.createElement('a')
     a.href = url
@@ -51,14 +52,14 @@ function Relatorios({ c, avisar }) {
   return (
     <div className="p-coluna">
       <Cartao
-        titulo={<><i className="fa fa-chart-line me-2" />Participação dos estudantes</>}
-        acoes={<button type="button" className="btn btn-xs btn-white" onClick={exportar}><i className="fa fa-file-excel me-1" />Exportar para Excel</button>}
+        titulo={<><i className="fa fa-chart-line me-2" />{tx('Participação dos estudantes')}</>}
+        acoes={<button type="button" className="btn btn-xs btn-white" onClick={exportar}><i className="fa fa-file-excel me-1" />{tx('Exportar para Excel')}</button>}
         corpo={false}
       >
-        {semAcesso > 0 && <div className="alert alert-warning rounded-0 mb-0 py-2 small"><i className="fa fa-exclamation-triangle me-1" />{semAcesso} estudante(s) sem entrar na cadeira há uma semana ou mais.</div>}
+        {semAcesso > 0 && <div className="alert alert-warning rounded-0 mb-0 py-2 small"><i className="fa fa-exclamation-triangle me-1" />{semAcesso} {tx('estudante(s) sem entrar na cadeira há uma semana ou mais.')}</div>}
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
-            <thead><tr><th>Estudante</th><th className="text-center">Acessos</th><th>Último acesso</th><th className="text-center">Atividades abertas</th><th className="text-center">Entregas</th><th className="text-center">Questionários</th><th className="text-center">Fórum</th><th /></tr></thead>
+            <thead><tr><th>{tx('Estudante')}</th><th className="text-center">{tx('Acessos')}</th><th>{tx('Último acesso')}</th><th className="text-center">{tx('Atividades abertas')}</th><th className="text-center">{tx('Entregas')}</th><th className="text-center">{tx('Questionários')}</th><th className="text-center">{tx('Fórum')}</th><th /></tr></thead>
             <tbody>
               {p.estudantes.map((e) => (
                 <tr key={e.estudante.id}>
@@ -69,7 +70,7 @@ function Relatorios({ c, avisar }) {
                   <td className="text-center">{e.entregas}</td>
                   <td className="text-center">{e.questionarios}</td>
                   <td className="text-center">{e.forum}</td>
-                  <td className="text-end"><button type="button" className="btn btn-xs btn-white" onClick={() => setEstudante(String(e.estudante.id))}>Registos</button></td>
+                  <td className="text-end"><button type="button" className="btn btn-xs btn-white" onClick={() => setEstudante(String(e.estudante.id))}>{tx('Registos')}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -77,10 +78,10 @@ function Relatorios({ c, avisar }) {
         </div>
       </Cartao>
 
-      <Cartao titulo={<><i className="fa fa-eye me-2" />Uso das atividades</>} corpo={false}>
+      <Cartao titulo={<><i className="fa fa-eye me-2" />{tx('Uso das atividades')}</>} corpo={false}>
         <div className="table-responsive">
           <table className="table align-middle mb-0">
-            <thead><tr><th>Atividade</th><th className="text-center">Aberturas</th><th style={{ width: '35%' }}>Estudantes que abriram</th></tr></thead>
+            <thead><tr><th>{tx('Atividade')}</th><th className="text-center">{tx('Aberturas')}</th><th style={{ width: '35%' }}>{tx('Estudantes que abriram')}</th></tr></thead>
             <tbody>
               {p.atividades.map((a) => {
                 const pc = p.totalEstudantes ? Math.round((a.estudantes / p.totalEstudantes) * 100) : 0
@@ -103,18 +104,18 @@ function Relatorios({ c, avisar }) {
       </Cartao>
 
       <Cartao
-        titulo={<><i className="fa fa-history me-2" />Registo de acessos</>}
+        titulo={<><i className="fa fa-history me-2" />{tx('Registo de acessos')}</>}
         acoes={(
-          <select className="form-select form-select-sm" style={{ width: 230 }} value={estudante} onChange={(e) => setEstudante(e.target.value)} aria-label="Filtrar por estudante">
-            <option value="">Todos os estudantes</option>
+          <select className="form-select form-select-sm" style={{ width: 230 }} value={estudante} onChange={(e) => setEstudante(e.target.value)} aria-label={tx('Filtrar por estudante')}>
+            <option value="">{tx('Todos os estudantes')}</option>
             {p.estudantes.map((e) => <option key={e.estudante.id} value={e.estudante.id}>{e.estudante.nome}</option>)}
           </select>
         )}
         corpo={false}
       >
         <div className="list-group list-group-flush">
-          {!registos && <div className="list-group-item text-muted small">A carregar…</div>}
-          {registos?.length === 0 && <div className="list-group-item text-muted small">Sem registos.</div>}
+          {!registos && <div className="list-group-item text-muted small">{tx('A carregar…')}</div>}
+          {registos?.length === 0 && <div className="list-group-item text-muted small">{tx('Sem registos.')}</div>}
           {registos?.map((r) => (
             <div key={r.id} className="list-group-item d-flex align-items-center gap-3 small">
               <span className="text-muted text-nowrap" style={{ width: 150 }}>{dataHora(r.em)}</span>
@@ -123,7 +124,7 @@ function Relatorios({ c, avisar }) {
             </div>
           ))}
         </div>
-        {mais && <div className="panel-body text-center"><button type="button" className="btn btn-sm btn-white" onClick={() => carregarRegistos(registos.at(-1).id)}>Mostrar mais</button></div>}
+        {mais && <div className="panel-body text-center"><button type="button" className="btn btn-sm btn-white" onClick={() => carregarRegistos(registos.at(-1).id)}>{tx('Mostrar mais')}</button></div>}
       </Cartao>
     </div>
   )

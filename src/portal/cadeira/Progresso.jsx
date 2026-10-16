@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { Cartao, Carregando, Vazio } from '../componentes'
+import { t as tx } from '../../i18n/linguas'
 
 const ICONES = { material: 'fa-file-alt', trabalho: 'fa-tasks', questionario: 'fa-question-circle' }
 
@@ -8,7 +9,7 @@ const ICONES = { material: 'fa-file-alt', trabalho: 'fa-tasks', questionario: 'f
 export function BarraProgresso({ p }) {
   if (!p || p.total === 0) return null
   return (
-    <div className="d-flex align-items-center gap-2 small" title={`${p.feitas} de ${p.total} atividades concluídas`}>
+    <div className="d-flex align-items-center gap-2 small" title={tx('{0} de {1} atividades concluídas', { 0: p.feitas, 1: p.total })}>
       <div className="progress flex-grow-1" style={{ height: 8 }}><div className="progress-bar bg-success" style={{ width: `${p.percentagem}%` }} /></div>
       <span className="fw-bold text-nowrap">{p.percentagem}%</span>
     </div>
@@ -21,16 +22,16 @@ function Progresso({ c, avisar }) {
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
   useEffect(() => { api(`/cadeiras/${c.id}/progresso`).then(setR).catch(falhou) }, [c.id, falhou])
   if (!r) return <Carregando />
-  if (!r.atividades.length) return <Vazio>Ainda não há atividades (materiais, trabalhos ou questionários publicados).</Vazio>
+  if (!r.atividades.length) return <Vazio>{tx('Ainda não há atividades (materiais, trabalhos ou questionários publicados).')}</Vazio>
   return (
-    <Cartao titulo={<><i className="fa fa-tasks me-2" />Conclusão das atividades</>} corpo={false}>
+    <Cartao titulo={<><i className="fa fa-tasks me-2" />{tx('Conclusão das atividades')}</>} corpo={false}>
       <div className="table-responsive">
         <table className="table table-bordered align-middle text-center mb-0">
           <thead>
             <tr>
-              <th className="text-start">Estudante</th>
+              <th className="text-start">{tx('Estudante')}</th>
               {r.atividades.map((a) => <th key={`${a.tipo}-${a.id}`} title={a.titulo} style={{ maxWidth: 120 }}><i className={`fa ${ICONES[a.tipo]} d-block mb-1`} /><span className="small fw-normal d-block text-truncate">{a.titulo}</span></th>)}
-              <th>Progresso</th>
+              <th>{tx('Progresso')}</th>
             </tr>
           </thead>
           <tbody>
@@ -39,7 +40,7 @@ function Progresso({ c, avisar }) {
                 <td className="text-start text-nowrap"><b>{l.estudante.nome}</b><div className="small text-muted">{l.estudante.numero}</div></td>
                 {r.atividades.map((a) => {
                   const feita = l.concluidas.includes(`${a.tipo}-${a.id}`)
-                  return <td key={`${a.tipo}-${a.id}`}>{feita ? <i className="fa fa-check-circle text-success" aria-label="Concluída" /> : <i className="far fa-circle text-gray-400" aria-label="Por fazer" />}</td>
+                  return <td key={`${a.tipo}-${a.id}`}>{feita ? <i className="fa fa-check-circle text-success" aria-label={tx('Concluída')} /> : <i className="far fa-circle text-gray-400" aria-label={tx('Por fazer')} />}</td>
                 })}
                 <td style={{ minWidth: 120 }}><BarraProgresso p={l} /></td>
               </tr>

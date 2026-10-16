@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { registarDialogos } from './dialogos'
+import { t as tx } from '../i18n/linguas'
 
 // janela de confirmação / pergunta (modal do tema); fecha com Esc e confirma com Enter
 function JanelaDialogo() {
@@ -33,7 +34,7 @@ function JanelaDialogo() {
               <h4 className="modal-title" id="dialogo-titulo">
                 {d.perigo && <i className="fa fa-exclamation-triangle text-danger me-2" />}{d.titulo}
               </h4>
-              <button type="button" className="btn-close" onClick={() => fechar(null)} aria-label="Fechar" />
+              <button type="button" className="btn-close" onClick={() => fechar(null)} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">
               {d.tipo === 'confirmar' ? <p className="mb-0">{d.texto}</p> : (
@@ -46,7 +47,7 @@ function JanelaDialogo() {
               )}
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={() => fechar(null)}>Cancelar</button>
+              <button type="button" className="btn btn-white" onClick={() => fechar(null)}>{tx('Cancelar')}</button>
               <button type="submit" ref={botao} className={`btn ${d.perigo ? 'btn-danger' : 'btn-theme'}`} disabled={vazio}>{d.botao}</button>
             </div>
           </form>

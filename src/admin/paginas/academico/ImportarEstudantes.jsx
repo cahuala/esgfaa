@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { api } from '../../api'
 import { lerFolha } from './lerFolha'
+import { t as tx } from '../../../i18n/linguas'
 
 const ACOES = {
-  matricular: ['bg-primary', 'Matricular'],
-  ja_matriculado: ['bg-gray-500', 'Já matriculado'],
-  erro: ['bg-danger', 'Erro'],
+  matricular: ['bg-primary', tx('Matricular')],
+  ja_matriculado: ['bg-gray-500', tx('Já matriculado')],
+  erro: ['bg-danger', tx('Erro')],
 }
 
 /*
@@ -28,8 +29,8 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
     try {
       const f = await lerFolha(ficheiro)
       setFolha({ nome: ficheiro.name, ...f })
-      if (f.colunas.email === undefined && f.colunas.numero === undefined) throw new Error('A folha precisa de uma coluna E-mail ou Número (na primeira linha).')
-      if (!f.linhas.length) throw new Error('A folha não tem estudantes por baixo do cabeçalho.')
+      if (f.colunas.email === undefined && f.colunas.numero === undefined) throw new Error(tx('A folha precisa de uma coluna E-mail ou Número (na primeira linha).'))
+      if (!f.linhas.length) throw new Error(tx('A folha não tem estudantes por baixo do cabeçalho.'))
       setPrevia(await api(`/academico/turmas/${turma.id}/importar`, { metodo: 'POST', corpo: { linhas: f.linhas, simular: true } }))
     } catch (e) {
       setErro(e.message)
@@ -59,24 +60,23 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
         <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />Matricular a partir de uma folha — {turma.nome}</h4>
-              <button type="button" className="btn-close" onClick={fechar} disabled={aTrabalhar} aria-label="Fechar" />
+              <h4 className="modal-title" id="imp-titulo"><i className="fa fa-file-excel me-2" />{tx('Matricular a partir de uma folha —')} {turma.nome}</h4>
+              <button type="button" className="btn-close" onClick={fechar} disabled={aTrabalhar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">
               <p className="text-muted small mb-2">
-                Excel (.xlsx) ou CSV com uma linha de cabeçalho e uma coluna <b>E-mail</b> ou <b>Número</b> (de estudante).
-                Só se matricula quem já está registado pela Repartição de Pessoal e Quadros; ninguém novo é registado aqui.
+                {tx('Excel (.xlsx) ou CSV com uma linha de cabeçalho e uma coluna')} <b>{tx('E-mail')}</b> {tx('ou')} <b>{tx('Número')}</b> {tx('(de estudante). Só se matricula quem já está registado pela Repartição de Pessoal e Quadros; ninguém novo é registado aqui.')}
               </p>
               {!feito && (
                 <label className="d-block border border-2 border-dashed rounded p-4 text-center" style={{ cursor: 'pointer' }}>
                   <span className="d-block mb-2"><i className="fa fa-cloud-upload-alt fa-2x text-muted" /></span>
-                  <span className="fw-bold">{folha ? folha.nome : 'Escolher a folha'}</span>
-                  <input type="file" accept=".xlsx,.csv,.txt" className="d-none" onChange={(e) => escolher(e.target.files[0])} disabled={aTrabalhar} aria-label="Folha de estudantes" />
+                  <span className="fw-bold">{folha ? folha.nome : tx('Escolher a folha')}</span>
+                  <input type="file" accept=".xlsx,.csv,.txt" className="d-none" onChange={(e) => escolher(e.target.files[0])} disabled={aTrabalhar} aria-label={tx('Folha de estudantes')} />
                 </label>
               )}
-              {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />A tratar a folha…</p>}
+              {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />{tx('A tratar a folha…')}</p>}
               {erro && <div className="alert alert-danger mt-3 mb-0">{erro}</div>}
-              {feito && <div className="alert alert-success">Matrícula concluída: {feito.resumo.matricular} estudante(s) matriculado(s){feito.resumo.erro ? `, ${feito.resumo.erro} linha(s) com erro` : ''}.</div>}
+              {feito && <div className="alert alert-success">{tx('Matrícula concluída:')} {feito.resumo.matricular} {tx('estudante(s) matriculado(s)')}{feito.resumo.erro ? tx(', {0} linha(s) com erro', { 0: feito.resumo.erro }) : ''}.</div>}
               {previa && (
                 <>
                   <div className="d-flex flex-wrap gap-2 my-3">
@@ -84,7 +84,7 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
                   </div>
                   <div className="table-responsive">
                     <table className="table table-sm table-striped align-middle mb-0">
-                      <thead><tr><th>Linha</th><th>Nome</th><th>E-mail / número</th><th>Resultado</th></tr></thead>
+                      <thead><tr><th>{tx('Linha')}</th><th>{tx('Nome')}</th><th>{tx('E-mail / número')}</th><th>{tx('Resultado')}</th></tr></thead>
                       <tbody>
                         {previa.linhas.map((l) => (
                           <tr key={l.linha} className={l.acao === 'erro' ? 'text-danger' : ''}>
@@ -101,8 +101,8 @@ function ImportarEstudantes({ turma, fechar, concluido }) {
               )}
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={fechar} disabled={aTrabalhar}>{feito ? 'Fechar' : 'Cancelar'}</button>
-              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? `Matricular ${aGravar} estudante(s)` : 'Matricular'}</button>}
+              <button type="button" className="btn btn-white" onClick={fechar} disabled={aTrabalhar}>{feito ? tx('Fechar') : tx('Cancelar')}</button>
+              {!feito && <button type="button" className="btn btn-theme" onClick={importar} disabled={aTrabalhar || !aGravar}><i className="fa fa-check me-1" />{aGravar ? tx('Matricular {0} estudante(s)', { 0: aGravar }) : tx('Matricular')}</button>}
             </div>
           </div>
         </div>

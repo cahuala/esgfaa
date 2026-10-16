@@ -6,7 +6,8 @@ import FormPergunta, { SolucaoPergunta } from './FormPergunta'
 import { TIPOS_PERGUNTA as TIPOS } from './tiposPergunta'
 import { BancoJanela } from './Banco'
 import { confirmar as perguntar, pedir } from '../dialogos'
-const ESTADOS = { em_breve: ['azul', 'Abre em breve'], aberto: ['verde', 'Aberto'], fechado: ['cinzento', 'Fechado'] }
+import { t as tx } from '../../i18n/linguas'
+const ESTADOS = { em_breve: ['azul', tx('Abre em breve')], aberto: ['verde', tx('Aberto')], fechado: ['cinzento', tx('Fechado')] }
 // ISO → valor de <input type="datetime-local"> na hora local
 
 // questionários online da cadeira (como os do Moodle)
@@ -19,7 +20,7 @@ function Questionarios(props) {
       return (
         <Cartao titulo={<><i className="fa fa-question-circle me-2" />{props.c.questionarios.find((x) => x.id === aberto).titulo}</>}>
           <Bloqueio motivos={bloqueio} />
-          <button type="button" className="btn btn-white mt-3" onClick={voltar}><i className="fa fa-arrow-left me-1" />Voltar</button>
+          <button type="button" className="btn btn-white mt-3" onClick={voltar}><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</button>
         </Cartao>
       )
     }
@@ -38,19 +39,19 @@ function Lista({ c, eDocente, avisar, abrir }) {
 
   return (
     <div className={eDocente ? 'p-grelha-lado' : ''}>
-      <Cartao titulo={<><i className="fa fa-question-circle me-2" />Questionários</>} corpo={false}>
-        {lista.length === 0 ? <div className="panel-body"><Vazio>{eDocente ? 'Ainda não criou questionários.' : 'Não há questionários publicados.'}</Vazio></div> : (
+      <Cartao titulo={<><i className="fa fa-question-circle me-2" />{tx('Questionários')}</>} corpo={false}>
+        {lista.length === 0 ? <div className="panel-body"><Vazio>{eDocente ? tx('Ainda não criou questionários.') : tx('Não há questionários publicados.')}</Vazio></div> : (
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-              <thead><tr><th>Questionário</th><th>Fecha</th><th className="text-center">Duração</th>{eDocente ? <th className="text-center">Estado</th> : <><th className="text-center">Tentativas</th><th className="text-center">Melhor nota</th></>}<th /></tr></thead>
+              <thead><tr><th>{tx('Questionário')}</th><th>{tx('Fecha')}</th><th className="text-center">{tx('Duração')}</th>{eDocente ? <th className="text-center">{tx('Estado')}</th> : <><th className="text-center">{tx('Tentativas')}</th><th className="text-center">{tx('Melhor nota')}</th></>}<th /></tr></thead>
               <tbody>
                 {lista.map((q) => (
                   <tr key={q.id}>
-                    <td><span className="fw-bold">{q.titulo}</span><div className="small text-muted">{q.numeroPerguntas} pergunta(s)</div></td>
-                    <td className="small">{q.fecha ? dataHora(q.fecha) : 'Sem prazo'}</td>
-                    <td className="text-center small">{q.duracao ? `${q.duracao} min` : 'Livre'}</td>
+                    <td><span className="fw-bold">{q.titulo}</span><div className="small text-muted">{q.numeroPerguntas} {tx('pergunta(s)')}</div></td>
+                    <td className="small">{q.fecha ? dataHora(q.fecha) : tx('Sem prazo')}</td>
+                    <td className="text-center small">{q.duracao ? tx('{0} min', { 0: q.duracao }) : tx('Livre')}</td>
                     {eDocente ? (
-                      <td className="text-center">{q.publicado ? <Etiqueta cor="verde">Publicado</Etiqueta> : <Etiqueta>Rascunho</Etiqueta>}</td>
+                      <td className="text-center">{q.publicado ? <Etiqueta cor="verde">{tx('Publicado')}</Etiqueta> : <Etiqueta>{tx('Rascunho')}</Etiqueta>}</td>
                     ) : (
                       <>
                         <td className="text-center small">{q.feitas} / {q.tentativas}</td>
@@ -59,7 +60,7 @@ function Lista({ c, eDocente, avisar, abrir }) {
                     )}
                     <td className="text-end text-nowrap">
                       {!eDocente && <span className="me-2"><Etiqueta cor={ESTADOS[q.estado][0]}>{ESTADOS[q.estado][1]}</Etiqueta></span>}
-                      <button type="button" className="btn btn-sm btn-theme" onClick={() => abrir(q.id)}>{eDocente ? 'Editar' : 'Abrir'}</button>
+                      <button type="button" className="btn btn-sm btn-theme" onClick={() => abrir(q.id)}>{eDocente ? tx('Editar') : tx('Abrir')}</button>
                     </td>
                   </tr>
                 ))}
@@ -92,17 +93,17 @@ function Definicoes({ inicial, guardar, botao }) {
   return (
     <form onSubmit={submeter} className="p-formulario">
       {erro && <p className="p-erro" role="alert">{erro}</p>}
-      <Campo id="q-titulo" rotulo="Título"><input id="q-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>
-      <Campo id="q-desc" rotulo="Instruções (opcional)"><textarea id="q-desc" rows={2} value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} /></Campo>
+      <Campo id="q-titulo" rotulo={tx('Título')}><input id="q-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>
+      <Campo id="q-desc" rotulo={tx('Instruções (opcional)')}><textarea id="q-desc" rows={2} value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} /></Campo>
       <div className="row g-2">
-        <div className="col-sm-6"><Campo id="q-abre" rotulo="Abre em"><input id="q-abre" type="datetime-local" value={f.abre} onChange={(e) => setF({ ...f, abre: e.target.value })} /></Campo></div>
-        <div className="col-sm-6"><Campo id="q-fecha" rotulo="Fecha em"><input id="q-fecha" type="datetime-local" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Campo></div>
-        <div className="col-sm-6"><Campo id="q-duracao" rotulo="Duração (min, 0 = livre)"><input id="q-duracao" type="number" min={0} max={600} value={f.duracao} onChange={(e) => setF({ ...f, duracao: e.target.value })} /></Campo></div>
-        <div className="col-sm-6"><Campo id="q-tent" rotulo="Tentativas"><input id="q-tent" type="number" min={1} max={10} value={f.tentativas} onChange={(e) => setF({ ...f, tentativas: e.target.value })} /></Campo></div>
+        <div className="col-sm-6"><Campo id="q-abre" rotulo={tx('Abre em')}><input id="q-abre" type="datetime-local" value={f.abre} onChange={(e) => setF({ ...f, abre: e.target.value })} /></Campo></div>
+        <div className="col-sm-6"><Campo id="q-fecha" rotulo={tx('Fecha em')}><input id="q-fecha" type="datetime-local" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Campo></div>
+        <div className="col-sm-6"><Campo id="q-duracao" rotulo={tx('Duração (min, 0 = livre)')}><input id="q-duracao" type="number" min={0} max={600} value={f.duracao} onChange={(e) => setF({ ...f, duracao: e.target.value })} /></Campo></div>
+        <div className="col-sm-6"><Campo id="q-tent" rotulo={tx('Tentativas')}><input id="q-tent" type="number" min={1} max={10} value={f.tentativas} onChange={(e) => setF({ ...f, tentativas: e.target.value })} /></Campo></div>
       </div>
-      <label className="p-caixa"><input type="checkbox" checked={f.mostrarRespostas} onChange={(e) => setF({ ...f, mostrarRespostas: e.target.checked })} /> Mostrar as respostas certas depois da entrega</label>
-      <label className="p-caixa"><input type="checkbox" checked={f.baralhar} onChange={(e) => setF({ ...f, baralhar: e.target.checked })} /> Baralhar as perguntas e as opções em cada tentativa</label>
-      <Campo id="q-sorteio" rotulo="Perguntas sorteadas por tentativa (0 = todas)" ajuda="Com um conjunto grande de perguntas, cada estudante recebe só algumas, ao acaso.">
+      <label className="p-caixa"><input type="checkbox" checked={f.mostrarRespostas} onChange={(e) => setF({ ...f, mostrarRespostas: e.target.checked })} /> {tx('Mostrar as respostas certas depois da entrega')}</label>
+      <label className="p-caixa"><input type="checkbox" checked={f.baralhar} onChange={(e) => setF({ ...f, baralhar: e.target.checked })} /> {tx('Baralhar as perguntas e as opções em cada tentativa')}</label>
+      <Campo id="q-sorteio" rotulo={tx('Perguntas sorteadas por tentativa (0 = todas)')} ajuda={tx('Com um conjunto grande de perguntas, cada estudante recebe só algumas, ao acaso.')}>
         <input id="q-sorteio" type="number" min={0} max={200} value={f.perguntasPorTentativa} onChange={(e) => setF({ ...f, perguntasPorTentativa: e.target.value })} />
       </Campo>
       <div><button type="submit" className="btn btn-theme">{botao}</button></div>
@@ -112,8 +113,8 @@ function Definicoes({ inicial, guardar, botao }) {
 
 function NovoQuestionario({ c, avisar, criado }) {
   return (
-    <Cartao titulo={<><i className="fa fa-plus me-2" />Novo questionário</>}>
-      <Definicoes botao="Criar e juntar perguntas" guardar={async (dados) => { const q = await api(`/cadeiras/${c.id}/questionarios`, { metodo: 'POST', corpo: dados }); avisar({ texto: 'Questionário criado. Junte as perguntas.' }); criado(q) }} />
+    <Cartao titulo={<><i className="fa fa-plus me-2" />{tx('Novo questionário')}</>}>
+      <Definicoes botao={tx('Criar e juntar perguntas')} guardar={async (dados) => { const q = await api(`/cadeiras/${c.id}/questionarios`, { metodo: 'POST', corpo: dados }); avisar({ texto: tx('Questionário criado. Junte as perguntas.') }); criado(q) }} />
     </Cartao>
   )
 }
@@ -133,29 +134,29 @@ function EditorQuestionario({ id, avisar, voltar }) {
   const porCorrigir = q.resultados.filter((r) => r.porCorrigir).length
 
   const publicar = () => api(`/questionarios/${id}`, { metodo: 'PUT', corpo: { publicado: !q.publicado } })
-    .then(() => { avisar({ texto: q.publicado ? 'Questionário escondido dos estudantes.' : 'Questionário publicado.' }); carregar() }).catch(falhou)
-  const apagar = async () => (await perguntar(`Apagar "${q.titulo}" e todas as tentativas?`, { titulo: 'Apagar questionário', botao: 'Apagar', perigo: true })) && api(`/questionarios/${id}`, { metodo: 'DELETE' }).then(voltar).catch(falhou)
+    .then(() => { avisar({ texto: q.publicado ? tx('Questionário escondido dos estudantes.') : tx('Questionário publicado.') }); carregar() }).catch(falhou)
+  const apagar = async () => (await perguntar(tx('Apagar "{0}" e todas as tentativas?', { 0: q.titulo }), { titulo: tx('Apagar questionário'), botao: tx('Apagar'), perigo: true })) && api(`/questionarios/${id}`, { metodo: 'DELETE' }).then(voltar).catch(falhou)
   const apagarPergunta = (p) => api(`/perguntas/${p.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
   const paraBanco = async (p) => {
-    const categoria = await pedir('Categoria no banco de perguntas', 'Geral', { botao: 'Guardar no banco' })
+    const categoria = await pedir(tx('Categoria no banco de perguntas'), tx('Geral'), { botao: tx('Guardar no banco') })
     if (categoria === null) return
-    api(`/perguntas/${p.id}/banco`, { metodo: 'POST', corpo: { categoria } }).then(() => avisar({ texto: 'Pergunta guardada no seu banco.' })).catch(falhou)
+    api(`/perguntas/${p.id}/banco`, { metodo: 'POST', corpo: { categoria } }).then(() => avisar({ texto: tx('Pergunta guardada no seu banco.') })).catch(falhou)
   }
   const total = q.perguntas.reduce((s, p) => s + p.pontos, 0)
-  const separadores = [['perguntas', 'fa-list-ol', `Perguntas (${q.perguntas.length})`], ['resultados', 'fa-poll', `Resultados (${q.resultados.length})`], ['estatisticas', 'fa-chart-bar', 'Estatísticas'], ['definicoes', 'fa-cog', 'Definições']]
+  const separadores = [['perguntas', 'fa-list-ol', tx('Perguntas ({0})', { 0: q.perguntas.length })], ['resultados', 'fa-poll', tx('Resultados ({0})', { 0: q.resultados.length })], ['estatisticas', 'fa-chart-bar', tx('Estatísticas')], ['definicoes', 'fa-cog', tx('Definições')]]
 
   return (
     <>
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
-        <button type="button" className={`btn ${q.publicado ? 'btn-white' : 'btn-success'}`} onClick={publicar}><i className={`fa ${q.publicado ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{q.publicado ? 'Esconder' : 'Publicar'}</button>
-        <button type="button" className="btn btn-danger ms-auto" onClick={apagar}><i className="fa fa-trash-alt me-1" /> Apagar</button>
+        <button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" /> {tx('Voltar à cadeira')}</button>
+        <button type="button" className={`btn ${q.publicado ? 'btn-white' : 'btn-success'}`} onClick={publicar}><i className={`fa ${q.publicado ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{q.publicado ? tx('Esconder') : tx('Publicar')}</button>
+        <button type="button" className="btn btn-danger ms-auto" onClick={apagar}><i className="fa fa-trash-alt me-1" /> {tx('Apagar')}</button>
       </div>
       <ul className="nav nav-tabs">
         {separadores.map(([k, icone, texto]) => (
           <li key={k} className="nav-item">
             <button type="button" className={`nav-link ${vista === k ? 'active' : ''}`} onClick={() => setVista(k)}>
-              <i className={`fa ${icone} me-1`} />{texto}{k === 'resultados' && porCorrigir > 0 && <span className="badge bg-danger ms-1">{porCorrigir} por corrigir</span>}
+              <i className={`fa ${icone} me-1`} />{texto}{k === 'resultados' && porCorrigir > 0 && <span className="badge bg-danger ms-1">{porCorrigir} {tx('por corrigir')}</span>}
             </button>
           </li>
         ))}
@@ -165,19 +166,19 @@ function EditorQuestionario({ id, avisar, voltar }) {
           <div className="row">
             <div className="col-xl-7">
               <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                <h3 className="h5 mb-0 flex-grow-1">{q.titulo} {q.publicado ? <span className="badge bg-success ms-1">Publicado</span> : <span className="badge bg-gray-500 ms-1">Rascunho</span>}</h3>
-                <span className="small text-muted">{q.perguntas.length} pergunta(s) · {nota(total)} pontos{q.perguntasPorTentativa > 0 && ` · ${q.perguntasPorTentativa} sorteadas por tentativa`}{q.baralhar && ' · baralhado'}</span>
+                <h3 className="h5 mb-0 flex-grow-1">{q.titulo} {q.publicado ? <span className="badge bg-success ms-1">{tx('Publicado')}</span> : <span className="badge bg-gray-500 ms-1">{tx('Rascunho')}</span>}</h3>
+                <span className="small text-muted">{q.perguntas.length} {tx('pergunta(s) ·')} {nota(total)} {tx('pontos')}{q.perguntasPorTentativa > 0 && tx(' · {0} sorteadas por tentativa', { 0: q.perguntasPorTentativa })}{q.baralhar && tx(' · baralhado')}</span>
               </div>
-              {bloqueado && <div className="alert alert-warning py-2"><i className="fa fa-lock me-1" /> Já há tentativas: as perguntas não podem mudar.</div>}
-              {q.perguntas.length === 0 && <Vazio>Junte a primeira pergunta (escreva-a ou traga-a do seu banco de perguntas).</Vazio>}
+              {bloqueado && <div className="alert alert-warning py-2"><i className="fa fa-lock me-1" /> {tx('Já há tentativas: as perguntas não podem mudar.')}</div>}
+              {q.perguntas.length === 0 && <Vazio>{tx('Junte a primeira pergunta (escreva-a ou traga-a do seu banco de perguntas).')}</Vazio>}
               <ol className="ps-3 mb-0">
                 {q.perguntas.map((p) => (
                   <li key={p.id} className="mb-3">
                     <div className="d-flex justify-content-between gap-2">
-                      <span><b>{p.enunciado}</b> <span className="small text-muted">· {TIPOS[p.tipo]} · {nota(p.pontos)} pt</span></span>
+                      <span><b>{p.enunciado}</b> <span className="small text-muted">· {TIPOS[p.tipo]} · {nota(p.pontos)} {tx('pt')}</span></span>
                       <span className="text-nowrap">
-                        <button type="button" className="btn btn-xs btn-white me-1" onClick={() => paraBanco(p)} title="Guardar no banco de perguntas" aria-label="Guardar no banco"><i className="fa fa-archive" /></button>
-                        {!bloqueado && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagarPergunta(p)} aria-label="Apagar pergunta"><i className="fa fa-times" /></button>}
+                        <button type="button" className="btn btn-xs btn-white me-1" onClick={() => paraBanco(p)} title={tx('Guardar no banco de perguntas')} aria-label={tx('Guardar no banco')}><i className="fa fa-archive" /></button>
+                        {!bloqueado && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagarPergunta(p)} aria-label={tx('Apagar pergunta')}><i className="fa fa-times" /></button>}
                       </span>
                     </div>
                     <SolucaoPergunta p={p} />
@@ -188,9 +189,9 @@ function EditorQuestionario({ id, avisar, voltar }) {
             <div className="col-xl-5">
               {!bloqueado && (
                 <>
-                  <button type="button" className="btn btn-white w-100 mb-3" onClick={() => setBanco(true)}><i className="fa fa-archive me-1" /> Juntar do meu banco de perguntas</button>
-                  <Cartao titulo={<><i className="fa fa-plus me-2" />Nova pergunta</>}>
-                    <FormPergunta guardar={async (corpo) => { await api(`/questionarios/${q.id}/perguntas`, { metodo: 'POST', corpo }); avisar({ texto: 'Pergunta juntada.' }); carregar() }} />
+                  <button type="button" className="btn btn-white w-100 mb-3" onClick={() => setBanco(true)}><i className="fa fa-archive me-1" /> {tx('Juntar do meu banco de perguntas')}</button>
+                  <Cartao titulo={<><i className="fa fa-plus me-2" />{tx('Nova pergunta')}</>}>
+                    <FormPergunta guardar={async (corpo) => { await api(`/questionarios/${q.id}/perguntas`, { metodo: 'POST', corpo }); avisar({ texto: tx('Pergunta juntada.') }); carregar() }} />
                   </Cartao>
                 </>
               )}
@@ -198,15 +199,15 @@ function EditorQuestionario({ id, avisar, voltar }) {
           </div>
         )}
         {vista === 'resultados' && (
-          q.resultados.length === 0 ? <Vazio>Ainda ninguém entregou.</Vazio> : (
+          q.resultados.length === 0 ? <Vazio>{tx('Ainda ninguém entregou.')}</Vazio> : (
             <table className="table table-hover align-middle mb-0">
-              <thead><tr><th>Estudante</th><th className="text-center">Tentativa</th><th>Entregue</th><th className="text-end">Nota</th><th /></tr></thead>
+              <thead><tr><th>{tx('Estudante')}</th><th className="text-center">{tx('Tentativa')}</th><th>{tx('Entregue')}</th><th className="text-end">{tx('Nota')}</th><th /></tr></thead>
               <tbody>
                 {q.resultados.map((r) => (
                   <tr key={r.id}>
                     <td className="fw-bold">{r.estudante.nome}</td><td className="text-center">{r.numero}</td><td className="small">{dataHora(r.entregueEm)}</td>
-                    <td className={`text-end fw-bold ${r.nota !== null && r.nota < 10 ? 'text-danger' : ''}`}>{r.porCorrigir ? <span className="badge bg-warning text-dark">Por corrigir</span> : nota(r.nota)}</td>
-                    <td className="text-end"><button type="button" className={`btn btn-sm ${r.porCorrigir ? 'btn-theme' : 'btn-white'}`} onClick={() => setCorrigir(r.id)}>{r.porCorrigir ? 'Corrigir' : 'Ver'}</button></td>
+                    <td className={`text-end fw-bold ${r.nota !== null && r.nota < 10 ? 'text-danger' : ''}`}>{r.porCorrigir ? <span className="badge bg-warning text-dark">{tx('Por corrigir')}</span> : nota(r.nota)}</td>
+                    <td className="text-end"><button type="button" className={`btn btn-sm ${r.porCorrigir ? 'btn-theme' : 'btn-white'}`} onClick={() => setCorrigir(r.id)}>{r.porCorrigir ? tx('Corrigir') : tx('Ver')}</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -214,9 +215,9 @@ function EditorQuestionario({ id, avisar, voltar }) {
           )
         )}
         {vista === 'estatisticas' && <Estatisticas id={q.id} perguntas={q.perguntas} falhou={falhou} />}
-        {vista === 'definicoes' && <Definicoes inicial={q} botao="Guardar definições" guardar={async (dados) => { await api(`/questionarios/${id}`, { metodo: 'PUT', corpo: dados }); avisar({ texto: 'Definições guardadas.' }); carregar() }} />}
+        {vista === 'definicoes' && <Definicoes inicial={q} botao={tx('Guardar definições')} guardar={async (dados) => { await api(`/questionarios/${id}`, { metodo: 'PUT', corpo: dados }); avisar({ texto: tx('Definições guardadas.') }); carregar() }} />}
       </div>
-      {banco && <BancoJanela fechar={() => setBanco(false)} juntar={async (ids) => { await api(`/questionarios/${q.id}/do-banco`, { metodo: 'POST', corpo: { ids } }); avisar({ texto: `${ids.length} pergunta(s) juntada(s) do banco.` }); setBanco(false); carregar() }} />}
+      {banco && <BancoJanela fechar={() => setBanco(false)} juntar={async (ids) => { await api(`/questionarios/${q.id}/do-banco`, { metodo: 'POST', corpo: { ids } }); avisar({ texto: tx('{0} pergunta(s) juntada(s) do banco.', { 0: ids.length }) }); setBanco(false); carregar() }} />}
       {corrigir && <CorrigirTentativa id={corrigir} avisar={avisar} fechar={() => { setCorrigir(null); carregar() }} />}
     </>
   )
@@ -225,7 +226,7 @@ function EditorQuestionario({ id, avisar, voltar }) {
 // a resposta dada a uma pergunta, em texto legível (correção do docente)
 function RespostaDada({ p, x }) {
   const dada = x?.dada
-  if (dada === null || dada === undefined) return <span className="text-muted fst-italic">Sem resposta</span>
+  if (dada === null || dada === undefined) return <span className="text-muted fst-italic">{tx('Sem resposta')}</span>
   if (p.tipo === 'correspondencia') return <span>{p.opcoes.pares.map((par, i) => <span key={i} className="d-block">{par.a} → {dada[i] === null || dada[i] === undefined ? '—' : p.opcoes.pares[dada[i]]?.b}</span>)}</span>
   if (Array.isArray(dada)) return <span>{dada.map((i) => p.opcoes[i]?.texto ?? i).join(' · ')}</span>
   return <span className="p-texto-pre">{String(dada)}</span>
@@ -247,7 +248,7 @@ function CorrigirTentativa({ id, avisar, fechar }) {
   async function guardar() {
     try {
       const r = await api(`/tentativas/${id}/correcao`, { metodo: 'PUT', corpo: { pontos, comentario } })
-      avisar({ texto: r.porCorrigir ? 'Guardado. Ainda faltam dissertações.' : `Corrigido: ${nota(r.nota)} valores. O estudante foi avisado.` })
+      avisar({ texto: r.porCorrigir ? tx('Guardado. Ainda faltam dissertações.') : tx('Corrigido: {0} valores. O estudante foi avisado.', { 0: nota(r.nota) }) })
       fechar()
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
@@ -260,8 +261,8 @@ function CorrigirTentativa({ id, avisar, fechar }) {
         <div className="modal-dialog modal-lg modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="corrigir-t"><i className="fa fa-pen me-2" />{d ? `${d.estudante?.nome || 'Tentativa'} — ${d.questionario.titulo}` : 'A carregar…'}</h4>
-              <button type="button" className="btn-close" onClick={fechar} aria-label="Fechar" />
+              <h4 className="modal-title" id="corrigir-t"><i className="fa fa-pen me-2" />{d ? `${d.estudante?.nome || tx('Tentativa')} — ${d.questionario.titulo}` : tx('A carregar…')}</h4>
+              <button type="button" className="btn-close" onClick={fechar} aria-label={tx('Fechar')} />
             </div>
             {d && (
               <div className="modal-body">
@@ -273,21 +274,21 @@ function CorrigirTentativa({ id, avisar, fechar }) {
                       <div className="my-1"><RespostaDada p={p} x={x} /></div>
                       {p.tipo === 'dissertacao' ? (
                         <div className="d-flex align-items-center gap-2">
-                          <label className="small fw-bold" htmlFor={`pd-${p.id}`}>Pontos</label>
+                          <label className="small fw-bold" htmlFor={`pd-${p.id}`}>{tx('Pontos')}</label>
                           <input id={`pd-${p.id}`} className="form-control form-control-sm" style={{ width: 80 }} inputMode="decimal" value={pontos[p.id] ?? ''} onChange={(e) => setPontos({ ...pontos, [p.id]: e.target.value })} />
-                          <span className="small text-muted">de {nota(p.pontos)}</span>
+                          <span className="small text-muted">{tx('de')} {nota(p.pontos)}</span>
                         </div>
-                      ) : <span className={`badge ${x.certa ? 'bg-success' : x.obtidos > 0 ? 'bg-warning text-dark' : 'bg-danger'}`}>{nota(x.obtidos)} / {nota(p.pontos)} pt</span>}
+                      ) : <span className={`badge ${x.certa ? 'bg-success' : x.obtidos > 0 ? 'bg-warning text-dark' : 'bg-danger'}`}>{nota(x.obtidos)} / {nota(p.pontos)} {tx('pt')}</span>}
                     </div>
                   )
                 })}
-                <label className="form-label fw-bold" htmlFor="ct-coment">Comentário para o estudante</label>
+                <label className="form-label fw-bold" htmlFor="ct-coment">{tx('Comentário para o estudante')}</label>
                 <textarea id="ct-coment" className="form-control" rows={2} value={comentario} onChange={(e) => setComentario(e.target.value)} />
               </div>
             )}
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={fechar}>Fechar</button>
-              <button type="button" className="btn btn-theme" onClick={guardar} disabled={!d}><i className="fa fa-save me-1" />Guardar correção</button>
+              <button type="button" className="btn btn-white" onClick={fechar}>{tx('Fechar')}</button>
+              <button type="button" className="btn btn-theme" onClick={guardar} disabled={!d}><i className="fa fa-save me-1" />{tx('Guardar correção')}</button>
             </div>
           </div>
         </div>
@@ -302,17 +303,17 @@ function Estatisticas({ id, perguntas, falhou }) {
   const [e, setE] = useState(null)
   useEffect(() => { api(`/questionarios/${id}/estatisticas`).then(setE).catch(falhou) }, [id, falhou])
   if (!e) return <Carregando />
-  if (!e.tentativas) return <Vazio>Ainda não há tentativas entregues.</Vazio>
+  if (!e.tentativas) return <Vazio>{tx('Ainda não há tentativas entregues.')}</Vazio>
   const cor = (f) => (f === null ? 'bg-gray-400' : f >= 70 ? 'bg-success' : f >= 40 ? 'bg-warning' : 'bg-danger')
   return (
     <>
       <div className="row g-2 mb-3">
-        {[['Tentativas', e.tentativas], ['Média', nota(e.media)], ['Mediana', nota(e.mediana)], ['Máxima', nota(e.maxima)], ['Mínima', nota(e.minima)]].map(([k, v]) => (
+        {[[tx('Tentativas'), e.tentativas], [tx('Média'), nota(e.media)], [tx('Mediana'), nota(e.mediana)], [tx('Máxima'), nota(e.maxima)], [tx('Mínima'), nota(e.minima)]].map(([k, v]) => (
           <div key={k} className="col"><div className="border rounded p-2 text-center"><div className="small text-muted">{k}</div><div className="fs-18px fw-bold">{v}</div></div></div>
         ))}
       </div>
       <table className="table table-bordered align-middle mb-0">
-        <thead><tr><th>Pergunta</th><th className="text-center">Respostas</th><th style={{ width: 220 }}>Facilidade (média dos pontos)</th></tr></thead>
+        <thead><tr><th>{tx('Pergunta')}</th><th className="text-center">{tx('Respostas')}</th><th style={{ width: 220 }}>{tx('Facilidade (média dos pontos)')}</th></tr></thead>
         <tbody>
           {e.porPergunta.map((p, n) => {
             const original = perguntas.find((x) => x.id === p.perguntaId)
@@ -334,7 +335,7 @@ function Estatisticas({ id, perguntas, falhou }) {
                 </td>
                 <td className="text-center">{p.respondidas}</td>
                 <td>
-                  {p.facilidade === null ? <span className="small text-muted">Por corrigir</span> : (
+                  {p.facilidade === null ? <span className="small text-muted">{tx('Por corrigir')}</span> : (
                     <div className="d-flex align-items-center gap-2"><div className="progress flex-grow-1" style={{ height: 8 }}><div className={`progress-bar ${cor(p.facilidade)}`} style={{ width: `${p.facilidade}%` }} /></div><b className="small">{p.facilidade}%</b></div>
                   )}
                 </td>
@@ -343,7 +344,7 @@ function Estatisticas({ id, perguntas, falhou }) {
           })}
         </tbody>
       </table>
-      <p className="p-legenda">Facilidade baixa (vermelho) indica uma pergunta difícil ou mal formulada; nas de escolha, veja que opções enganaram mais.</p>
+      <p className="p-legenda">{tx('Facilidade baixa (vermelho) indica uma pergunta difícil ou mal formulada; nas de escolha, veja que opções enganaram mais.')}</p>
     </>
   )
 }
@@ -368,7 +369,7 @@ function Realizar({ id, avisar, recarregar, voltar }) {
 
   const entregar = useCallback(async (confirmar = true) => {
     if (!tentativa || entregando.current) return
-    if (confirmar && !(await perguntar('Entregar o questionário? Depois não pode mudar as respostas.', { titulo: 'Entregar', botao: 'Entregar' }))) return
+    if (confirmar && !(await perguntar(tx('Entregar o questionário? Depois não pode mudar as respostas.'), { titulo: tx('Entregar'), botao: tx('Entregar') }))) return
     entregando.current = true
     clearTimeout(guardarT.current)
     try {
@@ -412,7 +413,7 @@ function Realizar({ id, avisar, recarregar, voltar }) {
     return Array.isArray(v) ? v.some((x) => x !== null && x !== undefined) : v !== undefined && String(v).trim() !== ''
   }
 
-  if (erroCarga) return <><Erro texto={erroCarga} /><button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" />Voltar</button></>
+  if (erroCarga) return <><Erro texto={erroCarga} /><button type="button" className="btn btn-white" onClick={voltar}><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</button></>
   if (!q) return <Carregando />
   const respondidas = tentativa ? tentativa.perguntas.filter(respondida).length : 0
 
@@ -420,13 +421,13 @@ function Realizar({ id, avisar, recarregar, voltar }) {
     return (
       <>
         <div className="d-flex align-items-center gap-3 mb-3 flex-wrap sticky-top bg-body py-2" style={{ top: 60 }}>
-          <h2 className="h5 mb-0 flex-grow-1">{q.titulo} <small className="text-muted">· tentativa {tentativa.numero}</small></h2>
-          <span className="small text-muted">{respondidas} de {tentativa.perguntas.length} respondidas</span>
+          <h2 className="h5 mb-0 flex-grow-1">{q.titulo} <small className="text-muted">{tx('· tentativa')} {tentativa.numero}</small></h2>
+          <span className="small text-muted">{respondidas} {tx('de')} {tentativa.perguntas.length} {tx('respondidas')}</span>
           {resta !== null && <span className={`badge fs-14px ${resta < 60 ? 'bg-danger' : 'bg-dark'}`}><i className="fa fa-clock me-1" />{String(Math.floor(resta / 60)).padStart(2, '0')}:{String(resta % 60).padStart(2, '0')}</span>}
-          <button type="button" className="btn btn-theme" onClick={() => entregar(true)}><i className="fa fa-paper-plane me-1" /> Entregar</button>
+          <button type="button" className="btn btn-theme" onClick={() => entregar(true)}><i className="fa fa-paper-plane me-1" /> {tx('Entregar')}</button>
         </div>
         {tentativa.perguntas.map((p, n) => (
-          <Cartao key={p.id} titulo={`Pergunta ${n + 1}`} acoes={<span className="text-white small">{p.pontos} pt · {TIPOS[p.tipo]}</span>}>
+          <Cartao key={p.id} titulo={tx('Pergunta {0}', { 0: n + 1 })} acoes={<span className="text-white small">{p.pontos} {tx('pt ·')} {TIPOS[p.tipo]}</span>}>
             <p className="fw-bold">{p.enunciado}</p>
             {p.opcoes && p.opcoes.map((o) => (
               <label key={o.i} className="d-flex gap-2 align-items-center py-1">
@@ -434,8 +435,8 @@ function Realizar({ id, avisar, recarregar, voltar }) {
                 {o.texto}
               </label>
             ))}
-            {p.tipo === 'curta' && <input className="form-control" style={{ maxWidth: 420 }} value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={`Resposta à pergunta ${n + 1}`} placeholder="A sua resposta" />}
-            {p.tipo === 'numerica' && <input className="form-control" style={{ maxWidth: 220 }} inputMode="decimal" value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={`Resposta à pergunta ${n + 1}`} placeholder="Número" />}
+            {p.tipo === 'curta' && <input className="form-control" style={{ maxWidth: 420 }} value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={tx('Resposta à pergunta {0}', { 0: n + 1 })} placeholder={tx('A sua resposta')} />}
+            {p.tipo === 'numerica' && <input className="form-control" style={{ maxWidth: 220 }} inputMode="decimal" value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={tx('Resposta à pergunta {0}', { 0: n + 1 })} placeholder={tx('Número')} />}
             {p.tipo === 'correspondencia' && (
               <table className="table table-sm align-middle mb-0" style={{ maxWidth: 640 }}>
                 <tbody>
@@ -443,9 +444,9 @@ function Realizar({ id, avisar, recarregar, voltar }) {
                     <tr key={k}>
                       <td className="fw-bold">{item}</td>
                       <td style={{ width: '55%' }}>
-                        <select className="form-select form-select-sm" value={respostas[p.id]?.[k] ?? ''} aria-label={`Correspondência de ${item}`}
+                        <select className="form-select form-select-sm" value={respostas[p.id]?.[k] ?? ''} aria-label={tx('Correspondência de {0}', { 0: item })}
                           onChange={(e) => { const atual = [...(respostas[p.id] || p.itens.map(() => null))]; atual[k] = e.target.value === '' ? null : Number(e.target.value); responder(p, atual) }}>
-                          <option value="">Escolha…</option>
+                          <option value="">{tx('Escolha…')}</option>
                           {p.escolhas.map((x) => <option key={x.i} value={x.i}>{x.texto}</option>)}
                         </select>
                       </td>
@@ -457,13 +458,13 @@ function Realizar({ id, avisar, recarregar, voltar }) {
             {p.tipo === 'dissertacao' && (
               <>
                 {p.orientacao && <p className="small text-muted">{p.orientacao}</p>}
-                <textarea className="form-control" rows={8} value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={`Resposta à pergunta ${n + 1}`} />
-                <div className="small text-muted mt-1">{String(respostas[p.id] ?? '').trim() ? String(respostas[p.id]).trim().split(/\s+/).length : 0} palavras · corrigida pelo docente</div>
+                <textarea className="form-control" rows={8} value={respostas[p.id] ?? ''} onChange={(e) => responder(p, e.target.value)} aria-label={tx('Resposta à pergunta {0}', { 0: n + 1 })} />
+                <div className="small text-muted mt-1">{String(respostas[p.id] ?? '').trim() ? String(respostas[p.id]).trim().split(/\s+/).length : 0} {tx('palavras · corrigida pelo docente')}</div>
               </>
             )}
           </Cartao>
         ))}
-        <p className="p-legenda">As respostas são gravadas automaticamente. No fim do tempo o questionário é entregue sozinho.</p>
+        <p className="p-legenda">{tx('As respostas são gravadas automaticamente. No fim do tempo o questionário é entregue sozinho.')}</p>
       </>
     )
   }
@@ -471,36 +472,36 @@ function Realizar({ id, avisar, recarregar, voltar }) {
   const podeComecar = q.estado === 'aberto' && q.feitas.length < q.tentativas
   return (
     <>
-      <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> Voltar à cadeira</button>
+      <button type="button" className="btn btn-white mb-3" onClick={voltar}><i className="fa fa-arrow-left me-1" /> {tx('Voltar à cadeira')}</button>
       {resultado && (resultado.porCorrigir ? (
         <div className="alert alert-info">
-          <h4 className="alert-heading mb-1">Entregue</h4>
-          Tem respostas de desenvolvimento que o docente vai corrigir; a nota aparece depois (será avisado).{resultado.foraDeTempo && ' O tempo terminou: contaram as respostas gravadas até ao fim.'}
+          <h4 className="alert-heading mb-1">{tx('Entregue')}</h4>
+          {tx('Tem respostas de desenvolvimento que o docente vai corrigir; a nota aparece depois (será avisado).')}{resultado.foraDeTempo && tx(' O tempo terminou: contaram as respostas gravadas até ao fim.')}
         </div>
       ) : (
         <div className={`alert ${resultado.nota >= 10 ? 'alert-success' : 'alert-danger'}`}>
-          <h4 className="alert-heading mb-1">Nota: {nota(resultado.nota)} valores</h4>
-          {nota(resultado.obtidos)} de {nota(resultado.total)} pontos.{resultado.foraDeTempo && ' O tempo terminou: contaram as respostas gravadas até ao fim.'}
+          <h4 className="alert-heading mb-1">{tx('Nota:')} {nota(resultado.nota)} {tx('valores')}</h4>
+          {nota(resultado.obtidos)} {tx('de')} {nota(resultado.total)} {tx('pontos.')}{resultado.foraDeTempo && tx(' O tempo terminou: contaram as respostas gravadas até ao fim.')}
         </div>
       ))}
       <Cartao titulo={q.titulo}>
         {q.descricao && <p className="p-texto-pre">{q.descricao}</p>}
         <dl className="p-ficha">
-          <div><dt>Perguntas</dt><dd>{q.numeroPerguntas}{q.pontos !== null && ` (${nota(q.pontos)} pontos)`}</dd></div>
-          <div><dt>Duração</dt><dd>{q.duracao ? `${q.duracao} minutos` : 'Sem limite'}</dd></div>
-          <div><dt>Abre / fecha</dt><dd>{q.abre ? dataHora(q.abre) : '—'} / {q.fecha ? dataHora(q.fecha) : 'sem prazo'}</dd></div>
-          <div><dt>Tentativas</dt><dd>{q.feitas.length} de {q.tentativas}</dd></div>
+          <div><dt>{tx('Perguntas')}</dt><dd>{q.numeroPerguntas}{q.pontos !== null && tx(' ({0} pontos)', { 0: nota(q.pontos) })}</dd></div>
+          <div><dt>{tx('Duração')}</dt><dd>{q.duracao ? tx('{0} minutos', { 0: q.duracao }) : tx('Sem limite')}</dd></div>
+          <div><dt>{tx('Abre / fecha')}</dt><dd>{q.abre ? dataHora(q.abre) : '—'} / {q.fecha ? dataHora(q.fecha) : tx('sem prazo')}</dd></div>
+          <div><dt>{tx('Tentativas')}</dt><dd>{q.feitas.length} {tx('de')} {q.tentativas}</dd></div>
         </dl>
         {q.feitas.length > 0 && (
           <table className="table table-sm mt-3 mb-0">
-            <thead><tr><th>Tentativa</th><th>Entregue</th><th className="text-end">Nota</th><th /></tr></thead>
+            <thead><tr><th>{tx('Tentativa')}</th><th>{tx('Entregue')}</th><th className="text-end">{tx('Nota')}</th><th /></tr></thead>
             <tbody>{q.feitas.map((t) => <LinhaTentativa key={t.id} t={t} falhou={falhou} />)}</tbody>
           </table>
         )}
         <div className="mt-3">
           {podeComecar
-            ? <button type="button" className="btn btn-theme" onClick={() => api(`/questionarios/${id}/tentativas`, { metodo: 'POST' }).then((t) => { setResultado(null); setTentativa(t); setRespostas(t.respostas || {}) }).catch(falhou)}><i className="fa fa-play me-1" /> {q.feitas.length ? 'Nova tentativa' : 'Começar'}</button>
-            : <span className="text-muted">{q.estado === 'em_breve' ? 'Ainda não abriu.' : q.estado === 'fechado' ? 'O questionário fechou.' : 'Já usou todas as tentativas.'}</span>}
+            ? <button type="button" className="btn btn-theme" onClick={() => api(`/questionarios/${id}/tentativas`, { metodo: 'POST' }).then((t) => { setResultado(null); setTentativa(t); setRespostas(t.respostas || {}) }).catch(falhou)}><i className="fa fa-play me-1" /> {q.feitas.length ? tx('Nova tentativa') : tx('Começar')}</button>
+            : <span className="text-muted">{q.estado === 'em_breve' ? tx('Ainda não abriu.') : q.estado === 'fechado' ? tx('O questionário fechou.') : tx('Já usou todas as tentativas.')}</span>}
         </div>
       </Cartao>
     </>
@@ -513,12 +514,12 @@ function LinhaTentativa({ t, falhou }) {
     <>
       <tr>
         <td>{t.numero}</td><td className="small">{dataHora(t.entregueEm)}</td>
-        <td className="text-end fw-bold">{t.porCorrigir ? <span className="badge bg-warning text-dark">Por corrigir</span> : nota(t.nota)}</td>
-        <td className="text-end"><button type="button" className="btn btn-xs btn-white" onClick={() => (rev ? setRev(null) : api(`/tentativas/${t.id}`).then(setRev).catch(falhou))}>{rev ? 'Fechar' : 'Rever'}</button></td>
+        <td className="text-end fw-bold">{t.porCorrigir ? <span className="badge bg-warning text-dark">{tx('Por corrigir')}</span> : nota(t.nota)}</td>
+        <td className="text-end"><button type="button" className="btn btn-xs btn-white" onClick={() => (rev ? setRev(null) : api(`/tentativas/${t.id}`).then(setRev).catch(falhou))}>{rev ? tx('Fechar') : tx('Rever')}</button></td>
       </tr>
       {rev && (
         <tr><td colSpan={4}>
-          {rev.comentario && <div className="alert alert-secondary py-2"><b>Comentário do docente:</b> {rev.comentario}</div>}
+          {rev.comentario && <div className="alert alert-secondary py-2"><b>{tx('Comentário do docente:')}</b> {rev.comentario}</div>}
           {rev.perguntas.map((p, n) => {
             const c = rev.correcao?.find((x) => x.perguntaId === p.id)
             const minha = rev.tentativa.respostas[p.id]
@@ -535,10 +536,10 @@ function LinhaTentativa({ t, falhou }) {
                 })}
                 {(p.tipo === 'curta' || p.tipo === 'numerica' || p.tipo === 'dissertacao') && (
                   <div className="small">
-                    <span className="text-muted">A sua resposta: </span>{minha ? <span className="p-texto-pre">{String(minha)}</span> : <i>sem resposta</i>}
-                    {c && p.tipo === 'curta' && <div className="text-success">Aceites: {c.solucao.join(' · ')}</div>}
-                    {c && p.tipo === 'numerica' && <div className="text-success">Certa: {c.solucao.valor}{c.solucao.tolerancia ? ` (± ${c.solucao.tolerancia})` : ''}</div>}
-                    {c && p.tipo === 'dissertacao' && <div className="text-muted">{nota(c.obtidos)} de {nota(c.pontos)} pontos</div>}
+                    <span className="text-muted">{tx('A sua resposta:')} </span>{minha ? <span className="p-texto-pre">{String(minha)}</span> : <i>{tx('sem resposta')}</i>}
+                    {c && p.tipo === 'curta' && <div className="text-success">{tx('Aceites:')} {c.solucao.join(' · ')}</div>}
+                    {c && p.tipo === 'numerica' && <div className="text-success">{tx('Certa:')} {c.solucao.valor}{c.solucao.tolerancia ? ` (± ${c.solucao.tolerancia})` : ''}</div>}
+                    {c && p.tipo === 'dissertacao' && <div className="text-muted">{nota(c.obtidos)} {tx('de')} {nota(c.pontos)} {tx('pontos')}</div>}
                   </div>
                 )}
                 {p.tipo === 'correspondencia' && (
@@ -547,7 +548,7 @@ function LinhaTentativa({ t, falhou }) {
                       {p.itens.map((item, k) => {
                         const dada = c?.textos?.dadas?.[k] ?? p.escolhas.find((x) => x.i === minha?.[k])?.texto
                         const certa = c?.textos?.certas?.[k]
-                        return <tr key={k}><td className="fw-bold">{item}</td><td className={c ? (dada === certa ? 'text-success' : 'text-danger') : ''}>{dada ?? '—'}{c && dada !== certa && <span className="text-success d-block">Certa: {certa}</span>}</td></tr>
+                        return <tr key={k}><td className="fw-bold">{item}</td><td className={c ? (dada === certa ? 'text-success' : 'text-danger') : ''}>{dada ?? '—'}{c && dada !== certa && <span className="text-success d-block">{tx('Certa:')} {certa}</span>}</td></tr>
                       })}
                     </tbody>
                   </table>
@@ -555,7 +556,7 @@ function LinhaTentativa({ t, falhou }) {
               </div>
             )
           })}
-          {!rev.correcao && !rev.porCorrigir && <p className="small text-muted mb-0">O docente não mostra as respostas certas.</p>}
+          {!rev.correcao && !rev.porCorrigir && <p className="small text-muted mb-0">{tx('O docente não mostra as respostas certas.')}</p>}
         </td></tr>
       )}
     </>

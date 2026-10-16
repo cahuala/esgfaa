@@ -1,4 +1,6 @@
 import { API_URL } from '../conteudo/api'
+import { t as tx } from '../i18n/linguas'
+import { traduzirRotulos } from '../i18n/rotulos'
 
 const CHAVE = 'esgfaa-admin-sessao'
 
@@ -20,7 +22,7 @@ export function definirAoExpirar(fn) {
 }
 
 export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulario } = {}) {
-  if (!API_URL) throw new Error('A API não está configurada (VITE_API_URL).')
+  if (!API_URL) throw new Error(tx('A API não está configurada (VITE_API_URL).'))
   const token = lerToken()
   const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {}
   let body
@@ -38,19 +40,19 @@ export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulari
   try {
     resposta = await fetch(`${API_URL}/api/admin${caminho}`, { method: metodo, headers: cabecalhos, body })
   } catch {
-    throw new Error('Não foi possível contactar o servidor. Verifique a ligação.')
+    throw new Error(tx('Não foi possível contactar o servidor. Verifique a ligação.'))
   }
   if (resposta.status === 204) return null
   const dados = await resposta.json().catch(() => ({}))
   if (resposta.status === 401 && caminho !== '/entrar') aoExpirar()
-  if (!resposta.ok) throw new Error(dados.erro || `Erro ${resposta.status}`)
-  return dados
+  if (!resposta.ok) throw new Error((dados.erro && tx(dados.erro)) || tx('Erro {0}', { 0: resposta.status }))
+  return traduzirRotulos(dados)
 }
 
 // ficheiros pedidos com a sessão: descarregam-se (ou abrem-se num separador, com abrir) a partir da memória
 export async function obterFicheiro(caminho, nome = 'documento', { abrir = false } = {}) {
   const r = await fetch(`${API_URL}/api/admin${caminho}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
-  if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
+  if (!r.ok) throw new Error(r.status === 404 ? tx('Ficheiro não encontrado.') : tx('Erro {0}', { 0: r.status }))
   const url = URL.createObjectURL(await r.blob())
   if (abrir) {
     window.open(url, '_blank', 'noopener')

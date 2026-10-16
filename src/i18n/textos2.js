@@ -207,4 +207,8 @@ export default [
   ['Doutoramento', 'Doctorate', 'Doctorat', 'Doctorado'],
   ['Formação militar superior', 'Higher military education', 'Formation militaire supérieure', 'Formación militar superior'],
   ['Outra', 'Other', 'Autre', 'Otra'],
+  ['Ver o processo de admissão', 'See the admission process', "Voir la procédure d'admission", 'Ver el proceso de admisión'],
+  ['A candidatura é feita pelo ramo, através da Repartição de Pessoal e Quadros, que regista os oficiais admitidos. A Secretaria Académica informa os próximos passos.', 'Applications are made through the branch, via the Personnel and Staff Department, which registers the admitted officers. The Academic Office provides the next steps.', "La candidature se fait par l'intermédiaire de la branche, via le Bureau du Personnel et des Cadres, qui enregistre les officiers admis. Le Secrétariat académique indique les prochaines étapes.", 'La candidatura se hace a través de la rama, por medio de la Sección de Personal y Cuadros, que registra a los oficiales admitidos. La Secretaría Académica informa de los próximos pasos.'],
+  ['Tradução automática do original em português.', 'Automatic translation of the Portuguese original.', "Traduction automatique de l'original en portugais.", 'Traducción automática del original en portugués.'],
+  ['Conhecer o processo de admissão', 'Learn about the admission process', "Découvrir la procédure d'admission", 'Conocer el proceso de admisión'],
 ]

@@ -6,6 +6,7 @@ import { Carregando } from '../../componentes/Ui'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../../../portal/regraAvaliacao'
 import Composicao from '../../../portal/cadeira/Composicao'
 import { exportarPautaExcel } from '../../../portal/exportarPauta'
+import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const COR = { cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }
 const paraTexto = (v) => (v === null || v === undefined ? '' : String(v).replace('.', ','))
@@ -15,7 +16,7 @@ const paraNumero = (v) => {
   const n = Number(t)
   return Number.isFinite(n) && n >= 0 && n <= 20 ? n : undefined
 }
-const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('pt-PT', { maximumFractionDigits: 2 }))
+const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { maximumFractionDigits: 2 }))
 
 /*
   Pauta da cadeira no painel: a Administração Escolar lança e publica notas (permissão academico.notas),
@@ -37,7 +38,7 @@ function PautaAdmin({ cadeira, avisar }) {
   useEffect(() => { api(`/academico/cadeiras/${cadeira.id}/pauta`).then(aplicar).catch((e) => avisar({ tipo: 'erro', texto: e.message })) }, [cadeira.id, aplicar, avisar])
 
   if (!p) return <Carregando />
-  if (p.linhas.length === 0) return <div className="alert alert-info mb-0">A turma não tem estudantes matriculados.</div>
+  if (p.linhas.length === 0) return <div className="alert alert-info mb-0">{tx('A turma não tem estudantes matriculados.')}</div>
 
   const resultado = (id) => {
     const v = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[id][k])]))
@@ -51,7 +52,7 @@ function PautaAdmin({ cadeira, avisar }) {
   async function guardar() {
     try {
       aplicar(await api(`/academico/cadeiras/${cadeira.id}/pauta`, { metodo: 'PUT', corpo: { linhas: p.linhas.map((l) => ({ estudanteId: l.estudante.id, ...edicao[l.estudante.id] })) } }))
-      avisar({ texto: 'Pauta guardada.' })
+      avisar({ texto: tx('Pauta guardada.') })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
     }
@@ -62,7 +63,7 @@ function PautaAdmin({ cadeira, avisar }) {
     try {
       const r = await api(`/academico/cadeiras/${cadeira.id}/pauta/publicacao`, { metodo: 'PUT', corpo: { publicadas } })
       setP({ ...p, publicadas: r.publicadas })
-      avisar({ texto: `${NOMES_COMPONENTES[k]}: ${publicadas.includes(k) ? 'publicada aos estudantes' : 'escondida dos estudantes'}.` })
+      avisar({ texto: `${NOMES_COMPONENTES[k]}: ${publicadas.includes(k) ? tx('publicada aos estudantes') : tx('escondida dos estudantes')}.` })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
     }
@@ -71,7 +72,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const calculada = (k) => Boolean(p.composicoes?.[k])
   const guardarComposicao = async (itens) => {
     aplicar(await api(`/academico/cadeiras/${cadeira.id}/pauta/composicao`, { metodo: 'PUT', corpo: { componente: compor, itens } }))
-    avisar({ texto: itens ? `${NOMES_COMPONENTES[compor]}: calculada a partir das atividades.` : `${NOMES_COMPONENTES[compor]}: volta a ser lançada à mão.` })
+    avisar({ texto: itens ? tx('{0}: calculada a partir das atividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
   }
 
   const coluna = (k) => {
@@ -79,10 +80,10 @@ function PautaAdmin({ cadeira, avisar }) {
     return (
       <th key={k} className="text-center">
         {NOMES_COMPONENTES[k]}
-        {editar && <button type="button" className={`btn btn-xs ms-1 ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} aria-label={`Como se calcula: ${NOMES_COMPONENTES[k]}`} title="Calcular a partir de trabalhos e questionários"><i className="fa fa-calculator" /></button>}
+        {editar && <button type="button" className={`btn btn-xs ms-1 ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} aria-label={tx('Como se calcula: {0}', { 0: NOMES_COMPONENTES[k] })} title={tx('Calcular a partir de trabalhos e questionários')}><i className="fa fa-calculator" /></button>}
         <div>
           <button type="button" disabled={!editar} className={`btn btn-xs mt-1 ${pub ? 'btn-success' : 'btn-white'}`} onClick={() => publicar(k)} aria-pressed={pub}>
-            <i className={`fa ${pub ? 'fa-eye' : 'fa-eye-slash'} me-1`} />{pub ? 'Publicada' : 'Por publicar'}
+            <i className={`fa ${pub ? 'fa-eye' : 'fa-eye-slash'} me-1`} />{pub ? tx('Publicada') : tx('Por publicar')}
           </button>
         </div>
       </th>
@@ -92,7 +93,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const celula = (l, k) => {
     const id = l.estudante.id
     const mal = resultados[id].invalidas.includes(k)
-    if (calculada(k)) return <td key={k} className="text-center fw-bold bg-primary bg-opacity-10" title="Calculada a partir das atividades">{nota(paraNumero(edicao[id][k]) ?? null)}</td>
+    if (calculada(k)) return <td key={k} className="text-center fw-bold bg-primary bg-opacity-10" title={tx('Calculada a partir das atividades')}>{nota(paraNumero(edicao[id][k]) ?? null)}</td>
     return (
       <td key={k} className="text-center">
         <input
@@ -100,7 +101,7 @@ function PautaAdmin({ cadeira, avisar }) {
           style={{ width: 70 }}
           inputMode="decimal"
           disabled={!editar}
-          aria-label={`${NOMES_COMPONENTES[k]} de ${l.estudante.nome}`}
+          aria-label={tx('{0} de {1}', { 0: NOMES_COMPONENTES[k], 1: l.estudante.nome })}
           value={edicao[id][k]}
           onChange={(e) => { setEdicao({ ...edicao, [id]: { ...edicao[id], [k]: e.target.value } }); setAlterado(true) }}
         />
@@ -117,10 +118,10 @@ function PautaAdmin({ cadeira, avisar }) {
         })}
         {editar && (
           <div className="ms-auto d-flex gap-2 align-items-center">
-            {alterado && <span className="text-warning small fw-bold">Alterações por guardar</span>}
-            <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(cadeira, p.linhas.map((l) => ({ ...l, ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[l.estudante.id][k]) ?? null])), ...resultados[l.estudante.id] })))}><i className="fa fa-file-excel me-1" /> Exportar Excel</button>
-            <Link to={`/academico/documentos/cadeira/${cadeira.id}/pauta`} className="btn btn-white"><i className="fa fa-print me-1" /> Imprimir pauta</Link>
-            <button type="button" className="btn btn-theme" disabled={!alterado || invalida} onClick={guardar}><i className="fa fa-save me-1" /> Guardar pauta</button>
+            {alterado && <span className="text-warning small fw-bold">{tx('Alterações por guardar')}</span>}
+            <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(cadeira, p.linhas.map((l) => ({ ...l, ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[l.estudante.id][k]) ?? null])), ...resultados[l.estudante.id] })))}><i className="fa fa-file-excel me-1" /> {tx('Exportar Excel')}</button>
+            <Link to={`/academico/documentos/cadeira/${cadeira.id}/pauta`} className="btn btn-white"><i className="fa fa-print me-1" /> {tx('Imprimir pauta')}</Link>
+            <button type="button" className="btn btn-theme" disabled={!alterado || invalida} onClick={guardar}><i className="fa fa-save me-1" /> {tx('Guardar pauta')}</button>
           </div>
         )}
       </div>
@@ -128,11 +129,11 @@ function PautaAdmin({ cadeira, avisar }) {
         <table className="table table-bordered align-middle mb-2">
           <thead className="table-dark">
             <tr>
-              <th>N.º</th><th>Estudante</th>
+              <th>{tx('N.º')}</th><th>{tx('Estudante')}</th>
               {coluna('p1')}{coluna('p2')}
-              <th className="text-center">MAC</th>
+              <th className="text-center">{tx('MAC')}</th>
               {coluna('exame')}{coluna('recurso')}
-              <th className="text-center">Nota final</th><th className="text-center">Situação</th>
+              <th className="text-center">{tx('Nota final')}</th><th className="text-center">{tx('Situação')}</th>
             </tr>
           </thead>
           <tbody>
@@ -155,7 +156,7 @@ function PautaAdmin({ cadeira, avisar }) {
         </table>
       </div>
       {compor && <Composicao componente={compor} atividades={p.atividades || []} atual={p.composicoes?.[compor]} guardar={guardarComposicao} fechar={() => setCompor(null)} />}
-      <p className="small text-muted mb-0">{REGRA} Os estudantes só veem as colunas publicadas. O botão <i className="fa fa-calculator" /> calcula uma coluna a partir de trabalhos e questionários.</p>
+      <p className="small text-muted mb-0">{REGRA} {tx('Os estudantes só veem as colunas publicadas. O botão')} <i className="fa fa-calculator" /> {tx('calcula uma coluna a partir de trabalhos e questionários.')}</p>
     </>
   )
 }

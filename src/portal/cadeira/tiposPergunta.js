@@ -1,5 +1,6 @@
+import { t as tx } from '../../i18n/linguas'
 // tipos de pergunta dos questionários (os mesmos da API)
 export const TIPOS_PERGUNTA = {
-  unica: 'Escolha única', multipla: 'Escolha múltipla', vf: 'Verdadeiro ou falso', curta: 'Resposta curta',
-  numerica: 'Numérica', correspondencia: 'Correspondência', dissertacao: 'Dissertação (correção manual)',
+  unica: tx('Escolha única'), multipla: tx('Escolha múltipla'), vf: tx('Verdadeiro ou falso'), curta: tx('Resposta curta'),
+  numerica: tx('Numérica'), correspondencia: tx('Correspondência'), dissertacao: tx('Dissertação (correção manual)'),
 }

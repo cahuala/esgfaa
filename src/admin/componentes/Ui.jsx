@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { t as tx } from '../../i18n/linguas'
 
 // Cabeçalho de página no estilo Color Admin: migalhas à direita + título
 export function CabecalhoPagina({ titulo, subtitulo, migalhas = [], children }) {
@@ -7,7 +8,7 @@ export function CabecalhoPagina({ titulo, subtitulo, migalhas = [], children }) 
     <div className="d-flex align-items-start flex-wrap gap-2 mb-3">
       <div className="flex-grow-1">
         <ol className="breadcrumb mb-1">
-          <li className="breadcrumb-item"><Link to="/">Painel</Link></li>
+          <li className="breadcrumb-item"><Link to="/">{tx('Painel')}</Link></li>
           {migalhas.map((m) => (
             <li key={m.rotulo} className={`breadcrumb-item ${m.para ? '' : 'active'}`}>
               {m.para ? <Link to={m.para}>{m.rotulo}</Link> : m.rotulo}
@@ -50,7 +51,7 @@ export function Aviso({ aviso, onFechar }) {
       <div className={`alert ${aviso.tipo === 'erro' ? 'alert-danger' : 'alert-success'} d-flex align-items-center shadow mb-0`} role="status">
         <i className={`fa ${aviso.tipo === 'erro' ? 'fa-exclamation-circle' : 'fa-check-circle'} fa-lg me-2`} />
         <span className="flex-grow-1">{aviso.texto}</span>
-        <button type="button" className="btn-close ms-3" onClick={onFechar} aria-label="Fechar" />
+        <button type="button" className="btn-close ms-3" onClick={onFechar} aria-label={tx('Fechar')} />
       </div>
     </div>
   )
@@ -66,13 +67,13 @@ export function Confirmar({ pedido, onCancelar }) {
           <div className="modal-content">
             <div className="modal-header">
               <h4 className="modal-title">{pedido.titulo}</h4>
-              <button type="button" className="btn-close" onClick={onCancelar} aria-label="Fechar" />
+              <button type="button" className="btn-close" onClick={onCancelar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">{pedido.texto}</div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-white" onClick={onCancelar}>Cancelar</button>
+              <button type="button" className="btn btn-white" onClick={onCancelar}>{tx('Cancelar')}</button>
               <button type="button" className={`btn ${pedido.perigo ? 'btn-danger' : 'btn-primary'}`} onClick={pedido.confirmar}>
-                {pedido.botao || 'Confirmar'}
+                {pedido.botao || tx('Confirmar')}
               </button>
             </div>
           </div>
@@ -86,7 +87,7 @@ export function Confirmar({ pedido, onCancelar }) {
 export function Carregando() {
   return (
     <div className="text-center text-muted py-5">
-      <span className="spinner-border spinner-border-sm me-2" /> A carregar…
+      <span className="spinner-border spinner-border-sm me-2" /> {tx('A carregar…')}
     </div>
   )
 }
@@ -96,7 +97,7 @@ export function Erro({ texto, onRepetir }) {
     <div className="alert alert-danger d-flex align-items-center">
       <i className="fa fa-exclamation-triangle me-2" />
       <span className="flex-grow-1">{texto}</span>
-      {onRepetir && <button className="btn btn-sm btn-white" onClick={onRepetir}>Tentar de novo</button>}
+      {onRepetir && <button className="btn btn-sm btn-white" onClick={onRepetir}>{tx('Tentar de novo')}</button>}
     </div>
   )
 }

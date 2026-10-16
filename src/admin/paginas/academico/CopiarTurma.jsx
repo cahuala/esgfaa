@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api'
+import { t as tx } from '../../../i18n/linguas'
 
 /*
   Novo ano letivo: copiar as cadeiras e os seus conteúdos de outra turma (normalmente a do ano anterior).
@@ -41,39 +42,37 @@ function CopiarTurma({ turma, fechar, concluido }) {
         <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
           <div className="modal-content">
             <div className="modal-header">
-              <h4 className="modal-title" id="copiar-turma"><i className="fa fa-copy me-2" />Copiar cadeiras para {turma.nome}</h4>
-              <button type="button" className="btn-close" onClick={fechar} disabled={aCopiar} aria-label="Fechar" />
+              <h4 className="modal-title" id="copiar-turma"><i className="fa fa-copy me-2" />{tx('Copiar cadeiras para')} {turma.nome}</h4>
+              <button type="button" className="btn-close" onClick={fechar} disabled={aCopiar} aria-label={tx('Fechar')} />
             </div>
             <div className="modal-body">
               {erro && <div className="alert alert-danger py-2">{erro}</div>}
               {!resultado ? (
                 <>
                   <p className="text-muted">
-                    Cria nesta turma as cadeiras da turma de origem (com o mesmo código) e copia os capítulos, materiais e ficheiros, trabalhos,
-                    questionários, datas das provas, programa e composição das notas. As datas avançam os anos que separam os anos letivos.
-                    Não se copiam entregas, notas, fórum nem presenças. Cadeiras que já tenham conteúdos ficam como estão.
+                    {tx('Cria nesta turma as cadeiras da turma de origem (com o mesmo código) e copia os capítulos, materiais e ficheiros, trabalhos, questionários, datas das provas, programa e composição das notas. As datas avançam os anos que separam os anos letivos. Não se copiam entregas, notas, fórum nem presenças. Cadeiras que já tenham conteúdos ficam como estão.')}
                   </p>
-                  <label className="form-label fw-bold" htmlFor="ct-origem">Copiar de</label>
+                  <label className="form-label fw-bold" htmlFor="ct-origem">{tx('Copiar de')}</label>
                   <select id="ct-origem" className="form-select mb-3" value={origem} onChange={(e) => setOrigem(e.target.value)}>
-                    {turmas.length === 0 && <option value="">Não há outras turmas com cadeiras</option>}
-                    {turmas.map((x) => <option key={x.id} value={x.id}>{x.nome} — {x.anoLetivo} ({x.cadeiras} cadeiras)</option>)}
+                    {turmas.length === 0 && <option value="">{tx('Não há outras turmas com cadeiras')}</option>}
+                    {turmas.map((x) => <option key={x.id} value={x.id}>{x.nome} — {x.anoLetivo} ({x.cadeiras} {tx('cadeiras)')}</option>)}
                   </select>
                   <div className="form-check">
                     <input id="ct-docentes" type="checkbox" className="form-check-input" checked={docentes} onChange={(e) => setDocentes(e.target.checked)} />
-                    <label className="form-check-label" htmlFor="ct-docentes">Copiar também a alocação de docentes (regentes, assistentes e horas)</label>
+                    <label className="form-check-label" htmlFor="ct-docentes">{tx('Copiar também a alocação de docentes (regentes, assistentes e horas)')}</label>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="alert alert-success py-2"><i className="fa fa-check-circle me-1" /> Cópia feita de {resultado.origem.nome} para {resultado.turma.nome}.</div>
+                  <div className="alert alert-success py-2"><i className="fa fa-check-circle me-1" /> {tx('Cópia feita de')} {resultado.origem.nome} {tx('para')} {resultado.turma.nome}.</div>
                   <table className="table table-bordered align-middle mb-0">
-                    <thead><tr><th>Cadeira</th><th className="text-center">Capítulos</th><th className="text-center">Materiais</th><th className="text-center">Trabalhos</th><th className="text-center">Questionários</th><th className="text-center">Datas</th><th>Estado</th></tr></thead>
+                    <thead><tr><th>{tx('Cadeira')}</th><th className="text-center">{tx('Capítulos')}</th><th className="text-center">{tx('Materiais')}</th><th className="text-center">{tx('Trabalhos')}</th><th className="text-center">{tx('Questionários')}</th><th className="text-center">{tx('Datas')}</th><th>{tx('Estado')}</th></tr></thead>
                     <tbody>
                       {resultado.cadeiras.map((c) => (
                         <tr key={c.codigo}>
                           <td><b>{c.codigo}</b> {c.nome}</td>
                           {c.copiada
-                            ? <>{['capitulos', 'materiais', 'trabalhos', 'questionarios', 'datas'].map((k) => <td key={k} className="text-center">{c[k]}</td>)}<td><span className="badge bg-success">{c.criada ? 'Criada e copiada' : 'Copiada'}</span></td></>
+                            ? <>{['capitulos', 'materiais', 'trabalhos', 'questionarios', 'datas'].map((k) => <td key={k} className="text-center">{c[k]}</td>)}<td><span className="badge bg-success">{c.criada ? tx('Criada e copiada') : tx('Copiada')}</span></td></>
                             : <><td colSpan={5} className="text-muted small">—</td><td><span className="badge bg-gray-500">{c.motivo}</span></td></>}
                         </tr>
                       ))}
@@ -84,8 +83,8 @@ function CopiarTurma({ turma, fechar, concluido }) {
             </div>
             <div className="modal-footer">
               {!resultado
-                ? <><button type="button" className="btn btn-white" onClick={fechar} disabled={aCopiar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={copiar} disabled={aCopiar || !origem}>{aCopiar ? <><span className="spinner-border spinner-border-sm me-1" />A copiar…</> : <><i className="fa fa-copy me-1" />Copiar</>}</button></>
-                : <button type="button" className="btn btn-theme" onClick={fechar}>Fechar</button>}
+                ? <><button type="button" className="btn btn-white" onClick={fechar} disabled={aCopiar}>{tx('Cancelar')}</button><button type="button" className="btn btn-theme" onClick={copiar} disabled={aCopiar || !origem}>{aCopiar ? <><span className="spinner-border spinner-border-sm me-1" />{tx('A copiar…')}</> : <><i className="fa fa-copy me-1" />{tx('Copiar')}</>}</button></>
+                : <button type="button" className="btn btn-theme" onClick={fechar}>{tx('Fechar')}</button>}
             </div>
           </div>
         </div>

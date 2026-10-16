@@ -1,4 +1,4 @@
-# PostgreSQL para desenvolvimento e testes:  docker compose up -d
+# PostgreSQL (desenvolvimento e testes) e tradutor automático do site:  docker compose up -d
 services:
   postgres:
     image: postgres:17-alpine
@@ -19,5 +19,26 @@ services:
       timeout: 3s
       retries: 30
 
+  # tradutor automático (código aberto, corre na máquina: nenhum texto sai da Escola)
+  # só português, inglês, francês e espanhol; os modelos ficam no volume (descarregados na 1.ª vez)
+  tradutor:
+    image: libretranslate/libretranslate:v1.9.6
+    container_name: esgfaa-tradutor
+    restart: unless-stopped
+    environment:
+      LT_LOAD_ONLY: pt,en,fr,es
+      LT_DISABLE_WEB_UI: "true"
+      LT_UPDATE_MODELS: "false"
+    ports:
+      - "127.0.0.1:5005:5000"
+    volumes:
+      - esgfaa-tradutor:/home/libretranslate/.local
+    healthcheck:
+      test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+
 volumes:
   esgfaa-pg:
+  esgfaa-tradutor:

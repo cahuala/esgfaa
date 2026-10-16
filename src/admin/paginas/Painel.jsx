@@ -5,8 +5,9 @@ import { useSessao } from '../sessaoContexto'
 import { COLECOES, NOMES_ACOES } from '../esquemas'
 import { Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
 import { dataHora } from '../formatar'
+import { t as tx, localAtual } from '../../i18n/linguas'
 
-const NOMES_COLECOES = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo', cursos: 'Curso', pessoas: 'Pessoa', publicidade: 'Banner' }
+const NOMES_COLECOES = { noticias: tx('Notícia'), eventos: tx('Evento'), artigos: tx('Artigo'), cursos: tx('Curso'), pessoas: tx('Pessoa'), publicidade: tx('Banner') }
 
 // últimos 14 dias, com zero nos dias sem registos
 function serie14(linhas = []) {
@@ -51,26 +52,24 @@ function Grafico({ series }) {
   )
 }
 
-const DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado']
-const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
 function saudacao() {
   const h = new Date().getHours()
-  return h < 12 ? 'Bom dia' : h < 19 ? 'Boa tarde' : 'Boa noite'
+  return h < 12 ? tx('Bom dia') : h < 19 ? tx('Boa tarde') : tx('Boa noite')
 }
 
 function hojePorExtenso() {
-  const d = new Date()
-  return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`
+  // na língua escolhida (ex.: "sexta-feira, 16 de outubro de 2026")
+  return new Intl.DateTimeFormat(localAtual(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())
 }
 
 // atalhos do topo, conforme as permissões
 const ATALHOS = [
-  { perm: 'noticias.criar', para: '/colecao/noticias/novo', icone: 'fa-pen-nib', texto: 'Nova notícia', principal: true },
-  { perm: 'eventos.criar', para: '/colecao/eventos/novo', icone: 'fa-calendar-plus', texto: 'Novo evento' },
-  { perm: 'artigos.criar', para: '/colecao/artigos/novo', icone: 'fa-book-open', texto: 'Novo artigo' },
-  { perm: 'publicidade.criar', para: '/colecao/publicidade/novo', icone: 'fa-bullhorn', texto: 'Novo banner' },
-  { perm: 'estatisticas.ver', para: '/estatisticas', icone: 'fa-chart-line', texto: 'Estatísticas' },
+  { perm: 'noticias.criar', para: '/colecao/noticias/novo', icone: 'fa-pen-nib', texto: tx('Nova notícia'), principal: true },
+  { perm: 'eventos.criar', para: '/colecao/eventos/novo', icone: 'fa-calendar-plus', texto: tx('Novo evento') },
+  { perm: 'artigos.criar', para: '/colecao/artigos/novo', icone: 'fa-book-open', texto: tx('Novo artigo') },
+  { perm: 'publicidade.criar', para: '/colecao/publicidade/novo', icone: 'fa-bullhorn', texto: tx('Novo banner') },
+  { perm: 'estatisticas.ver', para: '/estatisticas', icone: 'fa-chart-line', texto: tx('Estatísticas') },
 ]
 
 function Painel() {
@@ -85,16 +84,16 @@ function Painel() {
 
   const v = dados?.visitas
   const widgets = dados && [
-    v && { cor: 'esg-w-vermelho', icone: 'fa-users', titulo: 'VISITANTES HOJE', valor: v.hoje.visitantes, extra: `${v.online} online agora`, para: '/estatisticas' },
-    v && { cor: 'esg-w-preto', icone: 'fa-chart-line', titulo: 'VISITANTES (30 DIAS)', valor: v.mes.visitantes, extra: `${v.mes.paginas.toLocaleString('pt-PT')} páginas vistas`, para: '/estatisticas' },
-    dados.totais.noticias !== undefined && { cor: 'esg-w-dourado', icone: 'fa-newspaper', titulo: 'NOTÍCIAS PUBLICADAS', valor: dados.totais.noticias, extra: `${dados.rascunhos.noticias} em rascunho`, para: '/colecao/noticias' },
-    pode('comentarios.ver') && { cor: 'esg-w-cinza', icone: 'fa-comments', titulo: 'COMENTÁRIOS', valor: dados.interacoes.comentarios, extra: `${dados.interacoes.comentariosHoje} hoje · ${dados.interacoes.gostos} gostos`, para: '/comentarios' },
-    !v && dados.totais.eventos !== undefined && { cor: 'esg-w-preto', icone: 'fa-calendar-alt', titulo: 'EVENTOS', valor: dados.totais.eventos, extra: `${dados.rascunhos.eventos} em rascunho`, para: '/colecao/eventos' },
+    v && { cor: 'esg-w-vermelho', icone: 'fa-users', titulo: tx('VISITANTES HOJE'), valor: v.hoje.visitantes, extra: tx('{0} online agora', { 0: v.online }), para: '/estatisticas' },
+    v && { cor: 'esg-w-preto', icone: 'fa-chart-line', titulo: tx('VISITANTES (30 DIAS)'), valor: v.mes.visitantes, extra: tx('{0} páginas vistas', { 0: v.mes.paginas.toLocaleString(localAtual()) }), para: '/estatisticas' },
+    dados.totais.noticias !== undefined && { cor: 'esg-w-dourado', icone: 'fa-newspaper', titulo: tx('NOTÍCIAS PUBLICADAS'), valor: dados.totais.noticias, extra: tx('{0} em rascunho', { 0: dados.rascunhos.noticias }), para: '/colecao/noticias' },
+    pode('comentarios.ver') && { cor: 'esg-w-cinza', icone: 'fa-comments', titulo: tx('COMENTÁRIOS'), valor: dados.interacoes.comentarios, extra: tx('{0} hoje · {1} gostos', { 0: dados.interacoes.comentariosHoje, 1: dados.interacoes.gostos }), para: '/comentarios' },
+    !v && dados.totais.eventos !== undefined && { cor: 'esg-w-preto', icone: 'fa-calendar-alt', titulo: tx('EVENTOS'), valor: dados.totais.eventos, extra: tx('{0} em rascunho', { 0: dados.rascunhos.eventos }), para: '/colecao/eventos' },
   ].filter(Boolean).slice(0, 4)
 
   const series = dados && [
-    v && { nome: 'Visitantes', cor: '#e53917', dados: serie14(dados.visitasDias) },
-    dados.comentariosDias && { nome: 'Comentários', cor: '#c9a227', dados: serie14(dados.comentariosDias) },
+    v && { nome: tx('Visitantes'), cor: '#e53917', dados: serie14(dados.visitasDias) },
+    dados.comentariosDias && { nome: tx('Comentários'), cor: '#c9a227', dados: serie14(dados.comentariosDias) },
   ].filter(Boolean)
 
   return (
@@ -103,7 +102,7 @@ function Painel() {
         <div>
           <div className="esg-boas-vindas-data">{hojePorExtenso()}</div>
           <h1>{saudacao()}, {utilizador.nome.split(' ')[0]}.</h1>
-          <p>Painel de gestão do site da Escola Superior de Guerra · {utilizador.nomePapel}</p>
+          <p>{tx('Painel de gestão do site da Escola Superior de Guerra ·')} {utilizador.nomePapel}</p>
         </div>
         <div className="esg-atalhos">
           {ATALHOS.filter((a) => pode(a.perm)).slice(0, 4).map((a) => (
@@ -126,7 +125,7 @@ function Painel() {
                   <div className="stats-icon"><i className={`fa ${w.icone}`} /></div>
                   <div className="stats-info">
                     <h4>{w.titulo}</h4>
-                    <p>{w.valor.toLocaleString('pt-PT')}</p>
+                    <p>{w.valor.toLocaleString(localAtual())}</p>
                   </div>
                   <div className="stats-link">
                     <Link to={w.para}>{w.extra} <i className="fa fa-arrow-alt-circle-right" /></Link>
@@ -139,7 +138,7 @@ function Painel() {
           <div className="row">
             <div className="col-xl-8">
               {dados.porPublicar.length > 0 && (
-                <Caixa titulo={`Rascunhos à espera de publicação (${dados.porPublicar.length})`} corpo={false}>
+                <Caixa titulo={tx('Rascunhos à espera de publicação ({0})', { 0: dados.porPublicar.length })} corpo={false}>
                   <div className="list-group list-group-flush rounded-bottom">
                     {dados.porPublicar.map((r) => (
                       <Link key={`${r.colecao}/${r.id}`} to={`/colecao/${r.colecao}/${r.id}`} className="list-group-item list-group-item-action d-flex align-items-center gap-2">
@@ -154,20 +153,20 @@ function Painel() {
               )}
 
               {series.length > 0 && (
-                <Caixa titulo="Últimos 14 dias" acoes={v && <Link to="/estatisticas" className="btn btn-xs btn-default">Estatísticas</Link>}>
+                <Caixa titulo={tx('Últimos 14 dias')} acoes={v && <Link to="/estatisticas" className="btn btn-xs btn-default">{tx('Estatísticas')}</Link>}>
                   <Grafico series={series} />
                 </Caixa>
               )}
 
               {dados.maisVistos && (
-                <Caixa titulo="Conteúdos mais vistos" corpo={false}>
+                <Caixa titulo={tx('Conteúdos mais vistos')} corpo={false}>
                   <div className="table-responsive">
                     <table className="table table-panel align-middle mb-0">
                       <thead>
-                        <tr><th>Conteúdo</th><th className="text-end">Visualizações</th><th className="text-end">Gostos</th><th className="text-end">Comentários</th></tr>
+                        <tr><th>{tx('Conteúdo')}</th><th className="text-end">{tx('Visualizações')}</th><th className="text-end">{tx('Gostos')}</th><th className="text-end">{tx('Comentários')}</th></tr>
                       </thead>
                       <tbody>
-                        {dados.maisVistos.length === 0 && <tr><td colSpan={4} className="text-muted">Ainda sem visualizações registadas.</td></tr>}
+                        {dados.maisVistos.length === 0 && <tr><td colSpan={4} className="text-muted">{tx('Ainda sem visualizações registadas.')}</td></tr>}
                         {dados.maisVistos.map((m) => (
                           <tr key={m.chave}>
                             <td>
@@ -187,27 +186,27 @@ function Painel() {
             </div>
 
             <div className="col-xl-4">
-              <Caixa titulo="Conteúdos" corpo={false}>
+              <Caixa titulo={tx('Conteúdos')} corpo={false}>
                 <div className="list-group list-group-flush rounded-bottom">
                   {Object.entries(COLECOES).filter(([c]) => dados.totais[c] !== undefined).map(([chave, c]) => (
                     <Link key={chave} to={`/colecao/${chave}`} className="list-group-item list-group-item-action d-flex align-items-center">
                       <i className={`fa ${c.icone} fa-fw text-gray-500 me-2`} /> {c.titulo}
-                      {dados.rascunhos[chave] > 0 && <span className="badge bg-warning text-dark rounded-pill ms-auto me-1" title="Rascunhos">{dados.rascunhos[chave]}</span>}
-                      <span className={`badge bg-teal rounded-pill ${dados.rascunhos[chave] > 0 ? '' : 'ms-auto'}`} title="Publicados">{dados.totais[chave]}</span>
+                      {dados.rascunhos[chave] > 0 && <span className="badge bg-warning text-dark rounded-pill ms-auto me-1" title={tx('Rascunhos')}>{dados.rascunhos[chave]}</span>}
+                      <span className={`badge bg-teal rounded-pill ${dados.rascunhos[chave] > 0 ? '' : 'ms-auto'}`} title={tx('Publicados')}>{dados.totais[chave]}</span>
                     </Link>
                   ))}
                 </div>
               </Caixa>
 
               {dados.ultimosComentarios && (
-                <Caixa titulo="Últimos comentários" acoes={<Link to="/comentarios" className="btn btn-xs btn-default">Todos</Link>}>
-                  {dados.ultimosComentarios.length === 0 && <p className="text-muted mb-0">Ainda não há comentários.</p>}
+                <Caixa titulo={tx('Últimos comentários')} acoes={<Link to="/comentarios" className="btn btn-xs btn-default">{tx('Todos')}</Link>}>
+                  {dados.ultimosComentarios.length === 0 && <p className="text-muted mb-0">{tx('Ainda não há comentários.')}</p>}
                   {dados.ultimosComentarios.map((c) => (
                     <div key={c.id} className="d-flex mb-3">
                       <span className="admin-avatar me-2 flex-shrink-0">{c.nome.slice(0, 2).toUpperCase()}</span>
                       <div className="min-w-0">
                         <div className="fw-bold">{c.nome} <span className="text-muted fw-normal small">· {dataHora(c.data)}</span></div>
-                        <div className="text-muted small text-truncate">em {c.tituloItem}</div>
+                        <div className="text-muted small text-truncate">{tx('em')} {c.tituloItem}</div>
                         <div className="text-break">{c.texto.length > 140 ? `${c.texto.slice(0, 140)}…` : c.texto}</div>
                       </div>
                     </div>
@@ -216,8 +215,8 @@ function Painel() {
               )}
 
               <Caixa
-                titulo={pode('atividades.ver') ? 'Atividade recente' : 'A minha atividade'}
-                acoes={pode('atividades.ver') && <Link to="/atividades" className="btn btn-xs btn-default">Registo</Link>}
+                titulo={pode('atividades.ver') ? tx('Atividade recente') : tx('A minha atividade')}
+                acoes={pode('atividades.ver') && <Link to="/atividades" className="btn btn-xs btn-default">{tx('Registo')}</Link>}
               >
                 {dados.ultimasAtividades.map((a) => (
                   <div key={a.id} className="d-flex mb-2 small">

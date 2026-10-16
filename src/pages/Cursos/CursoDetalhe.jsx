@@ -84,7 +84,7 @@ function CursoDetalhe() {
           <div className={ed.caixaLateral}>
             <h3 className={detalhe.caixaTitulo}>{t('Candidaturas')}</h3>
             <p>{pagina.candidaturasAbertas && prazo ? t('Abertas até {prazo}.', { prazo }) : t('Consulte o calendário de admissão.')}</p>
-            <Link to={`/Candidatura?curso=${curso.id}`} className={ed.botao}>{t('Candidatar-me a este curso')}</Link>
+            <Link to={{ hash: '#admissao' }} className={ed.botao}>{t('Ver o processo de admissão')}</Link>
           </div>
         </aside>
 

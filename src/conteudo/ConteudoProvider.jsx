@@ -39,10 +39,11 @@ function ConteudoProvider({ children }) {
   // cada item fica com _lingua (a língua em que realmente está) para o site poder avisar
   const traduzidos = useMemo(() => {
     const itens = dados.traducoes?.itens || {}
+    const automaticas = dados.traducoes?.automaticas || {}
     if (lingua === 'pt') return dados
     const traduzir = (colecao, x, chave) => {
       const tr = itens[`${colecao}/${chave}`]?.[lingua]
-      return tr ? { ...aplicarTextos(x, tr), _lingua: lingua } : { ...x, _lingua: 'pt' }
+      return tr ? { ...aplicarTextos(x, tr), _lingua: lingua, _automatica: Boolean(automaticas[`${colecao}/${chave}`]?.includes(lingua)) } : { ...x, _lingua: 'pt' }
     }
     const r = { ...dados }
     for (const [colecao, campo] of [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id']]) {

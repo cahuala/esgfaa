@@ -5,6 +5,7 @@ import ReactQuill from 'react-quill-new'
 import 'react-quill-new/dist/quill.snow.css'
 import { POSICOES_BANNER, TIPOS_BLOCO } from '../esquemas'
 import { escrever, ler } from '../caminhos'
+import { t as tx } from '../../i18n/linguas'
 
 const LARGURAS = { metade: 'col-md-6', terco: 'col-md-4', doisTercos: 'col-md-8' }
 
@@ -67,7 +68,7 @@ export function Campo({ campo, valor, onChange, contexto, horizontal = false }) 
     const interruptor = (
       <div className="form-check form-switch">
         <input id={id} className="form-check-input" type="checkbox" checked={Boolean(valor)} onChange={(e) => onChange(e.target.checked)} />
-        <label htmlFor={id} className="form-check-label">{horizontal ? 'Sim' : campo.rotulo}</label>
+        <label htmlFor={id} className="form-check-label">{horizontal ? tx('Sim') : campo.rotulo}</label>
       </div>
     )
     if (!horizontal) return <div className="pt-md-4 mt-md-2">{interruptor}{ajuda}</div>
@@ -104,7 +105,7 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
     case 'textoRico':
       return (
         <div className="editor-texto">
-          <ReactQuill id={id} theme="snow" value={valor || ''} onChange={onChange} modules={{ toolbar: BARRA_TEXTO }} placeholder="Escreva aqui o texto…" />
+          <ReactQuill id={id} theme="snow" value={valor || ''} onChange={onChange} modules={{ toolbar: BARRA_TEXTO }} placeholder={tx('Escreva aqui o texto…')} />
         </div>
       )
 
@@ -128,7 +129,7 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
         : campo.opcoes === 'posicoesBanner' ? POSICOES_BANNER : campo.opcoes
       return (
         <select id={id} className="form-select" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio}>
-          <option value="">— escolher —</option>
+          <option value="">{tx('— escolher —')}</option>
           {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.rotulo}</option>)}
         </select>
       )
@@ -156,11 +157,11 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
           <input
             id={id}
             className="form-control"
-            placeholder="https://www.youtube.com/watch?v=…"
+            placeholder={tx('https://www.youtube.com/watch?v=…')}
             value={valor ?? ''}
             onChange={(e) => onChange(idYoutube(e.target.value))}
           />
-          {valor && <small className="d-block fs-12px text-success mt-1"><i className="fa fa-check me-1" />Vídeo identificado: {valor}</small>}
+          {valor && <small className="d-block fs-12px text-success mt-1"><i className="fa fa-check me-1" />{tx('Vídeo identificado:')} {valor}</small>}
         </>
       )
 
@@ -198,13 +199,13 @@ export function CampoFicheiro({ id, tipo, valor, onChange, recomendado }) {
     // copia já a lista: o campo de ficheiro esvazia-a logo a seguir (e há esperas pelo meio)
     const ficheiros = [...(escolhidos || [])]
     if (!ficheiros.length) return
-    setEstado('A carregar…')
+    setEstado(tx('A carregar…'))
     // mede a imagem antes de enviar, para avisar se não servir bem o espaço
     const info = tipo === 'imagem' ? await medirImagem(ficheiros[0]) : null
     try {
       const [f] = await api('/ficheiros', { metodo: 'POST', ficheiros: [ficheiros[0]] })
       onChange(f.url)
-      setEstado(info ? `${info.largura} × ${info.altura} px` : '')
+      setEstado(info ? tx('{0} × {1} px', { 0: info.largura, 1: info.altura }) : '')
       setAvisos(avaliarImagem(info, recomendado))
     } catch (erro) {
       setEstado(erro.message)
@@ -220,18 +221,18 @@ export function CampoFicheiro({ id, tipo, valor, onChange, recomendado }) {
     >
       {valor && tipo === 'imagem' && <img src={valor} alt="" className="campo-ficheiro-previa" />}
       {valor && tipo === 'video' && <video src={valor} className="campo-ficheiro-previa" muted />}
-      {valor && tipo === 'ficheiro' && <a href={valor} target="_blank" rel="noreferrer" className="campo-ficheiro-ligacao"><i className="fa fa-file-pdf me-2" />Abrir ficheiro</a>}
+      {valor && tipo === 'ficheiro' && <a href={valor} target="_blank" rel="noreferrer" className="campo-ficheiro-ligacao"><i className="fa fa-file-pdf me-2" />{tx('Abrir ficheiro')}</a>}
 
       <div className="campo-ficheiro-acoes">
         <button type="button" className="btn btn-sm btn-default" onClick={() => entrada.current.click()}>
-          <i className="fa fa-upload me-1" /> {valor ? 'Substituir' : 'Carregar'}
+          <i className="fa fa-upload me-1" /> {valor ? tx('Substituir') : tx('Carregar')}
         </button>
         {valor && (
           <button type="button" className="btn btn-sm btn-white text-danger" onClick={() => { onChange(''); setAvisos([]); setEstado('') }}>
-            <i className="fa fa-times me-1" /> Remover
+            <i className="fa fa-times me-1" /> {tx('Remover')}
           </button>
         )}
-        <span className="text-muted small">{estado || (valor ? '' : 'ou arraste o ficheiro para aqui')}</span>
+        <span className="text-muted small">{estado || (valor ? '' : tx('ou arraste o ficheiro para aqui'))}</span>
       </div>
       {tipo === 'imagem' && recomendado && <small className="d-block fs-12px text-gray-500 mt-1"><i className="fa fa-ruler-combined me-1" />{dicaTamanho(recomendado)}</small>}
       {avisos.map((a) => (
@@ -255,9 +256,9 @@ function mover(lista, i, delta) {
 function BotoesItem({ i, total, onMover, onRemover }) {
   return (
     <div className="btn-group btn-group-sm">
-      <button type="button" className="btn btn-white" disabled={i === 0} onClick={() => onMover(i, -1)} title="Subir"><i className="fa fa-arrow-up" /></button>
-      <button type="button" className="btn btn-white" disabled={i === total - 1} onClick={() => onMover(i, 1)} title="Descer"><i className="fa fa-arrow-down" /></button>
-      <button type="button" className="btn btn-white text-danger" onClick={() => onRemover(i)} title="Remover"><i className="fa fa-trash-alt" /></button>
+      <button type="button" className="btn btn-white" disabled={i === 0} onClick={() => onMover(i, -1)} title={tx('Subir')}><i className="fa fa-arrow-up" /></button>
+      <button type="button" className="btn btn-white" disabled={i === total - 1} onClick={() => onMover(i, 1)} title={tx('Descer')}><i className="fa fa-arrow-down" /></button>
+      <button type="button" className="btn btn-white text-danger" onClick={() => onRemover(i)} title={tx('Remover')}><i className="fa fa-trash-alt" /></button>
     </div>
   )
 }
@@ -275,7 +276,7 @@ function ListaTexto({ valor, onChange, multilinha }) {
         </div>
       ))}
       <button type="button" className="btn btn-sm btn-default" onClick={() => onChange([...valor, ''])}>
-        <i className="fa fa-plus me-1" /> Acrescentar
+        <i className="fa fa-plus me-1" /> {tx('Acrescentar')}
       </button>
     </div>
   )
@@ -288,14 +289,14 @@ function ListaObjetos({ campo, valor, onChange, contexto }) {
       {valor.map((item, i) => (
         <div key={i} className="lista-objetos-item">
           <div className="lista-objetos-topo">
-            <span className="badge bg-gray-600">{campo.rotuloItem || 'Item'} {i + 1}</span>
+            <span className="badge bg-gray-600">{campo.rotuloItem || tx('Item')} {i + 1}</span>
             <BotoesItem i={i} total={valor.length} onMover={(a, d) => onChange(mover(valor, a, d))} onRemover={(a) => onChange(valor.filter((_, j) => j !== a))} />
           </div>
           <Formulario campos={campo.campos} valor={item} onChange={(v) => onChange(valor.map((x, j) => (j === i ? v : x)))} contexto={contexto} />
         </div>
       ))}
       <button type="button" className="btn btn-sm btn-default" onClick={() => onChange([...valor, vazio()])}>
-        <i className="fa fa-plus me-1" /> Acrescentar {(campo.rotuloItem || 'item').toLowerCase()}
+        <i className="fa fa-plus me-1" /> {tx('Acrescentar')} {(campo.rotuloItem || 'item').toLowerCase()}
       </button>
     </div>
   )
@@ -314,10 +315,10 @@ function Inserir({ posicao, aberto, onAbrir, onFechar, onInserir }) {
               <i className={`fa ${def.icone} me-1`} /> {def.rotulo}
             </button>
           ))}
-          <button type="button" className="btn btn-sm btn-link" onClick={onFechar}>Cancelar</button>
+          <button type="button" className="btn btn-sm btn-link" onClick={onFechar}>{tx('Cancelar')}</button>
         </div>
       ) : (
-        <button type="button" className="blocos-mais" onClick={() => onAbrir(posicao)} title="Inserir bloco aqui">
+        <button type="button" className="blocos-mais" onClick={() => onAbrir(posicao)} title={tx('Inserir bloco aqui')}>
           <i className="fa fa-plus" />
         </button>
       )}

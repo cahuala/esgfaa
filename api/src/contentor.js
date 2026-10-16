@@ -8,7 +8,6 @@ import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
 import { RepositorioPublicidade } from './infraestrutura/repositorios/publicidade.js'
 import { RepositorioAtividades } from './infraestrutura/repositorios/atividades.js'
 import { RepositorioSessoes } from './infraestrutura/repositorios/sessoes.js'
-import { RepositorioCandidaturas } from './infraestrutura/repositorios/candidaturas.js'
 import { RepositorioContasPortal } from './infraestrutura/repositorios/contasPortal.js'
 import { RepositorioAcademico } from './infraestrutura/repositorios/academico.js'
 import { ArmazenamentoPrivado } from './infraestrutura/ficheiros/privados.js'
@@ -49,7 +48,6 @@ import { ServicoPaginas } from './aplicacao/paginas.js'
 import { ServicoInteracoes } from './aplicacao/interacoes.js'
 import { ServicoEstatisticas } from './aplicacao/estatisticas.js'
 import { ServicoFicheiros } from './aplicacao/ficheiros.js'
-import { ServicoCandidaturas } from './aplicacao/candidaturas.js'
 import { ServicoSessaoPortal } from './aplicacao/academico/ensino/sessao.js'
 import { ServicoPainel } from './aplicacao/academico/ensino/painel.js'
 import { ServicoEstudante } from './aplicacao/academico/ensino/estudante.js'
@@ -89,6 +87,8 @@ import { obterPagina } from './infraestrutura/web/paginas.js'
 import { ClienteClaude } from './infraestrutura/ia/claude.js'
 import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js'
 import { ServicoTraducoes } from './aplicacao/traducoes/traducoes.js'
+import { traduzirComClaude } from './aplicacao/traducoes/traducaoIA.js'
+import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
 
 /*
   Liga todas as peças (injeção de dependências). Os testes criam um contentor com
@@ -108,7 +108,6 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
     sessoes: new RepositorioSessoes({ prisma }),
-    candidaturas: new RepositorioCandidaturas({ prisma }),
     contasPortal: new RepositorioContasPortal({ prisma }),
     academico: new RepositorioAcademico({ prisma }),
     recursos: new RepositorioRecursosCadeira({ prisma }),
@@ -157,6 +156,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     pesquisaWeb: config.pesquisaWeb?.chave ? new PesquisaBrave({ chave: config.pesquisaWeb.chave }) : null,
     obterPagina, claude, ...externos,
   }
+  // tradução dos conteúdos: o Claude (melhor) ou o LibreTranslate (gratuito, no servidor)
+  if (!('tradutor' in externos)) {
+    ext.tradutor = ext.claude ? { nome: 'Claude (IA)', traduzirMapa: (m, l) => traduzirComClaude(ext.claude, m, l) }
+      : config.tradutor?.url ? Object.assign(new TradutorLibre(config.tradutor), { nome: 'LibreTranslate' }) : null
+  }
   // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
   const originalidade = new ServicoOriginalidade({
     pesquisaWeb: ext.pesquisaWeb, obterPagina: ext.obterPagina, claude: ext.claude, pesquisasPorDocumento: config.pesquisaWeb?.porDocumento ?? 8,
@@ -203,19 +207,21 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     }
   }
 
+  const traducoes = new ServicoTraducoes({ traducoes: r.traducoes, conteudos: r.conteudos, paginas: r.paginas, tradutor: ext.tradutor, auditoria, registarErro: (x) => console.error(JSON.stringify(x)) })
+  conteudos.aoPublicar = (colecao, id) => traducoes.agendar(colecao, id)
+
   const servicos = {
     auditoria,
     conteudos,
     sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio }),
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
-    paginas: new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }),
+    paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
     interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
     estatisticas: new ServicoEstatisticas({
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,
     }),
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
-    candidaturas: new ServicoCandidaturas({ candidaturas: r.candidaturas, conteudos: r.conteudos, auditoria, relogio }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
@@ -231,7 +237,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },
     integridade: originalidade,
     // traduções do site (redação, com rascunho da IA se houver chave)
-    traducoes: new ServicoTraducoes({ traducoes: r.traducoes, conteudos: r.conteudos, paginas: r.paginas, claude: ext.claude, auditoria }),
+    traducoes,
     // biblioteca: catálogo e circulação
     biblioteca: {
       catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio, originalidade }),

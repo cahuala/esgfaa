@@ -26,7 +26,7 @@ export class RepositorioTraducoes {
   }
 
   async publicadas() {
-    return (await this.prisma.traducao.findMany({ where: { estado: 'publicada' }, select: { colecao: true, alvoId: true, lingua: true, textos: true } }))
+    return (await this.prisma.traducao.findMany({ where: { estado: 'publicada' }, select: { colecao: true, alvoId: true, lingua: true, textos: true, automatica: true } }))
   }
 
   // resumo para as listas do painel: { "noticias/slug": { en: "publicada", fr: "rascunho" } }

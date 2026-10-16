@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { iconeFicheiro, tamanho } from './formatar'
+import { t as tx } from '../i18n/linguas'
 
 
 /*
@@ -7,7 +8,7 @@ import { iconeFicheiro, tamanho } from './formatar'
   arrastar ou clicar, pré-visualização, tamanho, progresso do envio e retirar.
   ficheiros: [{ ficheiro: File, progresso, erro }]
 */
-function ZonaUpload({ id, ficheiros, aoMudar, multiplos = false, aceitar, nota = 'PDF, Word, PowerPoint, Excel, imagens ou vídeo — até 50 MB por ficheiro.', desativado }) {
+function ZonaUpload({ id, ficheiros, aoMudar, multiplos = false, aceitar, nota = tx('PDF, Word, PowerPoint, Excel, imagens ou vídeo — até 50 MB por ficheiro.'), desativado }) {
   const entrada = useRef(null)
   const [sobre, setSobre] = useState(false)
 
@@ -30,7 +31,7 @@ function ZonaUpload({ id, ficheiros, aoMudar, multiplos = false, aceitar, nota =
       >
         <div className="dz-message needsclick my-4">
           <div className="text-center mb-2"><i className="fa fa-cloud-upload-alt fa-3x text-gray-400" /></div>
-          <span className="fs-16px">Arraste {multiplos ? 'os ficheiros' : 'o ficheiro'} para aqui ou <b className="text-theme">clique para escolher</b></span>
+          <span className="fs-16px">{tx('Arraste')} {multiplos ? tx('os ficheiros') : tx('o ficheiro')} {tx('para aqui ou')} <b className="text-theme">{tx('clique para escolher')}</b></span>
           <span className="dz-note needsclick fs-12px">{nota}</span>
         </div>
         <input
@@ -46,7 +47,7 @@ function ZonaUpload({ id, ficheiros, aoMudar, multiplos = false, aceitar, nota =
       {ficheiros.length > 0 && (
         <div className="table-responsive mt-2">
           <table className="table table-panel align-middle mb-0">
-            <thead><tr><th style={{ width: 48 }} /><th>Ficheiro</th><th style={{ width: '35%' }}>Envio</th><th style={{ width: 1 }} /></tr></thead>
+            <thead><tr><th style={{ width: 48 }} /><th>{tx('Ficheiro')}</th><th style={{ width: '35%' }}>{tx('Envio')}</th><th style={{ width: 1 }} /></tr></thead>
             <tbody>
               {ficheiros.map((f, i) => (
                 <tr key={`${f.ficheiro.name}-${i}`}>
@@ -64,7 +65,7 @@ function ZonaUpload({ id, ficheiros, aoMudar, multiplos = false, aceitar, nota =
                     )}
                   </td>
                   <td>
-                    <button type="button" className="btn btn-xs btn-white" disabled={desativado} onClick={() => aoMudar(ficheiros.filter((_, j) => j !== i))} aria-label={`Retirar ${f.ficheiro.name}`}><i className="fa fa-times" /></button>
+                    <button type="button" className="btn btn-xs btn-white" disabled={desativado} onClick={() => aoMudar(ficheiros.filter((_, j) => j !== i))} aria-label={tx('Retirar {0}', { 0: f.ficheiro.name })}><i className="fa fa-times" /></button>
                   </td>
                 </tr>
               ))}

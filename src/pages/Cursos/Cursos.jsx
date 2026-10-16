@@ -124,9 +124,8 @@ function Cursos() {
           </table>
           <aside className={styles.candidatar}>
             <h3>{t('Pronto para avançar?')}</h3>
-            <p>{t('Preencha o formulário e a Secretaria Académica entra em contacto com os próximos passos.')}</p>
-            <Link to="/Candidatura" className={ed.botao}>{t('Candidatar-me')}</Link>
-            <Link to="/Contactos#formulario" className={`${ed.botao} ${ed.botaoContorno}`}>{t('Pedir informações')}</Link>
+            <p>{t('A candidatura é feita pelo ramo, através da Repartição de Pessoal e Quadros, que regista os oficiais admitidos. A Secretaria Académica informa os próximos passos.')}</p>
+            <Link to="/Contactos#formulario" className={ed.botao}>{t('Pedir informações')}</Link>
           </aside>
         </div>
       </section>

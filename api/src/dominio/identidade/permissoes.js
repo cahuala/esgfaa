@@ -11,7 +11,6 @@ export const RECURSOS = [
   ...CONTEUDOS.map((r) => ({ id: r, acoes: ['ver', 'criar', 'editar', 'apagar', 'publicar'] })),
   { id: 'paginas', acoes: ['ver', 'editar'] },
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
-  { id: 'candidaturas', acoes: ['ver', 'editar'] },
   { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
   { id: 'pessoal', acoes: ['ver', 'registar'] },
   { id: 'biblioteca', acoes: ['ver', 'gerir'] },
@@ -66,7 +65,7 @@ export const PAPEIS_PADRAO = [
     nome: 'Repartição de Administração Escolar',
     descricao: 'Turmas, matrículas e inscrições (de quem o Pessoal e Quadros registou), cadeiras, alocação de docentes, programas, pautas, horários, documentos e pedidos.',
     sistema: 0,
-    permissoes: ['candidaturas.ver', 'candidaturas.editar', 'cursos.ver', 'academico.ver', 'academico.gerir', 'academico.notas', 'integridade.ver', 'integridade.gerir'],
+    permissoes: ['cursos.ver', 'academico.ver', 'academico.gerir', 'academico.notas', 'integridade.ver', 'integridade.gerir'],
   },
   {
     id: 'pessoal_quadros',

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Cartao, Carregando, Erro, Titulo } from '../componentes'
 import { ICONES_NOTIFICACAO, dataHora, ha } from '../formatar'
+import { t as tx } from '../../i18n/linguas'
 
 // todas as notificações, com filtro e "mais antigas"
 function Notificacoes() {
@@ -27,20 +28,20 @@ function Notificacoes() {
 
   return (
     <>
-      <Titulo rotulo="Notificações" titulo="Notificações" sub={dados.naoLidas ? `${dados.naoLidas} por ler` : 'tudo lido'}>
-        {dados.naoLidas > 0 && <button type="button" className="btn btn-white" onClick={lerTodas}><i className="fa fa-check-double me-1" /> Marcar todas como lidas</button>}
+      <Titulo rotulo={tx('Notificações')} titulo={tx('Notificações')} sub={dados.naoLidas ? tx('{0} por ler', { 0: dados.naoLidas }) : tx('tudo lido')}>
+        {dados.naoLidas > 0 && <button type="button" className="btn btn-white" onClick={lerTodas}><i className="fa fa-check-double me-1" /> {tx('Marcar todas como lidas')}</button>}
       </Titulo>
       <Cartao
-        titulo={<><i className="fa fa-bell me-2" />As minhas notificações</>}
+        titulo={<><i className="fa fa-bell me-2" />{tx('As minhas notificações')}</>}
         acoes={(
           <div className="btn-group btn-group-sm">
-            <button type="button" className={`btn ${!soNovas ? 'btn-light text-dark' : 'btn-outline-light'}`} onClick={() => setSoNovas(false)}>Todas</button>
-            <button type="button" className={`btn ${soNovas ? 'btn-light text-dark' : 'btn-outline-light'}`} onClick={() => setSoNovas(true)}>Por ler</button>
+            <button type="button" className={`btn ${!soNovas ? 'btn-light text-dark' : 'btn-outline-light'}`} onClick={() => setSoNovas(false)}>{tx('Todas')}</button>
+            <button type="button" className={`btn ${soNovas ? 'btn-light text-dark' : 'btn-outline-light'}`} onClick={() => setSoNovas(true)}>{tx('Por ler')}</button>
           </div>
         )}
         corpo={false}
       >
-        {lista.length === 0 ? <div className="panel-body text-center text-muted py-5"><i className="fa fa-bell-slash fa-2x d-block mb-2 opacity-50" />Sem notificações.</div> : (
+        {lista.length === 0 ? <div className="panel-body text-center text-muted py-5"><i className="fa fa-bell-slash fa-2x d-block mb-2 opacity-50" />{tx('Sem notificações.')}</div> : (
           <div className="list-group list-group-flush">
             {lista.map((n) => {
               const [icone, cor] = ICONES_NOTIFICACAO[n.tipo] || ICONES_NOTIFICACAO.geral
@@ -52,14 +53,14 @@ function Notificacoes() {
                     {n.texto && <span className="d-block small">{n.texto}</span>}
                     <span className="d-block small text-muted" title={dataHora(n.criadaEm)}>{ha(n.criadaEm)}</span>
                   </span>
-                  {!n.lida && <span className="badge bg-danger align-self-start">Nova</span>}
+                  {!n.lida && <span className="badge bg-danger align-self-start">{tx('Nova')}</span>}
                 </button>
               )
             })}
           </div>
         )}
         {!soNovas && dados.lista.length >= 30 && dados.lista.length % 30 === 0 && (
-          <div className="panel-body text-center"><button type="button" className="btn btn-white btn-sm" onClick={mais}>Mais antigas</button></div>
+          <div className="panel-body text-center"><button type="button" className="btn btn-white btn-sm" onClick={mais}>{tx('Mais antigas')}</button></div>
         )}
       </Cartao>
     </>

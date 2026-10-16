@@ -11,6 +11,7 @@ import Traducoes from '../componentes/Traducoes'
 import Documento from '../editor/Documento'
 import { PainelGoogle, PainelTexto, PreVisualizacao } from '../editor/Laterais'
 import { limparCorpo, prepararCorpo } from '../editor/normalizar'
+import { t as tx } from '../../i18n/linguas'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
@@ -83,11 +84,11 @@ function EditarItem() {
   async function guardar(estado) {
     const emFalta = def.campos.filter((c) => c.obrigatorio && !String(ler(item, c.nome) ?? '').trim())
     if (estado === 'publicado' && emFalta.length) {
-      setAviso({ tipo: 'erro', texto: `Para publicar, preencha: ${emFalta.map((c) => c.rotulo).join(', ')}.` })
+      setAviso({ tipo: 'erro', texto: tx('Para publicar, preencha: {0}.', { 0: emFalta.map((c) => c.rotulo).join(', ') }) })
       return
     }
     if (!String(item[def.campoTitulo] || '').trim()) {
-      setAviso({ tipo: 'erro', texto: 'Indique pelo menos o título.' })
+      setAviso({ tipo: 'erro', texto: tx('Indique pelo menos o título.') })
       return
     }
     setAGuardar(true)
@@ -101,8 +102,8 @@ function EditarItem() {
       setOriginal(JSON.stringify(pronto))
       const mensagem = {
         texto: guardado._estado === 'publicado'
-          ? 'Publicado — já está visível no site.'
-          : podePublicar ? 'Guardado como rascunho (não aparece no site).' : 'Rascunho guardado. Um editor-chefe vai rever e publicar.',
+          ? tx('Publicado — já está visível no site.')
+          : podePublicar ? tx('Guardado como rascunho (não aparece no site).') : tx('Rascunho guardado. Um editor-chefe vai rever e publicar.'),
       }
       setAviso(mensagem)
       if (novo) navegar(`/colecao/${colecao}/${guardado[def.chave]}`, { replace: true, state: { aviso: mensagem } })
@@ -123,18 +124,18 @@ function EditarItem() {
   return (
     <>
       <CabecalhoPagina
-        titulo={novo ? def.botaoNovo : 'Editar'}
+        titulo={novo ? def.botaoNovo : tx('Editar')}
         subtitulo={!novo && titulo}
-        migalhas={[{ rotulo: def.titulo, para: `/colecao/${colecao}` }, { rotulo: novo ? def.botaoNovo : 'Editar' }]}
+        migalhas={[{ rotulo: def.titulo, para: `/colecao/${colecao}` }, { rotulo: novo ? def.botaoNovo : tx('Editar') }]}
       >
         {doc && item && (
           <button type="button" className="btn btn-white" onClick={() => setPrevia(true)}>
-            <i className="fa fa-eye me-1" /> Pré-visualizar
+            <i className="fa fa-eye me-1" /> {tx('Pré-visualizar')}
           </button>
         )}
         {!novo && def.rotaSite && publicado && (
           <a href={`${SITE}${def.rotaSite(item)}`} target="_blank" rel="noreferrer" className="btn btn-white">
-            <i className="fa fa-external-link-alt me-1" /> Ver no site
+            <i className="fa fa-external-link-alt me-1" /> {tx('Ver no site')}
           </a>
         )}
       </CabecalhoPagina>
@@ -157,9 +158,9 @@ function EditarItem() {
             <div className="alert alert-warning d-flex align-items-center">
               <i className="fa fa-lock fa-lg me-3" />
               <div>
-                <b>Só de leitura.</b> {publicado
-                  ? 'Este conteúdo já está publicado e o seu papel não permite alterá-lo. Peça a um editor-chefe.'
-                  : 'O seu papel não permite editar este conteúdo.'}
+                <b>{tx('Só de leitura.')}</b> {publicado
+                  ? tx('Este conteúdo já está publicado e o seu papel não permite alterá-lo. Peça a um editor-chefe.')
+                  : tx('O seu papel não permite editar este conteúdo.')}
               </div>
             </div>
           )}
@@ -178,7 +179,7 @@ function EditarItem() {
                   </>
                 ) : (
                   <>
-                    <Painel titulo={`Dados ${def.feminino ? 'da' : 'do'} ${def.singular}`}>
+                    <Painel titulo={tx('Dados {0} {1}', { 0: def.feminino ? 'da' : 'do', 1: def.singular })}>
                       <Formulario campos={principais} valor={item} onChange={setItem} contexto={contexto} horizontal />
                     </Painel>
 
@@ -194,50 +195,50 @@ function EditarItem() {
 
             <div className="col-xl-3">
               <div className="publicacao-lateral">
-                <Painel titulo="Publicação">
+                <Painel titulo={tx('Publicação')}>
                   <dl className="ficha-publicacao">
-                    <dt>Estado</dt>
+                    <dt>{tx('Estado')}</dt>
                     <dd>
                       {publicado
-                        ? <span className="badge bg-success"><i className="fa fa-globe me-1" />Publicado</span>
-                        : <span className="badge bg-warning text-dark"><i className="fa fa-pencil-alt me-1" />Rascunho</span>}
+                        ? <span className="badge bg-success"><i className="fa fa-globe me-1" />{tx('Publicado')}</span>
+                        : <span className="badge bg-warning text-dark"><i className="fa fa-pencil-alt me-1" />{tx('Rascunho')}</span>}
                     </dd>
-                    {!novo && <><dt>Última edição</dt><dd>{dataHora(item._atualizado)}{item._editadoPor && <><br /><small className="text-muted">por {item._editadoPor}</small></>}</dd></>}
+                    {!novo && <><dt>{tx('Última edição')}</dt><dd>{dataHora(item._atualizado)}{item._editadoPor && <><br /><small className="text-muted">{tx('por')} {item._editadoPor}</small></>}</dd></>}
                   </dl>
 
                   {!soLeitura && (
                     <div className="d-grid gap-2">
                       {podePublicar && (
                         <button type="button" className="btn btn-theme" disabled={aGuardar} onClick={() => guardar('publicado')}>
-                          <i className="fa fa-globe me-1" /> {publicado ? 'Guardar e publicar' : 'Publicar'}
+                          <i className="fa fa-globe me-1" /> {publicado ? tx('Guardar e publicar') : tx('Publicar')}
                         </button>
                       )}
                       <button type="button" className={`btn ${podePublicar ? 'btn-white' : 'btn-theme'}`} disabled={aGuardar} onClick={() => guardar('rascunho')}>
-                        <i className="fa fa-save me-1" /> {podePublicar ? (publicado ? 'Retirar do site (rascunho)' : 'Guardar rascunho') : 'Guardar rascunho para revisão'}
+                        <i className="fa fa-save me-1" /> {podePublicar ? (publicado ? tx('Retirar do site (rascunho)') : tx('Guardar rascunho')) : tx('Guardar rascunho para revisão')}
                       </button>
                     </div>
                   )}
 
                   {!podePublicar && !soLeitura && (
                     <p className="small text-muted mt-3 mb-0">
-                      <i className="fa fa-info-circle me-1" />O seu papel guarda rascunhos. A publicação é feita por quem tem permissão de publicar.
+                      <i className="fa fa-info-circle me-1" />{tx('O seu papel guarda rascunhos. A publicação é feita por quem tem permissão de publicar.')}
                     </p>
                   )}
 
                   <hr />
                   <div className="small">
                     {alterado
-                      ? <span className="text-warning"><i className="fa fa-circle fs-8px me-2" />Alterações por guardar</span>
-                      : <span className="text-success"><i className="fa fa-check me-2" />Sem alterações por guardar</span>}
+                      ? <span className="text-warning"><i className="fa fa-circle fs-8px me-2" />{tx('Alterações por guardar')}</span>
+                      : <span className="text-success"><i className="fa fa-check me-2" />{tx('Sem alterações por guardar')}</span>}
                   </div>
-                  <div className="small text-muted mt-2"><kbd>Ctrl</kbd> + <kbd>S</kbd> para guardar</div>
+                  <div className="small text-muted mt-2"><kbd>Ctrl</kbd> + <kbd>S</kbd> {tx('para guardar')}</div>
                 </Painel>
                 {!novo && TRADUZIVEIS.includes(colecao) && <Traducoes colecao={colecao} id={id} />}
 
                 {doc && (
                   <>
                     <fieldset disabled={soLeitura}>
-                      <Painel titulo="Detalhes">
+                      <Painel titulo={tx('Detalhes')}>
                         <Formulario campos={camposLaterais.map((c) => ({ ...c, largura: undefined }))} valor={item} onChange={setItem} contexto={contexto} />
                       </Painel>
                     </fieldset>
@@ -246,7 +247,7 @@ function EditarItem() {
                   </>
                 )}
 
-                <Link to={`/colecao/${colecao}`} className="btn btn-white w-100"><i className="fa fa-arrow-left me-1" /> Voltar à lista</Link>
+                <Link to={`/colecao/${colecao}`} className="btn btn-white w-100"><i className="fa fa-arrow-left me-1" /> {tx('Voltar à lista')}</Link>
               </div>
             </div>
           </div>
@@ -258,11 +259,11 @@ function EditarItem() {
           <div className="modal d-block" role="dialog" aria-modal="true">
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
-                <div className="modal-header"><h4 className="modal-title">Alterações por guardar</h4></div>
-                <div className="modal-body">Se sair agora, perde as alterações que fez a este conteúdo.</div>
+                <div className="modal-header"><h4 className="modal-title">{tx('Alterações por guardar')}</h4></div>
+                <div className="modal-body">{tx('Se sair agora, perde as alterações que fez a este conteúdo.')}</div>
                 <div className="modal-footer">
-                  <button className="btn btn-white" onClick={() => bloqueio.reset()}>Continuar a editar</button>
-                  <button className="btn btn-danger" onClick={() => bloqueio.proceed()}>Sair sem guardar</button>
+                  <button className="btn btn-white" onClick={() => bloqueio.reset()}>{tx('Continuar a editar')}</button>
+                  <button className="btn btn-danger" onClick={() => bloqueio.proceed()}>{tx('Sair sem guardar')}</button>
                 </div>
               </div>
             </div>

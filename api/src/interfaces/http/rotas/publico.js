@@ -61,13 +61,6 @@ export function rotasPublicas({ servicos, config }) {
     },
   )
 
-  // candidatura a um curso (formulário por passos do site)
-  r.post('/candidaturas', limitar(L.candidatura, { mensagem: 'Recebemos várias candidaturas deste endereço. Tente de novo mais tarde.' }), validar({ body: E.candidatura }), async (req, res) => {
-    if (req.dados.body.website) return res.status(204).end() // campo escondido: só robôs o preenchem
-    const { website, ...entrada } = req.dados.body
-    void website
-    res.status(201).json(await servicos.candidaturas.submeter(entrada, { ip: req.ip, agente: req.get('user-agent') || '', actor: null }))
-  })
 
   r.post('/visita', limitar(L.visita), validar({ body: E.visita }), async (req, res) => {
     await servicos.estatisticas.registarVisita(req.dados.body, { agente: req.get('user-agent') || '', origemPedido: req.get('origin') })

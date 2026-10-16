@@ -27,7 +27,7 @@ function HeroSection() {
           </div>
 
           <div className={styles.acoes}>
-            <Link to="/Candidatura" className={styles.botao}>{t('Candidatar-me')} <span aria-hidden="true">→</span></Link>
+            <Link to="/Cursos#admissao" className={styles.botao}>{t('Como se candidatar')} <span aria-hidden="true">→</span></Link>
             <Link to="/Cursos" className={styles.mais}>
               <span><FaArrowRight size={12} aria-hidden="true" /></span>
               {t('Conhecer os cursos')}
