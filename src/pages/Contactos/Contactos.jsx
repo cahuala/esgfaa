@@ -37,7 +37,7 @@ function Contactos() {
         migalhas={[{ label: t('Contactos') }]}
         sobretitulo={t('Contactos')}
         titulo={t('Fale connosco')}
-        entrada={t('Candidaturas, pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis.')}
+        entrada={t('Pedidos de informação, imprensa ou cooperação — a nossa equipa responde no prazo de dois dias úteis.')}
       />
 
       <dl className={ed.factos}>

@@ -27,4 +27,16 @@ test.describe('site público', () => {
     await page.getByRole('button', { name: 'Publicar comentário' }).click()
     await expect(page.getByText(texto)).toBeVisible()
   })
+
+  test('lê a revista no leitor e salta para um artigo pelo sumário', async ({ page }) => {
+    await page.goto('/Revista')
+    await expect(page.getByRole('heading', { name: 'Revista da Escola Superior de Guerra' })).toBeVisible()
+    await page.getByRole('link', { name: 'Ler agora' }).click()
+    const leitor = page.getByRole('region', { name: /^Leitor:/ })
+    await expect(leitor.getByText('/ 8')).toBeVisible()
+    await expect(leitor.locator('canvas').first()).toBeVisible()
+    await page.getByRole('button', { name: /A SADC e a arquitetura/ }).click()
+    await expect(leitor.getByLabel('Página atual')).toHaveValue('6')
+    await expect(leitor.getByRole('link', { name: /Descarregar/ })).toHaveAttribute('href', /\.pdf$/)
+  })
 })

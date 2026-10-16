@@ -6,6 +6,9 @@ import { COLECOES_TRADUZIVEIS, ESTADOS_TRADUCAO, LINGUAS, desatualizados, extrai
   Traduções do site: a redação traduz (ou pede à IA um rascunho), revê e publica cada língua.
   O site mostra a tradução publicada; o que não estiver traduzido aparece em português.
 */
+// os originais guardados só dos textos que a tradução ainda tem
+const limparOriginais = (originais, textos) => Object.fromEntries(Object.entries(originais || {}).filter(([c]) => c in textos))
+
 export class ServicoTraducoes {
   #fila = Promise.resolve()
 
@@ -40,12 +43,19 @@ export class ServicoTraducoes {
       const atual = await this.traducoes.ler(colecao, id, lingua)
       const mudados = atual ? new Set(desatualizados(atual.originais, originais)) : null
       const pedir = Object.fromEntries(Object.entries(originais).filter(([c]) => !atual || !atual.textos[c] || mudados.has(c)))
-      if (!Object.keys(pedir).length) continue
+      if (!Object.keys(pedir).length) {
+        // nada para traduzir, mas pode haver textos que deixaram de se traduzir (ex.: nomes com posto): tiram-se
+        const limpos = atual && limparTextos(atual.textos, originais)
+        if (limpos && Object.keys(limpos).length !== Object.keys(atual.textos).length) {
+          await this.traducoes.guardar({ colecao, alvoId: id, lingua, textos: limpos, originais: limparOriginais(atual.originais, limpos), estado: atual.estado, automatica: atual.automatica, atualizadoPor: atual.atualizadoPor })
+        }
+        continue
+      }
       const novos = await this.tradutor.traduzirMapa(pedir, lingua)
       await this.traducoes.guardar({
         colecao, alvoId: id, lingua,
         textos: limparTextos({ ...(atual?.textos || {}), ...novos }, originais),
-        originais: { ...(atual?.originais || {}), ...Object.fromEntries(Object.keys(novos).map((c) => [c, originais[c]])) },
+        originais: limparOriginais({ ...(atual?.originais || {}), ...Object.fromEntries(Object.keys(novos).map((c) => [c, originais[c]])) }, limparTextos({ ...(atual?.textos || {}), ...novos }, originais)),
         estado: atual?.estado ?? 'publicada', automatica: atual?.automatica ?? true, atualizadoPor: this.tradutor.nome,
       })
     }

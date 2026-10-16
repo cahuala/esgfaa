@@ -1,10 +1,10 @@
 // Ganchos de carregamento do Node para importar os ficheiros de src/data do site:
-//  - "import Foto from '../assets/Foto.png'" passa a valer "/uploads/seed/foto.png"
+//  - "import Foto from '../assets/Foto.png'" passa a valer "/uploads/seed/foto.png" (o mesmo para os PDF da revista)
 //  - importações sem extensão ("./contactos") resolvem para ".js", como no Vite
 import path from 'node:path'
 import { nomeSemente } from './nomes.js'
 
-const IMAGENS = /\.(png|jpe?g|gif|webp|svg)$/i
+const IMAGENS = /\.(png|jpe?g|gif|webp|svg|pdf)$/i
 
 export async function resolve(especificador, contexto, seguinte) {
   try {

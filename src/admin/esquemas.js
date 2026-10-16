@@ -207,6 +207,32 @@ export const COLECOES = {
       { nome: 'foto', rotulo: tx('Fotografia'), tipo: 'imagem', ajuda: tx('Sem fotografia, o site mostra as iniciais.'), recomendado: TAMANHOS.pessoa },
     ],
   },
+  revistas: {
+    titulo: tx('Revista'), singular: tx('número da revista'), botaoNovo: tx('Novo número'), icone: 'fa-book-reader', chave: 'slug', campoTitulo: 'titulo',
+    ajudaLista: tx('Cada número é um PDF que qualquer visitante lê no site, em Revista. O número em destaque (ou o mais recente) aparece em grande.'),
+    rotaSite: (i) => `/Revista/${i.slug}`,
+    colunas: [
+      { rotulo: '', tipo: 'imagem', valor: (i) => i.capa },
+      { rotulo: tx('Número'), valor: (i) => i.numero },
+      { rotulo: tx('Tema'), valor: (i) => i.titulo, principal: true },
+      { rotulo: tx('Data'), valor: (i) => i.data, data: true },
+    ],
+    novo: () => ({ numero: '', titulo: '', data: new Date().toISOString().slice(0, 10), resumo: '', pdf: '', capa: '', destaque: false, sumario: [] }),
+    campos: [
+      { nome: 'numero', rotulo: tx('Número'), tipo: 'texto', largura: 'terco', ajuda: tx('Ex.: N.º 3') },
+      { nome: 'titulo', rotulo: tx('Tema do número'), tipo: 'texto', largura: 'doisTercos', obrigatorio: true },
+      { nome: 'data', rotulo: tx('Data de publicação'), tipo: 'data', largura: 'terco', obrigatorio: true },
+      { nome: 'destaque', rotulo: tx('Em destaque na página da Revista'), tipo: 'booleano', largura: 'doisTercos' },
+      { nome: 'resumo', rotulo: tx('Apresentação'), tipo: 'textarea', linhas: 3, ajuda: tx('Duas ou três frases sobre os temas deste número.') },
+      { nome: 'pdf', rotulo: tx('Revista em PDF'), tipo: 'ficheiro', largura: 'metade', obrigatorio: true, ajuda: tx('O ficheiro completo, como foi paginado. Os visitantes leem-no no site e podem descarregá-lo.') },
+      { nome: 'capa', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem imagem, o site usa a primeira página do PDF como capa.') },
+      { nome: 'sumario', rotulo: tx('Sumário'), tipo: 'objetos', rotuloItem: tx('Artigo'), ajuda: tx('Com a página, o leitor abre diretamente no artigo.'), campos: [
+        { nome: 'titulo', rotulo: tx('Título'), tipo: 'texto', largura: 'metade' },
+        { nome: 'autor', rotulo: tx('Autor'), tipo: 'texto', largura: 'terco' },
+        { nome: 'pagina', rotulo: tx('Página'), tipo: 'texto', largura: 'sexto' },
+      ] },
+    ],
+  },
   publicidade: {
     titulo: tx('Publicidade'), singular: 'banner', botaoNovo: tx('Novo banner'), icone: 'fa-bullhorn', chave: 'id', campoTitulo: 'titulo', ordenavel: true,
     ajudaLista: tx('Em cada posição do site aparece o primeiro banner ativo da lista (use as setas para escolher a ordem).'),
@@ -254,8 +280,6 @@ export const PAGINAS = {
           { nome: 'valor', rotulo: tx('Valor'), tipo: 'texto', largura: 'metade' },
           { nome: 'legenda', rotulo: tx('Legenda'), tipo: 'texto', largura: 'metade' },
         ] },
-        { nome: 'hero.formularioTitulo', rotulo: tx('Título do formulário de candidatura'), tipo: 'texto', largura: 'metade' },
-        { nome: 'hero.formularioTexto', rotulo: tx('Texto do formulário'), tipo: 'texto', largura: 'metade' },
       ] },
       { titulo: tx('Títulos das secções'), campos: [
         { nome: 'formacao.etiqueta', rotulo: tx('Formação — etiqueta'), tipo: 'texto', largura: 'terco' },
@@ -353,11 +377,9 @@ export const PAGINAS = {
       { titulo: tx('Geral'), campos: [
         { nome: 'entrada', rotulo: tx('Texto de entrada da página Cursos'), tipo: 'textarea', linhas: 2 },
         { nome: 'anoAcademico', rotulo: tx('Ano académico'), tipo: 'texto', largura: 'terco' },
-        { nome: 'prazo', rotulo: tx('Prazo de candidatura'), tipo: 'texto', largura: 'terco' },
-        { nome: 'candidaturasAbertas', rotulo: tx('Candidaturas abertas (mostra a faixa vermelha)'), tipo: 'booleano', largura: 'terco' },
       ] },
       { titulo: tx('Processo'), campos: [
-        { nome: 'processo', rotulo: tx('Passos da candidatura'), tipo: 'objetos', rotuloItem: tx('Passo'), campos: [
+        { nome: 'processo', rotulo: tx('Passos da admissão'), tipo: 'objetos', rotuloItem: tx('Passo'), campos: [
           { nome: 'titulo', rotulo: tx('Passo'), tipo: 'texto', largura: 'terco' },
           { nome: 'texto', rotulo: tx('Descrição'), tipo: 'texto', largura: 'doisTercos' },
         ] },
@@ -407,7 +429,7 @@ export const POSICOES_BANNER = [
 
 // nomes legíveis para a grelha de permissões
 export const NOMES_RECURSOS = {
-  noticias: tx('Notícias'), artigos: tx('Artigos'), eventos: tx('Eventos'), cursos: tx('Cursos'), pessoas: tx('Corpo docente'),
+  noticias: tx('Notícias'), artigos: tx('Artigos'), eventos: tx('Eventos'), cursos: tx('Cursos'), pessoas: tx('Corpo docente'), revistas: tx('Revista'),
   publicidade: tx('Publicidade'), paginas: tx('Páginas do site'), comentarios: tx('Comentários'), academico: tx('Gestão académica (portal)'), pessoal: tx('Pessoal e Quadros'), biblioteca: tx('Biblioteca'), integridade: tx('Integridade académica (anti-plágio)'), estatisticas: tx('Estatísticas'),
   utilizadores: tx('Utilizadores'), papeis: tx('Papéis e permissões'), atividades: tx('Registo de atividades'),
 }

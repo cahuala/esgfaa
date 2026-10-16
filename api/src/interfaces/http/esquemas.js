@@ -236,6 +236,6 @@ export const procurarLeitor = z.object({ q: texto(200).default('') })
 export const verificarDocumento = z.object({ titulo: texto(300).optional(), autor: texto(300).optional(), contexto: texto(200).optional(), guardar: z.union([z.boolean(), texto(5)]).optional() })
 
 // ---------- traduções do site ----------
-export const alvoTraducao = z.object({ colecao: z.enum(['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'paginas']), id })
+export const alvoTraducao = z.object({ colecao: z.enum(['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'revistas', 'paginas']), id })
 export const alvoTraducaoLingua = alvoTraducao.extend({ lingua: z.enum(['en', 'fr', 'es']) })
 export const traducao = z.object({ textos: z.record(z.string().max(300), z.string().max(60_000)).default({}), estado: z.enum(['rascunho', 'publicada']).default('rascunho') })

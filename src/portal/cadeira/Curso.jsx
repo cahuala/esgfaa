@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { abrirFicheiro, api } from '../api'
+import { api } from '../api'
 import { Bloqueio, Vazio } from '../componentes'
 import { dataHora, estadoSessao, faltam, nota } from '../formatar'
 import NovaAtividade from './NovaAtividade'
@@ -56,14 +56,15 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const doCapitulo = (id) => atividades.filter((a) => (a.secaoId ?? null) === id)
   const feita = (a) => progresso?.itens.find((i) => i.tipo === a.especie && i.id === a.id)?.feita
 
-  const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then((p) => { setProgresso(p); if (atividades.some((x) => x.bloqueio)) recarregar() }) // pode abrir outras.catch(falhou)
+  // concluir uma atividade pode abrir outras (restrições): nesse caso recarrega a cadeira
+  const marcar = (a, concluido) => api(`/materiais/${a.id}/conclusao`, { metodo: 'PUT', corpo: { concluido } }).then((p) => { setProgresso(p); if (atividades.some((x) => x.bloqueio)) recarregar() }).catch(falhou)
   function abrir(a) {
     if (a.bloqueio) return
-    if (a.especie === 'material' && ['ficheiro', 'ligacao', 'video', 'videoconferencia'].includes(a.tipo)) {
+    // ligações e videoconferências abrem à parte; ficheiros (PDF, vídeo…) e vídeos veem-se dentro do portal
+    if (a.especie === 'material' && ['ligacao', 'videoconferencia'].includes(a.tipo)) {
       if (a.tipo === 'videoconferencia' && !eDocente && !['abre', 'a_decorrer'].includes(estadoSessao(a))) return irPara({ atividade: a.chave })
       if (!eDocente && !feita(a)) marcar(a, true)
-      if (a.tipo === 'ficheiro') abrirFicheiro(a.ficheiroId, { nome: a.titulo, ver: true }).catch(falhou)
-      else window.open(a.url, '_blank', 'noopener')
+      window.open(a.url, '_blank', 'noopener')
     } else irPara({ atividade: a.chave })
   }
 

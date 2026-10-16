@@ -10,7 +10,7 @@ import { writeFile } from 'node:fs/promises'
 import { createServer } from 'vite'
 
 const API = process.env.API_URL || 'http://localhost:3001'
-const COLECOES = [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id']]
+const COLECOES = [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id'], ['revistas', 'slug']]
 
 const remoto = await (await fetch(`${API}/api/publico/conteudo`)).json()
 if (!remoto.traducoes) throw new Error('A API não devolveu traduções.')

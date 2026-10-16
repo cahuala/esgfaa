@@ -27,7 +27,6 @@ function CursoDetalhe() {
   const pagina = paginas.cursos
   const calendarioAdmissao = pagina.calendario || []
   const processoAdmissao = pagina.processo || []
-  const prazo = pagina.prazo || calendarioAdmissao[1]?.periodo
   const { id } = useParams()
   const curso = cursoPorId(id)
   const ativa = useSeccaoAtiva(ids)
@@ -82,8 +81,8 @@ function CursoDetalhe() {
           </nav>
 
           <div className={ed.caixaLateral}>
-            <h3 className={detalhe.caixaTitulo}>{t('Candidaturas')}</h3>
-            <p>{pagina.candidaturasAbertas && prazo ? t('Abertas até {prazo}.', { prazo }) : t('Consulte o calendário de admissão.')}</p>
+            <h3 className={detalhe.caixaTitulo}>{t('Ingresso')}</h3>
+            <p>{t('Por proposta do ramo de origem, através da Repartição de Pessoal e Quadros.')}</p>
             <Link to={{ hash: '#admissao' }} className={ed.botao}>{t('Ver o processo de admissão')}</Link>
           </div>
         </aside>
@@ -138,7 +137,7 @@ function CursoDetalhe() {
             </p>
           </Seccao>
 
-          <Seccao id="admissao" numero={numero('admissao')} rotulo={t('Admissão')} titulo={t('Requisitos e processo de candidatura')}>
+          <Seccao id="admissao" numero={numero('admissao')} rotulo={t('Admissão')} titulo={t('Requisitos e processo de admissão')}>
             <h3 className={detalhe.subtitulo}>{t('Requisitos')}</h3>
             <ol className={ed.listaNumerada}>
               {curso.requisitos.map((r) => <li key={r}>{r}</li>)}

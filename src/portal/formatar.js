@@ -100,3 +100,15 @@ export function tituloAgenda(titulo = '') {
   if (m && PREFIXOS_AGENDA.includes(m[1])) return `${tx(m[1])}: ${m[2]}`
   return tx(titulo)
 }
+
+// como um ficheiro se mostra no portal: pdf | video | audio | imagem (null: só se descarrega)
+export const tipoVisivel = (tipo = '') => {
+  if (tipo === 'application/pdf') return 'pdf'
+  if (tipo.startsWith('video/')) return 'video'
+  if (tipo.startsWith('audio/')) return 'audio'
+  if (tipo.startsWith('image/')) return 'imagem'
+  return null
+}
+
+// identificador de um vídeo do YouTube num endereço (watch, youtu.be, shorts, embed)
+export const idYoutube = (url = '') => url.match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/)([\w-]{11})/)?.[1] || null

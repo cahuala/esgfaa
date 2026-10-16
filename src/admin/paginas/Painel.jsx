@@ -7,7 +7,7 @@ import { Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
-const NOMES_COLECOES = { noticias: tx('Notícia'), eventos: tx('Evento'), artigos: tx('Artigo'), cursos: tx('Curso'), pessoas: tx('Pessoa'), publicidade: tx('Banner') }
+const NOMES_COLECOES = { noticias: tx('Notícia'), eventos: tx('Evento'), artigos: tx('Artigo'), cursos: tx('Curso'), pessoas: tx('Pessoa'), revistas: tx('Número da revista'), publicidade: tx('Banner') }
 
 // últimos 14 dias, com zero nos dias sem registos
 function serie14(linhas = []) {

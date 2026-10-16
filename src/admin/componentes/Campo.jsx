@@ -7,7 +7,7 @@ import { POSICOES_BANNER, TIPOS_BLOCO } from '../esquemas'
 import { escrever, ler } from '../caminhos'
 import { t as tx } from '../../i18n/linguas'
 
-const LARGURAS = { metade: 'col-md-6', terco: 'col-md-4', doisTercos: 'col-md-8' }
+const LARGURAS = { metade: 'col-md-6', terco: 'col-md-4', doisTercos: 'col-md-8', sexto: 'col-md-2' }
 
 // barra do editor de texto rico (Quill, o editor usado pelo Color Admin)
 const BARRA_TEXTO = [

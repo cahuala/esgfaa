@@ -15,6 +15,7 @@ const LIGACOES = [
   { para: '/Noticias', texto: 'Notícias' },
   { para: '/Eventos', texto: 'Eventos' },
   { para: '/Artigos', texto: 'Artigos' },
+  { para: '/Revista', texto: 'Revista' },
   { para: '/Contactos', texto: 'Contactos' },
 ]
 

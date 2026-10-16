@@ -51,7 +51,7 @@ export default [
   ["Tese / dissertação", "Thesis / dissertation", "Thèse / mémoire", "Tesis / disertación"],
   ["Monografia", "Monograph", "Monographie", "Monografía"],
   [", de {0}", ", by {0}", ", de {0}", ", de {0}"],
-  ["Revista", "Journal", "Revue", "Revista"],
+  ["Revista", "Magazine", "Revue", "Revista"],
   ["As minhas notas", "My grades", "Mes notes", "Mis notas"],
   ["dispensado", "exempt", "dispensé", "exento"],
   ["“—” = nota ainda não publicada.", "“—” = grade not yet published.", "« — » = note pas encore publiée.", "«—» = nota aún no publicada."],

@@ -8,11 +8,12 @@ import artigos from '../data/artigos'
 import eventos from '../data/eventos'
 import cursos from '../data/cursos'
 import pessoas from '../data/pessoas'
+import revistas from '../data/revistas'
 import paginas from '../data/paginas'
 import publicidade from '../data/publicidade'
 
 // conteúdos que vêm com o site: usados até a API responder, ou se ela estiver indisponível
-const LOCAL = { noticias, artigos, eventos, cursos, pessoas, paginas, publicidade, estatisticas: {} }
+const LOCAL = { noticias, artigos, eventos, cursos, pessoas, revistas, paginas, publicidade, estatisticas: {} }
 
 function ConteudoProvider({ children }) {
   const [dados, setDados] = useState(LOCAL)
@@ -57,7 +58,7 @@ function ConteudoProvider({ children }) {
       return tr ? { ...aplicarTextos(x, tr), _lingua: lingua, _automatica: Boolean(automaticas[`${colecao}/${chave}`]?.includes(lingua)) } : { ...x, _lingua: 'pt' }
     }
     const r = { ...dados }
-    for (const [colecao, campo] of [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id']]) {
+    for (const [colecao, campo] of [['noticias', 'slug'], ['artigos', 'slug'], ['eventos', 'id'], ['cursos', 'id'], ['pessoas', 'id'], ['revistas', 'slug']]) {
       r[colecao] = (dados[colecao] || []).map((x) => traduzir(colecao, x, x[campo]))
     }
     r.paginas = Object.fromEntries(Object.entries(dados.paginas || {}).map(([k, v]) => [k, aplicarTextos(v, itens[`paginas/${k}`]?.[lingua])]))
@@ -75,6 +76,7 @@ function ConteudoProvider({ children }) {
       artigoPorSlug: procurar(dados.artigos, 'slug'),
       eventoPorId: procurar(dados.eventos, 'id'),
       cursoPorId: procurar(dados.cursos, 'id'),
+      revistaPorSlug: procurar(dados.revistas || [], 'slug'),
       estatisticasDe: (colecao, id) => dados.estatisticas?.[`${colecao}/${id}`] || { gostos: 0, comentarios: 0, visualizacoes: 0 },
       // alteração local depois de um gosto/comentário, sem recarregar tudo
       atualizarEstatisticas: (colecao, id, est) => setDados((d) => ({

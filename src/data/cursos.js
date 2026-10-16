@@ -10,15 +10,13 @@ import Curso3 from '../assets/Curso3.png'
 
 // Processo e calendário de admissão comuns a todos os cursos
 export const processoAdmissao = [
-  { titulo: 'Candidatura', texto: 'Proposta do ramo de origem, com os documentos, entregue na Repartição de Pessoal e Quadros.' },
+  { titulo: 'Proposta do ramo', texto: 'O ramo de origem propõe os oficiais e envia a documentação à Repartição de Pessoal e Quadros.' },
   { titulo: 'Análise documental', texto: 'Verificação dos requisitos de posto, tempo de serviço e habilitações.' },
   { titulo: 'Provas e entrevista', texto: 'Prova escrita de conhecimentos gerais e entrevista perante um júri.' },
-  { titulo: 'Resultados', texto: 'Publicação da lista de admitidos e convocação para matrícula.' },
+  { titulo: 'Registo e matrícula', texto: 'A Repartição de Pessoal e Quadros regista os admitidos e a Secretaria Académica convoca-os para a matrícula.' },
 ]
 
 export const calendarioAdmissao = [
-  { fase: 'Abertura das candidaturas', periodo: '1 de outubro de 2026' },
-  { fase: 'Fim do prazo de candidatura', periodo: '30 de novembro de 2026' },
   { fase: 'Provas escritas e entrevistas', periodo: '11 a 22 de janeiro de 2027' },
   { fase: 'Publicação dos resultados', periodo: '5 de fevereiro de 2027' },
   { fase: 'Matrículas', periodo: '15 a 26 de fevereiro de 2027' },

@@ -5,86 +5,6 @@
   "es": "Español"
  },
  "itens": {
-  "noticias/abertura-ano-academico-2026": {
-   "en": {
-    "autor": "Communication Office",
-    "resumo": "The College welcomed more than 200 new students at the official opening ceremony of the academic year.",
-    "titulo": "Opening ceremony of the 2026 academic year",
-    "categoria": "Institutional",
-    "conteudo.0.texto": "The Higher War College of the Angolan Armed Forces opened the 2026 academic year with a ceremony that brought together, in the main auditorium, more than 200 new students, the faculty, invited guests and representatives of partner military schools.",
-    "conteudo.2.texto": "The session was chaired by the Commandant of the College, who welcomed the officers now starting the Staff, General Officer Promotion and Advanced Military Studies courses. The audience also included the officers who completed their training the previous year and who were invited to share their experience with the new students.",
-    "conteudo.3.texto": "The ceremony included the presentation of the faculty, the reading of the academic regulations and the symbolic signing of the pledge of honour by the representatives of each course. At the end, the students were received by their course coordinators for a first induction meeting.",
-    "conteudo.4.texto": "A year focused on leadership and research",
-    "conteudo.6.texto": "In his opening speech, the Commandant stressed that the new academic year strengthens applied research and the link between academic education and the operational needs of the Armed Forces. Each course now includes a mandatory research seminar, supervised by faculty from the Research Department.",
-    "conteudo.7.texto": "The expansion of the planning exercises programme was also announced, placing students in realistic crisis scenarios that require them to work as staffs, decide under pressure and present their conclusions to general officers.",
-    "conteudo.8.autor": "Gen. Carlos Vieira, Commandant of the College",
-    "conteudo.8.texto": "Educating those who command means educating those who decide. Every officer who passes through this College carries the responsibility of serving Angola with competence and integrity.",
-    "conteudo.10.texto": "What is new this academic year",
-    "conteudo.13.texto": "Classes for the three courses begin the week after the ceremony. The full academic calendar is available from the Academic Office.",
-    "conteudo.1.legenda": "Student officers at the first session of the academic year.",
-    "conteudo.5.legenda": "The main auditorium welcomed students, faculty and guests.",
-    "conteudo.9.legenda": "Demonstration video — to be replaced by the official video of the ceremony.",
-    "conteudo.11.itens.0": "A stronger programme of scientific research seminars.",
-    "conteudo.11.itens.1": "New course units on defence cooperation and diplomacy.",
-    "conteudo.11.itens.2": "Wider faculty exchanges with partner schools.",
-    "conteudo.12.legenda": "Moments from the opening ceremony.",
-    "conteudo.12.imagens.0.legenda": "Student officers at the formal session.",
-    "conteudo.12.imagens.1.legenda": "Invited guests in the front row.",
-    "conteudo.12.imagens.2.legenda": "A protocol moment of the ceremony."
-   },
-   "fr": {
-    "autor": "Bureau de la communication",
-    "resumo": "L'École a accueilli plus de 200 nouveaux élèves à la cérémonie d'ouverture officielle de l'année scolaire.",
-    "titulo": "Cérémonie d'ouverture de l'année académique 2026",
-    "categoria": "Institutions",
-    "conteudo.0.texto": "L'école secondaire des forces armées angolaises de guerre a commencé l'année scolaire 2026 lors d'une cérémonie qui a réuni plus de 200 nouveaux étudiants dans l'auditorium principal, la faculté, les entités invitées et les représentants des écoles militaires partenaires.",
-    "conteudo.2.texto": "La session était présidée par le commandant de l'école, qui a souhaité la bienvenue aux officiers qui commencent actuellement les cours d'état-major, de promotion à l'officier général et d'études militaires supérieures. Dans l'auditoire étaient également des agents qui ont terminé la formation l'année précédente et qui ont été invités à partager leur expérience avec les nouveaux étudiants.",
-    "conteudo.3.texto": "Le programme de la cérémonie comprenait la présentation de la faculté, la lecture du règlement académique et la signature symbolique de l'engagement d'honneur par les représentants de chaque cours. En fin de compte, les étudiants ont été reçus par les coordinateurs de leurs cours pour une première réunion-cadre.",
-    "conteudo.4.texto": "Une année axée sur le leadership et la recherche",
-    "conteudo.6.texto": "Dans le discours d'ouverture, le commandant a souligné que la nouvelle année scolaire renforce la composante recherche appliquée et relie la formation universitaire aux besoins opérationnels des forces armées. Chaque cours comprendra un séminaire de recherche obligatoire, guidé par des professeurs du département de recherche.",
-    "conteudo.7.texto": "Il a également été annoncé l'extension du programme d'exercices de planification, qui place les étudiants dans des scénarios de crise réalistes et les oblige à travailler dans les grands États, à décider sous pression et à présenter leurs conclusions aux officiers généraux.",
-    "conteudo.8.autor": "Le général Carlos Vieira, commandant de l'école",
-    "conteudo.8.texto": "Former celui qui commande, c'est former celui qui décide. Tous les officiers qui traversent cette école ont la responsabilité de servir l'Angola avec compétence et intégrité.",
-    "conteudo.10.texto": "Nouvelles de l'année académique",
-    "conteudo.13.texto": "Les trois cours commencent la semaine après la cérémonie. Le calendrier académique complet est disponible au Secrétariat académique.",
-    "conteudo.1.legenda": "Étudiants officiels à la première session de l'année académique.",
-    "conteudo.5.legenda": "L'auditorium principal a accueilli des étudiants, des enseignants et des invités.",
-    "conteudo.9.legenda": "Vidéo de démonstration — remplacer la vidéo officielle de la cérémonie.",
-    "conteudo.11.itens.0": "Renforcement du programme de séminaires de recherche scientifique.",
-    "conteudo.11.itens.1": "Nouvelles unités de programme de coopération et de diplomatie de défense.",
-    "conteudo.11.itens.2": "Extension des échanges d'enseignants avec les écoles partenaires.",
-    "conteudo.12.legenda": "Moments de la cérémonie d'ouverture.",
-    "conteudo.12.imagens.0.legenda": "Officiers à la séance formelle.",
-    "conteudo.12.imagens.1.legenda": "Entités invitées au premier rang.",
-    "conteudo.12.imagens.2.legenda": "Une minute de la cérémonie."
-   },
-   "es": {
-    "autor": "Oficina de Comunicación",
-    "resumo": "La Escuela recibió más de 200 nuevos alumnos en la ceremonia oficial de apertura del año académico.",
-    "titulo": "Cerimonio de apertura del año académico 2026",
-    "categoria": "Institucional",
-    "conteudo.0.texto": "La Escuela Superior de Guerra de las Fuerzas Armadas Angolanas inició el año académico 2026 en una ceremonia que reunió, en el auditorio principal, más de 200 nuevos alumnos, el cuerpo docente, entidades invitadas y representantes de escuelas militares asociadas.",
-    "conteudo.2.texto": "La sesión fue presidida por el Comandante de la Escuela, que dio la bienvenida a los oficiales que ahora inician los cursos de Estado Mayor, de Promoción la Oficial General y de Altos Estudios Militares. En la audiencia también estuvieron los oficiales que concluyeron la formación en el año anterior y que fueron invitados a compartir su experiencia con los nuevos alumnos.",
-    "conteudo.3.texto": "El programa de la ceremonia incluyó la presentación del cuerpo docente, la lectura del reglamento académico y la firma simbólica del compromiso de honor por los representantes de cada curso. Al final, los alumnos fueron recibidos por los coordinadores de sus cursos para una primera reunión de marco.",
-    "conteudo.4.texto": "Un año centrado en el liderazgo y la investigación",
-    "conteudo.6.texto": "En el discurso de apertura, el Comandante subrayó que el nuevo año académico refuerza el componente de investigación aplicado y la conexión entre la formación académica y las necesidades operacionales de las Fuerzas Armadas. Cada curso incluye un seminario de investigación obligatorio, orientado por docentes del Departamento de Investigación.",
-    "conteudo.7.texto": "También se anunció la ampliación del programa de ejercicios de planificación, que coloca a los alumnos ante escenarios realistas de crisis y obliga a trabajar en estados mayores, a decidir bajo presión y a presentar sus conclusiones ante oficiales generales.",
-    "conteudo.8.autor": "Gen. Carlos Vieira, Comandante de la Escuela",
-    "conteudo.8.texto": "Formar quien comanda es formar quien decide. Cada oficial que pasa por esta Escuela lleva consigo la responsabilidad de servir Angola tiene competencia e integridad.",
-    "conteudo.10.texto": "Noticias del año académico",
-    "conteudo.13.texto": "Las clases de los tres cursos comienzan la semana siguiente a la ceremonia. El calendario académico completo está disponible en la Secretaría Académica.",
-    "conteudo.1.legenda": "Oficiales alumnos en la primera sesión del año académico.",
-    "conteudo.5.legenda": "El auditorio principal recibió alumnos, docentes e invitados.",
-    "conteudo.9.legenda": "Video de demostración — reemplazar por el video oficial de la ceremonia.",
-    "conteudo.11.itens.0": "Refuerzo del programa de seminarios de investigación científica.",
-    "conteudo.11.itens.1": "Nuevas unidades curriculares de cooperación y diplomacia de defensa.",
-    "conteudo.11.itens.2": "Ampliación del intercambio de docentes con escuelas asociadas.",
-    "conteudo.12.legenda": "Momentos de la ceremonia de apertura.",
-    "conteudo.12.imagens.0.legenda": "Oficiales alumnos en la sesión solemne.",
-    "conteudo.12.imagens.1.legenda": "Entidades invitadas en la primera fila.",
-    "conteudo.12.imagens.2.legenda": "Momento protocolar de la ceremonia."
-   }
-  },
   "noticias/acordo-cooperacao-escola-parceira": {
    "en": {
     "autor": "Communication Office",
@@ -141,30 +61,13 @@
     "conteudo.6.itens.3": "Publicaciones y conferencias organizadas en colaboración."
    }
   },
-  "pessoas/teresa-lopes": {
-   "fr": {
-    "nome": "Maj. Thérèse Lopes",
-    "cargo": "Coordonnateur du cours d ' état-major général",
-    "destaque": "Diplômé de plus de 300 officiers tout au long de sa carrière"
-   },
-   "es": {
-    "nome": "Maj. Teresa Lopes",
-    "cargo": "Coordinadora del Curso de Estado Mayor",
-    "destaque": "Formó más de 300 oficiales a lo largo de la carrera docente"
-   },
-   "en": {
-    "nome": "Maj. Teresa Lopes",
-    "cargo": "Coordinator of the General Staff Course",
-    "destaque": "Graduated over 300 officers throughout his teaching career"
-   }
-  },
   "paginas/home": {
    "fr": {
     "cta.botao": "Connaître le processus d'admission",
-    "cta.texto": "Postulez aux formations de l'École Supérieure de Guerre et préparez-vous aux fonctions de commandement et de leadership.",
+    "cta.texto": "Découvrez les formations de l'École Supérieure de Guerre, qui préparent les officiers aux fonctions de commandement et de direction.",
     "cta.titulo": "Prêt à franchir la prochaine étape de votre carrière militaire ?",
     "faq.titulo": "Foire aux questions",
-    "hero.texto": "Découvrez les formations et programmes de l'École Supérieure de Guerre et postulez pour la prochaine année académique.",
+    "hero.texto": "Découvrez les formations et programmes de l'École Supérieure de Guerre et les publications de son corps enseignant.",
     "hero.titulo": "Former ceux qui défendent l'Angola, dès le premier jour.",
     "corpo.titulo": "Qui forme, mène aussi.",
     "faq.etiqueta": "Questions communes",
@@ -181,21 +84,19 @@
     "eventos.etiqueta": "Événements",
     "formacao.etiqueta": "Formation et cours",
     "noticias.etiqueta": "Actualités",
-    "hero.formularioTexto": "Remplissez vos données et nous vous contacterons.",
     "avisos.lista.0.resumo": "La période d'examen a été réajustée. Voir le calendrier académique actualisé.",
     "avisos.lista.0.titulo": "Nouvelles dates pour les examens du premier semestre",
     "avisos.lista.1.resumo": "Tous les enseignants sont invités à la réunion générale de préparation du nouveau semestre.",
     "avisos.lista.1.titulo": "Appel à une réunion de professeurs",
-    "avisos.lista.2.resumo": "Les candidatures sont ouvertes pour la prochaine année scolaire. Voir les conditions d'admission.",
-    "avisos.lista.2.titulo": "Ouverture de la période de candidature",
+    "avisos.lista.2.resumo": "Le nouveau numéro de la revue de l'École est disponible sur le site, en lecture libre.",
+    "avisos.lista.2.titulo": "Nouveau numéro de la Revue de l'École Supérieure de Guerre",
     "avisos.lista.3.resumo": "Pendant les travaux dans le bloc B, l'accès sera effectué exclusivement par l'entrée principale.",
     "avisos.lista.3.titulo": "Conditionnement de l'accès aux locaux",
-    "hero.formularioTitulo": "Faire une demande de cours",
     "hero.metricas.0.valor": "+10 ans",
     "hero.metricas.0.legenda": "D'existence",
     "hero.metricas.1.legenda": "Officiers formés",
-    "faq.perguntas.0.pergunta": "Comment puis-je postuler pour un cours?",
-    "faq.perguntas.0.resposta": "La demande est faite par l'intermédiaire de la branche d'origine: la Division du personnel et des conseils enregistre les officiers admis et le Secrétariat académique informe les dates des tests et le début du cours. Le processus d'admission est décrit sur la page Cours.",
+    "faq.perguntas.0.pergunta": "Comment intègre-t-on une formation de l'École ?",
+    "faq.perguntas.0.resposta": "L'admission se fait sur proposition de la branche d'origine : le Bureau du Personnel et des Cadres enregistre les officiers admis et le Secrétariat académique communique les dates des épreuves et le début de la formation. La procédure d'admission est décrite sur la page Formations.",
     "faq.perguntas.1.pergunta": "Quelles sont les conditions d'admission?",
     "faq.perguntas.1.resposta": "Les exigences varient selon le cours que vous voulez — comprennent habituellement le grade militaire minimum, les qualifications universitaires et le temps de service. Veuillez consulter la page de chaque cours, dans la section « Exigences d'entrée », pour connaître les critères spécifiques.",
     "faq.perguntas.2.pergunta": "Comment accéder aux documents scolaires publics?",
@@ -203,16 +104,15 @@
     "faq.perguntas.3.pergunta": "Comment contacter un service spécifique?",
     "faq.perguntas.3.resposta": "Sur la page Contacts, vous trouverez les moyens généraux de contact de l'École. Pour des ministères précis, consultez la section « Organisation et structure » de l'institution, où sont énumérés les chefs de chaque secteur.",
     "faq.perguntas.4.pergunta": "L'École offre-t-elle des programmes de coopération internationale?",
-    "faq.perguntas.4.resposta": "Oui. L'École maintient des accords de coopération avec des institutions militaires partenaires, y compris des échanges d'enseignants, d'étudiants et de projets de recherche conjoints. Plus d'informations dans la section Coopération internationale.",
     "faq.perguntas.5.pergunta": "Où puis-je consulter le calendrier académique?",
     "faq.perguntas.5.resposta": "Le calendrier avec le début et la fin des cours, les périodes scolaires, les examens et autres événements institutionnels est disponible dans l'agenda académique, accessible à partir du menu principal."
    },
    "es": {
     "cta.botao": "Conocer el proceso de admisión",
-    "cta.texto": "Postúlese a los cursos de la Escuela Superior de Guerra y prepárese para funciones de mando y liderazgo.",
+    "cta.texto": "Conozca los cursos de la Escuela Superior de Guerra, que preparan oficiales para funciones de mando y liderazgo.",
     "cta.titulo": "¿Listo para dar el siguiente paso en su carrera militar?",
     "faq.titulo": "Preguntas frecuentes",
-    "hero.texto": "Conozca los cursos y programas de la Escuela Superior de Guerra y postúlese para el próximo año académico.",
+    "hero.texto": "Conozca los cursos y programas de la Escuela Superior de Guerra y las publicaciones de su cuerpo docente.",
     "hero.titulo": "Formar a quienes defienden Angola, desde el primer día.",
     "corpo.titulo": "Quien forma, también lidera.",
     "faq.etiqueta": "Preguntas frecuentes",
@@ -229,21 +129,19 @@
     "eventos.etiqueta": "Eventos",
     "formacao.etiqueta": "Formación y cursos",
     "noticias.etiqueta": "Noticias",
-    "hero.formularioTexto": "Rellene sus datos y entraremos en contacto.",
     "avisos.lista.0.resumo": "El período de exámenes fue reajustado. Consulte el calendario académico actualizado.",
     "avisos.lista.0.titulo": "Nuevas fechas para los exámenes del 1o semestre",
     "avisos.lista.1.resumo": "Se convocan todos los docentes para la reunión general de preparación del nuevo semestre.",
     "avisos.lista.1.titulo": "Convocatoria para reunión del cuerpo docente",
-    "avisos.lista.2.resumo": "Están abiertas las solicitudes para el próximo año académico. Consulte los requisitos de admisión.",
-    "avisos.lista.2.titulo": "Apertura del período de candidaturas a los cursos",
+    "avisos.lista.2.resumo": "Ya está disponible en el sitio, para lectura libre, el nuevo número de la revista de la Escuela.",
+    "avisos.lista.2.titulo": "Nuevo número de la Revista de la Escuela Superior de Guerra",
     "avisos.lista.3.resumo": "Durante las obras en el bloque B, el acceso se hará exclusivamente por la entrada principal.",
     "avisos.lista.3.titulo": "Condicionamiento de acceso a las instalaciones",
-    "hero.formularioTitulo": "Candidate a un curso",
     "hero.metricas.0.valor": "+10 años",
     "hero.metricas.0.legenda": "De existencia",
     "hero.metricas.1.legenda": "Oficiales formados",
-    "faq.perguntas.0.pergunta": "¿Cómo puedo postularme a un curso?",
-    "faq.perguntas.0.resposta": "La candidatura se realiza a través de la rama de origen: la Repartición de Personal y Cuadros registra los oficiales admitidos y la Secretaría Académica informa las fechas de las pruebas y el inicio del curso. El proceso de admisión está descrito en la página de Cursos.",
+    "faq.perguntas.0.pergunta": "¿Cómo se ingresa en un curso de la Escuela?",
+    "faq.perguntas.0.resposta": "El ingreso se hace a propuesta de la rama de origen: la Sección de Personal y Cuadros registra a los oficiales admitidos y la Secretaría Académica informa de las fechas de las pruebas y del inicio del curso. El proceso de admisión se describe en la página de Cursos.",
     "faq.perguntas.1.pergunta": "¿Cuáles son los requisitos de admisión?",
     "faq.perguntas.1.resposta": "Los requisitos varían según el curso deseado, normalmente incluyen un puesto militar mínimo, cualificaciones académicas y tiempo de servicio. Consulte la página de cada curso, en la sección \"Requisitos de admisión\", para los criterios específicos.",
     "faq.perguntas.2.pergunta": "¿Cómo acceder a documentos públicos de la Escuela?",
@@ -251,16 +149,15 @@
     "faq.perguntas.3.pergunta": "¿Cómo contactar con un departamento específico?",
     "faq.perguntas.3.resposta": "En la página de Contactos encuentra los medios de contacto generales de la Escuela. Para departamentos específicos, consulte la sección \"Organización y Estructura\" en Institucional, donde están listados los responsables de cada área.",
     "faq.perguntas.4.pergunta": "¿La Escuela ofrece programas de cooperación internacional?",
-    "faq.perguntas.4.resposta": "Sí. La Escuela mantiene acuerdos de cooperación con instituciones militares asociadas, incluyendo el intercambio de docentes, alumnos y proyectos conjuntos de investigación. Más información en la sección de Cooperación Internacional.",
     "faq.perguntas.5.pergunta": "¿Dónde puedo consultar el calendario académico?",
     "faq.perguntas.5.resposta": "El calendario con el inicio y fin de los cursos, períodos letivos, exámenes y otros eventos institucionales está disponible en la Agenda Académica, accesible a partir del menú principal."
    },
    "en": {
     "cta.botao": "Know the admission process",
-    "cta.texto": "Apply for the courses of the Higher War College and prepare for command and leadership roles.",
+    "cta.texto": "Discover the courses of the Higher War College, which prepare officers for command and leadership roles.",
     "cta.titulo": "Ready to take the next step in your military career?",
     "faq.titulo": "Frequently asked questions",
-    "hero.texto": "Discover the courses and programmes of the Higher War College and apply for the next academic year.",
+    "hero.texto": "Discover the courses and programmes of the Higher War College and the publications of its faculty.",
     "hero.titulo": "Educating those who defend Angola, from day one.",
     "corpo.titulo": "Those who teach also lead.",
     "faq.etiqueta": "FAQ",
@@ -277,21 +174,19 @@
     "eventos.etiqueta": "Events",
     "formacao.etiqueta": "Education and Courses",
     "noticias.etiqueta": "News",
-    "hero.formularioTexto": "Fill in your details and we will get in touch.",
     "avisos.lista.0.resumo": "The exam period has been rescheduled. See the updated academic calendar.",
     "avisos.lista.0.titulo": "New dates for 1st semester exams",
     "avisos.lista.1.resumo": "All faculty members are called to the general meeting to prepare the new semester.",
     "avisos.lista.1.titulo": "Notice of faculty meeting",
-    "avisos.lista.2.resumo": "Applications for the next academic year are now open. See the admission requirements.",
-    "avisos.lista.2.titulo": "Applications for courses now open",
+    "avisos.lista.2.resumo": "The new issue of the College magazine is now available on the website, free to read.",
+    "avisos.lista.2.titulo": "New issue of the Higher War College Magazine",
     "avisos.lista.3.resumo": "During the works on block B, access will be through the main entrance only.",
     "avisos.lista.3.titulo": "Restricted access to the premises",
-    "hero.formularioTitulo": "Apply for a course",
     "hero.metricas.0.valor": "10+ years",
     "hero.metricas.0.legenda": "Of history",
     "hero.metricas.1.legenda": "Officers trained",
-    "faq.perguntas.0.pergunta": "How can I apply for a course?",
-    "faq.perguntas.0.resposta": "The application is made through the branch of origin: the Staff and Boards Division registers the admitted officers and the Academic Secretariat informs the dates of the tests and the beginning of the course. The admission process is described on the Courses page.",
+    "faq.perguntas.0.pergunta": "How do officers enter a course at the College?",
+    "faq.perguntas.0.resposta": "Entry is on the proposal of the officer's branch: the Personnel and Staff Department registers the admitted officers and the Academic Office announces the dates of the tests and the start of the course. The admission process is described on the Courses page.",
     "faq.perguntas.1.pergunta": "What are the admission requirements?",
     "faq.perguntas.1.resposta": "Requirements vary according to the course — they usually include a minimum military rank, academic qualifications and length of service. See each course page, under \"Admission requirements\", for the specific criteria.",
     "faq.perguntas.2.pergunta": "How can I access the College's public documents?",
@@ -299,9 +194,99 @@
     "faq.perguntas.3.pergunta": "How do I contact a specific department?",
     "faq.perguntas.3.resposta": "The Contact page lists the general contact details of the College. For specific departments, see the \"Organisation and Structure\" section under About us, which lists the heads of each area.",
     "faq.perguntas.4.pergunta": "Does the College offer international cooperation programmes?",
-    "faq.perguntas.4.resposta": "Yes. The College has cooperation agreements with partner military institutions, including faculty and student exchanges and joint research projects. More information in the International Cooperation section.",
     "faq.perguntas.5.pergunta": "Where can I see the academic calendar?",
     "faq.perguntas.5.resposta": "The calendar with course start and end dates, terms, exams and other institutional events is available in the Academic Calendar, accessible from the main menu."
+   }
+  },
+  "noticias/abertura-ano-academico-2026": {
+   "fr": {
+    "autor": "Bureau de la communication",
+    "resumo": "L'École a accueilli plus de 200 nouveaux élèves à la cérémonie d'ouverture officielle de l'année scolaire.",
+    "titulo": "Cérémonie d'ouverture de l'année académique 2026",
+    "categoria": "Institutions",
+    "conteudo.0.texto": "L'école secondaire des forces armées angolaises de guerre a commencé l'année scolaire 2026 lors d'une cérémonie qui a réuni plus de 200 nouveaux étudiants dans l'auditorium principal, la faculté, les entités invitées et les représentants des écoles militaires partenaires.",
+    "conteudo.2.texto": "La session était présidée par le commandant de l'école, qui a souhaité la bienvenue aux officiers qui commencent actuellement les cours d'état-major, de promotion à l'officier général et d'études militaires supérieures. Dans l'auditoire étaient également des agents qui ont terminé la formation l'année précédente et qui ont été invités à partager leur expérience avec les nouveaux étudiants.",
+    "conteudo.3.texto": "Le programme de la cérémonie comprenait la présentation de la faculté, la lecture du règlement académique et la signature symbolique de l'engagement d'honneur par les représentants de chaque cours. En fin de compte, les étudiants ont été reçus par les coordinateurs de leurs cours pour une première réunion-cadre.",
+    "conteudo.4.texto": "Une année axée sur le leadership et la recherche",
+    "conteudo.6.texto": "Dans le discours d'ouverture, le commandant a souligné que la nouvelle année scolaire renforce la composante recherche appliquée et relie la formation universitaire aux besoins opérationnels des forces armées. Chaque cours comprendra un séminaire de recherche obligatoire, guidé par des professeurs du département de recherche.",
+    "conteudo.7.texto": "Il a également été annoncé l'extension du programme d'exercices de planification, qui place les étudiants dans des scénarios de crise réalistes et les oblige à travailler dans les grands États, à décider sous pression et à présenter leurs conclusions aux officiers généraux.",
+    "conteudo.8.texto": "Former celui qui commande, c'est former celui qui décide. Tous les officiers qui traversent cette école ont la responsabilité de servir l'Angola avec compétence et intégrité.",
+    "conteudo.10.texto": "Nouvelles de l'année académique",
+    "conteudo.13.texto": "Les trois cours commencent la semaine après la cérémonie. Le calendrier académique complet est disponible au Secrétariat académique.",
+    "conteudo.1.legenda": "Étudiants officiels à la première session de l'année académique.",
+    "conteudo.5.legenda": "L'auditorium principal a accueilli des étudiants, des enseignants et des invités.",
+    "conteudo.9.legenda": "Vidéo de démonstration — remplacer la vidéo officielle de la cérémonie.",
+    "conteudo.11.itens.0": "Renforcement du programme de séminaires de recherche scientifique.",
+    "conteudo.11.itens.1": "Nouvelles unités de programme de coopération et de diplomatie de défense.",
+    "conteudo.11.itens.2": "Extension des échanges d'enseignants avec les écoles partenaires.",
+    "conteudo.12.legenda": "Moments de la cérémonie d'ouverture.",
+    "conteudo.12.imagens.0.legenda": "Officiers à la séance formelle.",
+    "conteudo.12.imagens.1.legenda": "Entités invitées au premier rang.",
+    "conteudo.12.imagens.2.legenda": "Une minute de la cérémonie."
+   },
+   "en": {
+    "autor": "Communication Office",
+    "resumo": "The College welcomed more than 200 new students at the official opening ceremony of the academic year.",
+    "titulo": "Opening ceremony of the 2026 academic year",
+    "categoria": "Institutional",
+    "conteudo.0.texto": "The Higher War College of the Angolan Armed Forces opened the 2026 academic year with a ceremony that brought together, in the main auditorium, more than 200 new students, the faculty, invited guests and representatives of partner military schools.",
+    "conteudo.2.texto": "The session was chaired by the Commandant of the College, who welcomed the officers now starting the Staff, General Officer Promotion and Advanced Military Studies courses. The audience also included the officers who completed their training the previous year and who were invited to share their experience with the new students.",
+    "conteudo.3.texto": "The ceremony included the presentation of the faculty, the reading of the academic regulations and the symbolic signing of the pledge of honour by the representatives of each course. At the end, the students were received by their course coordinators for a first induction meeting.",
+    "conteudo.4.texto": "A year focused on leadership and research",
+    "conteudo.6.texto": "In his opening speech, the Commandant stressed that the new academic year strengthens applied research and the link between academic education and the operational needs of the Armed Forces. Each course now includes a mandatory research seminar, supervised by faculty from the Research Department.",
+    "conteudo.7.texto": "The expansion of the planning exercises programme was also announced, placing students in realistic crisis scenarios that require them to work as staffs, decide under pressure and present their conclusions to general officers.",
+    "conteudo.8.texto": "Educating those who command means educating those who decide. Every officer who passes through this College carries the responsibility of serving Angola with competence and integrity.",
+    "conteudo.10.texto": "What is new this academic year",
+    "conteudo.13.texto": "Classes for the three courses begin the week after the ceremony. The full academic calendar is available from the Academic Office.",
+    "conteudo.1.legenda": "Student officers at the first session of the academic year.",
+    "conteudo.5.legenda": "The main auditorium welcomed students, faculty and guests.",
+    "conteudo.9.legenda": "Demonstration video — to be replaced by the official video of the ceremony.",
+    "conteudo.11.itens.0": "A stronger programme of scientific research seminars.",
+    "conteudo.11.itens.1": "New course units on defence cooperation and diplomacy.",
+    "conteudo.11.itens.2": "Wider faculty exchanges with partner schools.",
+    "conteudo.12.legenda": "Moments from the opening ceremony.",
+    "conteudo.12.imagens.0.legenda": "Student officers at the formal session.",
+    "conteudo.12.imagens.1.legenda": "Invited guests in the front row.",
+    "conteudo.12.imagens.2.legenda": "A protocol moment of the ceremony."
+   },
+   "es": {
+    "autor": "Oficina de Comunicación",
+    "resumo": "La Escuela recibió más de 200 nuevos alumnos en la ceremonia oficial de apertura del año académico.",
+    "titulo": "Cerimonio de apertura del año académico 2026",
+    "categoria": "Institucional",
+    "conteudo.0.texto": "La Escuela Superior de Guerra de las Fuerzas Armadas Angolanas inició el año académico 2026 en una ceremonia que reunió, en el auditorio principal, más de 200 nuevos alumnos, el cuerpo docente, entidades invitadas y representantes de escuelas militares asociadas.",
+    "conteudo.2.texto": "La sesión fue presidida por el Comandante de la Escuela, que dio la bienvenida a los oficiales que ahora inician los cursos de Estado Mayor, de Promoción la Oficial General y de Altos Estudios Militares. En la audiencia también estuvieron los oficiales que concluyeron la formación en el año anterior y que fueron invitados a compartir su experiencia con los nuevos alumnos.",
+    "conteudo.3.texto": "El programa de la ceremonia incluyó la presentación del cuerpo docente, la lectura del reglamento académico y la firma simbólica del compromiso de honor por los representantes de cada curso. Al final, los alumnos fueron recibidos por los coordinadores de sus cursos para una primera reunión de marco.",
+    "conteudo.4.texto": "Un año centrado en el liderazgo y la investigación",
+    "conteudo.6.texto": "En el discurso de apertura, el Comandante subrayó que el nuevo año académico refuerza el componente de investigación aplicado y la conexión entre la formación académica y las necesidades operacionales de las Fuerzas Armadas. Cada curso incluye un seminario de investigación obligatorio, orientado por docentes del Departamento de Investigación.",
+    "conteudo.7.texto": "También se anunció la ampliación del programa de ejercicios de planificación, que coloca a los alumnos ante escenarios realistas de crisis y obliga a trabajar en estados mayores, a decidir bajo presión y a presentar sus conclusiones ante oficiales generales.",
+    "conteudo.8.texto": "Formar quien comanda es formar quien decide. Cada oficial que pasa por esta Escuela lleva consigo la responsabilidad de servir Angola tiene competencia e integridad.",
+    "conteudo.10.texto": "Noticias del año académico",
+    "conteudo.13.texto": "Las clases de los tres cursos comienzan la semana siguiente a la ceremonia. El calendario académico completo está disponible en la Secretaría Académica.",
+    "conteudo.1.legenda": "Oficiales alumnos en la primera sesión del año académico.",
+    "conteudo.5.legenda": "El auditorio principal recibió alumnos, docentes e invitados.",
+    "conteudo.9.legenda": "Video de demostración — reemplazar por el video oficial de la ceremonia.",
+    "conteudo.11.itens.0": "Refuerzo del programa de seminarios de investigación científica.",
+    "conteudo.11.itens.1": "Nuevas unidades curriculares de cooperación y diplomacia de defensa.",
+    "conteudo.11.itens.2": "Ampliación del intercambio de docentes con escuelas asociadas.",
+    "conteudo.12.legenda": "Momentos de la ceremonia de apertura.",
+    "conteudo.12.imagens.0.legenda": "Oficiales alumnos en la sesión solemne.",
+    "conteudo.12.imagens.1.legenda": "Entidades invitadas en la primera fila.",
+    "conteudo.12.imagens.2.legenda": "Momento protocolar de la ceremonia."
+   }
+  },
+  "pessoas/teresa-lopes": {
+   "fr": {
+    "cargo": "Coordonnateur du cours d ' état-major général",
+    "destaque": "Diplômé de plus de 300 officiers tout au long de sa carrière"
+   },
+   "en": {
+    "cargo": "Coordinator of the General Staff Course",
+    "destaque": "Graduated over 300 officers throughout his teaching career"
+   },
+   "es": {
+    "cargo": "Coordinadora del Curso de Estado Mayor",
+    "destaque": "Formó más de 300 oficiales a lo largo de la carrera docente"
    }
   },
   "noticias/formatura-estado-maior-2026": {
@@ -685,61 +670,33 @@
     "conteudo.1.legenda": "Cerimonio de cierre del año académico."
    }
   },
-  "paginas/institucional": {
-   "fr": {
-    "visao": "Être une référence régionale dans la formation du personnel militaire et dans la recherche stratégique et de défense.",
-    "missao": "Former des officiers possédant des compétences techniques, des capacités en éthique et en commandement au service de la défense angolaise.",
-    "entrada": "L'École de guerre forme les officiers qui planifient, dirigent et dirigent les forces armées angolaises, et produit la pensée stratégique qui les accompagne.",
-    "legendaSede": "École secondaire de guerre des forces armées angolaises, Luanda.",
-    "mensagem.texto": "À l'Escola Superior de Guerra, nous croyons que la qualité de nos forces armées commence par la qualité de son personnel. C'est l'engagement que nous renouvelons chaque année académique : une exigence dans l'enseignement, la recherche rigoureuse et l'ouverture au monde.",
-    "valores.0.nome": "Discipline",
-    "valores.1.nome": "Intégrité",
-    "valores.2.nome": "Fidélité",
-    "valores.3.nome": "Esprit de service",
-    "historia.titulo": "Plus d'une décennie pour former le patron.",
-    "valores.0.texto": "Respect strict du devoir, des normes et du mot donné.",
-    "valores.1.texto": "Cohérence entre ce que vous pensez, ce que vous dites et ce que vous faites.",
-    "valores.2.texto": "À la nation, aux forces armées, aux supérieurs et aux subordonnés.",
-    "valores.3.texto": "Mettre les intérêts nationaux au-dessus des intérêts personnels.",
-    "historia.legenda": "Séance formelle dans l'auditorium principal.",
-    "mensagem.citacao": "Former celui qui commande, c'est former celui qui décide. Tous les officiers qui traversent cette école ont la responsabilité de servir l'Angola avec compétence et intégrité.",
-    "estrutura.comando": "Il gère l'École et définit des orientations stratégiques pour l'enseignement, la recherche et la coopération.",
-    "numeros.0.legenda": "Années d'existence",
-    "numeros.1.legenda": "Agents formés",
-    "numeros.2.legenda": "Enseignement supérieur",
-    "numeros.3.legenda": "Accords de coopération",
-    "estrutura.introducao": "Sous la direction du Commandement, l'École est organisée dans trois domaines - enseignement, recherche, coopération et soutien - chacun avec ses propres organes de mission.",
-    "historia.paragrafos.0": "L ' École secondaire des forces armées de guerre angolaises est née de la nécessité de former des officiers en Angola aux fonctions les plus élevées de commandement, de direction et d ' ancienneté, en réduisant la dépendance à l ' égard de la formation à l ' étranger et en adaptant l ' éducation à la réalité nationale.",
-    "historia.paragrafos.1": "Depuis, l'École s'est consolidée en tant que principal établissement d'enseignement supérieur militaire du pays. Son modèle combine la formation doctrinale avec la recherche scientifique et la coopération avec des institutions similaires, dans un environnement où les fonctionnaires des trois branches apprennent à planifier et à décider ensemble.",
-    "historia.paragrafos.2": "Au fil des ans, les cours ont été revus pour suivre l'évolution des menaces, de la technologie et des missions des forces armées, en tenant compte des valeurs qui définissent la situation militaire.",
-    "historia.marcos.0.texto": "Créé en tant qu ' établissement d ' enseignement supérieur militaire des Forces armées angolaises.",
-    "historia.marcos.1.texto": "Formation initiale des officiers aux fonctions du personnel.",
-    "historia.marcos.2.texto": "Signature des premiers protocoles de coopération avec les écoles militaires partenaires.",
-    "historia.marcos.3.texto": "Début d'un programme d'études et de modernisation pédagogique.",
-    "historia.marcos.4.texto": "Séminaires de recherche requis dans tous les cours et nouvelle revue scientifique.",
-    "estrutura.ramos.0.titulo": "Éducation",
-    "estrutura.ramos.1.titulo": "Recherche et coopération",
-    "estrutura.ramos.2.titulo": "Appui",
-    "historia.marcos.0.titulo": "Création de l'école",
-    "historia.marcos.1.titulo": "Premier cours d ' état-major général",
-    "historia.marcos.2.titulo": "Ouverture internationale",
-    "historia.marcos.3.titulo": "Nouveau cycle de commande",
-    "historia.marcos.4.titulo": "Renforcement de la recherche",
-    "estrutura.ramos.0.orgaos.0.nome": "Direction de l'éducation",
-    "estrutura.ramos.0.orgaos.1.nome": "Organisme enseignant",
-    "estrutura.ramos.0.orgaos.2.nome": "Secrétariat académique",
-    "estrutura.ramos.1.orgaos.0.nome": "Département de recherche",
-    "estrutura.ramos.1.orgaos.1.nome": "Coopération internationale",
-    "estrutura.ramos.2.orgaos.0.nome": "Bureau de la communication",
-    "estrutura.ramos.2.orgaos.1.nome": "Services d ' appui",
-    "estrutura.ramos.0.orgaos.0.texto": "Planifier les cours, les plans de programmes et l'évaluation.",
-    "estrutura.ramos.0.orgaos.1.texto": "Enseignants militaires et civils chargés de la formation.",
-    "estrutura.ramos.0.orgaos.2.texto": "Demandes, enregistrements, certificats et calendriers.",
-    "estrutura.ramos.1.orgaos.0.texto": "Recherche scientifique en stratégie, sécurité et défense.",
-    "estrutura.ramos.1.orgaos.1.texto": "Protocoles et échanges avec les institutions partenaires.",
-    "estrutura.ramos.2.orgaos.0.texto": "Presse, événements, publications et réseaux sociaux.",
-    "estrutura.ramos.2.orgaos.1.texto": "Logistique, installations et ressources administratives."
+  "noticias/protocolo-investigacao-universidade": {
+   "en": {
+    "autor": "Communication Office",
+    "resumo": "Agreement allows joint projects and co-orientation of final work.",
+    "titulo": "School signs research protocol with national university",
+    "categoria": "Cooperation",
+    "conteudo.0.texto": "The School signed a research protocol with a national university that allows the development of joint projects and the co-orientation of final works of course.",
+    "conteudo.1.texto": "The agreement reinforces the link between military higher education and civil higher education in areas of common interest, such as international relations and law."
    },
+   "fr": {
+    "autor": "Bureau de la communication",
+    "resumo": "L'accord permet des projets conjoints et la coorientation des travaux finaux.",
+    "titulo": "L'école signe un protocole de recherche avec l'université nationale",
+    "categoria": "Coopération",
+    "conteudo.0.texto": "L'École a signé un protocole de recherche avec une université nationale qui permet le développement de projets conjoints et la co-orientation des travaux finaux bien sûr.",
+    "conteudo.1.texto": "Cet accord renforce le lien entre l'enseignement supérieur militaire et l'enseignement supérieur civil dans des domaines d'intérêt commun, tels que les relations internationales et le droit."
+   },
+   "es": {
+    "autor": "Oficina de Comunicación",
+    "resumo": "Acuerdo permite proyectos conjuntos y la coorientación de trabajos finales.",
+    "titulo": "Escuela firma protocolo de investigación con universidad nacional",
+    "categoria": "Cooperación",
+    "conteudo.0.texto": "La Escuela firmó un protocolo de investigación con una universidad nacional que permite el desarrollo de proyectos conjuntos y la coorientación de trabajos finales de curso.",
+    "conteudo.1.texto": "El acuerdo refuerza la conexión entre la enseñanza superior militar y la enseñanza superior civil en áreas de interés común, como las relaciones internacionales y el derecho."
+   }
+  },
+  "paginas/institucional": {
    "es": {
     "visao": "Ser referencia regional en la formación de cuadros militares y en la investigación en estrategia y defensa.",
     "missao": "Formar oficiales con competencia técnica, ética y capacidad de mando al servicio de la defensa de Angola.",
@@ -788,7 +745,7 @@
     "estrutura.ramos.2.orgaos.1.nome": "Servicios de apoyo",
     "estrutura.ramos.0.orgaos.0.texto": "Planea los cursos, los planes curriculares y la evaluación.",
     "estrutura.ramos.0.orgaos.1.texto": "Docentes militares y civiles responsables de la formación.",
-    "estrutura.ramos.0.orgaos.2.texto": "Candidaturas, matrículas, certificados y calendario.",
+    "estrutura.ramos.0.orgaos.2.texto": "Matrículas, certificados y calendario.",
     "estrutura.ramos.1.orgaos.0.texto": "Investigación científica en estrategia, seguridad y defensa.",
     "estrutura.ramos.1.orgaos.1.texto": "Protocolos e intercambios con instituciones asociadas.",
     "estrutura.ramos.2.orgaos.0.texto": "Prensa, eventos, publicaciones y redes sociales.",
@@ -842,69 +799,70 @@
     "estrutura.ramos.2.orgaos.1.nome": "Support Services",
     "estrutura.ramos.0.orgaos.0.texto": "Plans courses, curriculum plans and evaluation.",
     "estrutura.ramos.0.orgaos.1.texto": "Military and civilian teachers responsible for training.",
-    "estrutura.ramos.0.orgaos.2.texto": "Applications, registrations, certificates and calendars.",
+    "estrutura.ramos.0.orgaos.2.texto": "Enrolment, certificates and calendar.",
     "estrutura.ramos.1.orgaos.0.texto": "Scientific research in strategy, security and defense.",
     "estrutura.ramos.1.orgaos.1.texto": "Protocols and exchanges with partner institutions.",
     "estrutura.ramos.2.orgaos.0.texto": "Press, events, publications and social networks.",
     "estrutura.ramos.2.orgaos.1.texto": "Logistics, facilities and administrative resources."
-   }
-  },
-  "noticias/protocolo-investigacao-universidade": {
-   "en": {
-    "autor": "Communication Office",
-    "resumo": "Agreement allows joint projects and co-orientation of final work.",
-    "titulo": "School signs research protocol with national university",
-    "categoria": "Cooperation",
-    "conteudo.0.texto": "The School signed a research protocol with a national university that allows the development of joint projects and the co-orientation of final works of course.",
-    "conteudo.1.texto": "The agreement reinforces the link between military higher education and civil higher education in areas of common interest, such as international relations and law."
    },
    "fr": {
-    "autor": "Bureau de la communication",
-    "resumo": "L'accord permet des projets conjoints et la coorientation des travaux finaux.",
-    "titulo": "L'école signe un protocole de recherche avec l'université nationale",
-    "categoria": "Coopération",
-    "conteudo.0.texto": "L'École a signé un protocole de recherche avec une université nationale qui permet le développement de projets conjoints et la co-orientation des travaux finaux bien sûr.",
-    "conteudo.1.texto": "Cet accord renforce le lien entre l'enseignement supérieur militaire et l'enseignement supérieur civil dans des domaines d'intérêt commun, tels que les relations internationales et le droit."
-   },
-   "es": {
-    "autor": "Oficina de Comunicación",
-    "resumo": "Acuerdo permite proyectos conjuntos y la coorientación de trabajos finales.",
-    "titulo": "Escuela firma protocolo de investigación con universidad nacional",
-    "categoria": "Cooperación",
-    "conteudo.0.texto": "La Escuela firmó un protocolo de investigación con una universidad nacional que permite el desarrollo de proyectos conjuntos y la coorientación de trabajos finales de curso.",
-    "conteudo.1.texto": "El acuerdo refuerza la conexión entre la enseñanza superior militar y la enseñanza superior civil en áreas de interés común, como las relaciones internacionales y el derecho."
+    "visao": "Être une référence régionale dans la formation du personnel militaire et dans la recherche stratégique et de défense.",
+    "missao": "Former des officiers possédant des compétences techniques, des capacités en éthique et en commandement au service de la défense angolaise.",
+    "entrada": "L'École de guerre forme les officiers qui planifient, dirigent et dirigent les forces armées angolaises, et produit la pensée stratégique qui les accompagne.",
+    "legendaSede": "École secondaire de guerre des forces armées angolaises, Luanda.",
+    "mensagem.texto": "À l'Escola Superior de Guerra, nous croyons que la qualité de nos forces armées commence par la qualité de son personnel. C'est l'engagement que nous renouvelons chaque année académique : une exigence dans l'enseignement, la recherche rigoureuse et l'ouverture au monde.",
+    "valores.0.nome": "Discipline",
+    "valores.1.nome": "Intégrité",
+    "valores.2.nome": "Fidélité",
+    "valores.3.nome": "Esprit de service",
+    "historia.titulo": "Plus d'une décennie pour former le patron.",
+    "valores.0.texto": "Respect strict du devoir, des normes et du mot donné.",
+    "valores.1.texto": "Cohérence entre ce que vous pensez, ce que vous dites et ce que vous faites.",
+    "valores.2.texto": "À la nation, aux forces armées, aux supérieurs et aux subordonnés.",
+    "valores.3.texto": "Mettre les intérêts nationaux au-dessus des intérêts personnels.",
+    "historia.legenda": "Séance formelle dans l'auditorium principal.",
+    "mensagem.citacao": "Former celui qui commande, c'est former celui qui décide. Tous les officiers qui traversent cette école ont la responsabilité de servir l'Angola avec compétence et intégrité.",
+    "estrutura.comando": "Il gère l'École et définit des orientations stratégiques pour l'enseignement, la recherche et la coopération.",
+    "numeros.0.legenda": "Années d'existence",
+    "numeros.1.legenda": "Agents formés",
+    "numeros.2.legenda": "Enseignement supérieur",
+    "numeros.3.legenda": "Accords de coopération",
+    "estrutura.introducao": "Sous la direction du Commandement, l'École est organisée dans trois domaines - enseignement, recherche, coopération et soutien - chacun avec ses propres organes de mission.",
+    "historia.paragrafos.0": "L ' École secondaire des forces armées de guerre angolaises est née de la nécessité de former des officiers en Angola aux fonctions les plus élevées de commandement, de direction et d ' ancienneté, en réduisant la dépendance à l ' égard de la formation à l ' étranger et en adaptant l ' éducation à la réalité nationale.",
+    "historia.paragrafos.1": "Depuis, l'École s'est consolidée en tant que principal établissement d'enseignement supérieur militaire du pays. Son modèle combine la formation doctrinale avec la recherche scientifique et la coopération avec des institutions similaires, dans un environnement où les fonctionnaires des trois branches apprennent à planifier et à décider ensemble.",
+    "historia.paragrafos.2": "Au fil des ans, les cours ont été revus pour suivre l'évolution des menaces, de la technologie et des missions des forces armées, en tenant compte des valeurs qui définissent la situation militaire.",
+    "historia.marcos.0.texto": "Créé en tant qu ' établissement d ' enseignement supérieur militaire des Forces armées angolaises.",
+    "historia.marcos.1.texto": "Formation initiale des officiers aux fonctions du personnel.",
+    "historia.marcos.2.texto": "Signature des premiers protocoles de coopération avec les écoles militaires partenaires.",
+    "historia.marcos.3.texto": "Début d'un programme d'études et de modernisation pédagogique.",
+    "historia.marcos.4.texto": "Séminaires de recherche requis dans tous les cours et nouvelle revue scientifique.",
+    "estrutura.ramos.0.titulo": "Éducation",
+    "estrutura.ramos.1.titulo": "Recherche et coopération",
+    "estrutura.ramos.2.titulo": "Appui",
+    "historia.marcos.0.titulo": "Création de l'école",
+    "historia.marcos.1.titulo": "Premier cours d ' état-major général",
+    "historia.marcos.2.titulo": "Ouverture internationale",
+    "historia.marcos.3.titulo": "Nouveau cycle de commande",
+    "historia.marcos.4.titulo": "Renforcement de la recherche",
+    "estrutura.ramos.0.orgaos.0.nome": "Direction de l'éducation",
+    "estrutura.ramos.0.orgaos.1.nome": "Organisme enseignant",
+    "estrutura.ramos.0.orgaos.2.nome": "Secrétariat académique",
+    "estrutura.ramos.1.orgaos.0.nome": "Département de recherche",
+    "estrutura.ramos.1.orgaos.1.nome": "Coopération internationale",
+    "estrutura.ramos.2.orgaos.0.nome": "Bureau de la communication",
+    "estrutura.ramos.2.orgaos.1.nome": "Services d ' appui",
+    "estrutura.ramos.0.orgaos.0.texto": "Planifier les cours, les plans de programmes et l'évaluation.",
+    "estrutura.ramos.0.orgaos.1.texto": "Enseignants militaires et civils chargés de la formation.",
+    "estrutura.ramos.0.orgaos.2.texto": "Inscriptions, certificats et calendrier.",
+    "estrutura.ramos.1.orgaos.0.texto": "Recherche scientifique en stratégie, sécurité et défense.",
+    "estrutura.ramos.1.orgaos.1.texto": "Protocoles et échanges avec les institutions partenaires.",
+    "estrutura.ramos.2.orgaos.0.texto": "Presse, événements, publications et réseaux sociaux.",
+    "estrutura.ramos.2.orgaos.1.texto": "Logistique, installations et ressources administratives."
    }
   },
   "artigos/defesa-cooperativa-africa-austral": {
-   "en": {
-    "area": "Strategy",
-    "autor": "miguel-santos",
-    "resumo": "It analyses how higher military education institutions contribute to mutual trust and interoperability between the region’s armed forces.",
-    "titulo": "Cooperative defense in Southern Africa: the role of war schools",
-    "palavrasChave.0": "SADC",
-    "palavrasChave.1": "cooperation",
-    "palavrasChave.2": "military education",
-    "palavrasChave.3": "interoperability",
-    "conteudo.0.texto": "Introduction",
-    "conteudo.1.texto": "Defence cooperation in Southern Africa is based on an institutional framework that values mutual trust between States. War schools occupy a particular place in this framework: they are the space where future commanders from different countries know each other, share doctrine and learn to work together.",
-    "conteudo.2.texto": "This article examines three mechanisms by which higher military education contributes to cooperative defence: student exchange, joint research and doctrinal harmonisation.",
-    "conteudo.3.texto": "Exchange of students and teachers",
-    "conteudo.5.texto": "The presence of foreign officers in the General Staff courses creates personal and professional networks that persist throughout careers. These networks facilitate coordination in multinational operations and crisis situations.",
-    "conteudo.6.texto": "Teacher exchange programs have a similar effect: when teaching in partner schools, teachers take and bring methods, study cases and ways of evaluating, contributing to a common language between institutions.",
-    "conteudo.7.texto": "Interoperability begins in the classroom long before it begins on the ground.",
-    "conteudo.8.texto": "Joint research",
-    "conteudo.9.texto": "Shared research projects make it possible to build a common reading of regional risks and identify priority areas for cooperation, maritime safety and disaster response.",
-    "conteudo.10.texto": "Conclusion",
-    "conteudo.11.texto": "War schools are a discrete but effective instrument of cooperative defense. Strengthening its role involves broadening the exchange, financing joint research and institutionalising the sharing of doctrine.",
-    "conteudo.4.legenda": "Opening session with national and foreign officials.",
-    "conteudo.12.itens.0": "Constitution of the Republic of Angola (2010).",
-    "conteudo.12.itens.1": "United Nations Charter (1945).",
-    "conteudo.12.itens.2": "Southern African Development Community — SADC (1992).",
-    "conteudo.12.itens.3": "SADC Protocol on Cooperation in Policy, Defense and Security Areas (2001)."
-   },
    "fr": {
     "area": "Stratégie",
-    "autor": "miguel-santos",
     "resumo": "Il analyse comment les établissements d'enseignement militaire supérieur contribuent à la confiance mutuelle et à l'interopérabilité entre les forces armées de la région.",
     "titulo": "Défense coopérative en Afrique australe : le rôle des écoles de guerre",
     "palavrasChave.0": "SADC",
@@ -928,9 +886,33 @@
     "conteudo.12.itens.2": "Communauté de développement de l'Afrique australe — SADC (1992).",
     "conteudo.12.itens.3": "Protocole de la SADC sur la coopération dans les domaines des politiques, de la défense et de la sécurité (2001)."
    },
+   "en": {
+    "area": "Strategy",
+    "resumo": "It analyses how higher military education institutions contribute to mutual trust and interoperability between the region’s armed forces.",
+    "titulo": "Cooperative defense in Southern Africa: the role of war schools",
+    "palavrasChave.0": "SADC",
+    "palavrasChave.1": "cooperation",
+    "palavrasChave.2": "military education",
+    "palavrasChave.3": "interoperability",
+    "conteudo.0.texto": "Introduction",
+    "conteudo.1.texto": "Defence cooperation in Southern Africa is based on an institutional framework that values mutual trust between States. War schools occupy a particular place in this framework: they are the space where future commanders from different countries know each other, share doctrine and learn to work together.",
+    "conteudo.2.texto": "This article examines three mechanisms by which higher military education contributes to cooperative defence: student exchange, joint research and doctrinal harmonisation.",
+    "conteudo.3.texto": "Exchange of students and teachers",
+    "conteudo.5.texto": "The presence of foreign officers in the General Staff courses creates personal and professional networks that persist throughout careers. These networks facilitate coordination in multinational operations and crisis situations.",
+    "conteudo.6.texto": "Teacher exchange programs have a similar effect: when teaching in partner schools, teachers take and bring methods, study cases and ways of evaluating, contributing to a common language between institutions.",
+    "conteudo.7.texto": "Interoperability begins in the classroom long before it begins on the ground.",
+    "conteudo.8.texto": "Joint research",
+    "conteudo.9.texto": "Shared research projects make it possible to build a common reading of regional risks and identify priority areas for cooperation, maritime safety and disaster response.",
+    "conteudo.10.texto": "Conclusion",
+    "conteudo.11.texto": "War schools are a discrete but effective instrument of cooperative defense. Strengthening its role involves broadening the exchange, financing joint research and institutionalising the sharing of doctrine.",
+    "conteudo.4.legenda": "Opening session with national and foreign officials.",
+    "conteudo.12.itens.0": "Constitution of the Republic of Angola (2010).",
+    "conteudo.12.itens.1": "United Nations Charter (1945).",
+    "conteudo.12.itens.2": "Southern African Development Community — SADC (1992).",
+    "conteudo.12.itens.3": "SADC Protocol on Cooperation in Policy, Defense and Security Areas (2001)."
+   },
    "es": {
     "area": "Estrategia",
-    "autor": "miguel-santos",
     "resumo": "Analiza la forma en que las instituciones de enseñanza militar superior contribuyen a la confianza mutua y a la interoperabilidad entre las fuerzas armadas de la región.",
     "titulo": "Defensa cooperativa en África Austral: el papel de las escuelas de guerra",
     "palavrasChave.0": "SADC",
@@ -953,112 +935,6 @@
     "conteudo.12.itens.1": "Carta de las Naciones Unidas (1945).",
     "conteudo.12.itens.2": "Tratado de la Comunidad de Desarrollo de África Austral — SADC (1992).",
     "conteudo.12.itens.3": "Protocolo de la SADC sobre Cooperación en las Áreas de Política, Defensa y Seguridad (2001)."
-   }
-  },
-  "artigos/lideranca-militar-seculo-xxi": {
-   "en": {
-    "area": "Leadership",
-    "autor": "isabel-fortunate",
-    "resumo": "Reflection on the leadership skills required of officers in the context of accelerated technological change and diffuse threats.",
-    "titulo": "Military leadership in the 21st century: commanding in environments of uncertainty",
-    "palavrasChave.0": "leadership",
-    "palavrasChave.1": "command",
-    "palavrasChave.2": "decision-making",
-    "conteudo.0.texto": "Commanding always meant deciding with incomplete information. What changed was the speed at which information arrives, the amount of available sources and the diversity of actors involved in each decision.",
-    "conteudo.1.texto": "Three essential skills",
-    "conteudo.3.texto": "Staff courses should train decision-making under pressure through realistic simulation exercises, and not just convey doctrinal knowledge.",
-    "conteudo.4.texto": "The military leadership of the 21st century therefore demands both technical rigor and human capacity — and it is in the combination of both that war schools must invest.",
-    "conteudo.3.titulo": "Implications for training",
-    "conteudo.2.itens.0": "Ability to synthesize large volumes of information.",
-    "conteudo.2.itens.1": "Delegation based on the confidence and intention of the commander.",
-    "conteudo.2.itens.2": "Integrity as the foundation of authority."
-   },
-   "fr": {
-    "area": "Leadership",
-    "autor": "isabel-fortunate",
-    "resumo": "Réflexion sur les compétences en leadership requises des officiers dans le contexte de changements technologiques accélérés et de menaces diffuses.",
-    "titulo": "Le leadership militaire au 21e siècle : commander dans des environnements d'incertitude",
-    "palavrasChave.0": "direction",
-    "palavrasChave.1": "commande",
-    "palavrasChave.2": "la prise de décisions",
-    "conteudo.0.texto": "Commander signifiait toujours décider avec des informations incomplètes. Ce qui a changé, c'est la rapidité avec laquelle l'information arrive, la quantité de sources disponibles et la diversité des acteurs impliqués dans chaque décision.",
-    "conteudo.1.texto": "Trois compétences essentielles",
-    "conteudo.3.texto": "Les cours du personnel devraient former la prise de décisions sous pression au moyen d'exercices de simulation réalistes, et non pas seulement transmettre des connaissances doctrinales.",
-    "conteudo.4.texto": "La direction militaire du XXIe siècle exige donc à la fois une rigueur technique et des capacités humaines, et c'est dans la combinaison des deux que les écoles de guerre doivent investir.",
-    "conteudo.3.titulo": "Incidences sur la formation",
-    "conteudo.2.itens.0": "Capacité de synthétiser de grands volumes d'information.",
-    "conteudo.2.itens.1": "Délégation fondée sur la confiance et l'intention du commandant.",
-    "conteudo.2.itens.2": "L'intégrité comme fondement de l'autorité."
-   },
-   "es": {
-    "area": "Liderazgo",
-    "autor": "isabel-fortunato",
-    "resumo": "Reflexión sobre las competencias de liderazgo exigidas a los oficiales en un contexto de cambio tecnológico acelerado y amenazas difusas.",
-    "titulo": "Liderazgo militar en el siglo XXI: comandar en ambientes de incertidumbre",
-    "palavrasChave.0": "liderazgo",
-    "palavrasChave.1": "mando",
-    "palavrasChave.2": "toma de decisiones",
-    "conteudo.0.texto": "Comandar siempre significó decidir con información incompleta. Lo que cambió fue la velocidad a la que la información llega, la cantidad de fuentes disponibles y la diversidad de actores involucrados en cada decisión.",
-    "conteudo.1.texto": "Tres competencias esenciales",
-    "conteudo.3.texto": "Los cursos de Estado Mayor deben entrenar la decisión bajo presión a través de ejercicios de simulación realistas, y no sólo transmitir conocimiento doutrinario.",
-    "conteudo.4.texto": "El liderazgo militar del siglo XXI exige, por lo tanto, tanto rigor técnico como capacidad humana, y es en la combinación de ambos que las escuelas de guerra tienen que invertir.",
-    "conteudo.3.titulo": "Implicaciones para la formación",
-    "conteudo.2.itens.0": "Capacidad de síntesis ante grandes volúmenes de información.",
-    "conteudo.2.itens.1": "Delegación basada en la confianza y en la intención del comandante.",
-    "conteudo.2.itens.2": "Integridad como fundamento de la autoridad."
-   }
-  },
-  "artigos/direito-internacional-humanitario-operacoes": {
-   "en": {
-    "area": "Right",
-    "autor": "jose-manuel",
-    "resumo": "It proposes a methodology for integrating the rules of international humanitarian law at each stage of the operational planning process.",
-    "titulo": "International humanitarian law in the planning of operations",
-    "palavrasChave.0": "IHL",
-    "palavrasChave.1": "operational planning",
-    "palavrasChave.2": "rules of engagement",
-    "conteudo.0.texto": "Compliance with international humanitarian law is not only a legal obligation: it is also a factor of legitimacy and operational effectiveness.",
-    "conteudo.1.texto": "Integration into the planning process",
-    "conteudo.2.texto": "The proposed methodology associates to each phase of planning a set of legal checks, conducted by the legal adviser in conjunction with the general government.",
-    "conteudo.3.itens.0": "Mission analysis: identification of the applicable legal framework.",
-    "conteudo.3.itens.1": "Development of modalities of action: proportionality assessment.",
-    "conteudo.3.itens.2": "Orders: drafting the commitment rules.",
-    "conteudo.4.itens.0": "Geneva Conventions of August 12, 1949.",
-    "conteudo.4.itens.1": "Additional Protocols to the Geneva Conventions (1977)."
-   },
-   "fr": {
-    "area": "Droite",
-    "autor": "jose-manuel",
-    "resumo": "Il propose une méthode pour intégrer les règles du droit international humanitaire à chaque étape du processus de planification opérationnelle.",
-    "titulo": "Droit international humanitaire dans la planification des opérations",
-    "palavrasChave.0": "DIH",
-    "palavrasChave.1": "planification opérationnelle",
-    "palavrasChave.2": "règles d ' engagement",
-    "conteudo.0.texto": "Le respect du droit international humanitaire n'est pas seulement une obligation juridique, mais aussi un facteur de légitimité et d'efficacité opérationnelle.",
-    "conteudo.1.texto": "Intégration dans le processus de planification",
-    "conteudo.2.texto": "La méthodologie proposée associe à chaque phase de planification une série de contrôles juridiques, effectués par le conseiller juridique en collaboration avec le gouvernement général.",
-    "conteudo.3.itens.0": "Analyse de mission : identification du cadre juridique applicable.",
-    "conteudo.3.itens.1": "Élaboration de modalités d'action: évaluation de la proportionnalité.",
-    "conteudo.3.itens.2": "Ordres : rédaction des règles d'engagement.",
-    "conteudo.4.itens.0": "Conventions de Genève du 12 août 1949.",
-    "conteudo.4.itens.1": "Protocoles additionnels aux Conventions de Genève (1977)."
-   },
-   "es": {
-    "area": "Derecho",
-    "autor": "jose-manuel",
-    "resumo": "Propone una metodología para integrar las normas del Derecho internacional humanitario en cada fase del proceso de planificación operativa.",
-    "titulo": "El Derecho internacional humanitario en la planificación de las operaciones",
-    "palavrasChave.0": "DIH",
-    "palavrasChave.1": "planificación operativa",
-    "palavrasChave.2": "normas de compromiso",
-    "conteudo.0.texto": "El cumplimiento del derecho internacional humanitario no es sólo una obligación legal: también es un factor de legitimidad y eficacia operativa.",
-    "conteudo.1.texto": "Integración en el proceso de planificación",
-    "conteudo.2.texto": "La metodología propuesta asocia cada fase de planificación un conjunto de verificaciones jurídicas, conducidas por el asesor jurídico en articulación con el estado mayor.",
-    "conteudo.3.itens.0": "Análisis de la misión: identificación del marco jurídico aplicable.",
-    "conteudo.3.itens.1": "Desarrollo de modalidades de acción: evaluación de proporcionalidad.",
-    "conteudo.3.itens.2": "Ordenes: redacción de las normas de compromiso.",
-    "conteudo.4.itens.0": "Convenios de Ginebra del 12 de agosto de 1949.",
-    "conteudo.4.itens.1": "Protocolos Adicionales a los Convenios de Ginebra (1977)."
    }
   },
   "eventos/jornadas-cientificas-2026": {
@@ -1084,10 +960,109 @@
     "conteudo.0.texto": "Las Jornadas Científicas reunieron más de 30 comunicaciones en estrategia, liderazgo, derecho internacional y cooperación."
    }
   },
+  "artigos/lideranca-militar-seculo-xxi": {
+   "en": {
+    "area": "Leadership",
+    "resumo": "Reflection on the leadership skills required of officers in the context of accelerated technological change and diffuse threats.",
+    "titulo": "Military leadership in the 21st century: commanding in environments of uncertainty",
+    "palavrasChave.0": "leadership",
+    "palavrasChave.1": "command",
+    "palavrasChave.2": "decision-making",
+    "conteudo.0.texto": "Commanding always meant deciding with incomplete information. What changed was the speed at which information arrives, the amount of available sources and the diversity of actors involved in each decision.",
+    "conteudo.1.texto": "Three essential skills",
+    "conteudo.3.texto": "Staff courses should train decision-making under pressure through realistic simulation exercises, and not just convey doctrinal knowledge.",
+    "conteudo.4.texto": "The military leadership of the 21st century therefore demands both technical rigor and human capacity — and it is in the combination of both that war schools must invest.",
+    "conteudo.3.titulo": "Implications for training",
+    "conteudo.2.itens.0": "Ability to synthesize large volumes of information.",
+    "conteudo.2.itens.1": "Delegation based on the confidence and intention of the commander.",
+    "conteudo.2.itens.2": "Integrity as the foundation of authority."
+   },
+   "fr": {
+    "area": "Leadership",
+    "resumo": "Réflexion sur les compétences en leadership requises des officiers dans le contexte de changements technologiques accélérés et de menaces diffuses.",
+    "titulo": "Le leadership militaire au 21e siècle : commander dans des environnements d'incertitude",
+    "palavrasChave.0": "direction",
+    "palavrasChave.1": "commande",
+    "palavrasChave.2": "la prise de décisions",
+    "conteudo.0.texto": "Commander signifiait toujours décider avec des informations incomplètes. Ce qui a changé, c'est la rapidité avec laquelle l'information arrive, la quantité de sources disponibles et la diversité des acteurs impliqués dans chaque décision.",
+    "conteudo.1.texto": "Trois compétences essentielles",
+    "conteudo.3.texto": "Les cours du personnel devraient former la prise de décisions sous pression au moyen d'exercices de simulation réalistes, et non pas seulement transmettre des connaissances doctrinales.",
+    "conteudo.4.texto": "La direction militaire du XXIe siècle exige donc à la fois une rigueur technique et des capacités humaines, et c'est dans la combinaison des deux que les écoles de guerre doivent investir.",
+    "conteudo.3.titulo": "Incidences sur la formation",
+    "conteudo.2.itens.0": "Capacité de synthétiser de grands volumes d'information.",
+    "conteudo.2.itens.1": "Délégation fondée sur la confiance et l'intention du commandant.",
+    "conteudo.2.itens.2": "L'intégrité comme fondement de l'autorité."
+   },
+   "es": {
+    "area": "Liderazgo",
+    "resumo": "Reflexión sobre las competencias de liderazgo exigidas a los oficiales en un contexto de cambio tecnológico acelerado y amenazas difusas.",
+    "titulo": "Liderazgo militar en el siglo XXI: comandar en ambientes de incertidumbre",
+    "palavrasChave.0": "liderazgo",
+    "palavrasChave.1": "mando",
+    "palavrasChave.2": "toma de decisiones",
+    "conteudo.0.texto": "Comandar siempre significó decidir con información incompleta. Lo que cambió fue la velocidad a la que la información llega, la cantidad de fuentes disponibles y la diversidad de actores involucrados en cada decisión.",
+    "conteudo.1.texto": "Tres competencias esenciales",
+    "conteudo.3.texto": "Los cursos de Estado Mayor deben entrenar la decisión bajo presión a través de ejercicios de simulación realistas, y no sólo transmitir conocimiento doutrinario.",
+    "conteudo.4.texto": "El liderazgo militar del siglo XXI exige, por lo tanto, tanto rigor técnico como capacidad humana, y es en la combinación de ambos que las escuelas de guerra tienen que invertir.",
+    "conteudo.3.titulo": "Implicaciones para la formación",
+    "conteudo.2.itens.0": "Capacidad de síntesis ante grandes volúmenes de información.",
+    "conteudo.2.itens.1": "Delegación basada en la confianza y en la intención del comandante.",
+    "conteudo.2.itens.2": "Integridad como fundamento de la autoridad."
+   }
+  },
+  "artigos/direito-internacional-humanitario-operacoes": {
+   "es": {
+    "area": "Derecho",
+    "resumo": "Propone una metodología para integrar las normas del Derecho internacional humanitario en cada fase del proceso de planificación operativa.",
+    "titulo": "El Derecho internacional humanitario en la planificación de las operaciones",
+    "palavrasChave.0": "DIH",
+    "palavrasChave.1": "planificación operativa",
+    "palavrasChave.2": "normas de compromiso",
+    "conteudo.0.texto": "El cumplimiento del derecho internacional humanitario no es sólo una obligación legal: también es un factor de legitimidad y eficacia operativa.",
+    "conteudo.1.texto": "Integración en el proceso de planificación",
+    "conteudo.2.texto": "La metodología propuesta asocia cada fase de planificación un conjunto de verificaciones jurídicas, conducidas por el asesor jurídico en articulación con el estado mayor.",
+    "conteudo.3.itens.0": "Análisis de la misión: identificación del marco jurídico aplicable.",
+    "conteudo.3.itens.1": "Desarrollo de modalidades de acción: evaluación de proporcionalidad.",
+    "conteudo.3.itens.2": "Ordenes: redacción de las normas de compromiso.",
+    "conteudo.4.itens.0": "Convenios de Ginebra del 12 de agosto de 1949.",
+    "conteudo.4.itens.1": "Protocolos Adicionales a los Convenios de Ginebra (1977)."
+   },
+   "en": {
+    "area": "Right",
+    "resumo": "It proposes a methodology for integrating the rules of international humanitarian law at each stage of the operational planning process.",
+    "titulo": "International humanitarian law in the planning of operations",
+    "palavrasChave.0": "IHL",
+    "palavrasChave.1": "operational planning",
+    "palavrasChave.2": "rules of engagement",
+    "conteudo.0.texto": "Compliance with international humanitarian law is not only a legal obligation: it is also a factor of legitimacy and operational effectiveness.",
+    "conteudo.1.texto": "Integration into the planning process",
+    "conteudo.2.texto": "The proposed methodology associates to each phase of planning a set of legal checks, conducted by the legal adviser in conjunction with the general government.",
+    "conteudo.3.itens.0": "Mission analysis: identification of the applicable legal framework.",
+    "conteudo.3.itens.1": "Development of modalities of action: proportionality assessment.",
+    "conteudo.3.itens.2": "Orders: drafting the commitment rules.",
+    "conteudo.4.itens.0": "Geneva Conventions of August 12, 1949.",
+    "conteudo.4.itens.1": "Additional Protocols to the Geneva Conventions (1977)."
+   },
+   "fr": {
+    "area": "Droite",
+    "resumo": "Il propose une méthode pour intégrer les règles du droit international humanitaire à chaque étape du processus de planification opérationnelle.",
+    "titulo": "Droit international humanitaire dans la planification des opérations",
+    "palavrasChave.0": "DIH",
+    "palavrasChave.1": "planification opérationnelle",
+    "palavrasChave.2": "règles d ' engagement",
+    "conteudo.0.texto": "Le respect du droit international humanitaire n'est pas seulement une obligation juridique, mais aussi un facteur de légitimité et d'efficacité opérationnelle.",
+    "conteudo.1.texto": "Intégration dans le processus de planification",
+    "conteudo.2.texto": "La méthodologie proposée associe à chaque phase de planification une série de contrôles juridiques, effectués par le conseiller juridique en collaboration avec le gouvernement général.",
+    "conteudo.3.itens.0": "Analyse de mission : identification du cadre juridique applicable.",
+    "conteudo.3.itens.1": "Élaboration de modalités d'action: évaluation de la proportionnalité.",
+    "conteudo.3.itens.2": "Ordres : rédaction des règles d'engagement.",
+    "conteudo.4.itens.0": "Conventions de Genève du 12 août 1949.",
+    "conteudo.4.itens.1": "Protocoles additionnels aux Conventions de Genève (1977)."
+   }
+  },
   "artigos/seguranca-maritima-golfo-guine": {
    "en": {
     "area": "Maritime safety",
-    "autor": "miguel-santos",
     "resumo": "It characterizes the main threats to maritime safety in the Gulf of Guinea and assesses the existing regional response mechanisms.",
     "titulo": "Maritime safety in the Gulf of Guinea: regional challenges and responses",
     "palavrasChave.0": "maritime safety",
@@ -1102,7 +1077,6 @@
    },
    "fr": {
     "area": "Sécurité maritime",
-    "autor": "miguel-santos",
     "resumo": "Elle caractérise les principales menaces à la sécurité maritime dans le golfe de Guinée et évalue les mécanismes d'intervention régionaux existants.",
     "titulo": "Sécurité maritime dans le golfe de Guinée : défis et réponses régionaux",
     "palavrasChave.0": "sécurité maritime",
@@ -1117,7 +1091,6 @@
    },
    "es": {
     "area": "Seguridad marítima",
-    "autor": "miguel-santos",
     "resumo": "Caracteriza las principales amenazas a la seguridad marítima en el Golfo de Guinea y evalúa los mecanismos de respuesta regional existentes.",
     "titulo": "Seguridad marítima en el Golfo de Guinea: desafíos y respuestas regionales",
     "palavrasChave.0": "seguridad marítima",
@@ -1134,7 +1107,6 @@
   "artigos/formacao-estado-maior-desafios": {
    "en": {
     "area": "Training",
-    "autor": "terea-lopes",
     "resumo": "A vision from the classroom on how to adapt the course to the requirements of a new operational environment.",
     "titulo": "What should change in the formation of Staff Officers",
     "palavrasChave.0": "Staff",
@@ -1146,7 +1118,6 @@
    },
    "fr": {
     "area": "Formation",
-    "autor": "téréa-lopes",
     "resumo": "Une vision de la classe sur la façon d'adapter le cours aux exigences d'un nouvel environnement opérationnel.",
     "titulo": "Ce qui devrait changer dans la formation des officiers d'état-major",
     "palavrasChave.0": "Personnel",
@@ -1158,7 +1129,6 @@
    },
    "es": {
     "area": "Formación",
-    "autor": "teresa-lopes",
     "resumo": "Una visión desde el aula sobre cómo adaptar el curso a las exigencias de un nuevo entorno operativo.",
     "titulo": "Lo que debe cambiar en la formación de oficiales de Estado Mayor",
     "palavrasChave.0": "Estado Mayor",
@@ -1171,19 +1141,16 @@
   },
   "pessoas/jose-manuel": {
    "fr": {
-    "nome": "Couleur. José Manuel",
     "cargo": "Directeur de la coopération internationale",
     "destaque": "Responsable de plus de 20 accords de coopération avec des écoles partenaires"
    },
-   "es": {
-    "nome": "Color. José Manuel",
-    "cargo": "Director de Cooperación Internacional",
-    "destaque": "Responsable de más de 20 acuerdos de cooperación con escuelas asociadas"
-   },
    "en": {
-    "nome": "Color. José Manuel",
     "cargo": "Director of International Cooperation",
     "destaque": "Responsible for more than 20 cooperation agreements with partner schools"
+   },
+   "es": {
+    "cargo": "Director de Cooperación Internacional",
+    "destaque": "Responsable de más de 20 acuerdos de cooperación con escuelas asociadas"
    }
   },
   "eventos/conferencia-seguranca-defesa-regional": {
@@ -1637,10 +1604,6 @@
    }
   },
   "pessoas/carlos-vieira": {
-   "en": {
-    "cargo": "School Commander",
-    "destaque": "More than 30 years of military career, ahead of the School since 2021"
-   },
    "fr": {
     "cargo": "Commandant de l ' école",
     "destaque": "Plus de 30 ans de carrière militaire, avant l'École depuis 2021"
@@ -1648,85 +1611,59 @@
    "es": {
     "cargo": "Comandante de la Escuela",
     "destaque": "Más de 30 años de carrera militar, frente a la Escuela desde 2021"
+   },
+   "en": {
+    "cargo": "School Commander",
+    "destaque": "More than 30 years of military career, ahead of the School since 2021"
    }
   },
   "pessoas/ana-baptista": {
    "en": {
-    "nome": "Color. Ana Baptista",
     "cargo": "Academic Subdirector",
     "destaque": "Responsible for coordinating all training programmes"
    },
    "fr": {
-    "nome": "Couleur. Ana Baptista",
     "cargo": "Sous-directeur académique",
     "destaque": "Responsable de la coordination de tous les programmes de formation"
    },
    "es": {
-    "nome": "Color. Ana Baptista",
     "cargo": "Subdirectora Académica",
     "destaque": "Responsable de la coordinación de todos los programas de formación"
    }
   },
   "pessoas/miguel-santos": {
    "en": {
-    "nome": "Color. Miguel Santos",
     "cargo": "Director of the Research Department",
     "destaque": "Author of more than 15 publications in strategy and defense"
    },
    "fr": {
-    "nome": "Couleur. Miguel Santos",
     "cargo": "Directeur du Département de recherche",
     "destaque": "Auteur de plus de 15 publications en stratégie et défense"
    },
    "es": {
-    "nome": "Color. Miguel Santos",
     "cargo": "Director del Departamento de Investigación",
     "destaque": "Autor de más de 15 publicaciones en estrategia y defensa"
    }
   },
   "pessoas/isabel-fortunato": {
    "en": {
-    "nome": "Ten-Color. Isabel Fortunato",
     "cargo": "Head of the Teaching Corps",
     "destaque": "Doctorate in International Relations, professor for 12 years"
    },
    "fr": {
-    "nome": "Dix couleurs. Isabel Fortunato",
     "cargo": "Chef du corps enseignant",
     "destaque": "Doctorat en relations internationales, professeur depuis 12 ans"
    },
    "es": {
-    "nome": "Ten-Cor. Isabel Fortunato",
     "cargo": "Jefe del Cuerpo Docente",
     "destaque": "Doctorado en Relaciones Internacionales, docente hace 12 años"
    }
   },
   "paginas/contactos": {
-   "en": {
-    "morada.0": "FAA War College",
-    "morada.1": "Luanda, Angola",
-    "assuntos.0": "Applications and admissions",
-    "assuntos.1": "Course information",
-    "assuntos.2": "Press and communication",
-    "assuntos.3": "Institutional cooperation",
-    "assuntos.4": "Research and publications",
-    "assuntos.5": "Other business",
-    "horario.0.dias": "Monday to Friday",
-    "horario.1.dias": "Saturday, Sunday and holidays",
-    "horario.1.horas": "Closed",
-    "departamentos.0.nome": "Academic Secretariat",
-    "departamentos.1.nome": "Communication Office",
-    "departamentos.2.nome": "International cooperation",
-    "departamentos.3.nome": "Research Department",
-    "departamentos.0.descricao": "Applications, registrations and certificates",
-    "departamentos.1.descricao": "Press, events and social networks",
-    "departamentos.2.descricao": "Partnerships and exchanges with military schools",
-    "departamentos.3.descricao": "Publications, journal and scientific projects"
-   },
    "fr": {
     "morada.0": "FAA Collège de guerre",
     "morada.1": "Luanda (Angola)",
-    "assuntos.0": "Demandes et admissions",
+    "assuntos.0": "Admission aux formations",
     "assuntos.1": "Informations sur le cours",
     "assuntos.2": "Presse et communication",
     "assuntos.3": "Coopération institutionnelle",
@@ -1739,7 +1676,7 @@
     "departamentos.1.nome": "Bureau de la communication",
     "departamentos.2.nome": "Coopération internationale",
     "departamentos.3.nome": "Département de recherche",
-    "departamentos.0.descricao": "Demandes, enregistrements et certificats",
+    "departamentos.0.descricao": "Inscriptions et certificats",
     "departamentos.1.descricao": "Presse, événements et réseaux sociaux",
     "departamentos.2.descricao": "Partenariats et échanges avec les écoles militaires",
     "departamentos.3.descricao": "Publications, revues et projets scientifiques"
@@ -1747,7 +1684,7 @@
    "es": {
     "morada.0": "Escuela Superior de Guerra de las FAA",
     "morada.1": "Luanda, Angola",
-    "assuntos.0": "Candidaturas y admisiones",
+    "assuntos.0": "Admisión a los cursos",
     "assuntos.1": "Información sobre cursos",
     "assuntos.2": "Prensa y comunicación",
     "assuntos.3": "Cooperación institucional",
@@ -1760,101 +1697,171 @@
     "departamentos.1.nome": "Oficina de Comunicación",
     "departamentos.2.nome": "Cooperación Internacional",
     "departamentos.3.nome": "Departamento de Investigación",
-    "departamentos.0.descricao": "Candidaturas, matrículas y certificados",
+    "departamentos.0.descricao": "Matrículas y certificados",
     "departamentos.1.descricao": "Prensa, eventos y redes sociales",
     "departamentos.2.descricao": "Asociaciones e intercambios con escuelas militares",
     "departamentos.3.descricao": "Publicaciones, revista y proyectos científicos"
+   },
+   "en": {
+    "morada.0": "FAA War College",
+    "morada.1": "Luanda, Angola",
+    "assuntos.0": "Admission to the courses",
+    "assuntos.1": "Course information",
+    "assuntos.2": "Press and communication",
+    "assuntos.3": "Institutional cooperation",
+    "assuntos.4": "Research and publications",
+    "assuntos.5": "Other business",
+    "horario.0.dias": "Monday to Friday",
+    "horario.1.dias": "Saturday, Sunday and holidays",
+    "horario.1.horas": "Closed",
+    "departamentos.0.nome": "Academic Secretariat",
+    "departamentos.1.nome": "Communication Office",
+    "departamentos.2.nome": "International cooperation",
+    "departamentos.3.nome": "Research Department",
+    "departamentos.0.descricao": "Enrolment and certificates",
+    "departamentos.1.descricao": "Press, events and social networks",
+    "departamentos.2.descricao": "Partnerships and exchanges with military schools",
+    "departamentos.3.descricao": "Publications, journal and scientific projects"
    }
   },
   "paginas/cursos": {
-   "en": {
-    "prazo": "30 november 2026",
-    "entrada": "Three higher education programs for each stage of the official career — from the general staff to the highest level.",
-    "processo.0.texto": "Proposal of the branch of origin, with the documents, delivered in the Staff and Boards Division.",
-    "processo.1.texto": "Verification of post requirements, service time and qualifications.",
-    "processo.2.texto": "Written evidence of general knowledge and interview before a jury.",
-    "processo.3.texto": "Publication of the list of admissions and registration.",
-    "calendario.0.fase": "Opening of applications",
-    "calendario.1.fase": "End of application period",
-    "calendario.2.fase": "Written evidence and interviews",
-    "calendario.3.fase": "Publication of results",
-    "calendario.4.fase": "Registration",
-    "calendario.5.fase": "Start of classes",
-    "processo.0.titulo": "Application",
-    "processo.1.titulo": "Document analysis",
-    "processo.2.titulo": "Evidence and interview",
-    "processo.3.titulo": "Results",
-    "calendario.0.periodo": "1 october 2026",
-    "calendario.1.periodo": "30 november 2026",
-    "calendario.2.periodo": "11 to 22 january 2027",
-    "calendario.3.periodo": "5 february 2027",
-    "calendario.4.periodo": "15 to 26 february 2027",
-    "calendario.5.periodo": "8 march 2027"
-   },
    "fr": {
-    "prazo": "30 novembre 2026",
     "entrada": "Trois programmes d'enseignement supérieur pour chaque étape de la carrière officielle — du personnel général au niveau le plus élevé.",
-    "processo.0.texto": "Proposition de la branche d'origine, accompagnée des documents, présentée à la Division du personnel et des conseils.",
-    "processo.1.texto": "Vérification des exigences de poste, du temps de service et des qualifications.",
-    "processo.2.texto": "Preuve écrite de connaissances générales et entrevue devant un jury.",
-    "processo.3.texto": "Publication de la liste des admissions et des inscriptions.",
-    "calendario.0.fase": "Ouverture des demandes",
-    "calendario.1.fase": "Fin de la période de demande",
-    "calendario.2.fase": "Preuves écrites et entrevues",
-    "calendario.3.fase": "Publication des résultats",
-    "calendario.4.fase": "Enregistrement",
-    "calendario.5.fase": "Début des cours",
-    "processo.0.titulo": "Demande",
-    "processo.1.titulo": "Analyse des documents",
-    "processo.2.titulo": "Preuves et entretiens",
-    "processo.3.titulo": "Résultats",
-    "calendario.0.periodo": "1er octobre 2026",
-    "calendario.1.periodo": "30 novembre 2026",
-    "calendario.2.periodo": "11-22 janvier 2027",
-    "calendario.3.periodo": "5 février 2027",
-    "calendario.4.periodo": "15-26 février 2027",
-    "calendario.5.periodo": "8 mars 2027"
+    "processo.0.texto": "La branche d'origine propose les officiers et envoie le dossier au Bureau du Personnel et des Cadres.",
+    "processo.1.texto": "Vérification des conditions de grade, d'ancienneté de service et de qualifications.",
+    "processo.2.texto": "Épreuve écrite de culture générale et entretien devant un jury.",
+    "processo.3.texto": "Le Bureau du Personnel et des Cadres enregistre les admis et le Secrétariat académique les convoque pour l'inscription.",
+    "calendario.0.fase": "Preuves écrites et entrevues",
+    "calendario.1.fase": "Publication des résultats",
+    "calendario.2.fase": "Enregistrement",
+    "calendario.3.fase": "Début des cours",
+    "processo.0.titulo": "Proposition de la branche",
+    "processo.1.titulo": "Analyse du dossier",
+    "processo.2.titulo": "Épreuves et entretien",
+    "processo.3.titulo": "Enregistrement et inscription",
+    "calendario.0.periodo": "11-22 janvier 2027",
+    "calendario.1.periodo": "5 février 2027",
+    "calendario.2.periodo": "15-26 février 2027",
+    "calendario.3.periodo": "8 mars 2027"
+   },
+   "en": {
+    "entrada": "Three higher education programs for each stage of the official career — from the general staff to the highest level.",
+    "processo.0.texto": "The officer's branch proposes the officers and sends the documents to the Personnel and Staff Department.",
+    "processo.1.texto": "Verification of the rank, length of service and qualification requirements.",
+    "processo.2.texto": "Written general knowledge test and interview before a panel.",
+    "processo.3.texto": "The Personnel and Staff Department registers those admitted and the Academic Office calls them for enrolment.",
+    "calendario.0.fase": "Written evidence and interviews",
+    "calendario.1.fase": "Publication of results",
+    "calendario.2.fase": "Registration",
+    "calendario.3.fase": "Start of classes",
+    "processo.0.titulo": "Branch proposal",
+    "processo.1.titulo": "Document review",
+    "processo.2.titulo": "Tests and interview",
+    "processo.3.titulo": "Registration and enrolment",
+    "calendario.0.periodo": "11 to 22 january 2027",
+    "calendario.1.periodo": "5 february 2027",
+    "calendario.2.periodo": "15 to 26 february 2027",
+    "calendario.3.periodo": "8 march 2027"
    },
    "es": {
-    "prazo": "30 de noviembre de 2026",
     "entrada": "Tres programas de formación superior para cada etapa de la carrera de oficial — del estado mayor al mando al más alto nivel.",
-    "processo.0.texto": "Propuesta de la rama de origen, con los documentos, entregado en la Repartición de Personal y Cuadros.",
+    "processo.0.texto": "La rama de origen propone a los oficiales y envía la documentación a la Sección de Personal y Cuadros.",
     "processo.1.texto": "Verificación de los requisitos de puesto, tiempo de servicio y habilitaciones.",
     "processo.2.texto": "Prueba escrita de conocimientos generales y entrevista ante un jurado.",
-    "processo.3.texto": "Publicación de la lista de admitidos y convocatoria de matrícula.",
-    "calendario.0.fase": "Apertura de las solicitudes",
-    "calendario.1.fase": "Fin del plazo de solicitud",
-    "calendario.2.fase": "Pruebas escritas y entrevistas",
-    "calendario.3.fase": "Publicación de los resultados",
-    "calendario.4.fase": "Matrículas",
-    "calendario.5.fase": "Inicio de clases",
-    "processo.0.titulo": "Candidatura",
+    "processo.3.texto": "La Sección de Personal y Cuadros registra a los admitidos y la Secretaría Académica los convoca para la matrícula.",
+    "calendario.0.fase": "Pruebas escritas y entrevistas",
+    "calendario.1.fase": "Publicación de los resultados",
+    "calendario.2.fase": "Matrículas",
+    "calendario.3.fase": "Inicio de clases",
+    "processo.0.titulo": "Propuesta de la rama",
     "processo.1.titulo": "Análisis documental",
-    "processo.2.titulo": "Prueba y entrevista",
-    "processo.3.titulo": "Resultados",
-    "calendario.0.periodo": "1 de octubre de 2026",
-    "calendario.1.periodo": "30 de noviembre de 2026",
-    "calendario.2.periodo": "11 al 22 de enero de 2027",
-    "calendario.3.periodo": "5 de febrero de 2027",
-    "calendario.4.periodo": "15 al 26 de febrero de 2027",
-    "calendario.5.periodo": "8 de marzo de 2027"
+    "processo.2.titulo": "Pruebas y entrevista",
+    "processo.3.titulo": "Registro y matrícula",
+    "calendario.0.periodo": "11 al 22 de enero de 2027",
+    "calendario.1.periodo": "5 de febrero de 2027",
+    "calendario.2.periodo": "15 al 26 de febrero de 2027",
+    "calendario.3.periodo": "8 de marzo de 2027"
+   }
+  },
+  "revistas/n-1-marco-2026": {
+   "en": {
+    "resumo": "The magazine's first issue: what changes and what remains in 21st-century military command, and a practical reading of the operations planning process.",
+    "titulo": "Leadership and command",
+    "sumario.0.autor": "Editorial board",
+    "sumario.3.autor": "Research Department",
+    "sumario.0.titulo": "Editorial: A magazine for the College",
+    "sumario.1.titulo": "Leading in the 21st century: what changes and what remains in military command",
+    "sumario.2.titulo": "The operations planning process: a practical reading",
+    "sumario.3.titulo": "Publishing in the Magazine: guidelines for authors"
+   },
+   "fr": {
+    "resumo": "Le premier numéro de la revue : ce qui change et ce qui demeure dans le commandement militaire du XXIe siècle, et une lecture pratique du processus de planification des opérations.",
+    "titulo": "Leadership et commandement",
+    "sumario.0.autor": "Direction de la Revue",
+    "sumario.3.autor": "Département de la recherche",
+    "sumario.0.titulo": "Éditorial : une revue pour l'École",
+    "sumario.1.titulo": "Diriger au XXIe siècle : ce qui change et ce qui demeure dans le commandement militaire",
+    "sumario.2.titulo": "Le processus de planification des opérations : une lecture pratique",
+    "sumario.3.titulo": "Publier dans la Revue : consignes aux auteurs"
+   },
+   "es": {
+    "resumo": "El primer número de la revista: lo que cambia y lo que permanece en el mando militar del siglo XXI, y una lectura práctica del proceso de planificación de operaciones.",
+    "titulo": "Liderazgo y mando",
+    "sumario.0.autor": "Dirección de la Revista",
+    "sumario.3.autor": "Departamento de Investigación",
+    "sumario.0.titulo": "Editorial: Una revista para la Escuela",
+    "sumario.1.titulo": "Liderar en el siglo XXI: lo que cambia y lo que permanece en el mando militar",
+    "sumario.2.titulo": "El proceso de planificación de operaciones: una lectura práctica",
+    "sumario.3.titulo": "Publicar en la Revista: normas para autores"
+   }
+  },
+  "revistas/n-2-outubro-2026": {
+   "fr": {
+    "resumo": "Un dossier sur le golfe de Guinée et le passage de la surveillance côtière à la coopération entre États, ainsi qu'une lecture de l'architecture de paix et de sécurité de la SADC.",
+    "titulo": "Sécurité maritime et coopération régionale",
+    "sumario.0.autor": "Direction de la Revue",
+    "sumario.3.autor": "Département de la recherche",
+    "sumario.0.titulo": "Éditorial : penser la mer, penser la région",
+    "sumario.1.titulo": "Golfe de Guinée : de la surveillance côtière à la coopération entre États",
+    "sumario.2.titulo": "La SADC et l'architecture de paix et de sécurité : des institutions à l'épreuve",
+    "sumario.3.titulo": "Publier dans la Revue : consignes aux auteurs"
+   },
+   "es": {
+    "resumo": "Un dosier sobre el golfo de Guinea y el paso de la vigilancia costera a la cooperación entre Estados, y una lectura de la arquitectura de paz y seguridad de la SADC.",
+    "titulo": "Seguridad marítima y cooperación regional",
+    "sumario.0.autor": "Dirección de la Revista",
+    "sumario.3.autor": "Departamento de Investigación",
+    "sumario.0.titulo": "Editorial: Pensar el mar, pensar la región",
+    "sumario.1.titulo": "Golfo de Guinea: de la vigilancia costera a la cooperación entre Estados",
+    "sumario.2.titulo": "La SADC y la arquitectura de paz y seguridad: instituciones a prueba",
+    "sumario.3.titulo": "Publicar en la Revista: normas para autores"
+   },
+   "en": {
+    "resumo": "A special report on the Gulf of Guinea and the shift from coastal surveillance to cooperation between States, and a reading of the SADC peace and security architecture.",
+    "titulo": "Maritime security and regional cooperation",
+    "sumario.0.autor": "Editorial board",
+    "sumario.3.autor": "Research Department",
+    "sumario.0.titulo": "Editorial: Thinking about the sea, thinking about the region",
+    "sumario.1.titulo": "Gulf of Guinea: from coastal surveillance to cooperation between States",
+    "sumario.2.titulo": "SADC and the peace and security architecture: institutions put to the test",
+    "sumario.3.titulo": "Publishing in the Magazine: guidelines for authors"
    }
   }
  },
  "automaticas": {
-  "noticias/abertura-ano-academico-2026": [
-   "fr",
-   "es"
-  ],
   "noticias/acordo-cooperacao-escola-parceira": [
    "en",
    "fr",
    "es"
   ],
+  "noticias/abertura-ano-academico-2026": [
+   "fr",
+   "es"
+  ],
   "pessoas/teresa-lopes": [
    "fr",
-   "es",
-   "en"
+   "en",
+   "es"
   ],
   "noticias/formatura-estado-maior-2026": [
    "en",
@@ -1916,17 +1923,20 @@
    "fr",
    "es"
   ],
-  "paginas/institucional": [
-   "fr",
-   "es",
-   "en"
-  ],
   "noticias/protocolo-investigacao-universidade": [
    "en",
    "fr",
    "es"
   ],
+  "paginas/institucional": [
+   "es"
+  ],
   "artigos/defesa-cooperativa-africa-austral": [
+   "fr",
+   "en",
+   "es"
+  ],
+  "eventos/jornadas-cientificas-2026": [
    "en",
    "fr",
    "es"
@@ -1937,14 +1947,9 @@
    "es"
   ],
   "artigos/direito-internacional-humanitario-operacoes": [
+   "es",
    "en",
-   "fr",
-   "es"
-  ],
-  "eventos/jornadas-cientificas-2026": [
-   "en",
-   "fr",
-   "es"
+   "fr"
   ],
   "artigos/seguranca-maritima-golfo-guine": [
    "en",
@@ -1958,8 +1963,8 @@
   ],
   "pessoas/jose-manuel": [
    "fr",
-   "es",
-   "en"
+   "en",
+   "es"
   ],
   "eventos/conferencia-seguranca-defesa-regional": [
    "en",
@@ -2007,9 +2012,9 @@
    "es"
   ],
   "pessoas/carlos-vieira": [
-   "en",
    "fr",
-   "es"
+   "es",
+   "en"
   ],
   "pessoas/ana-baptista": [
    "en",
@@ -2027,13 +2032,6 @@
    "es"
   ],
   "paginas/contactos": [
-   "en",
-   "fr",
-   "es"
-  ],
-  "paginas/cursos": [
-   "en",
-   "fr",
    "es"
   ]
  }

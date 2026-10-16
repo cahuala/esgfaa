@@ -33,6 +33,12 @@ const ESQUEMAS = {
   pessoas: z.looseObject({
     nome: texto(150), cargo: texto(150).optional(), destaque: texto(600).optional(),
   }),
+  // números da revista da Escola: um PDF que qualquer visitante lê no site
+  revistas: z.looseObject({
+    titulo: texto(300), numero: texto(40).optional(), data: data.optional(), resumo: texto(2000).optional(),
+    capa: texto(2000).optional(), pdf: texto(2000).optional(), destaque: z.boolean().optional(),
+    sumario: z.array(z.looseObject({ titulo: texto(300).optional(), autor: texto(200).optional(), pagina: z.union([texto(10), z.number()]).optional() })).max(80).optional(),
+  }),
   publicidade: z.looseObject({
     titulo: texto(200), anunciante: texto(120).optional(), tipo: z.enum(['composto', 'imagem']).optional(),
     texto: texto(400).optional(), botao: texto(40).optional(), ligacao: texto(2000).optional(),
@@ -52,6 +58,7 @@ export const COLECOES = {
   eventos: { chave: 'id', titulo: 'titulo', ordenar: porDataAsc, interativa: true },
   cursos: { chave: 'id', titulo: 'nome', ordenar: null, ordenavel: true },
   pessoas: { chave: 'id', titulo: 'nome', ordenar: null, ordenavel: true },
+  revistas: { chave: 'slug', titulo: 'titulo', ordenar: porDataDesc },
   publicidade: { chave: 'id', titulo: 'titulo', ordenar: null, ordenavel: true },
 }
 

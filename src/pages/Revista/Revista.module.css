@@ -1,0 +1,334 @@
+/* Revista da Escola: capas como numa banca, leitor e sumário */
+
+.numeros {
+  display: flex;
+  gap: 28px;
+}
+.numeros div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+.numeros dt {
+  font-size: 12.5px;
+  color: var(--texto-suave);
+}
+.numeros dd {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.vazio {
+  margin: 40px auto;
+  color: var(--texto-suave);
+}
+
+/* ---------- número mais recente ---------- */
+.destaque {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: start;
+}
+.capaGrande {
+  display: block;
+  position: relative;
+  aspect-ratio: 210 / 297;
+  border-radius: 3px 8px 8px 3px;
+  overflow: hidden;
+  background: var(--fundo-cinza);
+  box-shadow:
+    0 30px 50px -28px rgba(0, 0, 0, 0.55),
+    0 12px 24px -16px rgba(0, 0, 0, 0.35);
+  transform: perspective(1400px) rotateY(-4deg);
+  transform-origin: left center;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+/* lombada: uma sombra fina à esquerda, como numa revista dobrada */
+.capaGrande::after,
+.capaPequena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0, rgba(255, 255, 255, 0.18) 1.2%, rgba(0, 0, 0, 0) 3.5%);
+}
+.capaGrande:hover,
+.capaGrande:focus-visible {
+  transform: perspective(1400px) rotateY(0deg) translateY(-4px);
+}
+.capaImagem {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.destaqueTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rotulo {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tinte-marca);
+  border: 1px solid var(--tinte-marca-borda);
+  color: var(--marca);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.edicao {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.destaqueTexto h2 {
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.15;
+  color: var(--texto);
+}
+.resumo {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--texto-suave);
+}
+
+/* sumário (lista de artigos com a página) */
+.sumario {
+  list-style: none;
+  margin: 6px 0 4px;
+  padding: 0;
+  border-top: 1px solid var(--linha);
+}
+.sumario li {
+  border-bottom: 1px solid var(--linha);
+}
+.sumario a,
+.sumario button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sumario a:hover strong,
+.sumario button:hover:not(:disabled) strong {
+  color: var(--marca);
+}
+.sumario button:disabled {
+  cursor: default;
+}
+.pagina {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--marca);
+  font-variant-numeric: tabular-nums;
+}
+.sumario strong {
+  display: block;
+  font-size: 15.5px;
+  line-height: 1.4;
+  color: var(--texto);
+}
+.sumario em {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-style: normal;
+  color: var(--texto-suave);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 8px;
+}
+.acoes svg {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+.secundario:hover {
+  color: var(--marca);
+}
+
+/* ---------- estante com todos os números ---------- */
+.bloco {
+  margin-top: clamp(48px, 7vw, 80px);
+}
+.estante {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0 0 26px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 36px 28px;
+  /* prateleira */
+  background: linear-gradient(180deg, transparent calc(100% - 14px), var(--linha-forte) calc(100% - 14px), var(--linha-forte) calc(100% - 10px), transparent calc(100% - 10px));
+}
+.numero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.capaPequena {
+  position: relative;
+  display: block;
+  aspect-ratio: 210 / 297;
+  border-radius: 2px 6px 6px 2px;
+  overflow: hidden;
+  background: var(--fundo-cinza);
+  box-shadow: 0 16px 28px -18px rgba(0, 0, 0, 0.55);
+  transition: transform 0.25s ease;
+}
+.numero:hover .capaPequena,
+.numero:focus-visible .capaPequena {
+  transform: translateY(-6px);
+}
+.numero .edicao {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.numero strong {
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--texto);
+}
+.numero:hover strong {
+  color: var(--marca);
+}
+
+/* para autores */
+.autores {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: clamp(24px, 4vw, 40px);
+  border-radius: var(--raio);
+  background: var(--fundo-cinza);
+  margin-bottom: 72px;
+}
+.autores > div {
+  flex: 1 1 420px;
+}
+.autores p {
+  margin-top: 10px;
+  max-width: 640px;
+  color: var(--texto-suave);
+  line-height: 1.65;
+}
+
+/* ---------- leitura ---------- */
+.leitura {
+  margin-top: 32px;
+  margin-bottom: 72px;
+}
+.ancora {
+  scroll-margin-top: 96px;
+}
+.depois {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 48px;
+  margin-top: 40px;
+}
+.subtitulo {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: var(--texto);
+}
+.outros {
+  list-style: none;
+  margin: 6px 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.outros a {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.outros img {
+  width: 56px;
+  aspect-ratio: 210 / 297;
+  object-fit: cover;
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: 0 8px 16px -10px rgba(0, 0, 0, 0.5);
+}
+.outros em {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+.outros strong {
+  font-size: 15px;
+  color: var(--texto);
+}
+.outros a:hover strong {
+  color: var(--marca);
+}
+
+@media (max-width: 860px) {
+  .destaque {
+    grid-template-columns: 1fr;
+  }
+  .capaGrande {
+    max-width: 340px;
+    width: 100%;
+    margin: 0 auto;
+    transform: none;
+  }
+  .depois {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .estante {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capaGrande,
+  .capaPequena {
+    transition: none;
+  }
+}

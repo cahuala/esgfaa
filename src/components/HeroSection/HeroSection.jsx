@@ -4,7 +4,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import styles from './HeroSection.module.css'
 import { t } from '../../i18n/linguas'
 
-// Abertura da página inicial: fotografia, título, números e um só convite à candidatura
+// Abertura da página inicial: fotografia, título, números, os cursos e a revista
 function HeroSection() {
   const { paginas } = useConteudo()
   const hero = paginas.home.hero
@@ -27,10 +27,10 @@ function HeroSection() {
           </div>
 
           <div className={styles.acoes}>
-            <Link to="/Cursos#admissao" className={styles.botao}>{t('Como se candidatar')} <span aria-hidden="true">→</span></Link>
-            <Link to="/Cursos" className={styles.mais}>
+            <Link to="/Cursos" className={styles.botao}>{t('Conhecer os cursos')} <span aria-hidden="true">→</span></Link>
+            <Link to="/Revista" className={styles.mais}>
               <span><FaArrowRight size={12} aria-hidden="true" /></span>
-              {t('Conhecer os cursos')}
+              {t('Ler a revista')}
             </Link>
           </div>
         </div>

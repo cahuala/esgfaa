@@ -29,7 +29,7 @@ const colunas = [
     links: [
       { label: 'Notícias', to: '/Noticias' },
       { label: 'Eventos', to: '/Eventos' },
-      { label: 'Publicações e Documentos', to: '/Artigos' },
+      { label: 'Revista da Escola', to: '/Revista' },
       { label: 'Investigação Científica', to: '/Artigos' },
     ],
   },

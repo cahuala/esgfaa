@@ -104,6 +104,9 @@ describe('portal académico', () => {
 
     const detalhe = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
     const fid = detalhe.materiais[0].ficheiroId
+    // o portal recebe o nome e o tipo, para mostrar o PDF na página (e pedi-lo para ver, não descarregar)
+    assert.deepEqual({ ...detalhe.materiais[0].ficheiro, tamanho: undefined }, { id: fid, nome: 'sebenta.pdf', tipo: 'application/pdf', tamanho: undefined })
+    assert.match((await portal('ana').get(`/api/portal/ficheiros/${fid}?ver=1`)).headers['content-disposition'], /^inline/)
     const ok = await portal('ana').get(`/api/portal/ficheiros/${fid}`)
     assert.equal(ok.status, 200)
     assert.match(ok.headers['content-disposition'], /attachment; filename="sebenta.pdf"/)

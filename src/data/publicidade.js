@@ -10,14 +10,14 @@ import Auditorio from '../assets/Auditorio.png'
 */
 const publicidade = [
   {
-    id: 'candidaturas-2027',
-    titulo: 'Candidaturas abertas — ano académico 2027',
+    id: 'revista-n2',
+    titulo: 'Revista da Escola — N.º 2 já disponível',
     anunciante: 'Escola Superior de Guerra',
     tipo: 'composto',
-    texto: 'Curso de Estado-Maior, Promoção a Oficial General e Altos Estudos Militares. Prazo até 30 de novembro.',
-    botao: 'Saber mais',
+    texto: 'Segurança marítima e cooperação regional. Leitura livre no site, sem registo.',
+    botao: 'Ler a revista',
     imagem: Curso2,
-    ligacao: '/Cursos',
+    ligacao: '/Revista',
     posicao: 'home-meio',
     inicio: '',
     fim: '',

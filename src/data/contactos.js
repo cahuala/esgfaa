@@ -10,13 +10,13 @@ const contactos = {
   // pesquisa usada no mapa incorporado (Google Maps, sem chave de API)
   mapa: 'Escola Superior de Guerra, Luanda, Angola',
   departamentos: [
-    { nome: 'Secretaria Académica', descricao: 'Candidaturas, matrículas e certificados', email: 'secretaria@esgfaa.gov.ao' },
+    { nome: 'Secretaria Académica', descricao: 'Matrículas e certificados', email: 'secretaria@esgfaa.gov.ao' },
     { nome: 'Gabinete de Comunicação', descricao: 'Imprensa, eventos e redes sociais', email: 'comunicacao@esgfaa.gov.ao' },
     { nome: 'Cooperação Internacional', descricao: 'Parcerias e intercâmbio com escolas militares', email: 'cooperacao@esgfaa.gov.ao' },
     { nome: 'Departamento de Investigação', descricao: 'Publicações, revista e projetos científicos', email: 'investigacao@esgfaa.gov.ao' },
   ],
   assuntos: [
-    'Candidaturas e admissões',
+    'Admissão aos cursos',
     'Informação sobre cursos',
     'Imprensa e comunicação',
     'Cooperação institucional',

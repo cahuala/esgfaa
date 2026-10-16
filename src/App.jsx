@@ -13,6 +13,8 @@ import Eventos from './pages/Eventos/Eventos'
 import EventoDetalhe from './pages/Eventos/EventoDetalhe'
 import Artigos from './pages/Artigos/Artigos'
 import ArtigoDetalhe from './pages/Artigos/ArtigoDetalhe'
+import Revista from './pages/Revista/Revista'
+import RevistaLeitura from './pages/Revista/RevistaLeitura'
 import Contactos from './pages/Contactos/Contactos'
 import Cursos from './pages/Cursos/Cursos'
 import CursoDetalhe from './pages/Cursos/CursoDetalhe'
@@ -37,6 +39,8 @@ function App() {
         <Route path="/Eventos/:id" element={<EventoDetalhe />} />
         <Route path="/Artigos" element={<Artigos />} />
         <Route path="/Artigos/:slug" element={<ArtigoDetalhe />} />
+        <Route path="/Revista" element={<Revista />} />
+        <Route path="/Revista/:slug" element={<RevistaLeitura />} />
         <Route path="/Cursos" element={<Cursos />} />
         <Route path="/Cursos/:id" element={<CursoDetalhe />} />
         <Route path="/Contactos" element={<Contactos />} />

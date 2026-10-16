@@ -12,7 +12,6 @@ function Cursos() {
   const pagina = paginas.cursos
   const calendarioAdmissao = pagina.calendario || []
   const processoAdmissao = pagina.processo || []
-  const prazo = pagina.prazo || calendarioAdmissao[1]?.periodo
 
   return (
     <main className={ed.pagina}>
@@ -22,19 +21,6 @@ function Cursos() {
         titulo={t('Cursos')}
         entrada={pagina.entrada}
       />
-
-      {/* Faixa de candidaturas */}
-      {pagina.candidaturasAbertas && (
-      <div className={`contentor ${styles.faixa}`}>
-        <div className={styles.faixaInterior}>
-          <span className={styles.faixaSelo}>{t('Candidaturas abertas')}</span>
-          <p>
-            {t('Ano académico {ano}', { ano: pagina.anoAcademico })}{prazo && <> · {t('prazo até')} <strong>{prazo}</strong></>}
-          </p>
-          <a href="#calendario" className={styles.faixaLigacao}>{t('Ver calendário')}</a>
-        </div>
-      </div>
-      )}
 
       {/* Os cursos */}
       <section className={`contentor ${styles.lista}`} aria-label={t('Cursos disponíveis')}>
@@ -93,7 +79,7 @@ function Cursos() {
 
       {/* Admissão */}
       <section id="admissao" className={`contentor ${styles.bloco}`}>
-        <TituloSeccao rotulo={t('Admissão')} titulo={t('Como se candidatar')} />
+        <TituloSeccao rotulo={t('Admissão')} titulo={t('Como se ingressa nos cursos')} />
         <ol className={ed.passos} style={{ '--colunas': processoAdmissao.length }}>
           {processoAdmissao.map((p, i) => (
             <li key={p.titulo}>
@@ -122,9 +108,9 @@ function Cursos() {
               ))}
             </tbody>
           </table>
-          <aside className={styles.candidatar}>
-            <h3>{t('Pronto para avançar?')}</h3>
-            <p>{t('A candidatura é feita pelo ramo, através da Repartição de Pessoal e Quadros, que regista os oficiais admitidos. A Secretaria Académica informa os próximos passos.')}</p>
+          <aside className={styles.ingresso}>
+            <h3>{t('Quem regista os admitidos?')}</h3>
+            <p>{t('O ingresso é feito por proposta do ramo de origem, através da Repartição de Pessoal e Quadros, que regista os oficiais admitidos. A Secretaria Académica informa os próximos passos.')}</p>
             <Link to="/Contactos#formulario" className={ed.botao}>{t('Pedir informações')}</Link>
           </aside>
         </div>

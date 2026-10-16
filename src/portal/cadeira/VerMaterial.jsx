@@ -2,7 +2,8 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import { Bloqueio, Cartao, Vazio } from '../componentes'
-import { dataHora, estadoSessao, iconeFicheiro, tamanho } from '../formatar'
+import { dataHora, estadoSessao, iconeFicheiro, idYoutube, tamanho, tipoVisivel } from '../formatar'
+import VerFicheiro from '../VerFicheiro'
 import ZonaUpload from '../ZonaUpload'
 import { confirmar } from '../dialogos'
 import { t as tx } from '../../i18n/linguas'
@@ -10,8 +11,9 @@ import { t as tx } from '../../i18n/linguas'
 const EditorPagina = lazy(() => import('./EditorPagina'))
 
 /*
-  Um material aberto dentro do portal: página (texto), pasta (vários ficheiros) ou videoconferência.
-  O estudante fica com ele marcado como visto; o docente edita a página e junta ou retira ficheiros.
+  Um material aberto dentro do portal: ficheiro (PDF, vídeo, imagem…), vídeo do YouTube, página (texto),
+  pasta (vários ficheiros) ou videoconferência. O estudante fica com ele marcado como visto;
+  o docente edita a página e junta ou retira ficheiros.
 */
 function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso, so }) {
   const m = c.materiais.find((x) => x.id === so)
@@ -29,10 +31,38 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
   if (m.bloqueio) return <Cartao titulo={m.titulo}><Bloqueio motivos={m.bloqueio} /></Cartao>
   return (
     <div className="p-coluna">
+      {m.tipo === 'ficheiro' && <Ficheiro m={m} falhou={falhou} />}
+      {m.tipo === 'video' && <Video m={m} />}
       {m.tipo === 'pagina' && <Pagina m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
       {m.tipo === 'pasta' && <Pasta m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} falhou={falhou} />}
       {m.tipo === 'videoconferencia' && <Sessao m={m} eDocente={eDocente} feito={feito} setProgresso={setProgresso} falhou={falhou} />}
     </div>
+  )
+}
+
+function Ficheiro({ m, falhou }) {
+  return (
+    <Cartao titulo={<><i className={`fa ${iconeFicheiro(m.ficheiro?.tipo)} me-2`} />{m.titulo}</>}>
+      {m.descricao && <p className="text-muted">{m.descricao}</p>}
+      {m.ficheiro ? <VerFicheiro key={m.ficheiro.id} ficheiro={m.ficheiro} titulo={m.titulo} falhou={falhou} /> : <Vazio>{tx('Ficheiro não encontrado.')}</Vazio>}
+    </Cartao>
+  )
+}
+
+// vídeo por endereço: o YouTube vê-se aqui; outros sites abrem à parte
+function Video({ m }) {
+  const id = idYoutube(m.url)
+  return (
+    <Cartao titulo={<><i className="fa fa-play-circle me-2" />{m.titulo}</>}>
+      {m.descricao && <p className="text-muted">{m.descricao}</p>}
+      {id ? (
+        <div className="p-ficheiro-youtube">
+          <iframe src={`https://www.youtube-nocookie.com/embed/${id}?rel=0`} title={m.titulo} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" />
+        </div>
+      ) : (
+        <a className="btn btn-theme" href={m.url} target="_blank" rel="noopener noreferrer"><i className="fa fa-external-link-alt me-1" />{tx('Abrir o vídeo')}</a>
+      )}
+    </Cartao>
   )
 }
 
@@ -77,7 +107,11 @@ function Pagina({ m, eDocente, recarregar, avisar }) {
 function Pasta({ m, eDocente, recarregar, avisar, falhou }) {
   const [novos, setNovos] = useState([])
   const [aEnviar, setAEnviar] = useState(false)
+  const [aberto, setAberto] = useState(null)
   const baixar = (f) => abrirFicheiro(f.id, { nome: f.nome }).catch(falhou)
+  // PDF, vídeo, áudio e imagens abrem por baixo da lista; o resto descarrega-se
+  const abrir = (f) => (tipoVisivel(f.tipo) ? setAberto(aberto === f.id ? null : f.id) : baixar(f))
+  const emVista = m.ficheiros.find((f) => f.id === aberto)
   async function mudar(retirar = []) {
     setAEnviar(true)
     try {
@@ -102,8 +136,9 @@ function Pasta({ m, eDocente, recarregar, avisar, falhou }) {
         {m.ficheiros.map((f) => (
           <div key={f.id} className="list-group-item d-flex align-items-center gap-3">
             <i className={`fa ${iconeFicheiro(f.tipo)} fa-lg`} />
-            <button type="button" className="btn btn-link p-0 text-start text-body fw-bold text-decoration-none flex-grow-1" onClick={() => baixar(f)}>{f.nome}</button>
+            <button type="button" className="btn btn-link p-0 text-start text-body fw-bold text-decoration-none flex-grow-1" onClick={() => abrir(f)} aria-expanded={tipoVisivel(f.tipo) ? aberto === f.id : undefined}>{f.nome}</button>
             <span className="small text-muted text-nowrap">{tamanho(f.tamanho)}</span>
+            {tipoVisivel(f.tipo) && <button type="button" className={`btn btn-xs ${aberto === f.id ? 'btn-theme' : 'btn-white'}`} onClick={() => abrir(f)}><i className="fa fa-eye me-1" />{aberto === f.id ? tx('Fechar') : tx('Ver')}</button>}
             <button type="button" className="btn btn-xs btn-white" onClick={() => baixar(f)} aria-label={tx('Descarregar {0}', { 0: f.nome })}><i className="fa fa-download" /></button>
             {eDocente && (
               <button type="button" className="btn btn-xs btn-white text-danger" disabled={aEnviar} aria-label={tx('Retirar {0}', { 0: f.nome })} onClick={async () => { if (await confirmar(tx('Retirar "{0}" da pasta?', { 0: f.nome }), { titulo: tx('Retirar ficheiro'), botao: tx('Retirar'), perigo: true })) mudar([f.id]) }}><i className="fa fa-trash-alt" /></button>
@@ -111,6 +146,7 @@ function Pasta({ m, eDocente, recarregar, avisar, falhou }) {
           </div>
         ))}
       </div>
+      {emVista && <div className="panel-body border-top"><VerFicheiro key={emVista.id} ficheiro={emVista} titulo={emVista.nome} falhou={falhou} /></div>}
       {eDocente && (
         <div className="panel-body">
           <ZonaUpload id="pasta-novos" multiplos ficheiros={novos} aoMudar={(l) => setNovos(l.slice(0, 20))} desativado={aEnviar} nota={tx('Junte mais ficheiros a esta pasta.')} />

@@ -4,7 +4,7 @@
   e editam-se no painel; o papel "administrador" é de sistema e tem sempre tudo.
 */
 
-const CONTEUDOS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'publicidade']
+const CONTEUDOS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'revistas', 'publicidade']
 
 // catálogo usado pelo painel para desenhar a grelha de permissões
 export const RECURSOS = [

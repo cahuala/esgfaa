@@ -7,15 +7,17 @@
 export const LINGUA_ORIGINAL = 'pt'
 export const LINGUAS = { en: 'English', fr: 'Français', es: 'Español' }
 export const ESTADOS_TRADUCAO = { rascunho: 'Rascunho (por rever)', publicada: 'Publicada' }
-export const COLECOES_TRADUZIVEIS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas']
+export const COLECOES_TRADUZIVEIS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'revistas']
 
 const CHAVES_FIXAS = new Set([
   'id', 'slug', 'tipo', 'src', 'capa', 'imagem', 'imagemSede', 'foto', 'poster', 'video', 'youtube', 'posicao', 'data', 'hora', 'horaInicio',
   'horaFim', 'inicio', 'fim', 'ano', 'anoAcademico', 'sigla', 'vagas', 'coordenador', 'ligacao', 'link', 'url', 'href', 'email', 'telefones',
-  'telefone', 'mapa', 'icone', 'cor', 'chave', 'ordem', 'destaque_', 'categoriaId',
+  'telefone', 'mapa', 'icone', 'cor', 'chave', 'ordem', 'destaque_', 'categoriaId', 'pdf', 'numero', 'pagina',
 ])
 const NAO_TEXTO = [
   /^(https?:|mailto:|tel:|\/|#|data:)/i, /^\d{4}-\d{2}-\d{2}/, /^\d{1,2}:\d{2}$/, /^[\d\s.,:+%()/-]*$/, /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  // nomes com o posto à frente ("Cor. Ana Baptista") e identificadores ("ana-baptista") ficam como estão
+  /^(?:[A-Z][a-z]{0,4}\.?-)?[A-Z][a-z]{0,4}\.\s+\p{Lu}/u, /^[a-z0-9]+(-[a-z0-9]+)+$/,
 ]
 
 const traduzivel = (chave, v) => typeof v === 'string' && v.trim().length > 1 && !CHAVES_FIXAS.has(chave) && !chave.startsWith('_')

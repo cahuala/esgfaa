@@ -13,14 +13,12 @@ import { calendarioAdmissao, processoAdmissao } from './cursos'
 const home = {
   hero: {
     titulo: 'Formar quem defende Angola, desde o primeiro dia.',
-    texto: 'Conheça os cursos e programas da Escola Superior de Guerra e candidate-se ao próximo ano letivo.',
+    texto: 'Conheça os cursos e programas da Escola Superior de Guerra e as publicações do seu corpo docente.',
     imagem: Auditorio,
     metricas: [
       { valor: '+10 anos', legenda: 'De existência' },
       { valor: '+500', legenda: 'Oficiais formados' },
     ],
-    formularioTitulo: 'Candidate-se a um curso',
-    formularioTexto: 'Preencha os seus dados e entraremos em contacto.',
   },
   formacao: {
     etiqueta: 'Formação e Cursos',
@@ -35,7 +33,7 @@ const home = {
     lista: [
       { tipo: 'Alteração de calendário', data: '2026-09-25', titulo: 'Novas datas para os exames do 1.º semestre', resumo: 'O período de exames foi reajustado. Consulte o calendário académico atualizado.', importante: true },
       { tipo: 'Convocatória', data: '2026-09-22', titulo: 'Convocatória para reunião do corpo docente', resumo: 'Convocam-se todos os docentes para a reunião geral de preparação do novo semestre.', importante: false },
-      { tipo: 'Comunicado', data: '2026-09-18', titulo: 'Abertura do período de candidaturas aos cursos', resumo: 'Estão abertas as candidaturas para o próximo ano letivo. Consulte os requisitos de admissão.', importante: false },
+      { tipo: 'Comunicado', data: '2026-09-18', titulo: 'Novo número da Revista da Escola Superior de Guerra', resumo: 'Já está disponível no site, para leitura livre, o novo número da revista da Escola.', importante: false },
       { tipo: 'Aviso', data: '2026-09-10', titulo: 'Condicionamento de acesso às instalações', resumo: 'Durante as obras no bloco B, o acesso será feito exclusivamente pela entrada principal.', importante: false },
     ],
   },
@@ -50,7 +48,7 @@ const home = {
     etiqueta: 'Dúvidas frequentes',
     titulo: 'Perguntas frequentes',
     perguntas: [
-      { pergunta: 'Como posso candidatar-me a um curso?', resposta: 'A candidatura é feita através do ramo de origem: a Repartição de Pessoal e Quadros regista os oficiais admitidos e a Secretaria Académica informa as datas das provas e o início do curso. O processo de admissão está descrito na página de Cursos.' },
+      { pergunta: 'Como se ingressa num curso da Escola?', resposta: 'O ingresso é feito por proposta do ramo de origem: a Repartição de Pessoal e Quadros regista os oficiais admitidos e a Secretaria Académica informa as datas das provas e o início do curso. O processo de admissão está descrito na página de Cursos.' },
       { pergunta: 'Quais são os requisitos de admissão?', resposta: 'Os requisitos variam consoante o curso pretendido — normalmente incluem posto militar mínimo, habilitações académicas e tempo de serviço. Consulte a página de cada curso, na secção "Requisitos de admissão", para os critérios específicos.' },
       { pergunta: 'Como aceder a documentos públicos da Escola?', resposta: 'Todos os documentos de acesso público — regulamentos, editais, relatórios e publicações — estão disponíveis na secção "Publicações e Documentos", com pesquisa por categoria, ano e tipo de documento.' },
       { pergunta: 'Como contactar um departamento específico?', resposta: 'Na página de Contactos encontra os meios de contacto gerais da Escola. Para departamentos específicos, consulte a secção "Organização e Estrutura" em Institucional, onde estão listados os responsáveis de cada área.' },
@@ -60,7 +58,7 @@ const home = {
   },
   cta: {
     titulo: 'Pronto para dar o próximo passo na sua carreira militar?',
-    texto: 'Candidate-se aos cursos da Escola Superior de Guerra e prepare-se para funções de comando e liderança.',
+    texto: 'Conheça os cursos da Escola Superior de Guerra, que preparam oficiais para funções de comando e liderança.',
     botao: 'Conhecer o processo de admissão',
   },
 }
@@ -107,7 +105,7 @@ const institucional = {
       { titulo: 'Ensino', orgaos: [
         { nome: 'Direção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },
         { nome: 'Corpo Docente', texto: 'Docentes militares e civis responsáveis pela formação.' },
-        { nome: 'Secretaria Académica', texto: 'Candidaturas, matrículas, certificados e calendário.' },
+        { nome: 'Secretaria Académica', texto: 'Matrículas, certificados e calendário.' },
       ] },
       { titulo: 'Investigação e Cooperação', orgaos: [
         { nome: 'Departamento de Investigação', texto: 'Investigação científica em estratégia, segurança e defesa.' },
@@ -128,8 +126,6 @@ const institucional = {
 const cursos = {
   entrada: 'Três programas de formação superior para cada etapa da carreira de oficial — do estado-maior ao comando ao mais alto nível.',
   anoAcademico: '2027',
-  candidaturasAbertas: true,
-  prazo: '30 de novembro de 2026',
   processo: processoAdmissao,
   calendario: calendarioAdmissao,
 }

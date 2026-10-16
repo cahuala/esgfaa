@@ -19,6 +19,11 @@ describe('traduções: que textos se traduzem', () => {
     assert.equal(en.conteudo[1].src, '/uploads/b.png')
     assert.equal(dados.titulo, 'Abertura do ano') // o original não muda
   })
+
+  it('nomes com o posto à frente e identificadores não se traduzem', () => {
+    const t = extrairTextos({ nome: 'Cor. Ana Baptista', outro: 'Cap.-Ten. Pedro Neto', chefe: 'Ten-Cor. Isabel Fortunato', autor: 'ana-baptista', cargo: 'Docente de Estratégia', frase: 'A Escola. Nova frase.' })
+    assert.deepEqual(Object.keys(t).sort(), ['cargo', 'frase'])
+  })
 })
 
 describe('traduções do site: IA, revisão e publicação', () => {
@@ -84,6 +89,33 @@ describe('traduções do site: IA, revisão e publicação', () => {
     await esperar()
     assert.equal((await admin.post(`/api/admin/traducoes/noticias/${id}/de/ia`)).status, 404)
     assert.equal((await admin.get('/api/admin/traducoes/noticias')).body[id].en, 'publicada')
+  })
+
+  it('a revista: um número com PDF chega ao site, traduz-se sem tocar nos nomes e só a gere quem tem permissão', async () => {
+    const esperar = () => amb.contentor.servicos.traducoes.esvaziar()
+    const numero = {
+      numero: 'N.º 3', titulo: 'Ciberdefesa', data: '2027-03-01', resumo: 'Proteger as infraestruturas críticas.', pdf: '/uploads/2027-03/revista.pdf',
+      sumario: [{ titulo: 'Editorial', autor: 'Cor. Ana Baptista', pagina: '3' }], _estado: 'publicado',
+    }
+    assert.equal((await redator.post('/api/admin/colecoes/revistas').send(numero)).status, 403) // o redator não gere a revista
+    const chefe = amb.com((await amb.criarUtilizador('editor_chefe')).token)
+    const r = (await chefe.post('/api/admin/colecoes/revistas').send(numero)).body
+    assert.equal(r.slug, 'ciberdefesa')
+    await esperar()
+    const site = (await amb.http().get('/api/publico/conteudo')).body
+    const publicado = site.revistas.find((x) => x.slug === 'ciberdefesa')
+    assert.match(publicado.pdf, /^https?:\/\/.+\/uploads\/2027-03\/revista\.pdf$/) // endereço completo, para o site noutro domínio
+    const en = site.traducoes.itens['revistas/ciberdefesa'].en
+    assert.deepEqual([en.titulo, en['sumario.0.titulo'], en['sumario.0.autor'], en.numero, en.pdf], ['[EN] Ciberdefesa', '[EN] Editorial', undefined, undefined, undefined])
+
+    // uma tradução antiga com o nome traduzido é limpa ao completar
+    const t = await amb.contentor.repositorios.traducoes.ler('revistas', 'ciberdefesa', 'fr')
+    await amb.contentor.repositorios.traducoes.guardar({ ...t, textos: { ...t.textos, 'sumario.0.autor': 'Couleur. Ana Baptista' }, atualizadoEm: undefined })
+    await amb.contentor.servicos.traducoes.completar()
+    await esperar()
+    const limpa = await amb.contentor.repositorios.traducoes.ler('revistas', 'ciberdefesa', 'fr')
+    assert.equal(limpa.textos['sumario.0.autor'], undefined)
+    assert.equal(limpa.textos.titulo, '[FR] Ciberdefesa')
   })
 
   it('sem chave da IA, a tradução automática explica o que falta (à mão continua possível)', async () => {

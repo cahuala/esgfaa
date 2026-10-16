@@ -288,18 +288,29 @@ export class RepositorioAcademico {
 
   // ---------- materiais e avisos ----------
 
-  #material(m) {
+  #material(m, unicos = {}) {
     if (!m) return null
     const { ficheiros, ...resto } = m
     return {
       ...resto, publicadoEm: iso(m.publicadoEm), inicio: iso(m.inicio), disponivelDe: iso(m.disponivelDe),
       ficheiros: (ficheiros || []).map((x) => ({ id: x.ficheiro.id, nome: x.ficheiro.nome, tipo: x.ficheiro.tipo, tamanho: x.ficheiro.tamanho })),
+      // material de um só ficheiro: nome e tipo, para o portal o mostrar na página (PDF, vídeo, imagem)
+      ficheiro: m.ficheiroId ? unicos[m.ficheiroId] || null : null,
     }
+  }
+
+  // { id: { id, nome, tipo, tamanho } } dos ficheiros únicos destes materiais
+  async #ficheirosUnicos(materiais) {
+    const ids = [...new Set(materiais.map((m) => m?.ficheiroId).filter(Boolean))]
+    if (!ids.length) return {}
+    const linhas = await this.prisma.ficheiro.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, tipo: true, tamanho: true } })
+    return Object.fromEntries(linhas.map((f) => [f.id, f]))
   }
 
   async materiais(cadeiraId) {
     const linhas = await this.prisma.material.findMany({ where: { cadeiraId }, orderBy: [{ publicadoEm: 'asc' }, { id: 'asc' }], include: FICHEIROS_PASTA })
-    return linhas.map((m) => this.#material(m))
+    const unicos = await this.#ficheirosUnicos(linhas)
+    return linhas.map((m) => this.#material(m, unicos))
   }
 
   criarMaterial(dados) {
@@ -318,7 +329,8 @@ export class RepositorioAcademico {
   async material(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
-    return this.#material(await this.prisma.material.findUnique({ where: { id: n }, include: FICHEIROS_PASTA }))
+    const m = await this.prisma.material.findUnique({ where: { id: n }, include: FICHEIROS_PASTA })
+    return this.#material(m, await this.#ficheirosUnicos([m]))
   }
 
   apagarMaterial(id) {

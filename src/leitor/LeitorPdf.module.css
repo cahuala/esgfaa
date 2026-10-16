@@ -1,0 +1,204 @@
+/* Leitor de PDF: moldura escura (como uma mesa de leitura), páginas brancas com sombra */
+.leitor {
+  --altura: min(82vh, 1100px);
+  --leitor-fundo: #2b2d31;
+  --leitor-barra: #1c1d20;
+  --leitor-texto: #e9e9ea;
+  --leitor-suave: #a7a9ad;
+  --leitor-destaque: #e53917;
+  display: flex;
+  flex-direction: column;
+  height: var(--altura);
+  background: var(--leitor-fundo);
+  border-radius: 10px;
+  overflow: hidden;
+  color: var(--leitor-texto);
+  font-family: inherit;
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.6);
+}
+.inteiro {
+  height: 100vh;
+  border-radius: 0;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--leitor-barra);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.titulo {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.titulo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.titulo svg {
+  flex: none;
+  color: var(--leitor-destaque);
+}
+.grupo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--leitor-texto);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.botao:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.botao:focus-visible,
+.paginaAtual input:focus-visible,
+.area:focus-visible {
+  outline: 2px solid var(--leitor-destaque);
+  outline-offset: 2px;
+}
+.botao:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ativo {
+  background: rgba(255, 255, 255, 0.14);
+}
+.zoom {
+  min-width: 54px;
+  font-variant-numeric: tabular-nums;
+}
+.paginaAtual {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--leitor-suave);
+}
+.paginaAtual input {
+  width: 42px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--leitor-texto);
+  text-align: center;
+  font: inherit;
+}
+
+.area {
+  position: relative; /* as posições das páginas (offsetTop) contam a partir daqui */
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  overscroll-behavior: contain;
+}
+.linha {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.pagina {
+  position: relative;
+  flex: none;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+.tela {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.aDesenhar {
+  opacity: 0;
+}
+.numeroFundo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #d4d4d6;
+}
+
+.aviso {
+  margin: auto;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  color: var(--leitor-suave);
+  font-size: 14px;
+}
+.barraProgresso {
+  width: 220px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.barraProgresso span {
+  display: block;
+  height: 100%;
+  background: var(--leitor-destaque);
+  transition: width 0.2s;
+}
+
+@media (max-width: 640px) {
+  .leitor {
+    --altura: 78vh;
+    border-radius: 8px;
+  }
+  .barra {
+    gap: 6px 10px;
+    padding: 6px 8px;
+  }
+  .titulo {
+    flex-basis: 100%;
+  }
+  .soLargo,
+  .zoom {
+    display: none;
+  }
+  .botao {
+    min-width: 30px;
+    padding: 0 6px;
+  }
+  .grupo {
+    gap: 2px;
+  }
+  .area {
+    padding: 10px;
+    gap: 10px;
+  }
+}

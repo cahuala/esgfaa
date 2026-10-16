@@ -17,12 +17,12 @@ export async function semear({ config, repositorios }, { forcar = false } = {}) 
   }
   register('./carregador-dados.js', import.meta.url)
 
-  // 1) imagens do site -> uploads/seed
+  // 1) imagens e PDF do site -> uploads/seed
   if (config.pastaUploads) {
     const destino = path.join(config.pastaUploads, 'seed')
     fs.mkdirSync(destino, { recursive: true })
     for (const f of fs.readdirSync(path.join(pastaSite, 'assets'))) {
-      if (/\.(png|jpe?g|gif|webp|svg)$/i.test(f)) fs.copyFileSync(path.join(pastaSite, 'assets', f), path.join(destino, nomeSemente(f)))
+      if (/\.(png|jpe?g|gif|webp|svg|pdf)$/i.test(f)) fs.copyFileSync(path.join(pastaSite, 'assets', f), path.join(destino, nomeSemente(f)))
     }
   }
 

@@ -1,40 +1,5 @@
 /* Cursos, no estilo do modelo Corporate */
 
-/* aviso de candidaturas abertas */
-.faixa {
-  margin-top: 32px;
-}
-.faixaInterior {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 14px 20px;
-  border-radius: var(--raio);
-  background: var(--sucesso-fundo);
-  color: var(--sucesso-texto);
-  font-size: 14.5px;
-}
-.faixaSelo {
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #1d6b3d;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-}
-.faixaInterior p {
-  flex: 1;
-}
-.faixaLigacao {
-  color: var(--sucesso-texto);
-  font-weight: 600;
-  text-decoration: none;
-}
-.faixaLigacao:hover {
-  text-decoration: underline;
-}
-
 /* cada curso: cartão branco com a fotografia de um lado (alterna) */
 .lista {
   display: flex;
@@ -154,7 +119,7 @@
   gap: 40px;
   align-items: start;
 }
-.candidatar {
+.ingresso {
   padding: 24px;
   background: var(--fundo-cinza);
   border-radius: var(--raio);
@@ -163,10 +128,10 @@
   gap: 12px;
   align-items: flex-start;
 }
-.candidatar h3 {
+.ingresso h3 {
   font-size: 17px;
 }
-.candidatar p {
+.ingresso p {
   font-size: 14px;
   color: var(--texto-suave);
 }
