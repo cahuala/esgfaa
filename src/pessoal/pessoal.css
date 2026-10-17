@@ -124,3 +124,4 @@
 .pes-org-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(0, 0, 0, .1); border-radius: 8px; padding: 7px 12px; text-decoration: none; color: inherit; background: #fff; font-size: .85rem; }
 .pes-org-chip:hover { border-color: #c9a227; }
 @media (max-width: 768px) { .pes-org-stats .pes-org-barra, .pes-org-accoes { display: none; } }
+.pes-org-grupo td { background: #f4f7f4; font-size: .82rem; }

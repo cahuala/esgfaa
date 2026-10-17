@@ -134,6 +134,9 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.equal(o2.filhos[0].tipoNome, 'Secção')
     assert.ok(o2.pessoas >= de.pessoas + 1)
     const det = (await adm.get(`/api/organica/${unidade.id}`)).body
+    // o detalhe da unidade mostra também quem está nas subunidades
+    assert.ok(det.efectivo.some((x) => x.ident === 'SEC001'))
+    assert.ok(det.grupos.some((g) => g.id === unidade.id))
     assert.equal(det.cargos.find((c) => c.nome === 'Professor de Estratégia').ocupantes[0].nome, 'Carlos Alberto da Silva Neto')
   })
 })

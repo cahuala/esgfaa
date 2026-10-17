@@ -5,6 +5,7 @@ import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
 import { ICONE_UNIDADE } from '../arvore'
 import Foto from '../componentes/Foto'
+import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0)
@@ -158,31 +159,49 @@ export default function Organica() {
             </div>
           </Painel>
         )}
-        <Painel titulo={`Cargos${d ? ` (${d.cargos.length})` : ''}`} icone="fa-chair" corpo={false}>
+        <Painel titulo={`Cargos${d ? ` (${d.grupos.reduce((n, g) => n + g.cargos.length, 0)})` : ''}`} icone="fa-chair" corpo={false}>
           {!d ? <div className="panel-body"><Carregando /></div> : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
                 <thead><tr><th>Cargo</th><th>Posto / categoria</th><th className="text-center">Efectivo</th><th className="text-center">Ocupado</th><th>Quem ocupa</th>{gerir && <th />}</tr></thead>
-                <tbody>
-                  {d.cargos.map((c) => (
-                    <tr key={c.id}>
-                      <td><strong>{c.nome}</strong><div className="small text-muted">{c.funcaoNome}</div></td>
-                      <td className="small">{c.postoRequeridoNome}</td>
-                      <td className="text-center">{c.vagas}</td>
-                      <td className="text-center"><span className={`badge ${c.ocupados >= c.vagas ? 'bg-success' : c.ocupados ? 'bg-warning text-dark' : 'bg-danger'}`}>{c.ocupados ? c.ocupados : 'VAGO'}</span>{c.excesso > 0 && <div className="small text-danger">+{c.excesso}</div>}</td>
-                      <td>{c.ocupantes.map((o) => <Link key={o.id} to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>)}{!c.ocupantes.length && <span className="text-muted small">—</span>}</td>
-                      {gerir && <td className="text-end"><button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setModal({ cargo: c })} title="Editar cargo"><i className="fa fa-pencil-alt" /></button></td>}
-                    </tr>
-                  ))}
-                  {!d.cargos.length && <tr><td colSpan={6} className="text-center text-muted py-4">Sem cargos nesta unidade.{gerir && ' Use «+ Cargo».'}</td></tr>}
-                </tbody>
+                {d.grupos.map((g) => (
+                  <tbody key={g.id}>
+                    {(g.id !== atualId || d.grupos.length > 1) && (
+                      <tr className="pes-org-grupo"><td colSpan={gerir ? 6 : 5} style={{ paddingLeft: 12 + g.nivel * 18 }}>
+                        <i className={`fa ${ICONE_UNIDADE[g.tipo] ?? 'fa-building'} me-2 text-muted`} />
+                        {g.id === atualId ? <strong>{g.nome}</strong> : <Link to={`/organica/${g.id}`}><strong>{g.nome}</strong></Link>}
+                        {g.sigla && <span className="pes-org-sigla ms-2">{g.sigla}</span>}
+                        <span className="small text-muted ms-2">{g.cargos.reduce((n, c) => n + c.ocupados, 0)}/{g.cargos.reduce((n, c) => n + c.vagas, 0)} ocupados</span>
+                      </td></tr>
+                    )}
+                    {g.cargos.map((c) => (
+                      <tr key={c.id}>
+                        <td style={{ paddingLeft: 12 + g.nivel * 18 }}><strong>{c.nome}</strong><div className="small text-muted">{c.funcaoNome}</div></td>
+                        <td className="small">{c.postoRequeridoNome}</td>
+                        <td className="text-center">{c.vagas}</td>
+                        <td className="text-center"><span className={`badge ${c.ocupados >= c.vagas ? 'bg-success' : c.ocupados ? 'bg-warning text-dark' : 'bg-danger'}`}>{c.ocupados ? c.ocupados : 'VAGO'}</span>{c.excesso > 0 && <div className="small text-danger">+{c.excesso}</div>}</td>
+                        <td>{c.ocupantes.map((o) => <Link key={o.id} to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>)}{!c.ocupantes.length && <span className="text-muted small">—</span>}</td>
+                        {gerir && <td className="text-end"><button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setModal({ cargo: c })} title="Editar cargo"><i className="fa fa-pencil-alt" /></button></td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                ))}
+                {!d.grupos.length && <tbody><tr><td colSpan={6} className="text-center text-muted py-4">Sem cargos nesta unidade.{gerir && ' Use «+ Cargo».'}</td></tr></tbody>}
               </table>
             </div>
           )}
         </Painel>
-        {d?.semCargo.length > 0 && (
-          <Painel titulo={`Colocados sem cargo (${d.semCargo.length})`} icone="fa-user-clock">
-            <div className="row g-2">{d.semCargo.map((o) => <div key={o.id} className="col-md-6 col-xl-4"><Link to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.descricao}{o.vinculo === 'estudante' ? ' · estudante' : ''}</div></span></Link></div>)}</div>
+        {d && (
+          <Painel titulo={`Efectivo da unidade (${d.efectivo.length})`} icone="fa-users">
+            <Tabela titulo={`Efectivo — ${no.nome}`} linhas={d.efectivo} aoClicar={(x) => navegar(`/pessoas/${x.id}`)} ordemInicial={{ chave: 'posto', dir: 1 }} vazio="Ninguém colocado nesta unidade." colunas={[
+              { chave: 'nome', titulo: 'Nome', valor: (x) => x.nome, mostrar: (x) => <span className="pes-pessoa"><Foto pessoaId={x.id} fotoId={x.fotoId} nome={x.nome} /><strong>{x.nome}</strong></span> },
+              { chave: 'posto', titulo: 'Posto / categoria', valor: (x) => x.descricao, ordenarPor: (x) => 100 - x.grau },
+              { chave: 'ident', titulo: 'NIP / N.º', valor: (x) => x.ident },
+              { chave: 'ramo', titulo: 'Ramo', valor: (x) => x.ramo || 'Civil' },
+              { chave: 'cargo', titulo: 'Cargo', valor: (x) => x.cargoNome, mostrar: (x) => x.cargoNome || <span className="text-muted small">sem cargo</span> },
+              { chave: 'unidade', titulo: 'Secção / subunidade', valor: (x) => x.unidadeNome },
+              { chave: 'vinculo', titulo: 'Vínculo', valor: (x) => ({ docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário' }[x.vinculo] ?? x.vinculo) },
+            ]} />
           </Painel>
         )}
         {formularios}
