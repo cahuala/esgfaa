@@ -4,6 +4,7 @@ import { api, textoDoPdf } from '../api'
 import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
 import Tabela from '../componentes/Tabela'
+import Carregar from '../componentes/Carregar'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { dataPt } from '../formatar'
 
@@ -76,7 +77,7 @@ function NovoExtracto({ inicial, aoFechar, aoCriar }) {
         <Campo rotulo="Data" obrigatorio col="col-md-4" ajuda="Conta como data de antiguidade no posto."><input type="date" className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
         <Campo rotulo="Entidade" col="col-md-6"><input className="form-control form-control-sm" placeholder="Ex.: Chefe do Estado-Maior General das FAA" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
         <Campo rotulo="Resposta à proposta (opcional)" col="col-md-6"><Escolha valor={String(d.propostaId ?? '')} aoMudar={(v) => setD({ ...d, propostaId: v })} opcoes={(propostas ?? []).map((p) => [String(p.id), `N.º ${p.id} — ${p.titulo}`])} vazio="Nenhuma" /></Campo>
-        <Campo rotulo="Extracto digitalizado (PDF ou imagem)" col="col-12" ajuda={estado}><input type="file" className="form-control form-control-sm" accept="application/pdf,image/*" onChange={(e) => escolher(e.target.files[0])} /></Campo>
+        <Campo rotulo="Extracto digitalizado" col="col-12" ajuda={estado}><Carregar aceitar="application/pdf,image/*" maxMb={25} icone="fa-file-contract" ficheiros={ficheiro ? [ficheiro] : []} aoMudar={(l) => escolher(l[0] ?? null)} ajuda="PDF (de preferência com texto, para o sistema encontrar os militares) ou imagem · até 25 MB" /></Campo>
       </div>
     </Modal>
   )

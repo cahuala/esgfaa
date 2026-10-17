@@ -74,3 +74,23 @@ export async function textoDoPdf(ficheiro) {
   }
   return partes.join('\n')
 }
+
+// envio com barra de progresso (o fetch não diz quanto já foi): devolve a resposta como o api()
+export function enviarComProgresso(caminho, formulario, aoProgresso, metodo = 'POST') {
+  return new Promise((ok, falha) => {
+    const x = new XMLHttpRequest()
+    x.open(metodo, `${API}/api${caminho}`)
+    const t = lerToken()
+    if (t) x.setRequestHeader('Authorization', `Bearer ${t}`)
+    x.upload.onprogress = (e) => { if (e.lengthComputable) aoProgresso?.((e.loaded / e.total) * 100) }
+    x.onload = () => {
+      let d = {}
+      try { d = x.responseText ? JSON.parse(x.responseText) : {} } catch { /* resposta sem JSON */ }
+      if (x.status === 401) aoExpirar()
+      if (x.status >= 200 && x.status < 300) ok(x.status === 204 ? null : d)
+      else falha(Object.assign(new Error(d.erro || `Erro ${x.status}`), { codigo: d.codigo, campo: d.campo }))
+    }
+    x.onerror = () => falha(new Error('Não foi possível contactar o servidor do pessoal. Verifique a ligação à rede interna.'))
+    x.send(formulario)
+  })
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { abrirFicheiro, api, urlFoto } from '../api'
+import { abrirFicheiro, api, enviarComProgresso, urlFoto } from '../api'
 import { etiquetaProcesso, sinteseBiografica } from '../documentos'
 import Foto from '../componentes/Foto'
 import { reduzirFoto } from '../fotos'
@@ -10,6 +10,7 @@ import { fichaPdf } from '../fichaPdf'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
+import Carregar from '../componentes/Carregar'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
@@ -38,8 +39,10 @@ export default function Perfil() {
   const urlDaFoto = foto.chave === chaveFoto ? foto.url : null
 
   async function enviarFoto(e) {
-    const f = e.target.files[0]
+    const f = e.target?.files?.[0] ?? e.dataTransfer?.files?.[0]
     if (!f) return
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { avisar('A fotografia tem de ser JPG, PNG ou WEBP.', 'erro'); return }
+    if (f.size > 30 * 1048576) { avisar('Fotografia demasiado grande (máximo 30 MB antes de reduzir).', 'erro'); return }
     const fd = new FormData()
     try {
       fd.append('foto', await reduzirFoto(f))
@@ -49,7 +52,7 @@ export default function Perfil() {
     } catch (x) {
       avisar(x.message, 'erro')
     }
-    e.target.value = ''
+    if (e.target?.value) e.target.value = ''
   }
 
   if (erro) return <Erro texto={erro} aoRepetir={carregar} />
@@ -72,7 +75,7 @@ export default function Perfil() {
         <div className="profile-header">
           <div className="profile-header-cover" />
           <div className="profile-header-content">
-            <div className="profile-header-img pes-foto">
+            <div className="profile-header-img pes-foto" onDragOver={(e) => { if (editar) e.preventDefault() }} onDrop={(e) => { if (editar) { e.preventDefault(); enviarFoto(e) } }} title={editar ? 'Arraste uma fotografia para aqui ou clique na câmara' : ''}>
               {urlDaFoto ? <img src={urlDaFoto} alt={`Fotografia de ${p.nome}`} /> : <i className="fa fa-user fa-4x text-muted" />}
               {editar && <button type="button" className="pes-foto-mudar" onClick={() => ficheiro.current.click()} title="Mudar fotografia"><i className="fa fa-camera" /></button>}
               <input ref={ficheiro} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={enviarFoto} />
@@ -285,7 +288,7 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
   const { ref, avisar } = useSessao()
   const [loc, setLoc] = useState({ estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', estado: p.processo?.estado ?? 'activo', observacoes: p.processo?.observacoes ?? '' })
   const [novo, setNovo] = useState({ tipo: 'bi', titulo: '', data: '' })
-  const [aEnviar, setAEnviar] = useState(false)
+  const [aEnviar, setAEnviar] = useState(null)
   const falta = []
   const tem = (v, t) => { if (!v) falta.push(t) }
   tem(p.bi, 'N.º do BI'); tem(p.dataNascimento, 'Data de nascimento'); tem(p.fotoId, 'Fotografia'); tem(p.telefone, 'Telefone'); tem(p.habilitacao, 'Habilitações'); tem(p.unidadeId, 'Unidade')
@@ -294,19 +297,19 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
   const guardar = () => api(`/processos/${p.id}`, { metodo: 'PUT', corpo: loc }).then(() => { avisar(p.processo ? 'Processo actualizado.' : 'Processo aberto e numerado.'); aoMudar() }).catch((e) => avisar(e.message, 'erro'))
   async function anexar(f) {
     if (!f) return
-    setAEnviar(true)
+    setAEnviar(0)
     const fd = new FormData()
     fd.append('tipo', novo.tipo)
     fd.append('titulo', novo.titulo)
     fd.append('data', novo.data)
     fd.append('ficheiro', f)
     try {
-      await api(`/pessoas/${p.id}/documentos`, { metodo: 'POST', formulario: fd })
+      await enviarComProgresso(`/pessoas/${p.id}/documentos`, fd, setAEnviar)
       avisar('Documento junto ao processo.')
       setNovo({ ...novo, titulo: '' })
       aoMudar()
     } catch (e) { avisar(e.message, 'erro') }
-    setAEnviar(false)
+    setAEnviar(null)
   }
   return (
     <div className="row">
@@ -332,8 +335,8 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
             <div className="row align-items-end border-bottom pb-2 mb-2">
               <Campo rotulo="Tipo" col="col-md-4"><Escolha valor={novo.tipo} aoMudar={(v) => setNovo({ ...novo, tipo: v })} opcoes={ref.tiposDocumento} vazio={null} /></Campo>
               <Campo rotulo="Título (opcional)" col="col-md-4"><input className="form-control form-control-sm" value={novo.titulo} onChange={(e) => setNovo({ ...novo, titulo: e.target.value })} /></Campo>
-              <Campo rotulo="Data" col="col-md-2"><input type="date" className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
-              <div className="col-md-2 mb-2"><label className="btn btn-sm btn-theme w-100 mb-0">{aEnviar ? <i className="fa fa-spinner fa-spin" /> : <><i className="fa fa-upload me-1" />Juntar</>}<input type="file" hidden accept="application/pdf,image/*,.docx" onChange={(e) => { anexar(e.target.files[0]); e.target.value = '' }} /></label></div>
+              <Campo rotulo="Data do documento" col="col-md-4"><input type="date" className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
+              <div className="col-12 mb-2"><Carregar aceitar="application/pdf,image/*,.docx" maxMb={25} compacto titulo={`Juntar ${ref.tiposDocumento[novo.tipo]?.toLowerCase() ?? 'documento'}: arraste para aqui`} progresso={aEnviar} aoEscolher={anexar} ajuda="PDF, imagem digitalizada ou Word · até 25 MB" /></div>
             </div>
           )}
           <Tabela titulo={`Processo individual — ${p.nome}`} linhas={p.documentos.map((d) => ({ ...d, tipoNome: ref.tiposDocumento[d.tipo] ?? d.tipo }))} aoClicar={(d) => abrirFicheiro(`/documentos/${d.id}/ficheiro`, d.nomeOriginal).catch((e) => avisar(e.message, 'erro'))} vazio="Sem documentos digitalizados." colunas={[

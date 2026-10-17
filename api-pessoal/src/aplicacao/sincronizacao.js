@@ -22,10 +22,10 @@ export class ServicoSincronizacao {
     return Boolean(this.config.portal.url && this.config.portal.chave)
   }
 
-  #conteudo(p) {
+  #conteudo(p, contaId) {
     const ativo = p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
     return {
-      ref: `pessoal-${p.id}`, tipo: p.vinculo === 'estudante' ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
+      ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'estudante' ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
       dados: { posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : '', ramo: p.ramo ?? '', nip: p.nip ?? '', telefone: p.telefone ?? '', departamento: p.unidade?.nome ?? '' },
     }
   }
@@ -46,12 +46,22 @@ export class ServicoSincronizacao {
     return { emFila: ids.length }
   }
 
+  // depois de uma alteração, envia daí a poucos segundos (junta várias alterações seguidas num só pedido)
+  agendar(ms = 3000) {
+    if (!this.ativa || this.temporizador) return
+    this.temporizador = setTimeout(() => {
+      this.temporizador = null
+      this.enviarPendentes().catch(() => {})
+    }, ms)
+    this.temporizador.unref?.()
+  }
+
   // envia o que está pendente (corre de minuto a minuto e também a pedido)
   async enviarPendentes() {
     if (!this.ativa) return { enviados: 0, erros: 0, inativa: true }
     const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
-    const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa)) })
+    const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId)) })
     const data = String(Math.floor(this.agora().getTime() / 1000))
     let resultados
     try {

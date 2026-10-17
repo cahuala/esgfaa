@@ -89,7 +89,14 @@ export class ServicoRegistoPessoal {
       try {
         const email = emailDaEscola(p.email, this.dominioEmail)
         const t = escolha(p.tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
-        const existente = await this.contas.porEmail(email)
+        // a conta já enviada reconhece-se pelo id (assim uma mudança de e-mail não cria outra conta)
+        const porId = p.contaId ? await this.contas.porId(p.contaId) : null
+        const existente = (porId && porId.tipo === t ? porId : null) ?? await this.contas.porEmail(email)
+        if (existente && existente.email !== email) {
+          const outra = await this.contas.porEmail(email)
+          if (outra && outra.id !== existente.id) throw new ErroValidacao('Já existe outra conta no portal com o novo e-mail.')
+          existente.email = email
+        }
         if (!existente) {
           if (!p.ativo) {
             resultados.push({ ref: p.ref, ok: true, contaId: null })

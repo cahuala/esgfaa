@@ -38,5 +38,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     mensagens: new ServicoMensagens({ bd, ficheiros, ...relogio }),
     sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, ...(enviar ? { enviar } : {}), ...relogio }),
   }
+  // um docente ou estudante alterado vai para o portal daí a poucos segundos (não espera pelo minuto)
+  if (!config.teste) pessoas.aoMudarPortal = () => servicos.sincronizacao.agendar()
   return { config, bd, servicos, fechar: () => bd.$disconnect() }
 }

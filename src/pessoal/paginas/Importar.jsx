@@ -5,6 +5,7 @@ import { useSessao } from '../sessao'
 import { lerCsv, lerXlsx } from '../../admin/paginas/academico/lerFolha'
 import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
+import Carregar from '../componentes/Carregar'
 import { Cabecalho, Escolha, Painel } from '../componentes/Ui'
 
 // colunas reconhecidas na folha (pelo título, sem acentos nem maiúsculas) → campo da ficha
@@ -125,8 +126,8 @@ export default function Importar() {
                 <Escolha valor={modo} aoMudar={(m) => { setModo(m); if (folha) simular(folha, m) }} opcoes={[['novos', 'Inserir novos (cria fichas)'], ['actualizar', 'Actualizar por NIP (só as colunas preenchidas)']]} vazio={null} />
               </div>
               <div className="col-md-5 mb-2">
-                <label className="form-label small fw-semibold">Ficheiro (.xlsx ou .csv)</label>
-                <input type="file" className="form-control form-control-sm" accept=".xlsx,.csv,.txt" onChange={(e) => { escolher(e.target.files[0]); e.target.value = '' }} disabled={aTrabalhar} />
+                <label className="form-label small fw-semibold">Folha Excel</label>
+                <Carregar aceitar=".xlsx,.csv,.txt" maxMb={20} compacto icone="fa-file-excel" titulo={folha ? `Outra folha (actual: ${folha.nome})` : 'Arraste a folha para aqui'} ajuda="Excel (.xlsx) ou CSV · até 20 MB" aoEscolher={escolher} desativado={aTrabalhar} />
               </div>
               <div className="col-md-3 mb-2"><button type="button" className="btn btn-sm btn-outline-success w-100" onClick={modelo}><i className="fa fa-download me-1" />Descarregar o modelo</button></div>
             </div>
@@ -144,10 +145,7 @@ export default function Importar() {
       {aba === 'fotos' && (
         <Painel titulo="Fotografias em lote" icone="fa-images">
           <p className="small">Escolha a pasta (ou várias fotografias). O <strong>nome de cada ficheiro tem de ser o NIP</strong> (ou o n.º de agente, para civis), por exemplo <code>123456.jpg</code>. As fotografias são reduzidas antes de enviar.</p>
-          <div className="d-flex gap-2 flex-wrap">
-            <label className="btn btn-theme mb-0"><i className="fa fa-folder-open me-1" />Escolher a pasta<input type="file" hidden webkitdirectory="" directory="" multiple onChange={(e) => enviarFotos(e.target.files)} /></label>
-            <label className="btn btn-outline-theme mb-0"><i className="fa fa-images me-1" />Escolher fotografias<input type="file" hidden accept="image/*" multiple onChange={(e) => enviarFotos(e.target.files)} /></label>
-          </div>
+          <Carregar aceitar="image/*" multiplo pasta maxMb={30} icone="fa-images" titulo="Arraste a pasta ou as fotografias para aqui" ajuda="JPG, PNG ou WEBP · nome do ficheiro = NIP ou n.º de agente · reduzidas antes de enviar" aoEscolher={enviarFotos} progresso={fotos && fotos.feitos < fotos.total ? (fotos.feitos / fotos.total) * 100 : null} />
           {fotos && (
             <div className="mt-3">
               <div className="progress mb-2" style={{ height: 8 }}><div className="progress-bar bg-success" style={{ width: `${(fotos.feitos / fotos.total) * 100}%` }} /></div>

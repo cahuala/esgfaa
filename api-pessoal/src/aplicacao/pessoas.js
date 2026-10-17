@@ -150,7 +150,10 @@ export class ServicoPessoas {
   }
 
   async #marcarSincronizacao(tx, p) {
-    if (vaiParaPortal(p)) await tx.sincronizacao.upsert({ where: { pessoaId: p.id }, create: { pessoaId: p.id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
+    if (vaiParaPortal(p)) {
+      await tx.sincronizacao.upsert({ where: { pessoaId: p.id }, create: { pessoaId: p.id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
+      this.aoMudarPortal?.()
+    }
   }
 
   // a(o) domiciliar só fica afecta(o) a oficial superior ou general, dentro do limite do posto
@@ -200,7 +203,10 @@ export class ServicoPessoas {
       if (antes.ativo && !n.ativo) await evento('saida', d.observacoes || 'Deixou de servir na Escola.')
       if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
-      if (vaiParaPortal(antes) && !vaiParaPortal(n)) await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
+      if (vaiParaPortal(antes) && !vaiParaPortal(n)) {
+        await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
+        this.aoMudarPortal?.()
+      }
       // a conta do sistema acompanha a unidade (expediente e mensagens) e fecha quando a pessoa sai
       if (n.unidadeId !== antes.unidadeId || n.ativo !== antes.ativo || n.nome !== antes.nome) await tx.utilizador.updateMany({ where: { pessoaId: id }, data: { unidadeId: n.unidadeId, nome: n.nome, ...(n.ativo ? {} : { ativo: false, versaoToken: { increment: 1 } }) } })
       return n

@@ -60,6 +60,13 @@ function Conversa({ id, aoMudar }) {
   const [anexo, setAnexo] = useState(null)
   const fim = useRef(null)
   const ultimo = useRef(0)
+  // anexo: arrastado para a conversa ou escolhido no clipe (até 25 MB: PDF, imagens, Word, Excel)
+  const escolherAnexo = (f) => {
+    if (!f) return
+    if (f.size > 25 * 1048576) return avisar(`${f.name} tem mais de 25 MB.`, 'erro')
+    if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type) && !/\.(docx|xlsx)$/i.test(f.name)) return avisar('Só PDF, imagens (JPG, PNG, WEBP), Word (.docx) ou Excel (.xlsx).', 'erro')
+    setAnexo(f)
+  }
 
   useEffect(() => {
     let vivo = true
@@ -101,7 +108,7 @@ function Conversa({ id, aoMudar }) {
   }
   const grupo = estado.conversa && estado.conversa.tipo !== 'directa'
   return (
-    <div className="pes-chat-conversa">
+    <div className="pes-chat-conversa" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); escolherAnexo(e.dataTransfer.files[0]) }}>
       <div className="p-2 border-bottom bg-white"><strong>{estado.conversa?.nome || (estado.conversa?.tipo === 'directa' ? 'Conversa directa' : '')}</strong></div>
       <div className="pes-chat-mensagens">
         {!estado.conversa && <Carregando />}
@@ -120,7 +127,7 @@ function Conversa({ id, aoMudar }) {
         <div ref={fim} />
       </div>
       <form className="pes-chat-escrever" onSubmit={enviar}>
-        <label className="btn btn-outline-secondary mb-0" title="Juntar ficheiro"><i className="fa fa-paperclip" /><input type="file" hidden onChange={(e) => setAnexo(e.target.files[0] ?? null)} /></label>
+        <label className="btn btn-outline-secondary mb-0" title="Juntar ficheiro"><i className="fa fa-paperclip" /><input type="file" hidden onChange={(e) => { escolherAnexo(e.target.files[0]); e.target.value = '' }} /></label>
         <div className="flex-grow-1">
           {anexo && <div className="small text-muted">📎 {anexo.name} <button type="button" className="btn btn-link btn-sm p-0" onClick={() => setAnexo(null)}>retirar</button></div>}
           <textarea className="form-control" rows={1} placeholder="Escreva uma mensagem… (Enter envia; Shift+Enter muda de linha)" value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) enviar(e) }} aria-label="Mensagem" />

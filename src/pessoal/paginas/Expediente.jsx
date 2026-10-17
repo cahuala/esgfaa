@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { abrirFicheiro, api } from '../api'
+import { abrirFicheiro, api, enviarComProgresso } from '../api'
 import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
 import Tabela from '../componentes/Tabela'
+import Carregar from '../componentes/Carregar'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
 
@@ -104,7 +105,7 @@ function NovoDocumento({ aoFechar, aoCriar }) {
         <Campo rotulo="Resumo" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={d.resumo} onChange={set('resumo')} /></Campo>
         <Campo rotulo={d.sentido === 'entrada' ? 'Distribuir também a (opcional)' : 'Enviar a (áreas da Escola)'} obrigatorio={d.sentido === 'interno'} col="col-md-6">{unidades ? <Destinos valor={d.destinos} aoMudar={set('destinos')} unidades={unidades} minha={utilizador.unidadeId} /> : <Carregando />}</Campo>
         <div className="col-md-6">
-          <Campo rotulo="Anexos (documento digitalizado)" col="col-12"><input type="file" multiple className="form-control form-control-sm" accept="application/pdf,image/*,.docx,.xlsx" onChange={(e) => setAnexos([...e.target.files])} /></Campo>
+          <Campo rotulo="Anexos (documento digitalizado)" col="col-12"><Carregar aceitar="application/pdf,image/*,.docx,.xlsx" multiplo maxMb={25} compacto ficheiros={anexos} aoMudar={setAnexos} ajuda="PDF, imagens, Word ou Excel · até 25 MB cada" /></Campo>
           <Campo rotulo="Nota para quem recebe" col="col-12"><input className="form-control form-control-sm" value={d.nota} onChange={set('nota')} /></Campo>
           <div className="col-12"><label className="form-check"><input type="checkbox" className="form-check-input" checked={d.temFisico} onChange={set('temFisico')} /> <span className="form-check-label">Há original em papel (segue depois do digital)</span></label></div>
           {d.temFisico && d.sentido !== 'entrada' && <Campo rotulo="Quem leva o original" col="col-12"><input className="form-control form-control-sm" placeholder="Ex.: Sold. Bumba (estafeta)" value={d.portador} onChange={set('portador')} /></Campo>}
@@ -122,6 +123,7 @@ function Documento({ id }) {
   const x = alterado?.id === id ? alterado : carregado
   const { dados: unidades } = useDados('/expediente/unidades')
   const [modal, setModal] = useState(null)
+  const [envio, setEnvio] = useState(null)
   const acao = async (caminho, corpo, msg, formulario) => {
     try {
       setX(await api(`/expediente/${id}${caminho}`, { metodo: 'POST', corpo, formulario }))
@@ -157,7 +159,8 @@ function Documento({ id }) {
               {x.resumo && <><dt>Resumo</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{x.resumo}</dd></>}
             </dl>
           </Painel>
-          <Painel titulo={`Anexos (${x.anexos.length})`} icone="fa-paperclip" acoes={x.naMinhaUnidade && x.estado === 'em_curso' && <label className="btn btn-xs btn-theme mb-0"><i className="fa fa-plus me-1" />Juntar<input type="file" hidden multiple onChange={(e) => { const fd = new FormData(); for (const f of e.target.files) fd.append('anexos', f); acao('/anexos', undefined, 'Anexo junto.', fd) }} /></label>} corpo={false}>
+          <Painel titulo={`Anexos (${x.anexos.length})`} icone="fa-paperclip" corpo={false}>
+            {x.naMinhaUnidade && x.estado === 'em_curso' && <div className="p-2 border-bottom"><Carregar aceitar="application/pdf,image/*,.docx,.xlsx" multiplo maxMb={25} compacto titulo="Juntar anexos: arraste para aqui" progresso={envio} aoEscolher={(l) => { const fd = new FormData(); for (const f of l) fd.append('anexos', f); setEnvio(0); enviarComProgresso(`/expediente/${id}/anexos`, fd, setEnvio).then((r) => { setX(r); avisar('Anexo(s) junto(s).') }).catch((e) => avisar(e.message, 'erro')).finally(() => setEnvio(null)) }} /></div>}
             <div className="list-group list-group-flush">
               {x.anexos.map((a) => <button key={a.id} type="button" className="list-group-item list-group-item-action" onClick={() => abrirFicheiro(`/anexos/${a.id}`, a.nome).catch((e) => avisar(e.message, 'erro'))}><i className={`fa ${a.mime === 'application/pdf' ? 'fa-file-pdf text-danger' : a.mime.startsWith('image/') ? 'fa-file-image text-info' : 'fa-file'} me-2`} />{a.nome}<span className="small text-muted ms-2">{Math.ceil(a.tamanho / 1024)} KB · {a.por}</span></button>)}
               {!x.anexos.length && <div className="list-group-item text-muted small">Sem anexos.</div>}

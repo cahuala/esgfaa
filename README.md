@@ -149,7 +149,15 @@ npm run semear              # (opcional) dados de demonstração
 
 A aplicação constrói-se com `npm run build` na raiz (fica em `dist/pessoal`) e é servida pela própria API interna (`APP_DIR`). Em desenvolvimento: `npm run dev` em `api-pessoal/` e abrir `http://localhost:5173/pessoal/`.
 
-Para ligar ao portal, defina a mesma chave nos dois lados: `INTEGRACAO_CHAVE` (32+ caracteres) na API do portal e, na API interna, `INTEGRACAO_CHAVE` e `PORTAL_API_URL` (endereço da API do portal). Sem chave, a entrada no portal não existe.
+**Ligação ao portal em produção** (os docentes e estudantes registados no sistema interno passam a ter conta no portal):
+
+1. Gere uma chave: `openssl rand -base64 48`. Ponha-a em `INTEGRACAO_CHAVE` **nos dois servidores** (a mesma).
+2. No servidor interno (`api-pessoal/.env`, ver `api-pessoal/.env.example`): `PORTAL_API_URL` = endereço da API do portal (ex.: `https://api.esgfaa.gov.ao`).
+3. A rede interna tem de deixar o servidor interno **sair** por HTTPS (porta 443) até à API do portal. O portal nunca entra na rede interna: o pedido é sempre de dentro para fora.
+4. Os dois servidores com a **hora certa** (NTP): pedidos com mais de 5 minutos de diferença são recusados (protecção contra repetição).
+5. Em «Ligação ao portal» (sistema interno): «Reenviar todos» a primeira vez. Depois, cada docente ou estudante criado ou alterado segue sozinho em poucos segundos; se o portal estiver em baixo, tenta de novo de minuto a minuto.
+
+As contas novas no portal entram com o e-mail como palavra-passe inicial (o portal obriga a mudá-la). Os e-mails têm de ser do domínio da Escola (`EMAIL_DOMINIO_ESCOLA`); os que não forem aparecem como erro na página «Ligação ao portal». Se o e-mail de alguém mudar, a conta do portal é a mesma (reconhecida pelo número da conta). Sem chave, a entrada no portal não existe.
 
 > As carreiras e categorias do **pessoal civil** seguem o regime geral da função pública e estão marcadas «a confirmar» até a Escola indicar a legislação que aplica.
 

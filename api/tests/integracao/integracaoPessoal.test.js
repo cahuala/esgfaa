@@ -36,6 +36,15 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await amb.contentor.repositorios.contasPortal.porEmail(p.email)).ativo, false)
   })
 
+  it('mudança de e-mail: a conta é reconhecida pelo id e não se cria outra', async () => {
+    const p = { ref: 'pessoal-50', tipo: 'docente', nome: 'Major Carlos Mendes Neto', email: 'c.mendes@esgfaa.gov.ao', ativo: true }
+    const contaId = (await enviar([p]).expect(200)).body.resultados[0].contaId
+    const r = await enviar([{ ...p, contaId, email: 'carlos.mendes@esgfaa.gov.ao' }]).expect(200)
+    assert.equal(r.body.resultados[0].contaId, contaId)
+    assert.equal(await amb.contentor.repositorios.contasPortal.porEmail('c.mendes@esgfaa.gov.ao'), null)
+    assert.equal((await amb.contentor.repositorios.contasPortal.porEmail('carlos.mendes@esgfaa.gov.ao')).id, contaId)
+  })
+
   it('e-mail de fora da Escola volta como erro dessa pessoa, sem parar as outras', async () => {
     const r = await enviar([
       { ref: 'pessoal-2', tipo: 'estudante', nome: 'Pessoa de Fora Qualquer', email: 'x@gmail.com', ativo: true },
