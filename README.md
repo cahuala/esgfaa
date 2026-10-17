@@ -161,6 +161,15 @@ As contas novas no portal entram com o e-mail como palavra-passe inicial (o port
 
 > As carreiras e categorias do **pessoal civil** seguem o regime geral da função pública e estão marcadas «a confirmar» até a Escola indicar a legislação que aplica.
 
+## Protecção de dados pessoais (Lei n.º 22/11)
+
+- **Política de privacidade** no site (`/Privacidade`, ligada no rodapé e no formulário de contacto), editável no painel em *Páginas do site → Política de privacidade*. O texto inicial deve ser revisto pelo jurista da Escola (responsável pelo tratamento e contacto).
+- **Aviso na primeira entrada** no portal, no painel e no sistema interno; fica registado quando cada pessoa toma conhecimento.
+- **Direitos dos titulares:** no portal (*Perfil → Os meus dados*) e no sistema interno (*A minha ficha*), cada pessoa descarrega os seus dados e faz pedidos (rectificação, oposição, acesso, eliminação). Respondem-se no painel (*Segurança → Pedidos sobre dados pessoais*) e no sistema interno (*Pedidos sobre dados pessoais*); a pessoa é avisada.
+- **Conservação:** todos os dias o servidor apaga o que já não é preciso — mensagens do formulário (24 meses), registo de atividades do painel (60), eventos de segurança (12), acessos às cadeiras (24) e o IP dos comentários (1). Os prazos mudam-se com `CONSERVAR_*_MESES`. Notas, certificados, percursos e processos individuais ficam (arquivo da Escola). No sistema interno, a auditoria apaga-se após 10 anos.
+- **Dados para fora de Angola:** a análise por IA e a pesquisa na internet do anti-plágio (Anthropic, Brave) e a tradução por IA ficam **desligadas** mesmo com chave, até a Escola autorizar com `DADOS_FORA_DE_ANGOLA=sim` (a lei exige autorização para transferências internacionais).
+- **O que a Escola tem de fazer:** registar ou pedir autorização dos tratamentos à Agência de Protecção de Dados (APD), sobretudo os dados sensíveis do sistema de pessoal; confirmar o texto da política; decidir sobre os serviços fora de Angola e sobre onde fica alojado o site.
+
 ## Segurança e acessos simultâneos
 
 **Testes de intrusão** (`api/tests/integracao/ataques.test.js`, `seguranca.test.js`, `sessao.test.js`, `rbac.test.js`, `ficheiros.test.js`), que correm em cada publicação. Cada ataque tem de ser recusado:

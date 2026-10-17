@@ -2,6 +2,12 @@ import { test, expect } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import { ADMIN_E2E } from '../../playwright.config.js'
 
+// aviso de privacidade (Lei n.º 22/11) na primeira entrada: quem testa toma conhecimento, como faria uma pessoa
+test.beforeEach(async ({ page }) => {
+  await page.addLocatorHandler(page.getByRole('button', { name: 'Tomei conhecimento' }), async (b) => { await b.click() })
+})
+
+
 const FOTO = fileURLToPath(new URL('../../src/assets/Logo.png', import.meta.url))
 
 async function entrar(page, { email = ADMIN_E2E.email, senha = ADMIN_E2E.senha } = {}) {

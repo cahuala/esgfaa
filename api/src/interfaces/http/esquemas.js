@@ -141,6 +141,8 @@ export const evento = z.object({
   turmaId: z.union([idNumerico, z.null()]).optional(), cadeiraId: z.union([idNumerico, z.null()]).optional(),
 })
 export const intervalo = z.object({ de: dataIso, ate: dataIso })
+export const pedidoDados = z.object({ tipo: texto(20), texto: texto(3000) })
+export const respostaPedidoDados = z.object({ estado: z.enum(['respondido', 'recusado']), resposta: texto(3000) })
 export const prazoNotas = z.object({
   componente: texto(10), inicio: dataIso, fim: dataIso, descricao: texto(300).optional(),
   turmaId: z.union([idNumerico, z.null()]).optional(), cadeiraId: z.union([idNumerico, z.null()]).optional(),

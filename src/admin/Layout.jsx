@@ -7,6 +7,7 @@ import Sede from '../assets/Escola De Guerra.png'
 import { t as tx } from '../i18n/linguas'
 import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
 import { api } from './api'
+import AvisoPrivacidade from '../components/AvisoPrivacidade'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -23,6 +24,10 @@ function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
     </div>
   )
 }
+
+// aviso de privacidade na primeira entrada no painel
+const obterPrivacidade = () => api('/eu/privacidade')
+const aceitarPrivacidade = () => api('/eu/privacidade', { metodo: 'POST' })
 
 function Layout({ children }) {
   const { utilizador, pode, sair } = useSessao()
@@ -195,6 +200,7 @@ function Layout({ children }) {
             {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto={tx('Utilizadores')} />}
             {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto={tx('Papéis e permissões')} />}
             {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto={tx('Registo de atividades')} />}
+            {pode('atividades.ver') && <ItemMenu para="/privacidade" icone="fa-user-lock" texto={tx('Pedidos sobre dados pessoais')} />}
 
             <div className="menu-divider" />
             <div className="menu-item d-flex">
@@ -212,6 +218,7 @@ function Layout({ children }) {
 
       {/* Conteúdo */}
       <div id="content" className="app-content">
+        <AvisoPrivacidade obter={obterPrivacidade} aceitar={aceitarPrivacidade} area="painel" />
         {utilizador.deveMudarSenha && (
           <div className="alert alert-warning d-flex align-items-center mb-3" role="alert">
             <i className="fa fa-shield-alt fa-lg me-3" />

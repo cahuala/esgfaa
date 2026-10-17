@@ -8,6 +8,8 @@ import { iniciais } from './formatar'
 import CabecalhoAvisos from './CabecalhoAvisos'
 import { t as tx } from '../i18n/linguas'
 import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
+import AvisoPrivacidade from '../components/AvisoPrivacidade'
+import { api } from './api'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -26,6 +28,10 @@ function ItemMenu({ para, icone, texto, fim, etiqueta }) {
 }
 
 // moldura do portal no tema do painel (Color Admin): cabeçalho, barra lateral com o perfil e o menu
+// aviso de privacidade na primeira entrada (fixos: não mudam entre desenhos)
+const obterPrivacidade = () => api('/eu/privacidade')
+const aceitarPrivacidade = () => api('/eu/privacidade', { metodo: 'POST' })
+
 function Layout({ children }) {
   const { conta, eDocente, sair } = useSessao()
   const { pathname } = useLocation()
@@ -195,6 +201,7 @@ function Layout({ children }) {
       <div id="content" className="app-content">
         {children}
       </div>
+      <AvisoPrivacidade obter={obterPrivacidade} aceitar={aceitarPrivacidade} area="portal" />
     </div>
   )
 }

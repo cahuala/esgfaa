@@ -45,6 +45,15 @@ const ESQUEMA = z.object({
   BRAVE_API_KEY: z.string().default(''),
   PESQUISAS_WEB_POR_DOCUMENTO: inteiro(8, 0, 40),
   ANTHROPIC_API_KEY: z.string().default(''),
+  // Lei n.º 22/11: enviar dados pessoais para serviços fora de Angola (IA da Anthropic, pesquisa Brave) só com
+  // autorização da Escola (e da APD). Sem "sim", esses serviços ficam desligados mesmo com chave.
+  DADOS_FORA_DE_ANGOLA: z.enum(['sim', 'nao']).default('nao'),
+  // prazos de conservação (meses) dos registos técnicos com dados pessoais
+  CONSERVAR_CONTACTOS_MESES: z.coerce.number().int().min(1).max(600).default(24),
+  CONSERVAR_ATIVIDADES_MESES: z.coerce.number().int().min(1).max(600).default(60),
+  CONSERVAR_SEGURANCA_MESES: z.coerce.number().int().min(1).max(600).default(12),
+  CONSERVAR_ACESSOS_MESES: z.coerce.number().int().min(1).max(600).default(24),
+  CONSERVAR_IP_COMENTARIOS_MESES: z.coerce.number().int().min(1).max(600).default(1),
   ANTHROPIC_MODELO: z.string().regex(/^[a-z0-9.-]+$/).default('claude-sonnet-5-5'),
   // tradutor automático gratuito (LibreTranslate no servidor da Escola), usado se não houver chave da IA
   LIBRETRANSLATE_URL: z.union([z.literal(''), z.url()]).default(''),
@@ -114,6 +123,8 @@ export function criarConfig(env = process.env, extras = {}) {
     // serviços externos opcionais (sem chave ficam desligados)
     pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },
     ia: { chave: e.ANTHROPIC_API_KEY, modelo: e.ANTHROPIC_MODELO },
+    dadosForaDeAngola: e.DADOS_FORA_DE_ANGOLA === 'sim',
+    conservacao: { contactos: e.CONSERVAR_CONTACTOS_MESES, atividades: e.CONSERVAR_ATIVIDADES_MESES, seguranca: e.CONSERVAR_SEGURANCA_MESES, acessos: e.CONSERVAR_ACESSOS_MESES, ipComentarios: e.CONSERVAR_IP_COMENTARIOS_MESES },
     tradutor: { url: e.LIBRETRANSLATE_URL, chave: e.LIBRETRANSLATE_CHAVE },
     // avisos no telemóvel (Web Push): sem chaves, o servidor cria-as e guarda-as na pasta de dados
     push: { publica: e.VAPID_PUBLIC_KEY, privada: e.VAPID_PRIVATE_KEY, assunto: e.VAPID_SUBJECT },

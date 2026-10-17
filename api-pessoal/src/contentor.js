@@ -15,6 +15,7 @@ import { ServicoExtractos } from './aplicacao/extractos.js'
 import { ServicoExpediente } from './aplicacao/expediente.js'
 import { ServicoMensagens } from './aplicacao/mensagens.js'
 import { Ficheiros } from './infraestrutura/ficheiros.js'
+import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 
 // liga as peças: base de dados, segurança e serviços (os testes passam outro esquema, relógio e envio)
 export function criarContentor(config, { esquema = null, agora, enviar, enviarBi } = {}) {
@@ -36,6 +37,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     extractos: new ServicoExtractos({ bd, auditoria, ficheiros, ...relogio }),
     expediente: new ServicoExpediente({ bd, auditoria, ficheiros, ...relogio }),
     mensagens: new ServicoMensagens({ bd, ficheiros, ...relogio }),
+    privacidade: new ServicoPrivacidade({ bd, pessoas, auditoria, ...relogio }),
     sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, ...(enviar ? { enviar } : {}), ...relogio }),
   }
   // um docente ou estudante alterado vai para o portal daí a poucos segundos (não espera pelo minuto)

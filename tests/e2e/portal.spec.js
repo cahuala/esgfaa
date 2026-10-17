@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test'
 import { ADMIN_E2E } from '../../playwright.config.js'
 
+// aviso de privacidade (Lei n.º 22/11) na primeira entrada: quem testa toma conhecimento, como faria uma pessoa
+test.beforeEach(async ({ page }) => {
+  await page.addLocatorHandler(page.getByRole('button', { name: 'Tomei conhecimento' }), async (b) => { await b.click() })
+})
+
+
 const NOVA = 'Portal2026segura'
 
 async function primeiraEntrada(page, email) {

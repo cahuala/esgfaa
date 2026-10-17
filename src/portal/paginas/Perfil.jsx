@@ -66,6 +66,7 @@ function Perfil() {
               <AvisosAparelho />
             </Cartao>
           )}
+          <OsMeusDados avisar={setAviso} />
           <Cartao titulo={<><i className="fa fa-key me-2" />{tx('Mudar a palavra-passe')}</>}>
             <MudarSenha aoTerminar={() => setAviso({ texto: tx('Palavra-passe alterada. As outras sessões foram terminadas.') })} />
           </Cartao>
@@ -73,6 +74,71 @@ function Perfil() {
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+const TIPOS_PEDIDO = { rectificacao: 'Rectificação (corrigir dados)', acesso: 'Acesso aos meus dados', oposicao: 'Oposição a um tratamento', eliminacao: 'Eliminação de dados', outro: 'Outro assunto sobre dados pessoais' }
+const ESTADOS_PEDIDO = { pendente: 'Por responder', respondido: 'Respondido', recusado: 'Recusado' }
+
+// direitos do titular (Lei n.º 22/11): descarregar os seus dados e fazer pedidos à Escola
+function OsMeusDados({ avisar }) {
+  const [pedidos, setPedidos] = useState(null)
+  const [f, setF] = useState({ tipo: 'rectificacao', texto: '' })
+  const [aEnviar, setAEnviar] = useState(false)
+  const carregar = () => api('/eu/pedidos-dados').then(setPedidos).catch(() => setPedidos([]))
+  useEffect(() => { carregar() }, [])
+  async function descarregar() {
+    try {
+      const d = await api('/eu/dados')
+      const url = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'os-meus-dados.json'
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    } catch (e) {
+      avisar({ tipo: 'erro', texto: e.message })
+    }
+  }
+  async function pedir(e) {
+    e.preventDefault()
+    setAEnviar(true)
+    try {
+      await api('/eu/pedidos-dados', { metodo: 'POST', corpo: f })
+      setF({ ...f, texto: '' })
+      avisar({ texto: tx('Pedido enviado. A Escola responde aqui e avisa-o nas notificações.') })
+      carregar()
+    } catch (x) {
+      avisar({ tipo: 'erro', texto: x.message })
+    } finally {
+      setAEnviar(false)
+    }
+  }
+  return (
+    <Cartao titulo={<><i className="fa fa-user-shield me-2" />{tx('Os meus dados')}</>}>
+      <p className="small">{tx('Os seus dados são tratados segundo a Lei n.º 22/11 (protecção de dados pessoais).')} <a href={`${import.meta.env.BASE_URL}Privacidade`} target="_blank" rel="noreferrer">{tx('Política de privacidade')}</a></p>
+      <button type="button" className="btn btn-white btn-sm mb-3" onClick={descarregar}><i className="fa fa-download me-1" />{tx('Descarregar os meus dados')}</button>
+      <form onSubmit={pedir}>
+        <label className="form-label fw-bold" htmlFor="pd-tipo">{tx('Fazer um pedido')}</label>
+        <select id="pd-tipo" className="form-select form-select-sm mb-2" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
+          {Object.entries(TIPOS_PEDIDO).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
+        </select>
+        <textarea className="form-control form-control-sm mb-2" rows={3} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} placeholder={tx('Diga o que pretende (ex.: o meu telefone está errado, o correcto é…)')} aria-label={tx('Descrição do pedido')} required minLength={5} />
+        <button type="submit" className="btn btn-theme btn-sm" disabled={aEnviar || f.texto.trim().length < 5}><i className="fa fa-paper-plane me-1" />{tx('Enviar pedido')}</button>
+      </form>
+      {pedidos?.length > 0 && (
+        <ul className="list-unstyled small mt-3 mb-0">
+          {pedidos.map((p) => (
+            <li key={p.id} className="border-top pt-2 mt-2">
+              <span className={`badge ${p.estado === 'pendente' ? 'bg-warning text-dark' : p.estado === 'respondido' ? 'bg-success' : 'bg-gray-500'} me-1`}>{tx(ESTADOS_PEDIDO[p.estado] ?? p.estado)}</span>
+              <strong>{tx(TIPOS_PEDIDO[p.tipo] ?? p.tipo)}</strong> · {dataHora(p.criadoEm)}
+              <div className="text-muted">{p.texto}</div>
+              {p.resposta && <div><i className="fa fa-reply me-1" />{p.resposta}</div>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Cartao>
   )
 }
 

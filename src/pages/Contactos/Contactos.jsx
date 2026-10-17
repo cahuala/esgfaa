@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube, FaCheck, FaMapMarkerAlt } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import FAQ from '../../components/FAQ/Faq'
@@ -134,7 +135,7 @@ function Contactos() {
               <div className={styles.enviarLinha}>
                 <label className={styles.consentimento}>
                   <input type="checkbox" name="consentimento" checked={form.consentimento} onChange={handleChange} required />
-                  <span>{t('Autorizo a utilização dos meus dados apenas para responder a este pedido.')}</span>
+                  <span>{t('Autorizo a utilização dos meus dados apenas para responder a este pedido.')} <Link to="/Privacidade">{t('Política de privacidade')}</Link></span>
                 </label>
                 <button type="submit" className={ed.botao} disabled={aEnviar}>{aEnviar ? t('A enviar…') : t('Enviar mensagem')}</button>
               </div>

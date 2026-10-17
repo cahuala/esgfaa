@@ -188,6 +188,19 @@ describe('Expediente, mensagens e contas de utente', () => {
     assert.equal((await ana.get('/api/expediente?caixa=arquivo')).body.length, 1)
   })
 
+  it('protecção de dados: aviso, a própria ficha para descarregar e pedidos respondidos pela RPQ', async () => {
+    assert.equal((await ana.get('/api/eu/privacidade')).body.conhecimentoEm, null)
+    assert.ok((await ana.post('/api/eu/privacidade')).body.conhecimentoEm)
+    const d = (await ana.get('/api/eu/dados').expect(200)).body
+    assert.equal(d.ficha.nome, 'Ana Luísa Kalunga')
+    const p = (await ana.post('/api/eu/pedidos-dados').send({ tipo: 'rectificacao', texto: 'A minha data de ingresso está errada.' }).expect(201)).body
+    assert.equal((await ana.get('/api/privacidade/pedidos')).status, 403) // o utente não vê os pedidos dos outros
+    await adm.put(`/api/privacidade/pedidos/${p.id}`).send({ estado: 'respondido', resposta: 'Corrigida na ficha.' }).expect(200)
+    assert.equal((await ana.get('/api/eu/pedidos-dados')).body[0].estado, 'respondido')
+    const r = await amb.contentor.servicos.privacidade.aplicarConservacao()
+    assert.equal(typeof r.auditoria, 'number')
+  })
+
   it('quem não está no percurso não vê o documento', async () => {
     const outra = (await adm.post('/api/unidades').send({ nome: 'Secretaria Geral' }).expect(201)).body
     const d = (await ana.post('/api/expediente').field('dados', JSON.stringify({ assunto: 'Assunto reservado', classificacao: 'confidencial', destinos: [outra.id] })).expect(201)).body

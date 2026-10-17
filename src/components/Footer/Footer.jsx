@@ -38,6 +38,7 @@ const colunas = [
     links: [
       { label: 'Contactos', to: '/Contactos#formulario' },
       { label: 'Perguntas Frequentes', to: '/Contactos#faq' },
+      { label: 'Política de privacidade', to: '/Privacidade' },
       { label: 'Portal Académico', href: `${import.meta.env.BASE_URL}portal/` },
     ],
   },

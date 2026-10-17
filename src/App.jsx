@@ -16,6 +16,7 @@ import ArtigoDetalhe from './pages/Artigos/ArtigoDetalhe'
 import Revista from './pages/Revista/Revista'
 import RevistaLeitura from './pages/Revista/RevistaLeitura'
 import Contactos from './pages/Contactos/Contactos'
+import Privacidade from './pages/Privacidade/Privacidade'
 import Cursos from './pages/Cursos/Cursos'
 import CursoDetalhe from './pages/Cursos/CursoDetalhe'
 import NaoEncontrado from './pages/NaoEncontrado/NaoEncontrado'
@@ -44,6 +45,7 @@ function App() {
         <Route path="/Cursos" element={<Cursos />} />
         <Route path="/Cursos/:id" element={<CursoDetalhe />} />
         <Route path="/Contactos" element={<Contactos />} />
+        <Route path="/Privacidade" element={<Privacidade />} />
         <Route path="/Candidatura" element={<Navigate to="/Cursos#admissao" replace />} />
         <Route path="*" element={<NaoEncontrado />} />
       </Routes>

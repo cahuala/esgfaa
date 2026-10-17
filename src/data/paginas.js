@@ -2,6 +2,7 @@ import Auditorio from '../assets/Auditorio.png'
 import Escola2 from '../assets/Escola2.jpeg'
 import EscolaDeGuerra from '../assets/Escola De Guerra.png'
 import contactos from './contactos'
+import privacidade from './privacidade'
 import { calendarioAdmissao, processoAdmissao } from './cursos'
 
 /*
@@ -130,6 +131,6 @@ const cursos = {
   calendario: calendarioAdmissao,
 }
 
-const paginas = { home, institucional, contactos, cursos }
+const paginas = { home, institucional, contactos, cursos, privacidade }
 
 export default paginas

@@ -20,7 +20,7 @@ const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['carreira', 'Carreira', 'fa-ch
 
 export default function Perfil() {
   const { id } = useParams()
-  const { ref, pode, avisar } = useSessao()
+  const { ref, pode, avisar, utilizador } = useSessao()
   const navegar = useNavigate()
   const { dados: p, erro, recarregar: carregar } = useDados(`/pessoas/${id}`)
   const [foto, setFoto] = useState({ chave: null, url: null })
@@ -151,6 +151,7 @@ export default function Perfil() {
                 </div>
               </Painel>
             )}
+            {utilizador.pessoaId === p.id && <OsMeusDados />}
             {p.limiteDomiciliares > 0 && (
               <Painel titulo={`Empregados domiciliares (${p.domiciliares.length} de ${p.limiteDomiciliares})`} icone="fa-house-user">
                 {p.domiciliares.map((d) => <Link key={d.id} to={`/pessoas/${d.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={d.id} fotoId={d.fotoId} nome={d.nome} tamanho={30} /><span className="small">{d.nome}{d.telefone && <span className="text-muted"> · {d.telefone}</span>}</span></Link>)}
@@ -280,6 +281,38 @@ export default function Perfil() {
       {modal?.curso && <FormCurso p={p} curso={modal.curso} aoFechar={fechar} aoGuardar={(m) => depois(m)} />}
       {modal?.terminar && <TerminarGraduacao p={p} g={modal.terminar} aoFechar={fechar} aoGuardar={() => depois('Graduação terminada.')} />}
     </>
+  )
+}
+
+const TIPOS_PEDIDO = { rectificacao: 'Rectificação (corrigir dados)', acesso: 'Acesso aos meus dados', oposicao: 'Oposição a um tratamento', eliminacao: 'Eliminação de dados', outro: 'Outro assunto sobre dados pessoais' }
+const ESTADOS_PEDIDO = { pendente: 'Por responder', respondido: 'Respondido', recusado: 'Recusado' }
+
+// direitos do titular (Lei n.º 22/11): descarregar a própria ficha e pedir correcções
+function OsMeusDados() {
+  const { avisar } = useSessao()
+  const { dados: pedidos, recarregar } = useDados('/eu/pedidos-dados')
+  const [f, setF] = useState({ tipo: 'rectificacao', texto: '' })
+  async function descarregar() {
+    try {
+      const d = await api('/eu/dados')
+      const url = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'os-meus-dados.json'
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    } catch (e) { avisar(e.message, 'erro') }
+  }
+  const pedir = () => api('/eu/pedidos-dados', { metodo: 'POST', corpo: f }).then(() => { setF({ ...f, texto: '' }); avisar('Pedido enviado à Repartição de Pessoal e Quadros.'); recarregar() }).catch((e) => avisar(e.message, 'erro'))
+  return (
+    <Painel titulo="Os meus dados" icone="fa-user-shield">
+      <p className="small">Os seus dados são tratados segundo a Lei n.º 22/11. <Link to="/privacidade">Política de privacidade</Link></p>
+      <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={descarregar}><i className="fa fa-download me-1" />Descarregar os meus dados</button>
+      <Escolha valor={f.tipo} aoMudar={(v) => setF({ ...f, tipo: v })} opcoes={TIPOS_PEDIDO} vazio={null} aria-label="Tipo de pedido" />
+      <textarea className="form-control form-control-sm my-2" rows={3} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} placeholder="Diga o que pretende (ex.: a minha data de ingresso está errada)" aria-label="Descrição do pedido" />
+      <button type="button" className="btn btn-sm btn-theme" disabled={f.texto.trim().length < 5} onClick={pedir}><i className="fa fa-paper-plane me-1" />Enviar pedido</button>
+      {pedidos?.length > 0 && <ul className="list-unstyled small mt-3 mb-0">{pedidos.map((x) => <li key={x.id} className="border-top pt-2 mt-2"><span className={`badge ${x.estado === 'pendente' ? 'bg-warning text-dark' : x.estado === 'respondido' ? 'bg-success' : 'bg-secondary'} me-1`}>{ESTADOS_PEDIDO[x.estado]}</span><strong>{TIPOS_PEDIDO[x.tipo]}</strong><div className="text-muted">{x.texto}</div>{x.resposta && <div><i className="fa fa-reply me-1" />{x.resposta}</div>}</li>)}</ul>}
+    </Painel>
   )
 }
 

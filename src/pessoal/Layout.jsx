@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import AvisoPrivacidade from '../components/AvisoPrivacidade'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessao'
 import Brasao from '../assets/Logo.png'
@@ -17,6 +18,9 @@ function Item({ para, icone, texto, fim, contador = 0 }) {
     </div>
   )
 }
+
+const obterPrivacidade = () => api('/eu/privacidade')
+const aceitarPrivacidade = () => api('/eu/privacidade', { metodo: 'POST' })
 
 export default function Layout({ children }) {
   const { utilizador, pode, sair } = useSessao()
@@ -104,6 +108,8 @@ export default function Layout({ children }) {
             {pode('administrar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
             {pode('administrar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
+            {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
+            <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
             <Item para="/senha" icone="fa-key" texto="Mudar palavra-passe" />
 
             <div className="menu-divider" />
@@ -116,7 +122,7 @@ export default function Layout({ children }) {
       <div className="app-sidebar-bg" data-bs-theme="dark" />
       <div className="app-sidebar-mobile-backdrop"><button type="button" className="stretched-link border-0 bg-transparent" onClick={() => setMenuEm(null)} aria-label="Fechar menu" /></div>
 
-      <div id="content" className="app-content">{children}</div>
+      <div id="content" className="app-content">{children}<AvisoPrivacidade obter={obterPrivacidade} aceitar={aceitarPrivacidade} area="painel" ligacao="#/privacidade" /></div>
     </div>
   )
 }

@@ -39,6 +39,10 @@ const comunicacao = contentor.servicos.comunicacao
 const tarefa = (nome, f) => () => f().catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: `Tarefa ${nome} falhou`, erro: e.message })))
 const lembretes = setInterval(tarefa('lembretes', () => comunicacao.lembrarPrazos()), 15 * 60_000)
 const limpeza = setInterval(tarefa('limpeza', () => contentor.repositorios.comunicacao.limparAntigas(new Date(Date.now() - 90 * 86_400_000))), 24 * 3_600_000)
+// prazos de conservação dos dados pessoais (Lei n.º 22/11): uma vez por dia, e logo no arranque
+const conservacao = setInterval(tarefa('conservacao', () => contentor.servicos.privacidade.aplicarConservacao()), 24 * 3_600_000)
+tarefa('conservacao', () => contentor.servicos.privacidade.aplicarConservacao())()
+conservacao.unref()
 lembretes.unref()
 limpeza.unref()
 if (!contentor.correio.real) console.warn('[aviso] SMTP_URL não definido — as notificações ficam só no portal (sem e-mail).')

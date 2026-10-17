@@ -49,6 +49,10 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.use(autenticar(servicos.sessao))
 
   r.get('/eu', async (req, res) => res.json(await servicos.sessao.eu(ctx(req))))
+  r.get('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.avisoUtilizador(ctx(req))))
+  r.post('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.aceitarUtilizador(ctx(req))))
+  r.get('/privacidade/pedidos', async (req, res) => res.json(await servicos.privacidade.listarPedidos(ctx(req))))
+  r.put('/privacidade/pedidos/:id', validar({ params: pId, body: E.respostaPedidoDados }), async (req, res) => res.json(await servicos.privacidade.responder(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/traduzir', validar({ body: E.traduzirTextos }), async (req, res) => res.json(await servicos.traducaoDados.traduzir(ctx(req), req.dados.body)))
 
   r.post('/sair', async (req, res) => {

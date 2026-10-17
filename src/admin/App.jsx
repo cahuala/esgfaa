@@ -33,6 +33,7 @@ import PedidosAcademicos from './paginas/academico/Pedidos'
 import AvisosGerais from './paginas/academico/AvisosGerais'
 import Utilizadores from './paginas/Utilizadores'
 import Atividades from './paginas/Atividades'
+import PedidosDados from './paginas/PedidosDados'
 import Perfil from './paginas/Perfil'
 import Papeis from './paginas/Papeis'
 import Estatisticas from './paginas/Estatisticas'
@@ -91,6 +92,7 @@ function App() {
         {pode('utilizadores.ver') && <Route path="/utilizadores" element={<Utilizadores />} />}
         {(pode('papeis.ver') || pode('papeis.gerir')) && <Route path="/papeis" element={<Papeis />} />}
         {pode('atividades.ver') && <Route path="/atividades" element={<Atividades />} />}
+        {pode('atividades.ver') && <Route path="/privacidade" element={<PedidosDados />} />}
         {pode('seguranca.ver') && <Route path="/seguranca" element={<CentroSeguranca />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

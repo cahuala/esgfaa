@@ -76,6 +76,22 @@ export default function NovaProposta() {
     return m
   }, [cargos, sel])
 
+  /*
+    Cargos que se podem propor a uma pessoa: do seu posto ou de posto superior (art. 19.º e 20.º); para civis,
+    cargos civis da sua categoria ou de categoria superior (nível menor = mais alto). Os vagos primeiro.
+  */
+  const nivelCategoria = (nome) => Object.values(ref.carreirasCivis).find((c) => c.nome === nome)?.nivel ?? null
+  const cargosPara = (p) => (cargos ?? []).filter((c) => {
+    if (p.tipo === 'civil' || (!p.grau && !p.ramo)) {
+      if (c.tipo === 'militar') return false
+      const meu = ref.carreirasCivis[p.carreiraCivil]?.nivel
+      const dele = nivelCategoria(c.categoriaCivil)
+      return !meu || !dele || dele <= meu
+    }
+    if (c.tipo === 'civil') return false
+    return !c.postoRequerido || !p.grau || grauPosto(c.postoRequerido) >= p.grau
+  }).sort((a, b) => ((estadoCargo.get(b.id)?.livres ?? 0) > 0) - ((estadoCargo.get(a.id)?.livres ?? 0) > 0) || grauPosto(a.postoRequerido) - grauPosto(b.postoRequerido) || a.nome.localeCompare(b.nome))
+
   // art. 19.º: ninguém é nomeado para cargo de posto inferior ao seu
   const grauPosto = (id) => ref.postos.EXE.find((x) => x.id === id)?.grau ?? 0
   const pessoaActiva = sel.find((s) => s.pessoa.id === activo)?.pessoa
@@ -279,6 +295,11 @@ export default function NovaProposta() {
                         ? <div className={ocupado ? 'text-danger' : 'text-success'}><i className="fa fa-chair me-1" /><strong>{cargo.nome}</strong> · {cargo.unidadeCaminho || cargo.unidadeNome}{ocupado && ' — ocupado'}<button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => mudar(p.id, 'cargoId', null)}>mudar</button></div>
                         : <div className="text-warning"><i className="fa fa-hand-point-right me-1" />{activo === p.id ? 'Escolha o cargo à direita.' : 'Clique aqui e depois no cargo à direita.'}</div>)}
                       {tipo === 'exoneracao' && <span>Deixa o cargo: <strong>{p.cargoNome}</strong></span>}
+                      {nomeacao && (
+                        <Escolha valor={s.cargoId ?? ''} aoMudar={(v) => mudar(p.id, 'cargoId', v ? Number(v) : null)} aria-label={`Cargo para ${p.nome}`} className="form-select form-select-sm mt-1"
+                          opcoes={cargosPara(p).map((c) => { const e = estadoCargo.get(c.id); return [c.id, `${c.nome} — ${c.unidadeCaminho || c.unidadeNome || 'sem unidade'} · ${c.postoRequeridoNome || c.categoriaCivil || 'Civil'} · ${e?.livres > 0 ? `${e.livres} vago(s)` : 'ocupado'}`] })}
+                          vazio={`Cargo do seu posto ou superior (${cargosPara(p).length})`} />
+                      )}
                       <input className="form-control form-control-sm mt-1" placeholder="Justificação (opcional)" value={s.justificacao} onChange={(e) => mudar(p.id, 'justificacao', e.target.value)} />
                     </div>
                   </div>

@@ -48,6 +48,16 @@ export function rotasPortal({ servicos, config, privados }) {
     if (req.contexto.conta.deveMudarSenha) throw new SenhaPorMudar()
     next()
   })
+  // protecção de dados pessoais (Lei n.º 22/11): aviso, os meus dados e pedidos
+  r.get('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.avisoConta(ctx(req).conta)))
+  r.post('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.aceitarConta(ctx(req).conta)))
+  r.get('/eu/dados', async (req, res) => {
+    res.set('Content-Disposition', 'attachment; filename="os-meus-dados.json"')
+    res.json(await servicos.privacidade.meusDados(ctx(req)))
+  })
+  r.get('/eu/pedidos-dados', async (req, res) => res.json(await servicos.privacidade.meusPedidos(ctx(req))))
+  r.post('/eu/pedidos-dados', validar({ body: E.pedidoDados }), async (req, res) => res.status(201).json(await servicos.privacidade.pedir(ctx(req), req.dados.body)))
+
 
   // ---------- comum ----------
   r.get('/inicio', async (req, res) => res.json(await e.painel.inicio(ctx(req))))

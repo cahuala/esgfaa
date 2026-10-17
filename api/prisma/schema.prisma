@@ -43,6 +43,7 @@ model Utilizador {
   senha              String
   papel              String
   ativo              Boolean   @default(true)
+  privacidadeEm      DateTime? @map("privacidade_em") @db.Timestamptz(3)
   criadoEm           DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
   ultimoAcesso       DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
   tentativasFalhadas Int       @default(0) @map("tentativas_falhadas")
@@ -180,22 +181,25 @@ model Candidatura {
 
 // conta do portal: estudante ou docente (separada das contas do painel)
 model ContaPortal {
-  id                 Int       @id @default(autoincrement())
+  id                 Int           @id @default(autoincrement())
   tipo               String // "estudante" | "docente"
-  numero             String    @unique // n.º de estudante ou de docente
+  numero             String        @unique // n.º de estudante ou de docente
   nome               String
-  email              String    @unique
+  email              String        @unique
   senha              String
-  ativo              Boolean   @default(true)
-  dados              Json      @default("{}") // posto, ramo, telefone, …
-  criadoEm           DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
-  ultimoAcesso       DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
-  tokenCalendario    String?   @unique @map("token_calendario") // assinatura do calendário (iCal), sem sessão
-  tentativasFalhadas Int       @default(0) @map("tentativas_falhadas")
-  bloqueadoAte       DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
-  versaoToken        Int       @default(0) @map("versao_token")
-  deveMudarSenha     Boolean   @default(true) @map("deve_mudar_senha")
-  notificarEmail     Boolean   @default(true) @map("notificar_email") // receber também por e-mail
+  ativo              Boolean       @default(true)
+  dados              Json          @default("{}") // posto, ramo, telefone, …
+  criadoEm           DateTime      @default(now()) @map("criado_em") @db.Timestamptz(3)
+  ultimoAcesso       DateTime?     @map("ultimo_acesso") @db.Timestamptz(3)
+  tokenCalendario    String?       @unique @map("token_calendario") // assinatura do calendário (iCal), sem sessão
+  tentativasFalhadas Int           @default(0) @map("tentativas_falhadas")
+  bloqueadoAte       DateTime?     @map("bloqueado_ate") @db.Timestamptz(3)
+  versaoToken        Int           @default(0) @map("versao_token")
+  deveMudarSenha     Boolean       @default(true) @map("deve_mudar_senha")
+  // quando tomou conhecimento da política de privacidade (Lei n.º 22/11); null = ainda não
+  privacidadeEm      DateTime?     @map("privacidade_em") @db.Timestamptz(3)
+  pedidosDados       PedidoDados[]
+  notificarEmail     Boolean       @default(true) @map("notificar_email") // receber também por e-mail
 
   matriculas                  Matricula[]
   docencias                   Docencia[]
@@ -1521,4 +1525,21 @@ model PrazoNotas {
 
   @@index([componente])
   @@map("prazos_notas")
+}
+
+// pedidos dos titulares sobre os seus dados (Lei n.º 22/11): acesso, rectificação, oposição, eliminação
+model PedidoDados {
+  id            Int         @id @default(autoincrement())
+  contaId       Int         @map("conta_id")
+  tipo          String // acesso | rectificacao | oposicao | eliminacao | outro
+  texto         String
+  estado        String      @default("pendente") // pendente | respondido | recusado
+  resposta      String      @default("")
+  respondidoPor String      @default("") @map("respondido_por")
+  respondidoEm  DateTime?   @map("respondido_em") @db.Timestamptz(3)
+  criadoEm      DateTime    @default(now()) @map("criado_em") @db.Timestamptz(3)
+  conta         ContaPortal @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([estado])
+  @@map("pedidos_dados")
 }

@@ -25,6 +25,8 @@ import Extracto from './paginas/Extracto'
 import Domiciliares from './paginas/Domiciliares'
 import Expediente from './paginas/Expediente'
 import Mensagens from './paginas/Mensagens'
+import Privacidade from './paginas/Privacidade'
+import PedidosDados from './paginas/PedidosDados'
 import Utilizadores from './paginas/Utilizadores'
 import Auditoria from './paginas/Auditoria'
 import Portal from './paginas/Portal'
@@ -106,6 +108,8 @@ export default function App() {
           <Route path="/auditoria" element={<Auditoria />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/senha" element={<MudarSenha />} />
+          <Route path="/privacidade" element={<Privacidade />} />
+          <Route path="/pedidos-dados" element={<PedidosDados />} />
           <Route path="*" element={<div className="alert alert-warning">Página não encontrada.</div>} />
         </Routes>
       </Layout>

@@ -417,6 +417,24 @@ export const PAGINAS = {
       ] },
     ],
   },
+  privacidade: {
+    titulo: tx('Política de privacidade'), icone: 'fa-user-shield', rota: '/Privacidade',
+    grupos: [
+      { titulo: tx('Identificação'), campos: [
+        { nome: 'titulo', rotulo: tx('Título'), tipo: 'texto', largura: 'metade' },
+        { nome: 'actualizada', rotulo: tx('Última actualização'), tipo: 'data', largura: 'metade' },
+        { nome: 'responsavel', rotulo: tx('Responsável pelo tratamento'), tipo: 'texto', largura: 'metade' },
+        { nome: 'contacto', rotulo: tx('Contacto para os direitos dos titulares'), tipo: 'texto', largura: 'metade' },
+        { nome: 'entrada', rotulo: tx('Texto de entrada'), tipo: 'textarea', linhas: 3 },
+      ] },
+      { titulo: tx('Secções'), campos: [
+        { nome: 'seccoes', rotulo: tx('Secções da política'), tipo: 'objetos', rotuloItem: tx('Secção'), campos: [
+          { nome: 'titulo', rotulo: tx('Título'), tipo: 'texto' },
+          { nome: 'texto', rotulo: tx('Texto'), tipo: 'textarea', linhas: 5 },
+        ] },
+      ] },
+    ],
+  },
 }
 
 export const POSICOES_BANNER = [

@@ -68,6 +68,7 @@ import { ServicoCopiaSeguranca } from './aplicacao/academico/ensino/copiaSeguran
 import { ServicoPacotes } from './aplicacao/academico/ensino/pacotes.js'
 import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
 import { ServicoPrazosNotas } from './aplicacao/academico/administracao/prazosNotas.js'
+import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { RepositorioPrazosNotas } from './infraestrutura/repositorios/prazosNotas.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
@@ -174,9 +175,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
   // serviços externos opcionais: sem chave ficam desligados (os testes substituem-nos)
-  const claude = config.ia?.chave ? new ClienteClaude({ chave: config.ia.chave, modelo: config.ia.modelo }) : null
+  // Lei n.º 22/11: a IA e a pesquisa externas (fora de Angola) só com autorização expressa (DADOS_FORA_DE_ANGOLA=sim)
+  const fora = config.dadosForaDeAngola
+  const claude = fora && config.ia?.chave ? new ClienteClaude({ chave: config.ia.chave, modelo: config.ia.modelo }) : null
   const ext = {
-    pesquisaWeb: config.pesquisaWeb?.chave ? new PesquisaBrave({ chave: config.pesquisaWeb.chave }) : null,
+    pesquisaWeb: fora && config.pesquisaWeb?.chave ? new PesquisaBrave({ chave: config.pesquisaWeb.chave }) : null,
     obterPagina, claude, ...externos,
   }
   // tradução dos conteúdos: o Claude (melhor) ou o LibreTranslate (gratuito, no servidor)
@@ -247,6 +250,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
+    privacidade: new ServicoPrivacidade({ prisma, notificacoes, auditoria, relogio, conservacao: config.conservacao }),
     seguranca: new ServicoSeguranca({ monitor: new Monitor(), seguranca: r.seguranca, correio, emailAlerta: config.emailSeguranca, auditoria, pastaDados: config.pastaDados, registar: (x) => console.error(JSON.stringify(x)) }),
     contactos: new ServicoContactos({ contactos: r.contactos, correio, emailDestino: config.emailContactos, auditoria, registar: (x) => console.error(JSON.stringify(x)) }),
     interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
