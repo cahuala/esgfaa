@@ -6,6 +6,7 @@ import { dataHora, estadoSessao, iconeFicheiro, idYoutube, tamanho, tipoVisivel 
 import VerFicheiro from '../VerFicheiro'
 import Livro from './Livro'
 import Licao from './Licao'
+import Pacote from './Pacote'
 import ZonaUpload from '../ZonaUpload'
 import { confirmar } from '../dialogos'
 import { t as tx } from '../../i18n/linguas'
@@ -26,7 +27,7 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
   // abrir uma página ou pasta conta como visto
   useEffect(() => {
     // (a videoconferência conta ao entrar na sessão; a lição, ao chegar ao fim)
-    if (eDocente || !m || m.bloqueio || marcado.current || feito || !progresso || m.tipo === 'videoconferencia' || m.tipo === 'licao') return
+    if (eDocente || !m || m.bloqueio || marcado.current || feito || !progresso || m.tipo === 'videoconferencia' || m.tipo === 'licao' || m.tipo === 'scorm' || m.tipo === 'h5p') return
     marcado.current = true
     // concluir pode abrir atividades que dependiam desta: então a cadeira volta a carregar
     const haFechadas = [...c.materiais, ...c.trabalhos, ...c.questionarios, ...(c.inqueritos || []), ...(c.workshops || [])].some((x) => x.bloqueio)
@@ -44,6 +45,7 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
       {m.tipo === 'licao' && <Licao m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} setProgresso={setProgresso} cadeiraId={c.id} />}
       {m.tipo === 'pagina' && <Pagina m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
       {m.tipo === 'pasta' && <Pasta m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} falhou={falhou} />}
+      {(m.tipo === 'scorm' || m.tipo === 'h5p') && <Pacote m={m} eDocente={eDocente} falhou={falhou} aoMudar={() => api(`/cadeiras/${c.id}/progresso`).then(setProgresso).catch(() => {})} />}
       {m.tipo === 'videoconferencia' && <Sessao m={m} eDocente={eDocente} feito={feito} setProgresso={setProgresso} falhou={falhou} />}
     </div>
   )

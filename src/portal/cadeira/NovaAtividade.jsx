@@ -23,6 +23,8 @@ const OPCOES = [
   { id: 'videoconferencia', icone: 'fa-video', cor: 'bg-success', nome: 'Videoconferência', texto: tx('Aula à distância: ligação, dia e hora') },
   { id: 'sondagem', icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem', texto: tx('Uma pergunta de escolha aos estudantes') },
   { id: 'workshop', icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares', texto: tx('Os estudantes entregam e avaliam trabalhos uns dos outros') },
+  { id: 'scorm', icone: 'fa-cube', cor: 'bg-blue', nome: 'Pacote SCORM', texto: tx('Curso em formato SCORM (.zip), com nota e progresso') },
+  { id: 'h5p', icone: 'fa-puzzle-piece', cor: 'bg-lime', nome: 'Conteúdo H5P', texto: tx('Exercício interativo H5P (.h5p): perguntas, vídeos interativos, arrastar…') },
 ]
 const RESULTADOS = { apos_responder: tx('Depois de responderem'), apos_fecho: tx('Só depois do fecho'), nunca: tx('Nunca (só o docente)') }
 
@@ -61,6 +63,20 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
           progresso(i, 100)
         }
         avisar({ texto: ficheiros.length > 1 ? tx('{0} ficheiros publicados.', { 0: ficheiros.length }) : tx('Ficheiro publicado.') })
+        return criada()
+      }
+      // SCORM e H5P: um zip (o .h5p também é um zip, mas o navegador não sabe o tipo)
+      if (tipo === 'scorm' || tipo === 'h5p') {
+        if (!ficheiros.length) throw new Error(tipo === 'scorm' ? tx('Escolha o pacote SCORM (.zip).') : tx('Escolha o ficheiro .h5p.'))
+        const fd = new FormData()
+        fd.append('tipo', tipo)
+        fd.append('titulo', f.titulo)
+        fd.append('descricao', f.descricao)
+        if (secaoId) fd.append('secaoId', String(secaoId))
+        const x = ficheiros[0].ficheiro
+        fd.append('ficheiro', new File([x], x.name, { type: 'application/zip' }))
+        await enviarComProgresso(`/cadeiras/${c.id}/materiais`, fd, { aoProgresso: (p) => progresso(0, p) })
+        avisar({ texto: tx('Conteúdo publicado.') })
         return criada()
       }
       // livro e lição: criam-se com uma página; os capítulos e as perguntas escrevem-se ao abrir
@@ -170,6 +186,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                       {ficheiros.length <= 1 && <Campo id="na-titulo" rotulo={tx('Título (opcional: por omissão, o nome do ficheiro)')}><input id="na-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} /></Campo>}
                     </>
                   )}
+                  {(tipo === 'scorm' || tipo === 'h5p') && <ZonaUpload id="na-pacote" ficheiros={ficheiros} aoMudar={(l) => { setFicheiros(l.slice(-1)); if (!f.titulo && l[0]) setF((x) => ({ ...x, titulo: l[0].ficheiro.name.replace(/\.[^.]+$/, '') })) }} desativado={aEnviar} aceitar={tipo === 'scorm' ? '.zip' : '.h5p,.zip'} nota={tipo === 'scorm' ? tx('Pacote SCORM 1.2 ou 2004 (.zip com o imsmanifest.xml)') : tx('Ficheiro .h5p descarregado com as bibliotecas (por exemplo, do H5P.com ou do Lumi)')} />}
                   {tipo !== 'ficheiro' && <Campo id="na-titulo" rotulo={tx('Título')}><input id="na-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>}
                   {tipo === 'pagina' && (
                     <div>

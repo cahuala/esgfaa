@@ -15,7 +15,7 @@ const eGzip = (b) => b.length > 18 && b[0] === 0x1f && b[1] === 0x8b
 const grande = () => new ErroValidacao('A cópia é demasiado grande depois de descomprimida (máximo 1 GB).', { campo: 'ficheiro' })
 
 // ZIP -> { "caminho": Uint8Array }, verificando os tamanhos antes de descomprimir
-function lerZip(dados) {
+export function lerZip(dados) {
   let total = 0
   let n = 0
   return unzipSync(dados, {

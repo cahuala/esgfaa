@@ -15,6 +15,9 @@ export const TIPOS = {
   sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: tx('Sondagem') },
   avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: tx('Avaliação do docente') },
   workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: tx('Avaliação por pares') },
+  scorm: { icone: 'fa-cube', cor: 'bg-blue', nome: tx('Pacote SCORM') },
+  h5p: { icone: 'fa-puzzle-piece', cor: 'bg-lime', nome: tx('Conteúdo H5P') },
+  lti: { icone: 'fa-plug', cor: 'bg-gray-600', nome: tx('Ferramenta externa') },
 }
 
 // ícone de um ficheiro pelo tipo (PDF, vídeo, imagem…), para os materiais de um só ficheiro

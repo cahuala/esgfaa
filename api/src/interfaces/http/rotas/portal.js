@@ -6,6 +6,7 @@ import { contextoAnonimo } from '../middlewares/pedido.js'
 import { validar } from '../middlewares/validar.js'
 import { enviarFicheiro, receberCopia, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
 import * as E from '../esquemas.js'
+import { baseUrl } from '../apresentacao.js'
 
 const pId = z.object({ id: E.idNumerico })
 const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro não encontrado.') })
@@ -188,6 +189,10 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await e.organizacao.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await e.organizacao.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
+  // pacotes SCORM e H5P: endereço do leitor (assinado) e resultados da turma
+  r.post('/materiais/:id/pacote', validar({ params: pId }), async (req, res) => res.json(await e.pacotes.abrir(ctx(req), req.dados.params.id, baseUrl(req, config))))
+  r.get('/materiais/:id/pacote/resultados', validar({ params: pId }), async (req, res) => res.json(await e.pacotes.resultados(ctx(req), req.dados.params.id)))
+
   // cópia de segurança da cadeira num ficheiro, e restauração (desse ficheiro ou de um curso do Moodle)
   r.get('/cadeiras/:id/copia-seguranca', validar({ params: pId }), async (req, res) => {
     const { nome, dados } = await e.copiaSeguranca.exportar(ctx(req), req.dados.params.id)

@@ -5,6 +5,7 @@ import { RepositorioConteudos } from './infraestrutura/repositorios/conteudos.js
 import { RepositorioPaginas } from './infraestrutura/repositorios/paginas.js'
 import { RepositorioInteracoes } from './infraestrutura/repositorios/interacoes.js'
 import { RepositorioContactos } from './infraestrutura/repositorios/contactos.js'
+import { RepositorioPacotes } from './infraestrutura/repositorios/pacotes.js'
 import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
 import { RepositorioPublicidade } from './infraestrutura/repositorios/publicidade.js'
 import { RepositorioAtividades } from './infraestrutura/repositorios/atividades.js'
@@ -58,6 +59,7 @@ import { ServicoFicheirosPortal } from './aplicacao/academico/ensino/ficheiros.j
 import { ServicoOrganizacao } from './aplicacao/academico/ensino/organizacao.js'
 import { ServicoMateriais } from './aplicacao/academico/ensino/materiais.js'
 import { ServicoCopiaSeguranca } from './aplicacao/academico/ensino/copiaSeguranca.js'
+import { ServicoPacotes } from './aplicacao/academico/ensino/pacotes.js'
 import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
@@ -111,6 +113,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     paginas: new RepositorioPaginas({ prisma }),
     interacoes: new RepositorioInteracoes({ prisma, fuso }),
     contactos: new RepositorioContactos({ prisma }),
+    pacotes: new RepositorioPacotes({ prisma }),
     visitas: new RepositorioVisitas({ prisma, fuso }),
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
@@ -178,8 +181,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   // casos de uso do portal académico (estudantes e docentes)
   const ensino = () => {
+    const pacotes = new ServicoPacotes({ pacotes: r.pacotes, academico: r.academico, recursos: r.recursos, contas: r.contasPortal, apoio, disponibilidade, registos, privados, segredo: config.segredoJwt })
     const d = {
-      academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
+      pacotes, academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
       registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade, jitsiUrl: config.jitsiUrl,
     }
     return {
@@ -196,6 +200,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       progresso: new ServicoProgresso(d),
       questionarios: new ServicoQuestionarios(d),
       licoes: new ServicoLicoes(d),
+      pacotes,
       copiaSeguranca: new ServicoCopiaSeguranca({ copiasRepo: r.copias, academico: r.academico, privados, apoio, auditoria, filtroHtml: filtrarHtml, relogio, config }),
     }
   }

@@ -121,6 +121,8 @@ export function criarConfig(env = process.env, extras = {}) {
       gosto: { janelaMs: 60_000, maximo: 30 },
       comentario: { janelaMs: 60_000, maximo: 4 },
       contacto: { janelaMs: 10 * 60_000, maximo: 3 },
+      // pacotes SCORM/H5P: cada um carrega centenas de ficheiros, e uma turma pode estar atrás do mesmo endereço
+      pacotes: { janelaMs: 60_000, maximo: 6000 },
       visita: { janelaMs: 60_000, maximo: 60 },
       impressao: { janelaMs: 60_000, maximo: 120 },
       clique: { janelaMs: 60_000, maximo: 30 },

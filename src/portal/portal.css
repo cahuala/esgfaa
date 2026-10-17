@@ -656,3 +656,9 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .p-emblema.pequeno { padding: 0; border: 0; background: none; }
 .p-emblema.pequeno .p-emblema-medalha { width: 40px; height: 40px; font-size: 16px; }
 .p-emblemas-linha { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* conteúdos interativos (SCORM, H5P) e ferramentas externas (LTI) numa moldura */
+.p-pacote { background: #fff; }
+.p-pacote iframe { display: block; width: 100%; height: min(78vh, 760px); border: 0; }
+.p-pacote:fullscreen iframe { height: 100vh; }
+.p-pacote-carregar { display: grid; place-items: center; height: 240px; color: var(--bs-secondary-color, #6c757d); }

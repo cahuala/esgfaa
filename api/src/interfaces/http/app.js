@@ -6,6 +6,7 @@ import { naoEncontrado, tratarErros } from './middlewares/erros.js'
 import { rotasAdmin } from './rotas/admin.js'
 import { rotasPublicas } from './rotas/publico.js'
 import { rotasPortal } from './rotas/portal.js'
+import { rotasPacotes } from './rotas/pacotes.js'
 import { criarCacheConteudo } from './cacheConteudo.js'
 
 // Aplicação Express (sem arrancar o servidor: os testes usam-na diretamente)
@@ -51,6 +52,7 @@ export function criarApp(contentor, { registarErro } = {}) {
   }
   app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
   app.use('/api/admin', semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
+  app.use('/api/pacotes', rotasPacotes({ servicos, config }))
   app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))
 
   app.use(naoEncontrado)

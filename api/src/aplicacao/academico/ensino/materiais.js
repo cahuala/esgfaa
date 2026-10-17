@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { validarLicao, validarLivro } from '../../../dominio/academico/atividades/livroLicao.js'
 import { urlSegura } from '../../../dominio/comum/urls.js'
-import { TIPOS_MATERIAL } from '../../../dominio/academico/atividades/materiais.js'
+import { TIPOS_MATERIAL, TIPOS_PACOTE } from '../../../dominio/academico/atividades/materiais.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
 
 // Materiais (ficheiros, ligações, páginas, pastas, videoconferências) e avisos da cadeira.
@@ -26,9 +26,17 @@ export class ServicoMateriais {
       }
       if (tipo === 'ficheiro' && ficheiros.length !== 1) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
       if (tipo === 'pasta' && ficheiros.length === 0) throw new ErroValidacao('Junte pelo menos um ficheiro à pasta.', { campo: 'ficheiros' })
-      if (tipo !== 'ficheiro' && tipo !== 'pasta') largar()
+      const comFicheiro = tipo === 'ficheiro' || TIPOS_PACOTE.includes(tipo)
+      if (TIPOS_PACOTE.includes(tipo) && (ficheiros.length !== 1 || ficheiros[0].tipo !== 'application/zip')) {
+        throw new ErroValidacao(tipo === 'scorm' ? 'Escolha o pacote SCORM (ficheiro .zip).' : 'Escolha o conteúdo H5P (ficheiro .h5p).', { campo: 'ficheiro' })
+      }
+      if (!comFicheiro && tipo !== 'pasta') largar()
       let m
-      if (tipo === 'ficheiro') m = await this.academico.criarMaterial({ ...base, ficheiroId: await this.apoio.registarFicheiro(ficheiros[0], ctx.conta.id) })
+      // SCORM e H5P: o zip abre-se (e confirma-se) antes de guardar; o original fica para as cópias
+      if (TIPOS_PACOTE.includes(tipo)) {
+        const estrutura = this.pacotes.abrirZip(ficheiros[0].caminho, tipo)
+        m = await this.academico.criarMaterial({ ...base, estrutura, ficheiroId: await this.apoio.registarFicheiro(ficheiros[0], ctx.conta.id) })
+      } else if (tipo === 'ficheiro') m = await this.academico.criarMaterial({ ...base, ficheiroId: await this.apoio.registarFicheiro(ficheiros[0], ctx.conta.id) })
       else if (tipo === 'pasta') {
         const ids = []
         for (const f of ficheiros) ids.push(await this.apoio.registarFicheiro(f, ctx.conta.id))
