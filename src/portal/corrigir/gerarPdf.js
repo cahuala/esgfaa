@@ -1,4 +1,5 @@
 import { carregarPdfjs } from '../../leitor/pdfjs'
+import Brasao from '../../assets/brasao-documentos.png'
 
 /*
   PDF corrigido: o PDF do estudante com as anotações do docente desenhadas por cima
@@ -35,11 +36,21 @@ export async function gerarPdfCorrigido(ficheiros) {
   const { PDFDocument, StandardFonts, rgb, degrees, LineCapStyle } = await import('pdf-lib')
   const pdfjs = await carregarPdfjs()
   const saida = await PDFDocument.create()
+  // brasão da Escola: discreto, no canto superior direito da primeira página de cada documento corrigido
+  const bytesBrasao = await fetch(Brasao).then((r) => r.arrayBuffer()).catch(() => null)
   for (const f of ficheiros) {
     const doc = await PDFDocument.load(f.bytes, { ignoreEncryption: true })
     const tarefa = pdfjs.getDocument({ data: f.bytes.slice() })
     const js = await tarefa.promise
     const letra = await doc.embedFont(StandardFonts.Helvetica)
+    if (bytesBrasao && doc.getPageCount()) {
+      const img = await doc.embedPng(bytesBrasao)
+      const p1 = doc.getPage(0)
+      const { width, height } = p1.getSize()
+      const lado = Math.min(34, width * 0.06)
+      p1.drawImage(img, { x: width - lado - 10, y: height - lado - 10, width: lado, height: lado, opacity: 0.9 })
+      p1.drawText('Escola Superior de Guerra', { x: width - 126, y: height - lado - 20, size: 6.5, font: letra, color: rgb(0.25, 0.25, 0.25) })
+    }
     // a letra do PDF só tem o alfabeto latino: o que não couber troca-se por "?"
     const seguro = (t) => [...t].map((ch) => { try { letra.encodeText(ch); return ch } catch { return '?' } }).join('')
     const vistas = {}

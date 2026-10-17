@@ -7,6 +7,7 @@ import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
+import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
 /*
   Boletim em matriz: uma linha por disciplina e uma coluna por momento de avaliação
@@ -24,6 +25,7 @@ function Notas() {
 
   return (
     <>
+      <CabecalhoImpressao titulo="Boletim de notas" area="Administração Escolar" />
       <Titulo rotulo={tx('Notas')} titulo={tx('Boletim de notas')} sub={tx('só as notas publicadas pelos docentes')}>
         <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" className="me-1" /> {tx('Imprimir')}</button>
       </Titulo>

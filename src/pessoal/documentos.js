@@ -25,6 +25,12 @@ async function imagem(url) {
   })
 }
 
+// o brasão (pequeno) para os outros PDF do sistema (exportações das tabelas, ficha individual)
+export async function brasaoPng() {
+  brasao ??= await imagem(Brasao)
+  return brasao
+}
+
 async function novoDocumento() {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   brasao ??= await imagem(Brasao)

@@ -1,0 +1,9 @@
+.imp-cabecalho { display: none; }
+@media print {
+  .imp-cabecalho { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 14px; padding: 0 0 10px; margin-bottom: 14px; border-bottom: 2px solid #000; color: #000; font-size: 10pt; line-height: 1.25; text-transform: uppercase; font-weight: 600; break-inside: avoid; }
+  .imp-cabecalho img { width: 62px; height: 62px; object-fit: contain; }
+  .imp-cabecalho .imp-escola { font-weight: 800; font-size: 11pt; }
+  .imp-cabecalho .imp-area { font-weight: 500; text-transform: none; }
+  .imp-cabecalho .imp-titulo { grid-column: 1 / -1; text-align: center; font-size: 13pt; font-weight: 800; margin-top: 6px; }
+  .imp-cabecalho .imp-titulo small { display: block; font-size: 9.5pt; font-weight: 500; text-transform: none; }
+}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import './integridade.css'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
 // cores das fontes (a 1.ª é a que mais coincide)
 const CORES = ['#d62839', '#e07a1f', '#2a9d8f', '#3a6ea5', '#8e44ad', '#c9a227', '#6d597a', '#1b998b', '#b56576', '#457b9d', '#bc6c25', '#5f0f40']
@@ -81,6 +82,7 @@ function Relatorio({ r }) {
   const t = aberto
   return (
     <>
+      <CabecalhoImpressao titulo="Relatório de integridade académica" area="Integridade académica" />
       <div className="card">
         <div className="card-body o-topo">
           <Medidor p={r.percentagem} nivel={nivel} />

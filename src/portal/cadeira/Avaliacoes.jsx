@@ -7,6 +7,7 @@ import Composicao from './Composicao'
 import { exportarPautaExcel } from '../exportarPauta'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
+import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
 function Avaliacoes(props) {
   return props.eDocente ? <Pauta {...props} /> : <MinhasNotas {...props} />
@@ -150,7 +151,7 @@ function Pauta({ c, avisar }) {
       </div>
 
       <div className="panel mb-2 overflow-hidden">
-        <div className="p-impressao-cabeca">{tx('Pauta ·')} {c.codigo} {c.nome} · {c.turma?.nome}</div>
+        <CabecalhoImpressao titulo="Pauta" subtitulo={`${c.codigo} ${c.nome} · ${c.turma?.nome ?? ''}`} area="Administração Escolar" />
         <div className="table-responsive">
           <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz p-matriz-pauta">
             <thead>

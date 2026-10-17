@@ -1,4 +1,5 @@
 import { api } from './api'
+import { brasaoPng } from './documentos'
 
 const pt = (iso) => (iso ? new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toLocaleDateString('pt-PT') : '—')
 const imagemBase64 = (url) => new Promise((ok) => {
@@ -20,6 +21,8 @@ export async function fichaPdf(p, urlFoto) {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const w = doc.internal.pageSize.getWidth()
+  const brasao = await brasaoPng()
+  if (brasao) doc.addImage(brasao, 'PNG', 14, 6, 17, 17)
   doc.setFont('helvetica', 'bold').setFontSize(11).text('ESCOLA SUPERIOR DE GUERRA', w / 2, 13, { align: 'center' })
   doc.setFont('helvetica', 'normal').setFontSize(9).text('Repartição de Pessoal e Quadros', w / 2, 18, { align: 'center' })
   doc.setFont('helvetica', 'bold').setFontSize(14).text(p.tipo === 'militar' ? 'FICHA INDIVIDUAL DO MILITAR' : 'FICHA INDIVIDUAL DO FUNCIONÁRIO CIVIL', w / 2, 28, { align: 'center' })

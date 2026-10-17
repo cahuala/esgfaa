@@ -7,6 +7,7 @@ import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
 const ESTADOS = { ativa: ['bg-primary', tx('Em curso')], concluida: ['bg-success', tx('Concluído')], suspensa: ['bg-warning text-dark', tx('Suspenso')] }
 
@@ -27,6 +28,7 @@ function Percurso() {
 
   return (
     <>
+      <CabecalhoImpressao titulo="Percurso académico" subtitulo={`${conta.nome} · n.º ${conta.numero}`} area="Administração Escolar" />
       <Titulo rotulo={tx('Percurso académico')} titulo={tx('Percurso académico')} sub={`${conta.nome} · n.º ${conta.numero}`}>
         <button type="button" className="btn btn-white" onClick={() => window.print()}><i className="fa fa-print me-1" /> {tx('Imprimir')}</button>
       </Titulo>

@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual do Sistema ESGFAA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Manual de utilização: índice fixo à esquerda por perfil, texto ao centro, capturas que ampliam ao clicar */
+:root {
+  --fundo: #f3f4f2;
+  --papel: #ffffff;
+  --tinta: #1d2125;
+  --suave: #5b646d;
+  --linha: #d9ddde;
+  --vermelho: #c0301b;
+  --ouro: #b8890f;
+  --verde: #2f7a4f;
+  --realce: #fbeee9;
+  --titulo: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --texto: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --fundo: #111417; --papel: #181c20; --tinta: #e6e9eb; --suave: #9aa4ad; --linha: #2b3238; --vermelho: #ef6a52; --ouro: #e0b54a; --verde: #63c08a; --realce: #2a1d1a; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --fundo: #111417; --papel: #181c20; --tinta: #e6e9eb; --suave: #9aa4ad; --linha: #2b3238; --vermelho: #ef6a52; --ouro: #e0b54a; --verde: #63c08a; --realce: #2a1d1a; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--fundo); color: var(--tinta); font: 17px/1.6 var(--texto); margin: 0; }
+a { color: var(--vermelho); }
+:focus-visible { outline: 3px solid var(--ouro); outline-offset: 2px; }
+
+.faixa { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 6px; }
+.faixa i:nth-child(1) { background: #cc092f; } .faixa i:nth-child(2) { background: #111; } .faixa i:nth-child(3) { background: #ffcb00; }
+
+.capa { padding-block: 44px 34px; padding-inline: 16px; border-bottom: 1px solid var(--linha); background: var(--papel); }
+.capa-interior { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.capa small { font: 600 13px var(--texto); letter-spacing: .14em; text-transform: uppercase; color: var(--vermelho); }
+.capa h1 { margin: 0; font: 700 clamp(36px, 6vw, 60px)/1 var(--titulo); text-wrap: balance; }
+.capa p { margin: 0; max-width: 62ch; color: var(--suave); }
+.perfis { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.perfis a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--linha); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 15px; background: var(--fundo); }
+.perfis a:hover { border-color: var(--vermelho); color: var(--vermelho); }
+
+.corpo { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 80px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 960px) { .corpo { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+
+.indice { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow: auto; font-size: 14.5px; }
+@media (max-width: 960px) { .indice { position: static; max-height: none; background: var(--papel); border: 1px solid var(--linha); border-radius: 8px; padding: 6px 14px; } }
+.indice details { border-bottom: 1px solid var(--linha); }
+.indice summary { cursor: pointer; padding: 9px 0; font: 700 17px var(--titulo); letter-spacing: .02em; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; }
+.indice summary::after { content: "+"; color: var(--suave); }
+.indice details[open] summary::after { content: "–"; }
+.indice ol { margin: 0 0 10px; padding-left: 18px; }
+.indice li { margin: 2px 0; }
+.indice li a { color: var(--suave); text-decoration: none; }
+.indice li a:hover { color: var(--vermelho); }
+
+main { min-width: 0; }
+.parte { margin-bottom: 56px; }
+.parte > header { display: flex; align-items: baseline; gap: 14px; border-bottom: 3px solid var(--tinta); margin-bottom: 18px; padding-bottom: 6px; }
+.parte > header span { font: 700 15px var(--titulo); color: var(--vermelho); letter-spacing: .1em; text-transform: uppercase; }
+.parte > header h2 { margin: 0; font: 700 clamp(28px, 4vw, 38px)/1.1 var(--titulo); }
+.parte > p.entrada { max-width: 68ch; color: var(--suave); margin-top: 0; }
+section.tema { margin: 34px 0; scroll-margin-top: 16px; }
+section.tema h3 { margin: 0 0 8px; font: 700 25px/1.2 var(--titulo); text-wrap: balance; }
+section.tema h4 { margin: 18px 0 6px; font-size: 17px; }
+section.tema p, section.tema li { max-width: 70ch; }
+.passos { counter-reset: passo; list-style: none; padding: 0; display: grid; gap: 10px; }
+.passos li { counter-increment: passo; position: relative; padding-left: 44px; }
+.passos li::before { content: counter(passo); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--tinta); color: var(--papel); display: grid; place-items: center; font: 700 15px var(--titulo); }
+.botao { display: inline-block; padding: 0 7px; border: 1px solid var(--linha); border-radius: 5px; background: var(--papel); font-size: .92em; font-weight: 600; white-space: nowrap; }
+code, .end { font: 500 .88em var(--mono); background: var(--papel); border: 1px solid var(--linha); border-radius: 4px; padding: 1px 5px; word-break: break-all; }
+.nota { display: flex; gap: 12px; margin: 16px 0; padding: 12px 16px; border-left: 4px solid var(--ouro); background: var(--papel); border-radius: 0 6px 6px 0; max-width: 72ch; }
+.nota.importante { border-color: var(--vermelho); background: var(--realce); }
+.nota b { white-space: nowrap; }
+
+figure { margin: 16px 0 22px; }
+figure .foto { display: block; width: 100%; padding: 0; border: 1px solid var(--linha); border-radius: 8px; overflow: hidden; background: var(--papel); cursor: zoom-in; box-shadow: 0 6px 22px rgba(20, 24, 28, .07); }
+figure img { display: block; width: 100%; height: auto; }
+figure.telemovel { max-width: 300px; }
+.par { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.par figure { margin: 0; }
+figcaption { margin-top: 7px; font-size: 14px; color: var(--suave); }
+
+.tabela { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--papel); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); }
+
+dialog { border: 0; padding: 0; max-width: min(96vw, 1500px); background: transparent; }
+dialog::backdrop { background: rgba(8, 10, 12, .82); }
+dialog img { display: block; max-width: 100%; max-height: 90vh; border-radius: 6px; }
+dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radius: 50%; width: 38px; height: 38px; font-size: 22px; background: #fff; color: #111; cursor: pointer; }
+
+.rodape { border-top: 1px solid var(--linha); padding-block: 18px 30px; padding-inline: 16px; text-align: center; color: var(--suave); font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+.credito { margin: 6px 0 0; font-size: 15px; color: var(--suave); }
+.indice-impresso { display: none; }
+@page { size: A4; margin: 16mm 14mm 18mm; }
+@media print {
+  :root { --fundo: #fff; --papel: #fff; color-scheme: light; }
+  body { font-size: 10.5pt; line-height: 1.45; background: #fff; }
+  .indice, .perfis, dialog, .so-ecra { display: none !important; }
+  .corpo { display: block; padding: 0; max-width: none; }
+  .capa { min-height: 250mm; display: flex; align-items: center; border: 0; padding: 0 6mm; break-after: page; }
+  .capa h1 { font-size: 42pt; }
+  .capa p { font-size: 12pt; }
+  .credito { margin-top: 40mm !important; font-size: 12pt !important; color: var(--tinta) !important; }
+  .indice-impresso { display: block; break-after: page; padding: 0 2mm; }
+  .indice-impresso h2 { font: 700 26pt var(--titulo); margin: 0 0 6mm; }
+  .indice-impresso > ol { list-style: none; padding: 0; columns: 2; column-gap: 10mm; }
+  .indice-impresso > ol > li { break-inside: avoid; margin-bottom: 4mm; }
+  .indice-impresso ol ol { padding-left: 5mm; margin: 1mm 0 0; font-size: 9.5pt; }
+  .indice-impresso a { color: var(--tinta); text-decoration: none; }
+  .parte { break-before: page; margin-bottom: 0; }
+  .parte > header h2 { font-size: 26pt; }
+  section.tema { margin: 7mm 0; }
+  section.tema h3 { font-size: 16pt; break-after: avoid; }
+  figure, .nota, tr, .passos li { break-inside: avoid; }
+  figure .foto { box-shadow: none; }
+  figure img { max-height: 120mm; width: auto; max-width: 100%; margin: 0 auto; }
+  .par { grid-template-columns: 1fr 1fr; }
+  .par figure img { max-height: 85mm; }
+  figure.telemovel { max-width: 62mm; }
+  a { color: inherit; text-decoration: none; }
+  .rodape { break-before: avoid; }
+}
+</style>
+
+</head>
+<body>
+<div class="faixa" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="capa">
+  <div class="capa-interior">
+    <small>Escola Superior de Guerra · Forças Armadas Angolanas</small>
+    <h1>Manual do Sistema ESGFAA</h1>
+    <p>Como usar o site da Escola, o Portal Académico e o painel de gestão. Cada parte é para um perfil: escolha o seu e siga os passos. As imagens são do sistema com dados de demonstração<span class="so-ecra">; clique numa imagem para a ver maior</span>.</p>
+    <p class="credito">Sistema desenvolvido por <b>Império Noove Comércio e Serviços, (SU) Lda</b> · NIF 5002164787 · Versão de outubro de 2026</p>
+    <nav class="perfis" aria-label="Ir para o meu perfil">
+      <a href="#inicio">Primeiros passos</a>
+      <a href="#estudante">Sou estudante</a>
+      <a href="#docente">Sou docente</a>
+      <a href="#escolar">Administração Escolar</a>
+      <a href="#pessoal">Pessoal e Quadros</a>
+      <a href="#biblioteca">Biblioteca</a>
+      <a href="#redacao">Redação do site</a>
+      <a href="#administrador">Administrador</a>
+      <a href="#problemas">Problemas</a>
+    </nav>
+  </div>
+</header>
+
+<section class="indice-impresso" aria-label="Índice"><h2>Índice</h2><ol><li><a href="#inicio"><b>Parte 1 · Primeiros passos</b></a><ol><li><a href="#tres-espacos">Os três espaços do sistema</a></li><li><a href="#entrar">Entrar pela primeira vez</a></li><li><a href="#lingua">Língua, tema escuro e telemóvel</a></li></ol></li><li><a href="#estudante"><b>Parte 2 · Estudante</b></a><ol><li><a href="#turma">A minha turma</a></li><li><a href="#sala">A sala de aula</a></li><li><a href="#trabalho">Entregar um trabalho</a></li><li><a href="#questionario">Fazer um questionário</a></li><li><a href="#notas">Notas e percurso académico</a></li><li><a href="#emblemas">Emblemas</a></li><li><a href="#inqueritos">Inquéritos</a></li><li><a href="#ler">Biblioteca</a></li><li><a href="#pedidos">Pedidos de documentos</a></li><li><a href="#comunicar">Mensagens, avisos, notificações e calendário</a></li></ol></li><li><a href="#docente"><b>Parte 3 · Docente</b></a><ol><li><a href="#doc-cadeira">A página da cadeira e o modo de edição</a></li><li><a href="#doc-atividade">Juntar atividades e recursos</a></li><li><a href="#doc-corrigir">Corrigir trabalhos</a></li><li><a href="#doc-questionarios">Questionários e provas</a></li><li><a href="#doc-pauta">Pauta e notas</a></li><li><a href="#doc-turma">Fórum, presenças e relatórios</a></li><li><a href="#doc-copias">Importar e cópias de segurança</a></li><li><a href="#doc-video">Aulas à distância</a></li></ol></li><li><a href="#escolar"><b>Parte 4 · Administração Escolar</b></a><ol><li><a href="#ae-turmas">Turmas e matrículas</a></li><li><a href="#ae-alocacao">Docentes e cadeiras</a></li><li><a href="#ae-calendario">Calendário académico e avisos do portal</a></li><li><a href="#ae-pedidos">Pedidos e documentos oficiais</a></li><li><a href="#ae-indicadores">Indicadores académicos</a></li><li><a href="#ae-inqueritos">Inquéritos de satisfação</a></li><li><a href="#ae-integridade">Integridade académica (anti-plágio)</a></li><li><a href="#ae-lti">Ferramentas externas (LTI)</a></li></ol></li><li><a href="#pessoal"><b>Parte 5 · Pessoal e Quadros</b></a><ol><li><a href="#pessoal">Registar estudantes e docentes</a></li></ol></li><li><a href="#biblioteca"><b>Parte 6 · Biblioteca</b></a><ol><li><a href="#biblioteca">Catálogo e empréstimos</a></li></ol></li><li><a href="#redacao"><b>Parte 7 · Redação do site</b></a><ol><li><a href="#redacao">Notícias, artigos, eventos e revista</a></li><li><a href="#redacao">Páginas do site, mensagens e comentários</a></li></ol></li><li><a href="#administrador"><b>Parte 8 · Administrador do sistema</b></a><ol><li><a href="#administrador">Utilizadores e papéis</a></li><li><a href="#administrador">Registo de atividades e estatísticas</a></li><li><a href="#administrador">Centro de segurança</a></li></ol></li><li><a href="#problemas"><b>Parte 9 · Problemas frequentes</b></a></li></ol></section>
+<div class="corpo">
+  <aside class="indice" aria-label="Índice">
+    <details open><summary>Primeiros passos</summary><ol>
+      <li><a href="#tres-espacos">Os três espaços</a></li><li><a href="#entrar">Entrar pela primeira vez</a></li><li><a href="#lingua">Língua, tema e telemóvel</a></li></ol></details>
+    <details><summary>Estudante</summary><ol>
+      <li><a href="#turma">A minha turma</a></li><li><a href="#sala">Sala de aula</a></li><li><a href="#trabalho">Entregar um trabalho</a></li><li><a href="#questionario">Fazer um questionário</a></li><li><a href="#notas">Notas e percurso</a></li><li><a href="#emblemas">Emblemas</a></li><li><a href="#inqueritos">Inquéritos</a></li><li><a href="#ler">Biblioteca</a></li><li><a href="#pedidos">Pedidos de documentos</a></li><li><a href="#comunicar">Mensagens, avisos e calendário</a></li></ol></details>
+    <details><summary>Docente</summary><ol>
+      <li><a href="#doc-cadeira">A página da cadeira</a></li><li><a href="#doc-atividade">Juntar atividades e recursos</a></li><li><a href="#doc-corrigir">Corrigir trabalhos</a></li><li><a href="#doc-questionarios">Questionários e provas</a></li><li><a href="#doc-pauta">Pauta e notas</a></li><li><a href="#doc-turma">Fórum, presenças e relatórios</a></li><li><a href="#doc-copias">Importar e cópias de segurança</a></li><li><a href="#doc-video">Aulas à distância</a></li></ol></details>
+    <details><summary>Administração Escolar</summary><ol>
+      <li><a href="#ae-turmas">Turmas e matrículas</a></li><li><a href="#ae-alocacao">Docentes e cadeiras</a></li><li><a href="#ae-calendario">Calendário e avisos</a></li><li><a href="#ae-pedidos">Pedidos e documentos oficiais</a></li><li><a href="#ae-indicadores">Indicadores</a></li><li><a href="#ae-inqueritos">Inquéritos de satisfação</a></li><li><a href="#ae-integridade">Integridade académica</a></li><li><a href="#ae-lti">Ferramentas externas</a></li></ol></details>
+    <details><summary>Outros perfis</summary><ol>
+      <li><a href="#pessoal">Pessoal e Quadros</a></li><li><a href="#biblioteca">Biblioteca</a></li><li><a href="#redacao">Redação do site</a></li><li><a href="#administrador">Administrador</a></li><li><a href="#problemas">Problemas frequentes</a></li></ol></details>
+  </aside>
+
+  <main>
+    <!-- ====================== PRIMEIROS PASSOS ====================== -->
+    <article class="parte" id="inicio">
+      <header><span>Parte 1</span><h2>Primeiros passos</h2></header>
+
+      <section class="tema" id="tres-espacos">
+        <h3>Os três espaços do sistema</h3>
+        <div class="tabela"><table>
+          <thead><tr><th>Espaço</th><th>Para quem</th><th>Onde</th></tr></thead>
+          <tbody>
+            <tr><td><b>Site da Escola</b></td><td>Qualquer pessoa, sem entrar</td><td>notícias, cursos, eventos, revista, contactos — <span class="end">cahuala.github.io/esgfaa</span></td></tr>
+            <tr><td><b>Portal Académico</b></td><td>Estudantes e docentes</td><td>cadeiras, aulas, trabalhos, notas, biblioteca — botão <span class="botao">Portal Académico</span> no topo do site, ou <span class="end">…/esgfaa/portal/</span></td></tr>
+            <tr><td><b>Painel de gestão</b></td><td>Repartições, redação, biblioteca, administração</td><td>num endereço reservado que a Administração do sistema dá a cada pessoa (não aparece no site)</td></tr>
+          </tbody>
+        </table></div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/site-inicio.jpg" alt="Página inicial do site da Escola, com o menu e o botão Portal Académico"></button><figcaption>O site da Escola. O botão <b>Portal Académico</b>, em cima à direita, leva ao portal.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="entrar">
+        <h3>Entrar pela primeira vez</h3>
+        <ol class="passos">
+          <li>Abra o Portal Académico (estudantes e docentes) ou o painel (funcionários).</li>
+          <li>Escreva o seu <b>e-mail da Escola</b>. Na primeira vez, a palavra-passe é <b>o próprio e-mail</b>.</li>
+          <li>O sistema pede logo uma palavra-passe nova: pelo menos 10 caracteres, com letras e números, sem o seu nome nem o e-mail.</li>
+          <li>Daí em diante, entra com o e-mail e a palavra-passe que escolheu.</li>
+        </ol>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/portal-entrar.jpg" alt="Página de entrada do Portal Académico"></button><figcaption>Entrada do Portal Académico. Os botões PT · EN · FR · ES, em cima, mudam a língua antes de entrar.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/painel-entrar.jpg" alt="Página de entrada do painel de gestão"></button><figcaption>Entrada do painel de gestão.</figcaption></figure>
+        </div>
+        <div class="nota importante"><b>Atenção</b><span>Ao fim de 5 tentativas erradas, a conta fica bloqueada 15 minutos. Se se esqueceu da palavra-passe, peça à Repartição de Pessoal e Quadros que a reponha (volta a ser o seu e-mail e terá de a mudar ao entrar).</span></div>
+      </section>
+
+      <section class="tema" id="lingua">
+        <h3>Língua, tema escuro e telemóvel</h3>
+        <ul>
+          <li><b>Língua:</b> o botão <span class="botao">PT</span> no topo muda para inglês, francês ou espanhol. A escolha fica guardada no navegador.</li>
+          <li><b>Tema escuro:</b> o botão com a lua, no topo do portal.</li>
+          <li><b>Telemóvel:</b> o portal adapta-se ao ecrã. No Android, aparece o cartão <span class="botao">Instalar</span> (fica com um ícone, como uma aplicação). No iPhone: <i>Partilhar → Adicionar ao ecrã principal</i>. Depois pode ligar <span class="botao">Receber avisos</span> para ser avisado de notas, prazos e mensagens.</li>
+        </ul>
+        <div class="par">
+          <figure class="telemovel"><button class="foto" type="button"><img loading="lazy" src="img/est-telemovel.jpg" alt="Portal no telemóvel: a minha turma"></button><figcaption>O portal no telemóvel.</figcaption></figure>
+          <figure class="telemovel"><button class="foto" type="button"><img loading="lazy" src="img/est-telemovel-sala.jpg" alt="Portal no telemóvel: uma aula com PDF"></button><figcaption>Uma aula no telemóvel: a aula primeiro, os capítulos por baixo.</figcaption></figure>
+        </div>
+      </section>
+    </article>
+
+    <!-- ====================== ESTUDANTE ====================== -->
+    <article class="parte" id="estudante">
+      <header><span>Parte 2</span><h2>Estudante</h2></header>
+      <p class="entrada">Tudo o que precisa para as aulas está no Portal Académico: a sua turma, as cadeiras, as aulas, os trabalhos e as notas.</p>
+
+      <section class="tema" id="turma">
+        <h3>A minha turma</h3>
+        <p>É a primeira página depois de entrar. Mostra a turma e os colegas, as cadeiras do ano com o seu progresso, as aulas de hoje, o que tem para fazer, os avisos e os seus emblemas.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-turma.jpg" alt="A minha turma: cadeiras, aulas de hoje, emblemas, para fazer e avisos"></button><figcaption>Cada cartão é uma cadeira; a barra mostra quantas atividades já fez. <span class="botao">Entrar na sala de aula</span> abre a cadeira.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="sala">
+        <h3>A sala de aula</h3>
+        <ol class="passos">
+          <li>À direita estão os <b>capítulos</b> da cadeira. Clique num capítulo para ver os seus itens.</li>
+          <li>Clique num item: a aula abre ao meio — um PDF, um vídeo, uma página, uma pasta, um trabalho, um questionário…</li>
+          <li>O que já fez fica com um visto verde. Em baixo, <span class="botao">Anterior</span> e <span class="botao">Seguinte</span> passam ao item vizinho.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-sala.jpg" alt="Sala de aula com um PDF aberto ao meio e os capítulos à direita"></button><figcaption>Um PDF aberto na sala de aula. Lê-se como uma página web; os botões de cima mudam a página, o tamanho e põem em ecrã inteiro.</figcaption></figure>
+        <h4>Lições, livros e conteúdos interativos</h4>
+        <ul>
+          <li><b>Lição:</b> uma aula guiada, página a página, com perguntas pelo meio. A resposta pode levar a outra página.</li>
+          <li><b>Livro:</b> vários capítulos com índice próprio.</li>
+          <li><b>Pacote SCORM e conteúdo H5P:</b> exercícios interativos que guardam a nota e onde parou.</li>
+          <li><b>Ferramenta externa:</b> <span class="botao">Abrir a ferramenta</span> abre outra plataforma numa janela nova, já com a sua conta.</li>
+        </ul>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-licao.jpg" alt="Uma lição guiada aberta na sala de aula"></button><figcaption>Uma lição guiada.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="trabalho">
+        <h3>Entregar um trabalho</h3>
+        <ol class="passos">
+          <li>Abra o trabalho na sala de aula. Em cima vê o prazo, quantos ficheiros pode juntar e, se houver, a grelha de avaliação.</li>
+          <li>Em <b>A minha entrega</b>, arraste os ficheiros (PDF, Word…) ou escreva o texto, conforme o que o docente pediu.</li>
+          <li>Carregue em <span class="botao">Entregar</span>. Até ao prazo pode <span class="botao">Substituir a entrega</span>.</li>
+          <li>Quando o docente corrigir, aparecem a nota, o comentário e, se houver, <span class="botao">Ver o trabalho corrigido</span> com as marcas no seu PDF.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-trabalho.jpg" alt="Um trabalho com o prazo, o enunciado e a entrega do estudante"></button><figcaption>Um trabalho entregue.</figcaption></figure>
+        <div class="nota"><b>Notas publicadas de uma vez</b><span>Nalguns trabalhos, o docente publica as notas de todos ao mesmo tempo. Até lá vê <i>“A sua entrega já foi corrigida. A nota aparece quando o docente publicar as notas de todos”</i>. É normal.</span></div>
+      </section>
+
+      <section class="tema" id="questionario">
+        <h3>Fazer um questionário</h3>
+        <p>A página do questionário diz quantas perguntas tem, a duração, quando abre e fecha e quantas tentativas tem. <span class="botao">Começar</span> inicia a tentativa; o tempo conta a partir daí e, se acabar, a tentativa é entregue sozinha.</p>
+        <ul>
+          <li>Numa <b>prova</b>, o docente dá na sala a palavra-passe para começar.</li>
+          <li>Se a prova for <b>só para a frente</b>, depois de avançar não pode voltar às páginas anteriores.</li>
+          <li>Depois de entregar, <span class="botao">Rever</span> mostra as suas respostas (e as certas, se o docente o permitir).</li>
+        </ul>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-questionario.jpg" alt="Página de um questionário com as tentativas feitas"></button><figcaption>Um questionário com duas tentativas já feitas.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="notas">
+        <h3>Notas e percurso académico</h3>
+        <p><b>Notas</b> mostra a pauta de cada cadeira (1.ª prova, 2.ª prova, MAC, exame, recurso, nota final e situação). Só aparecem as colunas que o docente publicou. <b>Percurso académico</b> mostra todos os anos que frequentou, com as notas finais e a média.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-notas.jpg" alt="Notas do estudante por cadeira"></button><figcaption>Notas do ano.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-percurso.jpg" alt="Percurso académico em linha do tempo"></button><figcaption>Percurso académico.</figcaption></figure>
+        </div>
+        <div class="nota"><b>Regra de avaliação</b><span>MAC = média da 1.ª e da 2.ª prova. Com MAC ≥ 14 e nenhuma prova negativa, fica dispensado do exame. Nota final = 40 % da MAC + 60 % do exame (ou do recurso). Aprova com 10.</span></div>
+      </section>
+
+      <section class="tema" id="emblemas">
+        <h3>Emblemas</h3>
+        <p>Ganham-se sozinhos, ao avançar: a primeira atividade de uma cadeira, cada capítulo concluído, a cadeira inteira e todos os trabalhos entregues a tempo. Em <b>Os meus emblemas</b> vê os que ganhou e quanto falta para os outros.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-emblemas.jpg" alt="Os meus emblemas: ganhos e por ganhar"></button><figcaption>Emblemas ganhos e por ganhar.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="inqueritos">
+        <h3>Inquéritos</h3>
+        <p>A Escola pede a sua opinião sobre os serviços, o curso e os docentes. As respostas são <b>anónimas</b>: ninguém sabe o que respondeu. As perguntas com <span style="color:var(--vermelho)">*</span> são obrigatórias; se faltar alguma, fica a vermelho.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-inquerito.jpg" alt="Inquérito com perguntas de escala de 1 a 5"></button><figcaption>Um inquérito: escolha de 1 (discordo totalmente) a 5 (concordo totalmente) e carregue em <span class="botao">Enviar</span>.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="ler">
+        <h3>Biblioteca</h3>
+        <ul>
+          <li><b>Catálogo:</b> as estantes com as obras. Clique numa capa para ver a ficha: onde está, se está disponível, e <span class="botao">Reservar</span>.</li>
+          <li><b>Ler agora:</b> as obras digitais leem-se dentro do portal. Não se descarregam nem se imprimem, e cada página leva o seu nome em marca de água.</li>
+          <li><b>Os meus livros:</b> os empréstimos, os prazos de devolução, <span class="botao">Renovar</span> e as reservas.</li>
+        </ul>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-biblioteca.jpg" alt="Biblioteca com estantes de livros"></button><figcaption>As estantes da biblioteca.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-livro.jpg" alt="Um livro digital aberto para ler, com marca de água"></button><figcaption>Um livro digital, só para ler no portal.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="pedidos">
+        <h3>Pedidos de documentos</h3>
+        <ol class="passos">
+          <li>Em <b>Pedidos de documentos</b>, escolha o tipo (declaração de matrícula, certificado…) e diga para que é.</li>
+          <li>A Administração Escolar trata o pedido. Recebe um aviso quando estiver pronto, com o documento em anexo se for o caso.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-pedidos.jpg" alt="Pedidos de documentos do estudante"></button><figcaption>Pedidos de documentos e o estado de cada um.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="comunicar">
+        <h3>Mensagens, avisos, notificações e calendário</h3>
+        <ul>
+          <li><b>Mensagens</b> (envelope, no topo): conversa com docentes e colegas das suas cadeiras.</li>
+          <li><b>Notificações</b> (sino): material novo, correções, prazos, avisos.</li>
+          <li><b>Calendário:</b> aulas, provas, entregas e sessões. Pode assiná-lo no Google Calendar ou no telemóvel (no seu <b>perfil</b>).</li>
+        </ul>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-mensagens.jpg" alt="Mensagens do portal"></button><figcaption>Mensagens.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/est-calendario.jpg" alt="Calendário do estudante"></button><figcaption>Calendário.</figcaption></figure>
+        </div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/est-perfil.jpg" alt="Perfil do estudante com preferências"></button><figcaption>O seu perfil: palavra-passe, avisos por e-mail e no telemóvel, e o endereço do calendário.</figcaption></figure>
+      </section>
+    </article>
+
+    <!-- ====================== DOCENTE ====================== -->
+    <article class="parte" id="docente">
+      <header><span>Parte 3</span><h2>Docente</h2></header>
+      <p class="entrada">O docente vê as cadeiras em que está alocado (como regente ou assistente). Em cada uma organiza os capítulos, publica materiais, cria trabalhos e questionários, corrige e lança as notas.</p>
+      <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-inicio.jpg" alt="Painel do docente com cadeiras, prazos e correções por fazer"></button><figcaption>A entrada do docente: as cadeiras, o que há para corrigir e as próximas datas.</figcaption></figure>
+
+      <section class="tema" id="doc-cadeira">
+        <h3>A página da cadeira e o modo de edição</h3>
+        <ol class="passos">
+          <li>Abra a cadeira. Os separadores de cima levam aos avisos, fórum, notas, participantes, programa e, em <span class="botao">Mais</span>, a glossário, wiki, grupos, presenças, progresso e relatórios.</li>
+          <li>Ligue <span class="botao">Modo de edição</span>: aparecem os botões para juntar atividades, mudar, esconder e apagar. As atividades arrastam-se entre capítulos.</li>
+          <li><span class="botao">Ver como estudante</span> mostra a sala de aula exatamente como os estudantes a veem.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-cadeira.jpg" alt="Página da cadeira em modo de edição"></button><figcaption>A cadeira com o modo de edição ligado.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="doc-atividade">
+        <h3>Juntar atividades e recursos</h3>
+        <p>No modo de edição, em cada capítulo, <span class="botao">Adicionar atividade ou recurso</span> abre a lista abaixo. Escolha, preencha e publique: os estudantes são avisados.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-nova.jpg" alt="Janela Adicionar atividade ou recurso com os tipos disponíveis"></button><figcaption>Os tipos de atividade.</figcaption></figure>
+        <div class="tabela"><table>
+          <thead><tr><th>Tipo</th><th>Para quê</th></tr></thead>
+          <tbody>
+            <tr><td>Ficheiro</td><td>PDF, Word, PowerPoint, imagens ou vídeo (vários de uma vez). O PDF e o vídeo veem-se dentro do portal.</td></tr>
+            <tr><td>Ligação / Vídeo</td><td>Um endereço de outro site, ou um vídeo do YouTube.</td></tr>
+            <tr><td>Página</td><td>Texto escrito no portal, com títulos, tabelas e vídeos.</td></tr>
+            <tr><td>Pasta</td><td>Vários ficheiros juntos.</td></tr>
+            <tr><td>Livro</td><td>Vários capítulos com índice, para ler e imprimir.</td></tr>
+            <tr><td>Lição</td><td>Aula guiada: páginas com perguntas que levam a outras páginas.</td></tr>
+            <tr><td>Trabalho</td><td>Entrega com prazo, grelha de avaliação, em grupo ou não, correção anónima.</td></tr>
+            <tr><td>Questionário</td><td>Teste com correção automática; também serve para provas.</td></tr>
+            <tr><td>Videoconferência</td><td>Aula à distância numa sala do portal, ou com uma ligação do Zoom, Teams ou Meet.</td></tr>
+            <tr><td>Sondagem</td><td>Uma pergunta de escolha aos estudantes.</td></tr>
+            <tr><td>Avaliação por pares</td><td>Os estudantes entregam e avaliam o trabalho uns dos outros.</td></tr>
+            <tr><td>Pacote SCORM / Conteúdo H5P</td><td>Cursos e exercícios interativos feitos noutras ferramentas, com nota e progresso.</td></tr>
+            <tr><td>Ferramenta externa</td><td>Laboratório virtual ou simulador registado pela Administração Escolar (LTI).</td></tr>
+          </tbody>
+        </table></div>
+        <div class="nota"><b>Restrições</b><span>Cada atividade pode ficar escondida, abrir numa data, ou só depois de o estudante concluir outra (com nota mínima, se quiser).</span></div>
+      </section>
+
+      <section class="tema" id="doc-corrigir">
+        <h3>Corrigir trabalhos</h3>
+        <ol class="passos">
+          <li>Abra o trabalho: em baixo está a lista de <b>Entregas</b> — quem entregou, quando, a originalidade e a nota.</li>
+          <li><span class="botao">Ver e corrigir</span> abre a entrega. Dê a nota (ou os pontos da grelha) e escreva o comentário.</li>
+          <li>Num PDF, <span class="botao">Corrigir no PDF</span> deixa sublinhar, realçar, escrever comentários e pôr ✓ e ✗ no próprio trabalho. O estudante recebe o PDF corrigido.</li>
+          <li><span class="botao">Guardar</span>. O estudante é avisado (ou só quando publicar as notas, se escolheu publicá-las de uma vez).</li>
+        </ol>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-entregas.jpg" alt="Lista de entregas de um trabalho"></button><figcaption>As entregas, com a originalidade de cada uma.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-corrigir.jpg" alt="Uma entrega aberta para corrigir com nota e comentário"></button><figcaption>Uma entrega aberta para corrigir.</figcaption></figure>
+        </div>
+        <h4>Correção anónima e notas publicadas de uma vez</h4>
+        <p>Nas definições do trabalho: com <b>correção anónima</b>, vê “Participante 1, 2…” em vez dos nomes. Com <b>publicar as notas todas de uma vez</b>, os estudantes só veem as notas quando carregar em <span class="botao">Publicar as notas</span>. Para um estudante que precise de mais tempo, <span class="botao">Prazo</span> alarga o prazo só para ele.</p>
+      </section>
+
+      <section class="tema" id="doc-questionarios">
+        <h3>Questionários e provas</h3>
+        <p>Há 9 tipos de pergunta: escolha única e múltipla, verdadeiro/falso, resposta curta, numérica, correspondência, preencher lacunas, ordenar e dissertação (esta corrigida à mão). As perguntas podem vir do <b>Banco de perguntas</b>, para usar em várias cadeiras.</p>
+        <p>Para uma prova: palavra-passe (dada na sala), uma pergunta por página, navegação só para a frente, tempo limite, comentário conforme a nota e <b>exceções</b> por estudante (outra data, mais tempo ou mais tentativas).</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-questionario.jpg" alt="Um questionário visto pelo docente"></button><figcaption>Um questionário, visto pelo docente.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-banco.jpg" alt="Banco de perguntas"></button><figcaption>O banco de perguntas.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="doc-pauta">
+        <h3>Pauta e notas</h3>
+        <p>No separador <b>Notas</b>: escreva as notas de cada estudante (de 0 a 20, aceita vírgula) e carregue em <span class="botao">Guardar pauta</span>. O botão da calculadora, em cada coluna, calcula-a a partir de trabalhos e questionários. Os estudantes só veem as colunas que publicar.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-pauta.jpg" alt="Pauta da cadeira com notas, MAC, nota final e situação"></button><figcaption>A pauta: MAC, nota final e situação são calculadas sozinhas. <span class="botao">Exportar Excel</span> e <span class="botao">Imprimir</span> em cima.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="doc-turma">
+        <h3>Fórum, presenças e relatórios</h3>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-forum.jpg" alt="Fórum da cadeira"></button><figcaption><b>Fórum:</b> tópicos de discussão e de perguntas e respostas; o docente fixa, fecha e modera.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-presencas.jpg" alt="Registo de presenças"></button><figcaption><b>Presenças:</b> marque quem esteve em cada aula.</figcaption></figure>
+        </div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-relatorios.jpg" alt="Relatórios de participação dos estudantes"></button><figcaption><b>Relatórios</b> (em Mais): quem abriu o quê e quando, e quem está a ficar para trás.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="doc-copias">
+        <h3>Importar e cópias de segurança</h3>
+        <p>No modo de edição, <span class="botao">Importar e cópias</span> tem três separadores:</p>
+        <ul>
+          <li><b>De outra cadeira:</b> copia o conteúdo de uma cadeira sua do ano passado (as datas avançam sozinhas).</li>
+          <li><b>De um ficheiro:</b> restaura uma cópia de segurança, ou importa um curso do Moodle (<code>.mbz</code>).</li>
+          <li><b>Cópia de segurança:</b> descarrega tudo o que a cadeira tem num <code>.zip</code> (sem entregas nem notas).</li>
+        </ul>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/doc-importar.jpg" alt="Janela Importar e cópias de segurança"></button><figcaption>Importar e cópias de segurança.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="doc-video">
+        <h3>Aulas à distância</h3>
+        <p>Junte uma <b>Videoconferência</b> e escolha <b>Sala do portal</b>: o portal cria a sala e todos entram nela sem sair do portal nem instalar nada. Indique o dia, a hora e a duração; o botão <span class="botao">Entrar na sessão</span> abre 15 minutos antes.</p>
+      </section>
+    </article>
+
+    <!-- ====================== ADMINISTRAÇÃO ESCOLAR ====================== -->
+    <article class="parte" id="escolar">
+      <header><span>Parte 4</span><h2>Administração Escolar</h2></header>
+      <p class="entrada">No painel de gestão, a Repartição de Administração Escolar organiza o ano letivo: turmas, cadeiras, docentes, calendário, pedidos, documentos e inquéritos.</p>
+      <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-inicio.jpg" alt="Painel de gestão: página inicial com o menu à esquerda"></button><figcaption>O painel de gestão. Cada pessoa só vê no menu o que o seu papel permite.</figcaption></figure>
+
+      <section class="tema" id="ae-turmas">
+        <h3>Turmas e matrículas</h3>
+        <ol class="passos">
+          <li>Em <b>Turmas</b>, crie a turma: curso, ano letivo e nome.</li>
+          <li>Abra a turma e junte as cadeiras (código, nome, semestre, horas).</li>
+          <li>Matricule os estudantes (que a Repartição de Pessoal e Quadros já registou).</li>
+          <li>No ano seguinte, a cópia de turma cria as cadeiras com os conteúdos do ano anterior.</li>
+        </ol>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-turmas.jpg" alt="Lista de turmas"></button><figcaption>As turmas.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-turma.jpg" alt="Uma turma com estudantes e cadeiras"></button><figcaption>Uma turma: estudantes, cadeiras e finalistas.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="ae-alocacao">
+        <h3>Docentes e cadeiras</h3>
+        <p><b>Alocação de docentes</b> mostra as cadeiras sem regente e as horas de cada docente. Em cada cadeira escolha o regente e os assistentes.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-alocacao.jpg" alt="Alocação de docentes às cadeiras"></button><figcaption>Alocação de docentes.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="ae-calendario">
+        <h3>Calendário académico e avisos do portal</h3>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-calendario.jpg" alt="Calendário académico"></button><figcaption><b>Calendário académico:</b> provas, exames, feriados e eventos, por turma.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-avisos.jpg" alt="Avisos do portal"></button><figcaption><b>Avisos do portal:</b> chegam a todos os estudantes (ou a uma turma), com notificação.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="ae-pedidos">
+        <h3>Pedidos e documentos oficiais</h3>
+        <p><b>Pedidos de documentos</b> lista o que os estudantes pediram. Responda, junte o documento e marque como pronto. Os documentos oficiais (pauta da cadeira e da turma, folha de presenças, lista para a prova, histórico, certificado) imprimem-se ou guardam-se em PDF, com cabeçalho oficial e espaço para assinaturas.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-pedidos.jpg" alt="Pedidos de documentos dos estudantes"></button><figcaption>Pedidos dos estudantes.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-pauta-oficial.jpg" alt="Pauta oficial da turma pronta a imprimir"></button><figcaption>Pauta oficial da turma.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="ae-indicadores">
+        <h3>Indicadores académicos</h3>
+        <p>Estudantes ativos, estudantes em risco (com o motivo: notas negativas, faltas, sem acessos…), cadeiras com notas por lançar e a média por cadeira.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-indicadores.jpg" alt="Indicadores académicos"></button><figcaption>Indicadores do ano letivo.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="ae-inqueritos">
+        <h3>Inquéritos de satisfação</h3>
+        <ol class="passos">
+          <li>Em <b>Inquéritos de satisfação</b>, comece de um modelo (serviços da Escola, avaliação do curso) ou em branco.</li>
+          <li>No editor, escreva as perguntas: escala de 1 a 5, escolha ou resposta aberta. <span class="botao">Pré-visualizar</span> mostra como os estudantes o vão ver.</li>
+          <li>Escolha a quem se destina e até quando, e lance-o. O portal avisa cada pessoa.</li>
+          <li>Os resultados (anónimos) veem-se ao longo do tempo e exportam-se para Excel.</li>
+        </ol>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-satisfacao.jpg" alt="Lista de inquéritos de satisfação"></button><figcaption>Os inquéritos e o seu estado.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-satisfacao-editor.jpg" alt="Editor de um inquérito com cartões por pergunta"></button><figcaption>O editor, com um cartão por pergunta.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="ae-integridade">
+        <h3>Integridade académica (anti-plágio)</h3>
+        <p>Cada trabalho entregue é comparado com os outros trabalhos, a biblioteca digital, o repositório da Escola e, se configurado, a internet. Também se avaliam sinais de uso de inteligência artificial. O relatório mostra a percentagem, as fontes e os trechos coincidentes. <b>É um indicador para o docente, nunca uma prova.</b></p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-integridade.jpg" alt="Integridade académica: análises e repositório"></button><figcaption>As análises de originalidade.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="ae-lti">
+        <h3>Ferramentas externas (LTI)</h3>
+        <ol class="passos">
+          <li>Peça à ferramenta (simulador, laboratório virtual…) os dois endereços: o de início de sessão e o de lançamento.</li>
+          <li>Em <b>Ferramentas externas (LTI)</b>, carregue em <span class="botao">Registar ferramenta</span> e preencha-os.</li>
+          <li>Passe à ferramenta os dados do portal (emissor, JWKS, autorização) e o Client ID e Deployment ID da ferramenta registada — há botões para os copiar.</li>
+          <li>Os docentes passam a poder juntá-la às cadeiras.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-lti.jpg" alt="Ferramentas externas LTI no painel"></button><figcaption>Ferramentas externas: à esquerda, os dados do portal para dar à ferramenta.</figcaption></figure>
+      </section>
+    </article>
+
+    <!-- ====================== PESSOAL E QUADROS ====================== -->
+    <article class="parte" id="pessoal">
+      <header><span>Parte 5</span><h2>Pessoal e Quadros</h2></header>
+      <section class="tema">
+        <h3>Registar estudantes e docentes</h3>
+        <p>Não há candidaturas pela internet: é a Repartição de Pessoal e Quadros que regista os oficiais admitidos e os docentes.</p>
+        <ol class="passos">
+          <li>Em <b>Estudantes e docentes</b>, preencha os dados (nome, posto, ramo, NIP, e-mail da Escola) e carregue em <span class="botao">Registar estudante</span> ou <span class="botao">Registar docente</span>. Também pode importar uma folha de Excel.</li>
+          <li>A conta fica criada: a primeira palavra-passe é o e-mail.</li>
+          <li>Se alguém se esquecer da palavra-passe, o botão da chave na lista <b>repõe-na</b> (volta a ser o e-mail).</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-registo.jpg" alt="Registo de estudantes e docentes"></button><figcaption>Registo de pessoas.</figcaption></figure>
+      </section>
+    </article>
+
+    <!-- ====================== BIBLIOTECA ====================== -->
+    <article class="parte" id="biblioteca">
+      <header><span>Parte 6</span><h2>Biblioteca</h2></header>
+      <section class="tema">
+        <h3>Catálogo e empréstimos</h3>
+        <ul>
+          <li><b>Catálogo:</b> registe cada obra (livro, tese, TFC, revista…) com autores, assuntos, ISBN e cota; junte os exemplares (com o código de barras) e, se houver, a versão digital em PDF.</li>
+          <li><b>Empréstimos:</b> ao balcão, leia o código do exemplar e o leitor. 14 dias e até 3 livros para estudantes; 30 dias e até 5 para docentes. Quem tem livros em atraso não leva outros.</li>
+          <li>As reservas feitas no portal aparecem aqui; ao emprestar, a reserva fica atendida.</li>
+        </ul>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-biblioteca.jpg" alt="Catálogo da biblioteca no painel"></button><figcaption>O catálogo.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-emprestimos.jpg" alt="Empréstimos e devoluções"></button><figcaption>Empréstimos e devoluções.</figcaption></figure>
+        </div>
+      </section>
+    </article>
+
+    <!-- ====================== REDAÇÃO ====================== -->
+    <article class="parte" id="redacao">
+      <header><span>Parte 7</span><h2>Redação do site</h2></header>
+
+      <section class="tema">
+        <h3>Notícias, artigos, eventos e revista</h3>
+        <ol class="passos">
+          <li>Em <b>Notícias</b> (ou Artigos, Eventos…), carregue em <span class="botao">Nova notícia</span> (ou o botão de criar dessa lista).</li>
+          <li>Escreva o título, a entrada e o texto como num processador de texto. Junte a imagem de capa, imagens, galerias, vídeos ou tabelas.</li>
+          <li>Preencha a secção e a data, à direita. <span class="botao">Guardar rascunho</span> guarda sem publicar; <span class="botao">Publicar</span> põe no site.</li>
+          <li>O sistema traduz sozinho para inglês, francês e espanhol. As traduções podem ser revistas na própria notícia.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-noticia.jpg" alt="Editor de uma notícia nova"></button><figcaption>O editor de notícias.</figcaption></figure>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-noticias.jpg" alt="Lista de notícias"></button><figcaption>As notícias, com o estado de cada uma.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-revista.jpg" alt="Números da revista"></button><figcaption><b>Revista:</b> cada número é um PDF com capa e sumário; no site, lê-se dentro da página.</figcaption></figure>
+        </div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/site-revista.jpg" alt="A revista no site da Escola"></button><figcaption>A revista no site.</figcaption></figure>
+      </section>
+
+      <section class="tema">
+        <h3>Páginas do site, mensagens e comentários</h3>
+        <ul>
+          <li><b>Páginas do site:</b> página inicial, Institucional, admissão aos cursos e Contactos.</li>
+          <li><b>Mensagens do site:</b> o que as pessoas escrevem no formulário de Contactos chega aqui. <span class="botao">Responder por e-mail</span> abre o e-mail já com a mensagem; depois marque como respondida.</li>
+          <li><b>Comentários:</b> são publicados logo; apague os ofensivos ou fora do tema.</li>
+        </ul>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-pagina.jpg" alt="Edição da página inicial do site"></button><figcaption>Edição de uma página do site.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-mensagens.jpg" alt="Mensagens do site no painel"></button><figcaption>Mensagens do site.</figcaption></figure>
+        </div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/site-contactos.jpg" alt="Formulário de contacto no site"></button><figcaption>O formulário de contacto, no site.</figcaption></figure>
+      </section>
+    </article>
+
+    <!-- ====================== ADMINISTRADOR ====================== -->
+    <article class="parte" id="administrador">
+      <header><span>Parte 8</span><h2>Administrador do sistema</h2></header>
+
+      <section class="tema">
+        <h3>Utilizadores e papéis</h3>
+        <p><b>Utilizadores:</b> crie as contas do painel e escolha o papel de cada pessoa. <b>Papéis e permissões:</b> cada papel tem uma grelha do que pode ver, criar, editar, apagar e publicar. Mudar o papel de alguém termina as sessões dessa pessoa.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-utilizadores.jpg" alt="Utilizadores do painel"></button><figcaption>Utilizadores.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-papeis.jpg" alt="Papéis e permissões"></button><figcaption>Papéis e permissões.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema">
+        <h3>Registo de atividades e estatísticas</h3>
+        <p>O <b>registo de atividades</b> guarda quem entrou, quem falhou a palavra-passe, e cada criação, edição, publicação e remoção. As <b>estatísticas</b> mostram visitantes e páginas vistas do site, sem cookies.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-atividades.jpg" alt="Registo de atividades"></button><figcaption>Registo de atividades.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-estatisticas.jpg" alt="Estatísticas do site"></button><figcaption>Estatísticas.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema">
+        <h3>Centro de segurança</h3>
+        <p>Mostra, de 10 em 10 segundos, se o servidor e a base de dados estão bem e se alguém está a tentar atacar o sistema. O estado geral é <b style="color:var(--verde)">verde</b> (normal), <b style="color:var(--ouro)">amarelo</b> (atenção) ou <b style="color:var(--vermelho)">vermelho</b> (possível ataque).</p>
+        <ul>
+          <li><b>Ao vivo:</b> cada tentativa suspeita — palavras-passe erradas, procura de ficheiros de ataque, tentativas de injeção.</li>
+          <li><b>Endereços mais ativos:</b> <span class="botao">Bloquear</span> impede um endereço de usar o sistema. Os robôs de ataque ficam bloqueados 24 horas sozinhos.</li>
+          <li><b>Modo vigilância:</b> ecrã inteiro e escuro, para um ecrã de parede, com alarme sonoro opcional.</li>
+        </ul>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-seguranca.jpg" alt="Centro de segurança"></button><figcaption>O Centro de segurança.</figcaption></figure>
+        <div class="nota importante"><b>Rede partilhada</b><span>Antes de bloquear à mão, lembre-se de que todos os computadores da Escola podem sair para a internet pelo mesmo endereço. Bloquear esse endereço bloqueia todos.</span></div>
+      </section>
+    </article>
+
+    <!-- ====================== PROBLEMAS ====================== -->
+    <article class="parte" id="problemas">
+      <header><span>Parte 9</span><h2>Problemas frequentes</h2></header>
+      <div class="tabela"><table>
+        <thead><tr><th>Problema</th><th>O que fazer</th></tr></thead>
+        <tbody>
+          <tr><td>Esqueci-me da palavra-passe</td><td>Peça à Repartição de Pessoal e Quadros (estudantes e docentes) ou ao administrador (painel) que a reponha.</td></tr>
+          <tr><td>“Conta bloqueada por excesso de tentativas”</td><td>Espere 15 minutos e tente de novo, com calma. Se continuar, peça que a reponham.</td></tr>
+          <tr><td>Não vejo uma cadeira</td><td>A Administração Escolar tem de o matricular na turma (estudantes) ou alocar à cadeira (docentes).</td></tr>
+          <tr><td>Uma atividade aparece com cadeado</td><td>Ainda não abriu, ou depende de outra que tem de concluir primeiro. O cadeado diz porquê.</td></tr>
+          <tr><td>Não consigo entregar o trabalho</td><td>Veja o prazo e o tipo de ficheiro pedido. Os ficheiros com o nome trocado (por exemplo, um programa chamado .pdf) são recusados.</td></tr>
+          <tr><td>A nota do trabalho não aparece</td><td>O docente pode ter escolhido publicar as notas de todos de uma vez.</td></tr>
+          <tr><td>Não recebo avisos no telemóvel</td><td>No perfil, ligue <i>Receber os avisos neste aparelho</i> e permita as notificações no navegador. No iPhone, abra o portal pelo ícone do ecrã principal.</td></tr>
+          <tr><td>“Este endereço está bloqueado por motivos de segurança”</td><td>Contacte o administrador do sistema, que pode desbloquear no Centro de segurança.</td></tr>
+          <tr><td>O texto aparece noutra língua</td><td>Mude a língua no botão <span class="botao">PT</span> do topo.</td></tr>
+        </tbody>
+      </table></div>
+    </article>
+  </main>
+</div>
+
+<footer class="rodape">Manual do Sistema ESGFAA · Escola Superior de Guerra · outubro de 2026 · imagens com dados de demonstração<br><b>Sistema desenvolvido por Império Noove Comércio e Serviços, (SU) Lda</b> · NIF 5002164787</footer>
+
+<dialog id="ampliar" aria-label="Imagem ampliada"><button type="button" aria-label="Fechar">×</button><img alt=""></dialog>
+<script>
+  // clicar numa captura mostra-a grande; Esc ou clicar fora fecha
+  const d = document.getElementById('ampliar')
+  const grande = d.querySelector('img')
+  document.querySelectorAll('figure .foto').forEach((b) => b.addEventListener('click', () => {
+    const i = b.querySelector('img')
+    grande.src = i.src
+    grande.alt = i.alt
+    d.showModal()
+  }))
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.tagName === 'BUTTON') d.close() })
+  // o índice abre a secção do perfil em que se está
+  document.querySelectorAll('.indice a').forEach((a) => a.addEventListener('click', () => a.closest('details')?.setAttribute('open', '')))
+</script>
+
+</body>
+</html>

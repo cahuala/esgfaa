@@ -1,4 +1,5 @@
 import { api } from './api'
+import { brasaoPng } from './documentos'
 
 const hoje = () => new Date().toLocaleDateString('pt-PT')
 const nomeFicheiro = (titulo, ext) => `${titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'dados'}-${new Date().toISOString().slice(0, 10)}.${ext}`
@@ -25,6 +26,8 @@ export async function exportarPdf(titulo, colunas, linhas, { subtitulo = '' } = 
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ orientation: colunas.length > 6 ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' })
   const w = doc.internal.pageSize.getWidth()
+  const brasao = await brasaoPng()
+  if (brasao) doc.addImage(brasao, 'PNG', 14, 5, 15, 15)
   doc.setFont('helvetica', 'bold').setFontSize(11).text('ESCOLA SUPERIOR DE GUERRA', w / 2, 12, { align: 'center' })
   doc.setFont('helvetica', 'normal').setFontSize(9).text('Repartição de Pessoal e Quadros — Sistema de Gestão de Pessoal', w / 2, 17, { align: 'center' })
   doc.setFont('helvetica', 'bold').setFontSize(13).text(titulo, 14, 27)
