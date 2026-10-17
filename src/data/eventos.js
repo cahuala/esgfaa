@@ -140,8 +140,4 @@ const eventos = [
 
 eventos.sort((a, b) => a.data.localeCompare(b.data))
 
-export function eventoPorId(id) {
-  return eventos.find((e) => e.id === id)
-}
-
 export default eventos

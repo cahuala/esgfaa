@@ -127,8 +127,4 @@ const artigos = [
 
 artigos.sort((a, b) => b.data.localeCompare(a.data))
 
-export function artigoPorSlug(slug) {
-  return artigos.find((a) => a.slug === slug)
-}
-
 export default artigos

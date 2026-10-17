@@ -67,12 +67,6 @@ export function contagem(iso) {
 
 const DIAS_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
 
-// "Sexta-feira, 9 de outubro de 2026"
-export function dataPorExtenso(data = new Date()) {
-  if (linguaAtual() !== 'pt') return maiuscula(intl(data, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
-  return `${DIAS_SEMANA[data.getDay()]}, ${data.getDate()} de ${MESES_LONGOS[data.getMonth()]} de ${data.getFullYear()}`
-}
-
 // "Quinta-feira"
 export function diaDaSemana(iso) {
   if (linguaAtual() !== 'pt') return maiuscula(intl(paraData(iso), { weekday: 'long' }))

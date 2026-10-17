@@ -175,8 +175,4 @@ const cursos = [
 export const totalHoras = (curso) =>
   curso.plano.reduce((t, p) => t + p.unidades.reduce((s, u) => s + u.horas, 0), 0)
 
-export function cursoPorId(id) {
-  return cursos.find((c) => c.id === id)
-}
-
 export default cursos

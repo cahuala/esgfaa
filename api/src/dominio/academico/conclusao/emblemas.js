@@ -6,13 +6,6 @@
   - sempre a tempo: todos os trabalhos entregues dentro do prazo (pelo menos dois).
   Cada emblema diz se já foi ganho e quanto falta.
 */
-export const TIPOS_EMBLEMA = {
-  inicio: { nome: 'Primeiros passos', icone: 'fa-shoe-prints' },
-  capitulo: { nome: 'Capítulo concluído', icone: 'fa-bookmark' },
-  cadeira: { nome: 'Cadeira concluída', icone: 'fa-medal' },
-  pontual: { nome: 'Sempre a tempo', icone: 'fa-stopwatch' },
-}
-
 export function calcularEmblemas({ cadeira, secoes = [], itens = [], pontualidade = [] }) {
   if (!itens.length) return []
   const r = []

@@ -41,8 +41,4 @@ const pessoas = [
   },
 ]
 
-export function pessoaPorId(id) {
-  return pessoas.find((p) => p.id === id)
-}
-
 export default pessoas

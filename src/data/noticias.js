@@ -272,10 +272,6 @@ const noticias = [
 // mais recentes primeiro
 noticias.sort((a, b) => b.data.localeCompare(a.data))
 
-export function noticiaPorSlug(slug) {
-  return noticias.find((n) => n.slug === slug)
-}
-
 export const temVideo = (n) => n.conteudo.some((b) => b.tipo === 'video')
 export const temGaleria = (n) => n.conteudo.some((b) => b.tipo === 'galeria')
 
