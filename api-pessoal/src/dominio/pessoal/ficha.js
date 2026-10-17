@@ -1,6 +1,6 @@
 import { CATEGORIAS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
 import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verificarPromocao } from './carreira.js'
-import { CARREIRAS_CIVIS, VINCULOS_CIVIS, verificarProgressaoCivil } from './civis.js'
+import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgressaoCivil } from './civis.js'
 
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
 export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário', domiciliar: 'Empregada(o) domiciliar' }
@@ -51,6 +51,8 @@ export function comDerivados(p, hoje = new Date()) {
     f.descricao = [f.postoAbreviatura, f.ramo].filter(Boolean).join(' · ')
   } else {
     f.carreiraNome = CARREIRAS_CIVIS[p.carreiraCivil]?.nome ?? ''
+    f.nivelCategoria = CARREIRAS_CIVIS[p.carreiraCivil]?.nivel ?? null
+    f.remuneracao = remuneracaoDaCategoria(p.carreiraCivil)
     f.vinculoCivilNome = VINCULOS_CIVIS[p.vinculoCivil] ?? ''
     f.tempoServico = arred(p.dataAdmissao ? (hoje - new Date(p.dataAdmissao)) / (365.2425 * 86_400_000) : null)
     f.tempoNaCategoria = arred(p.dataCategoria ? (hoje - new Date(p.dataCategoria)) / (365.2425 * 86_400_000) : null)

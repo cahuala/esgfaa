@@ -9,7 +9,7 @@ import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
 // nomes dos filtros (para os mostrar e para o título do PDF)
-const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Carreira civil', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil' }
+const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Categoria (civis)', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil' }
 
 export default function Pessoas() {
   const { ref, pode } = useSessao()
@@ -74,7 +74,7 @@ export default function Pessoas() {
           {f('unidadeId', [['nenhum', 'Sem unidade'], ...arvore.opcoes.map(([k, v]) => [String(k), v])], 'Toda a Escola')}
           {f('genero', ref.generos)}
           {f('habilitacao', ref.habilitacoes, 'Todas')}
-          {f('carreiraCivil', Object.fromEntries(Object.entries(ref.carreirasCivis).map(([k, v]) => [k, v.nome])), 'Todas')}
+          {f('carreiraCivil', Object.entries(ref.carreirasCivis).filter(([, v]) => !v.domiciliar).sort(([, a], [, b]) => a.nivel - b.nivel).map(([k, v]) => [k, v.nome]), 'Todas')}
           {f('ativo', [['', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']], null)}
         </div>
         {descricao && <div className="small mt-1"><i className="fa fa-filter text-muted me-1" />{Object.entries(filtros).map(([k, v]) => (

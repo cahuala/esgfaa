@@ -22,7 +22,7 @@ const COLUNAS = [
   ['areaFormacao', 'Área de formação', ['area de formacao', 'formacao']], ['dataIngresso', 'Data de ingresso', ['data de ingresso', 'ingresso', 'incorporacao']],
   ['dataIngressoQP', 'Ingresso no QP', ['ingresso no qp', 'data de ingresso no qp']], ['dataAntiguidadePosto', 'Antiguidade no posto', ['antiguidade no posto', 'data do posto', 'data de promocao', 'antiguidade']],
   ['dataCargo', 'No cargo desde', ['no cargo desde', 'data do cargo', 'data de nomeacao']],
-  ['carreiraCivil', 'Carreira (civis)', ['carreira']], ['categoriaCivil', 'Categoria (civis)', ['categoria']], ['vinculoCivil', 'Vínculo (civis)', ['vinculo civil']], ['dataAdmissao', 'Admissão (civis)', ['admissao', 'data de admissao']],
+  ['carreiraCivil', 'Categoria (civis, como no SIGP)', ['categoria', 'carreira', 'categoria civil']], ['categoriaCivil', 'Classe (civis)', ['classe', 'categoria e classe']], ['vinculoCivil', 'Vínculo (civis)', ['vinculo civil']], ['dataAdmissao', 'Admissão (civis)', ['admissao', 'data de admissao']],
 ]
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 

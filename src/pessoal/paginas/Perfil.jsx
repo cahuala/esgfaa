@@ -14,6 +14,7 @@ import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, 
 import { anos, dataPt } from '../formatar'
 
 const Dado = ({ r, v }) => <div className="col-sm-6 col-lg-4 mb-2"><div className="small text-muted">{r}</div><div className="fw-semibold">{v || v === 0 ? v : '—'}</div></div>
+const KZ = (v) => (v || v === 0 ? `${Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz` : '—')
 const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['processo', 'Processo individual', 'fa-folder-open'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
 
 export default function Perfil() {
@@ -119,8 +120,9 @@ export default function Perfil() {
                   <Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} /><Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} /><Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
                 </> : <>
-                  <Dado r="Carreira" v={p.carreiraNome} /><Dado r="Categoria" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
-                  <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na categoria desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
+                  <Dado r="Categoria (SIGP)" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
+                  <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na classe desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
+                  {p.remuneracao && <><Dado r="Vencimento base da categoria" v={KZ(p.remuneracao.vencimentoBase)} /><Dado r="Subsídios (alimentação + transporte)" v={KZ(p.remuneracao.subsidioAlimentacao + p.remuneracao.subsidioTransporte)} /><Dado r={`Líquido de referência (SS ${p.remuneracao.percSegSocial}% · IRT ${p.remuneracao.percIrt}%)`} v={KZ(p.remuneracao.liquido)} /></>}
                   <Dado r="Avaliação de desempenho" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} />
                 </>}
               </div>

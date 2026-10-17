@@ -101,7 +101,7 @@ export class ServicoPainel {
         habilitacao: contar(todos, 'habilitacao', HABILITACOES, 'habilitacao', (a, b) => Object.keys(HABILITACOES).indexOf(a.chave) - Object.keys(HABILITACOES).indexOf(b.chave)),
         provincia: contar(todos, 'provincia', null),
         unidade: contar(todos, 'unidadeId', Object.fromEntries(todos.map((p) => [p.unidadeId, p.unidadeNome]))).slice(0, 15),
-        carreiraCivil: contar(civ, 'carreiraCivil', Object.fromEntries(Object.entries(CARREIRAS_CIVIS).map(([k, v]) => [k, v.nome]))).map(base({ tipo: 'civil' })),
+        carreiraCivil: contar(civ, 'carreiraCivil', Object.fromEntries(Object.entries(CARREIRAS_CIVIS).map(([k, v]) => [k, v.nome])), 'carreiraCivil', (a, b) => (CARREIRAS_CIVIS[a.chave]?.nivel ?? 9) - (CARREIRAS_CIVIS[b.chave]?.nivel ?? 9)).map(base({ tipo: 'civil' })),
         licencas: contar(licencas.filter((l) => l.inicio.getUTCFullYear() === anoAtual), 'tipo', NOMES_LICENCA, 'tipo'),
         propostas: contar(propostas, 'estado', ESTADOS_PROPOSTA, 'estado'),
         propostasTipo: contar(propostas, 'tipo', Object.fromEntries(Object.entries(TIPOS_PROPOSTA).map(([k, v]) => [k, v.nome])), 'tipo'),

@@ -56,7 +56,7 @@ const CARGOS = [
   ['RL', 'Chefe da Repartição de Logística', 'direccao_chefia', 'major', 1], ['SMT', 'Sargento de Material', 'execucao', 'segundo_sargento', 2], ['STR', 'Condutor', 'execucao', null, 4, 'civil'],
   ['RF', 'Chefe da Repartição de Finanças', 'direccao_chefia', 'major', 1], ['RF', 'Técnico de Contabilidade', 'execucao', null, 3, 'civil'],
   ['BD', 'Bibliotecário', 'execucao', null, 2, 'civil'], ['SS', 'Médico', 'execucao', 'capitao', 2], ['SS', 'Enfermeiro', 'execucao', 'primeiro_sargento', 2],
-  ['CS', 'Comandante da Companhia de Serviços', 'comando', 'capitao', 1],
+  ['CS', 'Comandante da Companhia de Serviços', 'comando', 'capitao', 1], ['CS', 'Auxiliar de Serviços Gerais', 'execucao', null, 4, 'civil'], ['SG', 'Auxiliar de Escritório', 'execucao', null, 2, 'civil'],
 ]
 
 // postos dos militares que servem na Escola (sobretudo oficiais) e o tempo típico no posto
@@ -160,7 +160,7 @@ async function main() {
   let agente = 5000
   for (const c of cargos.filter((x) => x.tipo === 'civil')) {
     for (let i = 0; i < c.vagas; i++) {
-      const carreira = c.nome.startsWith('Técnico de C') ? 'tecnica' : c.nome === 'Condutor' ? 'operaria' : ['Bibliotecário', 'Arquivista'].includes(c.nome) ? 'tecnica_media' : 'administrativa'
+      const carreira = c.nome.startsWith('Técnico de C') ? 'tecnico_superior' : ['Condutor', 'Auxiliar de Serviços Gerais'].includes(c.nome) ? 'auxiliar_servicos_gerais' : c.nome === 'Auxiliar de Escritório' ? 'auxiliar_escritorio' : ['Bibliotecário', 'Arquivista'].includes(c.nome) ? 'tecnico_medio' : 'administrativo'
       const cats = CARREIRAS_CIVIS[carreira].categorias
       const genero = aleatorio() < 0.5 ? 'F' : 'M'
       const admissao = data(ano - entre(3, 25))
@@ -187,7 +187,7 @@ async function main() {
   for (const o of await bd.pessoa.findMany({ where: { tipo: 'militar', vinculo: { not: 'estudante' }, posto: { in: ['major', 'tenente_coronel', 'coronel', 'brigadeiro', 'tenente_general'] } } })) {
     const k = Math.min(limiteDomiciliares(o.posto), aleatorio() < 0.45 ? entre(1, 2) : 0)
     for (let i = 0; i < k; i++) {
-      await bd.pessoa.create({ data: { tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: o.id, nome: `${um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}`, numeroAgente: `ED${agente++}`, genero: 'F', dataNascimento: data(ano - entre(22, 50)), provincia: um(PROVINCIAS), telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, dataAdmissao: data(ano - entre(1, 8)) } })
+      await bd.pessoa.create({ data: { tipo: 'civil', vinculo: 'domiciliar', carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar', militarAlocadoId: o.id, nome: `${um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}`, numeroAgente: `ED${agente++}`, genero: 'F', dataNascimento: data(ano - entre(22, 50)), provincia: um(PROVINCIAS), telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, dataAdmissao: data(ano - entre(1, 8)) } })
       dom++
     }
   }

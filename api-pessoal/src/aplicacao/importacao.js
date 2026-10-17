@@ -1,6 +1,6 @@
 import { invalido } from '../erros.js'
 import { ABREVIATURAS, EFECTIVIDADES, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, quadrosDoRamo } from '../dominio/pessoal/hierarquia.js'
-import { CARREIRAS_CIVIS, VINCULOS_CIVIS } from '../dominio/pessoal/civis.js'
+import { CARREIRAS_CIVIS, CATEGORIA_ANTIGA, VINCULOS_CIVIS } from '../dominio/pessoal/civis.js'
 import { ESTADOS_CIVIS, HABILITACOES, PROVINCIAS, VINCULOS, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { exigir } from './sessao.js'
 
@@ -134,9 +134,11 @@ export class ServicoImportacao {
       if (tem('situacao')) d.situacao = corresponder(l.situacao, daLista(SITUACOES), 'Situação')
       if (tem('efectividade')) d.efectividade = corresponder(l.efectividade, daLista(EFECTIVIDADES), 'Efectividade')
     } else {
-      if (tem('carreiraCivil')) d.carreiraCivil = corresponder(l.carreiraCivil, daLista(CARREIRAS_CIVIS), 'Carreira')
+      // categoria do SIGP (Técnico Superior, Técnico Médio, Administrativo…) e, dentro dela, a classe
+      if (tem('carreiraCivil')) d.carreiraCivil = corresponder(l.carreiraCivil, [...daLista(CARREIRAS_CIVIS), ...Object.entries(CATEGORIA_ANTIGA).map(([a, n]) => [n, a])], 'Categoria')
       const carreira = d.carreiraCivil ?? base?.carreiraCivil
-      if (tem('categoriaCivil')) d.categoriaCivil = corresponder(l.categoriaCivil, (CARREIRAS_CIVIS[carreira]?.categorias ?? []).map((c) => [c, c]), 'Categoria')
+      if (tem('categoriaCivil')) d.categoriaCivil = corresponder(l.categoriaCivil, (CARREIRAS_CIVIS[carreira]?.categorias ?? []).map((c) => [c, c]), 'Classe')
+      else if (d.carreiraCivil && !base?.categoriaCivil) d.categoriaCivil = CARREIRAS_CIVIS[d.carreiraCivil].categorias[0]
       if (tem('vinculoCivil')) d.vinculoCivil = corresponder(l.vinculoCivil, daLista(VINCULOS_CIVIS), 'Vínculo')
     }
     if (tem('unidade')) d.unidadeId = corresponder(l.unidade, unidades.map((x) => [x.id, x.nome, x.sigla].filter(Boolean)), 'Unidade')

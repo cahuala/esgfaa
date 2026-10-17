@@ -67,6 +67,12 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     const d = (await adm.get('/api/domiciliares')).body.find((x) => x.id === major.id)
     assert.deepEqual([d.limite, d.alocados, d.livres], [1, 1, 0])
     assert.equal((await adm.get('/api/painel')).body.totais.domiciliares, 1)
+    // categorias do SIGP: a domiciliar fica «Trabalhador Domiciliar»; um civil importado com «Técnico Médio» fica na 1.ª classe
+    const d1 = (await adm.get('/api/pessoas?vinculo=domiciliar')).body[0]
+    assert.deepEqual([d1.carreiraCivil, d1.categoriaCivil], ['trabalhador_domiciliar', 'Trabalhador Domiciliar'])
+    await adm.post('/api/pessoas/importar').send({ modo: 'novos', simular: false, linhas: [{ numeroAgente: 'CIV900', tipo: 'civil', nome: 'Teresa Mbala Sapalo', categoria: undefined, carreiraCivil: 'Técnico Médio' }] }).expect(200)
+    const civ = (await adm.get('/api/pessoas?tipo=civil')).body.find((x) => x.numeroAgente === 'CIV900')
+    assert.deepEqual([civ.carreiraCivil, civ.categoriaCivil, civ.remuneracao.vencimentoBase], ['tecnico_medio', 'Técnico Médio de 3.ª Classe', 320000])
   })
 
   it('extracto: encontra os militares pelo NIP no texto, aplica, anexa ao processo e o processo fica numerado', async () => {

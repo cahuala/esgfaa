@@ -130,11 +130,12 @@ export default function FormularioFicha() {
       {!militar && (
         <Painel titulo="Situação profissional" icone="fa-briefcase">
           <div className="row">
-            <Campo rotulo="Carreira" col="col-md-3"><Escolha valor={d.carreiraCivil} aoMudar={(v) => setD({ ...d, carreiraCivil: v, categoriaCivil: '' })} opcoes={Object.fromEntries(Object.entries(ref.carreirasCivis).map(([k, v]) => [k, v.nome]))} /></Campo>
-            <Campo rotulo="Categoria" col="col-md-3"><Escolha valor={d.categoriaCivil} aoMudar={set('categoriaCivil')} opcoes={categoriasCivis} /></Campo>
+            <Campo rotulo="Categoria (como no SIGP)" col="col-md-3" ajuda={ref.carreirasCivis[d.carreiraCivil]?.descricao}><Escolha valor={d.carreiraCivil} aoMudar={(v) => setD({ ...d, carreiraCivil: v, categoriaCivil: ref.carreirasCivis[v]?.categorias[0] ?? '' })} opcoes={Object.entries(ref.carreirasCivis).filter(([, v]) => !v.domiciliar || d.vinculo === 'domiciliar').sort(([, a], [, b]) => a.nivel - b.nivel).map(([k, v]) => [k, `${v.nivel}. ${v.nome}`])} /></Campo>
+            <Campo rotulo="Classe" col="col-md-3"><Escolha valor={d.categoriaCivil} aoMudar={set('categoriaCivil')} opcoes={categoriasCivis} /></Campo>
+            {ref.carreirasCivis[d.carreiraCivil]?.vencimentoBase && <div className="col-12 small text-muted mb-2"><i className="fa fa-coins me-1" />Vencimento base da categoria: <strong>{Number(ref.carreirasCivis[d.carreiraCivil].vencimentoBase).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz</strong> · subsídio de alimentação {Number(ref.carreirasCivis[d.carreiraCivil].subsidioAlimentacao).toLocaleString('pt-PT')} Kz · transporte {Number(ref.carreirasCivis[d.carreiraCivil].subsidioTransporte).toLocaleString('pt-PT')} Kz</div>}
             <Campo rotulo="Vínculo" col="col-md-3"><Escolha valor={d.vinculoCivil} aoMudar={set('vinculoCivil')} opcoes={ref.vinculosCivis} /></Campo>
             <Campo rotulo="Admissão" col="col-md-3">{data('dataAdmissao')}</Campo>
-            <Campo rotulo="Na categoria desde" col="col-md-3">{data('dataCategoria')}</Campo>
+            <Campo rotulo="Na classe desde" col="col-md-3">{data('dataCategoria')}</Campo>
           </div>
         </Painel>
       )}

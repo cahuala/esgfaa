@@ -193,7 +193,7 @@ function FormCargo({ c, unidades, refs, aoFechar, aoGuardar }) {
         <Campo rotulo="Função (art. 21.º)"><Escolha valor={d.funcao} aoMudar={(v) => setD({ ...d, funcao: v })} opcoes={refs.funcoes} vazio={null} /></Campo>
         <Campo rotulo="Para" col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={{ militar: 'Militar', civil: 'Civil', ambos: 'Militar ou civil' }} vazio={null} /></Campo>
         {d.tipo !== 'civil' && <Campo rotulo="Posto do cargo" col="col-md-4" ajuda="Ninguém é nomeado para cargo de posto inferior (art. 19.º)."><Escolha valor={d.postoRequerido} aoMudar={(v) => setD({ ...d, postoRequerido: v })} opcoes={refs.postos.EXE.map((p) => [p.id, `${p.nome} / ${refs.postos.MGA.find((x) => x.id === p.id).nome}`])} /></Campo>}
-        {d.tipo !== 'militar' && <Campo rotulo="Categoria (civis)" col="col-md-4"><input className="form-control form-control-sm" value={d.categoriaCivil} onChange={(e) => setD({ ...d, categoriaCivil: e.target.value })} /></Campo>}
+        {d.tipo !== 'militar' && <Campo rotulo="Categoria (civis, como no SIGP)" col="col-md-4"><Escolha valor={d.categoriaCivil} aoMudar={(v) => setD({ ...d, categoriaCivil: v })} opcoes={Object.values(refs.carreirasCivis).filter((v) => !v.domiciliar).sort((a, b) => a.nivel - b.nivel).map((v) => [v.nome, v.nome])} vazio="Qualquer" /></Campo>}
         <Campo rotulo="Lugares" col="col-md-4"><input type="number" min="1" className="form-control form-control-sm" value={d.vagas} onChange={(e) => setD({ ...d, vagas: e.target.value })} /></Campo>
       </div>
     </Modal>

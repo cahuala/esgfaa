@@ -109,7 +109,7 @@ describe('Lei n.º 13/18: graduação, nomeação, reserva, reforma, licenças e
 
 describe('Pessoal civil: progressão na carreira', () => {
   it('categoria seguinte depois do tempo mínimo e com avaliação favorável', () => {
-    const p = { tipo: 'civil', carreiraCivil: 'tecnica_superior', categoriaCivil: 'Técnico Superior de 2.ª Classe', dataCategoria: '2022-01-01', avaliacaoFavoravel: true }
+    const p = { tipo: 'civil', carreiraCivil: 'tecnico_superior', categoriaCivil: 'Técnico Superior de 2.ª Classe', dataCategoria: '2022-01-01', avaliacaoFavoravel: true }
     const r = verificarProgressaoCivil(p, { hoje: HOJE })
     assert.equal(r.categoriaProposta, 'Técnico Superior de 1.ª Classe')
     assert.equal(r.elegivel, true)

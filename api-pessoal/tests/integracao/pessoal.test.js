@@ -127,7 +127,7 @@ describe('Sistema de Gestão de Pessoal', () => {
   })
 
   it('civil: progressão na carreira por proposta', async () => {
-    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', nome: 'Maria da Conceição Lopes', numeroAgente: 'AG1001', genero: 'F', carreiraCivil: 'tecnica_superior', categoriaCivil: 'Técnico Superior de 2.ª Classe', dataAdmissao: '2018-03-01', dataCategoria: '2022-03-01' }).expect(201)).body
+    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', nome: 'Maria da Conceição Lopes', numeroAgente: 'AG1001', genero: 'F', carreiraCivil: 'tecnico_superior', categoriaCivil: 'Técnico Superior de 2.ª Classe', dataAdmissao: '2018-03-01', dataCategoria: '2022-03-01' }).expect(201)).body
     assert.equal(c.proximaCategoria, 'Técnico Superior de 1.ª Classe')
     const pr = (await adm.post('/api/propostas').send({ tipo: 'progressao', titulo: 'Progressões', itens: [{ pessoaId: c.id }] }).expect(201)).body
     await adm.post(`/api/propostas/${pr.id}/submeter`).expect(200)

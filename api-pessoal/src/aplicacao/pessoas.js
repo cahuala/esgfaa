@@ -132,6 +132,8 @@ export class ServicoPessoas {
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
     for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes']) if (k in x) x[k] ??= ''
     if (x.email) x.email = x.email.toLowerCase()
+    // empregados domiciliares têm a categoria própria do SIGP
+    if (x.vinculo === 'domiciliar') Object.assign(x, { carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar' })
     return x
   }
 

@@ -83,7 +83,7 @@ export class ServicoMensagens {
     const outro = await this.bd.utilizador.findUnique({ where: { id: outroId } })
     if (!outro?.ativo) throw naoEncontrado('Essa pessoa não tem conta activa.')
     const chave = [u.id, outroId].sort((a, b) => a - b).join('-')
-    const c = await this.bd.conversa.upsert({ where: { chave }, create: { tipo: 'directa', chave, participantes: { create: [{ utilizadorId: u.id }, { utilizadorId: outroId }] } }, update: {} })
+    const c = await this.bd.conversa.upsert({ where: { chave }, create: { tipo: 'directa', chave, participantes: { create: [{ utilizadorId: u.id, lidoAte: new Date(0) }, { utilizadorId: outroId, lidoAte: new Date(0) }] } }, update: {} })
     return { id: c.id }
   }
 
@@ -91,7 +91,7 @@ export class ServicoMensagens {
     exigir(u, 'mensagens')
     const ids = [...new Set([u.id, ...membros.map(Number)])]
     if (ids.length < 3) throw invalido('Um grupo tem pelo menos 3 pessoas (para duas, use uma conversa directa).')
-    const c = await this.bd.conversa.create({ data: { tipo: 'grupo', nome, participantes: { create: ids.map((id) => ({ utilizadorId: id })) } } })
+    const c = await this.bd.conversa.create({ data: { tipo: 'grupo', nome, participantes: { create: ids.map((id) => ({ utilizadorId: id, lidoAte: new Date(0) })) } } })
     return { id: c.id }
   }
 
@@ -117,7 +117,8 @@ export class ServicoMensagens {
     const t = String(texto).trim().slice(0, 4000)
     if (!t && !ficheiro) throw invalido('Escreva a mensagem.')
     const f = ficheiro ? await this.ficheiros.guardar(ficheiro) : null
-    const m = await this.bd.mensagem.create({ data: { conversaId, autorId: u.id, texto: t, ficheiro: f?.ficheiro ?? null, nomeOriginal: f?.nomeOriginal ?? null } })
+    // a mesma hora para a mensagem e para o «lido até» (senão a própria mensagem podia ficar por ler)
+    const m = await this.bd.mensagem.create({ data: { conversaId, autorId: u.id, texto: t, ficheiro: f?.ficheiro ?? null, nomeOriginal: f?.nomeOriginal ?? null, criadoEm: this.agora() } })
     await this.bd.conversa.update({ where: { id: conversaId }, data: { ultimaEm: m.criadoEm } })
     await this.bd.participante.update({ where: { conversaId_utilizadorId: { conversaId, utilizadorId: u.id } }, data: { lidoAte: m.criadoEm } })
     return { id: m.id }
