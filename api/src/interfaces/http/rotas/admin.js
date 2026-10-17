@@ -14,6 +14,7 @@ import { rotasBiblioteca } from './biblioteca.js'
 import { rotasIntegridade } from './integridade.js'
 import { rotasTraducoes } from './traducoes.js'
 import { sessaoEmCookie } from '../middlewares/sessaoCookie.js'
+import { DoisFatoresPorAtivar } from '../../../dominio/comum/erros.js'
 
 const pColecao = z.object({ colecao: E.colecao })
 const pItem = z.object({ colecao: E.colecao, id: E.id })
@@ -65,6 +66,25 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.put('/eu/senha', validar({ body: E.mudarSenha }), async (req, res) => {
     res.json(await servicos.sessao.mudarSenha(ctx(req), req.dados.body))
   })
+
+  // verificação em dois passos (aplicação de autenticação)
+  const df = servicos.doisFatores
+  r.get('/eu/2fa', async (req, res) => res.json(await df.estado(ctx(req))))
+  r.post('/eu/2fa/iniciar', async (req, res) => res.json(await df.iniciar(ctx(req))))
+  r.post('/eu/2fa/confirmar', validar({ body: E.codigo2fa }), async (req, res) => res.json(await df.confirmar(ctx(req), req.dados.body)))
+  r.post('/eu/2fa/codigos', validar({ body: E.codigo2fa }), async (req, res) => res.json(await df.novosCodigos(ctx(req), req.dados.body)))
+  r.post('/eu/2fa/desligar', validar({ body: E.desligar2fa }), async (req, res) => {
+    const u = await servicos.sessao.utilizadores.porId(ctx(req).actor.id)
+    res.json(await df.desligar(ctx(req), req.dados.body, (senha) => servicos.sessao.cifra.verificar(senha, u.senha)))
+  })
+  // papéis que a exigem: enquanto não a ligar, só o perfil, a palavra-passe, a privacidade e sair
+  const LIVRES_2FA = new Set(['/eu', '/eu/2fa', '/eu/2fa/iniciar', '/eu/2fa/confirmar', '/eu/senha', '/eu/privacidade', '/sair', '/traduzir'])
+  r.use(async (req, res, next) => {
+    const a = ctx(req).actor
+    if (!LIVRES_2FA.has(req.path) && df.obrigatorio(a.papel) && !(await df.ativo(a.id))) return next(new DoisFatoresPorAtivar())
+    next()
+  })
+  r.post('/utilizadores/:id/2fa/repor', validar({ params: pNumero }), async (req, res) => res.json(await df.repor(ctx(req), req.dados.params.id)))
 
   // ---------- painel e estatísticas ----------
 

@@ -45,12 +45,12 @@ export function validarSenha(senha, email = '') {
 }
 
 export class ServicoSessao {
-  constructor({ bd, cifra, tokens, auditoria, agora = () => new Date() }) {
-    Object.assign(this, { bd, cifra, tokens, auditoria, agora })
+  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, agora = () => new Date() }) {
+    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, agora })
   }
 
   // entra-se com o e-mail, o NIP ou o n.º de agente
-  async entrar({ email, senha }, ip) {
+  async entrar({ email, senha, codigo }, ip) {
     const e = String(email ?? '').trim().toLowerCase()
     const u = e.includes('@')
       ? await this.bd.utilizador.findUnique({ where: { email: e } })
@@ -67,6 +67,16 @@ export class ServicoSessao {
       await this.auditoria.registar({ nome: e }, 'entrada_falhada', '', {}, ip)
       throw erro
     }
+    // verificação em dois passos: a palavra-passe está certa; falta (ou está errado) o código do telemóvel
+    if (this.doisFatores && (await this.doisFatores.ativo(u.id))) {
+      if (!codigo) throw new ErroDominio('Introduza o código de 6 algarismos da aplicação de autenticação.', 'codigo_2fa')
+      if (!(await this.doisFatores.verificarEntrada(u.id, codigo))) {
+        const falhas = u.falhas + 1
+        await this.bd.utilizador.update({ where: { id: u.id }, data: falhas >= MAX_FALHAS ? { falhas: 0, bloqueadoAte: new Date(this.agora().getTime() + BLOQUEIO_MIN * 60_000) } : { falhas } })
+        await this.auditoria.registar({ nome: e }, 'entrada_falhada', 'código de dois passos errado', {}, ip)
+        throw new ErroDominio('Código errado. Use o código que aparece agora na aplicação (ou um código de recuperação).', 'codigo_2fa')
+      }
+    }
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { falhas: 0, bloqueadoAte: null, ultimoAcesso: this.agora() }, include: COM_UNIDADE })
     await this.auditoria.registar(g, 'entrar', '', {}, ip)
     return { token: this.tokens.emitir(g), utilizador: publico(g) }
@@ -81,8 +91,9 @@ export class ServicoSessao {
     return u
   }
 
-  eu(u) {
-    return publico(u)
+  async eu(u) {
+    const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
+    return { ...publico(u), doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
   }
 
   async mudarSenha(u, { atual, nova }) {

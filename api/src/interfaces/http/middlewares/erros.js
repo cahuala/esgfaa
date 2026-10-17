@@ -9,6 +9,8 @@ const ESTADOS = {
   conflito: 409,
   conta_bloqueada: 423,
   mudar_senha: 403,
+  codigo_2fa: 401,
+  ativar_2fa: 403,
 }
 
 export function naoEncontrado(req, res) {

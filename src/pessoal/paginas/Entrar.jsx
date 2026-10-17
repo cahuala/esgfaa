@@ -9,15 +9,22 @@ export default function Entrar() {
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
   const [aEntrar, setAEntrar] = useState(false)
+  // verificação em dois passos: a palavra-passe está certa, falta o código do telemóvel
+  const [pedeCodigo, setPedeCodigo] = useState(false)
+  const [codigo, setCodigo] = useState('')
 
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     setAEntrar(true)
     try {
-      await entrar(email, senha)
+      await entrar(email, senha, pedeCodigo ? codigo : undefined)
     } catch (f) {
-      setErro(f.message)
+      if (f.codigo === 'codigo_2fa') {
+        if (pedeCodigo) setErro(f.message)
+        setPedeCodigo(true)
+        setCodigo('')
+      } else setErro(f.message)
       setAEntrar(false)
     }
   }
@@ -56,6 +63,16 @@ export default function Entrar() {
                 <i className="fa fa-lock" aria-hidden="true" />
                 <input type="password" id="senha" className="form-control" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} required />
               </div>
+              {pedeCodigo && (
+                <>
+                  <label className="entrada-rotulo" htmlFor="codigo">Código da aplicação de autenticação</label>
+                  <div className="entrada-campo mb-2">
+                    <i className="fa fa-mobile-alt" aria-hidden="true" />
+                    <input id="codigo" className="form-control" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={11} value={codigo} onChange={(e) => setCodigo(e.target.value.trim())} required />
+                  </div>
+                  <p className="small text-muted mb-20px">Os 6 algarismos que a aplicação mostra agora. Perdeu o telemóvel? Use um código de recuperação.</p>
+                </>
+              )}
               <button type="submit" className="btn btn-theme d-block w-100 h-45px btn-lg entrada-botao" disabled={aEntrar}>
                 {aEntrar ? <><i className="fa fa-spinner fa-spin me-2" />A entrar…</> : <><i className="fa fa-sign-in-alt me-2" />Entrar</>}
               </button>

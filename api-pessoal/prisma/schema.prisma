@@ -31,8 +31,24 @@ model Utilizador {
   unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
   participacoes Participante[]
   mensagens     Mensagem[]
+  doisFatores   DoisFatores?
 
   @@map("utilizadores")
+}
+
+// verificação em dois passos (TOTP); o segredo fica cifrado (DADOS_CHAVE)
+model DoisFatores {
+  id             Int        @id @default(autoincrement())
+  utilizadorId   Int        @unique @map("utilizador_id")
+  segredo        String
+  ativo          Boolean    @default(false)
+  ultimoContador Int        @default(-1) @map("ultimo_contador")
+  recuperacao    Json       @default("[]")
+  ativadoEm      DateTime?  @map("ativado_em") @db.Timestamptz(3)
+  criadoEm       DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  utilizador     Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  @@map("dois_fatores")
 }
 
 // órgãos e serviços da Escola (Direcção, departamentos, repartições…)

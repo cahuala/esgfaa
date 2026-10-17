@@ -3,12 +3,16 @@ import { criarContentor } from './contentor.js'
 import { criarApp } from './interfaces/http/app.js'
 import { prepararSistema } from './aplicacao/arranque.js'
 import { semear } from '../scripts/semear.js'
+import { cifrarExistentes } from './infraestrutura/bd/cifraDados.js'
 
 const config = criarConfig()
 if (config.segredoDesenvolvimento) console.warn('[aviso] JWT_SECRET não definido — a usar um segredo de desenvolvimento.')
 if (config.producao && !config.urlPublico) console.warn('[aviso] PUBLIC_URL não definido — os endereços das imagens usam o cabeçalho Host do pedido.')
 
 const contentor = criarContentor(config)
+// dados pessoais de antes da encriptação: cifram-se no arranque (só o que ainda está em texto)
+const cifrados = await cifrarExistentes(contentor.prismaBase, contentor.cifraDados)
+if (cifrados) console.log(`Dados pessoais cifrados em ${cifrados} registo(s).`)
 
 // 1.º arranque: carrega os conteúdos atuais do site para a base de dados
 if ((await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)

@@ -1,4 +1,5 @@
 import { criarPrisma } from './infraestrutura/bd/prisma.js'
+import { CifraDados, comCifra } from './infraestrutura/bd/cifraDados.js'
 import { RepositorioUtilizadores } from './infraestrutura/repositorios/utilizadores.js'
 import { RepositorioPapeis } from './infraestrutura/repositorios/papeis.js'
 import { RepositorioConteudos } from './infraestrutura/repositorios/conteudos.js'
@@ -50,6 +51,7 @@ import { ServicoDisponibilidade } from './aplicacao/academico/partilhado/disponi
 import { relogioSistema } from './infraestrutura/relogio.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
 import { ServicoSessao } from './aplicacao/sessao.js'
+import { ServicoDoisFatores } from './aplicacao/doisFatores.js'
 import { ServicoUtilizadores } from './aplicacao/utilizadores.js'
 import { ServicoPapeis } from './aplicacao/papeis.js'
 import { ServicoConteudos } from './aplicacao/conteudos.js'
@@ -112,7 +114,10 @@ import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
   esquema próprio no PostgreSQL e uma pasta de uploads temporária.
 */
 export function criarContentor(config, { relogio = relogioSistema, esquema = null, externos = {} } = {}) {
-  const prisma = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBaseDados })
+  const prismaBase = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBaseDados })
+  const cifraDados = new CifraDados(config.chaveDados)
+  // os dados pessoais (dados das contas, candidaturas, mensagens de contacto) vão cifrados (cifraDados.js)
+  const prisma = comCifra(prismaBase, cifraDados)
   const fuso = config.fuso
 
   const repositorios = {
@@ -154,6 +159,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const privados = config.pastaPrivada ? new ArmazenamentoPrivado({ pasta: config.pastaPrivada, relogio: relogio.agora }) : null
   const armazenamento = config.pastaUploads ? new ArmazenamentoLocal({ pasta: config.pastaUploads, relogio: relogio.agora }) : null
   const auditoria = new ServicoAuditoria({ atividades: repositorios.atividades })
+  const doisFatores = new ServicoDoisFatores({ prisma, auditoria, relogio, papeis: config.doisFatoresPapeis })
   const r = repositorios
 
   const conteudos = new ServicoConteudos({
@@ -246,7 +252,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const servicos = {
     auditoria,
     conteudos,
-    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio }),
+    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores }),
+    doisFatores,
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
@@ -286,6 +293,6 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     },
   }
 
-  const fechar = async () => { await servicos.seguranca.parar(); await prisma.$disconnect() }
-  return { config, prisma, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
+  const fechar = async () => { await servicos.seguranca.parar(); await prismaBase.$disconnect() }
+  return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
 }

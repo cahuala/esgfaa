@@ -35,6 +35,16 @@ export class ContaBloqueada extends ErroDominio {
   constructor(mensagem, ate) { super(mensagem, 'conta_bloqueada', { ate }) }
 }
 
+// verificação em dois passos: falta o código da aplicação (ou está errado)
+export class CodigoEmFalta extends ErroDominio {
+  constructor(mensagem = 'Introduza o código de 6 algarismos da aplicação de autenticação.') { super(mensagem, 'codigo_2fa') }
+}
+
+// o papel exige verificação em dois passos e a conta ainda não a ligou
+export class DoisFatoresPorAtivar extends ErroDominio {
+  constructor(mensagem = 'Ligue a verificação em dois passos antes de continuar (Perfil).') { super(mensagem, 'ativar_2fa') }
+}
+
 // conta com a palavra-passe inicial: tem de a mudar antes de usar o portal
 export class SenhaPorMudar extends ErroDominio {
   constructor(mensagem = 'Mude a palavra-passe inicial antes de continuar.') {

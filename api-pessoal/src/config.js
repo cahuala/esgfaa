@@ -20,6 +20,8 @@ const ESQUEMA = z.object({
   JWT_SECRET: z.string().default(''),
   // chave da encriptação dos dados pessoais na base de dados (32 bytes: 64 hex ou base64); NUNCA a perca
   DADOS_CHAVE: z.string().default(''),
+  // papéis que têm de usar a verificação em dois passos (em produção, por omissão, todos os que vêem fichas)
+  DOIS_FATORES_PAPEIS: z.string().optional(),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/).default('8h'),
   // redes de onde se aceitam pedidos (IPv4 em CIDR); tudo o resto é recusado
   REDES_INTERNAS: lista('127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'),
@@ -68,6 +70,7 @@ export function criarConfig(env = process.env) {
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     ligacoesBd: e.DB_POOL,
     segredoJwt: segredo,
+    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,chefe,operador,consulta' : '')).split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('pessoal-desenvolvimento-dados').digest('hex'),
     duracaoSessao: e.SESSION_TTL,

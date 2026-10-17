@@ -14,15 +14,22 @@ function Entrar() {
   const [verSenha, setVerSenha] = useState(false)
   const [erro, setErro] = useState('')
   const [aEntrar, setAEntrar] = useState(false)
+  // verificação em dois passos: a palavra-passe está certa, falta o código do telemóvel
+  const [pedeCodigo, setPedeCodigo] = useState(false)
+  const [codigo, setCodigo] = useState('')
 
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     setAEntrar(true)
     try {
-      await entrar(email, senha)
+      await entrar(email, senha, pedeCodigo ? codigo : undefined)
     } catch (falha) {
-      setErro(falha.message)
+      if (falha.codigo === 'codigo_2fa') {
+        if (pedeCodigo) setErro(falha.message)
+        setPedeCodigo(true)
+        setCodigo('')
+      } else setErro(falha.message)
       setAEntrar(false)
     }
   }
@@ -97,6 +104,17 @@ function Entrar() {
                   <i className={`fa ${verSenha ? 'fa-eye-slash' : 'fa-eye'}`} />
                 </button>
               </div>
+
+              {pedeCodigo && (
+                <>
+                  <label className="entrada-rotulo" htmlFor="codigo">{tx('Código da aplicação de autenticação')}</label>
+                  <div className="entrada-campo mb-2">
+                    <i className="fa fa-mobile-alt" aria-hidden="true" />
+                    <input id="codigo" className="form-control" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={11} value={codigo} onChange={(e) => setCodigo(e.target.value.trim())} required />
+                  </div>
+                  <p className="small text-muted mb-30px">{tx('Os 6 algarismos que a aplicação mostra agora. Perdeu o telemóvel? Use um código de recuperação.')}</p>
+                </>
+              )}
 
               <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar}>
                 {aEntrar ? <><span className="spinner-border spinner-border-sm me-2" />{tx('A verificar…')}</> : <>{tx('Entrar')} <i className="fa fa-arrow-right ms-2" /></>}

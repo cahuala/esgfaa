@@ -5,6 +5,7 @@ import { ContextoSessao } from './sessao'
 import { Aviso, Carregando } from './componentes/Ui'
 import Layout from './Layout'
 import Entrar from './paginas/Entrar'
+import DoisFatores from './componentes/DoisFatores'
 import MudarSenha from './paginas/MudarSenha'
 import PainelInicial from './paginas/PainelInicial'
 import Pessoas from './paginas/Pessoas'
@@ -44,7 +45,7 @@ export default function App() {
   // a conta e as tabelas de referência (postos, ramos, carreiras…) — ao abrir e depois de entrar
   const carregar = useCallback(() => api('/eu')
     .then(async (u) => {
-      const r = u.deveMudar ? null : await api('/referencias')
+      const r = u.deveMudar || u.deveAtivar2fa ? null : await api('/referencias')
       setUtilizador(u)
       setRef(r)
     })
@@ -57,8 +58,9 @@ export default function App() {
     ref,
     pode: (p) => Boolean(utilizador?.permissoes.includes(p)),
     avisar: (texto, tipo = 'ok') => setAviso({ texto, tipo, id: Date.now() }),
-    async entrar(email, senha) {
-      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
+    recarregar: carregar,
+    async entrar(email, senha, codigo) {
+      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha, ...(codigo ? { codigo } : {}) } })
       marcarSessao(Boolean(r.sessao || r.token))
       await carregar()
     },
@@ -76,6 +78,8 @@ export default function App() {
   let conteudo
   if (!utilizador) conteudo = <Entrar />
   else if (utilizador.deveMudar) conteudo = <MudarSenha obrigatoria />
+  // o papel exige a verificação em dois passos: liga-se antes de entrar no sistema
+  else if (utilizador.deveAtivar2fa) conteudo = <div className="container py-5" style={{ maxWidth: 760 }}><DoisFatores obrigatoria aoMudar={carregar} /><button type="button" className="btn btn-link" onClick={sessao.sair}>Sair</button></div>
   else if (!ref) conteudo = <Carregando />
   else {
     conteudo = (

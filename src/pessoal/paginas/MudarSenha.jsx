@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { Cabecalho, Painel } from '../componentes/Ui'
+import DoisFatores from '../componentes/DoisFatores'
 
 export default function MudarSenha({ obrigatoria = false }) {
   const { mudouSenha, avisar, sair } = useSessao()
@@ -42,5 +43,5 @@ export default function MudarSenha({ obrigatoria = false }) {
     </form>
   )
   if (obrigatoria) return <div className="container py-5"><Painel titulo="Mudar a palavra-passe" icone="fa-key">{form}</Painel></div>
-  return <><Cabecalho titulo="Mudar a palavra-passe" migalhas={[['Palavra-passe']]} /><Painel>{form}</Painel></>
+  return <><Cabecalho titulo="Segurança da conta" subtitulo="palavra-passe e verificação em dois passos" migalhas={[['Segurança da conta']]} /><div className="row"><div className="col-xl-5"><Painel titulo="Mudar a palavra-passe" icone="fa-key">{form}</Painel></div><div className="col-xl-7"><DoisFatores /></div></div></>
 }

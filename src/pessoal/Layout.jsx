@@ -115,7 +115,7 @@ export default function Layout({ children }) {
             {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
             {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
             <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
-            <Item para="/senha" icone="fa-key" texto="Mudar palavra-passe" />
+            <Item para="/senha" icone="fa-key" texto="Segurança da conta" />
 
             <div className="menu-divider" />
             <div className="menu-item d-flex">

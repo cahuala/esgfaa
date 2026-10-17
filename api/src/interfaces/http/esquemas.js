@@ -10,7 +10,9 @@ const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 // textos dos painéis para o tradutor automático
 export const traduzirTextos = z.object({ lingua: z.enum(['en', 'fr', 'es']), textos: z.array(z.string().max(2000)).max(300) })
 
-export const entrar = z.object({ email: texto(254).default(''), senha: texto(200).default('') })
+export const entrar = z.object({ email: texto(254).default(''), senha: texto(200).default(''), codigo: texto(20).optional() })
+export const codigo2fa = z.object({ codigo: texto(20) })
+export const desligar2fa = z.object({ senha: texto(200), codigo: texto(20) })
 export const mudarSenha = z.object({ atual: texto(200).default(''), nova: texto(200).default('') })
 
 export const corpoConteudo = z.looseObject({ _estado: z.enum(['rascunho', 'publicado']).optional() })

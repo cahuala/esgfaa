@@ -133,9 +133,12 @@ describe('configuração', () => {
     const bd = 'postgresql://u:p@bd:5432/esgfaa'
     assert.throws(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd }), /JWT_SECRET/)
     assert.throws(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'curto' }), /curto/)
-    assert.throws(() => criarConfig({ NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(32) }), /DATABASE_URL/)
+    const chave = 'a'.repeat(64)
+    assert.throws(() => criarConfig({ NODE_ENV: 'production', JWT_SECRET: 'x'.repeat(32), DADOS_CHAVE: chave }), /DATABASE_URL/)
+    // sem a chave da encriptação dos dados pessoais não arranca em produção
+    assert.throws(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'x'.repeat(32) }), /DADOS_CHAVE/)
     assert.throws(() => criarConfig({ DATABASE_URL: 'mysql://x' }), /DATABASE_URL/)
-    assert.doesNotThrow(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'x'.repeat(32) }))
+    assert.doesNotThrow(() => criarConfig({ NODE_ENV: 'production', DATABASE_URL: bd, JWT_SECRET: 'x'.repeat(32), DADOS_CHAVE: chave }))
   })
 
   it('valida valores e lê listas', () => {

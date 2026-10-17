@@ -219,6 +219,13 @@ function Layout({ children }) {
       {/* Conteúdo */}
       <div id="content" className="app-content">
         <AvisoPrivacidade obter={obterPrivacidade} aceitar={aceitarPrivacidade} area="painel" />
+        {utilizador.deveAtivar2fa && (
+          <div className="alert alert-danger d-flex align-items-center mb-3" role="alert">
+            <i className="fa fa-mobile-alt fa-lg me-3" />
+            <div className="flex-fill"><strong>{tx('Ligue a verificação em dois passos.')}</strong> {tx('O seu papel exige-a: até a ligar, o painel só deixa usar o perfil.')}</div>
+            <Link to="/perfil" className="btn btn-sm btn-danger ms-3">{tx('Ligar agora')}</Link>
+          </div>
+        )}
         {utilizador.deveMudarSenha && (
           <div className="alert alert-warning d-flex align-items-center mb-3" role="alert">
             <i className="fa fa-shield-alt fa-lg me-3" />

@@ -61,8 +61,13 @@ function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
     const corpo = u.id ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}) } : { ...d, unidadeId }
     api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar('Utilizador guardado.')).catch((e) => setErro(e.message))
   }
+  // perdeu o telemóvel e os códigos de recuperação: volta a ligar a verificação ao entrar
+  const repor2fa = () => {
+    if (!window.confirm(`${u.nome} passa a entrar só com a palavra-passe e terá de ligar de novo a verificação em dois passos. Confirmou a identidade da pessoa?`)) return
+    api(`/utilizadores/${u.id}/2fa/repor`, { metodo: 'POST' }).then(() => aoGuardar('Verificação em dois passos reposta.')).catch((e) => setErro(e.message))
+  }
   return (
-    <Modal titulo={u.id ? `Editar ${u.nome}` : 'Novo utilizador'} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo={u.id ? `Editar ${u.nome}` : 'Novo utilizador'} aoFechar={aoFechar} rodape={<>{u.id && u.id !== eu.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={repor2fa}><i className="fa fa-mobile-alt me-1" />Repor verificação em dois passos</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>

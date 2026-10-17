@@ -46,7 +46,7 @@ export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulari
   if (resposta.status === 204) return null
   const dados = await resposta.json().catch(() => ({}))
   if (resposta.status === 401 && caminho !== '/entrar') aoExpirar()
-  if (!resposta.ok) throw new Error((dados.erro && tx(dados.erro)) || tx('Erro {0}', { 0: resposta.status }))
+  if (!resposta.ok) throw Object.assign(new Error((dados.erro && tx(dados.erro)) || tx('Erro {0}', { 0: resposta.status })), { codigo: dados.codigo, estado: resposta.status })
   return traduzirRotulos(dados)
 }
 

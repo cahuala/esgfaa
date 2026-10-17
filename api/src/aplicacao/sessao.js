@@ -1,4 +1,4 @@
-import { NaoAutenticado, SemPermissao, ContaBloqueada, ErroValidacao } from '../dominio/comum/erros.js'
+import { NaoAutenticado, SemPermissao, ContaBloqueada, ErroValidacao, CodigoEmFalta } from '../dominio/comum/erros.js'
 import { Actor } from '../dominio/identidade/actor.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../dominio/identidade/utilizador.js'
 import { motivoSenhaFraca, validarSenha } from '../dominio/identidade/politicaSenha.js'
@@ -8,11 +8,11 @@ const bloqueada = (ate) => new ContaBloqueada(`Conta bloqueada por excesso de te
 
 // Entrar, sair, sessão atual e mudança da própria palavra-passe
 export class ServicoSessao {
-  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio }) {
-    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio })
+  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null }) {
+    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores })
   }
 
-  async entrar(ctx, { email, senha }) {
+  async entrar(ctx, { email, senha, codigo }) {
     const emailLimpo = String(email || '').trim().toLowerCase().slice(0, 254)
     const u = emailLimpo ? await this.utilizadores.porEmail(emailLimpo) : null
     const agora = this.relogio.agora()
@@ -45,6 +45,18 @@ export class ServicoSessao {
       await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: 'conta desativada', utilizador: u })
       throw new SemPermissao('Esta conta está desativada. Contacte um administrador.')
     }
+    // verificação em dois passos: a palavra-passe está certa, falta (ou está errado) o código do telemóvel
+    if (this.doisFatores && (await this.doisFatores.ativo(u.id))) {
+      if (!codigo) throw new CodigoEmFalta()
+      if (!(await this.doisFatores.verificarEntrada(u.id, codigo))) {
+        await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: 'código de dois passos errado', utilizador: u })
+        if (reserva.tentativa >= MAX_TENTATIVAS) {
+          const ate = await this.utilizadores.bloquear(u.id, agora)
+          throw new ContaBloqueada(`Demasiadas tentativas falhadas. A conta ficou bloqueada durante ${MINUTOS_BLOQUEIO} minutos.`, ate)
+        }
+        throw new CodigoEmFalta('Código errado. Use o código que aparece agora na aplicação (ou um código de recuperação).')
+      }
+    }
     await this.utilizadores.registarEntrada(u.id, agora)
 
     // palavra-passe antiga que já não cumpre a política: pede-se que a mude
@@ -73,7 +85,8 @@ export class ServicoSessao {
   async eu(ctx) {
     const u = await this.utilizadores.porId(ctx.actor.id)
     const papel = await this.papeis.porId(u.papel)
-    return { ...u.publico(), nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha }
+    const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
+    return { ...u.publico(), nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
   }
 
   async sair(ctx) {

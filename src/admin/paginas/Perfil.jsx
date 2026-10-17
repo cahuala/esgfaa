@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, marcarSessao } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Painel } from '../componentes/Ui'
+import DoisFatores from '../componentes/DoisFatores'
 import { dataHora } from '../formatar'
 import { t as tx } from '../../i18n/linguas'
 
@@ -41,6 +42,7 @@ function Perfil() {
               <dt className="col-4">{tx('Criada em')}</dt><dd className="col-8 mb-0">{dataHora(utilizador.criadoEm)}</dd>
             </dl>
           </Painel>
+          <DoisFatores aoMudar={recarregar} />
         </div>
         <div className="col-lg-7">
           <Painel titulo={tx('Alterar palavra-passe')}>

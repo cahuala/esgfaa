@@ -37,23 +37,39 @@ model Pagina {
 }
 
 model Utilizador {
-  id                 Int       @id @default(autoincrement())
+  id                 Int          @id @default(autoincrement())
   nome               String
-  email              String    @unique
+  email              String       @unique
   senha              String
   papel              String
-  ativo              Boolean   @default(true)
-  privacidadeEm      DateTime? @map("privacidade_em") @db.Timestamptz(3)
-  criadoEm           DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
-  ultimoAcesso       DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
-  tentativasFalhadas Int       @default(0) @map("tentativas_falhadas")
-  bloqueadoAte       DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
-  versaoToken        Int       @default(0) @map("versao_token")
-  deveMudarSenha     Boolean   @default(false) @map("deve_mudar_senha")
-  edicoes            Item[]    @relation("edicoes")
+  ativo              Boolean      @default(true)
+  privacidadeEm      DateTime?    @map("privacidade_em") @db.Timestamptz(3)
+  criadoEm           DateTime     @default(now()) @map("criado_em") @db.Timestamptz(3)
+  ultimoAcesso       DateTime?    @map("ultimo_acesso") @db.Timestamptz(3)
+  tentativasFalhadas Int          @default(0) @map("tentativas_falhadas")
+  bloqueadoAte       DateTime?    @map("bloqueado_ate") @db.Timestamptz(3)
+  versaoToken        Int          @default(0) @map("versao_token")
+  deveMudarSenha     Boolean      @default(false) @map("deve_mudar_senha")
+  edicoes            Item[]       @relation("edicoes")
+  doisFatores        DoisFatores?
 
   @@index([papel])
   @@map("utilizadores")
+}
+
+// verificação em dois passos (TOTP) de uma conta do painel; o segredo fica cifrado (DADOS_CHAVE)
+model DoisFatores {
+  id             Int        @id @default(autoincrement())
+  utilizadorId   Int        @unique @map("utilizador_id")
+  segredo        String
+  ativo          Boolean    @default(false)
+  ultimoContador Int        @default(-1) @map("ultimo_contador") // o intervalo do último código aceite (não se repete)
+  recuperacao    Json       @default("[]") // resumos (sha256) dos códigos de recuperação por usar
+  ativadoEm      DateTime?  @map("ativado_em") @db.Timestamptz(3)
+  criadoEm       DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  utilizador     Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  @@map("dois_fatores")
 }
 
 model Papel {

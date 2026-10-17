@@ -3,8 +3,9 @@ import { ErroDominio } from '../erros.js'
 import { tokenDoPedido } from './sessaoCookie.js'
 
 export const COOKIE_PESSOAL = 'esg_pessoal'
+const LIVRES_2FA = new Set(['/eu', '/eu/2fa', '/eu/2fa/iniciar', '/eu/2fa/confirmar', '/mudar-senha', '/sair', '/eu/privacidade'])
 
-const ESTADOS = { validacao: 400, nao_autenticado: 401, sem_permissao: 403, mudar_senha: 403, nao_encontrado: 404, conflito: 409, conta_bloqueada: 423 }
+const ESTADOS = { validacao: 400, nao_autenticado: 401, codigo_2fa: 401, sem_permissao: 403, mudar_senha: 403, ativar_2fa: 403, nao_encontrado: 404, conflito: 409, conta_bloqueada: 423 }
 
 // valida o corpo, a consulta e os parâmetros com zod; o resultado fica em req.dados
 export const validar = (esquemas) => (req, res, next) => {
@@ -26,6 +27,9 @@ export const autenticar = (sessao) => async (req, res, next) => {
     const t = tokenDoPedido(req, COOKIE_PESSOAL)
     req.utilizador = await sessao.autenticar(t)
     if (req.utilizador.deveMudar && !['/eu', '/mudar-senha', '/sair'].includes(req.path)) throw new ErroDominio('Mude a palavra-passe inicial antes de continuar.', 'mudar_senha')
+    // o papel exige a verificação em dois passos: até a ligar, só o perfil, a ligação dela e sair
+    const df = sessao.doisFatores
+    if (df?.obrigatorio(req.utilizador.papel) && !LIVRES_2FA.has(req.path) && !(await df.ativo(req.utilizador.id))) throw new ErroDominio('Ligue a verificação em dois passos antes de continuar (Mudar palavra-passe → Verificação em dois passos).', 'ativar_2fa')
     next()
   } catch (e) {
     next(e)

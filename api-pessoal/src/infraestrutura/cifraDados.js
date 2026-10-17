@@ -81,9 +81,20 @@ export function comCifra(prisma, cifra) {
           return query(a)
         },
       },
+      // segredo da verificação em dois passos
+      doisFatores: {
+        async $allOperations({ operation, args, query }) {
+          const a = { ...args }
+          const cif = (d) => (d && typeof d.segredo === 'string' ? { ...d, segredo: cifra.cifrar(d.segredo) } : d)
+          if (['create', 'update', 'updateMany'].includes(operation)) a.data = cif(a.data)
+          if (operation === 'upsert') Object.assign(a, { create: cif(a.create), update: cif(a.update) })
+          return query(a)
+        },
+      },
     },
     result: {
       pessoa: Object.fromEntries(CAMPOS_CIFRADOS.map((c) => [c, { needs: { [c]: true }, compute: (p) => cifra.decifrar(p[c]) }])),
+      doisFatores: { segredo: { needs: { segredo: true }, compute: (r) => cifra.decifrar(r.segredo) } },
     },
   })
 }

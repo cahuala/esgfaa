@@ -34,3 +34,8 @@ api/coverage/
 
 # contas e palavras-passe de teste (só local; o repositório é público)
 CONTAS-DE-TESTE.md
+
+# cópias de segurança cifradas (scripts/copias.mjs) — nunca no repositório
+copias/
+*.esgc
+*.esgc.json

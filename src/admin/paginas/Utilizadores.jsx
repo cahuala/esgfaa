@@ -58,6 +58,25 @@ function Utilizadores() {
     }
   }
 
+  // quem perdeu o telemóvel e os códigos de recuperação: volta a ligar a verificação ao entrar
+  function reporDoisFatores(u) {
+    setConfirmar({
+      titulo: tx('Repor a verificação em dois passos'),
+      texto: <><b>{u.nome}</b> {tx('passa a entrar só com a palavra-passe e terá de ligar de novo a verificação em dois passos. Confirme a identidade da pessoa antes de o fazer.')}</>,
+      botao: tx('Repor'),
+      perigo: true,
+      confirmar: async () => {
+        setConfirmar(null)
+        try {
+          await api(`/utilizadores/${u.id}/2fa/repor`, { metodo: 'POST' })
+          setAviso({ texto: tx('Verificação em dois passos reposta.') })
+        } catch (e) {
+          setAviso({ tipo: 'erro', texto: e.message })
+        }
+      },
+    })
+  }
+
   function alternarAtivo(u) {
     setConfirmar({
       titulo: u.ativo ? tx('Desativar utilizador') : tx('Reativar utilizador'),
@@ -118,6 +137,9 @@ function Utilizadores() {
                         <td className="text-end text-nowrap">
                           {pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className="btn btn-sm btn-primary me-1" onClick={() => { setErroForm(''); setForm({ ...u, senha: '' }) }} title={tx('Editar')}><i className="fa fa-pencil-alt" /></button>
+                          )}
+                          {u.id !== eu.id && pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
+                            <button className="btn btn-sm btn-default me-1" onClick={() => reporDoisFatores(u)} title={tx('Repor a verificação em dois passos')}><i className="fa fa-mobile-alt" /></button>
                           )}
                           {u.id !== eu.id && pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className={`btn btn-sm ${u.ativo ? 'btn-warning' : 'btn-success'}`} onClick={() => alternarAtivo(u)} title={u.ativo ? tx('Desativar') : tx('Reativar')}>

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
@@ -21,6 +22,10 @@ const ESQUEMA = z.object({
   PUBLIC_URL: z.union([z.literal(''), z.url()]).default(''),
   CORS_ORIGINS: lista('http://localhost:5173,http://localhost:4173,https://cahuala.github.io'),
   JWT_SECRET: z.string().default(''),
+  // chave da encriptação dos dados pessoais na base de dados (32 bytes: 64 hex ou base64); NUNCA a perca
+  DADOS_CHAVE: z.string().default(''),
+  // papéis do painel que têm de usar a verificação em dois passos (em produção, por omissão, o administrador)
+  DOIS_FATORES_PAPEIS: z.string().optional(),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/, 'SESSION_TTL deve ser como 8h, 30m ou 1d').default('8h'),
   MAX_UPLOAD_MB: inteiro(80, 1, 1024),
   // ligações simultâneas à base de dados (suba com o número de pessoas ao mesmo tempo e o que o PostgreSQL aguentar)
@@ -87,6 +92,7 @@ export function criarConfig(env = process.env, extras = {}) {
     throw new Error('JWT_SECRET demasiado curto: use pelo menos 32 caracteres aleatórios.')
   }
 
+  if (producao && !e.DADOS_CHAVE) throw new Error('Defina DADOS_CHAVE (32 bytes aleatórios: openssl rand -hex 32) antes de arrancar em produção: encripta os dados pessoais.')
   if (!e.DATABASE_URL && producao) throw new Error('Defina DATABASE_URL (PostgreSQL) antes de arrancar a API em produção.')
   const pastaDados = path.resolve(RAIZ_API, e.DATA_DIR)
 
@@ -104,6 +110,9 @@ export function criarConfig(env = process.env, extras = {}) {
     urlPublico: e.PUBLIC_URL.replace(/\/$/, ''),
     origens: e.CORS_ORIGINS,
     segredoJwt,
+    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador' : '')).split(',').map((x) => x.trim()).filter(Boolean),
+    // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
+    chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('portal-desenvolvimento-dados').digest('hex'),
     segredoDesenvolvimento: segredoJwt === SEGREDO_DESENVOLVIMENTO,
     duracaoSessao: e.SESSION_TTL,
     tamanhoMaximoUpload: e.MAX_UPLOAD_MB * 1024 * 1024,
