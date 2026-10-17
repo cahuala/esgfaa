@@ -11,7 +11,8 @@ export default defineConfig({
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   timeout: 60_000,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // no CI, os erros também aparecem como anotações do GitHub (legíveis sem abrir os registos)
+  reporter: process.env.CI ? [['list'], ['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: SITE,
     // no computador usa o Chrome instalado; no CI usa o Chromium do Playwright
