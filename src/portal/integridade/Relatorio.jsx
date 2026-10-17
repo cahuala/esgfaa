@@ -14,6 +14,17 @@ export function ChipIA({ a }) {
   return <span className="o-chip ia" title={tx('Indicador de utilização de IA (avaliar no relatório)')}><i className="fa fa-robot" />{a.iaPontuacao}%</span>
 }
 
+// etiqueta "APA" com o número de erros de normas; e o aviso de letras disfarçadas
+export function ChipApa({ a }) {
+  if (a?.estado !== 'concluida') return null
+  return (
+    <>
+      {a.apaErros > 0 && <span className="o-chip medio" title={tx('Erros de normas APA (citações e referências)')}><i className="fa fa-quote-right" />{a.apaErros}</span>}
+      {a.disfarces > 0 && <span className="o-chip alto" title={tx('Letras disfarçadas (outro alfabeto ou invisíveis)')}><i className="fa fa-user-secret" />{a.disfarces}</span>}
+    </>
+  )
+}
+
 // etiqueta curta com a percentagem (listas de entregas e de análises)
 export function ChipOriginalidade({ a }) {
   if (!a) return <span className="o-chip cinza">—</span>
@@ -45,12 +56,34 @@ function Relatorio({ r }) {
   const numero = useMemo(() => Object.fromEntries(r.fontes.map((f, k) => [f.id, k + 1])), [r.fontes])
   const fonte = useMemo(() => Object.fromEntries(r.fontes.map((f) => [f.id, f])), [r.fontes])
 
+  // problemas de normas APA com posição no texto (vários no mesmo sítio juntam-se)
+  const apaProblemas = useMemo(() => {
+    const l = []
+    for (const x of (r.normas?.apa?.problemas || []).filter((y) => y.inicio !== null && y.inicio !== undefined).sort((a, b) => a.inicio - b.inicio)) {
+      const ult = l.at(-1)
+      if (ult && ult.inicio === x.inicio) ult.lista.push(x)
+      else if (!ult || x.inicio >= ult.fim) l.push({ inicio: x.inicio, fim: x.fim, gravidade: x.gravidade, lista: [x] })
+      if (x.gravidade === 'erro') l.at(-1).gravidade = 'erro'
+    }
+    return l
+  }, [r.normas])
+
   const iaParagrafos = useMemo(() => r.ia?.claude?.paragrafos?.length ? r.ia.claude.paragrafos : (r.ia?.local?.paragrafos || []).map((x) => ({ ...x, probabilidade: x.pontuacao })), [r.ia])
 
   // o texto partido em pedaços normais e trechos coincidentes (ou parágrafos suspeitos de IA)
   const partes = useMemo(() => {
     const l = []
     let p = 0
+    if (modo === 'apa') {
+      for (const x of apaProblemas) {
+        if (x.inicio < p) continue
+        if (x.inicio > p) l.push({ texto: r.texto.slice(p, x.inicio) })
+        l.push({ texto: r.texto.slice(x.inicio, x.fim), apa: x })
+        p = x.fim
+      }
+      if (p < r.texto.length) l.push({ texto: r.texto.slice(p) })
+      return l
+    }
     if (modo === 'ia') {
       for (const x of [...iaParagrafos].sort((a, b) => a.inicio - b.inicio)) {
         if (x.inicio < p) continue
@@ -68,7 +101,7 @@ function Relatorio({ r }) {
     }
     if (p < r.texto.length) l.push({ texto: r.texto.slice(p) })
     return l
-  }, [r.texto, r.trechos, modo, iaParagrafos])
+  }, [r.texto, r.trechos, modo, iaParagrafos, apaProblemas])
 
   if (r.estado === 'pendente') {
     return <div className="card"><div className="o-espera"><i className="fa fa-circle-notch fa-spin d-block" /><b>{tx('A comparar o documento com o repositório…')}</b><div className="text-muted small mt-1">{tx('Demora normalmente poucos segundos. Esta página atualiza-se sozinha.')}</div></div></div>
@@ -108,6 +141,7 @@ function Relatorio({ r }) {
       </div>
 
       <CartaoIA ia={r.ia} pontuacao={r.iaPontuacao} verNoTexto={() => setModo('ia')} />
+      <CartaoNormas normas={r.normas} verNoTexto={() => { setModo('apa'); setAberto(null) }} />
 
       <div className="o-corpo">
         <div className="card o-fontes">
@@ -132,12 +166,15 @@ function Relatorio({ r }) {
             <div className="btn-group btn-group-sm o-sem-impressao" role="group" aria-label={tx('O que assinalar')}>
               <button type="button" className={`btn btn-xs ${modo === 'semelhanca' ? 'btn-dark' : 'btn-white'}`} onClick={() => setModo('semelhanca')}>{tx('Semelhanças')}</button>
               <button type="button" className={`btn btn-xs ${modo === 'ia' ? 'btn-dark' : 'btn-white'}`} onClick={() => { setModo('ia'); setAberto(null) }} disabled={!iaParagrafos.length} title={iaParagrafos.length ? '' : tx('Nenhum parágrafo suspeito')}>{tx('IA')}</button>
+              <button type="button" className={`btn btn-xs ${modo === 'apa' ? 'btn-dark' : 'btn-white'}`} onClick={() => { setModo('apa'); setAberto(null) }} disabled={!apaProblemas.length} title={apaProblemas.length ? '' : tx('Sem problemas de normas APA')}>APA</button>
             </div>
             {foco && modo === 'semelhanca' && <button type="button" className="btn btn-xs btn-white o-sem-impressao" onClick={() => setFoco(null)}>{tx('Mostrar todas as fontes')}</button>}
             <button type="button" className="btn btn-xs btn-white o-sem-impressao" onClick={() => window.print()}><i className="fa fa-print me-1" />{tx('Imprimir')}</button>
           </div>
           <div className="o-documento">
-            {partes.map((p, k) => (p.ia ? (
+            {partes.map((p, k) => (p.apa ? (
+              <mark key={k} className={`o-apa ${p.apa.gravidade}`} title={p.apa.lista.map((x) => tx(x.mensagem) + (x.sugestao ? ` → ${x.sugestao}` : '')).join('\n')}><sup>APA</sup>{p.texto}</mark>
+            ) : p.ia ? (
               <mark key={k} className="o-ia" title={`IA: ${p.ia.probabilidade}%${p.ia.motivo ? ` — ${p.ia.motivo}` : ''}`}><sup>{tx('IA')} {p.ia.probabilidade}%</sup>{p.texto}</mark>
             ) : p.trecho ? (
               <mark key={k} style={{ '--o-cor': cor[p.trecho.fonte] }} className={`${foco && foco !== p.trecho.fonte ? 'esbatido' : ''} ${aberto?.k === p.trecho.k ? 'ativo' : ''}`}
@@ -162,6 +199,58 @@ function Relatorio({ r }) {
         </div>
       )}
     </>
+  )
+}
+
+// normas APA: citações no texto e lista de referências; e letras disfarçadas
+const REGRAS_APA = {
+  'sem-referencia': 'Citação sem referência', ano: 'Ano diferente da referência', apelido: 'Apelido diferente da referência', maiusculas: 'Apelido em maiúsculas',
+  'et-al': '«et al.» mal escrito', espacos: 'Espaços na citação', 'e-comercial': '«&» ou «e»', 'tres-autores': 'Três ou mais autores', pagina: 'Página da citação',
+  'citacao-direta': 'Citação direta', 'citacao-bloco': 'Citação em bloco', referencias: 'Lista de referências', norma: 'Norma das referências',
+  'referencia-ano': 'Formato da referência', 'referencia-repetida': 'Referência repetida', ordem: 'Ordem alfabética', doi: 'DOI', url: 'Endereço (URL)',
+  edicao: 'Edição', 'ponto-final': 'Ponto final', 'nao-citada': 'Referência não citada',
+}
+function CartaoNormas({ normas, verNoTexto }) {
+  const [aberto, setAberto] = useState(false)
+  const apa = normas?.apa
+  if (!apa) return null
+  const d = normas.disfarces
+  const cor = apa.erros ? '#d62839' : apa.avisos ? '#e09f3e' : '#2a9d8f'
+  const grupos = Object.entries(apa.problemas.reduce((m, p) => ({ ...m, [p.regra]: [...(m[p.regra] || []), p] }), {}))
+  return (
+    <div className="card mt-3 o-cartao-ia" style={{ '--o-cor': cor }}>
+      {d?.total > 0 && (
+        <div className="alert alert-danger m-3 mb-0">
+          <i className="fa fa-user-secret me-2" /><b>{tx('Letras disfarçadas:')}</b> {tx('{0} palavra(s) com letras de outro alfabeto (por exemplo, cirílico) ou caracteres invisíveis. É um truque conhecido para enganar o anti-plágio; na comparação contam como letras normais.', { 0: d.total })}
+          <div className="mt-1 small">{d.palavras.slice(0, 12).map((x) => <code key={x.inicio} className="me-2">{x.palavra}</code>)}</div>
+        </div>
+      )}
+      <div className="card-body d-flex flex-wrap gap-4 align-items-center">
+        <div className="o-ia-valor"><b>{apa.erros}</b><span>{tx('erros')}</span></div>
+        <div className="flex-grow-1" style={{ minWidth: 260 }}>
+          <div className="fw-bold" style={{ color: cor }}><i className="fa fa-quote-right me-2" />{tx('Normas APA (7.ª edição):')} {apa.erros ? tx('há erros a corrigir') : apa.avisos ? tx('só avisos') : tx('citações e referências conformes')}</div>
+          <div className="small text-muted mt-1">
+            {tx('{0} citação(ões) no texto, {1} citação(ões) direta(s), {2} referência(s) na lista ({3} citada(s)).', { 0: apa.citacoes, 1: apa.citacoesDiretas, 2: apa.referencias, 3: apa.referenciasCitadas })}
+            {' '}{apa.erros} {tx('erro(s)')} · {apa.avisos} {tx('aviso(s)')}. {tx('Verificação automática: o docente confirma.')}
+          </div>
+        </div>
+        {apa.problemas.length > 0 && <button type="button" className="btn btn-white o-sem-impressao" onClick={() => setAberto(!aberto)}><i className={`fa ${aberto ? 'fa-chevron-up' : 'fa-list'} me-1`} />{aberto ? tx('Esconder') : tx('Ver os problemas')}</button>}
+        {apa.problemas.some((p) => p.inicio !== null && p.inicio !== undefined) && <button type="button" className="btn btn-white o-sem-impressao" onClick={verNoTexto}><i className="fa fa-highlighter me-1" />{tx('Ver no texto')}</button>}
+      </div>
+      {(aberto || apa.problemas.length <= 6) && apa.problemas.length > 0 && (
+        <div className="px-3 pb-3 o-apa-lista">
+          {grupos.map(([regra, l]) => (
+            <div key={regra} className="mb-2">
+              <div className="fw-bold small"><span className={`badge me-2 ${l[0].gravidade === 'erro' ? 'bg-danger' : 'bg-warning text-dark'}`}>{l.length}</span>{tx(REGRAS_APA[regra] ?? regra)} — <span className="fw-normal">{tx(l[0].mensagem)}</span></div>
+              <ul className="small mb-0">
+                {l.slice(0, 8).map((p, k) => <li key={k}>{p.texto ? <q>{p.texto}</q> : null}{p.sugestao && <> → <b>{p.sugestao}</b></>}{p.detalhe && <span className="text-muted"> ({p.detalhe.replace('na lista:', tx('na lista:'))})</span>}</li>)}
+                {l.length > 8 && <li className="text-muted">… {tx('e mais')} {l.length - 8}</li>}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

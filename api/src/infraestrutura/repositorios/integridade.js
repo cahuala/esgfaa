@@ -8,7 +8,7 @@ const paraDocumento = (d) => d && {
 
 const paraAnalise = (a) => a && {
   id: a.id, documentoId: a.documentoId, estado: a.estado, percentagem: a.percentagem === null ? null : Number(a.percentagem),
-  fontes: a.fontes, trechos: a.trechos, opcoes: a.opcoes, erro: a.erro, internet: a.internet, ia: a.ia, criadaEm: iso(a.criadaEm), concluidaEm: iso(a.concluidaEm),
+  fontes: a.fontes, trechos: a.trechos, opcoes: a.opcoes, erro: a.erro, internet: a.internet, ia: a.ia, normas: a.normas, criadaEm: iso(a.criadaEm), concluidaEm: iso(a.concluidaEm),
   ...(a.documento ? { documento: paraDocumento(a.documento) } : {}),
 }
 

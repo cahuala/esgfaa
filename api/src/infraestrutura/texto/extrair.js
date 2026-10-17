@@ -51,6 +51,23 @@ function xmlParaTexto(xml, { paragrafo, tab, quebra }) {
     .replace(/<[^>]+>/g, ''))
 }
 
+/*
+  Word: só o texto escrito (<w:t>), com parágrafos, tabulações e quebras. Fica de fora o que não é texto
+  do documento: códigos de campos (índice: "PAGEREF _Toc…"), texto apagado com controlo de alterações,
+  posições das imagens e a cópia de reserva das caixas de texto (mc:Fallback, que repetiria o texto).
+*/
+function docxParaTexto(xml) {
+  const limpo = xml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g, '')
+  const partes = []
+  for (const m of limpo.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<\/w:p>|<w:tab\/>|<w:br(?:\s[^>]*)?\/>|<w:cr\/>/g)) {
+    if (m[1] !== undefined) partes.push(m[1])
+    else if (m[0] === '</w:p>') partes.push('\n\n')
+    else if (m[0] === '<w:tab/>') partes.push('\t')
+    else partes.push('\n')
+  }
+  return descodificar(partes.join(''))
+}
+
 async function textoPdf(buffer) {
   const { getDocument, VerbosityLevel } = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const tarefa = getDocument({ data: new Uint8Array(buffer), isEvalSupported: false, useSystemFonts: false, verbosity: VerbosityLevel.ERRORS })
@@ -88,7 +105,7 @@ export async function extrairDeBuffer(buffer, tipo) {
   else if (tipo === 'text/plain') t = buffer.toString('utf8')
   else if (tipo.includes('wordprocessingml')) {
     const xml = lerDoZip(buffer, 'word/document.xml')
-    t = xml ? xmlParaTexto(xml.toString('utf8'), { paragrafo: /<\/w:p>/g, tab: /<w:tab\/>/g, quebra: /<w:br\/>/g }) : ''
+    t = xml ? docxParaTexto(xml.toString('utf8')) : ''
   } else {
     const xml = lerDoZip(buffer, 'content.xml')
     t = xml ? xmlParaTexto(xml.toString('utf8'), { paragrafo: /<\/text:(p|h)>/g, tab: /<text:tab\/>/g, quebra: /<text:line-break\/>/g }) : ''

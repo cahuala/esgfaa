@@ -1,6 +1,7 @@
 import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../dominio/comum/erros.js'
 import { limparTexto } from '../../dominio/comum/texto.js'
-import { MINIMO_PALAVRAS, comparar, impressoes, nivelDe, tokenizar } from '../../dominio/integridade/semelhanca.js'
+import { MINIMO_PALAVRAS, caracteresDisfarcados, comparar, impressoes, nivelDe, tokenizar } from '../../dominio/integridade/semelhanca.js'
+import { verificarApa } from '../../dominio/integridade/apa.js'
 import { frasesParaPesquisa, indicadoresIA } from '../../dominio/integridade/ia.js'
 import { avaliarComClaude } from './avaliacaoIA.js'
 
@@ -10,6 +11,12 @@ const MAX_PAGINAS = 15
 const FORMATOS = 'PDF ou Word (.docx)'
 // probabilidade de IA a mostrar: a do Claude, se houver; senão a dos indicadores locais
 const pontuacaoIA = (ia) => ia?.claude?.probabilidade ?? ia?.local?.pontuacao ?? null
+
+// normas APA (citações e referências) e letras disfarçadas (outro alfabeto, caracteres invisíveis)
+export function normasDoTexto(texto) {
+  const disfarces = caracteresDisfarcados(texto)
+  return { apa: verificarApa(texto), disfarces: { total: disfarces.length, palavras: disfarces.slice(0, 40) } }
+}
 
 /*
   Integridade académica (anti-plágio): cada trabalho entregue, obra digital da biblioteca e documento
@@ -85,7 +92,7 @@ export class ServicoOriginalidade {
     await this.integridade.concluirAnalise(id, {
       estado: 'concluida', percentagem: r.percentagem, concluidaEm: this.relogio.agora(),
       fontes: r.fontes.map((f) => ({ ...f, ...info[f.id] })), trechos: r.trechos,
-      internet: web.info, ia: a.opcoes.ia === false ? {} : await this.#ia(doc.texto),
+      internet: web.info, ia: a.opcoes.ia === false ? {} : await this.#ia(doc.texto), normas: normasDoTexto(doc.texto),
     })
   }
 
@@ -194,12 +201,12 @@ export class ServicoOriginalidade {
       id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, opcoes: a.opcoes,
       criadaEm: a.criadaEm, concluidaEm: a.concluidaEm, origens: ORIGENS,
       documento: { id: d.id, titulo: d.titulo, autor: d.autor, contexto: d.contexto, origem: d.origem, palavras: d.palavras, pedidoPor: d.pedidoPor },
-      texto: d.texto, fontes: a.fontes, trechos: a.trechos, internet: a.internet, ia: a.ia, iaPontuacao: pontuacaoIA(a.ia),
+      texto: d.texto, fontes: a.fontes, trechos: a.trechos, internet: a.internet, ia: a.ia, iaPontuacao: pontuacaoIA(a.ia), normas: a.normas,
     }
   }
 
   #resumoAnalise(a) {
-    return { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, criadaEm: a.criadaEm, documento: a.documento, fontes: (a.fontes || []).slice(0, 3), iaPontuacao: pontuacaoIA(a.ia) }
+    return { id: a.id, estado: a.estado, percentagem: a.percentagem, nivel: nivelDe(a.percentagem), erro: a.erro, criadaEm: a.criadaEm, documento: a.documento, fontes: (a.fontes || []).slice(0, 3), iaPontuacao: pontuacaoIA(a.ia), apaErros: a.normas?.apa?.erros ?? null, disfarces: a.normas?.disfarces?.total ?? 0 }
   }
 
   async #analise(id) {

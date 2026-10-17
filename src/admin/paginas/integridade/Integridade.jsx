@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
-import Relatorio, { ChipIA, ChipOriginalidade } from '../../../portal/integridade/Relatorio'
+import Relatorio, { ChipApa, ChipIA, ChipOriginalidade } from '../../../portal/integridade/Relatorio'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const dia = (iso) => (iso ? new Date(iso).toLocaleString(localAtual(), { dateStyle: 'short', timeStyle: 'short' }) : '')
@@ -83,7 +83,7 @@ function PainelIntegridade() {
                       </td>
                       <td className="small">{d.origens[a.documento.origem]}</td>
                       <td className="small">{a.fontes?.[0] ? <>{a.fontes[0].titulo}<span className="text-muted"> · {String(a.fontes[0].percentagem).replace('.', ',')}%</span></> : <span className="text-muted">—</span>}</td>
-                      <td className="text-center"><Link to={`/integridade/analises/${a.id}`} className="d-inline-flex gap-1"><ChipOriginalidade a={a} /><ChipIA a={a} /></Link></td>
+                      <td className="text-center"><Link to={`/integridade/analises/${a.id}`} className="d-inline-flex gap-1"><ChipOriginalidade a={a} /><ChipIA a={a} /><ChipApa a={a} /></Link></td>
                     </tr>
                   ))}
                 </tbody>

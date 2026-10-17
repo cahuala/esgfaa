@@ -5,39 +5,119 @@
   - para procurar fontes depressa, cada documento guarda só alguns pedaços (winnowing: o menor de cada janela),
     o que garante encontrar qualquer passagem igual com K + JANELA - 1 palavras ou mais;
   - com as fontes candidatas, compara-se tudo e marcam-se as palavras cobertas por pedaços iguais.
-  Opcionalmente ignora-se o que está entre aspas (citações) e a lista de referências no fim.
+  Opcionalmente ignoram-se as citações (entre aspas, em bloco e as referências "(Autor, ano)", normas APA)
+  e a lista de referências no fim. Nunca conta o que é do modelo da Escola e igual em todos os trabalhos:
+  a capa (antes do Resumo/Índice/Introdução), o índice e as tabelas ou listas de linhas curtas (cronograma,
+  assinaturas).
 */
 export const K = 5
 export const JANELA = 4
 export const MINIMO_PALAVRAS = 40
+
+/*
+  Letras de outros alfabetos iguais às latinas (cirílico, grego): trocá-las é um truque para enganar o
+  anti-plágio ("AKЕELA" com um "Е" cirílico). Na comparação contam como a letra latina e o relatório avisa.
+*/
+const DISFARCES = { а: 'a', е: 'e', о: 'o', р: 'p', с: 'c', у: 'y', х: 'x', і: 'i', ј: 'j', ѕ: 's', ԁ: 'd', ӏ: 'l', һ: 'h', ԛ: 'q', ԝ: 'w', А: 'A', В: 'B', Е: 'E', К: 'K', М: 'M', Н: 'H', О: 'O', Р: 'P', С: 'C', Т: 'T', У: 'Y', Х: 'X', І: 'I', Ј: 'J', Ѕ: 'S', ο: 'o', α: 'a', ε: 'e', ι: 'i', κ: 'k', ν: 'v', ρ: 'p', τ: 't', υ: 'u', χ: 'x', Α: 'A', Β: 'B', Ε: 'E', Ζ: 'Z', Η: 'H', Ι: 'I', Κ: 'K', Μ: 'M', Ν: 'N', Ο: 'O', Ρ: 'P', Τ: 'T', Υ: 'Y', Χ: 'X' }
+const RE_DISFARCE = new RegExp(`[${Object.keys(DISFARCES).join('')}]`, 'gu')
+// caracteres invisíveis metidos no meio das palavras (espaço de largura zero, hífen invisível…)
+const INVISIVEIS = /[\u200b-\u200d\u2060\u00ad\ufeff]/g
+
+export function sem(s) {
+  return String(s).replace(INVISIVEIS, '').replace(RE_DISFARCE, (c) => DISFARCES[c]).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+// palavras latinas com letras de outros alfabetos ou caracteres invisíveis: [{ palavra, inicio, fim }]
+export function caracteresDisfarcados(texto) {
+  const r = []
+  for (const m of String(texto ?? '').matchAll(/[\p{L}\u200b-\u200d\u2060\u00ad\ufeff]+/gu)) {
+    const w = m[0]
+    const latinas = (w.match(/\p{Script=Latin}/gu) ?? []).length
+    const estranhas = (w.match(RE_DISFARCE) ?? []).length
+    const invisiveis = (w.match(INVISIVEIS) ?? []).length
+    // invisível no meio da palavra, ou letra estrangeira numa palavra sobretudo latina
+    const hifenOk = invisiveis && /^[^\u200b-\u200d\u2060\ufeff]+$/.test(w) && w.split('\u00ad').every((x) => x.length > 1)
+    if ((estranhas && latinas >= estranhas) || (invisiveis && !hifenOk && latinas >= 2)) r.push({ palavra: w.replace(INVISIVEIS, '·'), inicio: m.index, fim: m.index + w.length })
+  }
+  return r
+}
 
 const PARAGENS = new Set(`a o as os um uma uns umas de do da dos das d em no na nos nas num numa por pelo pela pelos pelas para pra com sem sob
 sobre entre ate até e ou nem mas que se ao aos à às é era foi ser são sao sua seu suas seus lhe lhes este esta estes estas esse essa esses essas
 isto isso aquilo aquele aquela como mais muito muita também tambem já ja não nao sim quando onde qual quais cujo cuja eu tu ele ela nós nos vós eles elas
 me te nos vos the of and to in is are was were be been an for on with as by at from that this these those it its or not which`.split(/\s+/).map(sem))
 
-export function sem(s) {
-  return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+export const REFERENCIAS = /^[ \t]*(\d+[.)]?\s*)?(refer[eê]ncias(\s+bi\p{L}{0,3}liogr[aá]ficas)?|bibliografia(\s+consultada)?|references|bibliography|obras citadas)[ \t]*:?[ \t]*$/gimu
+const CITACOES = /«[^»]{1,3000}»|“[^”]{1,3000}”|"[^"\n]{1,3000}"/g
+// "(Gil, 2019)", "(Bardin, 2011; Gil, 2019, p. 27)"
+const REFERENCIA_APA = /\((?=[^()\n]*\p{Lu})[^()\n]{2,400}?\b(?:1[5-9]|20)\d\d[a-z]?\b[^()\n]{0,60}\)/gu
+// citação em bloco (APA: 40 palavras ou mais, sem aspas): parágrafo que acaba com "(Autor, ano, p. 12)"
+const BLOCO = /(^|\n)([^\n]{200,})\((?=[^()\n]*\d{4})[^()\n]*\bp{1,2}\.\s*\d+[^()\n]*\)\.?[ \t]*(?=\n|$)/gu
+
+// índice/sumário: 3 ou mais linhas seguidas "Título ... 12"
+function indice(t) {
+  const r = []
+  const linhas = [...t.matchAll(/[^\n]+/g)]
+  let k = 0
+  while (k < linhas.length) {
+    let j = k
+    while (j < linhas.length && /^.{2,160}?[\s.…]\d{1,3}$/.test(linhas[j][0].trim())) j++
+    if (j - k >= 3) r.push([linhas[k].index, linhas[j - 1].index + linhas[j - 1][0].length])
+    k = Math.max(j, k + 1)
+  }
+  return r
 }
 
-const REFERENCIAS = /^[ \t]*(\d+[.)]?\s*)?(refer[eê]ncias(\s+bibliogr[aá]ficas)?|bibliografia|references|bibliography|obras citadas)[ \t]*:?[ \t]*$/gim
-const CITACOES = /«[^»]{1,3000}»|“[^”]{1,3000}”|"[^"\n]{1,3000}"/g
+// tabelas e listas: 5 ou mais linhas seguidas curtas — até 4 palavras, ou até 8 sem pontuação final
+// (células do cronograma, assinaturas…); as frases de texto corrido acabam em ponto
+const curta = (l) => {
+  const n = l.split(/\s+/).length
+  return n <= 4 || (n <= 8 && !/[.;:!?]$/.test(l))
+}
+function linhasCurtas(t) {
+  const r = []
+  const linhas = [...t.matchAll(/[^\n]+/g)]
+  let k = 0
+  while (k < linhas.length) {
+    let j = k
+    while (j < linhas.length && curta(linhas[j][0].trim())) j++
+    if (j - k >= 5) r.push([linhas[k].index, linhas[j - 1].index + linhas[j - 1][0].length])
+    k = Math.max(j, k + 1)
+  }
+  return r
+}
+
+// capa: o que vem antes do primeiro "Resumo", "Índice", "Sumário" ou "Introdução" (no primeiro terço)
+function capa(t) {
+  const m = /^[ \t]*(\d+[.)]?\s*)?(resumo|abstract|[íi]ndice|sum[áa]rio|introdu[çc][ãa]o|agradecimentos|dedicat[óo]ria|ep[íi]grafe)[ \t]*:?[ \t]*$/imu.exec(t)
+  return m && m.index < t.length / 3 ? [[0, m.index]] : []
+}
+
+const intervalos = (t, re) => [...t.matchAll(re)].map((m) => [m.index, m.index + m[0].length])
 
 // palavras com conteúdo: [{ n: normalizada, i: início, f: fim }] (posições no texto original)
 export function tokenizar(texto, { excluirCitacoes = false, excluirReferencias = false } = {}) {
   const t = String(texto ?? '')
   let limite = t.length
   if (excluirReferencias) {
-    for (const m of t.matchAll(REFERENCIAS)) if (m.index > t.length * 0.4) limite = m.index
+    // a primeira lista depois de 40 % do texto (pode haver «Referências» e depois «Bibliografia»)
+    for (const m of t.matchAll(REFERENCIAS)) {
+      if (m.index > t.length * 0.4) {
+        limite = m.index
+        break
+      }
+    }
   }
-  const citacoes = excluirCitacoes ? [...t.matchAll(CITACOES)].map((m) => [m.index, m.index + m[0].length]) : []
+  const citacoes = [...capa(t), ...indice(t), ...linhasCurtas(t), ...(excluirCitacoes ? [...intervalos(t, CITACOES), ...intervalos(t, REFERENCIA_APA), ...intervalos(t, BLOCO)] : [])].sort((x, y) => x[0] - y[0])
   const r = []
   let c = 0
-  for (const m of t.slice(0, limite).matchAll(/[\p{L}\p{N}]+/gu)) {
+  for (const m of t.slice(0, limite).matchAll(/[\p{L}\p{N}\u200b-\u200d\u2060\u00ad\ufeff]+/gu)) {
     const n = sem(m[0])
     if (PARAGENS.has(n) || (n.length < 2 && !/\d/.test(n))) continue
     while (c < citacoes.length && citacoes[c][1] <= m.index) c++
-    if (c < citacoes.length && citacoes[c][0] <= m.index) continue
+    let dentro = false
+    for (let q = c; q < citacoes.length && citacoes[q][0] <= m.index; q++) if (m.index < citacoes[q][1]) dentro = true
+    if (dentro) continue
     r.push({ n, i: m.index, f: m.index + m[0].length })
   }
   return r

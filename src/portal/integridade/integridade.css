@@ -71,3 +71,10 @@
 .o-ia-valor span { font-size: 10px; letter-spacing: .14em; color: var(--bs-secondary-color); font-weight: 700; }
 .o-documento mark.o-ia { background: rgba(157, 78, 221, .14); border-bottom: 0; border-left: 4px solid #9d4edd; padding: 2px 0 2px 8px; display: inline; cursor: help; }
 .o-documento mark.o-ia sup { background: #7b2cbf; }
+
+/* normas APA */
+.o-documento mark.o-apa { background: #fff3cd; border-bottom: 2px solid #e09f3e; cursor: help; padding: 0 1px; }
+.o-documento mark.o-apa.erro { background: #fde2e4; border-bottom-color: #d62839; }
+.o-documento mark.o-apa sup { font-size: 9px; font-weight: 700; color: #d62839; margin-right: 2px; }
+.o-apa-lista q { quotes: '«' '»'; }
+.o-apa-lista ul { padding-left: 1.2rem; }
