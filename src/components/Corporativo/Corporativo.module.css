@@ -1,27 +1,27 @@
 /* ---------- etiqueta (categoria) ---------- */
 .etiqueta {
+  /* só o texto colorido, sem fundo */
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 0;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.6;
   white-space: nowrap;
 }
-.vermelho { background: #fde4df; color: #a3291a; }
-.dourado { background: #fdf0cf; color: #7a5a00; }
-.azul { background: #dce9fb; color: #1f4f9a; }
-.verde { background: var(--sucesso-fundo); color: var(--sucesso-texto); }
-.roxo { background: #ece3fb; color: #5a36b0; }
-.cinzento { background: #eceef0; color: #495057; }
+.vermelho { color: #a3291a; }
+.dourado { color: #7a5a00; }
+.azul { color: #1f4f9a; }
+.verde { color: var(--sucesso-texto); }
+.roxo { color: #5a36b0; }
+.cinzento { color: #495057; }
 
-/* modo escuro: o mesmo tom, mas translúcido sobre o fundo escuro e com o texto claro */
-:global(html[data-tema='dark']) .vermelho { background: rgba(224, 74, 47, 0.18); color: #ff9b86; }
-:global(html[data-tema='dark']) .dourado { background: rgba(217, 166, 46, 0.18); color: #f0cd7a; }
-:global(html[data-tema='dark']) .azul { background: rgba(78, 140, 230, 0.2); color: #9cc2f5; }
-:global(html[data-tema='dark']) .verde { background: rgba(61, 190, 120, 0.18); color: #7fdcae; }
-:global(html[data-tema='dark']) .roxo { background: rgba(140, 100, 230, 0.2); color: #c3a8f5; }
-:global(html[data-tema='dark']) .cinzento { background: rgba(255, 255, 255, 0.1); color: #c9d0d6; }
+/* modo escuro: o mesmo tom, mais claro sobre o fundo escuro */
+:global(html[data-tema='dark']) .vermelho { color: #ff9b86; }
+:global(html[data-tema='dark']) .dourado { color: #f0cd7a; }
+:global(html[data-tema='dark']) .azul { color: #9cc2f5; }
+:global(html[data-tema='dark']) .verde { color: #7fdcae; }
+:global(html[data-tema='dark']) .roxo { color: #c3a8f5; }
+:global(html[data-tema='dark']) .cinzento { color: #c9d0d6; }
 
 /* ---------- título de secção ---------- */
 .seccaoCabeca {
