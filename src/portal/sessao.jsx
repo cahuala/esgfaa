@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, definirOuvintes, guardarToken, lerToken } from './api'
+import { api, definirOuvintes, marcarSessao, temSessao } from './api'
 import { ContextoSessao } from './sessaoContexto'
 
 // sessão do portal: conta atual, entrar, sair e mudar a palavra-passe
 export function SessaoPortal({ children }) {
   const [conta, setConta] = useState(null)
-  const [aVerificar, setAVerificar] = useState(() => Boolean(lerToken()))
+  const [aVerificar, setAVerificar] = useState(() => Boolean(temSessao()))
 
   const terminar = useCallback(() => {
-    guardarToken(null)
+    marcarSessao(null)
     setConta(null)
   }, [])
 
@@ -16,7 +16,7 @@ export function SessaoPortal({ children }) {
 
   useEffect(() => {
     definirOuvintes({ expirou: terminar, mudarSenha: () => setConta((c) => (c ? { ...c, deveMudarSenha: true } : c)) })
-    if (!lerToken()) return
+    if (!temSessao()) return
     api('/eu').then(setConta).catch(terminar).finally(() => setAVerificar(false))
   }, [terminar])
 
@@ -26,7 +26,7 @@ export function SessaoPortal({ children }) {
     eDocente: conta?.tipo === 'docente',
     async entrar(email, senha) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
-      guardarToken(r.token)
+      marcarSessao(Boolean(r.sessao || r.token))
       setConta(await api('/eu'))
     },
     async sair() {
@@ -34,8 +34,9 @@ export function SessaoPortal({ children }) {
       terminar()
     },
     async mudarSenha(atual, nova) {
-      const { token } = await api('/eu/senha', { metodo: 'PUT', corpo: { atual, nova } })
-      guardarToken(token)
+      // o servidor renova o cookie da sessão (as sessões antigas deixam de valer)
+      await api('/eu/senha', { metodo: 'PUT', corpo: { atual, nova } })
+      marcarSessao(true)
       setConta(await api('/eu'))
     },
     recarregar,

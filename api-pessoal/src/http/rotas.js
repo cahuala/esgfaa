@@ -17,6 +17,8 @@ import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expedie
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
+import { sessaoEmCookie } from './sessaoCookie.js'
+import { COOKIE_PESSOAL } from './middlewares.js'
 
 // assinaturas dos formatos de imagem aceites para a fotografia
 const IMAGENS = [['jpg', [0xff, 0xd8, 0xff]], ['png', [0x89, 0x50, 0x4e, 0x47]], ['webp', [0x52, 0x49, 0x46, 0x46]]]
@@ -25,6 +27,7 @@ const tipoImagem = (b) => IMAGENS.find(([, m]) => m.every((x, i) => b[i] === x))
 export function rotas({ servicos: s, config }) {
   const r = express.Router()
   const u = (req) => req.utilizador
+  r.use(sessaoEmCookie({ nome: COOKIE_PESSOAL, caminho: '/api', caminhos: ['/entrar', '/mudar-senha'], seguro: config.producao }))
   const ip = (req) => req.ip
 
   // entrar: no máximo 10 tentativas por minuto por endereço (além do bloqueio da conta)

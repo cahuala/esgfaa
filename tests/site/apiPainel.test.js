@@ -1,26 +1,27 @@
 import { describe, it, expect, vi } from 'vitest'
-import { api, guardarToken, lerToken, definirAoExpirar } from '../../src/admin/api'
+import { api, marcarSessao, temSessao, definirAoExpirar } from '../../src/admin/api'
 
 const responder = (corpo, status = 200) => vi.fn(() => Promise.resolve(new Response(status === 204 ? null : JSON.stringify(corpo), { status })))
 
 describe('cliente da API do painel', () => {
-  it('envia o token e JSON', async () => {
-    guardarToken('abc')
+  it('envia o cookie da sessão (com o cabeçalho anti-CSRF) e JSON, sem token no JavaScript', async () => {
+    marcarSessao(true)
     const f = responder({ ok: 1 })
     vi.stubGlobal('fetch', f)
     await api('/colecoes/noticias', { metodo: 'POST', corpo: { titulo: 'x' } })
     const [url, opcoes] = f.mock.calls[0]
     expect(url).toBe('http://api.teste/api/admin/colecoes/noticias')
-    expect(opcoes.headers).toEqual({ Authorization: 'Bearer abc', 'Content-Type': 'application/json' })
+    expect(opcoes.headers).toEqual({ 'X-Sessao': 'cookie', 'Content-Type': 'application/json' })
+    expect(opcoes.credentials).toBe('include')
     expect(opcoes.body).toBe('{"titulo":"x"}')
   })
 
-  it('o token fica só na sessão do separador', () => {
-    guardarToken('t1')
-    expect(sessionStorage.getItem('esgfaa-admin-sessao')).toBe('t1')
-    expect(localStorage.length).toBe(0)
-    guardarToken(null)
-    expect(lerToken()).toBeNull()
+  it('no navegador fica só o sinal de sessão aberta, nunca o token', () => {
+    marcarSessao(true)
+    expect(localStorage.getItem('esgfaa-admin-sessao')).toBe('1')
+    expect(sessionStorage.length).toBe(0)
+    marcarSessao(null)
+    expect(temSessao()).toBeNull()
   })
 
   it('401 termina a sessão (exceto ao entrar)', async () => {

@@ -2,18 +2,20 @@ import { API_URL } from '../conteudo/api'
 import { t as tx } from '../i18n/linguas'
 import { traduzirRotulos } from '../i18n/rotulos'
 
+/*
+  A sessão fica num cookie HttpOnly posto pelo servidor: o JavaScript da página não lhe toca (nem um script
+  injectado). Aqui guarda-se só o sinal «há sessão aberta» (não é segredo), para saber se vale a pena pedir /eu.
+*/
 const CHAVE = 'esgfaa-portal-sessao'
 
-export function lerToken() {
-  try { return sessionStorage.getItem(CHAVE) } catch { return null }
+export function temSessao() {
+  try { return localStorage.getItem(CHAVE) } catch { return null }
 }
-
-export function guardarToken(token) {
-  try {
-    if (token) sessionStorage.setItem(CHAVE, token)
-    else sessionStorage.removeItem(CHAVE)
-  } catch { /* armazenamento indisponível */ }
+export function marcarSessao(aberta) {
+  try { if (aberta) localStorage.setItem(CHAVE, '1'); else localStorage.removeItem(CHAVE) } catch { /* sem armazenamento */ }
 }
+// cada pedido leva o cookie e o cabeçalho que o servidor exige para o aceitar (protecção contra CSRF)
+export const comSessao = (cabecalhos = {}) => ({ credentials: 'include', headers: { ...cabecalhos, 'X-Sessao': 'cookie' } })
 
 // avisos da API para a sessão: 401 (sessão terminada) e 403 "mudar_senha"
 const ouvintes = { expirou: () => {}, mudarSenha: () => {} }
@@ -27,8 +29,7 @@ export function definirOuvintes(o) {
 */
 export async function api(caminho, { metodo = 'GET', corpo, formulario } = {}) {
   if (!API_URL) throw new Error(tx('O portal não está ligado ao servidor (VITE_API_URL).'))
-  const token = lerToken()
-  const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {}
+  const cabecalhos = { 'X-Sessao': 'cookie' }
   let body
   if (formulario) body = formulario
   else if (corpo !== undefined) {
@@ -37,7 +38,7 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario } = {}) {
   }
   let r
   try {
-    r = await fetch(`${API_URL}/api/portal${caminho}`, { method: metodo, headers: cabecalhos, body })
+    r = await fetch(`${API_URL}/api/portal${caminho}`, { method: metodo, headers: cabecalhos, body, credentials: 'include' })
   } catch {
     throw new Error(tx('Não foi possível contactar o servidor. Verifique a ligação.'))
   }
@@ -60,7 +61,7 @@ export function abrirFicheiro(id, opcoes) {
 
 // ficheiro pedido com a sessão, como endereço local (blob:) para mostrar na página; revogar depois de usar
 export async function urlFicheiro(caminho, { ver = true } = {}) {
-  const r = await fetch(`${API_URL}/api/portal${caminho}${ver ? '?ver=1' : ''}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  const r = await fetch(`${API_URL}/api/portal${caminho}${ver ? '?ver=1' : ''}`, comSessao())
   if (!r.ok) throw new Error(r.status === 404 ? tx('Ficheiro não encontrado.') : tx('Erro {0}', { 0: r.status }))
   return URL.createObjectURL(await r.blob())
 }
@@ -72,7 +73,7 @@ export async function carregarFicheiro(id, aoProgresso) {
 }
 
 async function blobDoFicheiro(id, aoProgresso) {
-  const r = await fetch(`${API_URL}/api/portal/ficheiros/${id}?ver=1`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  const r = await fetch(`${API_URL}/api/portal/ficheiros/${id}?ver=1`, comSessao())
   if (!r.ok) throw new Error(r.status === 404 ? tx('Ficheiro não encontrado.') : tx('Erro {0}', { 0: r.status }))
   const total = Number(r.headers.get('content-length')) || 0
   if (!r.body || !total || !aoProgresso) return r.blob()
@@ -113,8 +114,8 @@ export function enviarComProgresso(caminho, formulario, { metodo = 'POST', aoPro
   return new Promise((resolver, rejeitar) => {
     const x = new XMLHttpRequest()
     x.open(metodo, `${API_URL}/api/portal${caminho}`)
-    const token = lerToken()
-    if (token) x.setRequestHeader('Authorization', `Bearer ${token}`)
+    x.withCredentials = true
+    x.setRequestHeader('X-Sessao', 'cookie')
     x.upload.onprogress = (e) => { if (e.lengthComputable) aoProgresso?.(Math.round((e.loaded / e.total) * 100)) }
     x.onerror = () => rejeitar(new Error(tx('Não foi possível contactar o servidor. Verifique a ligação.')))
     x.onload = () => {

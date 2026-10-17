@@ -2,18 +2,20 @@ import { API_URL } from '../conteudo/api'
 import { t as tx } from '../i18n/linguas'
 import { traduzirRotulos } from '../i18n/rotulos'
 
+/*
+  A sessão fica num cookie HttpOnly posto pelo servidor: o JavaScript da página não lhe toca (nem um script
+  injectado). Aqui guarda-se só o sinal «há sessão aberta» (não é segredo), para saber se vale a pena pedir /eu.
+*/
 const CHAVE = 'esgfaa-admin-sessao'
 
-export function lerToken() {
-  try { return sessionStorage.getItem(CHAVE) } catch { return null }
+export function temSessao() {
+  try { return localStorage.getItem(CHAVE) } catch { return null }
 }
-
-export function guardarToken(token) {
-  try {
-    if (token) sessionStorage.setItem(CHAVE, token)
-    else sessionStorage.removeItem(CHAVE)
-  } catch { /* armazenamento indisponível */ }
+export function marcarSessao(aberta) {
+  try { if (aberta) localStorage.setItem(CHAVE, '1'); else localStorage.removeItem(CHAVE) } catch { /* sem armazenamento */ }
 }
+// cada pedido leva o cookie e o cabeçalho que o servidor exige para o aceitar (protecção contra CSRF)
+export const comSessao = (cabecalhos = {}) => ({ credentials: 'include', headers: { ...cabecalhos, 'X-Sessao': 'cookie' } })
 
 // chamado quando a API responde 401 (sessão expirada ou conta desativada)
 let aoExpirar = () => {}
@@ -23,8 +25,7 @@ export function definirAoExpirar(fn) {
 
 export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulario } = {}) {
   if (!API_URL) throw new Error(tx('A API não está configurada (VITE_API_URL).'))
-  const token = lerToken()
-  const cabecalhos = token ? { Authorization: `Bearer ${token}` } : {}
+  const cabecalhos = { 'X-Sessao': 'cookie' }
   let body
   if (formulario) {
     body = formulario
@@ -38,7 +39,7 @@ export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulari
 
   let resposta
   try {
-    resposta = await fetch(`${API_URL}/api/admin${caminho}`, { method: metodo, headers: cabecalhos, body })
+    resposta = await fetch(`${API_URL}/api/admin${caminho}`, { method: metodo, headers: cabecalhos, body, credentials: 'include' })
   } catch {
     throw new Error(tx('Não foi possível contactar o servidor. Verifique a ligação.'))
   }
@@ -51,7 +52,7 @@ export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulari
 
 // ficheiros pedidos com a sessão: descarregam-se (ou abrem-se num separador, com abrir) a partir da memória
 export async function obterFicheiro(caminho, nome = 'documento', { abrir = false } = {}) {
-  const r = await fetch(`${API_URL}/api/admin${caminho}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  const r = await fetch(`${API_URL}/api/admin${caminho}`, comSessao())
   if (!r.ok) throw new Error(r.status === 404 ? tx('Ficheiro não encontrado.') : tx('Erro {0}', { 0: r.status }))
   const url = URL.createObjectURL(await r.blob())
   if (abrir) {

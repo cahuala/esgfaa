@@ -70,6 +70,7 @@ export function comDerivados(p, hoje = new Date()) {
   f.vinculoNome = VINCULOS[p.vinculo] ?? ''
   f.generoNome = GENEROS[p.genero] ?? ''
   f.habilitacaoNome = HABILITACOES[p.habilitacao] ?? ''
+  delete f.biIndice // índice do BI (HMAC): fica no servidor
   delete f.unidade
   delete f.cargo
   delete f.militarAlocado

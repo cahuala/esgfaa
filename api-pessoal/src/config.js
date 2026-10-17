@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
@@ -17,6 +18,8 @@ const ESQUEMA = z.object({
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
   DB_POOL: inteiro(10, 2, 100),
   JWT_SECRET: z.string().default(''),
+  // chave da encriptação dos dados pessoais na base de dados (32 bytes: 64 hex ou base64); NUNCA a perca
+  DADOS_CHAVE: z.string().default(''),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/).default('8h'),
   // redes de onde se aceitam pedidos (IPv4 em CIDR); tudo o resto é recusado
   REDES_INTERNAS: lista('127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'),
@@ -54,6 +57,7 @@ export function criarConfig(env = process.env) {
     if (producao) throw new Error('Defina JWT_SECRET antes de arrancar em produção.')
     segredo = SEGREDO_DESENVOLVIMENTO
   } else if (producao && segredo.length < 32) throw new Error('JWT_SECRET demasiado curto: use pelo menos 32 caracteres aleatórios.')
+  if (producao && !e.DADOS_CHAVE) throw new Error('Defina DADOS_CHAVE (32 bytes aleatórios) antes de arrancar em produção: encripta os dados pessoais.')
   if (producao && !e.DATABASE_URL) throw new Error('Defina DATABASE_URL antes de arrancar em produção.')
   if (e.PORTAL_API_URL && e.INTEGRACAO_CHAVE.length < 32) throw new Error('INTEGRACAO_CHAVE deve ter pelo menos 32 caracteres (a mesma na API do portal).')
   return {
@@ -64,6 +68,8 @@ export function criarConfig(env = process.env) {
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     ligacoesBd: e.DB_POOL,
     segredoJwt: segredo,
+    // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
+    chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('pessoal-desenvolvimento-dados').digest('hex'),
     duracaoSessao: e.SESSION_TTL,
     redesInternas: e.REDES_INTERNAS,
     origens: e.CORS_ORIGINS,

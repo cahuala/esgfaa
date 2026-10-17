@@ -1,20 +1,25 @@
 // endereço da API interna: em desenvolvimento a porta 3002; no servidor da Escola a aplicação é servida pela própria API
 export const API = import.meta.env.VITE_PESSOAL_API ?? (import.meta.env.DEV ? 'http://localhost:3002' : '')
+/*
+  A sessão fica num cookie HttpOnly posto pelo servidor: o JavaScript da página não lhe toca (nem um script
+  injectado). Aqui guarda-se só o sinal «há sessão aberta» (não é segredo), para saber se vale a pena pedir /eu.
+*/
 const CHAVE = 'esg-pessoal-sessao'
 
-export function lerToken() {
-  try { return sessionStorage.getItem(CHAVE) } catch { return null }
+export function temSessao() {
+  try { return localStorage.getItem(CHAVE) } catch { return null }
 }
-export function guardarToken(t) {
-  try { if (t) sessionStorage.setItem(CHAVE, t); else sessionStorage.removeItem(CHAVE) } catch { /* sem armazenamento */ }
+export function marcarSessao(aberta) {
+  try { if (aberta) localStorage.setItem(CHAVE, '1'); else localStorage.removeItem(CHAVE) } catch { /* sem armazenamento */ }
 }
+// cada pedido leva o cookie e o cabeçalho que o servidor exige para o aceitar (protecção contra CSRF)
+export const comSessao = (cabecalhos = {}) => ({ credentials: 'include', headers: { ...cabecalhos, 'X-Sessao': 'cookie' } })
 
 let aoExpirar = () => {}
 export const definirAoExpirar = (fn) => { aoExpirar = fn }
 
 export async function api(caminho, { metodo = 'GET', corpo, formulario, consulta } = {}) {
-  const t = lerToken()
-  const cab = t ? { Authorization: `Bearer ${t}` } : {}
+  const cab = { 'X-Sessao': 'cookie' }
   let body
   if (formulario) body = formulario
   else if (corpo !== undefined) {
@@ -24,7 +29,7 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario, consulta
   const q = consulta ? `?${new URLSearchParams(Object.entries(consulta).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString()}` : ''
   let r
   try {
-    r = await fetch(`${API}/api${caminho}${q}`, { method: metodo, headers: cab, body })
+    r = await fetch(`${API}/api${caminho}${q}`, { method: metodo, headers: cab, body, credentials: 'include' })
   } catch {
     throw new Error('Não foi possível contactar o servidor do pessoal. Verifique a ligação à rede interna.')
   }
@@ -42,13 +47,13 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario, consulta
 
 // fotografia (pedida com a sessão) como endereço local para <img>
 export async function urlFoto(pessoaId) {
-  const r = await fetch(`${API}/api/pessoas/${pessoaId}/foto`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  const r = await fetch(`${API}/api/pessoas/${pessoaId}/foto`, comSessao())
   return r.ok ? URL.createObjectURL(await r.blob()) : null
 }
 
 // abre (PDF/imagem) ou descarrega um ficheiro protegido pela sessão
 export async function abrirFicheiro(caminho, nome = 'documento') {
-  const r = await fetch(`${API}/api${caminho}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  const r = await fetch(`${API}/api${caminho}`, comSessao())
   if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
   const blob = await r.blob()
   const url = URL.createObjectURL(blob)
@@ -80,8 +85,8 @@ export function enviarComProgresso(caminho, formulario, aoProgresso, metodo = 'P
   return new Promise((ok, falha) => {
     const x = new XMLHttpRequest()
     x.open(metodo, `${API}/api${caminho}`)
-    const t = lerToken()
-    if (t) x.setRequestHeader('Authorization', `Bearer ${t}`)
+    x.withCredentials = true
+    x.setRequestHeader('X-Sessao', 'cookie')
     x.upload.onprogress = (e) => { if (e.lengthComputable) aoProgresso?.((e.loaded / e.total) * 100) }
     x.onload = () => {
       let d = {}

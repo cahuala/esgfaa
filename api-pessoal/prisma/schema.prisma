@@ -81,18 +81,19 @@ model Pessoa {
   nomeGuerra           String    @default("") @map("nome_guerra")
   nip                  String?   @unique
   numeroAgente         String?   @unique @map("numero_agente")
-  bi                   String?   @unique
+  bi                   String? // cifrado (AES-256-GCM)
+  biIndice             String?   @unique @map("bi_indice") // HMAC do BI: único e para procurar sem decifrar
   dataNascimento       DateTime? @map("data_nascimento") @db.Date
   genero               String? // M | F
   estadoCivil          String?   @map("estado_civil")
   naturalidade         String    @default("")
   provincia            String    @default("")
   nacionalidade        String    @default("Angolana")
-  pai                  String    @default("")
-  mae                  String    @default("")
+  pai                  String    @default("") // cifrado
+  mae                  String    @default("") // cifrado
   email                String?   @unique
-  telefone             String    @default("")
-  morada               String    @default("")
+  telefone             String    @default("") // cifrado
+  morada               String    @default("") // cifrado
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")

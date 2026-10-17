@@ -57,13 +57,15 @@ test.describe('painel de administração', () => {
   test('sair termina a sessão', async ({ page }) => {
     await entrar(page)
     await expect(page.getByText('Administrador').first()).toBeVisible()
-    const token = await page.evaluate(() => sessionStorage.getItem('esgfaa-admin-sessao'))
+    // a sessão está num cookie HttpOnly: existe, mas o JavaScript da página não o vê
+    const token = (await page.context().cookies()).find((c) => c.name === 'esg_painel')?.value
     expect(token).toBeTruthy()
+    expect(await page.evaluate(() => JSON.stringify({ ...sessionStorage, ...localStorage }) + document.cookie)).not.toContain(token)
     await page.locator('.esg-menu-utilizador > a, .esg-menu-utilizador [data-bs-toggle], .esg-menu-utilizador button').first().click()
     await page.getByText('Sair', { exact: false }).last().click()
     await expect(page.getByLabel('E-mail institucional')).toBeVisible()
     // o token antigo já não serve, mesmo que alguém o tenha copiado
-    const r = await page.request.get('http://localhost:3101/api/admin/eu', { headers: { Authorization: `Bearer ${token}` } })
+    const r = await page.request.get('http://localhost:3101/api/admin/eu', { headers: { Cookie: `esg_painel=${token}`, 'X-Sessao': 'cookie' } })
     expect(r.status()).toBe(401)
   })
 })

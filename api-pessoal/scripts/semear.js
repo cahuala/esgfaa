@@ -6,6 +6,7 @@
 */
 import { criarConfig } from '../src/config.js'
 import { criarPrisma } from '../src/infraestrutura/bd.js'
+import { CifraDados, comCifra } from '../src/infraestrutura/cifraDados.js'
 import { POSTOS, quadrosDoRamo } from '../src/dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../src/dominio/pessoal/civis.js'
 import { PROVINCIAS } from '../src/dominio/pessoal/ficha.js'
@@ -13,7 +14,7 @@ import { limiteDomiciliares } from '../src/dominio/pessoal/domiciliares.js'
 import { CifraSenhas } from '../src/infraestrutura/cifra.js'
 
 const config = criarConfig()
-const bd = criarPrisma(config.urlBaseDados)
+const bd = comCifra(criarPrisma(config.urlBaseDados), new CifraDados(config.chaveDados))
 const forcar = process.argv.includes('--forcar')
 
 // gerador pseudo-aleatório com semente: os mesmos dados de cada vez

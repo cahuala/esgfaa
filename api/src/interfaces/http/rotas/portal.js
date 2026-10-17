@@ -3,6 +3,9 @@ import { z } from 'zod'
 import { SenhaPorMudar } from '../../../dominio/comum/erros.js'
 import { limitar } from '../middlewares/limites.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
+import { sessaoEmCookie, tokenDoPedido } from '../middlewares/sessaoCookie.js'
+
+const COOKIE_PORTAL = 'esg_portal'
 import { validar } from '../middlewares/validar.js'
 import { enviarFicheiro, receberCopia, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
 import * as E from '../esquemas.js'
@@ -14,6 +17,7 @@ const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro n
 // Portal académico: /api/portal/… (estudantes e docentes)
 export function rotasPortal({ servicos, config, privados }) {
   const r = Router()
+  r.use(sessaoEmCookie({ nome: COOKIE_PORTAL, caminho: '/api/portal', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao }))
   const L = config.limites
   const e = servicos.ensino
   const ctx = (req) => req.contexto
@@ -32,8 +36,7 @@ export function rotasPortal({ servicos, config, privados }) {
   // tudo o resto exige sessão do portal
   r.use(limitar(L.portal))
   r.use(async (req, res, next) => {
-    const cab = req.get('authorization') || ''
-    const { conta, sessao } = await servicos.sessaoPortal.autenticar(cab.startsWith('Bearer ') ? cab.slice(7).trim() : null)
+    const { conta, sessao } = await servicos.sessaoPortal.autenticar(tokenDoPedido(req, COOKIE_PORTAL))
     req.contexto = { ...contextoAnonimo(req), conta, sessao }
     next()
   })

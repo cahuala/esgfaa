@@ -1,5 +1,8 @@
 import crypto from 'node:crypto'
 import { ErroDominio } from '../erros.js'
+import { tokenDoPedido } from './sessaoCookie.js'
+
+export const COOKIE_PESSOAL = 'esg_pessoal'
 
 const ESTADOS = { validacao: 400, nao_autenticado: 401, sem_permissao: 403, mudar_senha: 403, nao_encontrado: 404, conflito: 409, conta_bloqueada: 423 }
 
@@ -17,10 +20,10 @@ export const validar = (esquemas) => (req, res, next) => {
   next()
 }
 
-// sessão: "Authorization: Bearer <token>"; com a palavra-passe inicial só pode mudá-la
+// sessão: cookie HttpOnly do navegador (com "X-Sessao: cookie") ou "Authorization: Bearer <token>"; com a palavra-passe inicial só pode mudá-la
 export const autenticar = (sessao) => async (req, res, next) => {
   try {
-    const t = /^Bearer (.+)$/.exec(req.get('authorization') || '')?.[1]
+    const t = tokenDoPedido(req, COOKIE_PESSOAL)
     req.utilizador = await sessao.autenticar(t)
     if (req.utilizador.deveMudar && !['/eu', '/mudar-senha', '/sair'].includes(req.path)) throw new ErroDominio('Mude a palavra-passe inicial antes de continuar.', 'mudar_senha')
     next()

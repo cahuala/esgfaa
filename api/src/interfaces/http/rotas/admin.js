@@ -3,7 +3,7 @@ import multer from 'multer'
 import { z } from 'zod'
 import { TIPOS } from '../../../infraestrutura/ficheiros/armazenamento.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
-import { autenticar } from '../middlewares/autenticacao.js'
+import { COOKIE_PAINEL, autenticar } from '../middlewares/autenticacao.js'
 import { limitar } from '../middlewares/limites.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
 import { validar } from '../middlewares/validar.js'
@@ -13,6 +13,7 @@ import { rotasSecretaria } from './secretaria.js'
 import { rotasBiblioteca } from './biblioteca.js'
 import { rotasIntegridade } from './integridade.js'
 import { rotasTraducoes } from './traducoes.js'
+import { sessaoEmCookie } from '../middlewares/sessaoCookie.js'
 
 const pColecao = z.object({ colecao: E.colecao })
 const pItem = z.object({ colecao: E.colecao, id: E.id })
@@ -27,6 +28,7 @@ const nomeOriginal = (n) => limparTexto(Buffer.from(n, 'latin1').toString('utf8'
 export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   const r = Router()
   const ctx = (req) => req.contexto
+  r.use(sessaoEmCookie({ nome: COOKIE_PAINEL, caminho: '/api/admin', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao }))
   const enviar = (req, res, dados, estado = 200) => res.status(estado).json(absolutizar(dados, baseUrl(req, config)))
 
   // ---------- sessão ----------

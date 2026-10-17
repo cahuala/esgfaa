@@ -46,7 +46,8 @@ export function criarApp(contentor, { registarErro } = {}) {
   app.use(cors({
     origin: (origem, cb) => cb(null, !origem || config.origens.includes(origem)),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Sessao'],
+    credentials: true, // o cookie da sessão (HttpOnly) vai nos pedidos das páginas da Escola
     exposedHeaders: ['X-Request-Id', 'Retry-After'],
     maxAge: 600,
   }))

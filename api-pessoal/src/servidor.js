@@ -1,9 +1,13 @@
 import { criarConfig } from './config.js'
 import { criarContentor } from './contentor.js'
 import { criarApp } from './http/app.js'
+import { cifrarExistentes } from './infraestrutura/cifraDados.js'
 
 const config = criarConfig()
 const contentor = criarContentor(config)
+// fichas de antes da encriptação: cifram-se no arranque (só o que ainda está em texto)
+const cifradas = await cifrarExistentes(contentor.base, contentor.cifraDados)
+if (cifradas) console.log(`Dados pessoais cifrados em ${cifradas} ficha(s).`)
 const admin = await contentor.servicos.sessao.garantirAdministrador(config.admin)
 if (admin) console.log(`Administrador criado: ${admin.email}`)
 

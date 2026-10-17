@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, definirAoExpirar, guardarToken, lerToken } from './api'
+import { api, definirAoExpirar, marcarSessao, temSessao } from './api'
 import { SessaoContexto } from './sessaoContexto'
 
 export function SessaoProvider({ children }) {
   const [utilizador, setUtilizador] = useState(null)
-  const [aVerificar, setAVerificar] = useState(() => Boolean(lerToken()))
+  const [aVerificar, setAVerificar] = useState(() => Boolean(temSessao()))
 
   const terminar = useCallback(() => {
-    guardarToken(null)
+    marcarSessao(null)
     setUtilizador(null)
   }, [])
 
   useEffect(() => {
     definirAoExpirar(terminar)
-    if (!lerToken()) return
+    if (!temSessao()) return
     api('/eu')
       .then(setUtilizador)
       .catch(terminar)
@@ -28,7 +28,7 @@ export function SessaoProvider({ children }) {
     pode: (permissao) => Boolean(utilizador?.permissoes?.includes(permissao)),
     async entrar(email, senha) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
-      guardarToken(r.token)
+      marcarSessao(Boolean(r.sessao || r.token))
       setUtilizador(await api('/eu'))
     },
     // volta a ler a conta (ex.: depois de mudar a palavra-passe)

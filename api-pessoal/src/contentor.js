@@ -1,4 +1,5 @@
 import { criarPrisma } from './infraestrutura/bd.js'
+import { CifraDados, comCifra } from './infraestrutura/cifraDados.js'
 import { CifraSenhas } from './infraestrutura/cifra.js'
 import { Tokens } from './infraestrutura/tokens.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
@@ -19,7 +20,10 @@ import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 
 // liga as peças: base de dados, segurança e serviços (os testes passam outro esquema, relógio e envio)
 export function criarContentor(config, { esquema = null, agora, enviar, enviarBi } = {}) {
-  const bd = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBd })
+  const base = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBd })
+  const cifraDados = new CifraDados(config.chaveDados)
+  // os dados pessoais sensíveis vão cifrados para a base de dados e voltam decifrados (cifraDados.js)
+  const bd = comCifra(base, cifraDados)
   const relogio = agora ? { agora } : {}
   const auditoria = new ServicoAuditoria({ bd })
   const pessoas = new ServicoPessoas({ bd, auditoria, config, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
@@ -42,5 +46,5 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   }
   // um docente ou estudante alterado vai para o portal daí a poucos segundos (não espera pelo minuto)
   if (!config.teste) pessoas.aoMudarPortal = () => servicos.sincronizacao.agendar()
-  return { config, bd, servicos, fechar: () => bd.$disconnect() }
+  return { config, bd, base, cifraDados, servicos, fechar: () => base.$disconnect() }
 }

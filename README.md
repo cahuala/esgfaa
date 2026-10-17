@@ -170,6 +170,10 @@ As contas novas no portal entram com o e-mail como palavra-passe inicial (o port
 - **Dados para fora de Angola:** a análise por IA e a pesquisa na internet do anti-plágio (Anthropic, Brave) e a tradução por IA ficam **desligadas** mesmo com chave, até a Escola autorizar com `DADOS_FORA_DE_ANGOLA=sim` (a lei exige autorização para transferências internacionais).
 - **O que a Escola tem de fazer:** registar ou pedir autorização dos tratamentos à Agência de Protecção de Dados (APD), sobretudo os dados sensíveis do sistema de pessoal; confirmar o texto da política; decidir sobre os serviços fora de Angola e sobre onde fica alojado o site.
 
+- **Dados cifrados na base de dados:** no sistema de pessoal, o BI, a filiação, o telefone e a morada ficam cifrados (AES-256-GCM, `api-pessoal/src/infraestrutura/cifraDados.js`); o BI tem um índice HMAC para continuar único e pesquisável. A chave é `DADOS_CHAVE` no `.env` (obrigatória em produção; `openssl rand -hex 32`) — guarde-a num cofre fora do servidor: sem ela os dados não se recuperam. As fichas antigas cifram-se sozinhas no arranque. As palavras-passe guardam-se com scrypt (não se decifram).
+- **Sessões sem token no navegador:** o painel, o portal e o sistema de pessoal guardam a sessão num cookie `HttpOnly`, `SameSite=Strict` (e `Secure` em produção) que o JavaScript da página não lê; o cookie só vale com o cabeçalho `X-Sessao: cookie`, que obriga à verificação CORS (protecção contra CSRF). As integrações continuam com `Authorization: Bearer`. A página e a API têm de estar no mesmo domínio (ex.: `esgfaa.gov.ao` e `api.esgfaa.gov.ao`).
+- **CSP nas páginas publicadas:** o build põe em cada página uma política que só deixa correr os scripts da aplicação e só deixa falar com as APIs da Escola (`VITE_API_URL`, `VITE_PESSOAL_API`).
+
 ## Segurança e acessos simultâneos
 
 **Testes de intrusão** (`api/tests/integracao/ataques.test.js`, `seguranca.test.js`, `sessao.test.js`, `rbac.test.js`, `ficheiros.test.js`), que correm em cada publicação. Cada ataque tem de ser recusado:

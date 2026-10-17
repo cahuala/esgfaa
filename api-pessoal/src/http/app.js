@@ -29,7 +29,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'data:', 'blob:'], styleSrc: ["'self'", "'unsafe-inline'"], scriptSrc: ["'self'"], connectSrc: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"] } },
     strictTransportSecurity: false,
   }))
-  app.use(cors({ origin: (o, cb) => cb(null, !o || config.origens.includes(o)), methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'], maxAge: 600 }))
+  app.use(cors({ origin: (o, cb) => cb(null, !o || config.origens.includes(o)), methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Sessao'], credentials: true, maxAge: 600 }))
   app.use(express.json({ limit: '2mb', strict: true }))
 
   app.get('/api/saude', (req, res) => res.json({ ok: true }))

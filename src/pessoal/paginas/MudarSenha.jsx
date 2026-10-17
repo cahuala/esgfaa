@@ -14,8 +14,8 @@ export default function MudarSenha({ obrigatoria = false }) {
     if (d.nova !== d.repetir) return setErro('As duas palavras-passe novas não são iguais.')
     setAGuardar(true)
     try {
-      const r = await api('/mudar-senha', { metodo: 'POST', corpo: { atual: d.atual, nova: d.nova } })
-      await mudouSenha(r.token)
+      await api('/mudar-senha', { metodo: 'POST', corpo: { atual: d.atual, nova: d.nova } })
+      await mudouSenha()
       avisar('Palavra-passe alterada.')
       setD({ atual: '', nova: '', repetir: '' })
     } catch (f) {

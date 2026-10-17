@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { api, definirAoExpirar, guardarToken, lerToken } from './api'
+import { api, definirAoExpirar, marcarSessao, temSessao } from './api'
 import { ContextoSessao } from './sessao'
 import { Aviso, Carregando } from './componentes/Ui'
 import Layout from './Layout'
@@ -35,10 +35,10 @@ import Portal from './paginas/Portal'
 export default function App() {
   const [utilizador, setUtilizador] = useState(null)
   const [ref, setRef] = useState(null)
-  const [aCarregar, setACarregar] = useState(Boolean(lerToken()))
+  const [aCarregar, setACarregar] = useState(Boolean(temSessao()))
   const [aviso, setAviso] = useState(null)
 
-  const terminar = useCallback(() => { guardarToken(null); setUtilizador(null); setRef(null) }, [])
+  const terminar = useCallback(() => { marcarSessao(null); setUtilizador(null); setRef(null) }, [])
   useEffect(() => { definirAoExpirar(terminar) }, [terminar])
 
   // a conta e as tabelas de referência (postos, ramos, carreiras…) — ao abrir e depois de entrar
@@ -50,7 +50,7 @@ export default function App() {
     })
     .catch(terminar)
     .finally(() => setACarregar(false)), [terminar])
-  useEffect(() => { if (lerToken()) carregar() }, [carregar])
+  useEffect(() => { if (temSessao()) carregar() }, [carregar])
 
   const sessao = useMemo(() => ({
     utilizador,
@@ -59,11 +59,11 @@ export default function App() {
     avisar: (texto, tipo = 'ok') => setAviso({ texto, tipo, id: Date.now() }),
     async entrar(email, senha) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
-      guardarToken(r.token)
+      marcarSessao(Boolean(r.sessao || r.token))
       await carregar()
     },
-    async mudouSenha(token) {
-      guardarToken(token)
+    async mudouSenha() {
+      marcarSessao(true)
       await carregar()
     },
     async sair() {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api, guardarToken } from '../api'
+import { api, marcarSessao } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
@@ -17,9 +17,9 @@ function Perfil() {
       return
     }
     try {
-      // as outras sessões terminam; esta continua com o token novo
-      const { token } = await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } })
-      guardarToken(token)
+      // as outras sessões terminam; esta continua (o servidor renova o cookie)
+      await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } })
+      marcarSessao(true)
       await recarregar()
       setForm({ atual: '', nova: '', repetir: '' })
       setAviso({ texto: tx('Palavra-passe alterada. As sessões abertas noutros computadores foram terminadas.') })
