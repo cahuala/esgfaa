@@ -1337,6 +1337,23 @@ model AnaliseIntegridade {
 // ---------- Traduções do site ----------
 
 // tradução de um conteúdo (item de uma coleção ou página) para uma língua; o original fica em português
+// ferramenta externa ligada por LTI 1.3 (o portal é a plataforma; a Administração Escolar regista a ferramenta)
+model FerramentaLti {
+  id                Int      @id @default(autoincrement())
+  nome              String
+  descricao         String   @default("")
+  urlLogin          String   @map("url_login") // OIDC login initiation URL da ferramenta
+  urlLancamento     String   @map("url_lancamento") // target link URI / redirect URI
+  redirecionamentos Json     @default("[]") // outros redirect URIs aceites
+  clienteId         String   @unique @map("cliente_id") // client_id dado pelo portal
+  idImplementacao   String   @default("1") @map("id_implementacao") // deployment_id
+  partilharDados    Boolean  @default(false) @map("partilhar_dados") // envia nome e e-mail
+  ativa             Boolean  @default(true)
+  criadoEm          DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@map("ferramentas_lti")
+}
+
 // progresso de um estudante num pacote SCORM ou H5P (estado, nota de 0 a 20 e os dados que o pacote guarda)
 model ProgressoPacote {
   id            Int      @id @default(autoincrement())

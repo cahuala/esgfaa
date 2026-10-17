@@ -183,6 +183,7 @@ function Layout({ children }) {
             {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Consultar registo de pessoas')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto={tx('Avisos do portal')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/lti" icone="fa-plug" texto={tx('Ferramentas externas (LTI)')} />}
 
             {(pode('comentarios.ver') || pode('publicidade.ver') || verContactos) && <div className="menu-header">{tx('Interação e publicidade')}</div>}
             {verContactos && <ItemMenu para="/mensagens-site" icone="fa-envelope-open-text" texto={tx('Mensagens do site')} contador={contactosNovos} />}

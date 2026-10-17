@@ -9,6 +9,7 @@ import EditarItem from './paginas/EditarItem'
 import EditarPagina from './paginas/EditarPagina'
 import Comentarios from './paginas/Comentarios'
 import MensagensSite from './paginas/MensagensSite'
+import FerramentasLti from './paginas/academico/FerramentasLti'
 import Turmas from './paginas/academico/Turmas'
 import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
@@ -83,6 +84,7 @@ function App() {
         <Route path="/academico/contas" element={<Navigate to="/pessoal/registo" replace />} />
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}
         {pode('academico.ver') && <Route path="/academico/avisos" element={<AvisosGerais />} />}
+        {pode('academico.ver') && <Route path="/academico/lti" element={<FerramentasLti />} />}
         {pode('estatisticas.ver') && <Route path="/estatisticas" element={<Estatisticas />} />}
         <Route path="/perfil" element={<Perfil />} />
         {pode('utilizadores.ver') && <Route path="/utilizadores" element={<Utilizadores />} />}

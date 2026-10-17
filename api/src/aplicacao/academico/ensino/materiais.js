@@ -26,6 +26,16 @@ export class ServicoMateriais {
       }
       if (tipo === 'ficheiro' && ficheiros.length !== 1) throw new ErroValidacao('Escolha o ficheiro.', { campo: 'ficheiro' })
       if (tipo === 'pasta' && ficheiros.length === 0) throw new ErroValidacao('Junte pelo menos um ficheiro à pasta.', { campo: 'ficheiros' })
+      // ferramenta externa (LTI): a ferramenta registada e, se quiser, um endereço próprio dentro dela
+      if (tipo === 'lti') {
+        const f = await this.lti.ferramentaAtiva(dados.ferramentaId)
+        const url = String(dados.url || '').trim()
+        if (url && (!/^https:\/\//.test(url) || !urlSegura(url) || new URL(url).origin !== new URL(f.urlLancamento).origin)) {
+          throw new ErroValidacao('O endereço da atividade tem de ser da mesma ferramenta (https://…).', { campo: 'url' })
+        }
+        base.estrutura = { ferramentaId: f.id, nome: f.nome, ...(url ? { url } : {}) }
+        base.url = ''
+      }
       const comFicheiro = tipo === 'ficheiro' || TIPOS_PACOTE.includes(tipo)
       if (TIPOS_PACOTE.includes(tipo) && (ficheiros.length !== 1 || ficheiros[0].tipo !== 'application/zip')) {
         throw new ErroValidacao(tipo === 'scorm' ? 'Escolha o pacote SCORM (ficheiro .zip).' : 'Escolha o conteúdo H5P (ficheiro .h5p).', { campo: 'ficheiro' })

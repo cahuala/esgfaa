@@ -49,6 +49,11 @@ export const dias = z.object({ dias: z.coerce.number().int().min(1).max(365).def
 const visitante = texto(64).optional()
 export const consultaVisitante = z.object({ visitante })
 export const corpoVisitante = z.object({ visitante }).loose()
+export const ferramentaLti = z.object({
+  nome: texto(200).optional(), descricao: texto(600).optional(), urlLogin: texto(1000).optional(), urlLancamento: texto(1000).optional(),
+  redirecionamentos: z.union([z.array(texto(1000)).max(10), texto(10_000)]).optional(), idImplementacao: texto(100).optional(),
+  partilharDados: z.boolean().optional(), ativa: z.boolean().optional(),
+})
 export const contacto = z.object({
   nome: texto(200).default(''), email: texto(300).default(''), telefone: texto(60).default(''), assunto: texto(300).default(''),
   mensagem: texto(6000).default(''), consentimento: z.boolean().default(false), website: texto(500).optional(),
@@ -92,6 +97,7 @@ export const material = z.object({
   retirarFicheiros: listaTexto(z.string().max(40), 50).optional(),
   estrutura: z.array(z.record(z.string(), z.unknown())).max(100).optional(), // livro (capítulos) ou lição (páginas)
   salaPortal: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional(), // videoconferência numa sala Jitsi criada pelo portal
+  ferramentaId: z.union([z.number(), z.string().max(12)]).optional(), // ferramenta externa (LTI)
 })
 export const subscricaoPush = z.object({
   endpoint: z.string().url().max(1000),

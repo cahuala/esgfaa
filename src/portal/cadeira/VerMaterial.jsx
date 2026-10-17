@@ -7,6 +7,7 @@ import VerFicheiro from '../VerFicheiro'
 import Livro from './Livro'
 import Licao from './Licao'
 import Pacote from './Pacote'
+import Lti from './Lti'
 import ZonaUpload from '../ZonaUpload'
 import { confirmar } from '../dialogos'
 import { t as tx } from '../../i18n/linguas'
@@ -45,6 +46,7 @@ function VerMaterial({ c, eDocente, recarregar, avisar, progresso, setProgresso,
       {m.tipo === 'licao' && <Licao m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} setProgresso={setProgresso} cadeiraId={c.id} />}
       {m.tipo === 'pagina' && <Pagina m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} />}
       {m.tipo === 'pasta' && <Pasta m={m} eDocente={eDocente} recarregar={recarregar} avisar={avisar} falhou={falhou} />}
+      {m.tipo === 'lti' && <Lti m={m} falhou={falhou} />}
       {(m.tipo === 'scorm' || m.tipo === 'h5p') && <Pacote m={m} eDocente={eDocente} falhou={falhou} aoMudar={() => api(`/cadeiras/${c.id}/progresso`).then(setProgresso).catch(() => {})} />}
       {m.tipo === 'videoconferencia' && <Sessao m={m} eDocente={eDocente} feito={feito} setProgresso={setProgresso} falhou={falhou} />}
     </div>

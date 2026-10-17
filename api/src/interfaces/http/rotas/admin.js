@@ -140,6 +140,14 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     )
   }
 
+  // ---------- ferramentas externas (LTI 1.3) ----------
+
+  const lti = servicos.ensino.lti
+  r.get('/academico/lti', async (req, res) => res.json(await lti.listar(ctx(req), baseUrl(req, config))))
+  r.post('/academico/lti', validar({ body: E.ferramentaLti }), async (req, res) => res.status(201).json(await lti.criar(ctx(req), req.dados.body)))
+  r.put('/academico/lti/:id', validar({ params: pNumero, body: E.ferramentaLti }), async (req, res) => res.json(await lti.atualizar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/academico/lti/:id', validar({ params: pNumero }), async (req, res) => { await lti.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
+
   // ---------- mensagens do formulário de contacto ----------
 
   r.get('/contactos', async (req, res) => res.json(await servicos.contactos.listar(ctx(req))))

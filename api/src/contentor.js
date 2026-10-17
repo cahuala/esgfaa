@@ -6,6 +6,9 @@ import { RepositorioPaginas } from './infraestrutura/repositorios/paginas.js'
 import { RepositorioInteracoes } from './infraestrutura/repositorios/interacoes.js'
 import { RepositorioContactos } from './infraestrutura/repositorios/contactos.js'
 import { RepositorioPacotes } from './infraestrutura/repositorios/pacotes.js'
+import { RepositorioLti } from './infraestrutura/repositorios/lti.js'
+import { chavesLti } from './infraestrutura/lti/chaves.js'
+import { ServicoLti } from './aplicacao/academico/lti.js'
 import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
 import { RepositorioPublicidade } from './infraestrutura/repositorios/publicidade.js'
 import { RepositorioAtividades } from './infraestrutura/repositorios/atividades.js'
@@ -114,6 +117,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     interacoes: new RepositorioInteracoes({ prisma, fuso }),
     contactos: new RepositorioContactos({ prisma }),
     pacotes: new RepositorioPacotes({ prisma }),
+    lti: new RepositorioLti({ prisma }),
     visitas: new RepositorioVisitas({ prisma, fuso }),
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
@@ -181,9 +185,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   })
   // casos de uso do portal académico (estudantes e docentes)
   const ensino = () => {
+    const lti = new ServicoLti({ lti: r.lti, academico: r.academico, contas: r.contasPortal, apoio, disponibilidade, registos, auditoria, chaves: chavesLti(config.pastaDados), segredo: config.segredoJwt })
     const pacotes = new ServicoPacotes({ pacotes: r.pacotes, academico: r.academico, recursos: r.recursos, contas: r.contasPortal, apoio, disponibilidade, registos, privados, segredo: config.segredoJwt })
     const d = {
-      pacotes, academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
+      lti, pacotes, academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
       registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade, jitsiUrl: config.jitsiUrl,
     }
     return {
@@ -201,6 +206,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       questionarios: new ServicoQuestionarios(d),
       licoes: new ServicoLicoes(d),
       pacotes,
+      lti,
       copiaSeguranca: new ServicoCopiaSeguranca({ copiasRepo: r.copias, academico: r.academico, privados, apoio, auditoria, filtroHtml: filtrarHtml, relogio, config }),
     }
   }

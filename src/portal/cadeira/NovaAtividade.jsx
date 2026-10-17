@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { api, enviarComProgresso } from '../api'
 import { Campo } from '../componentes'
 import { localParaIso } from '../formatar'
@@ -24,6 +24,7 @@ const OPCOES = [
   { id: 'sondagem', icone: 'fa-poll', cor: 'bg-cyan', nome: 'Sondagem', texto: tx('Uma pergunta de escolha aos estudantes') },
   { id: 'workshop', icone: 'fa-people-arrows', cor: 'bg-green', nome: 'Avaliação por pares', texto: tx('Os estudantes entregam e avaliam trabalhos uns dos outros') },
   { id: 'scorm', icone: 'fa-cube', cor: 'bg-blue', nome: 'Pacote SCORM', texto: tx('Curso em formato SCORM (.zip), com nota e progresso') },
+  { id: 'lti', icone: 'fa-plug', cor: 'bg-gray-600', nome: 'Ferramenta externa', texto: tx('Laboratório virtual, simulador ou outra plataforma ligada ao portal (LTI)') },
   { id: 'h5p', icone: 'fa-puzzle-piece', cor: 'bg-lime', nome: 'Conteúdo H5P', texto: tx('Exercício interativo H5P (.h5p): perguntas, vídeos interativos, arrastar…') },
 ]
 const RESULTADOS = { apos_responder: tx('Depois de responderem'), apos_fecho: tx('Só depois do fecho'), nunca: tx('Nunca (só o docente)') }
@@ -63,6 +64,11 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
           progresso(i, 100)
         }
         avisar({ texto: ficheiros.length > 1 ? tx('{0} ficheiros publicados.', { 0: ficheiros.length }) : tx('Ficheiro publicado.') })
+        return criada()
+      }
+      if (tipo === 'lti') {
+        await api(`/cadeiras/${c.id}/materiais`, { metodo: 'POST', corpo: { tipo, titulo: f.titulo, descricao: f.descricao, secaoId, ferramentaId: Number(f.ferramentaId), url: f.url } })
+        avisar({ texto: tx('Ferramenta externa juntada à cadeira.') })
         return criada()
       }
       // SCORM e H5P: um zip (o .h5p também é um zip, mas o navegador não sabe o tipo)
@@ -187,6 +193,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                     </>
                   )}
                   {(tipo === 'scorm' || tipo === 'h5p') && <ZonaUpload id="na-pacote" ficheiros={ficheiros} aoMudar={(l) => { setFicheiros(l.slice(-1)); if (!f.titulo && l[0]) setF((x) => ({ ...x, titulo: l[0].ficheiro.name.replace(/\.[^.]+$/, '') })) }} desativado={aEnviar} aceitar={tipo === 'scorm' ? '.zip' : '.h5p,.zip'} nota={tipo === 'scorm' ? tx('Pacote SCORM 1.2 ou 2004 (.zip com o imsmanifest.xml)') : tx('Ficheiro .h5p descarregado com as bibliotecas (por exemplo, do H5P.com ou do Lumi)')} />}
+                  {tipo === 'lti' && <EscolherFerramenta f={f} setF={setF} />}
                   {tipo !== 'ficheiro' && <Campo id="na-titulo" rotulo={tx('Título')}><input id="na-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} maxLength={200} required /></Campo>}
                   {tipo === 'pagina' && (
                     <div>
@@ -289,6 +296,27 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
         </div>
       </div>
       <div className="modal-backdrop fade show" />
+    </>
+  )
+}
+
+// ferramentas externas que a Administração Escolar registou
+function EscolherFerramenta({ f, setF }) {
+  const [lista, setLista] = useState(null)
+  useEffect(() => {
+    api('/lti/ferramentas').then((l) => {
+      setLista(l)
+      if (l[0] && !f.ferramentaId) setF((x) => ({ ...x, ferramentaId: String(l[0].id), titulo: x.titulo || l[0].nome }))
+    }).catch(() => setLista([]))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!lista) return <div className="text-muted small">{tx('A carregar…')}</div>
+  if (!lista.length) return <div className="alert alert-info mb-0">{tx('Ainda não há ferramentas externas. A Administração Escolar regista-as no painel (Ferramentas externas).')}</div>
+  return (
+    <>
+      <Campo id="na-ferramenta" rotulo={tx('Ferramenta')}>
+        <select id="na-ferramenta" value={f.ferramentaId || ''} onChange={(e) => setF({ ...f, ferramentaId: e.target.value })}>{lista.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select>
+      </Campo>
+      <Campo id="na-lti-url" rotulo={tx('Endereço de uma atividade concreta dentro da ferramenta (opcional)')}><input id="na-lti-url" type="url" placeholder="https://…" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} /></Campo>
     </>
   )
 }

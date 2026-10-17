@@ -189,6 +189,10 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
   r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await e.organizacao.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await e.organizacao.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
+  // ferramentas externas (LTI 1.3): as que o docente pode usar, e o início do lançamento
+  r.get('/lti/ferramentas', async (req, res) => res.json(await e.lti.ativas()))
+  r.post('/materiais/:id/lti', validar({ params: pId }), async (req, res) => res.json(await e.lti.lancamento(ctx(req), req.dados.params.id, baseUrl(req, config))))
+
   // pacotes SCORM e H5P: endereço do leitor (assinado) e resultados da turma
   r.post('/materiais/:id/pacote', validar({ params: pId }), async (req, res) => res.json(await e.pacotes.abrir(ctx(req), req.dados.params.id, baseUrl(req, config))))
   r.get('/materiais/:id/pacote/resultados', validar({ params: pId }), async (req, res) => res.json(await e.pacotes.resultados(ctx(req), req.dados.params.id)))
