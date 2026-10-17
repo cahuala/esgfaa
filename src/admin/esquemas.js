@@ -431,7 +431,7 @@ export const POSICOES_BANNER = [
 export const NOMES_RECURSOS = {
   noticias: tx('Notícias'), artigos: tx('Artigos'), eventos: tx('Eventos'), cursos: tx('Cursos'), pessoas: tx('Corpo docente'), revistas: tx('Revista'),
   publicidade: tx('Publicidade'), paginas: tx('Páginas do site'), comentarios: tx('Comentários'), contactos: tx('Mensagens do site'), academico: tx('Gestão académica (portal)'), pessoal: tx('Pessoal e Quadros'), biblioteca: tx('Biblioteca'), integridade: tx('Integridade académica (anti-plágio)'), estatisticas: tx('Estatísticas'),
-  utilizadores: tx('Utilizadores'), papeis: tx('Papéis e permissões'), atividades: tx('Registo de atividades'),
+  utilizadores: tx('Utilizadores'), papeis: tx('Papéis e permissões'), atividades: tx('Registo de atividades'), seguranca: tx('Centro de segurança'),
 }
 export const NOMES_PERMISSOES = { ver: tx('Ver'), criar: tx('Criar'), editar: tx('Editar'), apagar: tx('Apagar'), publicar: tx('Publicar'), gerir: tx('Gerir'), notas: tx('Notas'), registar: tx('Registar') }
 
@@ -506,6 +506,8 @@ export const NOMES_ACOES = {
   carregar_ficheiro: tx('Carregou ficheiro'),
   apagar_comentario: tx('Apagou comentário'),
   apagar_contacto: tx('Apagou mensagem do site'),
+  bloquear_ip: tx('Bloqueou um endereço'),
+  desbloquear_ip: tx('Desbloqueou um endereço'),
   criar_ferramenta_lti: tx('Registou ferramenta externa (LTI)'),
   editar_ferramenta_lti: tx('Editou ferramenta externa (LTI)'),
   apagar_ferramenta_lti: tx('Apagou ferramenta externa (LTI)'),

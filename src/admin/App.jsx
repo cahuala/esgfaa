@@ -10,6 +10,7 @@ import EditarPagina from './paginas/EditarPagina'
 import Comentarios from './paginas/Comentarios'
 import MensagensSite from './paginas/MensagensSite'
 import FerramentasLti from './paginas/academico/FerramentasLti'
+import CentroSeguranca from './paginas/CentroSeguranca'
 import Turmas from './paginas/academico/Turmas'
 import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
@@ -90,6 +91,7 @@ function App() {
         {pode('utilizadores.ver') && <Route path="/utilizadores" element={<Utilizadores />} />}
         {(pode('papeis.ver') || pode('papeis.gerir')) && <Route path="/papeis" element={<Papeis />} />}
         {pode('atividades.ver') && <Route path="/atividades" element={<Atividades />} />}
+        {pode('seguranca.ver') && <Route path="/seguranca" element={<CentroSeguranca />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

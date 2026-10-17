@@ -21,6 +21,18 @@ export function criarApp(contentor, { registarErro } = {}) {
   app.set('etag', false)
 
   app.use(idPedido)
+
+  // Centro de segurança: endereços bloqueados ficam por aqui; os outros pedidos são contados e classificados à saída
+  const seguranca = servicos.seguranca
+  app.use((req, res, next) => {
+    if (seguranca.estaBloqueado(req.ip)) {
+      seguranca.registarBloqueado(req.ip, req.originalUrl)
+      return res.status(403).json({ erro: 'Este endereço está bloqueado por motivos de segurança. Se for um engano, contacte a Escola.', codigo: 'bloqueado' })
+    }
+    const inicio = process.hrtime.bigint()
+    res.on('finish', () => seguranca.registarPedido({ ip: req.ip, metodo: req.method, url: req.originalUrl, estado: res.statusCode, ms: Number((process.hrtime.bigint() - inicio) / 1_000_000n) }))
+    next()
+  })
   if (config.registos === 'json') app.use(registoPedidos())
 
   app.use(helmet({

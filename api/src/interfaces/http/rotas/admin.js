@@ -140,6 +140,17 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     )
   }
 
+  // ---------- Centro de segurança ----------
+
+  r.get('/seguranca', async (req, res) => res.json(await servicos.seguranca.painel(ctx(req))))
+  r.post('/seguranca/bloqueios', validar({ body: z.object({ ip: z.string().max(45), horas: z.number().optional(), motivo: z.string().max(300).optional() }) }), async (req, res) => {
+    res.status(201).json(await servicos.seguranca.bloquear(ctx(req), req.dados.body, req.ip))
+  })
+  r.delete('/seguranca/bloqueios/:ip', validar({ params: z.object({ ip: z.string().max(45) }) }), async (req, res) => {
+    await servicos.seguranca.desbloquear(ctx(req), req.dados.params.ip)
+    res.status(204).end()
+  })
+
   // ---------- ferramentas externas (LTI 1.3) ----------
 
   const lti = servicos.ensino.lti

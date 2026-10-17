@@ -190,7 +190,8 @@ function Layout({ children }) {
             {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto={tx('Comentários')} />}
             {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto={tx('Publicidade')} />}
 
-            {(pode('utilizadores.ver') || pode('papeis.ver') || pode('atividades.ver')) && <div className="menu-header">{tx('Segurança')}</div>}
+            {(pode('utilizadores.ver') || pode('papeis.ver') || pode('atividades.ver') || pode('seguranca.ver')) && <div className="menu-header">{tx('Segurança')}</div>}
+            {pode('seguranca.ver') && <ItemMenu para="/seguranca" icone="fa-user-shield" texto={tx('Centro de segurança')} />}
             {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto={tx('Utilizadores')} />}
             {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto={tx('Papéis e permissões')} />}
             {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto={tx('Registo de atividades')} />}

@@ -20,6 +20,7 @@ export const RECURSOS = [
   { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
   { id: 'atividades', acoes: ['ver'] },
+  { id: 'seguranca', acoes: ['ver', 'gerir'] },
 ]
 
 export const TODAS = RECURSOS.flatMap((r) => r.acoes.map((a) => `${r.id}.${a}`))

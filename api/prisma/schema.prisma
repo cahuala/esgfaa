@@ -1337,6 +1337,32 @@ model AnaliseIntegridade {
 // ---------- Traduções do site ----------
 
 // tradução de um conteúdo (item de uma coleção ou página) para uma língua; o original fica em português
+// eventos de segurança, agregados por minuto, tipo e endereço (o Centro de segurança do painel)
+model EventoSeguranca {
+  id       Int      @id @default(autoincrement())
+  minuto   DateTime @db.Timestamptz(3)
+  tipo     String
+  ip       String
+  contagem Int      @default(1)
+  exemplo  String   @default("") // um dos endereços pedidos (sem dados pessoais)
+
+  @@index([minuto])
+  @@index([ip, minuto])
+  @@map("eventos_seguranca")
+}
+
+// endereços bloqueados (à mão no Centro de segurança, ou sozinhos quando um robô procura falhas)
+model BloqueioIp {
+  ip         String   @id
+  ate        DateTime @db.Timestamptz(3)
+  motivo     String   @default("")
+  automatico Boolean  @default(false)
+  criadoPor  String   @default("") @map("criado_por")
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@map("bloqueios_ip")
+}
+
 // ferramenta externa ligada por LTI 1.3 (o portal é a plataforma; a Administração Escolar regista a ferramenta)
 model FerramentaLti {
   id                Int      @id @default(autoincrement())

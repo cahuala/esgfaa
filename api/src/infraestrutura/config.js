@@ -34,6 +34,8 @@ const ESQUEMA = z.object({
   EMAIL_REMETENTE: z.string().default('Portal Académico ESG <portal@esgfaa.gov.ao>'),
   // para onde vai o aviso de cada mensagem do formulário de contacto do site (vazio: só no painel)
   CONTACTOS_EMAIL: z.union([z.literal(''), z.email()]).default(''),
+  // quem recebe o alerta quando o Centro de segurança deteta um ataque (precisa do SMTP_URL)
+  SEGURANCA_EMAIL: z.union([z.literal(''), z.email()]).default(''),
   // servidor Jitsi das salas de videoconferência do portal (o ideal é um servidor da Escola; meet.jit.si limita as salas incorporadas)
   JITSI_URL: z.url().default('https://meet.jit.si'),
   PORTAL_URL: z.union([z.literal(''), z.url()]).default(''),
@@ -102,6 +104,7 @@ export function criarConfig(env = process.env, extras = {}) {
     smtp: e.SMTP_URL,
     remetente: e.EMAIL_REMETENTE,
     emailContactos: e.CONTACTOS_EMAIL,
+    emailSeguranca: e.SEGURANCA_EMAIL,
     jitsiUrl: e.JITSI_URL.replace(/\/$/, ''),
     // endereço do portal usado nas ligações dos e-mails (ex.: https://escola.ao/portal/)
     urlPortal: e.PORTAL_URL.replace(/\/$/, ''),

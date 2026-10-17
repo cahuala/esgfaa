@@ -24,6 +24,9 @@ await contentor.servicos.integridade.retomar()
 // traduções automáticas que faltem (conteúdos publicados antes de haver tradutor)
 contentor.servicos.traducoes.completar().catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: 'Traduções', erro: e.message })))
 
+// Centro de segurança: grava os eventos, carrega os bloqueios e envia os alertas
+contentor.servicos.seguranca.iniciar()
+
 const app = criarApp(contentor)
 const servidor = app.listen(config.porta, () => {
   console.log(`API ESGFAA a correr em http://localhost:${config.porta}`)

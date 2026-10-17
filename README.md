@@ -126,6 +126,18 @@ Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (pu
 - **palavras-passe à força:** a conta bloqueia ao fim de 5 falhas (15 minutos), há limites por endereço, e a mensagem é a mesma para e-mail inexistente e palavra-passe errada;
 - **cabeçalhos de segurança** (helmet), CORS só para os sites autorizados, corpos grandes recusados, erros sem detalhes internos.
 
+**Centro de segurança** (painel → Segurança → Centro de segurança; permissões `seguranca.ver` e `seguranca.gerir`, só o administrador as tem por omissão), atualizado de 10 em 10 segundos:
+- **estado geral** (tudo normal / atenção / possível ataque) pelos últimos 5 minutos, com os motivos;
+- **saúde do servidor:** ligado há quanto tempo, base de dados (ligada e em quantos ms responde), pedidos por minuto, tempo de resposta médio e de 95 % dos pedidos, erros do servidor, processador, memória da API e disco;
+- **gráficos** da última hora (pedidos e eventos suspeitos por minuto) e das últimas 24 horas (eventos por hora e por tipo);
+- **ao vivo:** cada evento suspeito com a hora, o tipo, o endereço e o que pediu — palavra-passe errada, conta bloqueada, demasiados pedidos, acesso negado, procura de ficheiros de ataque (`.env`, `.git`, `wp-admin`, `phpmyadmin`…), tentativas de injeção (SQL, script, `../`), erros do servidor;
+- **endereços mais ativos** (15 min) com o botão **Bloquear**, e a lista dos **bloqueados** (desbloquear, ou bloquear à mão um endereço por 1 hora a 30 dias). Um endereço bloqueado recebe 403 em tudo (site, portal e painel);
+- **bloqueio automático:** um endereço que, em 5 minutos, faz 20 procuras de ficheiros de ataque ou 5 tentativas de injeção fica bloqueado 24 horas (os erros de palavra-passe não bloqueiam o endereço, porque numa rede partilhada, como a da Escola, bloqueariam todos — para esses há o bloqueio da conta e os limites por endereço);
+- **modo vigilância:** ecrã inteiro e escuro, para deixar num ecrã de parede, com **alarme sonoro** opcional quando o nível passa a "possível ataque";
+- **alerta por e-mail** (no máximo um a cada 30 minutos) com `SEGURANCA_EMAIL` e `SMTP_URL`.
+
+Os eventos guardam-se juntos por minuto, tipo e endereço durante 90 dias (sem palavras-passe nem dados pessoais); os números de tráfego ficam em memória (últimas 24 horas desde o arranque).
+
 **Dependências:** `npm audit` sem vulnerabilidades no site/painel e na API (a ferramenta do Prisma trazia versões com falhas do `deepmerge-ts` e do `mysql2`, que o `package.json` da API força para versões corrigidas).
 
 **Teste de carga** (`cd api && npm run carga`; `ESTUDANTES=300 SEGUNDOS=30 npm run carga` para mais): monta uma Escola de teste numa base temporária (não toca na real), com uma turma de 100 estudantes, e mede cada cenário durante 15 s. Resultados num Mac (M-series), API e PostgreSQL no mesmo computador:
@@ -156,6 +168,7 @@ Variáveis de ambiente obrigatórias em produção (ver `api/.env.example`):
 | `CORS_ORIGINS` | sites autorizados, ex.: `https://cahuala.github.io` |
 | `DATABASE_URL` | ligação ao PostgreSQL, ex.: `postgresql://utilizador:senha@servidor:5432/esgfaa` |
 | `DATA_DIR` | pasta persistente para os ficheiros carregados |
+| `SEGURANCA_EMAIL` | quem recebe o alerta quando o Centro de segurança deteta um possível ataque (precisa do `SMTP_URL`) |
 | `CONTACTOS_EMAIL` | e-mail que recebe um aviso de cada mensagem do formulário de contacto do site (precisa do `SMTP_URL`; sem ele, as mensagens ficam só no painel, em **Mensagens do site**) |
 | `JITSI_URL` | servidor Jitsi das salas de videoconferência do portal (por omissão `https://meet.jit.si`, gratuito, mas que limita as salas dentro de outros sites e pede a quem abre a sala que entre com uma conta; para uso real, instale um servidor Jitsi da Escola — é gratuito — e ponha aqui o endereço) |
 | `DB_POOL` | ligações simultâneas ao PostgreSQL (10 por omissão; ex.: 30 num servidor com muitos utilizadores) |

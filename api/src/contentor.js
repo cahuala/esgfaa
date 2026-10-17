@@ -7,6 +7,9 @@ import { RepositorioInteracoes } from './infraestrutura/repositorios/interacoes.
 import { RepositorioContactos } from './infraestrutura/repositorios/contactos.js'
 import { RepositorioPacotes } from './infraestrutura/repositorios/pacotes.js'
 import { RepositorioLti } from './infraestrutura/repositorios/lti.js'
+import { RepositorioSeguranca } from './infraestrutura/repositorios/seguranca.js'
+import { Monitor } from './infraestrutura/monitor/monitor.js'
+import { ServicoSeguranca } from './aplicacao/seguranca.js'
 import { chavesLti } from './infraestrutura/lti/chaves.js'
 import { ServicoLti } from './aplicacao/academico/lti.js'
 import { RepositorioVisitas } from './infraestrutura/repositorios/visitas.js'
@@ -118,6 +121,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     contactos: new RepositorioContactos({ prisma }),
     pacotes: new RepositorioPacotes({ prisma }),
     lti: new RepositorioLti({ prisma }),
+    seguranca: new RepositorioSeguranca({ prisma }),
     visitas: new RepositorioVisitas({ prisma, fuso }),
     publicidade: new RepositorioPublicidade({ prisma, fuso }),
     atividades: new RepositorioAtividades({ prisma }),
@@ -239,6 +243,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
+    seguranca: new ServicoSeguranca({ monitor: new Monitor(), seguranca: r.seguranca, correio, emailAlerta: config.emailSeguranca, auditoria, pastaDados: config.pastaDados, registar: (x) => console.error(JSON.stringify(x)) }),
     contactos: new ServicoContactos({ contactos: r.contactos, correio, emailDestino: config.emailContactos, auditoria, registar: (x) => console.error(JSON.stringify(x)) }),
     interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
     estatisticas: new ServicoEstatisticas({
@@ -273,6 +278,6 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     },
   }
 
-  const fechar = () => prisma.$disconnect()
+  const fechar = async () => { await servicos.seguranca.parar(); await prisma.$disconnect() }
   return { config, prisma, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
 }
