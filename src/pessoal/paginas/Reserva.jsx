@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDados } from '../useDados'
 import Tabela from '../componentes/Tabela'
+import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Escolha, Painel } from '../componentes/Ui'
 import { dataPt } from '../formatar'
 
@@ -19,7 +20,7 @@ export default function Reserva() {
     { chave: 'passagem', titulo: 'Passa à', valor: (l) => (l.passagem === 'reserva' ? 'Reserva' : 'Reforma'), mostrar: (l) => <span className={`badge ${l.passagem === 'reserva' ? 'bg-warning text-dark' : 'bg-danger'}`}>{l.passagem === 'reserva' ? 'Reserva' : 'Reforma'}</span> },
     { chave: 'posto', titulo: 'Posto', valor: (l) => l.postoNome },
     { chave: 'nip', titulo: 'NIP', valor: (l) => l.nip },
-    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome },
+    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome, mostrar: (l) => <span className="pes-pessoa"><Foto pessoaId={l.id} fotoId={l.fotoId} nome={l.nome} /><strong>{l.nome}</strong></span> },
     { chave: 'ramo', titulo: 'Ramo', valor: (l) => l.ramo },
     { chave: 'idade', titulo: 'Idade', valor: (l) => l.idade, alinhar: 'end' },
     { chave: 'cargo', titulo: 'Cargo', valor: (l) => l.cargoNome },

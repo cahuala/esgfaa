@@ -69,7 +69,7 @@ const GRAUS = [
 export const POSTOS = Object.fromEntries(GRAUS.map((p) => [p.id, p]))
 export const POSTOS_POR_GRAU = Object.fromEntries(GRAUS.map((p) => [p.grau, p]))
 
-const ABREVIATURAS = {
+export const ABREVIATURAS = {
   Soldado: 'Sold.', Grumete: 'Grum.', '2.º Cabo': '2.º Cabo', Marinheiro: 'Mar.', Subsargento: 'Subsarg.', '2.º Sargento': '2.º Sarg.', '1.º Sargento': '1.º Sarg.',
   'Sargento-Ajudante': 'Sarg.-Aj.', 'Sargento-Chefe': 'Sarg.-Ch.', 'Sargento-Maior': 'Sarg.-Mor', Aspirante: 'Asp.', Subtenente: 'Subten.', 'Tenente-de-Corveta': 'Ten.-Cv.',
   Tenente: 'Ten.', 'Tenente-de-Fragata': 'Ten.-Fr.', Capitão: 'Cap.', 'Tenente-de-Navio': 'Ten.-Nav.', Major: 'Maj.', 'Capitão-de-Corveta': 'Cap.-Cv.',

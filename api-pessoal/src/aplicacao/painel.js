@@ -20,6 +20,9 @@ export class ServicoPainel {
     exigir(u, 'ver')
     const todos = await this.pessoas.listar(u, {})
     const mil = todos.filter((p) => p.tipo === 'militar')
+    const mulheres = todos.filter((p) => p.genero === 'F')
+    const milF = mil.filter((p) => p.genero === 'F')
+    const domiciliares = await this.bd.pessoa.count({ where: { ativo: true, vinculo: 'domiciliar' } })
     const civ = todos.filter((p) => p.tipo === 'civil')
     const hoje = this.agora()
     const anoAtual = hoje.getUTCFullYear()
@@ -63,12 +66,13 @@ export class ServicoPainel {
         total: todos.length, militares: mil.length, civis: civ.length,
         docentes: todos.filter((p) => p.vinculo === 'docente').length, estudantes: todos.filter((p) => p.vinculo === 'estudante').length, funcionarios: todos.filter((p) => p.vinculo === 'funcionario').length,
         oficiais: mil.filter((p) => p.grupo === 'oficiais').length, sargentos: mil.filter((p) => p.grupo === 'sargentos').length, pracas: mil.filter((p) => p.grupo === 'pracas').length,
-        mulheres: todos.filter((p) => p.genero === 'F').length,
+        mulheres: mulheres.length, mulheresMilitares: milF.length, mulheresOficiais: milF.filter((p) => p.grupo === 'oficiais').length,
+        domiciliares,
         elegiveis: todos.filter((p) => p.elegivelPromocao && (p.tipo === 'civil' || p.situacao === 'activo')).length,
         emLicenca: emLicenca.size,
         graduados: mil.filter((p) => p.graduacoes?.length).length,
         semCargo: todos.filter((p) => !p.cargoId && p.vinculo !== 'estudante').length,
-        propostasDespacho: propostas.filter((p) => p.estado === 'submetida').length,
+        propostasDespacho: propostas.filter((p) => p.estado === 'enviada').length,
         propostasPreparacao: propostas.filter((p) => p.estado === 'rascunho').length,
         reservaEsteAno: projecao.filter((x) => x.passagem === 'reserva' && x.data.startsWith(String(anoAtual))).length,
         lugares, lugaresOcupados: ocupados,
@@ -87,6 +91,12 @@ export class ServicoPainel {
         situacao: contar(mil, 'situacao', SITUACOES).map(base({ tipo: 'militar' })),
         quadro: contar(mil, (p) => p.quadroEspecial && `${p.quadroEspecial}`, (v) => mil.map((p) => p.quadroEspecial === v && quadroEspecial(p.ramo, v)?.nome).find(Boolean) || v, 'quadroEspecial').slice(0, 12).map(base({ tipo: 'militar' })),
         genero: contar(todos, 'genero', GENEROS),
+        // mulheres: por ramo, por categoria, por posto, por vínculo e a proporção em cada ramo
+        mulheresRamo: contar(milF, 'ramo', Object.fromEntries(Object.entries(RAMOS).map(([k, v]) => [k, v.nome]))).map(base({ tipo: 'militar', genero: 'F' })),
+        mulheresCategoria: contar(milF, 'categoria', Object.fromEntries(Object.entries(CATEGORIAS).map(([k, v]) => [k, v.nome])), 'categoria', (a, b) => Object.keys(CATEGORIAS).indexOf(a.chave) - Object.keys(CATEGORIAS).indexOf(b.chave)).map(base({ tipo: 'militar', genero: 'F' })),
+        mulheresPosto: contar(milF, 'posto', (v) => POSTOS[v]?.nomes.EXE, 'posto', (a, b) => POSTOS[b.chave].grau - POSTOS[a.chave].grau).map(base({ tipo: 'militar', genero: 'F' })),
+        mulheresVinculo: contar(mulheres, 'vinculo', VINCULOS).map(base({ genero: 'F' })),
+        generoPorRamo: Object.keys(RAMOS).map((r) => ({ ramo: r, rotulo: RAMOS[r].nome, homens: mil.filter((p) => p.ramo === r && p.genero !== 'F').length, mulheres: milF.filter((p) => p.ramo === r).length })),
         faixaEtaria: contar(todos, faixa, Object.fromEntries(FAIXAS), 'idade', (a, b) => a.chave.localeCompare(b.chave)),
         habilitacao: contar(todos, 'habilitacao', HABILITACOES, 'habilitacao', (a, b) => Object.keys(HABILITACOES).indexOf(a.chave) - Object.keys(HABILITACOES).indexOf(b.chave)),
         provincia: contar(todos, 'provincia', null),
@@ -105,7 +115,7 @@ export class ServicoPainel {
         }).filter((x) => x.ocupados + x.livres),
       },
       listas: {
-        despacho: propostas.filter((p) => p.estado === 'submetida').sort((a, b) => a.submetidaEm - b.submetidaEm).slice(0, 8).map((p) => ({ id: p.id, titulo: p.titulo, tipoNome: TIPOS_PROPOSTA[p.tipo]?.nome, pessoas: p._count.itens, submetidaEm: p.submetidaEm })),
+        despacho: propostas.filter((p) => p.estado === 'enviada').sort((a, b) => a.submetidaEm - b.submetidaEm).slice(0, 8).map((p) => ({ id: p.id, titulo: p.titulo, tipoNome: TIPOS_PROPOSTA[p.tipo]?.nome, pessoas: p._count.itens, submetidaEm: p.submetidaEm })),
         reserva: projecao.slice(0, 8),
         aniversarios: todos.filter((p) => p.dataNascimento?.slice(5, 7) === hojeTxt.slice(5, 7)).sort((a, b) => a.dataNascimento.slice(8).localeCompare(b.dataNascimento.slice(8))).slice(0, 10).map((p) => ({ id: p.id, nome: p.nome, descricao: p.descricao, dia: p.dataNascimento.slice(8), idade: p.idade + (p.dataNascimento.slice(5) > hojeTxt.slice(5) ? 1 : 0) })),
       },

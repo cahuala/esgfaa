@@ -1,16 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from './api'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessao'
 import Brasao from '../assets/Logo.png'
 import Sede from '../assets/Escola De Guerra.png'
 
-function Item({ para, icone, texto, fim }) {
+function Item({ para, icone, texto, fim, contador = 0 }) {
   const ativo = useMatch({ path: para, end: Boolean(fim) })
   return (
     <div className={`menu-item ${ativo ? 'active' : ''}`}>
       <NavLink to={para} end={fim} className="menu-link">
         <div className="menu-icon"><i className={`fa ${icone}`} /></div>
         <div className="menu-text">{texto}</div>
+        {contador > 0 && <div className="menu-badge"><span className="badge bg-danger">{contador}</span></div>}
       </NavLink>
     </div>
   )
@@ -22,6 +24,16 @@ export default function Layout({ children }) {
   const [menuEm, setMenuEm] = useState(null)
   const [minimizado, setMinimizado] = useState(false)
   const menuMovel = menuEm === pathname
+  // documentos por receber e mensagens por ler (de 30 em 30 segundos, e logo que se lê uma conversa)
+  const [avisos, setAvisos] = useState({ porReceber: 0, mensagens: 0 })
+  useEffect(() => {
+    const ver = () => api('/avisos').then(setAvisos).catch(() => {})
+    ver()
+    const id = setInterval(ver, 30_000)
+    window.addEventListener('pes-avisos', ver)
+    return () => { clearInterval(id); window.removeEventListener('pes-avisos', ver) }
+  }, [])
+  const gestao = pode('ver')
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 
   return (
@@ -31,7 +43,7 @@ export default function Layout({ children }) {
           <Link to="/" className="navbar-brand">
             <img src={Brasao} alt="" className="admin-brasao" />
             <span className="esg-cabecalho-titulo">
-              <b>Gestão de Pessoal</b>
+              <b>{gestao ? 'Gestão de Pessoal' : 'Expediente e Mensagens'}</b>
               <small>Escola Superior de Guerra</small>
             </span>
           </Link>
@@ -47,7 +59,7 @@ export default function Layout({ children }) {
             <span className="admin-avatar">{iniciais}</span>
             <span className="d-none d-md-inline">
               <span className="fw-bold d-block lh-1">{utilizador.nome}</span>
-              <small className="text-muted">{utilizador.papelNome}</small>
+              <small className="text-muted">{utilizador.unidadeNome || utilizador.papelNome}</small>
             </span>
             <button type="button" className="btn btn-sm btn-outline-secondary ms-2" onClick={sair} title="Sair"><i className="fa fa-sign-out-alt" /></button>
           </div>
@@ -59,28 +71,39 @@ export default function Layout({ children }) {
           <div className="menu">
             <div className="esg-marca">
               <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="esg-marca-brasao" />
-              <div className="esg-marca-nome">Pessoal e Quadros</div>
+              <div className="esg-marca-nome">{gestao ? 'Pessoal e Quadros' : 'Sistema interno'}</div>
               <div className="esg-marca-sub">Exército · Força Aérea · Marinha · Civis</div>
             </div>
-            <div className="menu-header">Geral</div>
-            <Item para="/" fim icone="fa-chart-pie" texto="Painel" />
-            <Item para="/pessoas" icone="fa-users" texto="Pessoal" />
-            {pode('editar') && <Item para="/pessoas/nova" icone="fa-user-plus" texto="Nova ficha" />}
+            {gestao && <>
+              <div className="menu-header">Geral</div>
+              <Item para="/" fim icone="fa-chart-pie" texto="Painel" />
+              <Item para="/pessoas" icone="fa-users" texto="Pessoal" />
+              {pode('editar') && <Item para="/pessoas/nova" icone="fa-user-plus" texto="Nova ficha" />}
+              {pode('editar') && <Item para="/importar" icone="fa-file-import" texto="Importar Excel e fotos" />}
+              <Item para="/processos" icone="fa-folder-open" texto="Processos individuais" />
 
-            <div className="menu-header">Carreiras</div>
-            <Item para="/propostas" icone="fa-file-signature" texto="Propostas" />
-            <Item para="/elegiveis" icone="fa-medal" texto="Em condições de promoção" />
-            <Item para="/antiguidade" icone="fa-list-ol" texto="Listas de antiguidade" />
-            <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
-            <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
+              <div className="menu-header">Carreiras</div>
+              <Item para="/propostas" icone="fa-file-signature" texto="Propostas" />
+              <Item para="/extractos" icone="fa-file-contract" texto="Extractos" />
+              <Item para="/elegiveis" icone="fa-medal" texto="Em condições de promoção" />
+              <Item para="/antiguidade" icone="fa-list-ol" texto="Listas de antiguidade" />
+              <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
+              <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
 
-            <div className="menu-header">Organização</div>
-            <Item para="/quadro" icone="fa-sitemap" texto="Quadro orgânico" />
+              <div className="menu-header">Organização</div>
+              <Item para="/organica" icone="fa-sitemap" texto="Orgânica e planeamento" />
+              <Item para="/domiciliares" icone="fa-house-user" texto="Empregados domiciliares" />
+            </>}
+
+            <div className="menu-header">Comunicação</div>
+            <Item para="/expediente" icone="fa-inbox" texto="Expediente" contador={avisos.porReceber} />
+            <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
+            {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
 
             {pode('administrar') && <div className="menu-header">Administração</div>}
             {pode('administrar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
             {pode('administrar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
-            {pode('ver') && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
+            {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
             <Item para="/senha" icone="fa-key" texto="Mudar palavra-passe" />
 
             <div className="menu-divider" />

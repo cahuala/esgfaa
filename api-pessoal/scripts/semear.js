@@ -9,6 +9,8 @@ import { criarPrisma } from '../src/infraestrutura/bd.js'
 import { POSTOS, quadrosDoRamo } from '../src/dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../src/dominio/pessoal/civis.js'
 import { PROVINCIAS } from '../src/dominio/pessoal/ficha.js'
+import { limiteDomiciliares } from '../src/dominio/pessoal/domiciliares.js'
+import { CifraSenhas } from '../src/infraestrutura/cifra.js'
 
 const config = criarConfig()
 const bd = criarPrisma(config.urlBaseDados)
@@ -56,6 +58,10 @@ async function main() {
   if (await bd.pessoa.count()) {
     if (!forcar) return console.log('Já há fichas: nada a fazer (use --forcar para apagar e voltar a criar).')
     await bd.proposta.deleteMany()
+    await bd.extracto.deleteMany()
+    await bd.expediente.deleteMany()
+    await bd.conversa.deleteMany()
+    await bd.utilizador.deleteMany({ where: { papel: 'utente' } })
     await bd.pessoa.deleteMany()
     await bd.cargo.deleteMany()
     await bd.unidade.deleteMany()
@@ -64,7 +70,8 @@ async function main() {
   const ano = hoje.getUTCFullYear()
   const unidades = {}
   for (const [i, [n, s]] of UNIDADES.entries()) unidades[s] = await bd.unidade.create({ data: { nome: n, sigla: s, ordem: i } })
-  for (const s of Object.keys(unidades)) if (s !== 'DIR') await bd.unidade.update({ where: { id: unidades[s].id }, data: { paiId: unidades.DIR.id } })
+  // o Gabinete do Director fica dentro da Direcção; as restantes áreas ficam directamente na Escola
+  await bd.unidade.update({ where: { id: unidades.GD.id }, data: { paiId: unidades.DIR.id } })
   const cargos = []
   for (const [u, n, f, posto, vagas, tipo = 'militar'] of CARGOS) cargos.push(await bd.cargo.create({ data: { nome: n, unidadeId: unidades[u].id, funcao: f, postoRequerido: posto, vagas, tipo } }))
   const livres = (c) => c.vagas - (c.ocupados ?? 0)
@@ -167,7 +174,47 @@ async function main() {
     await bd.evento.create({ data: { pessoaId: p.id, tipo: 'admissao', data: p.dataAdmissao, criadoPor: 'semear' } })
     n++
   }
-  console.log(`Criadas ${Object.keys(unidades).length} unidades, ${cargos.length} cargos e ${n} fichas.`)
+  // empregadas domiciliares de alguns oficiais superiores e generais (dentro do limite do posto)
+  let dom = 0
+  for (const o of await bd.pessoa.findMany({ where: { tipo: 'militar', vinculo: { not: 'estudante' }, posto: { in: ['major', 'tenente_coronel', 'coronel', 'brigadeiro', 'tenente_general'] } } })) {
+    const k = Math.min(limiteDomiciliares(o.posto), aleatorio() < 0.45 ? entre(1, 2) : 0)
+    for (let i = 0; i < k; i++) {
+      await bd.pessoa.create({ data: { tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: o.id, nome: `${um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}`, numeroAgente: `ED${agente++}`, genero: 'F', dataNascimento: data(ano - entre(22, 50)), provincia: um(PROVINCIAS), telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, dataAdmissao: data(ano - entre(1, 8)) } })
+      dom++
+    }
+  }
+  // processos individuais numerados, com a localização no arquivo
+  const todas = await bd.pessoa.findMany({ where: { vinculo: { not: 'domiciliar' } }, orderBy: { id: 'asc' } })
+  for (const [i, p] of todas.entries()) await bd.processo.create({ data: { pessoaId: p.id, numero: `PI-${String(i + 1).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(i / 40)), prateleira: String(1 + Math.floor((i % 40) / 10)), posicao: String(1 + (i % 10)), estado: aleatorio() < 0.85 ? 'encapado' : 'activo' } })
+
+  // contas de demonstração (utente) para o expediente e as mensagens: palavra-passe Escola2026demo
+  const cifra = new CifraSenhas()
+  const senha = await cifra.cifrar('Escola2026demo')
+  const chefes = await bd.pessoa.findMany({ where: { cargo: { funcao: { in: ['comando', 'direccao_chefia'] } } }, include: { cargo: true } })
+  const contas = []
+  for (const p of chefes) contas.push(await bd.utilizador.create({ data: { nome: p.nome, email: `${p.nip}@pessoal.interno`, papel: 'utente', pessoaId: p.id, unidadeId: p.unidadeId, senha, deveMudar: false } }))
+  const por = (sigla) => contas.find((c) => c.unidadeId === unidades[sigla].id)
+  const docs = [
+    ['DE', ['RL'], 'requerimento', 'Pedido de material didáctico para o Curso de Estado-Maior', true],
+    ['RPQ', ['DE', 'DCEM'], 'circular', 'Actualização dos dados dos processos individuais até ao fim do mês', false],
+    ['DIR', ['DE', 'DIPG', 'DCEM', 'SG'], 'ordem', 'Ordem de serviço: abertura do ano académico 2026/2027', true],
+    ['SG', ['RF'], 'oficio', 'Pedido de cabimentação orçamental para a conferência de estratégia', false],
+  ]
+  let seq = 1
+  for (const [de, para, tipo, assunto, fisico] of docs) {
+    const autor = por(de)
+    if (!autor) continue
+    const e = await bd.expediente.create({ data: { protocolo: `EXP-${ano}-${String(seq++).padStart(4, '0')}`, tipo, assunto, classificacao: tipo === 'ordem' ? 'urgente' : 'normal', origemUnidadeId: unidades[de].id, temFisico: fisico, criadoPorId: autor.id } })
+    for (const s2 of para) await bd.movimento.create({ data: { expedienteId: e.id, deUnidadeId: unidades[de].id, paraUnidadeId: unidades[s2].id, enviadoPorId: autor.id, fisico: fisico ? 'a_enviar' : 'nao_aplica', fisicoPortador: fisico ? 'Estafeta da Companhia de Serviços' : '' } })
+  }
+  // conversa geral com as primeiras mensagens do Director e dos chefes
+  const geral = await bd.conversa.create({ data: { tipo: 'geral', nome: 'Escola Superior de Guerra (todos)' } })
+  const frases = ['Bom dia a todos. Recordo a reunião de coordenação de segunda-feira às 08h00 na sala do Conselho.', 'Bom dia, meu General. A Repartição de Pessoal confirma a presença.', 'Departamento de Ensino presente. Levaremos o plano de aulas do CEM.', 'Peço às áreas que enviem pelo expediente os mapas de efectivos até sexta-feira.']
+  for (const [i, f] of frases.entries()) {
+    const autor = i === 0 ? por('DIR') : contas[i % contas.length]
+    if (autor) await bd.mensagem.create({ data: { conversaId: geral.id, autorId: autor.id, texto: f, criadoEm: new Date(Date.now() - (frases.length - i) * 600_000) } })
+  }
+  console.log(`Criadas ${Object.keys(unidades).length} unidades, ${cargos.length} cargos, ${n} fichas, ${dom} domiciliares, ${contas.length} contas de demonstração (palavra-passe Escola2026demo).`)
 }
 
 try {

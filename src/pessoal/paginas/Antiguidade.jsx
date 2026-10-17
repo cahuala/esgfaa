@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
+import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
@@ -16,7 +17,7 @@ export default function Antiguidade() {
     { chave: 'ordem', titulo: 'N.º', valor: (p) => p.ordem, alinhar: 'end' },
     { chave: 'posto', titulo: 'Posto', valor: (p) => p.postoNome, ordenarPor: (p) => 100 - p.grau },
     { chave: 'nip', titulo: 'NIP', valor: (p) => p.nip },
-    { chave: 'nome', titulo: 'Nome', valor: (p) => p.nome, mostrar: (p) => <strong>{p.nome}</strong> },
+    { chave: 'nome', titulo: 'Nome', valor: (p) => p.nome, mostrar: (p) => <span className="pes-pessoa"><Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} /><strong>{p.nome}</strong></span> },
     { chave: 'ramo', titulo: 'Ramo', valor: (p) => p.ramo },
     { chave: 'quadro', titulo: 'Quadro', valor: (p) => p.quadroEspecial },
     { chave: 'antig', titulo: 'Antiguidade no posto', valor: (p) => p.dataAntiguidadePosto, mostrar: (p) => dataPt(p.dataAntiguidadePosto) },

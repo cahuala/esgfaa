@@ -31,6 +31,11 @@ const ESQUEMA = z.object({
   // pasta com a aplicação já construída (dist/pessoal) para servir no mesmo endereço; vazio = não serve
   APP_DIR: z.string().default(''),
   MAX_FOTO_MB: inteiro(5, 1, 50),
+  // documentos do processo individual, extractos, expediente e anexos das mensagens
+  MAX_DOCUMENTO_MB: inteiro(25, 1, 200),
+  // consulta do Bilhete de Identidade na base de dados do Estado (a mesma API do SIGP); sem chave fica desligada
+  BI_API_URL: z.url().default('https://api.gov.ao/bi/v1/getBI'),
+  BI_API_KEY: z.string().default(''),
   DATA_DIR: z.string().default('dados'),
 })
 
@@ -68,5 +73,8 @@ export function criarConfig(env = process.env) {
     pastaApp: e.APP_DIR ? path.resolve(RAIZ, e.APP_DIR) : '',
     pastaFotos: path.resolve(RAIZ, e.DATA_DIR, 'fotos'),
     maxFoto: e.MAX_FOTO_MB * 1048576,
+    pastaFicheiros: path.resolve(RAIZ, e.DATA_DIR, 'ficheiros'),
+    maxDocumento: e.MAX_DOCUMENTO_MB * 1048576,
+    bi: { url: e.BI_API_URL, chave: e.BI_API_KEY },
   }
 }

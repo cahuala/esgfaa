@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { ErroDominio, conflito, invalido, naoAutenticado, naoEncontrado, semPermissao } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 
@@ -6,13 +7,16 @@ import { eDuplicado } from '../infraestrutura/bd.js'
   administrador — tudo, incluindo utilizadores e a ligação ao portal;
   chefe — consulta, edita e decide as propostas (aprova ou rejeita);
   operador — consulta, edita fichas e prepara propostas;
-  consulta — só vê.
+  consulta — só vê;
+  utente — qualquer militar ou civil da Escola: só o expediente da sua área, as mensagens e o seu próprio perfil.
 */
+const COMUNS = ['expediente', 'mensagens']
 export const PAPEIS = {
-  administrador: { nome: 'Administrador', permissoes: ['ver', 'editar', 'propor', 'decidir', 'administrar'] },
-  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'editar', 'propor', 'decidir'] },
-  operador: { nome: 'Operador', permissoes: ['ver', 'editar', 'propor'] },
-  consulta: { nome: 'Consulta', permissoes: ['ver'] },
+  administrador: { nome: 'Administrador', permissoes: ['ver', 'editar', 'propor', 'decidir', 'administrar', ...COMUNS] },
+  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'editar', 'propor', 'decidir', ...COMUNS] },
+  operador: { nome: 'Operador', permissoes: ['ver', 'editar', 'propor', ...COMUNS] },
+  consulta: { nome: 'Consulta', permissoes: ['ver', ...COMUNS] },
+  utente: { nome: 'Utente (expediente e mensagens)', permissoes: COMUNS },
 }
 const MAX_FALHAS = 5
 const BLOQUEIO_MIN = 15
@@ -22,7 +26,16 @@ export function exigir(u, permissao) {
   if (!pode(u, permissao)) throw semPermissao()
 }
 
-const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: PAPEIS[u.papel]?.permissoes ?? [] })
+const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: PAPEIS[u.papel]?.permissoes ?? [], pessoaId: u.pessoaId ?? null, unidadeId: u.unidadeId ?? null, unidadeNome: u.unidade?.nome ?? '' })
+// palavra-passe inicial: 10 caracteres sem os que se confundem (0/O, 1/l), com letras e números
+const ALFABETO = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+export function senhaInicial() {
+  for (;;) {
+    const s = Array.from(crypto.randomBytes(10), (b) => ALFABETO[b % ALFABETO.length]).join('')
+    if (/\d/.test(s) && /[a-zA-Z]/.test(s)) return s
+  }
+}
+const COM_UNIDADE = { unidade: { select: { nome: true } } }
 
 export function validarSenha(senha, email = '') {
   const s = String(senha ?? '')
@@ -36,9 +49,12 @@ export class ServicoSessao {
     Object.assign(this, { bd, cifra, tokens, auditoria, agora })
   }
 
+  // entra-se com o e-mail, o NIP ou o n.º de agente
   async entrar({ email, senha }, ip) {
     const e = String(email ?? '').trim().toLowerCase()
-    const u = await this.bd.utilizador.findUnique({ where: { email: e } })
+    const u = e.includes('@')
+      ? await this.bd.utilizador.findUnique({ where: { email: e } })
+      : await this.bd.utilizador.findFirst({ where: { pessoa: { OR: [{ nip: e.toUpperCase() }, { nip: e }, { numeroAgente: e }, { numeroAgente: e.toUpperCase() }] } } })
     const erro = new ErroDominio('E-mail ou palavra-passe incorretos.', 'nao_autenticado')
     if (!u) {
       await this.cifra.verificarFicticio(senha)
@@ -51,7 +67,7 @@ export class ServicoSessao {
       await this.auditoria.registar({ nome: e }, 'entrada_falhada', '', {}, ip)
       throw erro
     }
-    const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { falhas: 0, bloqueadoAte: null, ultimoAcesso: this.agora() } })
+    const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { falhas: 0, bloqueadoAte: null, ultimoAcesso: this.agora() }, include: COM_UNIDADE })
     await this.auditoria.registar(g, 'entrar', '', {}, ip)
     return { token: this.tokens.emitir(g), utilizador: publico(g) }
   }
@@ -60,7 +76,7 @@ export class ServicoSessao {
   async autenticar(token) {
     const t = token && this.tokens.verificar(token)
     if (!t) throw naoAutenticado()
-    const u = await this.bd.utilizador.findUnique({ where: { id: t.utilizadorId } })
+    const u = await this.bd.utilizador.findUnique({ where: { id: t.utilizadorId }, include: COM_UNIDADE })
     if (!u || !u.ativo || u.versaoToken !== t.versao) throw naoAutenticado('A sessão terminou. Entre novamente.')
     return u
   }
@@ -86,15 +102,15 @@ export class ServicoSessao {
   // gestão de utilizadores (só o administrador)
   async listar(u) {
     exigir(u, 'administrar')
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' } })).map(publico)
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map(publico)
   }
 
-  async criar(u, { nome, email, papel, senha }) {
+  async criar(u, { nome, email, papel, senha, unidadeId = null }) {
     exigir(u, 'administrar')
     if (!PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
     validarSenha(senha, email)
     try {
-      const n = await this.bd.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, senha: await this.cifra.cifrar(senha) } })
+      const n = await this.bd.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, unidadeId, senha: await this.cifra.cifrar(senha) }, include: COM_UNIDADE })
       await this.auditoria.registar(u, 'criar_utilizador', n.email, { papel })
       return publico(n)
     } catch (e) {
@@ -103,7 +119,7 @@ export class ServicoSessao {
     }
   }
 
-  async editar(u, id, { nome, papel, ativo, senha }) {
+  async editar(u, id, { nome, papel, ativo, senha, unidadeId }) {
     exigir(u, 'administrar')
     const alvo = await this.bd.utilizador.findUnique({ where: { id } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
@@ -113,14 +129,35 @@ export class ServicoSessao {
     if (nome !== undefined) data.nome = nome
     if (papel !== undefined) data.papel = papel
     if (ativo !== undefined) data.ativo = ativo
+    if (unidadeId !== undefined) data.unidadeId = unidadeId
     if (senha) {
       validarSenha(senha, alvo.email)
       Object.assign(data, { senha: await this.cifra.cifrar(senha), deveMudar: true, falhas: 0, bloqueadoAte: null })
     }
     if (data.papel !== undefined || data.ativo !== undefined || data.senha) data.versaoToken = { increment: 1 }
-    const g = await this.bd.utilizador.update({ where: { id }, data })
+    const g = await this.bd.utilizador.update({ where: { id }, data, include: COM_UNIDADE })
     await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha) })
     return publico(g)
+  }
+
+  /*
+    Contas de utente para as pessoas da Escola (todas as que ainda não têm, ou as indicadas): entram com o
+    e-mail, o NIP ou o n.º de agente e uma palavra-passe inicial, que têm de mudar. Devolve as palavras-passe
+    (só esta vez) para se imprimirem e entregarem em mão.
+  */
+  async criarContasPessoas(u, { pessoaIds } = {}) {
+    exigir(u, 'administrar')
+    const pessoas = await this.bd.pessoa.findMany({ where: { ativo: true, utilizador: null, vinculo: { not: 'domiciliar' }, ...(pessoaIds?.length ? { id: { in: pessoaIds } } : {}) }, orderBy: { nome: 'asc' } })
+    const criadas = []
+    for (const p of pessoas) {
+      const senha = senhaInicial()
+      const email = (p.email || `${(p.nip || p.numeroAgente || `pessoa${p.id}`).toLowerCase().replace(/[^a-z0-9]/g, '')}@pessoal.interno`).toLowerCase()
+      if (await this.bd.utilizador.findUnique({ where: { email } })) continue
+      await this.bd.utilizador.create({ data: { nome: p.nome, email, papel: 'utente', pessoaId: p.id, unidadeId: p.unidadeId, senha: await this.cifra.cifrar(senha) } })
+      criadas.push({ pessoaId: p.id, nome: p.nome, identificacao: p.nip || p.numeroAgente || '', entrar: p.email || p.nip || p.numeroAgente || email, senha })
+    }
+    await this.auditoria.registar(u, 'criar_contas_pessoas', `${criadas.length} conta(s)`)
+    return criadas
   }
 
   // primeiro arranque: cria o administrador indicado na configuração

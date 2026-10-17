@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { api, urlFoto } from '../api'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { abrirFicheiro, api, urlFoto } from '../api'
+import { etiquetaProcesso, sinteseBiografica } from '../documentos'
+import Foto from '../componentes/Foto'
+import { reduzirFoto } from '../fotos'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import { fichaPdf } from '../fichaPdf'
@@ -11,7 +14,7 @@ import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, 
 import { anos, dataPt } from '../formatar'
 
 const Dado = ({ r, v }) => <div className="col-sm-6 col-lg-4 mb-2"><div className="small text-muted">{r}</div><div className="fw-semibold">{v || v === 0 ? v : '—'}</div></div>
-const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
+const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['processo', 'Processo individual', 'fa-folder-open'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
 
 export default function Perfil() {
   const { id } = useParams()
@@ -19,7 +22,8 @@ export default function Perfil() {
   const navegar = useNavigate()
   const { dados: p, erro, recarregar: carregar } = useDados(`/pessoas/${id}`)
   const [foto, setFoto] = useState({ chave: null, url: null })
-  const [aba, setAba] = useState('resumo')
+  const [params] = useSearchParams()
+  const [aba, setAba] = useState(params.get('aba') ?? 'resumo')
   const [modal, setModal] = useState(null)
   const ficheiro = useRef(null)
   const chaveFoto = p?.fotoId ? `${p.id}/${p.fotoId}` : null
@@ -36,8 +40,8 @@ export default function Perfil() {
     const f = e.target.files[0]
     if (!f) return
     const fd = new FormData()
-    fd.append('foto', f)
     try {
+      fd.append('foto', await reduzirFoto(f))
       await api(`/pessoas/${id}/foto`, { metodo: 'PUT', formulario: fd })
       avisar('Fotografia atualizada.')
       carregar()
@@ -58,7 +62,8 @@ export default function Perfil() {
   return (
     <>
       <Cabecalho titulo={militar ? 'Perfil do militar' : 'Perfil do funcionário civil'} migalhas={[['Pessoal', '/pessoas'], [p.nome]]}>
-        <button type="button" className="btn btn-danger" onClick={() => fichaPdf(p, urlDaFoto)}><i className="fa fa-file-pdf me-1" />Ficha em PDF</button>
+        {pode('ver') && <button type="button" className="btn btn-danger" onClick={() => sinteseBiografica(p)}><i className="fa fa-file-pdf me-1" />Síntese biográfica</button>}
+        {pode('ver') && <button type="button" className="btn btn-outline-danger" onClick={() => fichaPdf(p, urlDaFoto)}><i className="fa fa-file-pdf me-1" />Ficha individual</button>}
         {editar && <Link to={`/pessoas/${p.id}/editar`} className="btn btn-theme"><i className="fa fa-pen me-1" />Editar ficha</Link>}
       </Cabecalho>
 
@@ -139,6 +144,19 @@ export default function Perfil() {
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ licenca: true })}><i className="fa fa-plane-departure me-2" />Registar licença</button>
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-2" />Lançar no histórico (louvor, punição…)</button>
                 </div>
+              </Painel>
+            )}
+            {p.limiteDomiciliares > 0 && (
+              <Painel titulo={`Empregados domiciliares (${p.domiciliares.length} de ${p.limiteDomiciliares})`} icone="fa-house-user">
+                {p.domiciliares.map((d) => <Link key={d.id} to={`/pessoas/${d.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={d.id} fotoId={d.fotoId} nome={d.nome} tamanho={30} /><span className="small">{d.nome}{d.telefone && <span className="text-muted"> · {d.telefone}</span>}</span></Link>)}
+                {!p.domiciliares.length && <p className="small text-muted mb-1">Nenhum(a).</p>}
+                {editar && p.domiciliares.length < p.limiteDomiciliares && <Link to={`/pessoas/nova?domiciliar=${p.id}`} className="btn btn-xs btn-outline-theme mt-1"><i className="fa fa-plus me-1" />Registar empregada(o) domiciliar</Link>}
+              </Painel>
+            )}
+            {p.militarAlocado && (
+              <Painel titulo="Empregada(o) domiciliar de" icone="fa-house-user">
+                <Link to={`/pessoas/${p.militarAlocado.id}`}>{p.militarAlocado.postoNome} {p.militarAlocado.nome}</Link>
+                <p className="small text-muted mb-0 mt-1">Não conta como trabalhador civil da Escola.</p>
               </Painel>
             )}
             {p.sincronizacao && (
@@ -237,6 +255,8 @@ export default function Perfil() {
         </Painel>
       )}
 
+      {aba === 'processo' && <ProcessoIndividual p={p} editar={editar} aoMudar={carregar} />}
+
       {aba === 'propostas' && (
         <Painel titulo="Propostas em que entrou" icone="fa-file-signature">
           <Tabela titulo={`Propostas — ${p.nome}`} linhas={p.itens} aoClicar={(i) => navegar(`/propostas/${i.proposta.id}`)} colunas={[
@@ -256,6 +276,74 @@ export default function Perfil() {
       {modal?.curso && <FormCurso p={p} curso={modal.curso} aoFechar={fechar} aoGuardar={(m) => depois(m)} />}
       {modal?.terminar && <TerminarGraduacao p={p} g={modal.terminar} aoFechar={fechar} aoGuardar={() => depois('Graduação terminada.')} />}
     </>
+  )
+}
+
+// processo individual: n.º, onde está a pasta, documentos digitalizados e o que falta actualizar
+function ProcessoIndividual({ p, editar, aoMudar }) {
+  const { ref, avisar } = useSessao()
+  const [loc, setLoc] = useState({ estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', estado: p.processo?.estado ?? 'activo', observacoes: p.processo?.observacoes ?? '' })
+  const [novo, setNovo] = useState({ tipo: 'bi', titulo: '', data: '' })
+  const [aEnviar, setAEnviar] = useState(false)
+  const falta = []
+  const tem = (v, t) => { if (!v) falta.push(t) }
+  tem(p.bi, 'N.º do BI'); tem(p.dataNascimento, 'Data de nascimento'); tem(p.fotoId, 'Fotografia'); tem(p.telefone, 'Telefone'); tem(p.habilitacao, 'Habilitações'); tem(p.unidadeId, 'Unidade')
+  if (p.tipo === 'militar') { tem(p.dataIngresso, 'Data de ingresso'); tem(p.dataAntiguidadePosto, 'Antiguidade no posto'); tem(p.documentos.some((d) => d.tipo === 'extracto_promocao'), 'Extracto de promoção ao posto actual') }
+  tem(p.documentos.some((d) => d.tipo === 'bi'), 'Cópia do BI digitalizada')
+  const guardar = () => api(`/processos/${p.id}`, { metodo: 'PUT', corpo: loc }).then(() => { avisar(p.processo ? 'Processo actualizado.' : 'Processo aberto e numerado.'); aoMudar() }).catch((e) => avisar(e.message, 'erro'))
+  async function anexar(f) {
+    if (!f) return
+    setAEnviar(true)
+    const fd = new FormData()
+    fd.append('tipo', novo.tipo)
+    fd.append('titulo', novo.titulo)
+    fd.append('data', novo.data)
+    fd.append('ficheiro', f)
+    try {
+      await api(`/pessoas/${p.id}/documentos`, { metodo: 'POST', formulario: fd })
+      avisar('Documento junto ao processo.')
+      setNovo({ ...novo, titulo: '' })
+      aoMudar()
+    } catch (e) { avisar(e.message, 'erro') }
+    setAEnviar(false)
+  }
+  return (
+    <div className="row">
+      <div className="col-xl-4">
+        <Painel titulo={p.processo ? `Processo ${p.processo.numero}` : 'Processo por abrir'} icone="fa-folder" acoes={<button type="button" className="btn btn-xs btn-secondary" onClick={() => etiquetaProcesso(p)}><i className="fa fa-tag me-1" />Etiqueta da lombada</button>}>
+          <div className="row">
+            <Campo rotulo="Estante" col="col-4"><input className="form-control form-control-sm" value={loc.estante} disabled={!editar} onChange={(e) => setLoc({ ...loc, estante: e.target.value })} /></Campo>
+            <Campo rotulo="Prateleira" col="col-4"><input className="form-control form-control-sm" value={loc.prateleira} disabled={!editar} onChange={(e) => setLoc({ ...loc, prateleira: e.target.value })} /></Campo>
+            <Campo rotulo="Posição" col="col-4"><input className="form-control form-control-sm" value={loc.posicao} disabled={!editar} onChange={(e) => setLoc({ ...loc, posicao: e.target.value })} /></Campo>
+            <Campo rotulo="Estado da pasta" col="col-12"><Escolha valor={loc.estado} aoMudar={(v) => setLoc({ ...loc, estado: v })} opcoes={ref.estadosProcesso} vazio={null} disabled={!editar} /></Campo>
+            <Campo rotulo="Observações" col="col-12"><input className="form-control form-control-sm" value={loc.observacoes} disabled={!editar} onChange={(e) => setLoc({ ...loc, observacoes: e.target.value })} /></Campo>
+          </div>
+          {editar && <button type="button" className="btn btn-sm btn-theme" onClick={guardar}>{p.processo ? 'Guardar' : 'Abrir processo (n.º automático)'}</button>}
+        </Painel>
+        <Painel titulo={falta.length ? `Por actualizar (${falta.length})` : 'Processo actualizado'} icone={falta.length ? 'fa-exclamation-triangle' : 'fa-check-circle'}>
+          {falta.length ? <ul className="small mb-0 text-danger">{falta.map((f) => <li key={f}>{f}</li>)}</ul> : <p className="small text-success mb-0">Tem todos os dados e documentos essenciais.</p>}
+        </Painel>
+      </div>
+      <div className="col-xl-8">
+        <Painel titulo={`Documentos digitalizados (${p.documentos.length})`} icone="fa-file-alt">
+          {editar && (
+            <div className="row align-items-end border-bottom pb-2 mb-2">
+              <Campo rotulo="Tipo" col="col-md-4"><Escolha valor={novo.tipo} aoMudar={(v) => setNovo({ ...novo, tipo: v })} opcoes={ref.tiposDocumento} vazio={null} /></Campo>
+              <Campo rotulo="Título (opcional)" col="col-md-4"><input className="form-control form-control-sm" value={novo.titulo} onChange={(e) => setNovo({ ...novo, titulo: e.target.value })} /></Campo>
+              <Campo rotulo="Data" col="col-md-2"><input type="date" className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
+              <div className="col-md-2 mb-2"><label className="btn btn-sm btn-theme w-100 mb-0">{aEnviar ? <i className="fa fa-spinner fa-spin" /> : <><i className="fa fa-upload me-1" />Juntar</>}<input type="file" hidden accept="application/pdf,image/*,.docx" onChange={(e) => { anexar(e.target.files[0]); e.target.value = '' }} /></label></div>
+            </div>
+          )}
+          <Tabela titulo={`Processo individual — ${p.nome}`} linhas={p.documentos.map((d) => ({ ...d, tipoNome: ref.tiposDocumento[d.tipo] ?? d.tipo }))} aoClicar={(d) => abrirFicheiro(`/documentos/${d.id}/ficheiro`, d.nomeOriginal).catch((e) => avisar(e.message, 'erro'))} vazio="Sem documentos digitalizados." colunas={[
+            { chave: 'data', titulo: 'Data', valor: (d) => d.data?.slice(0, 10) ?? '', mostrar: (d) => dataPt(d.data) },
+            { chave: 'tipo', titulo: 'Tipo', valor: (d) => d.tipoNome },
+            { chave: 'titulo', titulo: 'Documento', valor: (d) => d.titulo, mostrar: (d) => <><i className={`fa ${d.mime === 'application/pdf' ? 'fa-file-pdf text-danger' : 'fa-file-image text-info'} me-1`} />{d.titulo}{d.extractoId && <Link to={`/extractos/${d.extractoId}`} className="small ms-2" onClick={(e) => e.stopPropagation()}>ver extracto</Link>}</> },
+            { chave: 'por', titulo: 'Junto por', valor: (d) => d.criadoPor },
+            ...(editar ? [{ chave: 'x', titulo: '', exportar: false, valor: () => '', mostrar: (d) => <button type="button" className="btn btn-xs btn-outline-danger" title="Apagar" onClick={(e) => { e.stopPropagation(); if (window.confirm('Apagar este documento do processo?')) api(`/documentos/${d.id}`, { metodo: 'DELETE' }).then(aoMudar).catch((x) => avisar(x.message, 'erro')) }}><i className="fa fa-trash" /></button> }] : []),
+          ]} />
+        </Painel>
+      </div>
+    </div>
   )
 }
 

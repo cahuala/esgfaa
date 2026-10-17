@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { Cabecalho, Campo, Carregando, Escolha, Painel } from '../componentes/Ui'
@@ -9,7 +9,7 @@ const VAZIA = {
   email: '', telefone: '', morada: '', habilitacao: '', areaFormacao: '', unidadeId: '', cargoId: '', dataCargo: '',
   ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
-  carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '',
+  carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
 }
 const CAMPOS = Object.keys(VAZIA)
 
@@ -17,12 +17,17 @@ export default function FormularioFicha() {
   const { id } = useParams()
   const { ref, avisar } = useSessao()
   const navegar = useNavigate()
-  const [d, setD] = useState(id ? null : VAZIA)
+  const [params] = useSearchParams()
+  // vindo de «Registar empregada(o) domiciliar» (perfil do oficial ou lista de domiciliares)
+  const [d, setD] = useState(id ? null : params.get('domiciliar') ? { ...VAZIA, tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: params.get('domiciliar') } : VAZIA)
+  const [oficiais, setOficiais] = useState([])
+  const [aConsultar, setAConsultar] = useState(false)
   const [unidades, setUnidades] = useState([])
   const [cargos, setCargos] = useState([])
   const [erro, setErro] = useState(null)
   const [aGuardar, setAGuardar] = useState(false)
 
+  useEffect(() => { if (d?.vinculo === 'domiciliar' && !oficiais.length) api('/domiciliares').then(setOficiais).catch(() => {}) }, [d?.vinculo, oficiais.length])
   useEffect(() => {
     api('/unidades').then(setUnidades).catch(() => {})
     api('/cargos').then(setCargos).catch(() => {})
@@ -38,11 +43,27 @@ export default function FormularioFicha() {
   const quadros = ref.quadros[d.ramo] ?? []
   const categoriasCivis = ref.carreirasCivis[d.carreiraCivil]?.categorias ?? []
 
+  async function consultarBi() {
+    setAConsultar(true)
+    setErro(null)
+    try {
+      const b = await api(`/bi/${encodeURIComponent(d.bi.trim())}`)
+      // só preenche o que veio; o que já está escrito à mão fica se o BI não o trouxer
+      setD((x) => ({ ...x, ...Object.fromEntries(Object.entries(b).filter(([, v]) => v)) }))
+      avisar('Dados do BI preenchidos. Confira antes de guardar.')
+    } catch (x) {
+      setErro({ texto: x.message, campo: 'bi' })
+    } finally {
+      setAConsultar(false)
+    }
+  }
+
   async function guardar(e) {
     e.preventDefault()
     setErro(null)
     setAGuardar(true)
     const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId ? Number(d.cargoId) : null }
+    corpo.militarAlocadoId = corpo.vinculo === 'domiciliar' && corpo.militarAlocadoId ? Number(corpo.militarAlocadoId) : null
     for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto']) if (corpo[k] === '') corpo[k] = null
     if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
     if (id) delete corpo.cargoId // o cargo muda por nomeação/exoneração
@@ -72,11 +93,17 @@ export default function FormularioFicha() {
               {Object.entries(ref.tipos).map(([k, v]) => <button key={k} type="button" className={`btn btn-sm ${d.tipo === k ? 'btn-theme' : 'btn-outline-secondary'}`} onClick={() => set('tipo')(k)} disabled={Boolean(id)}>{v}</button>)}
             </div>
           </Campo>
-          <Campo rotulo="Vínculo à Escola" obrigatorio col="col-md-3" ajuda="Docentes e estudantes com e-mail recebem conta no Portal Académico."><Escolha valor={d.vinculo} aoMudar={set('vinculo')} opcoes={ref.vinculos} vazio={null} /></Campo>
+          <Campo rotulo="Vínculo à Escola" obrigatorio col="col-md-3" ajuda="Docentes e estudantes com e-mail recebem conta no Portal Académico."><Escolha valor={d.vinculo} aoMudar={set('vinculo')} opcoes={Object.fromEntries(Object.entries(ref.vinculos).filter(([k]) => k !== 'domiciliar' || d.tipo === 'civil'))} vazio={null} /></Campo>
+          {d.vinculo === 'domiciliar' && <Campo rotulo="Afecta(o) ao oficial" obrigatorio col="col-md-6" ajuda="Só oficiais superiores e generais, dentro do limite do posto. Não conta como trabalhador civil."><Escolha valor={String(d.militarAlocadoId ?? '')} aoMudar={set('militarAlocadoId')} opcoes={oficiais.filter((o) => o.livres > 0 || String(o.id) === String(d.militarAlocadoId)).map((o) => [String(o.id), `${o.postoNome} ${o.nome} (${o.alocados}/${o.limite})`])} vazio="Escolha o oficial" /></Campo>}
           <Campo rotulo="Nome completo" obrigatorio col="col-md-6">{txt('nome', { required: true, minLength: 5 })}</Campo>
           {militar && <Campo rotulo="NIP" obrigatorio col="col-md-3">{txt('nip', { required: true })}</Campo>}
           {!militar && <Campo rotulo="N.º de agente" col="col-md-3">{txt('numeroAgente')}</Campo>}
-          <Campo rotulo="Bilhete de identidade" col="col-md-3">{txt('bi')}</Campo>
+          <Campo rotulo="Bilhete de identidade" col="col-md-3" ajuda="«Consultar» preenche os dados a partir da base de dados do Estado.">
+            <div className="input-group input-group-sm">
+              {txt('bi', { placeholder: '001234567LA041' })}
+              <button type="button" className="btn btn-outline-theme" disabled={aConsultar || !d.bi} onClick={consultarBi} title="Consultar o BI"><i className={`fa ${aConsultar ? 'fa-spinner fa-spin' : 'fa-search'}`} /></button>
+            </div>
+          </Campo>
           {militar && <Campo rotulo="Nome de guerra" col="col-md-3">{txt('nomeGuerra')}</Campo>}
           <Campo rotulo="E-mail institucional" col="col-md-3">{txt('email', { type: 'email', placeholder: 'nome@esgfaa.gov.ao' })}</Campo>
         </div>

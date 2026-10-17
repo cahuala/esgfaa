@@ -44,6 +44,7 @@ export default function PainelInicial() {
   const categoriasRamo = useMemo(() => g && ({ rotulos: g.categorias.map((c) => c.rotulo), series: g.postoPorRamo.map((r) => ({ rotulo: r.rotulo, valores: r.valores })) }), [g])
   const movimentos = useMemo(() => g && ({ rotulos: g.movimentos.meses.map((m) => new Date(`${m}-15`).toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' })), series: g.movimentos.series.map((s) => ({ rotulo: s.rotulo, valores: s.valores })) }), [g])
   const reserva = useMemo(() => g && ({ rotulos: g.reserva.map((r) => r.rotulo), series: [{ rotulo: 'Passam à reserva', valores: g.reserva.map((r) => r.reserva), cor: '#c9a227' }, { rotulo: 'Passam à reforma', valores: g.reserva.map((r) => r.reforma), cor: '#8c3b2e' }] }), [g])
+  const generoRamo = useMemo(() => g && ({ rotulos: g.generoPorRamo.map((r) => r.rotulo), series: [{ rotulo: 'Homens', valores: g.generoPorRamo.map((r) => r.homens), cor: '#1f3b73' }, { rotulo: 'Mulheres', valores: g.generoPorRamo.map((r) => r.mulheres), cor: '#c2185b' }] }), [g])
   const ocupacao = useMemo(() => g && ({ rotulos: g.ocupacao.map((o) => o.rotulo), series: [{ rotulo: 'Ocupados', valores: g.ocupacao.map((o) => o.ocupados), cor: '#2d5a3d' }, { rotulo: 'Livres', valores: g.ocupacao.map((o) => o.livres), cor: '#d9d9d9' }] }), [g])
 
   if (erro) return <Erro texto={erro} aoRepetir={carregar} />
@@ -59,10 +60,12 @@ export default function PainelInicial() {
         <Cartao cor="blue" icone="fa-chalkboard-teacher" titulo="Docentes" valor={t.docentes} detalhe={`${t.estudantes} estudantes · ${t.funcionarios} funcionários`} para={lista({ vinculo: 'docente' })} />
         <Cartao cor="indigo" icone="fa-star" titulo="Oficiais" valor={t.oficiais} detalhe={`${t.sargentos} sargentos · ${t.pracas} praças`} para={lista({ tipo: 'militar', grupo: 'oficiais' })} />
         <Cartao cor="orange" icone="fa-medal" titulo="Em condições de promoção" valor={t.elegiveis} detalhe="Ver quem cumpre a lei" para="/elegiveis" />
-        <Cartao cor="red" icone="fa-file-signature" titulo="Propostas a despacho" valor={t.propostasDespacho} detalhe={`${t.propostasPreparacao} em preparação`} para="/propostas?estado=submetida" />
+        <Cartao cor="red" icone="fa-file-signature" titulo="Propostas enviadas" valor={t.propostasDespacho} detalhe={`${t.propostasPreparacao} em preparação`} para="/propostas?estado=enviada" />
         <Cartao cor="purple" icone="fa-plane-departure" titulo="De licença hoje" valor={t.emLicenca} detalhe="Ver licenças em curso" para="/licencas?estado=em_curso" />
         <Cartao cor="yellow" icone="fa-hourglass-half" titulo={`Reserva em ${new Date().getFullYear()}`} valor={t.reservaEsteAno} detalhe="Projeção de reserva e reforma" para="/reserva" />
-        <Cartao cor="dark" icone="fa-sitemap" titulo="Cargos ocupados" valor={`${t.lugaresOcupados}/${t.lugares}`} detalhe={`${pct(t.lugaresOcupados, t.lugares)}% do quadro orgânico`} para="/quadro" />
+        <Cartao cor="dark" icone="fa-sitemap" titulo="Cargos ocupados" valor={`${t.lugaresOcupados}/${t.lugares}`} detalhe={`${pct(t.lugaresOcupados, t.lugares)}% do quadro orgânico`} para="/organica" />
+        <Cartao cor="pink" icone="fa-venus" titulo="Mulheres" valor={t.mulheres} detalhe={`${t.mulheresMilitares} militares · ${t.mulheresOficiais} oficiais (${pct(t.mulheres, t.total)}%)`} para={lista({ genero: 'F' })} />
+        <Cartao cor="lime" icone="fa-house-user" titulo="Empregados domiciliares" valor={t.domiciliares} detalhe="Não contam como civis" para="/domiciliares" />
       </div>
 
       <div className="row">
@@ -101,6 +104,19 @@ export default function PainelInicial() {
         <GraficoGrupo titulo="Quadros especiais (armas e serviços)" icone="fa-shield-alt" dados={g.quadro} tipo="barH" />
       </div>
       <div className="row">
+        <GraficoGrupo titulo="Mulheres militares por ramo" icone="fa-venus" dados={g.mulheresRamo} tipo="doughnut" rotuloSerie="Mulheres" />
+        <GraficoGrupo titulo="Mulheres militares por categoria" icone="fa-venus" dados={g.mulheresCategoria} tipo="bar" rotuloSerie="Mulheres" />
+        <div className="col-xl-4 col-md-6">
+          <Painel titulo="Homens e mulheres em cada ramo" icone="fa-venus-mars">
+            <Grafico tipo="bar" empilhado rotulos={generoRamo.rotulos} series={generoRamo.series} aoClicar={(i, s) => navegar(lista({ tipo: 'militar', ramo: g.generoPorRamo[i].ramo, ...(s === 1 ? { genero: 'F' } : { genero: 'M' }) }))} />
+          </Painel>
+        </div>
+      </div>
+      <div className="row">
+        <GraficoGrupo titulo="Mulheres por posto" icone="fa-venus" dados={g.mulheresPosto} tipo="barH" col="col-xl-6" rotuloSerie="Mulheres" />
+        <GraficoGrupo titulo="Mulheres por vínculo" icone="fa-venus" dados={g.mulheresVinculo} tipo="pie" col="col-xl-6" rotuloSerie="Mulheres" />
+      </div>
+      <div className="row">
         <GraficoGrupo titulo="Pessoas por unidade" icone="fa-building" dados={g.unidade} tipo="barH" col="col-xl-6" altura={Math.max(260, g.unidade.length * 26)} />
         <GraficoGrupo titulo="Naturalidade (província)" icone="fa-map-marker-alt" dados={g.provincia} tipo="bar" col="col-xl-6" altura={Math.max(260, g.unidade.length * 26)} />
       </div>
@@ -112,7 +128,7 @@ export default function PainelInicial() {
         </div>
         <div className="col-xl-4 col-md-6">
           <Painel titulo="Ocupação do quadro orgânico" icone="fa-sitemap">
-            <Grafico tipo="bar" empilhado rotulos={ocupacao.rotulos} series={ocupacao.series} aoClicar={() => navegar('/quadro')} />
+            <Grafico tipo="bar" empilhado rotulos={ocupacao.rotulos} series={ocupacao.series} aoClicar={() => navegar('/organica')} />
           </Painel>
         </div>
         <GraficoGrupo titulo="Pessoal civil por carreira" icone="fa-briefcase" dados={g.carreiraCivil} tipo="doughnut" />
@@ -125,15 +141,15 @@ export default function PainelInicial() {
 
       <div className="row">
         <div className="col-xl-4">
-          <Painel titulo="A aguardar despacho" icone="fa-stamp" corpo={false}>
+          <Painel titulo="À espera do extracto" icone="fa-hourglass-half" corpo={false}>
             <div className="list-group list-group-flush">
               {d.listas.despacho.map((p) => (
                 <Link key={p.id} to={`/propostas/${p.id}`} className="list-group-item list-group-item-action">
                   <strong>{p.titulo}</strong>
-                  <div className="small text-muted">{p.tipoNome} · {p.pessoas} pessoa(s) · submetida {dataHoraPt(p.submetidaEm)}</div>
+                  <div className="small text-muted">{p.tipoNome} · {p.pessoas} pessoa(s) · enviada {dataHoraPt(p.submetidaEm)}</div>
                 </Link>
               ))}
-              {!d.listas.despacho.length && <div className="list-group-item text-muted">Nenhuma proposta à espera de despacho.</div>}
+              {!d.listas.despacho.length && <div className="list-group-item text-muted">Nenhuma proposta enviada à espera de resposta.</div>}
             </div>
           </Painel>
         </div>

@@ -1,9 +1,11 @@
-import { conflito, invalido, naoEncontrado } from '../erros.js'
+import { ErroDominio, conflito, invalido, naoEncontrado } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { nomeProprio } from './importacao.js'
+import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
 import { exigir } from './sessao.js'
 
 // tipos de registo no histórico (os das propostas e os que se lançam à mão)
@@ -30,7 +32,7 @@ export const TIPOS_EVENTO = {
 }
 export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'despromocao', 'outro']
 
-const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
+const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
@@ -38,8 +40,8 @@ const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilh
 const vaiParaPortal = (p) => p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
 
 export class ServicoPessoas {
-  constructor({ bd, auditoria, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, agora })
+  constructor({ bd, auditoria, config, enviar = fetch, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, config, enviar, agora })
   }
 
   async #todas(where) {
@@ -55,6 +57,9 @@ export class ServicoPessoas {
     const where = { ativo: f.ativo === 'nao' ? false : f.ativo === 'todos' ? undefined : true }
     for (const k of ['tipo', 'vinculo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
     for (const k of ['unidadeId', 'cargoId']) if (f[k]) where[k] = f[k] === 'nenhum' ? null : Number(f[k])
+    // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem
+    if (!f.vinculo) where.vinculo = { not: 'domiciliar' }
+    if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
     const hoje = this.agora()
     let lista = (await this.#todas(where)).map((p) => comDerivados(p, hoje))
     if (f.grupo) lista = lista.filter((p) => p.grupo === f.grupo)
@@ -72,11 +77,15 @@ export class ServicoPessoas {
 
   // ficha completa do militar ou do civil, com o histórico e o que a lei diz da sua carreira
   async perfil(u, id) {
-    exigir(u, 'ver')
+    // cada um vê a sua própria ficha (o utente não vê as dos outros)
+    if (u.pessoaId !== id) exigir(u, 'ver')
     const p = await this.bd.pessoa.findUnique({
       where: { id },
       include: {
-        unidade: true, cargo: true, sincronizacao: true,
+        unidade: true, cargo: true, sincronizacao: true, processo: true,
+        militarAlocado: { select: { id: true, nome: true, posto: true, ramo: true } },
+        domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, fotoId: true } },
+        documentos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
         cursos: { orderBy: [{ fim: 'desc' }, { id: 'desc' }] },
         eventos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
         graduacoes: { orderBy: { inicio: 'desc' } },
@@ -89,6 +98,8 @@ export class ServicoPessoas {
     const f = comDerivados(p, hoje)
     f.unidade = p.unidade
     f.cargo = p.cargo
+    if (p.militarAlocado) f.militarAlocado = { ...p.militarAlocado, postoNome: nomeDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo) }
+    f.limiteDomiciliares = p.tipo === 'militar' ? limiteDomiciliares(p.posto) : 0
     f.eventos = p.eventos.map((e) => ({ ...e, tipoNome: TIPOS_EVENTO[e.tipo] ?? e.tipo, postoAnteriorNome: e.postoAnterior ? nomeDoPosto(e.postoAnterior, p.ramo) : '', postoNovoNome: e.postoNovo ? nomeDoPosto(e.postoNovo, p.ramo) : '' }))
     f.graduacoes = p.graduacoes.map((g) => ({ ...g, postoNome: nomeDoPosto(g.posto, p.ramo) }))
     f.cursos = p.cursos.map((c) => ({ ...c, chaveNome: CURSOS_PROMOCAO[c.chave] ?? '' }))
@@ -130,28 +141,45 @@ export class ServicoPessoas {
     if (vaiParaPortal(p)) await tx.sincronizacao.upsert({ where: { pessoaId: p.id }, create: { pessoaId: p.id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
   }
 
-  async criar(u, dados) {
+  // a(o) domiciliar só fica afecta(o) a oficial superior ou general, dentro do limite do posto
+  async #verificarDomiciliar(d, id = null) {
+    if (d.vinculo !== 'domiciliar') {
+      d.militarAlocadoId = null
+      return
+    }
+    const m = await this.bd.pessoa.findUnique({ where: { id: d.militarAlocadoId }, include: { _count: { select: { domiciliares: { where: { ativo: true, ...(id ? { id: { not: id } } : {}) } } } } } })
+    if (!m || !temDireitoDomiciliar(m)) throw invalido('Só os oficiais superiores e generais têm empregados domiciliares.', 'militarAlocadoId')
+    if (m._count.domiciliares >= limiteDomiciliares(m.posto)) throw invalido(`${m.nome} já tem ${m._count.domiciliares} empregado(s) domiciliar(es), o limite do posto.`, 'militarAlocadoId')
+  }
+
+  async criar(u, dados, { silencioso = false } = {}) {
     exigir(u, 'editar')
     const d = this.#dados(dados)
     const problema = problemaNaFicha(d)
     if (problema) throw invalido(problema[1], problema[0])
+    if (d.tipo === 'civil') await this.#verificarDomiciliar(d)
     const p = await this.#gravar(() => this.bd.$transaction(async (tx) => {
       const n = await tx.pessoa.create({ data: d })
       await tx.evento.create({ data: { pessoaId: n.id, tipo: 'registo', data: this.agora(), descricao: 'Ficha criada no sistema.', criadoPor: u.email } })
       await this.#marcarSincronizacao(tx, n)
       return n
     }))
-    await this.auditoria.registar(u, 'criar_ficha', `${p.nome} (#${p.id})`)
+    if (!silencioso) await this.auditoria.registar(u, 'criar_ficha', `${p.nome} (#${p.id})`)
     return comDerivados(p, this.agora())
   }
 
-  async editar(u, id, dados) {
+  async editar(u, id, dados, { silencioso = false } = {}) {
     exigir(u, 'editar')
     const antes = await this.bd.pessoa.findUnique({ where: { id } })
     if (!antes) throw naoEncontrado('Ficha não encontrada.')
     const d = this.#dados({ ...dados, tipo: dados.tipo ?? antes.tipo })
     const problema = problemaNaFicha({ ...antes, ...d })
     if (problema) throw invalido(problema[1], problema[0])
+    if ((d.tipo ?? antes.tipo) === 'civil' && ('vinculo' in d || 'militarAlocadoId' in d)) {
+      const junto = { ...antes, ...d }
+      await this.#verificarDomiciliar(junto, id)
+      if (junto.vinculo !== 'domiciliar') d.militarAlocadoId = null
+    }
     const p = await this.#gravar(() => this.bd.$transaction(async (tx) => {
       const n = await tx.pessoa.update({ where: { id }, data: d })
       const evento = (tipo, descricao, extra = {}) => tx.evento.create({ data: { pessoaId: id, tipo, data: this.agora(), descricao, criadoPor: u.email, ...extra } })
@@ -161,10 +189,59 @@ export class ServicoPessoas {
       if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
       if (vaiParaPortal(antes) && !vaiParaPortal(n)) await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
+      // a conta do sistema acompanha a unidade (expediente e mensagens) e fecha quando a pessoa sai
+      if (n.unidadeId !== antes.unidadeId || n.ativo !== antes.ativo || n.nome !== antes.nome) await tx.utilizador.updateMany({ where: { pessoaId: id }, data: { unidadeId: n.unidadeId, nome: n.nome, ...(n.ativo ? {} : { ativo: false, versaoToken: { increment: 1 } }) } })
       return n
     }))
-    await this.auditoria.registar(u, 'editar_ficha', `${p.nome} (#${p.id})`, { campos: Object.keys(dados) })
+    if (!silencioso) await this.auditoria.registar(u, 'editar_ficha', `${p.nome} (#${p.id})`, { campos: Object.keys(dados) })
     return comDerivados(p, this.agora())
+  }
+
+  /*
+    Consulta do Bilhete de Identidade na base de dados do Estado (a mesma API que o SIGP usa):
+    devolve os dados para preencher a ficha. Sem chave configurada, diz que está desligada.
+  */
+  async consultarBi(u, numero) {
+    exigir(u, 'editar')
+    const bi = String(numero ?? '').trim().toUpperCase().replace(/\s/g, '')
+    if (!/^[0-9]{9}[A-Z]{2}[0-9]{3}$/.test(bi)) throw invalido('Número de BI inválido (ex.: 001234567LA041).', 'bi')
+    const { url, chave } = this.config.bi
+    if (!chave) throw new ErroDominio('A consulta do BI não está configurada (BI_API_KEY no servidor).', 'indisponivel')
+    let j
+    try {
+      const r = await this.enviar(`${url}?bi=${encodeURIComponent(bi)}`, { headers: { Authorization: `Basic ${chave}`, Accept: 'application/json' }, signal: AbortSignal.timeout(15_000) })
+      j = await r.json().catch(() => null)
+    } catch {
+      throw new ErroDominio('O serviço do BI não respondeu. Tente mais tarde ou preencha à mão.', 'indisponivel')
+    }
+    if (!j || Number(j.code) !== 200 || !j.data) throw naoEncontrado(j?.message || 'BI não encontrado na base de dados do Estado.')
+    const x = j.data
+    const junta = (...p) => p.map((v) => String(v ?? '').trim()).filter(Boolean).join(' ')
+    const genero = /^f/i.test(x.gender_name ?? '') ? 'F' : /^m/i.test(x.gender_name ?? '') ? 'M' : null
+    const estado = { solteiro: 'solteiro', solteira: 'solteiro', casado: 'casado', casada: 'casado', divorciado: 'divorciado', divorciada: 'divorciado', viuvo: 'viuvo', viuva: 'viuvo' }[String(x.marital_status_name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()] ?? null
+    const provincia = PROVINCIAS.find((p) => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === String(x.birth_province_name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()) ?? ''
+    await this.auditoria.registar(u, 'consultar_bi', bi)
+    return {
+      bi, nome: nomeProprio(junta(x.first_name, x.last_name)), dataNascimento: x.birth_date ? String(x.birth_date).slice(0, 10) : null, genero, estadoCivil: estado,
+      pai: nomeProprio(junta(x.father_first_name, x.father_last_name)), mae: nomeProprio(junta(x.mother_first_name, x.mother_last_name)),
+      naturalidade: x.birth_municipality_name ?? '', provincia,
+      morada: [x.residence_neighbor, x.residence_commune_name, x.residence_municipality_name, x.residence_province_name].filter(Boolean).join(', '),
+    }
+  }
+
+  // oficiais superiores e generais com as(os) suas(seus) domiciliares e os lugares livres
+  async domiciliares(u) {
+    exigir(u, 'ver')
+    const oficiais = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { not: 'reforma' } }, include: { domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, bi: true, dataAdmissao: true, fotoId: true } } } })
+    return oficiais.filter(temDireitoDomiciliar).map((m) => ({
+      id: m.id, nome: m.nome, nip: m.nip, ramo: m.ramo, postoNome: nomeDoPosto(m.posto, m.ramo), grau: comDerivados(m).grau, fotoId: m.fotoId,
+      limite: limiteDomiciliares(m.posto), alocados: m.domiciliares.length, livres: Math.max(0, limiteDomiciliares(m.posto) - m.domiciliares.length),
+      domiciliares: m.domiciliares.map((x) => ({ ...x, dataAdmissao: x.dataAdmissao?.toISOString().slice(0, 10) ?? null })),
+    })).sort((a, b) => b.grau - a.grau || a.nome.localeCompare(b.nome))
+  }
+
+  async porIdentificacao(ident) {
+    return this.bd.pessoa.findFirst({ where: { OR: [{ nip: ident }, { numeroAgente: ident }] }, select: { id: true, nome: true } })
   }
 
   async #existe(id) {
@@ -205,7 +282,7 @@ export class ServicoPessoas {
     exigir(u, 'editar')
     const e = await this.bd.evento.findFirst({ where: { id: eventoId, pessoaId } })
     if (!e) throw naoEncontrado('Registo não encontrado.')
-    if (!EVENTOS_MANUAIS.includes(e.tipo)) throw invalido('Os registos que vêm de propostas aprovadas não se apagam.')
+    if (!EVENTOS_MANUAIS.includes(e.tipo)) throw invalido('Os registos que vêm de extractos não se apagam.')
     await this.bd.evento.delete({ where: { id: eventoId } })
     await this.auditoria.registar(u, 'remover_evento', `${TIPOS_EVENTO[e.tipo]} (ficha #${pessoaId})`)
   }
@@ -231,8 +308,8 @@ export class ServicoPessoas {
     return antes.fotoId
   }
 
+  // a fotografia vê-se em todo o sistema (listas, mensagens, expediente)
   async fotoDe(u, pessoaId) {
-    exigir(u, 'ver')
     return (await this.bd.pessoa.findUnique({ where: { id: pessoaId }, select: { fotoId: true } }))?.fotoId ?? null
   }
 
@@ -249,11 +326,11 @@ export class ServicoPessoas {
     exigir(u, 'ver')
     const hoje = this.agora()
     const lista = await this.bd.pessoa.findMany({ where: { tipo, ativo: true }, include: { ...INCLUIR_LISTA, eventos: { select: { tipo: true, data: true } } }, orderBy: { nome: 'asc' } })
-    const emPropostaAberta = new Set((await this.bd.itemProposta.findMany({ where: { proposta: { estado: { in: ['rascunho', 'submetida'] }, tipo: { in: ['promocao', 'progressao'] } } }, select: { pessoaId: true } })).map((i) => i.pessoaId))
+    const emPropostaAberta = new Set((await this.bd.itemProposta.findMany({ where: { proposta: { estado: { in: ['rascunho', 'enviada'] }, tipo: { in: ['promocao', 'progressao'] } } }, select: { pessoaId: true } })).map((i) => i.pessoaId))
     return lista.map((p) => {
       const v = tipo === 'militar' ? verificarPromocao({ ...p, historico: p.eventos }, { hoje }) : verificarProgressaoCivil(p, { hoje })
       const f = comDerivados(p, hoje)
-      return { id: p.id, nome: p.nome, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeNome: f.unidadeNome, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
+      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeNome: f.unidadeNome, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
     }).filter((x) => x.proposto)
   }
 
@@ -267,7 +344,7 @@ export class ServicoPessoas {
     for (const p of lista) {
       const rr = reservaEReforma(p, hoje)
       const f = comDerivados(p, hoje)
-      const base = { id: p.id, nome: p.nome, nip: p.nip, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome }
+      const base = { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome }
       // com a data já passada fica marcado «em atraso»: a situação na ficha ainda não foi mudada
       const hojeTxt = hoje.toISOString().slice(0, 10)
       if (p.situacao === 'activo' && rr?.reserva && rr.reserva.data <= limite) r.push({ ...base, passagem: 'reserva', data: rr.reserva.data, artigo: rr.reserva.artigo, idadeLimite: rr.reserva.idadeLimite, atrasado: rr.reserva.data < hojeTxt })

@@ -11,33 +11,41 @@ datasource db {
 
 // quem usa o sistema (Repartição de Pessoal e Quadros, chefia, consulta)
 model Utilizador {
-  id           Int       @id @default(autoincrement())
-  nome         String
-  email        String    @unique
-  senha        String
-  papel        String // administrador | chefe | operador | consulta
-  ativo        Boolean   @default(true)
-  versaoToken  Int       @default(1) @map("versao_token")
-  falhas       Int       @default(0)
-  bloqueadoAte DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
-  ultimoAcesso DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
-  deveMudar    Boolean   @default(true) @map("deve_mudar")
-  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id            Int            @id @default(autoincrement())
+  nome          String
+  email         String         @unique
+  senha         String
+  papel         String // administrador | chefe | operador | consulta | utente (só expediente e mensagens)
+  pessoaId      Int?           @unique @map("pessoa_id")
+  unidadeId     Int?           @map("unidade_id")
+  ativo         Boolean        @default(true)
+  versaoToken   Int            @default(1) @map("versao_token")
+  falhas        Int            @default(0)
+  bloqueadoAte  DateTime?      @map("bloqueado_ate") @db.Timestamptz(3)
+  ultimoAcesso  DateTime?      @map("ultimo_acesso") @db.Timestamptz(3)
+  deveMudar     Boolean        @default(true) @map("deve_mudar")
+  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa        Pessoa?        @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  participacoes Participante[]
+  mensagens     Mensagem[]
 
   @@map("utilizadores")
 }
 
 // órgãos e serviços da Escola (Direcção, departamentos, repartições…)
 model Unidade {
-  id      Int       @id @default(autoincrement())
-  nome    String
-  sigla   String    @default("")
-  paiId   Int?      @map("pai_id")
-  ordem   Int       @default(0)
-  pai     Unidade?  @relation("Arvore", fields: [paiId], references: [id], onDelete: SetNull)
-  filhos  Unidade[] @relation("Arvore")
-  cargos  Cargo[]
-  pessoas Pessoa[]
+  id           Int          @id @default(autoincrement())
+  nome         String
+  sigla        String       @default("")
+  paiId        Int?         @map("pai_id")
+  ordem        Int          @default(0)
+  pai          Unidade?     @relation("Arvore", fields: [paiId], references: [id], onDelete: SetNull)
+  filhos       Unidade[]    @relation("Arvore")
+  cargos       Cargo[]
+  pessoas      Pessoa[]
+  utilizadores Utilizador[]
+  conversas    Conversa[]
 
   @@map("unidades")
 }
@@ -62,7 +70,9 @@ model Cargo {
 model Pessoa {
   id                   Int       @id @default(autoincrement())
   tipo                 String // militar | civil
-  vinculo              String    @default("funcionario") // docente | estudante | funcionario
+  vinculo              String    @default("funcionario") // docente | estudante | funcionario | domiciliar
+  // empregada(o) domiciliar: o oficial superior ou general a quem está afecta (não conta como trabalhador civil)
+  militarAlocadoId     Int?      @map("militar_alocado_id")
   nome                 String
   nomeGuerra           String    @default("") @map("nome_guerra")
   nip                  String?   @unique
@@ -111,14 +121,20 @@ model Pessoa {
   criadoEm             DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm         DateTime  @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
-  unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
-  cargo         Cargo?         @relation(fields: [cargoId], references: [id], onDelete: SetNull)
-  cursos        Curso[]
-  eventos       Evento[]
-  graduacoes    Graduacao[]
-  licencas      Licenca[]
-  itens         ItemProposta[]
-  sincronizacao Sincronizacao?
+  unidade        Unidade?           @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  cargo          Cargo?             @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  cursos         Curso[]
+  eventos        Evento[]
+  graduacoes     Graduacao[]
+  licencas       Licenca[]
+  itens          ItemProposta[]
+  sincronizacao  Sincronizacao?
+  militarAlocado Pessoa?            @relation("Domiciliares", fields: [militarAlocadoId], references: [id], onDelete: SetNull)
+  domiciliares   Pessoa[]           @relation("Domiciliares")
+  processo       Processo?
+  documentos     DocumentoPessoal[]
+  itensExtracto  ItemExtracto[]
+  utilizador     Utilizador?
 
   @@index([tipo, ativo])
   @@map("pessoas")
@@ -209,7 +225,8 @@ model Proposta {
   documento     String         @default("")
   dataDocumento DateTime?      @map("data_documento") @db.Date
   entidade      String         @default("")
-  motivo        String         @default("") // da rejeição ou do cancelamento
+  motivo        String         @default("") // do indeferimento ou do cancelamento
+  extractoId    Int?           @map("extracto_id")
   criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
   itens         ItemProposta[]
 
@@ -263,4 +280,176 @@ model Sincronizacao {
   pessoa          Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@map("sincronizacao")
+}
+
+// processo individual (arquivo físico): número, onde está a pasta e em que estado
+model Processo {
+  pessoaId     Int      @id @map("pessoa_id")
+  numero       String   @unique // PI-00001
+  estante      String   @default("")
+  prateleira   String   @default("")
+  posicao      String   @default("")
+  estado       String   @default("activo") // activo | encapado | em_falta | arquivado
+  observacoes  String   @default("")
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  pessoa       Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@map("processos")
+}
+
+// documentos digitalizados do processo individual (extractos, BI, certificados, sínteses…)
+model DocumentoPessoal {
+  id           Int       @id @default(autoincrement())
+  pessoaId     Int       @map("pessoa_id")
+  tipo         String
+  titulo       String
+  ficheiro     String
+  nomeOriginal String    @map("nome_original")
+  mime         String
+  tamanho      Int
+  data         DateTime? @db.Date
+  extractoId   Int?      @map("extracto_id")
+  criadoPor    String    @map("criado_por")
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa       Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  extracto     Extracto? @relation(fields: [extractoId], references: [id], onDelete: SetNull)
+
+  @@index([pessoaId])
+  @@map("documentos_pessoais")
+}
+
+// extracto de ordem (promoção, nomeação, reforma…) que chega do escalão superior
+model Extracto {
+  id           Int                @id @default(autoincrement())
+  tipo         String // promocao | nomeacao | graduacao | exoneracao | reserva | reforma | outro
+  numero       String
+  data         DateTime           @db.Date
+  entidade     String             @default("")
+  ficheiro     String             @default("")
+  nomeOriginal String             @default("") @map("nome_original")
+  texto        String             @default("")
+  estado       String             @default("pendente") // pendente | aplicado
+  propostaId   Int?               @map("proposta_id")
+  criadoPor    String             @map("criado_por")
+  criadoEm     DateTime           @default(now()) @map("criado_em") @db.Timestamptz(3)
+  aplicadoEm   DateTime?          @map("aplicado_em") @db.Timestamptz(3)
+  itens        ItemExtracto[]
+  documentos   DocumentoPessoal[]
+
+  @@map("extractos")
+}
+
+model ItemExtracto {
+  id            Int      @id @default(autoincrement())
+  extractoId    Int      @map("extracto_id")
+  pessoaId      Int      @map("pessoa_id")
+  postoNovo     String?  @map("posto_novo")
+  cargoId       Int?     @map("cargo_id")
+  encontradoPor String   @default("manual") @map("encontrado_por") // nip | nome | proposta | manual
+  aplicado      Boolean  @default(false)
+  extracto      Extracto @relation(fields: [extractoId], references: [id], onDelete: Cascade)
+  pessoa        Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@unique([extractoId, pessoaId])
+  @@map("itens_extracto")
+}
+
+// expediente: documentos que circulam entre as áreas da Escola (e de/para fora), com o percurso do original físico
+model Expediente {
+  id              Int               @id @default(autoincrement())
+  protocolo       String            @unique // EXP-2026-0001
+  sentido         String            @default("interno") // interno | entrada | saida
+  tipo            String            @default("oficio")
+  numero          String            @default("") // n.º do documento original
+  assunto         String
+  resumo          String            @default("")
+  classificacao   String            @default("normal") // normal | urgente | confidencial
+  origemUnidadeId Int?              @map("origem_unidade_id")
+  entidadeExterna String            @default("") @map("entidade_externa")
+  temFisico       Boolean           @default(false) @map("tem_fisico")
+  prazo           DateTime?         @db.Date
+  estado          String            @default("em_curso") // em_curso | arquivado
+  criadoPorId     Int               @map("criado_por_id")
+  criadoEm        DateTime          @default(now()) @map("criado_em") @db.Timestamptz(3)
+  anexos          AnexoExpediente[]
+  movimentos      Movimento[]
+
+  @@index([criadoEm])
+  @@map("expedientes")
+}
+
+model AnexoExpediente {
+  id           Int        @id @default(autoincrement())
+  expedienteId Int        @map("expediente_id")
+  ficheiro     String
+  nomeOriginal String     @map("nome_original")
+  mime         String
+  tamanho      Int
+  criadoPorId  Int        @map("criado_por_id")
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+
+  @@map("anexos_expediente")
+}
+
+// cada passo do percurso: enviar, encaminhar, receber (e o original físico: entregue, recebido)
+model Movimento {
+  id               Int        @id @default(autoincrement())
+  expedienteId     Int        @map("expediente_id")
+  deUnidadeId      Int?       @map("de_unidade_id")
+  paraUnidadeId    Int?       @map("para_unidade_id")
+  nota             String     @default("")
+  enviadoPorId     Int        @map("enviado_por_id")
+  enviadoEm        DateTime   @default(now()) @map("enviado_em") @db.Timestamptz(3)
+  recebidoPorId    Int?       @map("recebido_por_id")
+  recebidoEm       DateTime?  @map("recebido_em") @db.Timestamptz(3)
+  fisico           String     @default("nao_aplica") // nao_aplica | a_enviar | entregue | recebido
+  fisicoPortador   String     @default("") @map("fisico_portador")
+  fisicoRecebidoEm DateTime?  @map("fisico_recebido_em") @db.Timestamptz(3)
+  expediente       Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+
+  @@index([paraUnidadeId, recebidoEm])
+  @@map("movimentos")
+}
+
+// mensagens internas: conversas directas, de grupo, de cada unidade e a geral da Escola
+model Conversa {
+  id            Int            @id @default(autoincrement())
+  tipo          String // directa | grupo | unidade | geral
+  nome          String         @default("")
+  unidadeId     Int?           @unique @map("unidade_id")
+  chave         String?        @unique // conversa directa: "menorId-maiorId"
+  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  ultimaEm      DateTime       @default(now()) @map("ultima_em") @db.Timestamptz(3)
+  unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
+  participantes Participante[]
+  mensagens     Mensagem[]
+
+  @@map("conversas")
+}
+
+model Participante {
+  conversaId   Int        @map("conversa_id")
+  utilizadorId Int        @map("utilizador_id")
+  lidoAte      DateTime   @default(now()) @map("lido_ate") @db.Timestamptz(3)
+  conversa     Conversa   @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  utilizador   Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  @@id([conversaId, utilizadorId])
+  @@map("participantes")
+}
+
+model Mensagem {
+  id           Int        @id @default(autoincrement())
+  conversaId   Int        @map("conversa_id")
+  autorId      Int        @map("autor_id")
+  texto        String
+  ficheiro     String?
+  nomeOriginal String?    @map("nome_original")
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  conversa     Conversa   @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  autor        Utilizador @relation(fields: [autorId], references: [id], onDelete: Cascade)
+
+  @@index([conversaId, id])
+  @@map("mensagens")
 }

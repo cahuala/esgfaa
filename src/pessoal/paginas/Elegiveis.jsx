@@ -4,6 +4,7 @@ import { api } from '../api'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
+import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Erro, Painel } from '../componentes/Ui'
 import { anos } from '../formatar'
 
@@ -32,7 +33,7 @@ export default function Elegiveis() {
   const colunas = useMemo(() => [
     { chave: 'sel', titulo: '', exportar: false, valor: () => '', mostrar: (l) => (l.elegivel && !l.emProposta && pode('propor') ? <input type="checkbox" className="form-check-input" checked={marcados.includes(l.id)} onClick={(e) => e.stopPropagation()} onChange={() => marcar(l.id)} aria-label={`Escolher ${l.nome}`} /> : null) },
     { chave: 'ident', titulo: 'NIP / N.º', valor: (l) => l.nip || l.numeroAgente || '' },
-    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome, mostrar: (l) => <strong>{l.nome}</strong> },
+    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome, mostrar: (l) => <span className="pes-pessoa"><Foto pessoaId={l.id} fotoId={l.fotoId} nome={l.nome} /><strong>{l.nome}</strong></span> },
     { chave: 'atual', titulo: tipo === 'militar' ? 'Posto' : 'Categoria', valor: (l) => l.postoNome || l.categoriaCivil },
     ...(tipo === 'militar' ? [{ chave: 'ramo', titulo: 'Ramo', valor: (l) => l.ramo }] : []),
     { chave: 'proposto', titulo: 'Para', valor: (l) => l.proposto, mostrar: (l) => <strong className="text-success">{l.proposto}</strong> },
@@ -55,7 +56,7 @@ export default function Elegiveis() {
             <button type="button" className={`btn btn-sm ${tipo === 'civil' ? 'btn-theme' : 'btn-outline-secondary'}`} onClick={() => mudarTipo('civil')}>Civis (progressão)</button>
           </div>
           <label className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={so} onChange={(e) => setSo(e.target.checked)} /> <span className="form-check-label">Só quem cumpre</span></label>
-          <span className="small text-muted"><i className="fa fa-info-circle me-1" />A existência de vaga no quadro especial confirma-se no despacho.</span>
+          <span className="small text-muted"><i className="fa fa-info-circle me-1" />A existência de vaga no quadro especial confirma-a o escalão superior.</span>
         </div>
         {erro && <Erro texto={erro} />}
         {!linhas ? <Carregando /> : <Tabela titulo={tipo === 'militar' ? 'Militares em condições de promoção' : 'Civis em condições de progressão'} colunas={colunas} linhas={visiveis} aoClicar={(l) => navegar(`/pessoas/${l.id}`)} />}

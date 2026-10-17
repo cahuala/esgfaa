@@ -4,6 +4,7 @@ import { api } from '../api'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
+import Foto from '../componentes/Foto'
 import NovaLicenca from '../componentes/NovaLicenca'
 import { Cabecalho, Carregando, Escolha, Estado, Painel } from '../componentes/Ui'
 import { dataPt } from '../formatar'
@@ -19,7 +20,7 @@ export default function Licencas() {
   const [nova, setNova] = useState(false)
   const mudar = (k, v) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n) }
   const colunas = useMemo(() => [
-    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome, mostrar: (l) => <strong>{l.nome}</strong> },
+    { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome, mostrar: (l) => <span className="pes-pessoa"><Foto pessoaId={l.pessoaId} fotoId={l.fotoId} nome={l.nome} /><strong>{l.nome}</strong></span> },
     { chave: 'ident', titulo: 'NIP / N.º', valor: (l) => l.identificacao },
     { chave: 'posto', titulo: 'Posto', valor: (l) => l.postoNome },
     { chave: 'tipo', titulo: 'Licença', valor: (l) => l.tipoNome },

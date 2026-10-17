@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
+import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
@@ -34,7 +35,7 @@ export default function Pessoas() {
 
   const colunas = useMemo(() => [
     { chave: 'ident', titulo: 'NIP / N.º', valor: (p) => p.nip || p.numeroAgente || '' },
-    { chave: 'nome', titulo: 'Nome', valor: (p) => p.nome, mostrar: (p) => <><strong>{p.nome}</strong>{p.nomeGuerra && <div className="small text-muted">«{p.nomeGuerra}»</div>}</> },
+    { chave: 'nome', titulo: 'Nome', valor: (p) => p.nome, mostrar: (p) => <span className="pes-pessoa"><Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} /><span><strong>{p.nome}</strong>{p.nomeGuerra && <div className="small text-muted">«{p.nomeGuerra}»</div>}{p.militarAlocadoNome && <div className="small text-muted">de {p.militarAlocadoNome}</div>}</span></span> },
     { chave: 'posto', titulo: 'Posto / Categoria', valor: (p) => (p.tipo === 'militar' ? p.postoNome : p.categoriaCivil || 'Civil'), ordenarPor: (p) => 100 - (p.grau ?? 0), mostrar: (p) => (p.tipo === 'militar' ? <span title={p.categoriaNome}>{p.postoNome}{p.graduacoes?.length > 0 && <span className="badge bg-warning text-dark ms-1" title="Graduado">grad.</span>}</span> : <span className="text-muted">{p.categoriaCivil || 'Civil'}</span>) },
     { chave: 'ramo', titulo: 'Ramo', valor: (p) => p.ramo || (p.tipo === 'civil' ? 'Civil' : ''), mostrar: (p) => (p.ramo ? <span className={`badge pes-ramo-${p.ramo}`}>{p.ramo}</span> : <span className="badge bg-secondary">Civil</span>) },
     { chave: 'fps', titulo: 'Serviço', valor: (p) => p.fps || p.vinculoCivilNome || '' },
@@ -57,9 +58,10 @@ export default function Pessoas() {
   return (
     <>
       <Cabecalho titulo="Pessoal" subtitulo="fichas de militares e civis" migalhas={[['Pessoal']]}>
+        {pode('editar') && <Link to="/importar" className="btn btn-outline-theme"><i className="fa fa-file-import me-2" />Importar Excel</Link>}
         {pode('editar') && <Link to="/pessoas/nova" className="btn btn-theme"><i className="fa fa-user-plus me-2" />Nova ficha</Link>}
       </Cabecalho>
-      <Painel titulo="Filtros" icone="fa-filter" acoes={Object.keys(filtros).length > 0 && <button type="button" className="btn btn-xs btn-light" onClick={() => setParams({})}>Limpar filtros</button>}>
+      <Painel titulo="Filtros" icone="fa-filter" acoes={Object.keys(filtros).length > 0 && <button type="button" className="btn btn-xs btn-secondary" onClick={() => setParams({})}>Limpar filtros</button>}>
         <div className="row">
           {f('tipo', ref.tipos)}
           {f('vinculo', ref.vinculos)}

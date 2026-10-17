@@ -45,3 +45,32 @@ export async function urlFoto(pessoaId) {
   const r = await fetch(`${API}/api/pessoas/${pessoaId}/foto`, { headers: { Authorization: `Bearer ${lerToken()}` } })
   return r.ok ? URL.createObjectURL(await r.blob()) : null
 }
+
+// abre (PDF/imagem) ou descarrega um ficheiro protegido pela sessão
+export async function abrirFicheiro(caminho, nome = 'documento') {
+  const r = await fetch(`${API}/api${caminho}`, { headers: { Authorization: `Bearer ${lerToken()}` } })
+  if (!r.ok) throw new Error(r.status === 404 ? 'Ficheiro não encontrado.' : `Erro ${r.status}`)
+  const blob = await r.blob()
+  const url = URL.createObjectURL(blob)
+  if (/^(application\/pdf|image\/)/.test(blob.type)) window.open(url, '_blank', 'noopener')
+  else {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = nome
+    a.click()
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
+// texto de um PDF (para o sistema procurar os militares num extracto); vazio se for digitalização sem texto
+export async function textoDoPdf(ficheiro) {
+  const { carregarPdfjs } = await import('../leitor/pdfjs')
+  const pdfjs = await carregarPdfjs()
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(await ficheiro.arrayBuffer()) }).promise
+  const partes = []
+  for (let i = 1; i <= Math.min(doc.numPages, 200); i++) {
+    const c = await (await doc.getPage(i)).getTextContent()
+    partes.push(c.items.map((x) => x.str).join(' '))
+  }
+  return partes.join('\n')
+}

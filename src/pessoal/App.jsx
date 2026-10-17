@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { api, definirAoExpirar, guardarToken, lerToken } from './api'
 import { ContextoSessao } from './sessao'
 import { Aviso, Carregando } from './componentes/Ui'
@@ -16,7 +16,14 @@ import Elegiveis from './paginas/Elegiveis'
 import Antiguidade from './paginas/Antiguidade'
 import Reserva from './paginas/Reserva'
 import Licencas from './paginas/Licencas'
-import QuadroOrganico from './paginas/QuadroOrganico'
+import Organica from './paginas/Organica'
+import Importar from './paginas/Importar'
+import Processos from './paginas/Processos'
+import Extractos from './paginas/Extractos'
+import Extracto from './paginas/Extracto'
+import Domiciliares from './paginas/Domiciliares'
+import Expediente from './paginas/Expediente'
+import Mensagens from './paginas/Mensagens'
 import Utilizadores from './paginas/Utilizadores'
 import Auditoria from './paginas/Auditoria'
 import Portal from './paginas/Portal'
@@ -70,7 +77,7 @@ export default function App() {
     conteudo = (
       <Layout>
         <Routes>
-          <Route path="/" element={<PainelInicial />} />
+          <Route path="/" element={utilizador.permissoes.includes('ver') ? <PainelInicial /> : <Navigate to="/expediente" replace />} />
           <Route path="/pessoas" element={<Pessoas />} />
           <Route path="/pessoas/nova" element={<FormularioFicha />} />
           <Route path="/pessoas/:id" element={<Perfil />} />
@@ -81,7 +88,18 @@ export default function App() {
           <Route path="/antiguidade" element={<Antiguidade />} />
           <Route path="/reserva" element={<Reserva />} />
           <Route path="/licencas" element={<Licencas />} />
-          <Route path="/quadro" element={<QuadroOrganico />} />
+          <Route path="/quadro" element={<Navigate to="/organica" replace />} />
+          <Route path="/organica" element={<Organica />} />
+          <Route path="/organica/:id" element={<Organica />} />
+          <Route path="/importar" element={<Importar />} />
+          <Route path="/processos" element={<Processos />} />
+          <Route path="/extractos" element={<Extractos />} />
+          <Route path="/extractos/:id" element={<Extracto />} />
+          <Route path="/domiciliares" element={<Domiciliares />} />
+          <Route path="/expediente" element={<Expediente />} />
+          <Route path="/expediente/:id" element={<Expediente />} />
+          <Route path="/mensagens" element={<Mensagens />} />
+          <Route path="/mensagens/:id" element={<Mensagens />} />
           <Route path="/utilizadores" element={<Utilizadores />} />
           <Route path="/auditoria" element={<Auditoria />} />
           <Route path="/portal" element={<Portal />} />

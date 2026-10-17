@@ -35,7 +35,7 @@ export default function NovaLicenca({ pessoa: inicial, aoFechar, aoGuardar }) {
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Pessoa" obrigatorio col="col-12">
-          {pessoa ? <div className="d-flex align-items-center gap-2"><strong>{pessoa.postoAbreviatura ? `${pessoa.postoAbreviatura} ` : ''}{pessoa.nome}</strong>{!inicial && <button type="button" className="btn btn-xs btn-light" onClick={() => setPessoa(null)}>mudar</button>}</div> : <EscolherPessoa aoEscolher={setPessoa} />}
+          {pessoa ? <div className="d-flex align-items-center gap-2"><strong>{pessoa.postoAbreviatura ? `${pessoa.postoAbreviatura} ` : ''}{pessoa.nome}</strong>{!inicial && <button type="button" className="btn btn-xs btn-secondary" onClick={() => setPessoa(null)}>mudar</button>}</div> : <EscolherPessoa aoEscolher={setPessoa} />}
         </Campo>
         <Campo rotulo="Tipo" obrigatorio col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={tipos} vazio={null} /></Campo>
         <Campo rotulo="Início" obrigatorio col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>

@@ -1,5 +1,12 @@
 import { conflito, invalido, naoEncontrado } from '../erros.js'
-import { FUNCOES, POSTOS, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { CATEGORIAS, FUNCOES, POSTOS, abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+
+// colunas do planeamento: escalões dos oficiais, sargentos, praças e civis
+const CURTOS = { oficial_general: 'Of. Gen.', oficial_superior: 'Of. Sup.', oficial_capitao: 'Of. Cap.', oficial_subalterno: 'Of. Sub.', sargento: 'Sarg.', praca: 'Praças' }
+export const COLUNAS_PLANEAMENTO = [...Object.entries(CATEGORIAS).map(([k, v]) => [k, CURTOS[k], v.nome]), ['civil', 'Civis', 'Pessoal civil']]
+const categoriaDe = (p) => (p.tipo === 'civil' ? 'civil' : POSTOS[p.posto]?.categoria ?? null)
+const categoriaDoCargo = (c) => (c.tipo === 'civil' || !c.postoRequerido ? 'civil' : POSTOS[c.postoRequerido].categoria)
+const vazio = () => Object.fromEntries(COLUNAS_PLANEAMENTO.map(([k]) => [k, 0]))
 import { exigir } from './sessao.js'
 
 // quadro orgânico da Escola: unidades (órgãos e serviços) e os cargos de cada uma, com os lugares
@@ -12,6 +19,79 @@ export class ServicoOrganica {
     exigir(u, 'ver')
     const l = await this.bd.unidade.findMany({ include: { _count: { select: { pessoas: { where: { ativo: true } }, cargos: true } } }, orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] })
     return l.map(({ _count, ...x }) => ({ ...x, pessoas: _count.pessoas, cargos: _count.cargos }))
+  }
+
+  /*
+    Árvore orgânica com os números do planeamento (como no SIGP): para cada unidade e para a Escola toda,
+    o efectivo previsto (lugares dos cargos) e o existente (pessoas colocadas), por categoria — contando as
+    subunidades. As empregadas domiciliares não entram.
+  */
+  async arvore(u) {
+    exigir(u, 'ver')
+    const [unidades, cargos, pessoas] = await Promise.all([
+      this.bd.unidade.findMany({ orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] }),
+      this.bd.cargo.findMany({ select: { id: true, unidadeId: true, vagas: true, tipo: true, postoRequerido: true } }),
+      this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, select: { unidadeId: true, cargoId: true, tipo: true, posto: true, genero: true, vinculo: true } }),
+    ])
+    const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
+    const somar = (n, campo, cat, q = 1) => { if (n && cat) n[campo][cat] += q }
+    for (const c of cargos) {
+      const n = no.get(c.unidadeId)
+      if (!n) continue
+      n.cargos++
+      n.lugares += c.vagas
+      somar(n, 'previsto', categoriaDoCargo(c), c.vagas)
+    }
+    const ocupadosPorCargo = new Map()
+    for (const p of pessoas) {
+      const n = no.get(p.unidadeId)
+      if (!n) continue
+      // os estudantes dos cursos não fazem parte do efectivo da unidade: contam-se à parte
+      if (p.vinculo === 'estudante') { n.estudantes++; continue }
+      n.pessoas++
+      if (p.genero === 'F') n.mulheres++
+      somar(n, 'existente', categoriaDe(p))
+      if (p.cargoId) ocupadosPorCargo.set(p.cargoId, (ocupadosPorCargo.get(p.cargoId) ?? 0) + 1)
+    }
+    for (const c of cargos) { const n = no.get(c.unidadeId); if (n) n.ocupados += Math.min(c.vagas, ocupadosPorCargo.get(c.id) ?? 0) }
+    const raizes = []
+    for (const n of no.values()) (no.get(n.paiId)?.filhos ?? raizes).push(n)
+    // os totais de cada unidade incluem as subunidades
+    const total = (n) => {
+      for (const f of n.filhos) {
+        total(f)
+        for (const k of ['lugares', 'ocupados', 'cargos', 'mulheres', 'pessoas', 'estudantes']) n[k] += f[k]
+        for (const cat of Object.keys(n.previsto)) { n.previsto[cat] += f.previsto[cat]; n.existente[cat] += f.existente[cat] }
+      }
+      return n
+    }
+    raizes.forEach(total)
+    const escola = { id: null, nome: 'Escola Superior de Guerra', sigla: 'ESG', filhos: raizes, previsto: vazio(), existente: vazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }
+    for (const r of raizes) {
+      for (const k of ['lugares', 'ocupados', 'cargos', 'mulheres', 'pessoas', 'estudantes']) escola[k] += r[k]
+      for (const cat of Object.keys(escola.previsto)) { escola.previsto[cat] += r.previsto[cat]; escola.existente[cat] += r.existente[cat] }
+    }
+    // pessoas sem unidade também contam no existente da Escola
+    for (const p of pessoas.filter((x) => !no.has(x.unidadeId))) { if (p.vinculo === 'estudante') { escola.estudantes++; continue } escola.pessoas++; escola.existente[categoriaDe(p)] = (escola.existente[categoriaDe(p)] ?? 0) + 1; if (p.genero === 'F') escola.mulheres++ }
+    return { escola, colunas: COLUNAS_PLANEAMENTO }
+  }
+
+  // detalhe de uma unidade: caminho até à raiz, subunidades, cargos com os ocupantes (com foto)
+  async detalhe(u, id) {
+    exigir(u, 'ver')
+    const unidades = await this.bd.unidade.findMany()
+    const atual = unidades.find((x) => x.id === id)
+    if (!atual) throw naoEncontrado('Unidade não encontrada.')
+    const caminho = []
+    for (let x = atual; x; x = unidades.find((y) => y.id === x.paiId)) caminho.unshift({ id: x.id, nome: x.nome, sigla: x.sigla })
+    const cargos = await this.bd.cargo.findMany({ where: { unidadeId: id }, include: { pessoas: { where: { ativo: true }, select: { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true } } }, orderBy: [{ funcao: 'asc' }, { nome: 'asc' }] })
+    const semCargo = await this.bd.pessoa.findMany({ where: { unidadeId: id, ativo: true, cargoId: null, vinculo: { not: 'domiciliar' } }, select: { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true } })
+    const pessoa = (p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, ident: p.nip || p.numeroAgente || '', descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', ramo: p.ramo })
+    return {
+      ...atual, caminho,
+      cargos: cargos.map((c) => ({ id: c.id, nome: c.nome, funcao: c.funcao, funcaoNome: FUNCOES[c.funcao] ?? '', tipo: c.tipo, postoRequeridoNome: c.postoRequerido ? nomeDoPosto(c.postoRequerido) : c.categoriaCivil || 'Civil', categoria: CATEGORIAS[categoriaDoCargo(c)]?.nome ?? 'Civil', vagas: c.vagas, ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length), excesso: Math.max(0, c.pessoas.length - c.vagas), ocupantes: c.pessoas.map(pessoa) })),
+      semCargo: semCargo.map((p) => ({ ...pessoa(p), vinculo: p.vinculo })),
+    }
   }
 
   async guardarUnidade(u, id, { nome, sigla = '', paiId = null, ordem = 0 }) {

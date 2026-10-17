@@ -20,7 +20,7 @@ async function sql(fn) {
 }
 
 // API completa com um esquema próprio; nada é partilhado entre testes
-export async function criarAmbiente({ env = {}, enviar, hoje = '2026-10-17T10:00:00Z' } = {}) {
+export async function criarAmbiente({ env = {}, enviar, enviarBi, hoje = '2026-10-17T10:00:00Z' } = {}) {
   const esquema = `t_${crypto.randomBytes(6).toString('hex')}`
   await sql(async (c) => {
     await c.query(`CREATE SCHEMA "${esquema}"`)
@@ -29,7 +29,7 @@ export async function criarAmbiente({ env = {}, enviar, hoje = '2026-10-17T10:00
   })
   const dados = fs.mkdtempSync(path.join(os.tmpdir(), 'pessoal-'))
   const config = criarConfig({ NODE_ENV: 'test', DATABASE_URL: URL_TESTE, JWT_SECRET: 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres', ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.senha, DATA_DIR: dados, ...env })
-  const contentor = criarContentor(config, { esquema, agora: () => new Date(hoje), enviar })
+  const contentor = criarContentor(config, { esquema, agora: () => new Date(hoje), enviar, enviarBi })
   await contentor.servicos.sessao.garantirAdministrador(config.admin)
   const erros = []
   const app = criarApp(contentor, { registarErro: (e) => erros.push(e) })

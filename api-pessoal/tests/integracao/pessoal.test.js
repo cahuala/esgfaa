@@ -3,6 +3,12 @@ import assert from 'node:assert/strict'
 import { criarAmbiente, militar } from '../apoio/ambiente.js'
 import { assinar } from '../../src/aplicacao/sincronizacao.js'
 
+// a Escola envia a proposta; o extracto que chega do escalão superior é registado e aplicado
+async function porExtracto(adm, propostaId, tipo, numero, data) {
+  const e = await adm.post('/api/extractos').field('tipo', tipo).field('numero', numero).field('data', data).field('propostaId', String(propostaId)).expect(201)
+  return (await adm.post(`/api/extractos/${e.body.id}/aplicar`).expect(200)).body
+}
+
 describe('Sistema de Gestão de Pessoal', () => {
   let amb, adm
   before(async () => {
@@ -51,7 +57,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await adm.post('/api/pessoas').send(militar({ posto: 'soldado' }))).status, 400) // posto do SMO no QP
   })
 
-  it('promoção: proposta, submissão, despacho — a ficha muda e o histórico fica registado', async () => {
+  it('promoção: proposta enviada, extracto recebido — a ficha muda e o histórico fica registado', async () => {
     const p = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0002' })).expect(201)).body
     await adm.post(`/api/pessoas/${p.id}/cursos`).send({ chave: 'promocao_oficial_superior', nome: 'CPOS 2024', aproveitamento: true, fim: '2024-07-30' }).expect(201)
     const eleg = (await adm.get('/api/carreira/elegiveis').expect(200)).body.find((x) => x.id === p.id)
@@ -64,17 +70,18 @@ describe('Sistema de Gestão de Pessoal', () => {
     // a mesma pessoa não entra em duas propostas abertas
     assert.equal((await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Outra', itens: [{ pessoaId: p.id }] })).status, 400)
     await adm.post(`/api/propostas/${pr.id}/submeter`).expect(200)
-    const ap = await adm.post(`/api/propostas/${pr.id}/aprovar`).send({ documento: 'Despacho n.º 45/CEMG/2026', dataDocumento: '2026-10-15' }).expect(200)
-    assert.equal(ap.body.estado, 'aprovada')
+    assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.estado, 'enviada')
+    await porExtracto(adm, pr.id, 'promocao', '45/CEMG/2026', '2026-10-15')
+    assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.estado, 'concluida')
     const f = (await adm.get(`/api/pessoas/${p.id}`).expect(200)).body
     assert.equal(f.posto, 'major')
     assert.equal(f.dataAntiguidadePosto, '2026-10-15')
     const ev = f.eventos.find((e) => e.tipo === 'promocao')
-    assert.equal(ev.documento, 'Despacho n.º 45/CEMG/2026')
+    assert.equal(ev.documento, 'Extracto n.º 45/CEMG/2026')
     assert.equal(ev.postoAnteriorNome, 'Capitão')
   })
 
-  it('quem não cumpre a lei não segue para despacho', async () => {
+  it('quem não cumpre a lei não segue para o escalão superior', async () => {
     const p = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0003', dataAntiguidadePosto: '2024-01-01' })).expect(201)).body
     const pr = (await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Sem tempo', itens: [{ pessoaId: p.id }] }).expect(201)).body
     assert.equal(pr.naoCumprem, 1)
@@ -90,7 +97,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     const b = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0005', nome: 'Bernardo José Tchipa' })).expect(201)).body
     const pr = (await adm.post('/api/propostas').send({ tipo: 'nomeacao', titulo: 'Chefia do DE', itens: [{ pessoaId: a.id, cargoId: cargo.id, inicio: '2026-10-20' }] }).expect(201)).body
     await adm.post(`/api/propostas/${pr.id}/submeter`).expect(200)
-    await adm.post(`/api/propostas/${pr.id}/aprovar`).send({ documento: 'Ordem n.º 12/2026', dataDocumento: '2026-10-18' }).expect(200)
+    await porExtracto(adm, pr.id, 'nomeacao', '12/2026', '2026-10-18')
     const f = (await adm.get(`/api/pessoas/${a.id}`)).body
     assert.equal(f.cargoId, cargo.id)
     assert.equal(f.unidadeId, un.id)
@@ -101,7 +108,7 @@ describe('Sistema de Gestão de Pessoal', () => {
 
     const g = (await adm.post('/api/propostas').send({ tipo: 'graduacao', titulo: 'Graduação', itens: [{ pessoaId: b.id, postoProposto: 'major', inicio: '2026-11-01', justificacao: 'Cargo de Major sem militar desse posto' }] }).expect(201)).body
     await adm.post(`/api/propostas/${g.id}/submeter`).expect(200)
-    await adm.post(`/api/propostas/${g.id}/aprovar`).send({ documento: 'Despacho 3/2026', dataDocumento: '2026-10-30' }).expect(200)
+    await porExtracto(adm, g.id, 'graduacao', '3/2026', '2026-10-30')
     const fb = (await adm.get(`/api/pessoas/${b.id}`)).body
     assert.equal(fb.graduacoes[0].postoNome, 'Major')
     assert.equal(fb.graduacoes[0].ativa, true)
@@ -124,7 +131,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal(c.proximaCategoria, 'Técnico Superior de 1.ª Classe')
     const pr = (await adm.post('/api/propostas').send({ tipo: 'progressao', titulo: 'Progressões', itens: [{ pessoaId: c.id }] }).expect(201)).body
     await adm.post(`/api/propostas/${pr.id}/submeter`).expect(200)
-    await adm.post(`/api/propostas/${pr.id}/aprovar`).send({ documento: 'Despacho 9/2026', dataDocumento: '2026-10-16' }).expect(200)
+    await porExtracto(adm, pr.id, 'progressao', '9/2026', '2026-10-16')
     assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.categoriaCivil, 'Técnico Superior de 1.ª Classe')
     // a promoção é só para militares
     assert.equal((await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'X', itens: [{ pessoaId: c.id }] })).status, 400)

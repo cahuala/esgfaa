@@ -39,17 +39,17 @@ export default function Entrar() {
             <img src={Brasao} alt="Brasão da Escola Superior de Guerra" className="entrada-brasao" />
             <div>
               <span className="entrada-sobretitulo">Rede interna · Uso reservado</span>
-              <h1>Gestão de Pessoal</h1>
-              <p>Repartição de Pessoal e Quadros</p>
+              <h1>Sistema interno</h1>
+              <p>Pessoal e Quadros · Expediente · Mensagens</p>
             </div>
           </div>
           <div className="login-content">
             <form onSubmit={submeter} className="fs-13px">
               {erro && <div className="alert alert-danger d-flex align-items-center py-2 mb-20px" role="alert"><i className="fa fa-exclamation-circle me-2" />{erro}</div>}
-              <label className="entrada-rotulo" htmlFor="email">E-mail</label>
+              <label className="entrada-rotulo" htmlFor="email">NIP, n.º de agente ou e-mail</label>
               <div className="entrada-campo mb-20px">
                 <i className="fa fa-envelope" aria-hidden="true" />
-                <input type="email" id="email" className="form-control" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input type="text" id="email" className="form-control" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <label className="entrada-rotulo" htmlFor="senha">Palavra-passe</label>
               <div className="entrada-campo mb-20px">

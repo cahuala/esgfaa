@@ -11,7 +11,12 @@ export const TIPOS_PROPOSTA = {
   exoneracao: { nome: 'Exoneração', pessoal: 'ambos' },
   progressao: { nome: 'Progressão na carreira (civis)', pessoal: 'civil' },
 }
-export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', submetida: 'Submetida a despacho', aprovada: 'Aprovada', rejeitada: 'Rejeitada', cancelada: 'Cancelada' }
+/*
+  A Escola não faz despachos: prepara a proposta (com a ficha de proposta e a síntese biográfica de cada um),
+  envia-a ao escalão superior e, quando chega o extracto, regista-o (Extractos) — é o extracto que muda as fichas.
+*/
+export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', enviada: 'Enviada ao escalão superior', concluida: 'Concluída (extracto recebido)', indeferida: 'Indeferida', cancelada: 'Cancelada' }
+export const ABERTAS = ['rascunho', 'enviada']
 const INCLUIR = { itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 
@@ -61,7 +66,7 @@ export class ServicoPropostas {
 
   #apresentar(pr) {
     const itens = pr.itens.map((i) => ({
-      id: i.id, pessoaId: i.pessoaId, nome: i.pessoa.nome, nip: i.pessoa.nip, numeroAgente: i.pessoa.numeroAgente, ramo: i.pessoa.ramo,
+      id: i.id, pessoaId: i.pessoaId, nome: i.pessoa.nome, fotoId: i.pessoa.fotoId, nip: i.pessoa.nip, numeroAgente: i.pessoa.numeroAgente, ramo: i.pessoa.ramo,
       postoAtual: i.postoAtual, postoAtualNome: i.postoAtual ? nomeDoPosto(i.postoAtual, i.pessoa.ramo) : '',
       postoProposto: i.postoProposto, postoPropostoNome: i.postoProposto ? nomeDoPosto(i.postoProposto, i.pessoa.ramo) : '',
       modalidade: i.modalidade, modalidadeNome: MODALIDADES[i.modalidade] ?? '', cargoId: i.cargoId, categoriaAtual: i.categoriaAtual, categoriaProposta: i.categoriaProposta,
@@ -118,7 +123,7 @@ export class ServicoPropostas {
     if (pr.itens.some((i) => i.pessoaId === item.pessoaId)) throw invalido('Essa pessoa já está na proposta.', 'pessoaId')
     const p = await this.bd.pessoa.findUnique({ where: { id: item.pessoaId }, include: { cursos: true, eventos: true, graduacoes: true, cargo: true } })
     if (!p) throw naoEncontrado('Ficha não encontrada.')
-    const aberta = await this.bd.itemProposta.findFirst({ where: { pessoaId: p.id, proposta: { tipo: pr.tipo, estado: { in: ['rascunho', 'submetida'] } } }, include: { proposta: { select: { id: true, titulo: true } } } })
+    const aberta = await this.bd.itemProposta.findFirst({ where: { pessoaId: p.id, proposta: { tipo: pr.tipo, estado: { in: ABERTAS } } }, include: { proposta: { select: { id: true, titulo: true } } } })
     if (aberta) throw invalido(`${p.nome} já está noutra proposta em curso (#${aberta.proposta.id} — ${aberta.proposta.titulo}).`, 'pessoaId')
     const dados = await this.#verificar(pr.tipo, p, item)
     await this.bd.itemProposta.create({ data: { ...dados, propostaId: id } })
@@ -146,68 +151,32 @@ export class ServicoPropostas {
     return nova
   }
 
-  async submeter(u, id) {
+  // enviada ao escalão superior (com as fichas de proposta impressas): fica à espera do extracto
+  async submeter(u, id, { documento = '' } = {}) {
     exigir(u, 'propor')
     const pr = await this.#emPreparacao(id)
     if (!pr.itens.length) throw invalido('A proposta não tem ninguém.')
     await this.#reverificar(pr)
-    await this.bd.proposta.update({ where: { id }, data: { estado: 'submetida', submetidaEm: this.agora() } })
-    await this.auditoria.registar(u, 'submeter_proposta', `#${id}: ${pr.titulo}`)
+    await this.bd.proposta.update({ where: { id }, data: { estado: 'enviada', submetidaEm: this.agora(), ...(documento ? { documento } : {}) } })
+    await this.auditoria.registar(u, 'enviar_proposta', `#${id}: ${pr.titulo}`)
     return this.obter(u, id)
   }
 
-  // despacho favorável: atualiza as fichas e regista no histórico de cada um
-  async aprovar(u, id, { documento, dataDocumento, entidade = '' }) {
+  // o escalão superior respondeu que não (fica o motivo e o documento da resposta)
+  async indeferir(u, id, { motivo, documento = '', dataDocumento = null }) {
     exigir(u, 'decidir')
     const pr = await this.#obter(id)
-    if (pr.estado !== 'submetida') throw invalido('Só se decide uma proposta submetida.')
-    const atual = await this.#reverificar(pr)
-    const data = new Date(dataDocumento)
-    const doc = { documento, entidade, propostaId: id, criadoPor: u.email }
-    await this.bd.$transaction(async (tx) => {
-      for (const i of atual.itens) {
-        const p = i.pessoa
-        if (pr.tipo === 'promocao') {
-          await tx.pessoa.update({ where: { id: p.id }, data: { posto: i.postoProposto, dataAntiguidadePosto: data } })
-          // a promoção ao posto da graduação (ou acima) faz cessar a graduação (art. 67.º)
-          for (const g of p.graduacoes.filter((g) => g.ativa && POSTOS[g.posto].grau <= POSTOS[i.postoProposto].grau)) await tx.graduacao.update({ where: { id: g.id }, data: { ativa: false, fim: data } })
-          await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'promocao', data, postoAnterior: i.postoAtual, postoNovo: i.postoProposto, descricao: `Por ${(MODALIDADES[i.modalidade] ?? '').toLowerCase()}` } })
-        } else if (pr.tipo === 'graduacao') {
-          await tx.graduacao.create({ data: { pessoaId: p.id, posto: i.postoProposto, inicio: i.inicio ?? data, fim: i.fim, motivo: i.justificacao, propostaId: id } })
-          await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'graduacao', data: i.inicio ?? data, postoAnterior: p.posto, postoNovo: i.postoProposto, descricao: i.justificacao } })
-        } else if (pr.tipo === 'nomeacao') {
-          const cargo = await tx.cargo.findUnique({ where: { id: i.cargoId } })
-          await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: cargo.id, dataCargo: i.inicio ?? data, ...(cargo.unidadeId ? { unidadeId: cargo.unidadeId } : {}) } })
-          if (p.cargo) await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'exoneracao', data: i.inicio ?? data, cargoNome: p.cargo.nome, descricao: 'Por nomeação para outro cargo.' } })
-          await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'nomeacao', data: i.inicio ?? data, cargoNome: cargo.nome, descricao: i.fim ? `Até ${dia(i.fim)}` : '' } })
-        } else if (pr.tipo === 'exoneracao') {
-          await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: null, dataCargo: null } })
-          await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'exoneracao', data: i.inicio ?? data, cargoNome: p.cargo?.nome ?? '', descricao: i.justificacao } })
-        } else {
-          await tx.pessoa.update({ where: { id: p.id }, data: { categoriaCivil: i.categoriaProposta, dataCategoria: data } })
-          await tx.evento.create({ data: { ...doc, pessoaId: p.id, tipo: 'progressao', data, descricao: `${i.categoriaAtual} → ${i.categoriaProposta}` } })
-        }
-      }
-      await tx.proposta.update({ where: { id }, data: { estado: 'aprovada', documento, dataDocumento: data, entidade, decididoPor: u.email, decididaEm: this.agora() } })
-    })
-    await this.auditoria.registar(u, 'aprovar_proposta', `#${id}: ${pr.titulo}`, { documento, pessoas: atual.itens.length })
+    if (pr.estado !== 'enviada') throw invalido('Só se regista a resposta de uma proposta enviada.')
+    await this.bd.proposta.update({ where: { id }, data: { estado: 'indeferida', motivo, documento, dataDocumento: dataDocumento ? new Date(dataDocumento) : null, decididoPor: u.email, decididaEm: this.agora() } })
+    await this.auditoria.registar(u, 'indeferir_proposta', `#${id}: ${pr.titulo}`, { motivo })
     return this.obter(u, id)
   }
 
-  async rejeitar(u, id, { motivo }) {
-    exigir(u, 'decidir')
-    const pr = await this.#obter(id)
-    if (pr.estado !== 'submetida') throw invalido('Só se decide uma proposta submetida.')
-    await this.bd.proposta.update({ where: { id }, data: { estado: 'rejeitada', motivo, decididoPor: u.email, decididaEm: this.agora() } })
-    await this.auditoria.registar(u, 'rejeitar_proposta', `#${id}: ${pr.titulo}`, { motivo })
-    return this.obter(u, id)
-  }
-
-  // quem a preparou pode cancelá-la enquanto não tem despacho; volta à preparação se for devolvida
+  // quem a preparou pode cancelá-la enquanto não tem resposta
   async cancelar(u, id, { motivo = '' }) {
     exigir(u, 'propor')
     const pr = await this.#obter(id)
-    if (!['rascunho', 'submetida'].includes(pr.estado)) throw invalido('Esta proposta já foi decidida.')
+    if (!ABERTAS.includes(pr.estado)) throw invalido('Esta proposta já teve resposta.')
     await this.bd.proposta.update({ where: { id }, data: { estado: 'cancelada', motivo } })
     await this.auditoria.registar(u, 'cancelar_proposta', `#${id}: ${pr.titulo}`)
     return this.obter(u, id)
@@ -216,7 +185,7 @@ export class ServicoPropostas {
   async devolver(u, id, { motivo = '' }) {
     exigir(u, 'decidir')
     const pr = await this.#obter(id)
-    if (pr.estado !== 'submetida') throw invalido('Só se devolve uma proposta submetida.')
+    if (pr.estado !== 'enviada') throw invalido('Só volta à preparação uma proposta enviada (ex.: devolvida para correção).')
     await this.bd.proposta.update({ where: { id }, data: { estado: 'rascunho', motivo } })
     await this.auditoria.registar(u, 'devolver_proposta', `#${id}: ${pr.titulo}`, { motivo })
     return this.obter(u, id)

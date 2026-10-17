@@ -3,7 +3,7 @@ import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verif
 import { CARREIRAS_CIVIS, VINCULOS_CIVIS, verificarProgressaoCivil } from './civis.js'
 
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
-export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário' }
+export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário', domiciliar: 'Empregada(o) domiciliar' }
 export const HABILITACOES = { base: 'Ensino de base', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 export const GENEROS = { M: 'Masculino', F: 'Feminino' }
 export const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
@@ -57,19 +57,22 @@ export function comDerivados(p, hoje = new Date()) {
     const prog = verificarProgressaoCivil(p, { hoje })
     f.proximaCategoria = prog.categoriaProposta
     f.elegivelPromocao = prog.elegivel
-    f.descricao = p.categoriaCivil || 'Civil'
+    f.descricao = p.vinculo === 'domiciliar' ? 'Empregada(o) domiciliar' : p.categoriaCivil || 'Civil'
+    if (p.militarAlocado) f.militarAlocadoNome = `${abreviaturaDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo)} ${p.militarAlocado.nome}`
   }
   f.vinculoNome = VINCULOS[p.vinculo] ?? ''
   f.generoNome = GENEROS[p.genero] ?? ''
   f.habilitacaoNome = HABILITACOES[p.habilitacao] ?? ''
   delete f.unidade
   delete f.cargo
+  delete f.militarAlocado
   return f
 }
 
 // verifica a coerência dos dados de uma ficha (já validados no formato); devolve a mensagem do 1.º problema
 export function problemaNaFicha(p) {
   if (p.tipo === 'militar') {
+    if (p.vinculo === 'domiciliar') return ['vinculo', 'Empregados domiciliares são pessoal civil.']
     if (!RAMOS[p.ramo]) return ['ramo', 'Indique o ramo (Exército, Força Aérea ou Marinha).']
     if (!POSTOS[p.posto]) return ['posto', 'Indique o posto.']
     if (!FORMAS_SERVICO[p.fps]) return ['fps', 'Indique a forma de prestação de serviço.']
@@ -77,6 +80,7 @@ export function problemaNaFicha(p) {
     if (p.quadroEspecial && !quadroEspecial(p.ramo, p.quadroEspecial)) return ['quadroEspecial', 'Esse quadro especial não existe no ramo.']
     if (['aspirante', 'subsargento', 'soldado', 'segundo_cabo'].includes(p.posto) && p.fps === 'QP') return ['posto', 'Esse posto é do Serviço Militar Obrigatório (art. 127.º).']
   } else {
+    if (p.vinculo === 'domiciliar' && !p.militarAlocadoId) return ['militarAlocadoId', 'Indique o oficial a quem a empregada(o) domiciliar está afecta(o).']
     if (p.carreiraCivil && !CARREIRAS_CIVIS[p.carreiraCivil]) return ['carreiraCivil', 'Carreira desconhecida.']
     if (p.carreiraCivil && p.categoriaCivil && !CARREIRAS_CIVIS[p.carreiraCivil].categorias.includes(p.categoriaCivil)) return ['categoriaCivil', 'A categoria não é dessa carreira.']
   }

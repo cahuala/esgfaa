@@ -61,9 +61,9 @@ export default function NovaProposta({ pessoa, aoFechar, aoCriar, tipoInicial })
           </>
         )}
         {pessoa && <Campo rotulo="Justificação" col="col-12"><textarea className="form-control form-control-sm" rows={2} value={item.justificacao ?? ''} onChange={mudar('justificacao')} /></Campo>}
-        <Campo rotulo="Fundamentação da proposta" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} placeholder="Texto que acompanha a proposta a despacho." /></Campo>
+        <Campo rotulo="Fundamentação da proposta" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} placeholder="Texto que acompanha a proposta (aparece nas fichas de proposta)." /></Campo>
       </div>
-      <p className="small text-muted mb-0"><i className="fa fa-balance-scale me-1" />O sistema verifica as condições da Lei n.º 13/18 para cada pessoa; quem não as cumpre não segue para despacho.</p>
+      <p className="small text-muted mb-0"><i className="fa fa-balance-scale me-1" />O sistema verifica as condições da Lei n.º 13/18 para cada pessoa; quem não as cumpre não segue para o escalão superior.</p>
     </Modal>
   )
 }

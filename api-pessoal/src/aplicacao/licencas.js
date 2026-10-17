@@ -20,8 +20,8 @@ export class ServicoLicencas {
     if (ano) where.inicio = { gte: new Date(`${ano}-01-01`), lte: new Date(`${ano}-12-31`) }
     if (estado === 'em_curso') Object.assign(where, { inicio: { lte: new Date(hoje) }, fim: { gte: new Date(hoje) } })
     if (estado === 'futura') where.inicio = { gt: new Date(hoje) }
-    const l = await this.bd.licenca.findMany({ where, include: { pessoa: { select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, ramo: true } } }, orderBy: { inicio: 'desc' }, take: 5000 })
-    return l.map((x) => ({ ...x, inicio: dia(x.inicio), fim: dia(x.fim), tipoNome: NOMES_LICENCA[x.tipo] ?? x.tipo, nome: x.pessoa.nome, identificacao: x.pessoa.nip || x.pessoa.numeroAgente || '', postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : 'Civil', estado: dia(x.inicio) > hoje ? 'futura' : dia(x.fim) < hoje ? 'terminada' : 'em_curso', pessoa: undefined }))
+    const l = await this.bd.licenca.findMany({ where, include: { pessoa: { select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, ramo: true, fotoId: true } } }, orderBy: { inicio: 'desc' }, take: 5000 })
+    return l.map((x) => ({ ...x, inicio: dia(x.inicio), fim: dia(x.fim), tipoNome: NOMES_LICENCA[x.tipo] ?? x.tipo, nome: x.pessoa.nome, fotoId: x.pessoa.fotoId, identificacao: x.pessoa.nip || x.pessoa.numeroAgente || '', postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : 'Civil', estado: dia(x.inicio) > hoje ? 'futura' : dia(x.fim) < hoje ? 'terminada' : 'em_curso', pessoa: undefined }))
   }
 
   // verifica sem gravar (o formulário mostra as condições antes de confirmar)

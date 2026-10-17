@@ -10,6 +10,9 @@ import { autenticar, validar } from './middlewares.js'
 import { invalido } from '../erros.js'
 import { exigir, PAPEIS } from '../aplicacao/sessao.js'
 import { referencias } from '../dominio/pessoal/referencias.js'
+import { TIPOS_DOCUMENTO, ESTADOS_PROCESSO } from '../aplicacao/processos.js'
+import { TIPOS_EXTRACTO } from '../aplicacao/extractos.js'
+import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expediente.js'
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
@@ -31,7 +34,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/eu', (req, res) => res.json(s.sessao.eu(u(req))))
   r.post('/mudar-senha', validar({ body: E.mudarSenha }), async (req, res) => res.json(await s.sessao.mudarSenha(u(req), req.dados.body)))
   r.post('/sair', async (req, res) => { await s.sessao.sair(u(req)); res.status(204).end() })
-  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA }))
+  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
 
   r.get('/painel', async (req, res) => res.json(await s.painel.resumo(u(req))))
 
@@ -67,6 +70,96 @@ export function rotas({ servicos: s, config }) {
     res.sendFile(path.join(config.pastaFotos, path.basename(f)), { dotfiles: 'deny' })
   })
 
+  // importação por Excel, BI, fotos em lote, domiciliares
+  r.post('/pessoas/importar', validar({ body: E.importar }), async (req, res) => res.json(await s.importacao.importar(u(req), req.dados.body)))
+  r.get('/bi/:numero', validar({ params: z.object({ numero: z.string().max(20) }) }), async (req, res) => res.json(await s.pessoas.consultarBi(u(req), req.dados.params.numero)))
+  // fotografias em lote: o nome de cada ficheiro é o NIP ou o n.º de agente (já reduzidas no navegador)
+  const lote = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxFoto, files: 500 } })
+  r.post('/fotos/lote', lote.array('fotos', 500), async (req, res) => {
+    exigir(u(req), 'editar')
+    const resultados = []
+    for (const f of req.files ?? []) {
+      const ident = path.parse(f.originalname).name.trim().toUpperCase()
+      const ext = tipoImagem(f.buffer)
+      const p = ident && await s.pessoas.porIdentificacao(ident)
+      if (!ext || !p) { resultados.push({ ficheiro: f.originalname, ok: false, erro: !ext ? 'Não é uma imagem JPG/PNG/WEBP.' : 'Nenhuma ficha com esse NIP / n.º de agente.' }); continue }
+      const nome = `${crypto.randomUUID()}.${ext}`
+      await fs.promises.writeFile(path.join(config.pastaFotos, nome), f.buffer)
+      const antiga = await s.pessoas.guardarFoto(u(req), p.id, nome)
+      if (antiga) fs.rm(path.join(config.pastaFotos, path.basename(antiga)), { force: true }, () => {})
+      resultados.push({ ficheiro: f.originalname, ok: true, pessoaId: p.id, nome: p.nome })
+    }
+    res.json({ resultados })
+  })
+  r.get('/domiciliares', async (req, res) => res.json(await s.pessoas.domiciliares(u(req))))
+
+  // processos individuais e documentos digitalizados
+  const documento = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxDocumento, files: 10 } })
+  const enviarFicheiro = (res, f) => {
+    const inline = /^(application\/pdf|image\/)/.test(f.mime ?? '')
+    res.set('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(f.nome || 'documento')}`)
+    if (f.mime) res.type(f.mime)
+    res.set('Cache-Control', 'private, no-store')
+    res.sendFile(f.caminho, { dotfiles: 'deny' })
+  }
+  r.get('/processos', validar({ query: z.object({ incompletos: z.string().max(5).optional() }) }), async (req, res) => res.json(await s.processos.catalogo(u(req), { incompletos: Boolean(req.dados.query.incompletos) })))
+  r.put('/processos/:id', validar({ params: E.pId, body: E.processo }), async (req, res) => res.json(await s.processos.guardar(u(req), req.dados.params.id, req.dados.body)))
+  r.get('/pessoas/:id/documentos', validar({ params: E.pId }), async (req, res) => res.json(await s.processos.documentos(u(req), req.dados.params.id)))
+  r.post('/pessoas/:id/documentos', validar({ params: E.pId }), documento.single('ficheiro'), async (req, res) => {
+    const d = E.documentoPessoal.parse(req.body ?? {})
+    res.status(201).json(await s.processos.adicionarDocumento(u(req), req.dados.params.id, d, req.file))
+  })
+  r.get('/documentos/:id/ficheiro', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.processos.ficheiro(u(req), req.dados.params.id)))
+  r.delete('/documentos/:id', validar({ params: E.pId }), async (req, res) => { await s.processos.removerDocumento(u(req), req.dados.params.id); res.status(204).end() })
+
+  // extractos de ordem (promoção, nomeação, reforma…)
+  r.get('/extractos', validar({ query: z.object({ tipo: z.string().max(20).optional(), estado: z.string().max(20).optional() }) }), async (req, res) => res.json(await s.extractos.listar(u(req), req.dados.query)))
+  r.post('/extractos', documento.single('ficheiro'), async (req, res) => {
+    const d = E.extracto.parse(req.body ?? {})
+    res.status(201).json(await s.extractos.criar(u(req), d, req.file))
+  })
+  r.get('/extractos/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.extractos.obter(u(req), req.dados.params.id)))
+  r.get('/extractos/:id/ficheiro', validar({ params: E.pId }), async (req, res) => { const f = await s.extractos.ficheiro(u(req), req.dados.params.id); enviarFicheiro(res, { ...f, mime: f.nome.toLowerCase().endsWith('.pdf') ? 'application/pdf' : undefined }) })
+  r.post('/extractos/:id/itens', validar({ params: E.pId, body: E.itemExtracto }), async (req, res) => res.json(await s.extractos.adicionarItem(u(req), req.dados.params.id, req.dados.body)))
+  r.put('/extractos/:id/itens/:sub', validar({ params: E.pIdSub, body: E.editarItemExtracto }), async (req, res) => res.json(await s.extractos.editarItem(u(req), req.dados.params.id, req.dados.params.sub, req.dados.body)))
+  r.delete('/extractos/:id/itens/:sub', validar({ params: E.pIdSub }), async (req, res) => res.json(await s.extractos.removerItem(u(req), req.dados.params.id, req.dados.params.sub)))
+  r.post('/extractos/:id/aplicar', validar({ params: E.pId }), async (req, res) => res.json(await s.extractos.aplicar(u(req), req.dados.params.id)))
+  r.delete('/extractos/:id', validar({ params: E.pId }), async (req, res) => { await s.extractos.remover(u(req), req.dados.params.id); res.status(204).end() })
+
+  // orgânica (árvore com o planeamento)
+  r.get('/organica', async (req, res) => res.json(await s.organica.arvore(u(req))))
+  r.get('/organica/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.organica.detalhe(u(req), req.dados.params.id)))
+
+  // expediente entre as áreas
+  const anexos = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxDocumento, files: 20 } })
+  r.get('/expediente', validar({ query: z.object({ caixa: z.enum(['por_receber', 'na_unidade', 'enviados', 'arquivo', 'todos']).default('por_receber') }) }), async (req, res) => res.json(await s.expediente.listar(u(req), req.dados.query)))
+  r.get('/expediente/unidades', async (req, res) => res.json(await s.expediente.unidadesDestino(u(req))))
+  r.post('/expediente', anexos.array('anexos', 20), async (req, res) => {
+    let dados
+    try { dados = JSON.parse(req.body?.dados ?? '{}') } catch { throw invalido('Pedido mal formado.') }
+    res.status(201).json(await s.expediente.criar(u(req), E.expediente.parse(dados), req.files ?? []))
+  })
+  r.get('/expediente/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.obter(u(req), req.dados.params.id)))
+  r.post('/expediente/:id/receber', validar({ params: E.pId, body: z.object({ fisico: z.boolean().default(false) }) }), async (req, res) => res.json(await s.expediente.receber(u(req), req.dados.params.id, req.dados.body)))
+  r.post('/expediente/:id/encaminhar', validar({ params: E.pId, body: E.encaminhar }), async (req, res) => res.json(await s.expediente.encaminhar(u(req), req.dados.params.id, req.dados.body)))
+  r.post('/expediente/:id/movimentos/:sub/entregue', validar({ params: E.pIdSub, body: E.entregue }), async (req, res) => res.json(await s.expediente.entregarFisico(u(req), req.dados.params.id, req.dados.params.sub, req.dados.body)))
+  r.post('/expediente/:id/arquivar', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, true)))
+  r.post('/expediente/:id/reabrir', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, false)))
+  r.post('/expediente/:id/anexos', validar({ params: E.pId }), anexos.array('anexos', 20), async (req, res) => res.json(await s.expediente.anexar(u(req), req.dados.params.id, req.files ?? [])))
+  r.get('/anexos/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.expediente.anexo(u(req), req.dados.params.id)))
+
+  // mensagens internas
+  r.get('/mensagens/conversas', async (req, res) => res.json(await s.mensagens.conversas(u(req))))
+  r.get('/mensagens/contactos', async (req, res) => res.json(await s.mensagens.contactos(u(req))))
+  r.post('/mensagens/directa', validar({ body: z.object({ utilizadorId: E.pId.shape.id }) }), async (req, res) => res.json(await s.mensagens.directa(u(req), req.dados.body.utilizadorId)))
+  r.post('/mensagens/grupo', validar({ body: E.grupo }), async (req, res) => res.status(201).json(await s.mensagens.grupo(u(req), req.dados.body)))
+  r.get('/mensagens/conversas/:id', validar({ params: E.pId, query: z.object({ depois: z.coerce.number().int().min(0).default(0) }) }), async (req, res) => res.json(await s.mensagens.mensagens(u(req), req.dados.params.id, req.dados.query)))
+  r.post('/mensagens/conversas/:id', validar({ params: E.pId }), anexos.single('ficheiro'), async (req, res) => res.status(201).json(await s.mensagens.enviar(u(req), req.dados.params.id, { texto: req.body?.texto ?? '' }, req.file)))
+  r.get('/mensagens/anexo/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.mensagens.anexo(u(req), req.dados.params.id)))
+
+  // contadores do cabeçalho: documentos por receber e mensagens por ler
+  r.get('/avisos', async (req, res) => res.json({ ...(await s.expediente.contadores(u(req))), mensagens: await s.mensagens.naoLidas(u(req)) }))
+
   // carreiras
   r.get('/carreira/antiguidade', validar({ query: z.object({ posto: z.string().max(30).optional(), ramo: z.string().max(3).optional() }) }), async (req, res) => res.json(await s.pessoas.antiguidade(u(req), req.dados.query)))
   r.get('/carreira/elegiveis', validar({ query: z.object({ tipo: z.enum(['militar', 'civil']).default('militar') }) }), async (req, res) => res.json(await s.pessoas.elegiveis(u(req), req.dados.query)))
@@ -78,9 +171,9 @@ export function rotas({ servicos: s, config }) {
   r.put('/propostas/:id', validar({ params: E.pId, body: E.editarProposta }), async (req, res) => res.json(await s.propostas.editar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/propostas/:id/itens', validar({ params: E.pId, body: E.itemProposta }), async (req, res) => res.status(201).json(await s.propostas.adicionarItem(u(req), req.dados.params.id, req.dados.body)))
   r.delete('/propostas/:id/itens/:sub', validar({ params: E.pIdSub }), async (req, res) => res.json(await s.propostas.removerItem(u(req), req.dados.params.id, req.dados.params.sub)))
-  r.post('/propostas/:id/submeter', validar({ params: E.pId }), async (req, res) => res.json(await s.propostas.submeter(u(req), req.dados.params.id)))
-  r.post('/propostas/:id/aprovar', validar({ params: E.pId, body: E.despacho }), async (req, res) => res.json(await s.propostas.aprovar(u(req), req.dados.params.id, req.dados.body)))
-  r.post('/propostas/:id/rejeitar', validar({ params: E.pId, body: E.motivoObrigatorio }), async (req, res) => res.json(await s.propostas.rejeitar(u(req), req.dados.params.id, req.dados.body)))
+  // a Escola envia a proposta ao escalão superior; a resposta é o extracto (ou o indeferimento)
+  r.post('/propostas/:id/submeter', validar({ params: E.pId, body: E.enviarProposta }), async (req, res) => res.json(await s.propostas.submeter(u(req), req.dados.params.id, req.dados.body)))
+  r.post('/propostas/:id/indeferir', validar({ params: E.pId, body: E.indeferir }), async (req, res) => res.json(await s.propostas.indeferir(u(req), req.dados.params.id, req.dados.body)))
   r.post('/propostas/:id/devolver', validar({ params: E.pId, body: E.motivo }), async (req, res) => res.json(await s.propostas.devolver(u(req), req.dados.params.id, req.dados.body)))
   r.post('/propostas/:id/cancelar', validar({ params: E.pId, body: E.motivo }), async (req, res) => res.json(await s.propostas.cancelar(u(req), req.dados.params.id, req.dados.body)))
 
@@ -102,6 +195,7 @@ export function rotas({ servicos: s, config }) {
 
   // administração
   r.get('/utilizadores', async (req, res) => res.json(await s.sessao.listar(u(req))))
+  r.post('/utilizadores/contas-pessoas', validar({ body: E.contasPessoas }), async (req, res) => res.json(await s.sessao.criarContasPessoas(u(req), req.dados.body)))
   r.post('/utilizadores', validar({ body: E.utilizador }), async (req, res) => res.status(201).json(await s.sessao.criar(u(req), req.dados.body)))
   r.put('/utilizadores/:id', validar({ params: E.pId, body: E.editarUtilizador }), async (req, res) => res.json(await s.sessao.editar(u(req), req.dados.params.id, req.dados.body)))
   r.get('/auditoria', validar({ query: z.object({ de: z.string().max(10).optional(), ate: z.string().max(10).optional(), utilizador: z.string().max(200).optional(), acao: z.string().max(40).optional() }) }), async (req, res) => res.json(await s.auditoria.listar(u(req), req.dados.query)))
