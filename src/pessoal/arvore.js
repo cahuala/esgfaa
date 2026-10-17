@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useDados } from './useDados'
 
 /*
-  A orgânica da Escola é uma árvore (como as U/E/O do SIGP). Este gancho dá-a já pronta a usar:
+  A orgânica da Escola é uma árvore (unidades, subunidades, secções). Este gancho dá-a já pronta a usar:
   lista (pela ordem da árvore, com o nível), opcoes (para as listas de escolha, com recuo e o tipo),
   descendentes(id) (a unidade e todas as subunidades) e caminho(id) («DE › Secção de Estratégia»).
 */

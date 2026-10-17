@@ -4,7 +4,7 @@ const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 const numerico = (a, b) => String(a).localeCompare(String(b), 'pt', { numeric: true })
 
 /*
-  Estante do arquivo dos processos individuais (como no SIGP): cada estante com as prateleiras e as
+  Estante do arquivo dos processos individuais: cada estante com as prateleiras e as
   posições; a pasta com processo é preta, com o n.º, o posto e o nome; as posições livres ficam claras.
   processos: [{ id, numero, estante, prateleira, posicao, nome, abreviatura, nip }]
 */

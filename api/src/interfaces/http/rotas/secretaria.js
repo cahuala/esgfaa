@@ -82,6 +82,10 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/cadeiras/:id/eventos', validar({ params: pId }), async (req, res) => res.json(await a.calendario.eventosDaCadeira(ctx(req), req.dados.params.id)))
   r.post('/eventos', validar({ body: E.evento }), async (req, res) => res.status(201).json(await a.calendario.criarEvento(ctx(req), req.dados.body)))
   r.delete('/eventos/:id', validar({ params: pId }), async (req, res) => { await a.calendario.apagarEvento(ctx(req), req.dados.params.id); res.status(204).end() })
+  // prazos de lançamento das notas (o docente só lança dentro deles)
+  r.get('/prazos-notas', async (req, res) => res.json(await a.prazosNotas.listar(ctx(req))))
+  r.post('/prazos-notas', validar({ body: E.prazoNotas }), async (req, res) => res.status(201).json(await a.prazosNotas.criar(ctx(req), req.dados.body)))
+  r.delete('/prazos-notas/:id', validar({ params: pId }), async (req, res) => { await a.prazosNotas.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
 
   r.get('/avisos', async (req, res) => res.json(await a.avisos.listarAvisos(ctx(req))))
   r.post('/avisos', validar({ body: E.avisoGeral }), async (req, res) => res.status(201).json(await a.avisos.criarAviso(ctx(req), req.dados.body)))

@@ -67,6 +67,8 @@ import { ServicoMateriais } from './aplicacao/academico/ensino/materiais.js'
 import { ServicoCopiaSeguranca } from './aplicacao/academico/ensino/copiaSeguranca.js'
 import { ServicoPacotes } from './aplicacao/academico/ensino/pacotes.js'
 import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
+import { ServicoPrazosNotas } from './aplicacao/academico/administracao/prazosNotas.js'
+import { RepositorioPrazosNotas } from './infraestrutura/repositorios/prazosNotas.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
 import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
@@ -129,6 +131,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     contasPortal: new RepositorioContasPortal({ prisma }),
     academico: new RepositorioAcademico({ prisma }),
     recursos: new RepositorioRecursosCadeira({ prisma }),
+    prazosNotas: new RepositorioPrazosNotas({ prisma }),
     comunicacao: new RepositorioComunicacao({ prisma }),
     copias: new RepositorioCopias({ prisma }),
     inqueritos: new RepositorioInqueritos({ prisma }),
@@ -166,7 +169,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     // avisos no telemóvel (os testes trazem um falso; null desliga)
     push: 'push' in externos ? externos.push : criarPush(config),
   })
-  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, auditoria, notificacoes, relogio })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio })
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
@@ -228,6 +231,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       cadeiras: new ServicoCadeiras(d),
       pautas: new ServicoPautasAdministracao(d),
       calendario: new ServicoCalendarioAcademico(d),
+      prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),
     }

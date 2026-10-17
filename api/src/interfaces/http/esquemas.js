@@ -141,6 +141,10 @@ export const evento = z.object({
   turmaId: z.union([idNumerico, z.null()]).optional(), cadeiraId: z.union([idNumerico, z.null()]).optional(),
 })
 export const intervalo = z.object({ de: dataIso, ate: dataIso })
+export const prazoNotas = z.object({
+  componente: texto(10), inicio: dataIso, fim: dataIso, descricao: texto(300).optional(),
+  turmaId: z.union([idNumerico, z.null()]).optional(), cadeiraId: z.union([idNumerico, z.null()]).optional(),
+})
 export const conclusao = z.object({ concluido: z.boolean().optional() })
 const dataHora = z.union([z.string().max(40), z.null()]).optional()
 export const questionario = z.object({

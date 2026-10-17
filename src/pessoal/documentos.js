@@ -97,7 +97,7 @@ const tabelaDados = (autoTable, doc, y, titulo, pares) => {
 const identificacao = (p) => (p.tipo === 'militar' ? `${p.postoNome} · ${p.ramoNome} · NIP ${p.nip ?? '—'}` : `${p.categoriaCivil ?? 'Civil'} · N.º de agente ${p.numeroAgente ?? '—'}`)
 
 /*
-  Síntese biográfica (como no SIGP): identificação, filiação, carreira, cursos, cargos e louvores,
+  Síntese biográfica: identificação, filiação, carreira, cursos, cargos e louvores,
   com fotografia. p = ficha completa (GET /pessoas/:id).
 */
 export async function sinteseBiografica(p) {
@@ -126,7 +126,7 @@ async function desenharSintese(doc, autoTable, p) {
       ['Ingresso nas FAA', pt(p.dataIngresso)], ['Antiguidade no posto', pt(p.dataAntiguidadePosto)], ['Situação', p.situacaoNome], ['Tempo de serviço', p.tempoServico !== null ? `${Math.floor(p.tempoServico)} anos` : ''],
     ])
   } else {
-    y = tabelaDados(autoTable, doc, y, 'Situação profissional', [['Categoria (SIGP)', p.carreiraNome], ['Classe', p.categoriaCivil ?? ''], ['Admissão', pt(p.dataAdmissao)], ['Vínculo', p.vinculoCivilNome]])
+    y = tabelaDados(autoTable, doc, y, 'Situação profissional', [['Categoria', p.carreiraNome], ['Classe', p.categoriaCivil ?? ''], ['Admissão', pt(p.dataAdmissao)], ['Vínculo', p.vinculoCivilNome]])
   }
   const tabela = (titulo, cab, corpo) => {
     if (!corpo.length) return

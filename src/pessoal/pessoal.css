@@ -60,7 +60,7 @@
 .pes-percurso li::before { content: ''; position: absolute; left: -7px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #2d5a3d; }
 .pes-percurso li.pendente::before { background: #c9a227; }
 @media (max-width: 768px) { .pes-chat { grid-template-columns: 1fr; height: auto; } .pes-chat-lista { max-height: 260px; border-right: 0; } .pes-chat-mensagens { min-height: 50vh; } }
-/* estante dos processos individuais (como no SIGP): madeira clara, pastas pretas com o número */
+/* estante dos processos individuais : madeira clara, pastas pretas com o número */
 .pes-estantes { display: grid; gap: 1.25rem; }
 .pes-estante { background: linear-gradient(180deg, #f5f0e6 0%, #e8dcc8 100%); border: 1px solid #d4c9b0; border-radius: 12px; padding: 12px 14px 18px; position: relative; box-shadow: inset 0 -4px 8px rgba(0, 0, 0, .05); }
 .pes-estante::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: linear-gradient(180deg, #8b6914, #6b4f0f); border-radius: 0 0 12px 12px; }
@@ -90,3 +90,37 @@
 .pes-carregar-lista li { display: flex; align-items: center; gap: .6rem; border: 1px solid rgba(0, 0, 0, .08); border-radius: 8px; padding: .35rem .5rem; font-size: .8rem; background: #fff; min-width: 0; }
 .pes-carregar-mini { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 .text-theme { color: #2d5a3d; }
+.pes-ficha-foto { width: 120px; height: 150px; margin: 0 auto; border-radius: 8px; background: #eef1ee; border: 1px solid rgba(0, 0, 0, .1); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pes-ficha-foto img { width: 100%; height: 100%; object-fit: cover; }
+/* orgânica: organograma hierárquico */
+.pes-org-kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+@media (max-width: 900px) { .pes-org-kpis { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 500px) { .pes-org-kpis { grid-template-columns: repeat(2, 1fr); } }
+.pes-org-kpi { background: #fff; border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+.pes-org-kpi-ic { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.pes-org-kpi b { display: block; font-size: 20px; line-height: 1.1; }
+.pes-org-kpi small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; color: #6c757d; font-weight: 600; }
+.pes-org-painel { background: #fff; border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; overflow: hidden; }
+.pes-org-cab { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; border-bottom: 1px solid rgba(0, 0, 0, .08); background: #f8faf8; font-weight: 700; font-size: .85rem; }
+.pes-org-linha { border-bottom: 1px solid #f0f2f0; }
+.pes-org-linha:last-child { border-bottom: 0; }
+.pes-org-interior { display: flex; align-items: center; gap: 10px; padding: 9px 12px; transition: background .12s; }
+.pes-org-interior:hover { background: #f6faf6; }
+.pes-org-seta { border: 0; background: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: #6c757d; padding: 0; flex-shrink: 0; }
+.pes-org-seta i.fa-chevron-right { transition: transform .2s; font-size: 11px; }
+.pes-org-seta i.aberta { transform: rotate(90deg); }
+.pes-org-nome { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: .85rem; }
+.pes-org-nome a { font-weight: 600; color: #1f3a2d; text-decoration: none; }
+.pes-org-nome a:hover { text-decoration: underline; }
+.pes-org-sigla { font-size: 10px; background: #e3f2fd; color: #1565c0; padding: 1px 7px; border-radius: 4px; font-weight: 700; }
+.pes-org-tipo { font-size: 9.5px; padding: 1px 8px; border-radius: 10px; font-weight: 700; }
+.pes-org-stats { display: flex; align-items: center; gap: 10px; flex-shrink: 0; font-size: 11.5px; font-weight: 600; }
+.pes-org-barra { width: 54px; height: 5px; background: #eee; border-radius: 3px; overflow: hidden; display: inline-block; }
+.pes-org-barra > span { display: block; height: 100%; border-radius: 3px; }
+.pes-org-accoes { display: flex; gap: 2px; flex-shrink: 0; }
+.pes-org-accoes button { border: 0; background: none; padding: 4px 6px; border-radius: 5px; font-size: 12.5px; }
+.pes-org-accoes button:hover { background: #eef2ee; }
+.pes-org-filhos { border-left: 2px solid #e3ebe3; margin-left: 22px; }
+.pes-org-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(0, 0, 0, .1); border-radius: 8px; padding: 7px 12px; text-decoration: none; color: inherit; background: #fff; font-size: .85rem; }
+.pes-org-chip:hover { border-color: #c9a227; }
+@media (max-width: 768px) { .pes-org-stats .pes-org-barra, .pes-org-accoes { display: none; } }

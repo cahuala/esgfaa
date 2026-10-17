@@ -123,7 +123,7 @@ export default function Perfil() {
                   <Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} /><Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} /><Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
                 </> : <>
-                  <Dado r="Categoria (SIGP)" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
+                  <Dado r="Categoria" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
                   <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na classe desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   {p.remuneracao && <><Dado r="Vencimento base da categoria" v={KZ(p.remuneracao.vencimentoBase)} /><Dado r="Subsídios (alimentação + transporte)" v={KZ(p.remuneracao.subsidioAlimentacao + p.remuneracao.subsidioTransporte)} /><Dado r={`Líquido de referência (SS ${p.remuneracao.percSegSocial}% · IRT ${p.remuneracao.percIrt}%)`} v={KZ(p.remuneracao.liquido)} /></>}
                   <Dado r="Avaliação de desempenho" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} />

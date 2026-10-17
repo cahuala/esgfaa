@@ -23,7 +23,7 @@ const COLUNAS = [
   ['areaFormacao', 'Área de formação', ['area de formacao', 'formacao']], ['dataIngresso', 'Data de ingresso', ['data de ingresso', 'ingresso', 'incorporacao']],
   ['dataIngressoQP', 'Ingresso no QP', ['ingresso no qp', 'data de ingresso no qp']], ['dataAntiguidadePosto', 'Antiguidade no posto', ['antiguidade no posto', 'data do posto', 'data de promocao', 'antiguidade']],
   ['dataCargo', 'No cargo desde', ['no cargo desde', 'data do cargo', 'data de nomeacao']],
-  ['carreiraCivil', 'Categoria (civis, como no SIGP)', ['categoria', 'carreira', 'categoria civil']], ['categoriaCivil', 'Classe (civis)', ['classe', 'categoria e classe']], ['vinculoCivil', 'Vínculo (civis)', ['vinculo civil']], ['dataAdmissao', 'Admissão (civis)', ['admissao', 'data de admissao']],
+  ['carreiraCivil', 'Categoria (civis)', ['categoria', 'carreira', 'categoria civil']], ['categoriaCivil', 'Classe (civis)', ['classe', 'categoria e classe']], ['vinculoCivil', 'Vínculo (civis)', ['vinculo civil']], ['dataAdmissao', 'Admissão (civis)', ['admissao', 'data de admissao']],
 ]
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
@@ -131,7 +131,7 @@ export default function Importar() {
               </div>
               <div className="col-md-3 mb-2"><button type="button" className="btn btn-sm btn-outline-success w-100" onClick={modelo}><i className="fa fa-download me-1" />Descarregar o modelo</button></div>
             </div>
-            <p className="small text-muted mb-0">A primeira linha tem os títulos das colunas (como no modelo). As correspondências são <strong>exactas</strong>, como no SIGP: posto, ramo, forma de serviço, quadro especial, unidade (nome ou sigla) e cargo têm de existir; o que não corresponder fica a vermelho e não é gravado. Os nomes ficam em «Primeira Letra Maiúscula». Datas em dd/mm/aaaa. Primeiro o sistema simula; só grava quando confirmar.</p>
+            <p className="small text-muted mb-0">A primeira linha tem os títulos das colunas (como no modelo). As correspondências são <strong>exactas</strong>: posto, ramo, forma de serviço, quadro especial, unidade (nome ou sigla) e cargo têm de existir; o que não corresponder fica a vermelho e não é gravado. Os nomes ficam em «Primeira Letra Maiúscula». Datas em dd/mm/aaaa. Primeiro o sistema simula; só grava quando confirmar.</p>
             {folha && <div className="small mt-2"><strong>{folha.nome}</strong>: {folha.linhas.length} linha(s) · colunas reconhecidas: {folha.campos.map((c) => COLUNAS.find((x) => x[0] === c)[1]).join(', ')}{folha.ignoradas.length > 0 && <span className="text-warning"> · ignoradas: {folha.ignoradas.join(', ')}</span>}</div>}
           </Painel>
           {resultado && (

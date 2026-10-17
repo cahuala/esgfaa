@@ -4,8 +4,8 @@
   regime geral e devem ser confirmados com a legislação que a Escola aplica.
 */
 /*
-  Categorias do pessoal civil — as mesmas do SIGP (faa_categorias_civis), com o nível, o vencimento base,
-  os subsídios e os descontos. A Escola tem também docentes civis (categoria que o SIGP não tem).
+  Categorias do pessoal civil das FAA, com o nível, o vencimento base,
+  os subsídios e os descontos. A Escola tem também docentes civis.
   Dentro de cada categoria, as classes (da mais baixa para a mais alta) servem à progressão.
   No sistema, a categoria fica em carreiraCivil e a classe em categoriaCivil.
 */
@@ -17,12 +17,12 @@ export const CARREIRAS_CIVIS = {
   auxiliar_escritorio: C('Auxiliar de Escritório', 4, 190000, 10000, 7000, 'Apoio geral de escritório', ['Auxiliar de Escritório de 2.ª Classe', 'Auxiliar de Escritório de 1.ª Classe', 'Auxiliar de Escritório Principal']),
   auxiliar_servicos_gerais: C('Auxiliar de Serviços Gerais', 5, 150000, 9000, 6000, 'Limpeza, vigilância, condução, manutenção, etc.', ['Auxiliar de Serviços Gerais de 2.ª Classe', 'Auxiliar de Serviços Gerais de 1.ª Classe', 'Auxiliar de Serviços Gerais Principal']),
   trabalhador_domiciliar: C('Trabalhador Domiciliar', 6, 130000, 8000, 5000, 'Afecto a oficial superior ou general', ['Trabalhador Domiciliar'], { domiciliar: true }),
-  docente: C('Docente (ensino superior)', 1, null, 0, 0, 'Docentes civis da Escola (não existe no SIGP)', ['Assistente Estagiário', 'Assistente', 'Professor Auxiliar', 'Professor Associado', 'Professor Catedrático'], { esg: true }),
+  docente: C('Docente (ensino superior)', 1, null, 0, 0, 'Docentes civis da Escola', ['Assistente Estagiário', 'Assistente', 'Professor Auxiliar', 'Professor Associado', 'Professor Catedrático'], { esg: true }),
 }
-// nomes antigos (antes de seguir o SIGP) → categoria actual
+// nomes antigos (versão anterior) → categoria actual
 export const CATEGORIA_ANTIGA = { tecnica_superior: 'tecnico_superior', tecnica: 'tecnico_medio', tecnica_media: 'tecnico_medio', administrativa: 'administrativo', auxiliar: 'auxiliar_escritorio', operaria: 'auxiliar_servicos_gerais' }
 
-// remuneração de referência da categoria (como no SIGP): base + subsídios, e os descontos
+// remuneração de referência da categoria : base + subsídios, e os descontos
 export function remuneracaoDaCategoria(chave) {
   const c = CARREIRAS_CIVIS[chave]
   if (!c?.vencimentoBase) return null

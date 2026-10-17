@@ -28,7 +28,7 @@ export function dadosEmFalta(p, docs = []) {
 }
 
 /*
-  Processos individuais (como no SIGP): n.º PI-NNNNN de cada pessoa, onde está a pasta física
+  Processos individuais: n.º PI-NNNNN de cada pessoa, onde está a pasta física
   (estante > prateleira > posição), o estado, os documentos digitalizados e o que falta actualizar.
 */
 export class ServicoProcessos {

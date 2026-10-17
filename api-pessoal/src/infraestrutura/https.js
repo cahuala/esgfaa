@@ -3,7 +3,7 @@ import https from 'node:https'
 
 /*
   Pedidos HTTPS a serviços do Estado (ex.: api.gov.ao, a API do BI). A rede local muitas vezes não resolve
-  os domínios .gov.ao: como o SIGP, se o DNS do sistema falhar, o endereço resolve-se por DNS-over-HTTPS
+  os domínios .gov.ao: se o DNS do sistema falhar, o endereço resolve-se por DNS-over-HTTPS
   (Cloudflare e, se falhar, Google). O certificado continua a ser verificado com o nome verdadeiro.
 */
 const RESOLVEDORES = ['https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve']

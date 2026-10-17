@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { api } from '../api'
+import { api, urlFoto } from '../api'
+import { reduzirFoto } from '../fotos'
+import Carregar from '../componentes/Carregar'
 import { useSessao } from '../sessao'
 import { useArvore } from '../arvore'
 import { Cabecalho, Campo, Carregando, Escolha, Painel } from '../componentes/Ui'
@@ -23,6 +25,17 @@ export default function FormularioFicha() {
   const [d, setD] = useState(id ? null : params.get('domiciliar') ? { ...VAZIA, tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: params.get('domiciliar') } : VAZIA)
   const [oficiais, setOficiais] = useState([])
   const [aConsultar, setAConsultar] = useState(false)
+  // fotografia: escolhida aqui e enviada ao guardar (na ficha nova, depois de criada)
+  const [foto, setFoto] = useState(null)
+  const [fotoAtual, setFotoAtual] = useState(null)
+  const previa = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto])
+  useEffect(() => () => { if (previa) URL.revokeObjectURL(previa) }, [previa])
+  useEffect(() => {
+    if (!id) return undefined
+    let url = null
+    urlFoto(id).then((u) => { url = u; setFotoAtual(u) })
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [id])
   const arvore = useArvore()
   const [cargos, setCargos] = useState([])
   const [erro, setErro] = useState(null)
@@ -69,6 +82,11 @@ export default function FormularioFicha() {
     if (id) delete corpo.cargoId // o cargo muda por nomeação/exoneração
     try {
       const r = await api(id ? `/pessoas/${id}` : '/pessoas', { metodo: id ? 'PUT' : 'POST', corpo })
+      if (foto) {
+        const fd = new FormData()
+        fd.append('foto', await reduzirFoto(foto))
+        await api(`/pessoas/${r.id}/foto`, { metodo: 'PUT', formulario: fd }).catch((x) => avisar(`Ficha guardada, mas a fotografia não: ${x.message}`, 'erro'))
+      }
       avisar(id ? 'Ficha guardada.' : 'Ficha criada.')
       navegar(`/pessoas/${r.id}`)
     } catch (x) {
@@ -88,6 +106,12 @@ export default function FormularioFicha() {
 
       <Painel titulo="Identificação" icone="fa-id-card">
         <div className="row">
+          <div className="col-lg-2 col-md-3 mb-3 text-center">
+            <div className="pes-ficha-foto mb-2">{previa || fotoAtual ? <img src={previa || fotoAtual} alt="Fotografia" /> : <i className="fa fa-user fa-4x text-muted" />}</div>
+            <Carregar aceitar="image/jpeg,image/png,image/webp" maxMb={30} compacto icone="fa-camera" titulo={previa || fotoAtual ? 'Mudar fotografia' : 'Fotografia'} ajuda="JPG, PNG ou WEBP · tipo passe" ficheiros={foto ? [foto] : []} aoMudar={(l) => setFoto(l[0] ?? null)} />
+          </div>
+          <div className="col-lg-10 col-md-9">
+        <div className="row">
           <Campo rotulo="Tipo" obrigatorio col="col-md-3">
             <div className="btn-group w-100" role="group">
               {Object.entries(ref.tipos).map(([k, v]) => <button key={k} type="button" className={`btn btn-sm ${d.tipo === k ? 'btn-theme' : 'btn-outline-secondary'}`} onClick={() => set('tipo')(k)} disabled={Boolean(id)}>{v}</button>)}
@@ -106,6 +130,8 @@ export default function FormularioFicha() {
           </Campo>
           {militar && <Campo rotulo="Nome de guerra" col="col-md-3">{txt('nomeGuerra')}</Campo>}
           <Campo rotulo="E-mail institucional" col="col-md-3">{txt('email', { type: 'email', placeholder: 'nome@esgfaa.gov.ao' })}</Campo>
+        </div>
+          </div>
         </div>
       </Painel>
 
@@ -130,7 +156,7 @@ export default function FormularioFicha() {
       {!militar && (
         <Painel titulo="Situação profissional" icone="fa-briefcase">
           <div className="row">
-            <Campo rotulo="Categoria (como no SIGP)" col="col-md-3" ajuda={ref.carreirasCivis[d.carreiraCivil]?.descricao}><Escolha valor={d.carreiraCivil} aoMudar={(v) => setD({ ...d, carreiraCivil: v, categoriaCivil: ref.carreirasCivis[v]?.categorias[0] ?? '' })} opcoes={Object.entries(ref.carreirasCivis).filter(([, v]) => !v.domiciliar || d.vinculo === 'domiciliar').sort(([, a], [, b]) => a.nivel - b.nivel).map(([k, v]) => [k, `${v.nivel}. ${v.nome}`])} /></Campo>
+            <Campo rotulo="Categoria" col="col-md-3" ajuda={ref.carreirasCivis[d.carreiraCivil]?.descricao}><Escolha valor={d.carreiraCivil} aoMudar={(v) => setD({ ...d, carreiraCivil: v, categoriaCivil: ref.carreirasCivis[v]?.categorias[0] ?? '' })} opcoes={Object.entries(ref.carreirasCivis).filter(([, v]) => !v.domiciliar || d.vinculo === 'domiciliar').sort(([, a], [, b]) => a.nivel - b.nivel).map(([k, v]) => [k, `${v.nivel}. ${v.nome}`])} /></Campo>
             <Campo rotulo="Classe" col="col-md-3"><Escolha valor={d.categoriaCivil} aoMudar={set('categoriaCivil')} opcoes={categoriasCivis} /></Campo>
             {ref.carreirasCivis[d.carreiraCivil]?.vencimentoBase && <div className="col-12 small text-muted mb-2"><i className="fa fa-coins me-1" />Vencimento base da categoria: <strong>{Number(ref.carreirasCivis[d.carreiraCivil].vencimentoBase).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz</strong> · subsídio de alimentação {Number(ref.carreirasCivis[d.carreiraCivil].subsidioAlimentacao).toLocaleString('pt-PT')} Kz · transporte {Number(ref.carreirasCivis[d.carreiraCivil].subsidioTransporte).toLocaleString('pt-PT')} Kz</div>}
             <Campo rotulo="Vínculo" col="col-md-3"><Escolha valor={d.vinculoCivil} aoMudar={set('vinculoCivil')} opcoes={ref.vinculosCivis} /></Campo>

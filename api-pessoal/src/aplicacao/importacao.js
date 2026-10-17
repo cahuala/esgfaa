@@ -35,7 +35,7 @@ const daLista = (obj) => Object.entries(obj).map(([k, v]) => [k, k, typeof v ===
 const SIM = new Set(['sim', 's', 'x', '1', 'verdadeiro', 'true'])
 
 /*
-  Importação em massa a partir de uma folha (lida no navegador). Dois modos, como no SIGP:
+  Importação em massa a partir de uma folha (lida no navegador). Dois modos:
   "novos" cria fichas (NIP ou n.º de agente que já exista bloqueia a linha); "actualizar" altera as fichas
   existentes pelo NIP/n.º de agente, só nas colunas preenchidas. Todas as correspondências (posto, ramo, unidade,
   cargo…) são exactas: o que não corresponde bloqueia a linha. Com simular, só diz o que faria.
@@ -134,7 +134,7 @@ export class ServicoImportacao {
       if (tem('situacao')) d.situacao = corresponder(l.situacao, daLista(SITUACOES), 'Situação')
       if (tem('efectividade')) d.efectividade = corresponder(l.efectividade, daLista(EFECTIVIDADES), 'Efectividade')
     } else {
-      // categoria do SIGP (Técnico Superior, Técnico Médio, Administrativo…) e, dentro dela, a classe
+      // categoria do pessoal civil (Técnico Superior, Técnico Médio, Administrativo…) e, dentro dela, a classe
       if (tem('carreiraCivil')) d.carreiraCivil = corresponder(l.carreiraCivil, [...daLista(CARREIRAS_CIVIS), ...Object.entries(CATEGORIA_ANTIGA).map(([a, n]) => [n, a])], 'Categoria')
       const carreira = d.carreiraCivil ?? base?.carreiraCivil
       if (tem('categoriaCivil')) d.categoriaCivil = corresponder(l.categoriaCivil, (CARREIRAS_CIVIS[carreira]?.categorias ?? []).map((c) => [c, c]), 'Classe')

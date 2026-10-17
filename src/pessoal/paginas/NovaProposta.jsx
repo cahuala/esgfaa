@@ -11,7 +11,7 @@ const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toL
 const TIPOS = [['promocao', 'Promoção', 'fa-chevron-up'], ['nomeacao', 'Nomeação', 'fa-user-tag'], ['graduacao', 'Graduação', 'fa-star-half-alt'], ['exoneracao', 'Exoneração', 'fa-user-minus'], ['progressao', 'Progressão (civis)', 'fa-briefcase']]
 
 /*
-  Nova proposta, como no SIGP: à esquerda o efectivo (com fotografia) para seleccionar; ao meio os seleccionados
+  Nova proposta: à esquerda o efectivo (com fotografia) para seleccionar; ao meio os seleccionados
   (na promoção o posto seguinte já fica definido); à direita, na nomeação, os cargos com os lugares livres.
   Um cargo ocupado só se pode propor se quem lá está também entrar na proposta, para outro cargo.
 */

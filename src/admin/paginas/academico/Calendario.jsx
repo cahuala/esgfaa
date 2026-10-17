@@ -3,6 +3,7 @@ import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx, localAtual } from '../../../i18n/linguas'
+import PrazosNotas from './PrazosNotas'
 
 const TIPOS = {
   geral: ['bg-primary', tx('Evento')], feriado: ['bg-teal', tx('Feriado / sem aulas')],
@@ -117,6 +118,7 @@ function CalendarioAcademico() {
           </div>
         )}
       </div>
+      <PrazosNotas turmas={turmas} avisar={setAviso} />
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

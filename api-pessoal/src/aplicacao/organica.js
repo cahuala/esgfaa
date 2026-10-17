@@ -23,7 +23,7 @@ export class ServicoOrganica {
   }
 
   /*
-    Árvore orgânica com os números do planeamento (como no SIGP): para cada unidade e para a Escola toda,
+    Árvore orgânica com os números do planeamento : para cada unidade e para a Escola toda,
     o efectivo previsto (lugares dos cargos) e o existente (pessoas colocadas), por categoria — contando as
     subunidades. As empregadas domiciliares não entram.
   */
@@ -112,6 +112,8 @@ export class ServicoOrganica {
   async removerUnidade(u, id) {
     exigir(u, 'administrar')
     if (await this.bd.pessoa.count({ where: { unidadeId: id, ativo: true } })) throw conflito('Há pessoas nesta unidade: mude-as primeiro.')
+    if (await this.bd.unidade.count({ where: { paiId: id } })) throw conflito('A unidade tem subunidades: apague-as ou mude-as primeiro.')
+    if (await this.bd.cargo.count({ where: { unidadeId: id } })) throw conflito('A unidade tem cargos: apague-os ou mude-os primeiro.')
     const r = await this.bd.unidade.deleteMany({ where: { id } })
     if (!r.count) throw naoEncontrado('Unidade não encontrada.')
     await this.auditoria.registar(u, 'remover_unidade', `#${id}`)

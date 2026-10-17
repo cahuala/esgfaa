@@ -57,7 +57,7 @@ export async function fichaPdf(p, urlFoto) {
       ['Passagem à reserva', pt(p.reservaReforma?.reserva?.data)], ['Reforma', pt(p.reservaReforma?.reforma?.data)], ['Próximo posto', p.proximoPostoNome || '—'], ['Promoção', p.promocao?.elegivel ? 'Em condições' : 'Não reúne as condições'],
     ], y)
   } else {
-    y = secao('Carreira (pessoal civil)', [['Categoria (SIGP)', p.carreiraNome || '—'], ['Classe', p.categoriaCivil || '—'], ['Vínculo', p.vinculoCivilNome || '—'], ['Admissão', pt(p.dataAdmissao)], ['Na classe desde', pt(p.dataCategoria)], ['Classe seguinte', p.proximaCategoria || '—']], y)
+    y = secao('Carreira (pessoal civil)', [['Categoria', p.carreiraNome || '—'], ['Classe', p.categoriaCivil || '—'], ['Vínculo', p.vinculoCivilNome || '—'], ['Admissão', pt(p.dataAdmissao)], ['Na classe desde', pt(p.dataCategoria)], ['Classe seguinte', p.proximaCategoria || '—']], y)
   }
   const tabela = (titulo, cab, corpo) => {
     if (!corpo.length) return

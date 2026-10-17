@@ -30,7 +30,7 @@ const nome = (g) => `${g === 'F' ? um(NOMES_F) : um(NOMES_M)} ${um(APELIDOS)} ${
 const ESTADOS = ['solteiro', 'casado', 'casado', 'casado', 'uniao_facto', 'divorciado', 'viuvo']
 const HAB_OF = ['licenciatura', 'licenciatura', 'mestrado', 'mestrado', 'doutoramento']
 
-// orgânica da Escola (árvore, como as U/E/O do SIGP): [nome, sigla, tipo, sigla da unidade-mãe]
+// orgânica da Escola (árvore: unidades, subunidades, secções): [nome, sigla, tipo, sigla da unidade-mãe]
 const UNIDADES = [
   ['Direcção da Escola', 'DIR', 'direccao', null], ['Gabinete do Director', 'GD', 'gabinete', 'DIR'], ['Secretaria Geral', 'SG', 'servico', 'DIR'],
   ['Departamento de Ensino', 'DE', 'departamento', null], ['Secção de Estratégia', 'SEE', 'seccao', 'DE'], ['Secção de Táctica e Operações', 'STO', 'seccao', 'DE'], ['Secção de Logística Militar', 'SLM', 'seccao', 'DE'],

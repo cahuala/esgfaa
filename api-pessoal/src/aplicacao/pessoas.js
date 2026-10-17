@@ -132,7 +132,7 @@ export class ServicoPessoas {
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
     for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes']) if (k in x) x[k] ??= ''
     if (x.email) x.email = x.email.toLowerCase()
-    // empregados domiciliares têm a categoria própria do SIGP
+    // empregados domiciliares têm a categoria própria (Trabalhador Domiciliar)
     if (x.vinculo === 'domiciliar') Object.assign(x, { carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar' })
     return x
   }
@@ -216,7 +216,7 @@ export class ServicoPessoas {
   }
 
   /*
-    Consulta do Bilhete de Identidade na base de dados do Estado (a mesma API que o SIGP usa):
+    Consulta do Bilhete de Identidade na base de dados do Estado (API do Estado):
     devolve os dados para preencher a ficha. Sem chave configurada, diz que está desligada.
   */
   async consultarBi(u, numero) {

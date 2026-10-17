@@ -67,7 +67,7 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     const d = (await adm.get('/api/domiciliares')).body.find((x) => x.id === major.id)
     assert.deepEqual([d.limite, d.alocados, d.livres], [1, 1, 0])
     assert.equal((await adm.get('/api/painel')).body.totais.domiciliares, 1)
-    // categorias do SIGP: a domiciliar fica «Trabalhador Domiciliar»; um civil importado com «Técnico Médio» fica na 1.ª classe
+    // categorias do pessoal civil: a domiciliar fica «Trabalhador Domiciliar»; um civil importado com «Técnico Médio» fica na 1.ª classe
     const d1 = (await adm.get('/api/pessoas?vinculo=domiciliar')).body[0]
     assert.deepEqual([d1.carreiraCivil, d1.categoriaCivil], ['trabalhador_domiciliar', 'Trabalhador Domiciliar'])
     await adm.post('/api/pessoas/importar').send({ modo: 'novos', simular: false, linhas: [{ numeroAgente: 'CIV900', tipo: 'civil', nome: 'Teresa Mbala Sapalo', categoria: undefined, carreiraCivil: 'Técnico Médio' }] }).expect(200)
@@ -105,7 +105,7 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.ok(!(await adm.get('/api/processos')).body.find((x) => x.id === a.id).emFalta.includes('Cópia do BI digitalizada'))
   })
 
-  it('nomeação para cargo ocupado: só segue se o ocupante entrar na mesma proposta para outro cargo (como no SIGP)', async () => {
+  it('nomeação para cargo ocupado: só segue se o ocupante entrar na mesma proposta para outro cargo', async () => {
     const c1 = (await adm.post('/api/cargos').send({ nome: 'Chefe de Secção A', unidadeId: unidade.id, funcao: 'direccao_chefia', postoRequerido: 'major', vagas: 1 }).expect(201)).body
     const c2 = (await adm.post('/api/cargos').send({ nome: 'Chefe de Secção B', unidadeId: unidade.id, funcao: 'direccao_chefia', postoRequerido: 'major', vagas: 1 }).expect(201)).body
     const ocupante = (await adm.post('/api/pessoas').send(militar({ nip: 'OC001', posto: 'major', cargoId: c1.id, unidadeId: unidade.id })).expect(201)).body

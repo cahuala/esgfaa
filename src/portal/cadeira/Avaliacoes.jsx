@@ -100,11 +100,15 @@ function Pauta({ c, avisar }) {
     avisar({ texto: itens ? tx('{0}: calculada a partir das atividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
   }
 
+  // prazo de lançamento definido pela Administração Escolar: fora dele a coluna fica fechada
+  const prazo = (k) => p.prazos?.[k]
+  const fechada = (k) => Boolean(prazo(k) && !prazo(k).aberto)
   const cabeca = (k) => {
     const pub = p.publicadas.includes(k)
     return (
       <th scope="col" key={k}>
         {NOMES_COMPONENTES[k]}
+        {prazo(k) && !prazo(k).livre && <div className={`small fw-normal p-sem-impressao ${fechada(k) ? 'text-danger' : 'text-success'}`} title={prazo(k).origem}><i className={`fa ${fechada(k) ? 'fa-lock' : 'fa-lock-open'} me-1`} />{prazo(k).texto}</div>}
         <button type="button" className={`btn btn-xs ms-1 p-sem-impressao ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} title={calculada(k) ? tx('Calculada a partir das atividades. Clique para mudar.') : tx('Calcular a partir de trabalhos e questionários')} aria-label={tx('Como se calcula: {0}', { 0: NOMES_COMPONENTES[k] })}>
           <i className="fa fa-calculator" />
         </button>
@@ -120,6 +124,7 @@ function Pauta({ c, avisar }) {
     const invalida = resultados[id].invalidas.includes(k)
     // componente calculada: mostra o valor, não se escreve
     if (calculada(k)) return <td className="p-celula-calculada" title={tx('Calculada a partir das atividades')}><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
+    if (fechada(k)) return <td className="p-celula-inativa" title={tx('Prazo de lançamento fechado')}><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
     return (
       <td className={desativado && !edicao[id][k] ? 'p-celula-inativa' : ''}>
         <input
@@ -150,6 +155,7 @@ function Pauta({ c, avisar }) {
         </div>
       </div>
 
+      {COMPONENTES_NOTA.some(fechada) && <div className="alert alert-warning py-2 p-sem-impressao"><i className="fa fa-lock me-1" />{tx('Algumas colunas estão fechadas: o prazo de lançamento definido pela Administração Escolar não está aberto. Para lançar fora do prazo, peça uma prorrogação.')}</div>}
       <div className="panel mb-2 overflow-hidden">
         <CabecalhoImpressao titulo="Pauta" subtitulo={`${c.codigo} ${c.nome} · ${c.turma?.nome ?? ''}`} area="Administração Escolar" />
         <div className="table-responsive">

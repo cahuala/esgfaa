@@ -255,6 +255,8 @@ model Turma {
   tfcs       TrabalhoFimCurso[]
   diplomas   CertificadoCurso[]
 
+  prazosNotas PrazoNotas[]
+
   @@unique([curso, anoLetivo, nome])
   @@map("turmas")
 }
@@ -310,6 +312,8 @@ model UnidadeCurricular {
   glossario        TermoGlossario[]
   paginasWiki      PaginaWiki[]
   inscricoes       InscricaoCadeira[]
+
+  prazosNotas PrazoNotas[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -1497,4 +1501,24 @@ model SubscricaoPush {
 
   @@index([contaId])
   @@map("subscricoes_push")
+}
+
+// prazos de lançamento das notas (Administração Escolar / Direcção de Ensino): por componente, para toda a
+// Escola, uma turma ou uma cadeira (prorrogação). Fora do prazo o docente não lança essa componente.
+model PrazoNotas {
+  id         Int      @id @default(autoincrement())
+  componente String // p1 | p2 | exame | recurso
+  inicio     String // AAAA-MM-DD
+  fim        String // AAAA-MM-DD (inclusive)
+  turmaId    Int?     @map("turma_id")
+  cadeiraId  Int?     @map("cadeira_id")
+  descricao  String   @default("")
+  criadoPor  String   @default("") @map("criado_por")
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  turma   Turma?             @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  cadeira UnidadeCurricular? @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@index([componente])
+  @@map("prazos_notas")
 }

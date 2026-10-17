@@ -48,7 +48,7 @@ export class ServicoPropostas {
       const cargo = item.cargoId && await this.bd.cargo.findUnique({ where: { id: item.cargoId } })
       if (!cargo) throw invalido('Indique o cargo.', 'cargoId')
       /*
-        Como no SIGP: um cargo ocupado só se pode propor se quem lá está também entrar nesta proposta,
+        Um cargo ocupado só se pode propor se quem lá está também entrar nesta proposta,
         nomeado para outro cargo. Contam-se os que ficam no cargo e os outros desta proposta propostos para ele.
       */
       const ocupantes = await this.bd.pessoa.findMany({ where: { cargoId: cargo.id, ativo: true, id: { not: p.id } }, select: { id: true, nome: true, posto: true, ramo: true } })

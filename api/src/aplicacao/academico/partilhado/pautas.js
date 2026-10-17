@@ -5,6 +5,8 @@ import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, resultadoDisciplina } from '../../../dominio/academico/avaliacao/resultado.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { notasDoTrabalhoVisiveis } from '../../../dominio/academico/atividades/trabalhos.js'
+import { estadoDosPrazos, mensagemFechado } from '../../../dominio/academico/avaliacao/prazosNotas.js'
+import { SemPermissao } from '../../../dominio/comum/erros.js'
 
 /*
   Pauta de uma cadeira (1.ª e 2.ª prova, exame, recurso), partilhada pelo portal (docentes alocados)
@@ -12,8 +14,19 @@ import { notasDoTrabalhoVisiveis } from '../../../dominio/academico/atividades/t
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, recursos, workshops, auditoria, notificacoes, relogio }) {
-    Object.assign(this, { academico, recursos, workshops, auditoria, notificacoes, relogio })
+  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio }) {
+    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio })
+  }
+
+  // o dia de hoje na hora de Luanda (AAAA-MM-DD)
+  #hoje() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: this.fuso, year: 'numeric', month: '2-digit', day: '2-digit' }).format(this.relogio.agora())
+  }
+
+  // em que prazo está cada componente desta cadeira (aberto, fechado ou sem prazo)
+  async prazos(cadeira) {
+    if (!this.prazosNotas) return null
+    return estadoDosPrazos(await this.prazosNotas.daCadeira(cadeira), cadeira, this.#hoje())
   }
 
   // ---------- componentes calculadas a partir das atividades ----------
@@ -105,7 +118,7 @@ export class ServicoPautas {
       this.academico.pautaDaCadeira(cadeira.id),
     ])
     return {
-      cadeira, publicadas: cadeira.notasPublicadas, composicoes, atividades,
+      cadeira, publicadas: cadeira.notasPublicadas, composicoes, atividades, prazos: await this.prazos(cadeira),
       linhas: estudantes.map((e) => {
         const n = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, notas[e.id]?.[k] ?? null]))
         return { estudante: e, ...n, observacao: notas[e.id]?.observacao || '', ...resultadoDisciplina(n) }
@@ -135,6 +148,17 @@ export class ServicoPautas {
     const calculadas = Object.keys(await this.academico.composicoes(cadeira.id))
     const atuais = await this.academico.pautaDaCadeira(cadeira.id)
     for (const l of notas) for (const k of calculadas) l[k] = atuais[l.estudanteId]?.[k] ?? null
+    /*
+      O docente (no portal) só lança uma componente dentro do prazo definido pela Administração Escolar.
+      A Administração Escolar (no painel) pode sempre corrigir: fica no registo de atividades.
+    */
+    if (ctx.conta) {
+      const prazos = await this.prazos(cadeira)
+      const mudadas = new Set()
+      for (const l of notas) for (const k of COMPONENTES_NOTA) if (!calculadas.includes(k) && (l[k] ?? null) !== (atuais[l.estudanteId]?.[k] ?? null)) mudadas.add(k)
+      const fechada = COMPONENTES_NOTA.find((k) => mudadas.has(k) && prazos && !prazos[k].aberto)
+      if (fechada) throw new SemPermissao(mensagemFechado(fechada, prazos[fechada]))
+    }
     await this.academico.gravarPauta(cadeira.id, notas)
     await this.auditoria.registar(ctx, { acao: 'lancar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: cadeira.nome, detalhes: { estudantes: notas.length }, utilizador })
     return this.pauta(await this.academico.cadeira(cadeira.id))

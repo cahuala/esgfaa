@@ -33,7 +33,7 @@ const ESQUEMA = z.object({
   MAX_FOTO_MB: inteiro(5, 1, 50),
   // documentos do processo individual, extractos, expediente e anexos das mensagens
   MAX_DOCUMENTO_MB: inteiro(25, 1, 200),
-  // consulta do Bilhete de Identidade na base de dados do Estado (a mesma API do SIGP); sem chave fica desligada
+  // consulta do Bilhete de Identidade na base de dados do Estado; sem chave fica desligada
   BI_API_URL: z.url().default('https://api.gov.ao/bi/v1/getBI'),
   BI_API_KEY: z.string().default(''),
   DATA_DIR: z.string().default('dados'),
