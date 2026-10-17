@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { api, marcarSessao, temSessao, definirAoExpirar } from '../../src/admin/api'
+import { api, confirmarSessao, marcarSessao, temSessao, definirAoExpirar } from '../../src/admin/api'
 
 const responder = (corpo, status = 200) => vi.fn(() => Promise.resolve(new Response(status === 204 ? null : JSON.stringify(corpo), { status })))
 
@@ -22,6 +22,30 @@ describe('cliente da API do painel', () => {
     expect(sessionStorage.length).toBe(0)
     marcarSessao(null)
     expect(temSessao()).toBeNull()
+  })
+
+  it('API noutro domínio: se o navegador não guardar o cookie (Safari), usa o token de reserva; se guardar, ignora-o', async () => {
+    // o cookie não chegou: /eu sem ele responde 401
+    vi.stubGlobal('fetch', responder({ erro: 'Sessão em falta.' }, 401))
+    await confirmarSessao({ sessao: 'cookie', tokenReserva: 'reserva-1' })
+    const f = responder({ ok: 1 })
+    vi.stubGlobal('fetch', f)
+    await api('/eu')
+    expect(f.mock.calls[0][1].headers).toEqual({ Authorization: 'Bearer reserva-1' })
+    // mudar a palavra-passe nesse modo: o token novo passa a ser a reserva
+    await confirmarSessao({ token: 'reserva-2' })
+    await api('/eu')
+    expect(f.mock.calls[1][1].headers).toEqual({ Authorization: 'Bearer reserva-2' })
+    marcarSessao(null)
+    // o cookie chegou: a reserva não se guarda
+    vi.stubGlobal('fetch', responder({ id: 1 }))
+    await confirmarSessao({ sessao: 'cookie', tokenReserva: 'reserva-3' })
+    expect(sessionStorage.getItem('esgfaa-admin-sessao-reserva')).toBeNull()
+    const g = responder({ ok: 1 })
+    vi.stubGlobal('fetch', g)
+    await api('/eu')
+    expect(g.mock.calls[0][1].headers).toEqual({ 'X-Sessao': 'cookie' })
+    marcarSessao(null)
   })
 
   it('401 termina a sessão (exceto ao entrar)', async () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api, definirOuvintes, marcarSessao, temSessao } from './api'
+import { api, confirmarSessao, definirOuvintes, marcarSessao, temSessao } from './api'
 import { ContextoSessao } from './sessaoContexto'
 
 // sessão do portal: conta atual, entrar, sair e mudar a palavra-passe
@@ -26,7 +26,7 @@ export function SessaoPortal({ children }) {
     eDocente: conta?.tipo === 'docente',
     async entrar(email, senha) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
-      marcarSessao(Boolean(r.sessao || r.token))
+      await confirmarSessao(r)
       setConta(await api('/eu'))
     },
     async sair() {
@@ -35,8 +35,7 @@ export function SessaoPortal({ children }) {
     },
     async mudarSenha(atual, nova) {
       // o servidor renova o cookie da sessão (as sessões antigas deixam de valer)
-      await api('/eu/senha', { metodo: 'PUT', corpo: { atual, nova } })
-      marcarSessao(true)
+      await confirmarSessao(await api('/eu/senha', { metodo: 'PUT', corpo: { atual, nova } }))
       setConta(await api('/eu'))
     },
     recarregar,

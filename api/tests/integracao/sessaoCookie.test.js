@@ -68,3 +68,29 @@ describe('Sessão do navegador em cookie HttpOnly (sem token no JavaScript)', ()
     assert.equal((await amb.http().get('/api/portal/eu').set('Cookie', `esg_portal=${c.valor}`).set('X-Sessao', 'cookie')).status, 401)
   })
 })
+
+describe('API noutro domínio (SESSAO_ENTRE_SITES=sim)', () => {
+  let amb
+  before(async () => { amb = await criarAmbiente({ env: { SESSAO_ENTRE_SITES: 'sim', CORS_ORIGINS: 'https://esgfaa.gov.ao' } }) })
+  after(() => amb.fechar())
+
+  it('cookie SameSite=None; Secure; Partitioned, e um token de reserva para os navegadores que o bloqueiem', async () => {
+    const r = await amb.http().post('/api/portal/entrar').set('X-Sessao', 'cookie').send({ email: 'ninguem@esgfaa.gov.ao', senha: 'x' })
+    assert.equal(r.status, 401) // sem conta: nada de cookie
+    const a = await amb.http().post('/api/admin/entrar').set('X-Sessao', 'cookie').send(ADMIN).expect(200)
+    const c = cookie(a, 'esg_painel')
+    for (const atr of ['httponly', 'secure', 'samesite=none', 'partitioned', 'path=/api/admin']) assert.ok(c.atributos.includes(atr), atr)
+    assert.ok(a.body.tokenReserva)
+    assert.equal(a.body.token, undefined)
+    // o cookie continua a exigir o cabeçalho (CSRF) e a reserva funciona como Bearer
+    assert.equal((await amb.http().get('/api/admin/eu').set('Cookie', `esg_painel=${c.valor}`)).status, 401)
+    await amb.http().get('/api/admin/eu').set('Cookie', `esg_painel=${c.valor}`).set('X-Sessao', 'cookie').expect(200)
+    await amb.http().get('/api/admin/eu').set('Authorization', `Bearer ${a.body.tokenReserva}`).expect(200)
+    // CORS com credenciais só para as páginas da Escola
+    const pre = await amb.http().options('/api/admin/eu').set('Origin', 'https://esgfaa.gov.ao').set('Access-Control-Request-Method', 'GET').set('Access-Control-Request-Headers', 'x-sessao')
+    assert.equal(pre.headers['access-control-allow-origin'], 'https://esgfaa.gov.ao')
+    assert.equal(pre.headers['access-control-allow-credentials'], 'true')
+    const sair = await amb.http().post('/api/admin/sair').set('Cookie', `esg_painel=${c.valor}`).set('X-Sessao', 'cookie').expect(204)
+    assert.ok(cookie(sair, 'esg_painel').atributos.includes('partitioned')) // apaga o mesmo cookie
+  })
+})

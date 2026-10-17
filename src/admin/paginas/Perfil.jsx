@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api, marcarSessao } from '../api'
+import { api, confirmarSessao } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Painel } from '../componentes/Ui'
 import DoisFatores from '../componentes/DoisFatores'
@@ -19,8 +19,7 @@ function Perfil() {
     }
     try {
       // as outras sessões terminam; esta continua (o servidor renova o cookie)
-      await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } })
-      marcarSessao(true)
+      await confirmarSessao(await api('/eu/senha', { metodo: 'PUT', corpo: { atual: form.atual, nova: form.nova } }))
       await recarregar()
       setForm({ atual: '', nova: '', repetir: '' })
       setAviso({ texto: tx('Palavra-passe alterada. As sessões abertas noutros computadores foram terminadas.') })

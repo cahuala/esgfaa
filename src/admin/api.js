@@ -11,11 +11,33 @@ const CHAVE = 'esgfaa-admin-sessao'
 export function temSessao() {
   try { return localStorage.getItem(CHAVE) } catch { return null }
 }
-export function marcarSessao(aberta) {
+/*
+  API noutro domínio (SESSAO_ENTRE_SITES): o cookie é «partitioned» e o servidor manda também um token de
+  reserva. Só se usa se o navegador não guardar o cookie (Safari bloqueia os cookies de outros sites): fica
+  na memória do separador e vai no cabeçalho Authorization.
+*/
+const RESERVA = `${CHAVE}-reserva`
+let reserva = null
+try { reserva = sessionStorage.getItem(RESERVA) } catch { /* sem armazenamento */ }
+
+export function marcarSessao(aberta, tokenReserva = null) {
   try { if (aberta) localStorage.setItem(CHAVE, '1'); else localStorage.removeItem(CHAVE) } catch { /* sem armazenamento */ }
+  reserva = aberta ? tokenReserva : null
+  try { if (reserva) sessionStorage.setItem(RESERVA, reserva); else sessionStorage.removeItem(RESERVA) } catch { /* sem armazenamento */ }
 }
-// cada pedido leva o cookie e o cabeçalho que o servidor exige para o aceitar (protecção contra CSRF)
-export const comSessao = (cabecalhos = {}) => ({ credentials: 'include', headers: { ...cabecalhos, 'X-Sessao': 'cookie' } })
+// os cabeçalhos da sessão: o que o servidor exige ao cookie (protecção contra CSRF) ou, sem cookie, o token de reserva
+export const cabecalhosSessao = () => (reserva ? { Authorization: `Bearer ${reserva}` } : { 'X-Sessao': 'cookie' })
+export const comSessao = (cabecalhos = {}) => ({ credentials: 'include', headers: { ...cabecalhos, ...cabecalhosSessao() } })
+
+// depois de entrar (ou mudar a palavra-passe): o cookie chegou? se não (Safari, API noutro domínio), usa a reserva
+export async function confirmarSessao(r) {
+  // já sem cookie (reserva): a resposta traz o token novo, que passa a ser a reserva
+  if (reserva && r?.token) return marcarSessao(true, r.token)
+  marcarSessao(true)
+  if (!r?.tokenReserva) return
+  const t = await fetch(`${API_URL}/api/admin/eu`, comSessao()).catch(() => null)
+  if (!t?.ok) marcarSessao(true, r.tokenReserva)
+}
 
 // chamado quando a API responde 401 (sessão expirada ou conta desativada)
 let aoExpirar = () => {}
@@ -25,7 +47,7 @@ export function definirAoExpirar(fn) {
 
 export async function api(caminho, { metodo = 'GET', corpo, ficheiros, formulario } = {}) {
   if (!API_URL) throw new Error(tx('A API não está configurada (VITE_API_URL).'))
-  const cabecalhos = { 'X-Sessao': 'cookie' }
+  const cabecalhos = cabecalhosSessao()
   let body
   if (formulario) {
     body = formulario

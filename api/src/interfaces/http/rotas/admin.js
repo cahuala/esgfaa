@@ -29,7 +29,7 @@ const nomeOriginal = (n) => limparTexto(Buffer.from(n, 'latin1').toString('utf8'
 export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   const r = Router()
   const ctx = (req) => req.contexto
-  r.use(sessaoEmCookie({ nome: COOKIE_PAINEL, caminho: '/api/admin', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao }))
+  r.use(sessaoEmCookie({ nome: COOKIE_PAINEL, caminho: '/api/admin', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao, entreSites: config.sessaoEntreSites }))
   const enviar = (req, res, dados, estado = 200) => res.status(estado).json(absolutizar(dados, baseUrl(req, config)))
 
   // ---------- sessão ----------

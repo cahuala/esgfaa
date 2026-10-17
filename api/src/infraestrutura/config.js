@@ -26,6 +26,8 @@ const ESQUEMA = z.object({
   DADOS_CHAVE: z.string().default(''),
   // papéis do painel que têm de usar a verificação em dois passos (em produção, por omissão, o administrador)
   DOIS_FATORES_PAPEIS: z.string().optional(),
+  // a API num domínio diferente do das páginas (ex.: páginas em esgfaa.gov.ao, API noutro alojamento)
+  SESSAO_ENTRE_SITES: z.enum(['sim', 'nao']).default('nao'),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/, 'SESSION_TTL deve ser como 8h, 30m ou 1d').default('8h'),
   MAX_UPLOAD_MB: inteiro(80, 1, 1024),
   // ligações simultâneas à base de dados (suba com o número de pessoas ao mesmo tempo e o que o PostgreSQL aguentar)
@@ -110,6 +112,7 @@ export function criarConfig(env = process.env, extras = {}) {
     urlPublico: e.PUBLIC_URL.replace(/\/$/, ''),
     origens: e.CORS_ORIGINS,
     segredoJwt,
+    sessaoEntreSites: e.SESSAO_ENTRE_SITES === 'sim',
     doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador' : '')).split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('portal-desenvolvimento-dados').digest('hex'),

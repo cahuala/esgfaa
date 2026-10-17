@@ -17,7 +17,7 @@ const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro n
 // Portal académico: /api/portal/… (estudantes e docentes)
 export function rotasPortal({ servicos, config, privados }) {
   const r = Router()
-  r.use(sessaoEmCookie({ nome: COOKIE_PORTAL, caminho: '/api/portal', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao }))
+  r.use(sessaoEmCookie({ nome: COOKIE_PORTAL, caminho: '/api/portal', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao, entreSites: config.sessaoEntreSites }))
   const L = config.limites
   const e = servicos.ensino
   const ctx = (req) => req.contexto
