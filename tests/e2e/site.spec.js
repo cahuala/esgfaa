@@ -35,8 +35,12 @@ test.describe('site público', () => {
     const leitor = page.getByRole('region', { name: /^Leitor:/ })
     await expect(leitor.getByText('/ 8')).toBeVisible()
     await expect(leitor.locator('canvas').first()).toBeVisible()
-    await page.getByRole('button', { name: /A SADC e a arquitetura/ }).click()
-    await expect(leitor.getByLabel('Página atual')).toHaveValue('6')
+    await expect(leitor.getByLabel('Página atual')).toHaveValue('1')
+    // o leitor pode ainda estar a acabar de carregar (no CI é mais lento): se voltar à 1.ª página, clica de novo
+    await expect(async () => {
+      await page.getByRole('button', { name: /A SADC e a arquitetura/ }).click()
+      await expect(leitor.getByLabel('Página atual')).toHaveValue('6', { timeout: 2000 })
+    }).toPass({ timeout: 20_000 })
     await expect(leitor.getByRole('link', { name: /Descarregar/ })).toHaveAttribute('href', /\.pdf$/)
   })
 })
