@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessao'
+import { useArvore } from '../arvore'
 import { Cabecalho, Campo, Carregando, Escolha, Painel } from '../componentes/Ui'
 
 const VAZIA = {
@@ -22,14 +23,13 @@ export default function FormularioFicha() {
   const [d, setD] = useState(id ? null : params.get('domiciliar') ? { ...VAZIA, tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: params.get('domiciliar') } : VAZIA)
   const [oficiais, setOficiais] = useState([])
   const [aConsultar, setAConsultar] = useState(false)
-  const [unidades, setUnidades] = useState([])
+  const arvore = useArvore()
   const [cargos, setCargos] = useState([])
   const [erro, setErro] = useState(null)
   const [aGuardar, setAGuardar] = useState(false)
 
   useEffect(() => { if (d?.vinculo === 'domiciliar' && !oficiais.length) api('/domiciliares').then(setOficiais).catch(() => {}) }, [d?.vinculo, oficiais.length])
   useEffect(() => {
-    api('/unidades').then(setUnidades).catch(() => {})
     api('/cargos').then(setCargos).catch(() => {})
     if (id) api(`/pessoas/${id}`).then((p) => setD(Object.fromEntries(CAMPOS.map((k) => [k, p[k] ?? (typeof VAZIA[k] === 'boolean' ? VAZIA[k] : '')])))).catch((e) => setErro({ texto: e.message }))
   }, [id])
@@ -158,8 +158,8 @@ export default function FormularioFicha() {
 
       <Painel titulo="Na Escola" icone="fa-building">
         <div className="row">
-          <Campo rotulo="Unidade" col="col-md-4"><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={unidades.map((u) => [u.id, u.nome])} vazio="Sem unidade" /></Campo>
-          {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, o cargo muda por proposta de nomeação."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.map((c) => [c.id, `${c.nome}${c.unidadeNome ? ` — ${c.unidadeNome}` : ''}`])} vazio="Sem cargo" /></Campo>}
+          <Campo rotulo="Unidade (orgânica)" col="col-md-4"><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={arvore.opcoes} vazio="Sem unidade" /></Campo>
+          {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, o cargo muda por proposta de nomeação."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])} vazio="Sem cargo" /></Campo>}
           {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
           <div className="col-12 d-flex flex-wrap gap-4 my-2">
             <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.avaliacaoFavoravel} onChange={set('avaliacaoFavoravel')} /> <span className="form-check-label">Avaliação favorável</span></label>

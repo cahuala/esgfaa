@@ -56,7 +56,9 @@ export class ServicoPessoas {
     exigir(u, 'ver')
     const where = { ativo: f.ativo === 'nao' ? false : f.ativo === 'todos' ? undefined : true }
     for (const k of ['tipo', 'vinculo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
-    for (const k of ['unidadeId', 'cargoId']) if (f[k]) where[k] = f[k] === 'nenhum' ? null : Number(f[k])
+    if (f.cargoId) where.cargoId = f.cargoId === 'nenhum' ? null : Number(f.cargoId)
+    // a unidade é uma árvore: filtrar por uma unidade inclui as suas subunidades
+    if (f.unidadeId) where.unidadeId = f.unidadeId === 'nenhum' ? null : { in: await this.#comSubunidades(Number(f.unidadeId)) }
     // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem
     if (!f.vinculo) where.vinculo = { not: 'domiciliar' }
     if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
@@ -73,6 +75,13 @@ export class ServicoPessoas {
     if (f.reservaAte) lista = lista.filter((p) => p.dataReserva && p.dataReserva <= `${f.reservaAte}-12-31`)
     if (f.semCargo) lista = lista.filter((p) => !p.cargoId)
     return lista.map(({ cursos, eventos, ...p }) => (void cursos, void eventos, p))
+  }
+
+  async #comSubunidades(id) {
+    const todas = await this.bd.unidade.findMany({ select: { id: true, paiId: true } })
+    const ids = [id]
+    for (let i = 0; i < ids.length; i++) for (const u of todas) if (u.paiId === ids[i] && !ids.includes(u.id)) ids.push(u.id)
+    return ids
   }
 
   // ficha completa do militar ou do civil, com o histórico e o que a lei diz da sua carreira
@@ -330,7 +339,7 @@ export class ServicoPessoas {
     return lista.map((p) => {
       const v = tipo === 'militar' ? verificarPromocao({ ...p, historico: p.eventos }, { hoje }) : verificarProgressaoCivil(p, { hoje })
       const f = comDerivados(p, hoje)
-      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeNome: f.unidadeNome, cargoId: p.cargoId, cargoNome: f.cargoNome, grau: f.grau, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
+      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoId: p.cargoId, cargoNome: f.cargoNome, grau: f.grau, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
     }).filter((x) => x.proposto)
   }
 

@@ -49,7 +49,7 @@ export const motivo = z.object({ motivo: txt(1000).default('') })
 export const motivoObrigatorio = z.object({ motivo: txt(1000, 3) })
 
 export const licenca = z.object({ pessoaId: id, tipo: txt(30), inicio: data, fim: data, despacho: txt(150).default(''), observacoes: txt(1000).default('') }).strict()
-export const unidade = z.object({ nome: txt(150, 2), sigla: txt(20).default(''), paiId: idOpc, ordem: z.coerce.number().int().min(0).max(999).default(0) }).strict()
+export const unidade = z.object({ nome: txt(150, 2), sigla: txt(20).default(''), tipo: txt(20).default('outro'), paiId: idOpc, ordem: z.coerce.number().int().min(0).max(999).default(0) }).strict()
 export const cargo = z.object({ nome: txt(150, 2), unidadeId: idOpc, funcao: txt(20).default('execucao'), tipo: z.enum(['militar', 'civil', 'ambos']).default('militar'), postoRequerido: z.union([txt(30), z.null()]).optional(), categoriaCivil: z.union([txt(80), z.null()]).optional(), vagas: z.coerce.number().int().min(1).max(500).default(1) }).strict()
 
 export const importar = z.object({ modo: z.enum(['novos', 'actualizar']), simular: z.boolean().default(true), linhas: z.array(z.record(z.string(), z.union([z.string().max(500), z.number(), z.null()]))).min(1).max(3000) })

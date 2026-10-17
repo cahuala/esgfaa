@@ -30,24 +30,33 @@ const nome = (g) => `${g === 'F' ? um(NOMES_F) : um(NOMES_M)} ${um(APELIDOS)} ${
 const ESTADOS = ['solteiro', 'casado', 'casado', 'casado', 'uniao_facto', 'divorciado', 'viuvo']
 const HAB_OF = ['licenciatura', 'licenciatura', 'mestrado', 'mestrado', 'doutoramento']
 
+// orgânica da Escola (árvore, como as U/E/O do SIGP): [nome, sigla, tipo, sigla da unidade-mãe]
 const UNIDADES = [
-  ['Direcção da Escola', 'DIR'], ['Gabinete do Director', 'GD'], ['Departamento de Ensino', 'DE'], ['Departamento de Investigação e Pós-Graduação', 'DIPG'],
-  ['Departamento de Cursos de Estado-Maior', 'DCEM'], ['Secretaria Geral', 'SG'], ['Repartição de Pessoal e Quadros', 'RPQ'], ['Repartição de Logística', 'RL'],
-  ['Repartição de Finanças', 'RF'], ['Biblioteca e Documentação', 'BD'], ['Serviço de Saúde', 'SS'], ['Companhia de Serviços', 'CS'],
+  ['Direcção da Escola', 'DIR', 'direccao', null], ['Gabinete do Director', 'GD', 'gabinete', 'DIR'], ['Secretaria Geral', 'SG', 'servico', 'DIR'],
+  ['Departamento de Ensino', 'DE', 'departamento', null], ['Secção de Estratégia', 'SEE', 'seccao', 'DE'], ['Secção de Táctica e Operações', 'STO', 'seccao', 'DE'], ['Secção de Logística Militar', 'SLM', 'seccao', 'DE'],
+  ['Departamento de Investigação e Pós-Graduação', 'DIPG', 'departamento', null], ['Centro de Estudos Estratégicos', 'CEE', 'seccao', 'DIPG'],
+  ['Departamento de Cursos', 'DC', 'departamento', null], ['Curso de Estado-Maior', 'CEM', 'curso', 'DC'], ['Curso Superior de Guerra', 'CSG', 'curso', 'DC'],
+  ['Repartição de Pessoal e Quadros', 'RPQ', 'reparticao', null], ['Secção de Efectivos', 'SEF', 'seccao', 'RPQ'], ['Secção de Carreiras', 'SCA', 'seccao', 'RPQ'], ['Secção de Arquivo', 'SAR', 'seccao', 'RPQ'],
+  ['Repartição de Logística', 'RL', 'reparticao', null], ['Secção de Material', 'SMT', 'seccao', 'RL'], ['Secção de Transportes', 'STR', 'seccao', 'RL'],
+  ['Repartição de Finanças', 'RF', 'reparticao', null], ['Biblioteca e Documentação', 'BD', 'servico', null], ['Serviço de Saúde', 'SS', 'servico', null], ['Companhia de Serviços', 'CS', 'companhia', null],
 ]
 // cargos: [unidade, nome, função, posto, lugares, tipo]
 const CARGOS = [
   ['DIR', 'Director da Escola Superior de Guerra', 'comando', 'tenente_general', 1], ['DIR', 'Director Adjunto para o Ensino', 'direccao_chefia', 'brigadeiro', 1],
   ['GD', 'Chefe do Gabinete', 'direccao_chefia', 'coronel', 1], ['GD', 'Assessor do Director', 'estado_maior', 'tenente_coronel', 2],
-  ['DE', 'Chefe do Departamento de Ensino', 'direccao_chefia', 'coronel', 1], ['DE', 'Professor de Estratégia', 'execucao', 'coronel', 4], ['DE', 'Professor de Táctica', 'execucao', 'tenente_coronel', 4], ['DE', 'Professor de Logística Militar', 'execucao', 'major', 3],
-  ['DIPG', 'Chefe do Departamento de Investigação', 'direccao_chefia', 'coronel', 1], ['DIPG', 'Investigador', 'execucao', 'major', 3],
-  ['DCEM', 'Chefe do Departamento de Cursos de Estado-Maior', 'direccao_chefia', 'coronel', 1], ['DCEM', 'Coordenador de Curso', 'execucao', 'tenente_coronel', 3],
-  ['SG', 'Secretário Geral', 'direccao_chefia', 'tenente_coronel', 1], ['SG', 'Técnico de Secretaria', 'execucao', null, 4, 'civil'],
-  ['RPQ', 'Chefe da Repartição de Pessoal e Quadros', 'direccao_chefia', 'tenente_coronel', 1], ['RPQ', 'Oficial de Pessoal', 'execucao', 'capitao', 2], ['RPQ', 'Sargento de Pessoal', 'execucao', 'primeiro_sargento', 2],
-  ['RL', 'Chefe da Repartição de Logística', 'direccao_chefia', 'major', 1], ['RL', 'Sargento de Material', 'execucao', 'segundo_sargento', 2],
+  ['SG', 'Secretário Geral', 'direccao_chefia', 'tenente_coronel', 1], ['SG', 'Técnico de Secretaria', 'execucao', null, 3, 'civil'],
+  ['DE', 'Chefe do Departamento de Ensino', 'direccao_chefia', 'coronel', 1],
+  ['SEE', 'Chefe da Secção de Estratégia', 'direccao_chefia', 'coronel', 1], ['SEE', 'Professor de Estratégia', 'execucao', 'coronel', 3],
+  ['STO', 'Chefe da Secção de Táctica e Operações', 'direccao_chefia', 'coronel', 1], ['STO', 'Professor de Táctica', 'execucao', 'tenente_coronel', 3],
+  ['SLM', 'Chefe da Secção de Logística Militar', 'direccao_chefia', 'tenente_coronel', 1], ['SLM', 'Professor de Logística Militar', 'execucao', 'major', 3],
+  ['DIPG', 'Chefe do Departamento de Investigação', 'direccao_chefia', 'coronel', 1], ['CEE', 'Investigador', 'execucao', 'major', 3],
+  ['DC', 'Chefe do Departamento de Cursos', 'direccao_chefia', 'coronel', 1], ['CEM', 'Coordenador do Curso de Estado-Maior', 'execucao', 'tenente_coronel', 1], ['CSG', 'Coordenador do Curso Superior de Guerra', 'execucao', 'coronel', 1],
+  ['RPQ', 'Chefe da Repartição de Pessoal e Quadros', 'direccao_chefia', 'tenente_coronel', 1], ['SEF', 'Chefe da Secção de Efectivos', 'direccao_chefia', 'capitao', 1], ['SEF', 'Sargento de Efectivos', 'execucao', 'primeiro_sargento', 2],
+  ['SCA', 'Chefe da Secção de Carreiras', 'direccao_chefia', 'capitao', 1], ['SAR', 'Arquivista', 'execucao', null, 2, 'civil'],
+  ['RL', 'Chefe da Repartição de Logística', 'direccao_chefia', 'major', 1], ['SMT', 'Sargento de Material', 'execucao', 'segundo_sargento', 2], ['STR', 'Condutor', 'execucao', null, 4, 'civil'],
   ['RF', 'Chefe da Repartição de Finanças', 'direccao_chefia', 'major', 1], ['RF', 'Técnico de Contabilidade', 'execucao', null, 3, 'civil'],
   ['BD', 'Bibliotecário', 'execucao', null, 2, 'civil'], ['SS', 'Médico', 'execucao', 'capitao', 2], ['SS', 'Enfermeiro', 'execucao', 'primeiro_sargento', 2],
-  ['CS', 'Comandante da Companhia de Serviços', 'comando', 'capitao', 1], ['CS', 'Condutor', 'execucao', null, 4, 'civil'],
+  ['CS', 'Comandante da Companhia de Serviços', 'comando', 'capitao', 1],
 ]
 
 // postos dos militares que servem na Escola (sobretudo oficiais) e o tempo típico no posto
@@ -69,9 +78,7 @@ async function main() {
   const hoje = new Date()
   const ano = hoje.getUTCFullYear()
   const unidades = {}
-  for (const [i, [n, s]] of UNIDADES.entries()) unidades[s] = await bd.unidade.create({ data: { nome: n, sigla: s, ordem: i } })
-  // o Gabinete do Director fica dentro da Direcção; as restantes áreas ficam directamente na Escola
-  await bd.unidade.update({ where: { id: unidades.GD.id }, data: { paiId: unidades.DIR.id } })
+  for (const [i, [n, s, tipo, pai]] of UNIDADES.entries()) unidades[s] = await bd.unidade.create({ data: { nome: n, sigla: s, tipo, ordem: i, paiId: pai ? unidades[pai].id : null } })
   const cargos = []
   for (const [u, n, f, posto, vagas, tipo = 'militar'] of CARGOS) cargos.push(await bd.cargo.create({ data: { nome: n, unidadeId: unidades[u].id, funcao: f, postoRequerido: posto, vagas, tipo } }))
   const livres = (c) => c.vagas - (c.ocupados ?? 0)
@@ -93,7 +100,7 @@ async function main() {
         dataNascimento: nasc, genero, estadoCivil: um(ESTADOS), naturalidade: '', provincia: um(PROVINCIAS), pai: `${um(NOMES_M)} ${um(APELIDOS)}`, mae: `${um(NOMES_F)} ${um(APELIDOS)}`,
         email: vinculo !== 'funcionario' || aleatorio() < 0.5 ? `m${nip}@esgfaa.gov.ao` : null, telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, morada: `${um(['Bairro Militar', 'Talatona', 'Kilamba', 'Maianga', 'Rangel', 'Cazenga'])}, Luanda`,
         habilitacao: oficial ? um(HAB_OF) : um(['medio', 'medio', 'bacharelato', 'licenciatura']), areaFormacao: oficial ? um(['Ciências Militares', 'Relações Internacionais', 'Engenharia', 'Gestão', 'Direito', 'Medicina']) : '',
-        unidadeId: cargo ? cargo.unidadeId : vinculo === 'estudante' ? unidades.DCEM.id : um(Object.values(unidades)).id, cargoId: cargo?.id ?? null, dataCargo: cargo ? data(ano - entre(0, 3)) : null,
+        unidadeId: cargo ? cargo.unidadeId : vinculo === 'estudante' ? um([unidades.CEM.id, unidades.CEM.id, unidades.CSG.id]) : um(Object.values(unidades)).id, cargoId: cargo?.id ?? null, dataCargo: cargo ? data(ano - entre(0, 3)) : null,
         ramo, posto, fps: 'QP', quadroEspecial: um(quadros)?.sigla ?? null, especialidade: '', situacao: 'activo', efectividade: aleatorio() < 0.05 ? 'inactividade_temporaria' : 'comissao_normal',
         dataIngresso: ingresso, dataIngressoQP: ingresso, dataAntiguidadePosto: antiguidade, avaliacaoFavoravel: aleatorio() > 0.06, aptidaoFisica: aleatorio() > 0.04, processoPendente: aleatorio() < 0.03,
       },
@@ -127,8 +134,9 @@ async function main() {
   let n = 0
   for (const c of cargos.filter((x) => x.tipo === 'militar')) {
     for (let i = 0; i < c.vagas; i++) {
-      if (aleatorio() < 0.15 && c.vagas > 1) continue
-      const docente = c.unidadeId === unidades.DE.id || c.unidadeId === unidades.DIPG.id || c.unidadeId === unidades.DCEM.id
+      // alguns lugares ficam vagos (os de comando estão sempre preenchidos)
+      if (c.funcao !== 'comando' && aleatorio() < (c.vagas > 1 ? 0.3 : 0.2)) continue
+      const docente = ['DE', 'SEE', 'STO', 'SLM', 'DIPG', 'CEE', 'DC', 'CEM', 'CSG'].some((x) => unidades[x].id === c.unidadeId)
       await criarMilitar({ posto: c.postoRequerido, anosNoPosto: entre(1, 9), vinculo: docente ? 'docente' : 'funcionario' })
       n++
     }
@@ -152,7 +160,7 @@ async function main() {
   let agente = 5000
   for (const c of cargos.filter((x) => x.tipo === 'civil')) {
     for (let i = 0; i < c.vagas; i++) {
-      const carreira = c.nome.startsWith('Técnico de C') ? 'tecnica' : c.nome === 'Condutor' ? 'operaria' : c.nome === 'Bibliotecário' ? 'tecnica_media' : 'administrativa'
+      const carreira = c.nome.startsWith('Técnico de C') ? 'tecnica' : c.nome === 'Condutor' ? 'operaria' : ['Bibliotecário', 'Arquivista'].includes(c.nome) ? 'tecnica_media' : 'administrativa'
       const cats = CARREIRAS_CIVIS[carreira].categorias
       const genero = aleatorio() < 0.5 ? 'F' : 'M'
       const admissao = data(ano - entre(3, 25))
@@ -196,8 +204,8 @@ async function main() {
   const por = (sigla) => contas.find((c) => c.unidadeId === unidades[sigla].id)
   const docs = [
     ['DE', ['RL'], 'requerimento', 'Pedido de material didáctico para o Curso de Estado-Maior', true],
-    ['RPQ', ['DE', 'DCEM'], 'circular', 'Actualização dos dados dos processos individuais até ao fim do mês', false],
-    ['DIR', ['DE', 'DIPG', 'DCEM', 'SG'], 'ordem', 'Ordem de serviço: abertura do ano académico 2026/2027', true],
+    ['RPQ', ['DE', 'DC'], 'circular', 'Actualização dos dados dos processos individuais até ao fim do mês', false],
+    ['DIR', ['DE', 'DIPG', 'DC', 'SG'], 'ordem', 'Ordem de serviço: abertura do ano académico 2026/2027', true],
     ['SG', ['RF'], 'oficio', 'Pedido de cabimentação orçamental para a conferência de estratégia', false],
   ]
   let seq = 1

@@ -38,6 +38,8 @@ model Unidade {
   id           Int          @id @default(autoincrement())
   nome         String
   sigla        String       @default("")
+  // como no SIGP (U/E/O): direccao | gabinete | departamento | reparticao | seccao | servico | companhia | curso | outro
+  tipo         String       @default("outro")
   paiId        Int?         @map("pai_id")
   ordem        Int          @default(0)
   pai          Unidade?     @relation("Arvore", fields: [paiId], references: [id], onDelete: SetNull)

@@ -12,6 +12,7 @@ import { exigir, PAPEIS } from '../aplicacao/sessao.js'
 import { referencias } from '../dominio/pessoal/referencias.js'
 import { TIPOS_DOCUMENTO, ESTADOS_PROCESSO } from '../aplicacao/processos.js'
 import { TIPOS_EXTRACTO } from '../aplicacao/extractos.js'
+import { TIPOS_UNIDADE } from '../aplicacao/organica.js'
 import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expediente.js'
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
@@ -34,7 +35,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/eu', (req, res) => res.json(s.sessao.eu(u(req))))
   r.post('/mudar-senha', validar({ body: E.mudarSenha }), async (req, res) => res.json(await s.sessao.mudarSenha(u(req), req.dados.body)))
   r.post('/sair', async (req, res) => { await s.sessao.sair(u(req)); res.status(204).end() })
-  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
+  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
 
   r.get('/painel', async (req, res) => res.json(await s.painel.resumo(u(req))))
 

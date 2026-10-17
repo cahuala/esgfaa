@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useDados } from '../useDados'
+import { useArvore } from '../arvore'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
 import Foto from '../componentes/Foto'
@@ -16,7 +17,7 @@ export default function Pessoas() {
   const [params, setParams] = useSearchParams()
   const filtros = useMemo(() => Object.fromEntries(params), [params])
   const { dados: linhas, erro } = useDados('/pessoas', filtros)
-  const unidades = useDados('/unidades').dados ?? []
+  const arvore = useArvore()
 
   const mudar = (k, v) => {
     const n = new URLSearchParams(params)
@@ -28,7 +29,7 @@ export default function Pessoas() {
   const valorFiltro = (k, v) => ({
     tipo: ref.tipos[v], vinculo: ref.vinculos[v], ramo: ref.ramos[v]?.nome, grupo: ref.grupos[v], categoria: ref.categorias[v]?.nome,
     posto: ref.postos[ramo].find((p) => p.id === v)?.nome, fps: ref.formasServico[v]?.nome, situacao: ref.situacoes[v], efectividade: ref.efectividades[v]?.nome,
-    genero: ref.generos[v], habilitacao: ref.habilitacoes[v], unidadeId: v === 'nenhum' ? 'Sem unidade' : unidades.find((u) => String(u.id) === v)?.nome, carreiraCivil: ref.carreirasCivis[v]?.nome,
+    genero: ref.generos[v], habilitacao: ref.habilitacoes[v], unidadeId: v === 'nenhum' ? 'Sem unidade' : `${arvore.caminho(Number(v))} (com as subunidades)`, carreiraCivil: ref.carreirasCivis[v]?.nome,
     quadroEspecial: ref.quadros[ramo].find((q) => q.sigla === v)?.nome, idade: v.replace('-200', ' ou mais').replace('-', ' a '), elegivel: 'sim', graduado: 'sim', semCargo: 'sim', ativo: v === 'nao' ? 'Já saíram' : 'Todos',
   }[k] ?? v)
   const descricao = Object.entries(filtros).map(([k, v]) => `${NOMES_FILTRO[k] ?? k}: ${valorFiltro(k, v)}`).join(' · ')
@@ -70,7 +71,7 @@ export default function Pessoas() {
           {f('posto', ref.postos[ramo].map((p) => [p.id, p.nome]))}
           {f('fps', ref.formasServico)}
           {f('situacao', ref.situacoes)}
-          {f('unidadeId', [['nenhum', 'Sem unidade'], ...unidades.map((u) => [String(u.id), u.nome])], 'Todas')}
+          {f('unidadeId', [['nenhum', 'Sem unidade'], ...arvore.opcoes.map(([k, v]) => [String(k), v])], 'Toda a Escola')}
           {f('genero', ref.generos)}
           {f('habilitacao', ref.habilitacoes, 'Todas')}
           {f('carreiraCivil', Object.fromEntries(Object.entries(ref.carreirasCivis).map(([k, v]) => [k, v.nome])), 'Todas')}

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
+import { ICONE_UNIDADE } from '../arvore'
 import Foto from '../componentes/Foto'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
 
@@ -16,7 +17,7 @@ function Ramo({ n, atual, abertos, alternar, navegar }) {
     <li>
       <button type="button" className={atual === n.id ? 'ativo' : ''} onClick={() => { navegar(n.id ? `/organica/${n.id}` : '/organica'); if (n.filhos.length && !aberto) alternar(n.id ?? 'raiz') }}>
         {n.filhos.length ? <i className={`fa fa-fw ${aberto ? 'fa-caret-down' : 'fa-caret-right'}`} onClick={(e) => { e.stopPropagation(); alternar(n.id ?? 'raiz') }} /> : <i className="fa fa-fw fa-circle" style={{ fontSize: 5 }} />}
-        <i className={`fa ${n.id ? 'fa-building' : 'fa-landmark'} opacity-75`} />
+        <i className={`fa fa-fw ${n.id ? ICONE_UNIDADE[n.tipo] ?? 'fa-building' : 'fa-landmark'} opacity-75`} title={n.tipoNome} />
         <span>{n.sigla && n.id ? <strong className="me-1">{n.sigla}</strong> : null}{n.id ? n.nome : <strong>{n.nome}</strong>}</span>
         <span className="pes-num" title="Lugares ocupados / previstos">{n.ocupados}/{n.lugares}</span>
       </button>
@@ -88,7 +89,7 @@ export default function Organica() {
                 <tbody>
                   {(linhas.length ? linhas : [no]).map((n) => (
                     <tr key={n.id ?? 'raiz'} style={{ cursor: n.id && n.id !== atualId ? 'pointer' : undefined }} onClick={() => n.id && n.id !== atualId && navegar(`/organica/${n.id}`)}>
-                      <td><strong>{n.sigla || n.nome}</strong>{n.sigla && <div className="small text-muted">{n.nome}</div>}</td>
+                      <td><strong>{n.sigla || n.nome}</strong>{n.sigla && <div className="small text-muted">{n.nome}</div>}{n.tipoNome && n.id && <div className="small text-muted fst-italic">{n.tipoNome}{n.filhos.length ? ` · ${n.filhos.length} subunidade(s)` : ''}</div>}</td>
                       {col.map(([k]) => [<td key={`${k}p`}>{n.previsto[k] || ''}</td>, <td key={`${k}e`} className={n.existente[k] > n.previsto[k] ? 'text-danger fw-bold' : n.existente[k] < n.previsto[k] ? 'text-warning' : ''}>{n.existente[k] || ''}</td>])}
                       <td className="fw-bold">{totalPrev(n)}</td><td className="fw-bold">{totalExist(n)}</td>
                       <td><div className="pes-barra" style={{ minWidth: 50 }}><span style={{ width: `${Math.min(100, pct(n.ocupados, n.lugares))}%` }} /></div><small>{pct(n.ocupados, n.lugares)}%</small></td>
@@ -109,7 +110,7 @@ export default function Organica() {
                 {linhas.map((f) => (
                   <div key={f.id} className="col-md-6 col-xl-4">
                     <button type="button" className="pes-cartao-unidade" onClick={() => navegar(`/organica/${f.id}`)}>
-                      <div className="d-flex"><strong className="me-auto">{f.nome}</strong>{f.sigla && <span className="badge bg-light text-dark border">{f.sigla}</span>}</div>
+                      <div className="d-flex"><strong className="me-auto"><i className={`fa ${ICONE_UNIDADE[f.tipo] ?? 'fa-building'} me-1 text-muted`} />{f.nome}</strong>{f.sigla && <span className="badge bg-light text-dark border">{f.sigla}</span>}</div>
                       <div className="small text-muted my-1">{f.cargos} cargo(s) · {f.pessoas} pessoa(s){f.estudantes ? ` · ${f.estudantes} estudante(s)` : ''}{f.filhos.length ? ` · ${f.filhos.length} subunidade(s)` : ''}</div>
                       <div className="pes-barra"><span style={{ width: `${Math.min(100, pct(f.ocupados, f.lugares))}%` }} /></div>
                       <div className="small mt-1">{f.ocupados} de {f.lugares} lugares ocupados ({pct(f.ocupados, f.lugares)}%)</div>
@@ -159,7 +160,8 @@ export default function Organica() {
 }
 
 function FormUnidade({ u, unidades, aoFechar, aoGuardar }) {
-  const [d, setD] = useState({ nome: u.nome ?? '', sigla: u.sigla ?? '', paiId: u.paiId ?? '', ordem: u.ordem ?? 0 })
+  const { ref } = useSessao()
+  const [d, setD] = useState({ nome: u.nome ?? '', sigla: u.sigla ?? '', tipo: u.tipo ?? 'outro', paiId: u.paiId ?? '', ordem: u.ordem ?? 0 })
   const [erro, setErro] = useState('')
   const guardar = () => api(u.id ? `/unidades/${u.id}` : '/unidades', { metodo: u.id ? 'PUT' : 'POST', corpo: { ...d, paiId: d.paiId ? Number(d.paiId) : null, ordem: Number(d.ordem) } }).then(() => aoGuardar('Unidade guardada.')).catch((e) => setErro(e.message))
   const apagar = () => api(`/unidades/${u.id}`, { metodo: 'DELETE' }).then(() => aoGuardar('Unidade apagada.')).catch((e) => setErro(e.message))
@@ -169,8 +171,9 @@ function FormUnidade({ u, unidades, aoFechar, aoGuardar }) {
       <div className="row">
         <Campo rotulo="Nome" obrigatorio col="col-md-8"><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
         <Campo rotulo="Sigla" col="col-md-4"><input className="form-control form-control-sm" value={d.sigla} onChange={(e) => setD({ ...d, sigla: e.target.value })} /></Campo>
-        <Campo rotulo="Dentro de" col="col-md-8"><Escolha valor={d.paiId} aoMudar={(v) => setD({ ...d, paiId: v })} opcoes={unidades.filter((x) => x.id !== u.id).map((x) => [x.id, x.nome])} vazio="(topo)" /></Campo>
-        <Campo rotulo="Ordem" col="col-md-4"><input type="number" className="form-control form-control-sm" value={d.ordem} onChange={(e) => setD({ ...d, ordem: e.target.value })} /></Campo>
+        <Campo rotulo="Tipo (como no SIGP)" col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.tiposUnidade} vazio={null} /></Campo>
+        <Campo rotulo="Dentro de (unidade-mãe)" col="col-md-8"><Escolha valor={d.paiId} aoMudar={(v) => setD({ ...d, paiId: v })} opcoes={unidades.filter((x) => x.id !== u.id).map((x) => [x.id, x.nome])} vazio="(topo)" /></Campo>
+        <Campo rotulo="Ordem" col="col-md-12"><input type="number" className="form-control form-control-sm" value={d.ordem} onChange={(e) => setD({ ...d, ordem: e.target.value })} /></Campo>
       </div>
     </Modal>
   )

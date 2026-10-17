@@ -114,6 +114,14 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     const o = (await adm.get('/api/organica').expect(200)).body
     const de = o.escola.filhos.find((x) => x.id === unidade.id)
     assert.ok(de.lugares >= 1 && de.previsto.oficial_superior >= 1 && de.existente.oficial_superior >= 1)
+    // a orgânica é uma árvore: a secção conta na unidade-mãe e o filtro da unidade inclui as subunidades
+    const seccao = (await adm.post('/api/unidades').send({ nome: 'Secção de Estratégia', sigla: 'SEE', tipo: 'seccao', paiId: unidade.id }).expect(201)).body
+    const p = (await adm.post('/api/pessoas').send(militar({ nip: 'SEC001', unidadeId: seccao.id })).expect(201)).body
+    assert.ok((await adm.get(`/api/pessoas?unidadeId=${unidade.id}`)).body.some((x) => x.id === p.id))
+    assert.equal((await adm.put(`/api/unidades/${unidade.id}`).send({ nome: unidade.nome, paiId: seccao.id })).status, 400) // sem voltas na árvore
+    const o2 = (await adm.get('/api/organica')).body.escola.filhos.find((x) => x.id === unidade.id)
+    assert.equal(o2.filhos[0].tipoNome, 'Secção')
+    assert.ok(o2.pessoas >= de.pessoas + 1)
     const det = (await adm.get(`/api/organica/${unidade.id}`)).body
     assert.equal(det.cargos.find((c) => c.nome === 'Professor de Estratégia').ocupantes[0].nome, 'Carlos Alberto da Silva Neto')
   })

@@ -52,11 +52,16 @@ function Caixas() {
   )
 }
 
+// áreas de destino pela árvore da orgânica (com recuo para as subunidades)
 function Destinos({ valor, aoMudar, unidades, minha }) {
+  const nivel = (u) => { let n = 0; for (let x = u; x?.paiId; x = unidades.find((y) => y.id === x.paiId)) n++; return n }
+  const ordem = []
+  const andar = (pai) => unidades.filter((u) => (u.paiId ?? null) === pai).forEach((u) => { ordem.push(u); andar(u.id) })
+  andar(null)
   return (
-    <div className="border rounded p-2" style={{ maxHeight: 180, overflow: 'auto' }}>
-      {unidades.filter((u) => u.id !== minha).map((u) => (
-        <label key={u.id} className="form-check d-block small"><input type="checkbox" className="form-check-input" checked={valor.includes(u.id)} onChange={(e) => aoMudar(e.target.checked ? [...valor, u.id] : valor.filter((x) => x !== u.id))} /> <span className="form-check-label">{u.sigla && <strong className="me-1">{u.sigla}</strong>}{u.nome}</span></label>
+    <div className="border rounded p-2" style={{ maxHeight: 220, overflow: 'auto' }}>
+      {ordem.filter((u) => u.id !== minha).map((u) => (
+        <label key={u.id} className="form-check d-block small" style={{ marginLeft: nivel(u) * 16 }}><input type="checkbox" className="form-check-input" checked={valor.includes(u.id)} onChange={(e) => aoMudar(e.target.checked ? [...valor, u.id] : valor.filter((x) => x !== u.id))} /> <span className="form-check-label">{u.sigla && <strong className="me-1">{u.sigla}</strong>}{u.nome}</span></label>
       ))}
     </div>
   )

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
+import { ICONE_UNIDADE, useArvore } from '../arvore'
 import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Escolha, Painel } from '../componentes/Ui'
 
@@ -30,7 +31,8 @@ export default function NovaProposta() {
   const consulta = useMemo(() => (promocao ? { tipo: tipo === 'progressao' ? 'civil' : 'militar' } : tipo === 'nomeacao' ? {} : { tipo: 'militar' }), [tipo, promocao])
   const { dados: efectivo } = useDados(promocao ? '/carreira/elegiveis' : '/pessoas', consulta)
   const { dados: cargos } = useDados(tipo === 'nomeacao' || tipo === 'exoneracao' ? '/cargos' : null)
-  const { dados: unidades } = useDados('/unidades')
+  const arvore = useArvore()
+  const [abertos, setAbertos] = useState(() => new Set(['raiz']))
   const inicial = params.get('pessoa')
 
   // vindo do perfil («Propor promoção…»): já entra seleccionado
@@ -56,11 +58,11 @@ export default function NovaProposta() {
     if (tipo === 'exoneracao') l = l.filter((p) => p.cargoId)
     if (promocao && f.so) l = l.filter((p) => p.elegivel && !p.emProposta)
     if (f.ramo) l = l.filter((p) => p.ramo === f.ramo)
-    if (f.unidade) l = l.filter((p) => p.unidadeNome === f.unidade)
+    if (f.unidade) { const ids = arvore.descendentes(Number(f.unidade)); l = l.filter((p) => ids.has(p.unidadeId)) }
     const t = norm(f.q).split(/\s+/).filter(Boolean)
     if (t.length) l = l.filter((p) => t.every((x) => norm(`${p.nome} ${p.nip ?? ''} ${p.numeroAgente ?? ''} ${p.postoNome ?? ''} ${p.cargoNome ?? ''}`).includes(x)))
     return l
-  }, [efectivo, f, tipo, promocao])
+  }, [efectivo, f, tipo, promocao, arvore])
 
   // lugares de cada cargo tendo em conta a proposta: quem sai liberta o lugar, quem entra ocupa-o
   const estadoCargo = useMemo(() => {
@@ -124,13 +126,76 @@ export default function NovaProposta() {
   const nomeacao = tipo === 'nomeacao'
   const ramos = Object.fromEntries(Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]))
   const postosAcima = (p, max = 2) => (ref.postos[p.ramo] ?? ref.postos.EXE).filter((x) => x.grau > (p.grau ?? 0) && x.grau <= (p.grau ?? 0) + max)
-  const cargosPorUnidade = useMemo(() => {
-    const t = norm(f.qCargo)
-    const l = (cargos ?? []).filter((c) => (!f.soLivres || (estadoCargo.get(c.id)?.livres ?? 0) > 0) && (!t || norm(`${c.nome} ${c.unidadeNome} ${c.postoRequeridoNome}`).includes(t)))
-    const g = new Map()
-    for (const c of l) g.set(c.unidadeNome || 'Sem unidade', [...(g.get(c.unidadeNome || 'Sem unidade') ?? []), c])
-    return [...g]
-  }, [cargos, f.soLivres, f.qCargo, estadoCargo])
+  // cargos de cada unidade e, para cada ramo da árvore, quantos lugares livres tem (somando as subunidades)
+  const textoCargo = norm(f.qCargo)
+  const mostraCargo = (c) => (!f.soLivres || (estadoCargo.get(c.id)?.livres ?? 0) > 0) && (!textoCargo || norm(`${c.nome} ${c.postoRequeridoNome} ${c.unidadeCaminho}`).includes(textoCargo))
+  const cargosDe = useMemo(() => {
+    const m = new Map()
+    for (const c of cargos ?? []) m.set(c.unidadeId ?? 0, [...(m.get(c.unidadeId ?? 0) ?? []), c])
+    return m
+  }, [cargos])
+  const resumoRamo = useMemo(() => {
+    const r = new Map()
+    const somar = (n) => {
+      let livres = 0
+      let visiveis = 0
+      for (const c of cargosDe.get(n.id ?? 0) ?? []) { livres += Math.max(0, estadoCargo.get(c.id)?.livres ?? 0); if (mostraCargo(c)) visiveis++ }
+      for (const x of n.filhos) { const t = somar(x); livres += t.livres; visiveis += t.visiveis }
+      r.set(n.id ?? 'raiz', { livres, visiveis })
+      return { livres, visiveis }
+    }
+    if (arvore.escola) somar(arvore.escola)
+    return r
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arvore.escola, cargosDe, estadoCargo, f.soLivres, textoCargo])
+  const filtrando = f.soLivres || Boolean(textoCargo)
+  const alternarNo = (k) => setAbertos((a) => { const n = new Set(a); if (n.has(k)) n.delete(k); else n.add(k); return n })
+
+  const cartaoCargo = (c) => {
+    const e = estadoCargo.get(c.id)
+    const fora = e.ficam.filter((o) => !escolhido(o.id))
+    return (
+      <div key={c.id} className="border-bottom px-2 py-2 small bg-white">
+        <button type="button" className="btn btn-link p-0 text-start text-decoration-none w-100" onClick={() => atribuir(c)} title={activo ? 'Atribuir à pessoa escolhida' : 'Escolha primeiro a pessoa, ao meio'}>
+          <span className="d-flex"><strong className="me-auto text-body"><i className="fa fa-chair me-1 text-muted" />{c.nome}</strong><span className={`badge ${e.livres > 0 ? 'bg-success' : e.livres === 0 ? 'bg-secondary' : 'bg-danger'}`}>{e.livres > 0 ? `${e.livres} vago(s)` : e.livres === 0 ? 'preenchido' : 'ocupado'}</span></span>
+          <span className="text-muted d-block">{c.postoRequeridoNome || c.categoriaCivil || 'Civil'} · {c.vagas} lugar(es)</span>
+          {inferior(c) && <span className="d-block text-danger"><i className="fa fa-ban me-1" />Posto inferior ao de {pessoaActiva.nome} (art. 19.º)</span>}
+        </button>
+        {c.ocupantes.map((o) => (
+          <div key={o.id} className="d-flex align-items-center gap-1 mt-1">
+            <Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={24} />
+            <span className={`flex-grow-1 ${escolhido(o.id) ? 'text-decoration-line-through text-muted' : ''}`}>{o.descricao} {o.nome}</span>
+            {fora.some((x) => x.id === o.id) && e.entram.length > 0 && <button type="button" className="btn btn-xs btn-warning" onClick={() => juntarOcupante(o)} title="O ocupante tem de entrar na proposta para outro cargo">Juntar à proposta</button>}
+          </div>
+        ))}
+        {e.entram.map((x) => <div key={x.pessoa.id} className="text-success mt-1"><i className="fa fa-arrow-right me-1" />{x.pessoa.nome}</div>)}
+      </div>
+    )
+  }
+
+  const noArvore = (n, nivel) => {
+    const k = n.id ?? 'raiz'
+    const t = resumoRamo.get(k) ?? { livres: 0, visiveis: 0 }
+    if (filtrando && !t.visiveis) return null
+    const aberto = filtrando || abertos.has(k)
+    const proprios = (cargosDe.get(n.id ?? 0) ?? []).filter(mostraCargo)
+    return (
+      <div key={k}>
+        <button type="button" className="w-100 border-0 border-bottom text-start px-2 py-1 d-flex align-items-center gap-1 small" style={{ paddingLeft: `${8 + nivel * 14}px`, background: nivel ? '#f6f7f5' : '#e9ede8' }} onClick={() => alternarNo(k)}>
+          <i className={`fa fa-fw ${aberto ? 'fa-caret-down' : 'fa-caret-right'}`} />
+          <i className={`fa fa-fw ${n.id ? ICONE_UNIDADE[n.tipo] ?? 'fa-building' : 'fa-landmark'} text-muted`} />
+          <span className="me-auto">{n.sigla && n.id && <strong className="me-1">{n.sigla}</strong>}{n.id ? n.nome : <strong>{n.nome}</strong>}</span>
+          <span className={`badge ${t.livres ? 'bg-success' : 'bg-light text-dark border'}`} title="Lugares livres neste ramo da orgânica">{t.livres} vago(s)</span>
+        </button>
+        {aberto && (
+          <div style={{ marginLeft: nivel * 14 }}>
+            {proprios.map(cartaoCargo)}
+            {n.filhos.map((x) => noArvore(x, nivel + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -157,7 +222,7 @@ export default function NovaProposta() {
               <input type="search" className="form-control form-control-sm mb-2" placeholder="Nome, NIP, posto ou cargo…" value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} aria-label="Pesquisar no efectivo" />
               <div className="d-flex gap-2">
                 {tipo !== 'progressao' && <Escolha valor={f.ramo} aoMudar={(v) => setF({ ...f, ramo: v })} opcoes={ramos} vazio="Os três ramos" aria-label="Ramo" />}
-                <Escolha valor={f.unidade} aoMudar={(v) => setF({ ...f, unidade: v })} opcoes={(unidades ?? []).map((u) => [u.nome, u.sigla || u.nome])} vazio="Todas as unidades" aria-label="Unidade" />
+                <Escolha valor={f.unidade} aoMudar={(v) => setF({ ...f, unidade: v })} opcoes={arvore.opcoes} vazio="Toda a Escola" aria-label="Unidade (inclui as subunidades)" />
               </div>
               {promocao && <label className="form-check small mt-2 mb-0"><input type="checkbox" className="form-check-input" checked={f.so} onChange={(e) => setF({ ...f, so: e.target.checked })} /> <span className="form-check-label">Só quem está em condições (Lei n.º 13/18)</span></label>}
               <div className="d-flex gap-2 mt-2">
@@ -211,7 +276,7 @@ export default function NovaProposta() {
                       {tipo === 'progressao' && <span>{p.categoriaCivil} <i className="fa fa-arrow-right mx-1" /> <strong className="text-success">{p.proposto}</strong></span>}
                       {tipo === 'graduacao' && <div className="d-flex gap-2"><Escolha valor={s.postoProposto} aoMudar={(v) => mudar(p.id, 'postoProposto', v)} opcoes={postosAcima(p).map((x) => [x.id, `Graduado em ${x.nome}`])} vazio="Posto (até 2 graus)" /><input type="date" className="form-control form-control-sm" value={s.inicio} onChange={(e) => mudar(p.id, 'inicio', e.target.value)} title="Início" /><input type="date" className="form-control form-control-sm" value={s.fim} onChange={(e) => mudar(p.id, 'fim', e.target.value)} title="Fim" /></div>}
                       {nomeacao && (cargo
-                        ? <div className={ocupado ? 'text-danger' : 'text-success'}><i className="fa fa-chair me-1" /><strong>{cargo.nome}</strong> · {cargo.unidadeNome}{ocupado && ' — ocupado'}<button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => mudar(p.id, 'cargoId', null)}>mudar</button></div>
+                        ? <div className={ocupado ? 'text-danger' : 'text-success'}><i className="fa fa-chair me-1" /><strong>{cargo.nome}</strong> · {cargo.unidadeCaminho || cargo.unidadeNome}{ocupado && ' — ocupado'}<button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => mudar(p.id, 'cargoId', null)}>mudar</button></div>
                         : <div className="text-warning"><i className="fa fa-hand-point-right me-1" />{activo === p.id ? 'Escolha o cargo à direita.' : 'Clique aqui e depois no cargo à direita.'}</div>)}
                       {tipo === 'exoneracao' && <span>Deixa o cargo: <strong>{p.cargoNome}</strong></span>}
                       <input className="form-control form-control-sm mt-1" placeholder="Justificação (opcional)" value={s.justificacao} onChange={(e) => mudar(p.id, 'justificacao', e.target.value)} />
@@ -233,32 +298,7 @@ export default function NovaProposta() {
                 <label className="form-check small mb-0"><input type="checkbox" className="form-check-input" checked={f.soLivres} onChange={(e) => setF({ ...f, soLivres: e.target.checked })} /> <span className="form-check-label">Só os vagos</span></label>
               </div>
               <div style={{ maxHeight: 700, overflowY: 'auto' }}>
-                {!cargos ? <Carregando /> : cargosPorUnidade.map(([unidade, l]) => (
-                  <div key={unidade}>
-                    <div className="px-2 py-1 bg-light small fw-bold border-bottom">{unidade}</div>
-                    {l.map((c) => {
-                      const e = estadoCargo.get(c.id)
-                      const fora = e.ficam.filter((o) => !escolhido(o.id))
-                      return (
-                        <div key={c.id} className="border-bottom px-2 py-2 small">
-                          <button type="button" className="btn btn-link p-0 text-start text-decoration-none w-100" onClick={() => atribuir(c)} title={activo ? 'Atribuir à pessoa escolhida' : 'Escolha primeiro a pessoa, ao meio'}>
-                            <span className="d-flex"><strong className="me-auto text-body">{c.nome}</strong><span className={`badge ${e.livres > 0 ? 'bg-success' : e.livres === 0 ? 'bg-secondary' : 'bg-danger'}`}>{e.livres > 0 ? `${e.livres} vago(s)` : e.livres === 0 ? 'preenchido' : 'ocupado'}</span></span>
-                            <span className="text-muted d-block">{c.postoRequeridoNome || c.categoriaCivil || 'Civil'} · {c.vagas} lugar(es)</span>
-                            {inferior(c) && <span className="d-block text-danger"><i className="fa fa-ban me-1" />Posto inferior ao de {pessoaActiva.nome} (art. 19.º)</span>}
-                          </button>
-                          {c.ocupantes.map((o) => (
-                            <div key={o.id} className="d-flex align-items-center gap-1 mt-1">
-                              <Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={24} />
-                              <span className={`flex-grow-1 ${escolhido(o.id) ? 'text-decoration-line-through text-muted' : ''}`}>{o.descricao} {o.nome}</span>
-                              {fora.some((x) => x.id === o.id) && e.entram.length > 0 && <button type="button" className="btn btn-xs btn-warning" onClick={() => juntarOcupante(o)} title="O ocupante tem de entrar na proposta para outro cargo">Juntar à proposta</button>}
-                            </div>
-                          ))}
-                          {e.entram.map((s) => <div key={s.pessoa.id} className="text-success mt-1"><i className="fa fa-arrow-right me-1" />{s.pessoa.nome}</div>)}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
+                {!cargos || !arvore.escola ? <Carregando /> : noArvore(arvore.escola, 0)}
               </div>
             </Painel>
           </div>
