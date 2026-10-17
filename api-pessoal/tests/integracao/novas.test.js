@@ -121,6 +121,46 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     await adm.post(`/api/propostas/${pr.id}/submeter`).send({}).expect(200)
   })
 
+  it('situação em árvore (Lei n.º 13/18) e estado operacional, com o histórico das mudanças', async () => {
+    const r = (await adm.get('/api/referencias')).body
+    assert.deepEqual(r.arvoreSituacoes.map((x) => [x.id, x.artigo]), [['activo', 'art. 7.º'], ['reserva', 'art. 8.º'], ['reforma', 'art. 9.º']])
+    assert.deepEqual(r.arvoreSituacoes[0].filhos.map((g) => g.filhos.map((f) => f.id)), [['comissao_normal', 'inactividade_temporaria'], ['comissao_especial', 'licenca_registada', 'licenca_ilimitada']])
+    const m = (await adm.post('/api/pessoas').send(militar({ nip: 'SIT001', estado: 'destacado' })).expect(201)).body
+    assert.equal(m.situacaoCaminho, 'Activo › Em efectividade de serviço › Comissão normal de serviço')
+    assert.deepEqual([m.situacaoArtigo, m.estadoNome, m.efectivo], ['art. 12.º', 'Destacado', true])
+    const f = (await adm.put(`/api/pessoas/${m.id}`).send(militar({ nip: 'SIT001', efectividade: 'licenca_registada', estado: 'em_missao' })).expect(200)).body
+    assert.equal(f.situacaoCaminho, 'Activo › Fora de efectividade de serviço › Licença registada')
+    assert.equal(f.efectivo, false)
+    const h = (await adm.get(`/api/pessoas/${m.id}`)).body.eventos.map((e) => [e.tipo, e.descricao])
+    assert.ok(h.some(([t, d]) => t === 'situacao' && d === 'Comissão normal de serviço → Licença registada'))
+    assert.ok(h.some(([t, d]) => t === 'estado' && d === 'Destacado → Em missão'))
+    assert.equal((await adm.get('/api/pessoas?estado=em_missao')).body.filter((p) => p.nip === 'SIT001').length, 1)
+    assert.equal((await adm.post('/api/pessoas').send(militar({ nip: 'SIT002', estado: 'de_ferias' }))).status, 400)
+    const reserva = (await adm.put(`/api/pessoas/${m.id}`).send(militar({ nip: 'SIT001', situacao: 'reserva', estado: '' })).expect(200)).body
+    assert.deepEqual([reserva.situacaoCaminho, reserva.situacaoArtigo, reserva.efectividadeNome, reserva.estadoNome], ['Reserva', 'art. 8.º', '', ''])
+  })
+
+  it('proposta para curso: o curso é obrigatório, não se repete quem já o fez, e o extracto regista-o na ficha', async () => {
+    const a = (await adm.post('/api/pessoas').send(militar({ nip: 'CUR001', nome: 'Domingos Kiala Sapalo' })).expect(201)).body
+    const b = (await adm.post('/api/pessoas').send(militar({ nip: 'CUR002', nome: 'Teresa Ndala Muteka', genero: 'F' })).expect(201)).body
+    await adm.post(`/api/pessoas/${b.id}/cursos`).send({ nome: 'Curso de Estado-Maior', tipo: 'formacao', aproveitamento: true, fim: '2024-06-30' }).expect(201)
+    assert.equal((await adm.post('/api/propostas').send({ tipo: 'curso', titulo: 'Sem curso', itens: [] })).status, 400)
+    const pr = (await adm.post('/api/propostas').send({ tipo: 'curso', titulo: 'CEM 2027', curso: 'Curso de Estado-Maior', itens: [{ pessoaId: a.id, inicio: '2027-02-01', fim: '2027-11-30' }, { pessoaId: b.id }] }).expect(201)).body
+    assert.deepEqual(pr.itens.map((i) => [i.nome, i.cumpre]), [['Domingos Kiala Sapalo', true], ['Teresa Ndala Muteka', false]])
+    // lista das pessoas propostas (para os documentos)
+    const itens = (await adm.get('/api/propostas/itens?tipo=curso').expect(200)).body
+    assert.deepEqual(itens.map((i) => [i.nome, i.curso, i.inicio, i.estado]), [['Domingos Kiala Sapalo', 'Curso de Estado-Maior', '2027-02-01', 'rascunho'], ['Teresa Ndala Muteka', 'Curso de Estado-Maior', null, 'rascunho']])
+    await adm.delete(`/api/propostas/${pr.id}/itens/${pr.itens[1].id}`).expect(200)
+    await adm.post(`/api/propostas/${pr.id}/submeter`).send({}).expect(200)
+    const e = (await adm.post('/api/extractos').field('tipo', 'curso').field('numero', '12/DPQ/2026').field('data', '2026-10-15').field('propostaId', String(pr.id)).attach('ficheiro', PDF, 'curso.pdf').expect(201)).body
+    assert.deepEqual(e.itens.map((i) => i.pessoaId), [a.id])
+    await adm.post(`/api/extractos/${e.id}/aplicar`).expect(200)
+    const f = (await adm.get(`/api/pessoas/${a.id}`)).body
+    assert.ok(f.cursos.some((c) => c.nome === 'Curso de Estado-Maior' && String(c.inicio).startsWith('2027-02-01')), JSON.stringify(f.cursos))
+    assert.ok(f.eventos.some((x) => x.tipo === 'curso'))
+    assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.estado, 'concluida')
+  })
+
   it('orgânica: árvore com o previsto e o existente por categoria', async () => {
     const o = (await adm.get('/api/organica').expect(200)).body
     const de = o.escola.filhos.find((x) => x.id === unidade.id)

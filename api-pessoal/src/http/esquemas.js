@@ -27,7 +27,7 @@ export const pessoa = z.object({
   habilitacao: opc(20).nullable(), areaFormacao: opc(120),
   unidadeId: idOpc, cargoId: idOpc, dataCargo: dataOpc,
   ramo: opc(3).nullable(), posto: opc(30).nullable(), fps: opc(3).nullable(), quadroEspecial: opc(10).nullable(), especialidade: opc(80),
-  situacao: opc(10).nullable(), efectividade: opc(30).nullable(),
+  situacao: opc(10).nullable(), efectividade: opc(30).nullable(), estado: opc(30).nullable(),
   dataIngresso: dataOpc, dataIngressoQP: dataOpc, dataAntiguidadePosto: dataOpc, dataSituacao: dataOpc,
   avaliacaoFavoravel: z.boolean().optional(), aptidaoFisica: z.boolean().optional(), processoPendente: z.boolean().optional(),
   carreiraCivil: opc(30).nullable(), categoriaCivil: opc(80).nullable(), vinculoCivil: opc(30).nullable(), dataAdmissao: dataOpc, dataCategoria: dataOpc,
@@ -42,8 +42,8 @@ export const fimGraduacao = z.object({ fim: data, motivo: txt(500).default('') }
 
 const item = z.object({ pessoaId: id, postoProposto: opc(30), modalidade: opc(20), cargoId: idOpc, inicio: dataOpc, fim: dataOpc, justificacao: txt(1000).default('') }).strict()
 export const itemProposta = item
-export const proposta = z.object({ tipo: z.enum(['promocao', 'graduacao', 'nomeacao', 'exoneracao', 'progressao']), titulo: txt(200, 3), fundamentacao: txt(4000).default(''), itens: z.array(item).max(300).default([]) }).strict()
-export const editarProposta = z.object({ titulo: txt(200, 3).optional(), fundamentacao: txt(4000).optional() }).strict()
+export const proposta = z.object({ tipo: z.enum(['promocao', 'graduacao', 'nomeacao', 'exoneracao', 'progressao', 'curso']), titulo: txt(200, 3), fundamentacao: txt(4000).default(''), curso: txt(200).default(''), itens: z.array(item).max(300).default([]) }).strict()
+export const editarProposta = z.object({ titulo: txt(200, 3).optional(), fundamentacao: txt(4000).optional(), curso: txt(200).optional() }).strict()
 export const despacho = z.object({ documento: txt(150, 2), dataDocumento: data, entidade: txt(150).default('') }).strict()
 export const motivo = z.object({ motivo: txt(1000).default('') })
 export const motivoObrigatorio = z.object({ motivo: txt(1000, 3) })

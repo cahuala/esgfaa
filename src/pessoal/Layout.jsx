@@ -94,6 +94,11 @@ export default function Layout({ children }) {
               <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
               <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
 
+              <div className="menu-header">Documentos</div>
+              <Item para="/documentos/efectividade" icone="fa-table" texto="Efectividade" />
+              <Item para="/documentos/propostas" icone="fa-file-signature" texto="Pessoal proposto" />
+              <Item para="/documentos/listas" icone="fa-list" texto="Listas" />
+
               <div className="menu-header">Organização</div>
               <Item para="/organica" icone="fa-sitemap" texto="Orgânica e planeamento" />
               <Item para="/domiciliares" icone="fa-house-user" texto="Empregados domiciliares" />

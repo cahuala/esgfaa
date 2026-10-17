@@ -174,6 +174,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/carreira/elegiveis', validar({ query: z.object({ tipo: z.enum(['militar', 'civil']).default('militar') }) }), async (req, res) => res.json(await s.pessoas.elegiveis(u(req), req.dados.query)))
   r.get('/carreira/reserva', validar({ query: z.object({ anos: z.coerce.number().int().min(1).max(15).default(5) }) }), async (req, res) => res.json(await s.pessoas.projecaoReserva(u(req), req.dados.query)))
 
+  r.get('/propostas/itens', validar({ query: z.object({ estado: z.string().max(20).optional(), tipo: z.string().max(20).optional() }) }), async (req, res) => res.json(await s.propostas.itens(u(req), req.dados.query)))
   r.get('/propostas', validar({ query: z.object({ estado: z.string().max(20).optional(), tipo: z.string().max(20).optional(), pessoaId: z.string().max(10).optional() }) }), async (req, res) => res.json(await s.propostas.listar(u(req), req.dados.query)))
   r.post('/propostas', validar({ body: E.proposta }), async (req, res) => res.status(201).json(await s.propostas.criar(u(req), req.dados.body)))
   r.get('/propostas/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.propostas.obter(u(req), req.dados.params.id)))

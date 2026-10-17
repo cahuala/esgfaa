@@ -8,7 +8,7 @@ import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Escolha, Painel } from '../componentes/Ui'
 
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-const TIPOS = [['promocao', 'Promoção', 'fa-chevron-up'], ['nomeacao', 'Nomeação', 'fa-user-tag'], ['graduacao', 'Graduação', 'fa-star-half-alt'], ['exoneracao', 'Exoneração', 'fa-user-minus'], ['progressao', 'Progressão (civis)', 'fa-briefcase']]
+const TIPOS = [['promocao', 'Promoção', 'fa-chevron-up'], ['nomeacao', 'Nomeação', 'fa-user-tag'], ['graduacao', 'Graduação', 'fa-star-half-alt'], ['exoneracao', 'Exoneração', 'fa-user-minus'], ['progressao', 'Progressão (civis)', 'fa-briefcase'], ['curso', 'Curso', 'fa-graduation-cap']]
 
 /*
   Nova proposta: à esquerda o efectivo (com fotografia) para seleccionar; ao meio os seleccionados
@@ -22,13 +22,14 @@ export default function NovaProposta() {
   const [tipo, setTipo] = useState(params.get('tipo') ?? 'promocao')
   const [titulo, setTitulo] = useState('')
   const [fundamentacao, setFundamentacao] = useState('')
+  const [curso, setCurso] = useState('')
   const [sel, setSel] = useState([]) // [{ pessoa, cargoId, postoProposto, modalidade, inicio, fim, justificacao }]
   const [activo, setActivo] = useState(null)
   const [f, setF] = useState({ q: '', ramo: '', unidade: '', so: true, soLivres: false, qCargo: '' })
   const [aGuardar, setAGuardar] = useState(false)
 
   const promocao = tipo === 'promocao' || tipo === 'progressao'
-  const consulta = useMemo(() => (promocao ? { tipo: tipo === 'progressao' ? 'civil' : 'militar' } : tipo === 'nomeacao' ? {} : { tipo: 'militar' }), [tipo, promocao])
+  const consulta = useMemo(() => (promocao ? { tipo: tipo === 'progressao' ? 'civil' : 'militar' } : tipo === 'nomeacao' || tipo === 'curso' ? {} : { tipo: 'militar' }), [tipo, promocao])
   const { dados: efectivo } = useDados(promocao ? '/carreira/elegiveis' : '/pessoas', consulta)
   const { dados: cargos } = useDados(tipo === 'nomeacao' || tipo === 'exoneracao' ? '/cargos' : null)
   const arvore = useArvore()
@@ -119,6 +120,7 @@ export default function NovaProposta() {
     }
   }
   if (tipo === 'graduacao') for (const s of sel) if (!s.postoProposto) problemas.push(`${s.pessoa.nome}: escolha o posto da graduação.`)
+  if (tipo === 'curso' && !curso.trim()) problemas.push('Indique o curso ou acção de formação.')
 
   async function criar() {
     setAGuardar(true)
@@ -126,8 +128,8 @@ export default function NovaProposta() {
       const r = await api('/propostas', {
         metodo: 'POST',
         corpo: {
-          tipo, fundamentacao,
-          titulo: titulo || `${ref.tiposProposta[tipo].nome} — ${new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`,
+          tipo, fundamentacao, curso: tipo === 'curso' ? curso : '',
+          titulo: titulo || `${tipo === 'curso' && curso ? `Nomeação para o curso ${curso}` : ref.tiposProposta[tipo].nome} — ${new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`,
           itens: sel.map((s) => ({ pessoaId: s.pessoa.id, cargoId: s.cargoId ?? undefined, postoProposto: s.postoProposto || undefined, modalidade: s.modalidade || undefined, inicio: s.inicio || null, fim: s.fim || null, justificacao: s.justificacao })),
         },
       })
@@ -217,7 +219,7 @@ export default function NovaProposta() {
     <>
       <Cabecalho titulo="Nova proposta" migalhas={[['Propostas', '/propostas'], ['Nova']]}>
         <button type="button" className="btn btn-outline-secondary" onClick={() => navegar('/propostas')}>Cancelar</button>
-        <button type="button" className="btn btn-theme" disabled={!sel.length || aGuardar} onClick={criar}><i className="fa fa-check me-1" />Criar proposta ({sel.length})</button>
+        <button type="button" className="btn btn-theme" disabled={!sel.length || aGuardar || (tipo === 'curso' && !curso.trim())} onClick={criar}><i className="fa fa-check me-1" />Criar proposta ({sel.length})</button>
       </Cabecalho>
       <Painel>
         <div className="row align-items-end">
@@ -227,6 +229,7 @@ export default function NovaProposta() {
           </div>
           <div className="col-xl-3 col-md-6 mb-2"><label className="form-label small fw-semibold">Título</label><input className="form-control form-control-sm" placeholder={`${ref.tiposProposta[tipo].nome} — ${new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`} value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
           <div className="col-xl-3 col-md-6 mb-2"><label className="form-label small fw-semibold">Fundamentação (vai nas fichas)</label><input className="form-control form-control-sm" value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} /></div>
+          {tipo === 'curso' && <div className="col-xl-6 mb-2"><label className="form-label small fw-semibold">Curso ou acção de formação <span className="text-danger">*</span></label><input className="form-control form-control-sm" placeholder="Ex.: Curso de Estado-Maior Conjunto" value={curso} onChange={(e) => setCurso(e.target.value)} /><small className="text-muted">As datas de início e fim indicam-se em cada pessoa (no meio).</small></div>}
         </div>
       </Painel>
 
@@ -295,6 +298,7 @@ export default function NovaProposta() {
                         ? <div className={ocupado ? 'text-danger' : 'text-success'}><i className="fa fa-chair me-1" /><strong>{cargo.nome}</strong> · {cargo.unidadeCaminho || cargo.unidadeNome}{ocupado && ' — ocupado'}<button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => mudar(p.id, 'cargoId', null)}>mudar</button></div>
                         : <div className="text-warning"><i className="fa fa-hand-point-right me-1" />{activo === p.id ? 'Escolha o cargo à direita.' : 'Clique aqui e depois no cargo à direita.'}</div>)}
                       {tipo === 'exoneracao' && <span>Deixa o cargo: <strong>{p.cargoNome}</strong></span>}
+                      {tipo === 'curso' && <div className="d-flex align-items-center gap-2"><i className="fa fa-graduation-cap text-theme" /><span className="text-nowrap">{curso || 'Curso por indicar'}</span><input type="date" className="form-control form-control-sm" value={s.inicio} onChange={(e) => mudar(p.id, 'inicio', e.target.value)} title="Início" aria-label="Início do curso" /><input type="date" className="form-control form-control-sm" value={s.fim} onChange={(e) => mudar(p.id, 'fim', e.target.value)} title="Fim" aria-label="Fim do curso" /></div>}
                       {nomeacao && (
                         <Escolha valor={s.cargoId ?? ''} aoMudar={(v) => mudar(p.id, 'cargoId', v ? Number(v) : null)} aria-label={`Cargo para ${p.nome}`} className="form-select form-select-sm mt-1"
                           opcoes={cargosPara(p).map((c) => { const e = estadoCargo.get(c.id); return [c.id, `${c.nome} — ${c.unidadeCaminho || c.unidadeNome || 'sem unidade'} · ${c.postoRequeridoNome || c.categoriaCivil || 'Civil'} · ${e?.livres > 0 ? `${e.livres} vago(s)` : 'ocupado'}`] })}

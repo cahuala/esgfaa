@@ -6,7 +6,7 @@ import { exigir } from './sessao.js'
 export const TIPOS_DOCUMENTO = {
   bi: 'Bilhete de Identidade', foto: 'Fotografia', certificado: 'Certificado de habilitações', diploma: 'Diploma de curso militar',
   extracto_promocao: 'Extracto de promoção', extracto_nomeacao: 'Extracto de nomeação', extracto_graduacao: 'Extracto de graduação', extracto_exoneracao: 'Extracto de exoneração',
-  extracto_reserva: 'Extracto de passagem à reserva', extracto_reforma: 'Extracto de reforma', extracto_progressao: 'Extracto de progressão', extracto: 'Extracto',
+  extracto_reserva: 'Extracto de passagem à reserva', extracto_reforma: 'Extracto de reforma', extracto_progressao: 'Extracto de progressão', extracto_curso: 'Extracto de nomeação para curso', extracto: 'Extracto',
   louvor: 'Louvor / condecoração', punicao: 'Punição', saude: 'Inspecção médica', contrato: 'Contrato', declaracao: 'Declaração', outro: 'Outro',
 }
 export const ESTADOS_PROCESSO = { activo: 'Activo', encapado: 'Encapado', em_falta: 'Pasta em falta', arquivado: 'Arquivado' }

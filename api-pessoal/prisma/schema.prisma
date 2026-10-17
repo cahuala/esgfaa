@@ -107,6 +107,7 @@ model Pessoa {
   especialidade        String    @default("")
   situacao             String?   @default("activo") // activo | reserva | reforma
   efectividade         String?   @default("comissao_normal")
+  estado               String? // estado operacional: destacado | em_missao | em_formacao | … (sem estado = ao serviço)
   dataIngresso         DateTime? @map("data_ingresso") @db.Date
   dataIngressoQP       DateTime? @map("data_ingresso_qp") @db.Date
   dataAntiguidadePosto DateTime? @map("data_antiguidade_posto") @db.Date
@@ -223,6 +224,7 @@ model Proposta {
   estado        String         @default("rascunho") // rascunho | submetida | aprovada | rejeitada | cancelada
   titulo        String
   fundamentacao String         @default("")
+  curso         String         @default("") // nas propostas para curso: o curso ou acção de formação
   criadoPor     String         @map("criado_por")
   submetidaEm   DateTime?      @map("submetida_em") @db.Timestamptz(3)
   decididoPor   String         @default("") @map("decidido_por")

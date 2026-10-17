@@ -6,11 +6,12 @@ import Carregar from '../componentes/Carregar'
 import { useSessao } from '../sessao'
 import { useArvore } from '../arvore'
 import { Cabecalho, Campo, Carregando, Escolha, Painel } from '../componentes/Ui'
+import { EscolhaSituacao } from '../componentes/Situacao'
 
 const VAZIA = {
   tipo: 'militar', vinculo: 'funcionario', nome: '', nomeGuerra: '', nip: '', numeroAgente: '', bi: '', dataNascimento: '', genero: '', estadoCivil: '', naturalidade: '', provincia: '', nacionalidade: 'Angolana', pai: '', mae: '',
   email: '', telefone: '', morada: '', habilitacao: '', areaFormacao: '', unidadeId: '', cargoId: '', dataCargo: '',
-  ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
+  ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', estado: '', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
 }
@@ -78,7 +79,7 @@ export default function FormularioFicha() {
     const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId ? Number(d.cargoId) : null }
     corpo.militarAlocadoId = corpo.vinculo === 'domiciliar' && corpo.militarAlocadoId ? Number(corpo.militarAlocadoId) : null
     for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto']) if (corpo[k] === '') corpo[k] = null
-    if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
+    if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'estado', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
     if (id) delete corpo.cargoId // o cargo muda por nomeação/exoneração
     try {
       const r = await api(id ? `/pessoas/${id}` : '/pessoas', { metodo: id ? 'PUT' : 'POST', corpo })
@@ -143,8 +144,8 @@ export default function FormularioFicha() {
             <Campo rotulo="Forma de prestação de serviço" obrigatorio col="col-md-3"><Escolha valor={d.fps} aoMudar={set('fps')} opcoes={ref.formasServico} vazio={null} /></Campo>
             <Campo rotulo="Quadro especial" col="col-md-3" ajuda="Arma, serviço ou classe (arts. 84.º–95.º)."><Escolha valor={d.quadroEspecial} aoMudar={set('quadroEspecial')} opcoes={quadros.map((q) => [q.sigla, `${q.sigla} — ${q.nome}${q.comum ? ' (comum)' : ''}`])} /></Campo>
             <Campo rotulo="Especialidade" col="col-md-3">{txt('especialidade')}</Campo>
-            <Campo rotulo="Situação" col="col-md-3"><Escolha valor={d.situacao} aoMudar={set('situacao')} opcoes={ref.situacoes} vazio={null} /></Campo>
-            <Campo rotulo="Efectividade de serviço" col="col-md-3"><Escolha valor={d.efectividade} aoMudar={set('efectividade')} opcoes={ref.efectividades} vazio={null} /></Campo>
+            <Campo rotulo="Situação (Lei n.º 13/18)" col="col-md-6" ajuda="Activo em efectividade ou fora de efectividade de serviço (art. 11.º), reserva ou reforma."><EscolhaSituacao arvore={ref.arvoreSituacoes} situacao={d.situacao} efectividade={d.efectividade} aoMudar={(x) => setD({ ...d, ...x })} aria-label="Situação" /></Campo>
+            <Campo rotulo="Estado" col="col-md-3" ajuda="Estado operacional; muda a qualquer momento."><Escolha valor={d.estado} aoMudar={set('estado')} opcoes={ref.estados} vazio="Ao serviço" /></Campo>
             <Campo rotulo="Na situação desde" col="col-md-3">{data('dataSituacao')}</Campo>
             <Campo rotulo="Ingresso nas FAA" col="col-md-3">{data('dataIngresso')}</Campo>
             <Campo rotulo="Ingresso no Quadro Permanente" col="col-md-3">{data('dataIngressoQP')}</Campo>

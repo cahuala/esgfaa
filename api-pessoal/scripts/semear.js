@@ -20,6 +20,14 @@ const forcar = process.argv.includes('--forcar')
 let semente = 20261017
 const aleatorio = () => ((semente = (semente * 1103515245 + 12345) % 2147483648) / 2147483648)
 const um = (l) => l[Math.floor(aleatorio() * l.length)]
+// situação na árvore da Lei n.º 13/18 e estado operacional: a maioria em comissão normal e ao serviço
+function situacaoDemo() {
+  const r = aleatorio()
+  const efectividade = r < 0.86 ? 'comissao_normal' : r < 0.9 ? 'inactividade_temporaria' : r < 0.95 ? 'comissao_especial' : r < 0.98 ? 'licenca_registada' : 'licenca_ilimitada'
+  const e = aleatorio()
+  const estado = efectividade !== 'comissao_normal' ? null : e < 0.05 ? 'destacado' : e < 0.09 ? 'em_missao' : e < 0.14 ? 'em_formacao' : e < 0.16 ? 'em_substituicao' : e < 0.17 ? 'aguardando_colocacao' : null
+  return { efectividade, estado }
+}
 const entre = (a, b) => a + Math.floor(aleatorio() * (b - a + 1))
 const data = (ano, mes = entre(1, 12), dia = entre(1, 28)) => new Date(Date.UTC(ano, mes - 1, dia))
 
@@ -101,7 +109,7 @@ async function main() {
         email: vinculo !== 'funcionario' || aleatorio() < 0.5 ? `m${nip}@esgfaa.gov.ao` : null, telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, morada: `${um(['Bairro Militar', 'Talatona', 'Kilamba', 'Maianga', 'Rangel', 'Cazenga'])}, Luanda`,
         habilitacao: oficial ? um(HAB_OF) : um(['medio', 'medio', 'bacharelato', 'licenciatura']), areaFormacao: oficial ? um(['Ciências Militares', 'Relações Internacionais', 'Engenharia', 'Gestão', 'Direito', 'Medicina']) : '',
         unidadeId: cargo ? cargo.unidadeId : vinculo === 'estudante' ? um([unidades.CEM.id, unidades.CEM.id, unidades.CSG.id]) : um(Object.values(unidades)).id, cargoId: cargo?.id ?? null, dataCargo: cargo ? data(ano - entre(0, 3)) : null,
-        ramo, posto, fps: 'QP', quadroEspecial: um(quadros)?.sigla ?? null, especialidade: '', situacao: 'activo', efectividade: aleatorio() < 0.05 ? 'inactividade_temporaria' : 'comissao_normal',
+        ramo, posto, fps: 'QP', quadroEspecial: um(quadros)?.sigla ?? null, especialidade: '', situacao: 'activo', ...situacaoDemo(),
         dataIngresso: ingresso, dataIngressoQP: ingresso, dataAntiguidadePosto: antiguidade, avaliacaoFavoravel: aleatorio() > 0.06, aptidaoFisica: aleatorio() > 0.04, processoPendente: aleatorio() < 0.03,
       },
     })

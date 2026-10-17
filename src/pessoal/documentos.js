@@ -123,7 +123,7 @@ async function desenharSintese(doc, autoTable, p) {
   if (p.tipo === 'militar') {
     y = tabelaDados(autoTable, doc, y, 'Situação militar', [
       ['Posto', p.postoNome], ['Categoria', p.categoriaNome], ['Forma de serviço', p.fpsNome], ['Quadro especial', p.quadroNome],
-      ['Ingresso nas FAA', pt(p.dataIngresso)], ['Antiguidade no posto', pt(p.dataAntiguidadePosto)], ['Situação', p.situacaoNome], ['Tempo de serviço', p.tempoServico !== null ? `${Math.floor(p.tempoServico)} anos` : ''],
+      ['Ingresso nas FAA', pt(p.dataIngresso)], ['Antiguidade no posto', pt(p.dataAntiguidadePosto)], ['Situação', p.situacaoCaminho || p.situacaoNome], ['Estado', p.estadoNome || 'Ao serviço'], ['Tempo de serviço', p.tempoServico !== null ? `${Math.floor(p.tempoServico)} anos` : ''],
     ])
   } else {
     y = tabelaDados(autoTable, doc, y, 'Situação profissional', [['Categoria', p.carreiraNome], ['Classe', p.categoriaCivil ?? ''], ['Admissão', pt(p.dataAdmissao)], ['Vínculo', p.vinculoCivilNome]])
@@ -151,7 +151,7 @@ const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', confirmar: 'A confirmar' }
 export async function fichasDeProposta(proposta, cargos = [], { comSintese = true } = {}) {
   const { doc, autoTable } = await novoDocumento()
   const w = doc.internal.pageSize.getWidth()
-  const titulo = { promocao: 'FICHA DE PROPOSTA DE PROMOÇÃO', nomeacao: 'FICHA DE PROPOSTA DE NOMEAÇÃO', graduacao: 'FICHA DE PROPOSTA DE GRADUAÇÃO', exoneracao: 'FICHA DE PROPOSTA DE EXONERAÇÃO', progressao: 'FICHA DE PROPOSTA DE PROGRESSÃO' }[proposta.tipo] ?? 'FICHA DE PROPOSTA'
+  const titulo = { promocao: 'FICHA DE PROPOSTA DE PROMOÇÃO', nomeacao: 'FICHA DE PROPOSTA DE NOMEAÇÃO', graduacao: 'FICHA DE PROPOSTA DE GRADUAÇÃO', exoneracao: 'FICHA DE PROPOSTA DE EXONERAÇÃO', progressao: 'FICHA DE PROPOSTA DE PROGRESSÃO', curso: 'FICHA DE PROPOSTA DE NOMEAÇÃO PARA CURSO' }[proposta.tipo] ?? 'FICHA DE PROPOSTA'
   for (const [n, i] of proposta.itens.entries()) {
     if (n) doc.addPage()
     const p = await api(`/pessoas/${i.pessoaId}`)
@@ -170,6 +170,7 @@ export async function fichasDeProposta(proposta, cargos = [], { comSintese = tru
     y = tabelaDados(autoTable, doc, y, 'O que se propõe', [
       ...(['promocao', 'graduacao'].includes(proposta.tipo) ? [['Posto proposto', i.postoPropostoNome], ['Modalidade', i.modalidadeNome]] : []),
       ...(proposta.tipo === 'progressao' ? [['Categoria proposta', i.categoriaProposta]] : []),
+      ...(proposta.tipo === 'curso' ? [['Curso', proposta.curso], ['Período', i.inicio ? `${pt(i.inicio)}${i.fim ? ` a ${pt(i.fim)}` : ''}` : '']] : []),
       ...(['nomeacao', 'exoneracao'].includes(proposta.tipo) ? [['Cargo', cargo ? `${cargo.nome}${cargo.unidadeNome ? ` — ${cargo.unidadeNome}` : ''}` : ''], ['Posto do cargo', cargo?.postoRequeridoNome ?? '']] : []),
       ...(i.inicio ? [['A partir de', pt(i.inicio)]] : []), ...(i.fim ? [['Até', pt(i.fim)]] : []),
     ])

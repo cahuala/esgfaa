@@ -88,7 +88,8 @@ export default function Perfil() {
               <div className="d-flex flex-wrap gap-1">
                 <span className="badge bg-light text-dark">{p.vinculoNome}</span>
                 {militar && <span className={`badge pes-ramo-${p.ramo}`}>{p.fpsNome}</span>}
-                {militar && <span className={`badge ${p.situacao === 'activo' ? 'bg-success' : 'bg-warning text-dark'}`}>{p.situacaoNome}</span>}
+                {militar && <span className={`badge ${p.situacao === 'activo' ? (p.efectivo ? 'bg-success' : 'bg-info') : 'bg-warning text-dark'}`} title={p.situacaoCaminho}>{p.situacao === 'activo' && p.efectividadeNome ? p.efectividadeNome : p.situacaoNome}</span>}
+                {militar && p.estadoNome && <span className="badge bg-dark">{p.estadoNome}</span>}
                 {graduacaoAtiva && <span className="badge bg-warning text-dark">Graduado em {graduacaoAtiva.postoNome}</span>}
                 {p.elegivelPromocao && <span className="badge bg-success"><i className="fa fa-medal me-1" />Em condições de {militar ? `promoção a ${p.proximoPostoNome}` : `progressão a ${p.proximaCategoria}`}</span>}
                 {!p.ativo && <span className="badge bg-danger">Já não está na Escola</span>}
@@ -119,7 +120,7 @@ export default function Perfil() {
                 {militar ? <>
                   <Dado r="Ramo" v={p.ramoNome} /><Dado r="Posto" v={p.postoNome} /><Dado r="Categoria" v={p.categoriaNome} />
                   <Dado r="Forma de prestação de serviço" v={`${p.fpsNome} (${ref.formasServico[p.fps]?.carreira})`} /><Dado r="Quadro especial" v={p.quadroNome} /><Dado r="Especialidade" v={p.especialidade} />
-                  <Dado r="Situação" v={p.situacaoNome} /><Dado r="Efectividade (art. 11.º)" v={p.efectividadeNome} /><Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} />
+                  <Dado r="Situação (Lei n.º 13/18)" v={p.situacaoCaminho ? `${p.situacaoCaminho} (${p.situacaoArtigo})` : ''} /><Dado r="Estado" v={p.estadoNome || 'Ao serviço'} /><Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} />
                   <Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} /><Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} /><Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
                 </> : <>
@@ -143,8 +144,8 @@ export default function Perfil() {
             {editar && pode('propor') && (
               <Painel titulo="Ações" icone="fa-bolt">
                 <div className="d-grid gap-2">
-                  {(militar ? ['promocao', 'graduacao', 'nomeacao', 'exoneracao'] : ['progressao', 'nomeacao', 'exoneracao']).filter((t) => t !== 'exoneracao' || p.cargoId).map((t) => (
-                    <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => navegar(`/propostas/nova?tipo=${t}&pessoa=${p.id}`)}><i className="fa fa-file-signature me-2" />Propor {ref.tiposProposta[t].nome.toLowerCase()}</button>
+                  {(militar ? ['promocao', 'graduacao', 'nomeacao', 'curso', 'exoneracao'] : ['progressao', 'nomeacao', 'curso', 'exoneracao']).filter((t) => t !== 'exoneracao' || p.cargoId).map((t) => (
+                    <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => navegar(`/propostas/nova?tipo=${t}&pessoa=${p.id}`)}><i className="fa fa-file-signature me-2" />{t === 'curso' ? 'Propor para curso' : `Propor ${ref.tiposProposta[t].nome.toLowerCase()}`}</button>
                   ))}
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ licenca: true })}><i className="fa fa-plane-departure me-2" />Registar licença</button>
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-2" />Lançar no histórico (louvor, punição…)</button>

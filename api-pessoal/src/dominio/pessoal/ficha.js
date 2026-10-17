@@ -1,4 +1,4 @@
-import { CATEGORIAS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
+import { CATEGORIAS, ESTADOS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, caminhoDaSituacao, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
 import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verificarPromocao } from './carreira.js'
 import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgressaoCivil } from './civis.js'
 
@@ -36,7 +36,12 @@ export function comDerivados(p, hoje = new Date()) {
     f.ramoNome = RAMOS[p.ramo]?.nome ?? ''
     f.fpsNome = FORMAS_SERVICO[p.fps]?.nome ?? ''
     f.situacaoNome = SITUACOES[p.situacao] ?? ''
-    f.efectividadeNome = EFECTIVIDADES[p.efectividade]?.nome ?? ''
+    f.efectividadeNome = p.situacao === 'activo' ? EFECTIVIDADES[p.efectividade]?.nome ?? '' : ''
+    const cs = caminhoDaSituacao(p.situacao, p.efectividade)
+    f.situacaoCaminho = cs.caminho.join(' › ')
+    f.situacaoArtigo = cs.artigo
+    f.efectivo = p.situacao === 'activo' && EFECTIVIDADES[p.efectividade]?.efectividade !== false
+    f.estadoNome = ESTADOS[p.estado] ?? ''
     f.quadroNome = quadroEspecial(p.ramo, p.quadroEspecial)?.nome ?? ''
     f.tempoServico = arred(tempoServico(p, hoje))
     f.tempoNoPosto = arred(tempoNoPosto(p, hoje))
@@ -79,6 +84,9 @@ export function problemaNaFicha(p) {
     if (!POSTOS[p.posto]) return ['posto', 'Indique o posto.']
     if (!FORMAS_SERVICO[p.fps]) return ['fps', 'Indique a forma de prestação de serviço.']
     if (!p.nip) return ['nip', 'O militar tem de ter NIP.']
+    if (p.situacao && !SITUACOES[p.situacao]) return ['situacao', 'Situação desconhecida.']
+    if (p.situacao === 'activo' && p.efectividade && !EFECTIVIDADES[p.efectividade]) return ['efectividade', 'Efectividade desconhecida.']
+    if (p.estado && !ESTADOS[p.estado]) return ['estado', 'Estado desconhecido.']
     if (p.quadroEspecial && !quadroEspecial(p.ramo, p.quadroEspecial)) return ['quadroEspecial', 'Esse quadro especial não existe no ramo.']
     if (['aspirante', 'subsargento', 'soldado', 'segundo_cabo'].includes(p.posto) && p.fps === 'QP') return ['posto', 'Esse posto é do Serviço Militar Obrigatório (art. 127.º).']
   } else {

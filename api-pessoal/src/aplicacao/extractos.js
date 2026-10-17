@@ -5,8 +5,8 @@ import { proximaCategoria } from '../dominio/pessoal/civis.js'
 import { aplicarAlteracao } from './alteracoes.js'
 import { exigir } from './sessao.js'
 
-export const TIPOS_EXTRACTO = { promocao: 'Promoção', nomeacao: 'Nomeação', graduacao: 'Graduação', exoneracao: 'Exoneração', reserva: 'Passagem à reserva', reforma: 'Passagem à reforma', progressao: 'Progressão (civis)', outro: 'Outro' }
-const TIPO_DOCUMENTO = { promocao: 'extracto_promocao', nomeacao: 'extracto_nomeacao', graduacao: 'extracto_graduacao', exoneracao: 'extracto_exoneracao', reserva: 'extracto_reserva', reforma: 'extracto_reforma', progressao: 'extracto_progressao', outro: 'extracto' }
+export const TIPOS_EXTRACTO = { promocao: 'Promoção', nomeacao: 'Nomeação', graduacao: 'Graduação', exoneracao: 'Exoneração', reserva: 'Passagem à reserva', reforma: 'Passagem à reforma', progressao: 'Progressão (civis)', curso: 'Nomeação para curso', outro: 'Outro' }
+const TIPO_DOCUMENTO = { promocao: 'extracto_promocao', nomeacao: 'extracto_nomeacao', graduacao: 'extracto_graduacao', exoneracao: 'extracto_exoneracao', reserva: 'extracto_reserva', reforma: 'extracto_reforma', progressao: 'extracto_progressao', curso: 'extracto_curso', outro: 'extracto' }
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const MIME = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }
@@ -141,10 +141,20 @@ export class ServicoExtractos {
       if (e.tipo === 'nomeacao' && !i.cargoId) throw invalido(`${p.nome}: indique o cargo.`)
       if (e.tipo === 'progressao' && !proximaCategoria(p.carreiraCivil, p.categoriaCivil)) throw invalido(`${p.nome}: não há categoria acima.`)
     }
+    // nomeação para curso: o curso e as datas vêm da proposta (a do extracto ou a proposta enviada de cada um)
+    const cursos = new Map()
+    if (e.tipo === 'curso') {
+      for (const i of itens) {
+        const onde = e.propostaId ? { propostaId: e.propostaId } : { proposta: { tipo: 'curso', estado: 'enviada' } }
+        const ip = await this.bd.itemProposta.findFirst({ where: { pessoaId: i.pessoaId, ...onde }, include: { proposta: { select: { curso: true } } } })
+        if (!ip?.proposta.curso) throw invalido(`${i.pessoa.nome}: associe o extracto à proposta para curso (é de lá que vem o nome do curso).`)
+        cursos.set(i.pessoaId, { curso: ip.proposta.curso, inicio: ip.inicio, fim: ip.fim })
+      }
+    }
     const doc = { documento: `Extracto n.º ${e.numero}`, entidade: e.entidade, criadoPor: u.email, propostaId: e.propostaId }
     await this.bd.$transaction(async (tx) => {
       for (const i of itens) {
-        await aplicarAlteracao(tx, e.tipo, i.pessoa, { postoNovo: i.postoNovo, cargoId: i.cargoId, categoriaNova: proximaCategoria(i.pessoa.carreiraCivil, i.pessoa.categoriaCivil) }, e.data, doc)
+        await aplicarAlteracao(tx, e.tipo, i.pessoa, { postoNovo: i.postoNovo, cargoId: i.cargoId, categoriaNova: proximaCategoria(i.pessoa.carreiraCivil, i.pessoa.categoriaCivil), ...cursos.get(i.pessoaId) }, e.data, doc)
         if (e.ficheiro) await tx.documentoPessoal.create({ data: { pessoaId: i.pessoaId, tipo: TIPO_DOCUMENTO[e.tipo], titulo: `Extracto n.º ${e.numero} — ${TIPOS_EXTRACTO[e.tipo]}`, ficheiro: e.ficheiro, nomeOriginal: e.nomeOriginal, mime: MIME[e.ficheiro.split('.').pop()] ?? 'application/octet-stream', tamanho: 0, data: e.data, extractoId: e.id, criadoPor: u.email } })
         await tx.itemExtracto.update({ where: { id: i.id }, data: { aplicado: true } })
       }

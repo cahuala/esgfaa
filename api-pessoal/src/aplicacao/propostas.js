@@ -10,6 +10,7 @@ export const TIPOS_PROPOSTA = {
   nomeacao: { nome: 'Nomeação', pessoal: 'ambos' },
   exoneracao: { nome: 'Exoneração', pessoal: 'ambos' },
   progressao: { nome: 'Progressão na carreira (civis)', pessoal: 'civil' },
+  curso: { nome: 'Nomeação para curso', pessoal: 'ambos' },
 }
 /*
   A Escola não faz despachos: prepara a proposta (com a ficha de proposta e a síntese biográfica de cada um),
@@ -19,6 +20,7 @@ export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', enviada: 'Enviada
 export const ABERTAS = ['rascunho', 'enviada']
 const INCLUIR = { itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
+const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 export class ServicoPropostas {
   constructor({ bd, auditoria, agora = () => new Date() }) {
@@ -65,6 +67,13 @@ export class ServicoPropostas {
       if (p.cargoId === cargo.id) v.condicoes.push({ id: 'mesmo', texto: 'Ainda não ocupa este cargo', artigo: '—', estado: 'falta', detalhe: '' })
       return { ...base, cargoId: cargo.id, verificacao: { elegivel: v.condicoes.every((c) => c.estado !== 'falta'), condicoes: v.condicoes } }
     }
+    if (tipo === 'curso') {
+      // não se propõe para um curso que já fez (mesmo nome, com aproveitamento ou ainda sem resultado)
+      const curso = sem(item.curso)
+      const feito = curso && (p.cursos ?? []).find((c) => sem(c.nome) === curso && c.aproveitamento !== false)
+      const condicoes = [{ id: 'curso', texto: 'Ainda não fez este curso', artigo: '—', estado: feito ? 'falta' : 'ok', detalhe: feito ? `${feito.nome}${feito.fim ? ` (${dia(feito.fim)})` : ''}` : '' }]
+      return { ...base, verificacao: { elegivel: !feito, condicoes } }
+    }
     if (tipo === 'exoneracao') {
       const condicoes = [{ id: 'cargo', texto: 'Ocupa um cargo', artigo: 'art. 18.º', estado: p.cargoId ? 'ok' : 'falta', detalhe: p.cargo?.nome ?? '' }]
       return { ...base, cargoId: p.cargoId, verificacao: { elegivel: Boolean(p.cargoId), condicoes } }
@@ -100,15 +109,35 @@ export class ServicoPropostas {
     return l.map(({ _count, ...p }) => ({ ...p, dataDocumento: dia(p.dataDocumento), tipoNome: TIPOS_PROPOSTA[p.tipo]?.nome, estadoNome: ESTADOS_PROPOSTA[p.estado], total: _count.itens }))
   }
 
+  // todas as pessoas propostas (para as listas impressas): uma linha por pessoa e proposta
+  async itens(u, { tipo, estado } = {}) {
+    exigir(u, 'ver')
+    const where = { proposta: { ...(tipo ? { tipo } : {}), estado: estado ? estado : { in: ABERTAS } } }
+    const l = await this.bd.itemProposta.findMany({
+      where, orderBy: [{ propostaId: 'desc' }, { id: 'asc' }],
+      include: { proposta: true, pessoa: { include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true } } } } },
+    })
+    const cargos = new Map((await this.bd.cargo.findMany({ where: { id: { in: [...new Set(l.map((i) => i.cargoId).filter(Boolean))] } }, select: { id: true, nome: true } })).map((c) => [c.id, c.nome]))
+    return l.map((i) => ({
+      propostaId: i.propostaId, titulo: i.proposta.titulo, tipo: i.proposta.tipo, tipoNome: TIPOS_PROPOSTA[i.proposta.tipo]?.nome, estado: i.proposta.estado, estadoNome: ESTADOS_PROPOSTA[i.proposta.estado], curso: i.proposta.curso,
+      pessoaId: i.pessoaId, nome: i.pessoa.nome, tipoPessoa: i.pessoa.tipo, nip: i.pessoa.nip, numeroAgente: i.pessoa.numeroAgente, ramo: i.pessoa.ramo, genero: i.pessoa.genero,
+      postoAtualNome: i.postoAtual ? nomeDoPosto(i.postoAtual, i.pessoa.ramo) : '', grau: POSTOS[i.postoAtual]?.grau ?? 0, postoPropostoNome: i.postoProposto ? nomeDoPosto(i.postoProposto, i.pessoa.ramo) : '',
+      categoriaAtual: i.categoriaAtual, categoriaProposta: i.categoriaProposta, cargoPropostoNome: cargos.get(i.cargoId) ?? '',
+      unidadeNome: i.pessoa.unidade?.nome ?? '', cargoAtualNome: i.pessoa.cargo?.nome ?? '', inicio: dia(i.inicio), fim: dia(i.fim),
+      cumpre: i.verificacao?.condicoes?.every((c) => c.estado !== 'falta') ?? false,
+    }))
+  }
+
   async obter(u, id) {
     exigir(u, 'ver')
     return this.#apresentar(await this.#obter(id))
   }
 
-  async criar(u, { tipo, titulo, fundamentacao = '', itens = [] }) {
+  async criar(u, { tipo, titulo, fundamentacao = '', curso = '', itens = [] }) {
     exigir(u, 'propor')
     if (!TIPOS_PROPOSTA[tipo]) throw invalido('Tipo de proposta desconhecido.', 'tipo')
-    const pr = await this.bd.proposta.create({ data: { tipo, titulo, fundamentacao, criadoPor: u.email } })
+    if (tipo === 'curso' && !curso.trim()) throw invalido('Indique o curso.', 'curso')
+    const pr = await this.bd.proposta.create({ data: { tipo, titulo, fundamentacao, curso: tipo === 'curso' ? curso.trim() : '', criadoPor: u.email } })
     for (const i of itens) await this.adicionarItem(u, pr.id, i, { silencioso: true, semActualizar: true })
     await this.#actualizar(pr.id)
     await this.auditoria.registar(u, 'criar_proposta', `${TIPOS_PROPOSTA[tipo].nome}: ${titulo} (#${pr.id})`, { pessoas: itens.length })
@@ -121,10 +150,12 @@ export class ServicoPropostas {
     return pr
   }
 
-  async editar(u, id, { titulo, fundamentacao }) {
+  async editar(u, id, { titulo, fundamentacao, curso }) {
     exigir(u, 'propor')
-    await this.#emPreparacao(id)
-    await this.bd.proposta.update({ where: { id }, data: { ...(titulo !== undefined ? { titulo } : {}), ...(fundamentacao !== undefined ? { fundamentacao } : {}) } })
+    const pr = await this.#emPreparacao(id)
+    if (curso !== undefined && pr.tipo === 'curso' && !curso.trim()) throw invalido('Indique o curso.', 'curso')
+    await this.bd.proposta.update({ where: { id }, data: { ...(titulo !== undefined ? { titulo } : {}), ...(fundamentacao !== undefined ? { fundamentacao } : {}), ...(curso !== undefined && pr.tipo === 'curso' ? { curso: curso.trim() } : {}) } })
+    if (curso !== undefined) await this.#actualizar(id)
     return this.obter(u, id)
   }
 
@@ -136,7 +167,7 @@ export class ServicoPropostas {
     if (!p) throw naoEncontrado('Ficha não encontrada.')
     const aberta = await this.bd.itemProposta.findFirst({ where: { pessoaId: p.id, proposta: { tipo: pr.tipo, estado: { in: ABERTAS } } }, include: { proposta: { select: { id: true, titulo: true } } } })
     if (aberta) throw invalido(`${p.nome} já está noutra proposta em curso (#${aberta.proposta.id} — ${aberta.proposta.titulo}).`, 'pessoaId')
-    const dados = await this.#verificar(pr.tipo, p, item, pr.itens.map((i) => ({ pessoaId: i.pessoaId, cargoId: i.cargoId })))
+    const dados = await this.#verificar(pr.tipo, p, { ...item, curso: pr.curso }, pr.itens.map((i) => ({ pessoaId: i.pessoaId, cargoId: i.cargoId })))
     await this.bd.itemProposta.create({ data: { ...dados, propostaId: id } })
     if (!semActualizar) await this.#actualizar(id)
     if (!silencioso) await this.auditoria.registar(u, 'adicionar_a_proposta', `#${id}: ${p.nome}`)
@@ -159,7 +190,7 @@ export class ServicoPropostas {
     const i = pr.itens.find((x) => x.id === itemId)
     if (!i) throw naoEncontrado('Essa pessoa não está na proposta.')
     const outros = pr.itens.filter((x) => x.id !== itemId).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
-    const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), ...dados }, outros)
+    const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), ...dados, curso: pr.curso }, outros)
     await this.bd.itemProposta.update({ where: { id: itemId }, data: d })
     await this.#actualizar(id)
     return this.obter(u, id)
@@ -171,7 +202,7 @@ export class ServicoPropostas {
     for (const i of pr.itens) {
       const outros = pr.itens.filter((x) => x.id !== i.id).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
       try {
-        const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
+        const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), curso: pr.curso, modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
         await this.bd.itemProposta.update({ where: { id: i.id }, data: { verificacao: d.verificacao } })
       } catch {
         // ficha alterada entretanto: a submissão mostra o erro
@@ -183,7 +214,7 @@ export class ServicoPropostas {
   async #reverificar(pr) {
     for (const i of pr.itens) {
       const outros = pr.itens.filter((x) => x.id !== i.id).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
-      const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
+      const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), curso: pr.curso, modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
       await this.bd.itemProposta.update({ where: { id: i.id }, data: { verificacao: d.verificacao, postoAtual: d.postoAtual, categoriaAtual: d.categoriaAtual } })
     }
     const nova = await this.#obter(pr.id)

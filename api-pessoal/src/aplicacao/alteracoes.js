@@ -29,6 +29,10 @@ export async function aplicarAlteracao(tx, tipo, p, x, data, doc) {
     // na reforma deixa o cargo (art. 9.º, n.º 3); na reserva pode continuar a servir
     await tx.pessoa.update({ where: { id: p.id }, data: { situacao: tipo, dataSituacao: data, ...(tipo === 'reforma' ? { cargoId: null, dataCargo: null } : {}) } })
     await tx.evento.create({ data: { ...base, tipo: 'situacao', data, descricao: tipo === 'reserva' ? 'Passagem à reserva' : 'Passagem à reforma' } })
+  } else if (tipo === 'curso') {
+    // fica na ficha o curso para que foi nomeado (o aproveitamento regista-se no fim)
+    await tx.curso.create({ data: { pessoaId: p.id, nome: x.curso, tipo: 'formacao', inicio: x.inicio ?? data, fim: x.fim ?? null } })
+    await tx.evento.create({ data: { ...base, tipo: 'curso', data, descricao: `Nomeado(a) para o curso: ${x.curso}` } })
   } else if (tipo === 'progressao') {
     await tx.pessoa.update({ where: { id: p.id }, data: { categoriaCivil: x.categoriaNova, dataCategoria: data } })
     await tx.evento.create({ data: { ...base, tipo: 'progressao', data, descricao: `${p.categoriaCivil ?? ''} → ${x.categoriaNova}` } })

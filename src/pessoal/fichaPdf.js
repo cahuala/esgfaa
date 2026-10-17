@@ -34,7 +34,7 @@ export async function fichaPdf(p, urlFoto) {
   const linha1 = p.tipo === 'militar' ? `${p.postoNome} · ${p.ramoNome} · NIP ${p.nip ?? '—'}` : `${p.categoriaCivil ?? 'Civil'} · N.º de agente ${p.numeroAgente ?? '—'}`
   doc.text(linha1, 14, 46)
   doc.text(`${p.unidadeNome || 'Sem unidade'}${p.cargoNome ? ` · ${p.cargoNome}` : ''}`, 14, 51)
-  doc.text(`${p.vinculoNome}${p.situacaoNome ? ` · ${p.situacaoNome}` : ''}${p.efectividadeNome ? ` (${p.efectividadeNome})` : ''}`, 14, 56)
+  doc.text(`${p.vinculoNome}${p.situacaoCaminho ? ` · ${p.situacaoCaminho}` : ''}${p.estadoNome ? ` · ${p.estadoNome}` : ''}`, 14, 56)
 
   const secao = (titulo, linhas, y) => {
     autoTable(doc, {

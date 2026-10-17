@@ -1,4 +1,4 @@
-import { CATEGORIAS, FORMAS_SERVICO, GRUPOS, POSTOS, RAMOS, SITUACOES, quadroEspecial } from '../dominio/pessoal/hierarquia.js'
+import { CATEGORIAS, EFECTIVIDADES, ESTADOS, FORMAS_SERVICO, GRUPOS, POSTOS, RAMOS, SITUACOES, quadroEspecial } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
 import { GENEROS, HABILITACOES, TIPOS, VINCULOS } from '../dominio/pessoal/ficha.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from './propostas.js'
@@ -89,6 +89,9 @@ export class ServicoPainel {
         categorias: Object.keys(CATEGORIAS).map((c) => ({ chave: c, rotulo: CATEGORIAS[c].nome })),
         fps: contar(mil, 'fps', Object.fromEntries(Object.entries(FORMAS_SERVICO).map(([k, v]) => [k, v.nome]))).map(base({ tipo: 'militar' })),
         situacao: contar(mil, 'situacao', SITUACOES).map(base({ tipo: 'militar' })),
+        // no activo: cada ramo da árvore (em efectividade / fora de efectividade)
+        efectividade: contar(mil.filter((p) => p.situacao === 'activo'), 'efectividade', Object.fromEntries(Object.entries(EFECTIVIDADES).map(([k, v]) => [k, v.nome]))).map(base({ tipo: 'militar', situacao: 'activo' })),
+        estado: contar(mil, (p) => p.estado || 'ao_servico', { ao_servico: 'Ao serviço', ...ESTADOS }, 'estado').filter((x) => x.chave !== 'ao_servico').map(base({ tipo: 'militar' })),
         quadro: contar(mil, (p) => p.quadroEspecial && `${p.quadroEspecial}`, (v) => mil.map((p) => p.quadroEspecial === v && quadroEspecial(p.ramo, v)?.nome).find(Boolean) || v, 'quadroEspecial').slice(0, 12).map(base({ tipo: 'militar' })),
         genero: contar(todos, 'genero', GENEROS),
         // mulheres: por ramo, por categoria, por posto, por vínculo e a proporção em cada ramo

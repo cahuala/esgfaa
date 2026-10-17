@@ -9,7 +9,7 @@ import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
 // nomes dos filtros (para os mostrar e para o título do PDF)
-const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Categoria (civis)', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil' }
+const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', estado: 'Estado', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Categoria (civis)', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil' }
 
 export default function Pessoas() {
   const { ref, pode } = useSessao()
@@ -28,7 +28,7 @@ export default function Pessoas() {
   const ramo = filtros.ramo || 'EXE'
   const valorFiltro = (k, v) => ({
     tipo: ref.tipos[v], vinculo: ref.vinculos[v], ramo: ref.ramos[v]?.nome, grupo: ref.grupos[v], categoria: ref.categorias[v]?.nome,
-    posto: ref.postos[ramo].find((p) => p.id === v)?.nome, fps: ref.formasServico[v]?.nome, situacao: ref.situacoes[v], efectividade: ref.efectividades[v]?.nome,
+    posto: ref.postos[ramo].find((p) => p.id === v)?.nome, fps: ref.formasServico[v]?.nome, situacao: ref.situacoes[v], efectividade: ref.efectividades[v]?.nome, estado: ref.estados[v],
     genero: ref.generos[v], habilitacao: ref.habilitacoes[v], unidadeId: v === 'nenhum' ? 'Sem unidade' : `${arvore.caminho(Number(v))} (com as subunidades)`, carreiraCivil: ref.carreirasCivis[v]?.nome,
     quadroEspecial: ref.quadros[ramo].find((q) => q.sigla === v)?.nome, idade: v.replace('-200', ' ou mais').replace('-', ' a '), elegivel: 'sim', graduado: 'sim', semCargo: 'sim', ativo: v === 'nao' ? 'Já saíram' : 'Todos',
   }[k] ?? v)
@@ -71,6 +71,7 @@ export default function Pessoas() {
           {f('posto', ref.postos[ramo].map((p) => [p.id, p.nome]))}
           {f('fps', ref.formasServico)}
           {f('situacao', ref.situacoes)}
+          {f('estado', ref.estados)}
           {f('unidadeId', [['nenhum', 'Sem unidade'], ...arvore.opcoes.map(([k, v]) => [String(k), v])], 'Toda a Escola')}
           {f('genero', ref.generos)}
           {f('habilitacao', ref.habilitacoes, 'Todas')}

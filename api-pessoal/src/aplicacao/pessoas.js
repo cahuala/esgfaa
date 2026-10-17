@@ -2,7 +2,7 @@ import { ErroDominio, conflito, invalido, naoEncontrado } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
-import { SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { EFECTIVIDADES, ESTADOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
@@ -22,6 +22,8 @@ export const TIPOS_EVENTO = {
   progressao: 'Progressão na carreira',
   despromocao: 'Despromoção',
   situacao: 'Mudança de situação',
+  estado: 'Mudança de estado',
+  curso: 'Nomeação para curso',
   colocacao: 'Colocação na Escola',
   transferencia: 'Transferência',
   louvor: 'Louvor',
@@ -56,7 +58,7 @@ export class ServicoPessoas {
   async listar(u, f = {}) {
     exigir(u, 'ver')
     const where = { ativo: f.ativo === 'nao' ? false : f.ativo === 'todos' ? undefined : true }
-    for (const k of ['tipo', 'vinculo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
+    for (const k of ['tipo', 'vinculo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'estado', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
     if (f.cargoId) where.cargoId = f.cargoId === 'nenhum' ? null : Number(f.cargoId)
     // a unidade é uma árvore: filtrar por uma unidade inclui as suas subunidades
     if (f.unidadeId) where.unidadeId = f.unidadeId === 'nenhum' ? null : { in: await this.#comSubunidades(Number(f.unidadeId)) }
@@ -124,7 +126,7 @@ export class ServicoPessoas {
 
   #dados(d) {
     const x = Object.fromEntries(Object.entries(d).map(([k, v]) => [k, vazioANulo(v)]))
-    if (x.tipo === 'civil') for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) x[k] = null
+    if (x.tipo === 'civil') for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'estado', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) x[k] = null
     if (x.tipo === 'militar') {
       x.situacao ??= 'activo'
       x.efectividade ??= 'comissao_normal'
@@ -199,6 +201,8 @@ export class ServicoPessoas {
       const n = await tx.pessoa.update({ where: { id }, data: d })
       const evento = (tipo, descricao, extra = {}) => tx.evento.create({ data: { pessoaId: id, tipo, data: this.agora(), descricao, criadoPor: u.email, ...extra } })
       if (antes.situacao && n.situacao !== antes.situacao) await evento('situacao', `${SITUACOES[antes.situacao]} → ${SITUACOES[n.situacao]}`)
+      else if (n.situacao === 'activo' && antes.efectividade && n.efectividade !== antes.efectividade) await evento('situacao', `${EFECTIVIDADES[antes.efectividade]?.nome} → ${EFECTIVIDADES[n.efectividade]?.nome}`)
+      if ((antes.estado ?? null) !== (n.estado ?? null)) await evento('estado', `${ESTADOS[antes.estado] ?? 'Ao serviço'} → ${ESTADOS[n.estado] ?? 'Ao serviço'}`)
       if (antes.posto && n.posto !== antes.posto) await evento('correcao', 'Posto corrigido na ficha (sem proposta).', { postoAnterior: antes.posto, postoNovo: n.posto })
       if (antes.ativo && !n.ativo) await evento('saida', d.observacoes || 'Deixou de servir na Escola.')
       if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)

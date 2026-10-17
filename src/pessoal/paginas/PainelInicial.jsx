@@ -87,8 +87,12 @@ export default function PainelInicial() {
       </div>
       <div className="row">
         <GraficoGrupo titulo="Forma de prestação de serviço" icone="fa-id-badge" dados={g.fps} tipo="pie" />
-        <GraficoGrupo titulo="Situação (art. 6.º)" icone="fa-user-clock" dados={g.situacao} tipo="doughnut" />
+        <GraficoGrupo titulo="Situação (Lei n.º 13/18)" icone="fa-user-clock" dados={g.situacao} tipo="doughnut" />
         <GraficoGrupo titulo="Vínculo à Escola" icone="fa-school" dados={g.vinculo} tipo="polarArea" />
+      </div>
+      <div className="row">
+        <GraficoGrupo titulo="No activo: efectividade de serviço (art. 11.º)" icone="fa-sitemap" dados={g.efectividade} tipo="bar" />
+        {g.estado?.length > 0 && <GraficoGrupo titulo="Estado (destacados, em missão, em formação…)" icone="fa-route" dados={g.estado} tipo="bar" />}
       </div>
       <div className="row">
         <div className="col-xl-8">

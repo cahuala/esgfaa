@@ -39,7 +39,7 @@ export default function Proposta() {
   if (!p) return <Carregando />
   const preparacao = p.estado === 'rascunho'
   const nomeCargo = (cid) => cargos.find((c) => c.id === cid)?.nome ?? ''
-  const proposto = (i) => (p.tipo === 'progressao' ? `${i.categoriaAtual} → ${i.categoriaProposta}` : p.tipo === 'nomeacao' || p.tipo === 'exoneracao' ? nomeCargo(i.cargoId) : `${i.postoAtualNome} → ${i.postoPropostoNome}${i.modalidadeNome ? ` (${i.modalidadeNome.toLowerCase()})` : ''}`)
+  const proposto = (i) => (p.tipo === 'curso' ? `${p.curso}${i.inicio ? ` (${dataPt(i.inicio)}${i.fim ? ` a ${dataPt(i.fim)}` : ''})` : ''}` : p.tipo === 'progressao' ? `${i.categoriaAtual} → ${i.categoriaProposta}` : p.tipo === 'nomeacao' || p.tipo === 'exoneracao' ? nomeCargo(i.cargoId) : `${i.postoAtualNome} → ${i.postoPropostoNome}${i.modalidadeNome ? ` (${i.modalidadeNome.toLowerCase()})` : ''}`)
 
   const imprimir = () => exportarPdf(`Proposta n.º ${p.id} — ${p.titulo}`, [
     { titulo: 'N.º', valor: (i) => p.itens.indexOf(i) + 1 },
@@ -70,6 +70,7 @@ export default function Proposta() {
           <Painel titulo="Proposta" icone="fa-file-signature">
             <h5 className="mb-1">{p.titulo}</h5>
             <p className="mb-2"><Estado estado={p.estado} texto={p.estadoNome} /> <span className="text-muted small ms-1">{p.total} pessoa(s){p.naoCumprem > 0 && <span className="text-danger"> · {p.naoCumprem} não cumpre(m) a lei</span>}</span></p>
+            {p.tipo === 'curso' && <p className="mb-2"><i className="fa fa-graduation-cap me-1 text-theme" />Curso: <strong>{p.curso}</strong></p>}
             {p.fundamentacao && <p className="small" style={{ whiteSpace: 'pre-wrap' }}>{p.fundamentacao}</p>}
             <dl className="small mb-0">
               <dt>Preparada por</dt><dd>{p.criadoPor} · {dataHoraPt(p.criadoEm)}</dd>

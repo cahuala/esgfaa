@@ -31,11 +31,41 @@ export const FORMAS_SERVICO = {
 // situações de serviço (art. 6.º) e, no ativo, a efetividade (art. 11.º)
 export const SITUACOES = { activo: 'Activo', reserva: 'Reserva', reforma: 'Reforma' }
 export const EFECTIVIDADES = {
-  comissao_normal: { nome: 'Comissão normal', efectividade: true },
-  inactividade_temporaria: { nome: 'Inactividade temporária', efectividade: true },
-  comissao_especial: { nome: 'Comissão especial', efectividade: false },
-  licenca_registada: { nome: 'Licença registada', efectividade: false },
-  licenca_ilimitada: { nome: 'Licença ilimitada', efectividade: false },
+  comissao_normal: { nome: 'Comissão normal de serviço', efectividade: true, artigo: 'art. 12.º' },
+  inactividade_temporaria: { nome: 'Inactividade temporária', efectividade: true, artigo: 'art. 13.º' },
+  comissao_especial: { nome: 'Comissão especial de serviço', efectividade: false, artigo: 'art. 14.º' },
+  licenca_registada: { nome: 'Licença registada', efectividade: false, artigo: 'art. 40.º' },
+  licenca_ilimitada: { nome: 'Licença ilimitada', efectividade: false, artigo: 'art. 41.º' },
+}
+/*
+  Situação dos militares em árvore, como na Lei n.º 13/18 (e no SIGP):
+  Activo (art. 7.º) → Em efectividade de serviço (art. 11.º, n.º 1, a) → comissão normal / inactividade temporária
+                    → Fora de efectividade de serviço (art. 11.º, n.º 1, b) → comissão especial / licenças
+  Reserva (art. 8.º) e Reforma (art. 9.º). Cada militar fica numa folha: situação + efectividade (só no activo).
+*/
+const folha = (id) => ({ id, nome: EFECTIVIDADES[id].nome, artigo: EFECTIVIDADES[id].artigo })
+export const ARVORE_SITUACOES = [
+  {
+    id: 'activo', nome: 'Activo', artigo: 'art. 7.º', filhos: [
+      { id: 'em_efectividade', nome: 'Em efectividade de serviço', artigo: 'art. 11.º, n.º 1, a)', filhos: ['comissao_normal', 'inactividade_temporaria'].map(folha) },
+      { id: 'fora_efectividade', nome: 'Fora de efectividade de serviço', artigo: 'art. 11.º, n.º 1, b)', filhos: ['comissao_especial', 'licenca_registada', 'licenca_ilimitada'].map(folha) },
+    ],
+  },
+  { id: 'reserva', nome: 'Reserva', artigo: 'art. 8.º', filhos: [] },
+  { id: 'reforma', nome: 'Reforma', artigo: 'art. 9.º', filhos: [] },
+]
+// o caminho na árvore: ["Activo", "Em efectividade de serviço", "Comissão normal de serviço"] e o artigo da folha
+export function caminhoDaSituacao(situacao, efectividade) {
+  const raiz = ARVORE_SITUACOES.find((s) => s.id === situacao)
+  if (!raiz) return { caminho: [], artigo: '' }
+  if (situacao !== 'activo' || !EFECTIVIDADES[efectividade]) return { caminho: [raiz.nome], artigo: raiz.artigo }
+  const ramo = raiz.filhos.find((g) => g.filhos.some((f) => f.id === efectividade))
+  return { caminho: [raiz.nome, ramo.nome, EFECTIVIDADES[efectividade].nome], artigo: EFECTIVIDADES[efectividade].artigo }
+}
+// estado operacional (como no SIGP): independente da situação e muda a qualquer momento; um de cada vez
+export const ESTADOS = {
+  destacado: 'Destacado', em_missao: 'Em missão', em_formacao: 'Em formação', em_substituicao: 'Em substituição',
+  a_cargo_direccao: 'A cargo da Direcção', suspensao_funcoes: 'Suspensão de funções', aguardando_colocacao: 'Aguardando colocação', desaparecido_servico: 'Desaparecido em serviço',
 }
 // funções militares (art. 21.º)
 export const FUNCOES = { comando: 'Comando', direccao_chefia: 'Direcção e Chefia', estado_maior: 'Estado Maior', execucao: 'Execução' }

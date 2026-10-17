@@ -125,3 +125,15 @@
 .pes-org-chip:hover { border-color: #c9a227; }
 @media (max-width: 768px) { .pes-org-stats .pes-org-barra, .pes-org-accoes { display: none; } }
 .pes-org-grupo td { background: #f4f7f4; font-size: .82rem; }
+
+/* situação dos militares em árvore (Lei n.º 13/18) */
+.pes-arvore-sits, .pes-arvore-sits ul { list-style: none; margin: 0; padding: 0; }
+.pes-arvore-sits ul { margin-left: 0.6rem; padding-left: 1rem; border-left: 2px solid var(--bs-border-color); }
+.pes-arvore-sit > div { padding: 0.35rem 0.5rem; border-radius: 6px; }
+.pes-arvore-sit > div:hover { background: var(--bs-tertiary-bg); }
+.pes-arvore-sit.n0 + .pes-arvore-sit.n0 { margin-top: 0.25rem; border-top: 1px dashed var(--bs-border-color); padding-top: 0.25rem; }
+
+/* documentos (menu Documentos) */
+.pes-documento { transition: box-shadow 0.15s; }
+.pes-documento:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); }
+.pes-documento-icone { flex: none; width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--bs-theme-bg-subtle, #e8efe9); color: var(--bs-theme, #1f3a2d); font-size: 18px; }
