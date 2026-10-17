@@ -86,7 +86,7 @@ function NovoDocumento({ aoFechar, aoCriar }) {
     }
   }
   return (
-    <Modal titulo="Novo documento" largo aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={enviar} disabled={aEnviar || !d.assunto}><i className="fa fa-paper-plane me-1" />{d.sentido === 'entrada' ? 'Registar entrada' : 'Enviar'}</button></>}>
+    <Modal titulo="Novo documento" largo aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={enviar} disabled={aEnviar || !d.assunto}><i className="fa fa-paper-plane me-1" />{d.sentido === 'entrada' ? 'Registar entrada' : 'Enviar'}</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Sentido" col="col-md-4"><Escolha valor={d.sentido} aoMudar={set('sentido')} opcoes={ref.sentidos} vazio={null} /></Campo>
@@ -133,7 +133,7 @@ function Documento({ id }) {
   return (
     <>
       <Cabecalho titulo={x.protocolo} subtitulo={x.assunto} migalhas={[['Expediente', '/expediente'], [x.protocolo]]}>
-        <button type="button" className="btn btn-light" onClick={() => navegar(-1)}>Voltar</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={() => navegar(-1)}>Voltar</button>
         {x.porReceber && <button type="button" className="btn btn-success" onClick={() => acao('/receber', {}, 'Recepção confirmada.')}><i className="fa fa-check me-1" />Confirmar recepção</button>}
         {fisicoPorConfirmar && <button type="button" className="btn btn-outline-success" onClick={() => acao('/receber', { fisico: true }, 'Original em papel recebido.')}><i className="fa fa-file-alt me-1" />Recebi o original</button>}
         {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-theme" onClick={() => setModal('encaminhar')}><i className="fa fa-share me-1" />Encaminhar</button>}
@@ -188,7 +188,7 @@ function Documento({ id }) {
 function Encaminhar({ x, unidades, minha, aoFechar, aoEnviar }) {
   const [d, setD] = useState({ destinos: [], nota: '', fisico: x.temFisico, portador: '' })
   return (
-    <Modal titulo="Encaminhar" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!d.destinos.length} onClick={() => aoEnviar(d)}><i className="fa fa-share me-1" />Encaminhar</button></>}>
+    <Modal titulo="Encaminhar" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!d.destinos.length} onClick={() => aoEnviar(d)}><i className="fa fa-share me-1" />Encaminhar</button></>}>
       <div className="row">
         <Campo rotulo="Para" obrigatorio col="col-12"><Destinos valor={d.destinos} aoMudar={(v) => setD({ ...d, destinos: v })} unidades={unidades} minha={minha} /></Campo>
         <Campo rotulo="Nota / despacho interno" col="col-12"><textarea rows={2} className="form-control form-control-sm" value={d.nota} onChange={(e) => setD({ ...d, nota: e.target.value })} placeholder="Ex.: Para informar até sexta-feira." /></Campo>
@@ -202,7 +202,7 @@ function Encaminhar({ x, unidades, minha, aoFechar, aoEnviar }) {
 function Entrega({ portador: inicial = '', aoFechar, aoConfirmar }) {
   const [portador, setPortador] = useState(inicial)
   return (
-    <Modal titulo="Entrega do original em papel" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={() => aoConfirmar(portador)}>Registar</button></>}>
+    <Modal titulo="Entrega do original em papel" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={() => aoConfirmar(portador)}>Registar</button></>}>
       <Campo rotulo="Entregue por (portador)" col="col-12"><input className="form-control form-control-sm" value={portador} onChange={(e) => setPortador(e.target.value)} /></Campo>
       <p className="small text-muted mb-0">A unidade que recebe confirma depois «Recebi o original».</p>
     </Modal>

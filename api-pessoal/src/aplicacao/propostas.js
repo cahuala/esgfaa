@@ -25,12 +25,9 @@ export class ServicoPropostas {
     Object.assign(this, { bd, auditoria, agora })
   }
 
-  async #ocupados(cargoId) {
-    return this.bd.pessoa.count({ where: { cargoId, ativo: true } })
-  }
-
   // aplica as regras da lei a uma pessoa da proposta; devolve o item já preenchido
-  async #verificar(tipo, p, item) {
+  // outros: as restantes pessoas da mesma proposta ({ pessoaId, cargoId }), para a regra dos cargos ocupados
+  async #verificar(tipo, p, item, outros = []) {
     const hoje = this.agora()
     const def = TIPOS_PROPOSTA[tipo]
     if (def.pessoal !== 'ambos' && p.tipo !== def.pessoal) throw invalido(`${p.nome}: a ${def.nome.toLowerCase()} é só para pessoal ${def.pessoal}.`)
@@ -50,8 +47,21 @@ export class ServicoPropostas {
     if (tipo === 'nomeacao') {
       const cargo = item.cargoId && await this.bd.cargo.findUnique({ where: { id: item.cargoId } })
       if (!cargo) throw invalido('Indique o cargo.', 'cargoId')
-      const ocupados = (await this.#ocupados(cargo.id)) - (p.cargoId === cargo.id ? 1 : 0)
+      /*
+        Como no SIGP: um cargo ocupado só se pode propor se quem lá está também entrar nesta proposta,
+        nomeado para outro cargo. Contam-se os que ficam no cargo e os outros desta proposta propostos para ele.
+      */
+      const ocupantes = await this.bd.pessoa.findMany({ where: { cargoId: cargo.id, ativo: true, id: { not: p.id } }, select: { id: true, nome: true, posto: true, ramo: true } })
+      const saem = new Set(outros.filter((o) => o.cargoId && o.cargoId !== cargo.id).map((o) => o.pessoaId))
+      const ficam = ocupantes.filter((o) => !saem.has(o.id))
+      const entram = outros.filter((o) => o.cargoId === cargo.id && o.pessoaId !== p.id).length
+      const ocupados = ficam.length + entram
       const v = verificarNomeacao(p, { ...cargo, ocupados }, { hoje, fim: item.fim })
+      const vaga = v.condicoes.find((c) => c.id === 'vagas')
+      if (vaga && ficam.length) {
+        vaga.texto = 'O cargo fica livre nesta proposta'
+        vaga.detalhe = `Ocupado por ${ficam.map((o) => `${o.posto ? `${nomeDoPosto(o.posto, o.ramo)} ` : ''}${o.nome}`).join(', ')}: tem de entrar nesta proposta, nomeado(a) para outro cargo.`
+      }
       if (p.cargoId === cargo.id) v.condicoes.push({ id: 'mesmo', texto: 'Ainda não ocupa este cargo', artigo: '—', estado: 'falta', detalhe: '' })
       return { ...base, cargoId: cargo.id, verificacao: { elegivel: v.condicoes.every((c) => c.estado !== 'falta'), condicoes: v.condicoes } }
     }
@@ -99,7 +109,8 @@ export class ServicoPropostas {
     exigir(u, 'propor')
     if (!TIPOS_PROPOSTA[tipo]) throw invalido('Tipo de proposta desconhecido.', 'tipo')
     const pr = await this.bd.proposta.create({ data: { tipo, titulo, fundamentacao, criadoPor: u.email } })
-    for (const i of itens) await this.adicionarItem(u, pr.id, i, { silencioso: true })
+    for (const i of itens) await this.adicionarItem(u, pr.id, i, { silencioso: true, semActualizar: true })
+    await this.#actualizar(pr.id)
     await this.auditoria.registar(u, 'criar_proposta', `${TIPOS_PROPOSTA[tipo].nome}: ${titulo} (#${pr.id})`, { pessoas: itens.length })
     return this.obter(u, pr.id)
   }
@@ -117,7 +128,7 @@ export class ServicoPropostas {
     return this.obter(u, id)
   }
 
-  async adicionarItem(u, id, item, { silencioso = false } = {}) {
+  async adicionarItem(u, id, item, { silencioso = false, semActualizar = false } = {}) {
     exigir(u, 'propor')
     const pr = await this.#emPreparacao(id)
     if (pr.itens.some((i) => i.pessoaId === item.pessoaId)) throw invalido('Essa pessoa já está na proposta.', 'pessoaId')
@@ -125,8 +136,9 @@ export class ServicoPropostas {
     if (!p) throw naoEncontrado('Ficha não encontrada.')
     const aberta = await this.bd.itemProposta.findFirst({ where: { pessoaId: p.id, proposta: { tipo: pr.tipo, estado: { in: ABERTAS } } }, include: { proposta: { select: { id: true, titulo: true } } } })
     if (aberta) throw invalido(`${p.nome} já está noutra proposta em curso (#${aberta.proposta.id} — ${aberta.proposta.titulo}).`, 'pessoaId')
-    const dados = await this.#verificar(pr.tipo, p, item)
+    const dados = await this.#verificar(pr.tipo, p, item, pr.itens.map((i) => ({ pessoaId: i.pessoaId, cargoId: i.cargoId })))
     await this.bd.itemProposta.create({ data: { ...dados, propostaId: id } })
+    if (!semActualizar) await this.#actualizar(id)
     if (!silencioso) await this.auditoria.registar(u, 'adicionar_a_proposta', `#${id}: ${p.nome}`)
     return silencioso ? null : this.obter(u, id)
   }
@@ -136,13 +148,42 @@ export class ServicoPropostas {
     await this.#emPreparacao(id)
     const r = await this.bd.itemProposta.deleteMany({ where: { id: itemId, propostaId: id } })
     if (!r.count) throw naoEncontrado('Essa pessoa não está na proposta.')
+    await this.#actualizar(id)
     return this.obter(u, id)
+  }
+
+  // muda o que se propõe a uma pessoa (o cargo, o posto da graduação, as datas…)
+  async editarItem(u, id, itemId, dados) {
+    exigir(u, 'propor')
+    const pr = await this.#emPreparacao(id)
+    const i = pr.itens.find((x) => x.id === itemId)
+    if (!i) throw naoEncontrado('Essa pessoa não está na proposta.')
+    const outros = pr.itens.filter((x) => x.id !== itemId).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
+    const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), ...dados }, outros)
+    await this.bd.itemProposta.update({ where: { id: itemId }, data: d })
+    await this.#actualizar(id)
+    return this.obter(u, id)
+  }
+
+  // volta a verificar todos sem falhar (uns dependem dos outros: quem sai de um cargo liberta-o)
+  async #actualizar(id) {
+    const pr = await this.#obter(id)
+    for (const i of pr.itens) {
+      const outros = pr.itens.filter((x) => x.id !== i.id).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
+      try {
+        const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
+        await this.bd.itemProposta.update({ where: { id: i.id }, data: { verificacao: d.verificacao } })
+      } catch {
+        // ficha alterada entretanto: a submissão mostra o erro
+      }
+    }
   }
 
   // volta a aplicar a lei a todos (os dados podem ter mudado desde que a proposta foi feita)
   async #reverificar(pr) {
     for (const i of pr.itens) {
-      const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined })
+      const outros = pr.itens.filter((x) => x.id !== i.id).map((x) => ({ pessoaId: x.pessoaId, cargoId: x.cargoId }))
+      const d = await this.#verificar(pr.tipo, i.pessoa, { ...i, inicio: dia(i.inicio), fim: dia(i.fim), modalidade: ['distincao', 'excepcional'].includes(i.modalidade) ? i.modalidade : undefined }, outros)
       await this.bd.itemProposta.update({ where: { id: i.id }, data: { verificacao: d.verificacao, postoAtual: d.postoAtual, categoriaAtual: d.categoriaAtual } })
     }
     const nova = await this.#obter(pr.id)

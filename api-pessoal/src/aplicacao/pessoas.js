@@ -330,7 +330,7 @@ export class ServicoPessoas {
     return lista.map((p) => {
       const v = tipo === 'militar' ? verificarPromocao({ ...p, historico: p.eventos }, { hoje }) : verificarProgressaoCivil(p, { hoje })
       const f = comDerivados(p, hoje)
-      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeNome: f.unidadeNome, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
+      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeNome: f.unidadeNome, cargoId: p.cargoId, cargoNome: f.cargoNome, grau: f.grau, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
     }).filter((x) => x.proposto)
   }
 

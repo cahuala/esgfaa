@@ -164,7 +164,7 @@ function FormUnidade({ u, unidades, aoFechar, aoGuardar }) {
   const guardar = () => api(u.id ? `/unidades/${u.id}` : '/unidades', { metodo: u.id ? 'PUT' : 'POST', corpo: { ...d, paiId: d.paiId ? Number(d.paiId) : null, ordem: Number(d.ordem) } }).then(() => aoGuardar('Unidade guardada.')).catch((e) => setErro(e.message))
   const apagar = () => api(`/unidades/${u.id}`, { metodo: 'DELETE' }).then(() => aoGuardar('Unidade apagada.')).catch((e) => setErro(e.message))
   return (
-    <Modal titulo={u.id ? 'Editar unidade' : 'Nova unidade'} aoFechar={aoFechar} rodape={<>{u.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo={u.id ? 'Editar unidade' : 'Nova unidade'} aoFechar={aoFechar} rodape={<>{u.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Nome" obrigatorio col="col-md-8"><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
@@ -182,7 +182,7 @@ function FormCargo({ c, unidades, refs, aoFechar, aoGuardar }) {
   const guardar = () => api(c.id ? `/cargos/${c.id}` : '/cargos', { metodo: c.id ? 'PUT' : 'POST', corpo: { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, postoRequerido: d.postoRequerido || null, categoriaCivil: d.categoriaCivil || null, vagas: Number(d.vagas) } }).then(() => aoGuardar('Cargo guardado.')).catch((e) => setErro(e.message))
   const apagar = () => api(`/cargos/${c.id}`, { metodo: 'DELETE' }).then(() => aoGuardar('Cargo apagado.')).catch((e) => setErro(e.message))
   return (
-    <Modal titulo={c.id ? 'Editar cargo' : 'Novo cargo'} aoFechar={aoFechar} rodape={<>{c.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo={c.id ? 'Editar cargo' : 'Novo cargo'} aoFechar={aoFechar} rodape={<>{c.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Cargo" obrigatorio col="col-12"><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>

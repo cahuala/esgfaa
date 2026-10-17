@@ -170,6 +170,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/propostas/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.propostas.obter(u(req), req.dados.params.id)))
   r.put('/propostas/:id', validar({ params: E.pId, body: E.editarProposta }), async (req, res) => res.json(await s.propostas.editar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/propostas/:id/itens', validar({ params: E.pId, body: E.itemProposta }), async (req, res) => res.status(201).json(await s.propostas.adicionarItem(u(req), req.dados.params.id, req.dados.body)))
+  r.put('/propostas/:id/itens/:sub', validar({ params: E.pIdSub, body: E.itemProposta.partial().omit({ pessoaId: true }) }), async (req, res) => res.json(await s.propostas.editarItem(u(req), req.dados.params.id, req.dados.params.sub, req.dados.body)))
   r.delete('/propostas/:id/itens/:sub', validar({ params: E.pIdSub }), async (req, res) => res.json(await s.propostas.removerItem(u(req), req.dados.params.id, req.dados.params.sub)))
   // a Escola envia a proposta ao escalão superior; a resposta é o extracto (ou o indeferimento)
   r.post('/propostas/:id/submeter', validar({ params: E.pId, body: E.enviarProposta }), async (req, res) => res.json(await s.propostas.submeter(u(req), req.dados.params.id, req.dados.body)))

@@ -81,7 +81,7 @@ export default function FormularioFicha() {
   return (
     <form onSubmit={guardar}>
       <Cabecalho titulo={id ? 'Editar ficha' : 'Nova ficha'} migalhas={[['Pessoal', '/pessoas'], [id ? d.nome : 'Nova ficha']]}>
-        <button type="button" className="btn btn-light" onClick={() => navegar(-1)}>Cancelar</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={() => navegar(-1)}>Cancelar</button>
         <button type="submit" className="btn btn-theme" disabled={aGuardar}><i className="fa fa-save me-1" />Guardar</button>
       </Cabecalho>
       {erro && <div className="alert alert-danger"><i className="fa fa-exclamation-circle me-2" />{erro.texto}</div>}

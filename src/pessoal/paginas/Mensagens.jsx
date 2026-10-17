@@ -162,7 +162,7 @@ function NovoGrupo({ aoFechar, aoCriar }) {
   const [nome, setNome] = useState('')
   const [membros, setMembros] = useState([])
   return (
-    <Modal titulo="Novo grupo" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={nome.trim().length < 2 || membros.length < 2} onClick={() => aoCriar({ nome, membros })}>Criar grupo ({membros.length + 1})</button></>}>
+    <Modal titulo="Novo grupo" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={nome.trim().length < 2 || membros.length < 2} onClick={() => aoCriar({ nome, membros })}>Criar grupo ({membros.length + 1})</button></>}>
       <Campo rotulo="Nome do grupo" col="col-12"><input className="form-control mb-2" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Docentes do CEM 2026" /></Campo>
       <ListaContactos escolhidos={membros} aoEscolher={(c) => setMembros((m) => (m.includes(c.id) ? m.filter((x) => x !== c.id) : [...m, c.id]))} />
     </Modal>

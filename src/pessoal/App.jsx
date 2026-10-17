@@ -12,6 +12,7 @@ import Perfil from './paginas/Perfil'
 import FormularioFicha from './paginas/FormularioFicha'
 import Propostas from './paginas/Propostas'
 import Proposta from './paginas/Proposta'
+import NovaProposta from './paginas/NovaProposta'
 import Elegiveis from './paginas/Elegiveis'
 import Antiguidade from './paginas/Antiguidade'
 import Reserva from './paginas/Reserva'
@@ -83,6 +84,7 @@ export default function App() {
           <Route path="/pessoas/:id" element={<Perfil />} />
           <Route path="/pessoas/:id/editar" element={<FormularioFicha />} />
           <Route path="/propostas" element={<Propostas />} />
+          <Route path="/propostas/nova" element={<NovaProposta />} />
           <Route path="/propostas/:id" element={<Proposta />} />
           <Route path="/elegiveis" element={<Elegiveis />} />
           <Route path="/antiguidade" element={<Antiguidade />} />

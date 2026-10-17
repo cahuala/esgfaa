@@ -31,7 +31,7 @@ export default function NovaLicenca({ pessoa: inicial, aoFechar, aoGuardar }) {
     }
   }
   return (
-    <Modal titulo="Registar licença" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar} disabled={!pronto || !verificacao?.possivel}><i className="fa fa-check me-1" />Registar</button></>}>
+    <Modal titulo="Registar licença" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar} disabled={!pronto || !verificacao?.possivel}><i className="fa fa-check me-1" />Registar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Pessoa" obrigatorio col="col-12">

@@ -96,6 +96,13 @@ const identificacao = (p) => (p.tipo === 'militar' ? `${p.postoNome} · ${p.ramo
 */
 export async function sinteseBiografica(p) {
   const { doc, autoTable } = await novoDocumento()
+  await desenharSintese(doc, autoTable, p)
+  rodape(doc)
+  doc.save(`sintese-biografica-${(p.nip || p.numeroAgente || p.id).toString().replace(/[^\w-]/g, '')}.pdf`)
+  registar(`Síntese biográfica: ${p.nome}`)
+}
+
+async function desenharSintese(doc, autoTable, p) {
   let y = cabecalho(doc, 'SÍNTESE BIOGRÁFICA')
   const w = doc.internal.pageSize.getWidth()
   await foto(doc, p, w - 44, y)
@@ -125,9 +132,6 @@ export async function sinteseBiografica(p) {
   tabela('Cursos', ['Curso', 'Local', 'Conclusão', 'Resultado'], p.cursos.map((c) => [c.nome, c.local, pt(c.fim), c.aproveitamento === false ? 'Sem aproveitamento' : c.classificacao ? `${c.classificacao} valores` : 'Com aproveitamento']))
   tabela('Louvores e condecorações', ['Data', 'Registo', 'Descrição'], p.eventos.filter((e) => ['louvor', 'condecoracao'].includes(e.tipo)).map((e) => [pt(e.data), e.tipoNome, e.descricao]))
   assinaturas(doc, y + 6, ['O Chefe da Repartição de Pessoal e Quadros'])
-  rodape(doc)
-  doc.save(`sintese-biografica-${(p.nip || p.numeroAgente || p.id).toString().replace(/[^\w-]/g, '')}.pdf`)
-  registar(`Síntese biográfica: ${p.nome}`)
 }
 
 const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', confirmar: 'A confirmar' }
@@ -135,9 +139,10 @@ const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', confirmar: 'A confirmar' }
 /*
   Ficha de proposta (promoção, nomeação, graduação…) de cada pessoa da proposta, com fotografia, a situação
   actual, o que se propõe e as condições da Lei n.º 13/18 — é o que a Escola envia ao escalão superior.
-  Gera uma página (ou mais) por pessoa, tudo num só PDF.
+  Para cada pessoa saem os dois documentos, prontos a assinar: a ficha de proposta e a síntese biográfica,
+  tudo num só PDF (comSintese = false: só as fichas).
 */
-export async function fichasDeProposta(proposta, cargos = []) {
+export async function fichasDeProposta(proposta, cargos = [], { comSintese = true } = {}) {
   const { doc, autoTable } = await novoDocumento()
   const w = doc.internal.pageSize.getWidth()
   const titulo = { promocao: 'FICHA DE PROPOSTA DE PROMOÇÃO', nomeacao: 'FICHA DE PROPOSTA DE NOMEAÇÃO', graduacao: 'FICHA DE PROPOSTA DE GRADUAÇÃO', exoneracao: 'FICHA DE PROPOSTA DE EXONERAÇÃO', progressao: 'FICHA DE PROPOSTA DE PROGRESSÃO' }[proposta.tipo] ?? 'FICHA DE PROPOSTA'
@@ -177,10 +182,14 @@ export async function fichasDeProposta(proposta, cargos = []) {
       y += 8 + linhas.length * 4
     }
     assinaturas(doc, y + 4, ['O Chefe da Repartição de Pessoal e Quadros', 'O Director da Escola Superior de Guerra'])
+    if (comSintese) {
+      doc.addPage()
+      await desenharSintese(doc, autoTable, p)
+    }
   }
   rodape(doc)
-  doc.save(`fichas-proposta-${proposta.id}.pdf`)
-  registar(`Fichas da proposta n.º ${proposta.id}`)
+  doc.save(`proposta-${proposta.id}-documentos.pdf`)
+  registar(`Documentos da proposta n.º ${proposta.id} (fichas${comSintese ? ' e sínteses' : ''})`)
 }
 
 // etiqueta para a lombada da pasta do processo individual

@@ -8,7 +8,6 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import { fichaPdf } from '../fichaPdf'
 import Tabela from '../componentes/Tabela'
-import NovaProposta from '../componentes/NovaProposta'
 import NovaLicenca from '../componentes/NovaLicenca'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
@@ -139,7 +138,7 @@ export default function Perfil() {
               <Painel titulo="Ações" icone="fa-bolt">
                 <div className="d-grid gap-2">
                   {(militar ? ['promocao', 'graduacao', 'nomeacao', 'exoneracao'] : ['progressao', 'nomeacao', 'exoneracao']).filter((t) => t !== 'exoneracao' || p.cargoId).map((t) => (
-                    <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => setModal({ proposta: t })}><i className="fa fa-file-signature me-2" />Propor {ref.tiposProposta[t].nome.toLowerCase()}</button>
+                    <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => navegar(`/propostas/nova?tipo=${t}&pessoa=${p.id}`)}><i className="fa fa-file-signature me-2" />Propor {ref.tiposProposta[t].nome.toLowerCase()}</button>
                   ))}
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ licenca: true })}><i className="fa fa-plane-departure me-2" />Registar licença</button>
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-2" />Lançar no histórico (louvor, punição…)</button>
@@ -270,7 +269,6 @@ export default function Perfil() {
         </Painel>
       )}
 
-      {modal?.proposta && <NovaProposta pessoa={p} tipoInicial={modal.proposta} aoFechar={fechar} aoCriar={(r) => navegar(`/propostas/${r.id}`)} />}
       {modal?.licenca && <NovaLicenca pessoa={p} aoFechar={fechar} aoGuardar={() => depois('Licença registada.')} />}
       {modal?.evento && <NovoEvento p={p} aoFechar={fechar} aoGuardar={() => depois('Registado no histórico.')} />}
       {modal?.curso && <FormCurso p={p} curso={modal.curso} aoFechar={fechar} aoGuardar={(m) => depois(m)} />}
@@ -353,7 +351,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
   const [erro, setErro] = useState('')
   const guardar = () => api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d }).then(aoGuardar).catch((e) => setErro(e.message))
   return (
-    <Modal titulo="Lançar no histórico" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo="Lançar no histórico" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <p className="small text-muted">Promoções, graduações, nomeações e exonerações entram no histórico pelas propostas aprovadas.</p>
       <div className="row">
@@ -375,7 +373,7 @@ function FormCurso({ p, curso, aoFechar, aoGuardar }) {
   const guardar = () => api(`/pessoas/${p.id}/cursos${curso.id ? `/${curso.id}` : ''}`, { metodo: curso.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar(curso.id ? 'Curso atualizado.' : 'Curso adicionado.')).catch((e) => setErro(e.message))
   const apagar = () => api(`/pessoas/${p.id}/cursos/${curso.id}`, { metodo: 'DELETE' }).then(() => aoGuardar('Curso apagado.')).catch((e) => avisar(e.message, 'erro'))
   return (
-    <Modal titulo={curso.id ? 'Editar curso' : 'Adicionar curso'} aoFechar={aoFechar} rodape={<>{curso.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo={curso.id ? 'Editar curso' : 'Adicionar curso'} aoFechar={aoFechar} rodape={<>{curso.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Nome do curso" obrigatorio col="col-12"><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
@@ -396,7 +394,7 @@ function TerminarGraduacao({ p, g, aoFechar, aoGuardar }) {
   const [erro, setErro] = useState('')
   const guardar = () => api(`/pessoas/${p.id}/graduacoes/${g.id}/terminar`, { metodo: 'POST', corpo: d }).then(aoGuardar).catch((e) => setErro(e.message))
   return (
-    <Modal titulo={`Terminar a graduação em ${g.postoNome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-danger" onClick={guardar}>Terminar</button></>}>
+    <Modal titulo={`Terminar a graduação em ${g.postoNome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-danger" onClick={guardar}>Terminar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <p className="small text-muted">A graduação cessa com o fim do cargo que a justificou, a promoção ou por despacho (art. 67.º).</p>
       <div className="row">

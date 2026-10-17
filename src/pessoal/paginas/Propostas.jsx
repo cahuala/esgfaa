@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
-import NovaProposta from '../componentes/NovaProposta'
 import { Cabecalho, Carregando, Erro, Escolha, Estado, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
 
@@ -13,7 +12,6 @@ export default function Propostas() {
   const [params, setParams] = useSearchParams()
   const filtros = useMemo(() => Object.fromEntries(params), [params])
   const { dados: linhas, erro } = useDados('/propostas', filtros)
-  const [nova, setNova] = useState(false)
   const mudar = (k, v) => { const n = new URLSearchParams(params); if (v) n.set(k, v); else n.delete(k); setParams(n) }
 
   const colunas = useMemo(() => [
@@ -29,7 +27,7 @@ export default function Propostas() {
   return (
     <>
       <Cabecalho titulo="Propostas" subtitulo="promoções, graduações, nomeações, exonerações e progressões" migalhas={[['Propostas']]}>
-        {pode('propor') && <button type="button" className="btn btn-theme" onClick={() => setNova(true)}><i className="fa fa-plus me-1" />Nova proposta</button>}
+        {pode('propor') && <button type="button" className="btn btn-theme" onClick={() => navegar('/propostas/nova')}><i className="fa fa-plus me-1" />Nova proposta</button>}
       </Cabecalho>
       <Painel>
         <div className="row mb-2">
@@ -39,7 +37,6 @@ export default function Propostas() {
         {erro && <Erro texto={erro} />}
         {!linhas ? <Carregando /> : <Tabela titulo="Propostas" subtitulo={[filtros.tipo && ref.tiposProposta[filtros.tipo]?.nome, filtros.estado && ref.estadosProposta[filtros.estado]].filter(Boolean).join(' · ')} colunas={colunas} linhas={linhas} aoClicar={(p) => navegar(`/propostas/${p.id}`)} />}
       </Painel>
-      {nova && <NovaProposta aoFechar={() => setNova(false)} aoCriar={(r) => navegar(`/propostas/${r.id}`)} />}
     </>
   )
 }

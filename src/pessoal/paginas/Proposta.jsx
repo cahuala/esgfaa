@@ -55,7 +55,7 @@ export default function Proposta() {
     <>
       <Cabecalho titulo={`Proposta n.º ${p.id}`} subtitulo={p.tipoNome} migalhas={[['Propostas', '/propostas'], [`N.º ${p.id}`]]}>
         <button type="button" className="btn btn-danger" onClick={imprimir} disabled={!p.itens.length}><i className="fa fa-file-pdf me-1" />PDF</button>
-        <button type="button" className="btn btn-danger" onClick={() => fichasDeProposta(p, cargos).catch((e) => avisar(e.message, 'erro'))} disabled={!p.itens.length}><i className="fa fa-file-pdf me-1" />Fichas de proposta</button>
+        <button type="button" className="btn btn-danger" onClick={() => fichasDeProposta(p, cargos).catch((e) => avisar(e.message, 'erro'))} title="Para cada militar: a ficha de proposta e a síntese biográfica" disabled={!p.itens.length}><i className="fa fa-print me-1" />Imprimir documentos</button>
         {preparacao && pode('propor') && <button type="button" className="btn btn-warning" onClick={() => setModal('enviar')} disabled={!p.itens.length}><i className="fa fa-paper-plane me-1" />Enviar ao escalão superior</button>}
         {p.estado === 'enviada' && pode('editar') && <button type="button" className="btn btn-success" onClick={() => navegar(`/extractos?proposta=${p.id}&tipo=${p.tipo}`)}><i className="fa fa-file-contract me-1" />Registar o extracto</button>}
         {p.estado === 'enviada' && pode('decidir') && <>
@@ -91,7 +91,9 @@ export default function Proposta() {
                     <Foto pessoaId={i.pessoaId} fotoId={i.fotoId} nome={i.nome} tamanho={38} />
                     <div className="me-auto">
                       <Link to={`/pessoas/${i.pessoaId}`} className="fw-bold">{i.nome}</Link> <span className="small text-muted">{i.nip || i.numeroAgente} · {i.ramo || 'Civil'}</span>
-                      <div className="small">{proposto(i)}{i.inicio && ` · desde ${dataPt(i.inicio)}`}{i.fim && ` até ${dataPt(i.fim)}`}</div>
+                      {p.tipo === 'nomeacao' && preparacao && pode('propor')
+                        ? <div className="small d-flex align-items-center gap-1" style={{ maxWidth: 420 }}><i className="fa fa-chair" /><Escolha valor={i.cargoId} aoMudar={(v) => api(`/propostas/${p.id}/itens/${i.id}`, { metodo: 'PUT', corpo: { cargoId: v ? Number(v) : null } }).then(setP).catch((e) => avisar(e.message, 'erro'))} opcoes={cargos.map((c) => [c.id, `${c.nome}${c.unidadeNome ? ` — ${c.unidadeNome}` : ''} (${c.ocupados}/${c.vagas})`])} vazio="Escolha o cargo" /></div>
+                        : <div className="small">{proposto(i)}{i.inicio && ` · desde ${dataPt(i.inicio)}`}{i.fim && ` até ${dataPt(i.fim)}`}</div>}
                       {i.justificacao && <div className="small text-muted">{i.justificacao}</div>}
                     </div>
                     <button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setAberto(aberto === i.id ? null : i.id)}>{aberto === i.id ? 'Esconder' : 'Ver'} condições</button>
@@ -107,7 +109,7 @@ export default function Proposta() {
       </div>
 
       {modal === 'adicionar' && <Adicionar p={p} cargos={cargos} aoFechar={() => setModal(null)} aoAdicionar={(item) => acao('/itens', item, 'Adicionado à proposta.')} />}
-      {modal === 'enviar' && <Decidir titulo="Enviar ao escalão superior" botao="Enviar" cor="warning" campos={['documento']} rotuloDocumento="N.º do ofício de envio (opcional)" aviso="Imprima as fichas de proposta (com a síntese biográfica de cada um, no perfil), assine e envie. Quando chegar a resposta, registe o extracto: é ele que actualiza as fichas." aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/submeter', d, 'Proposta enviada ao escalão superior.')} />}
+      {modal === 'enviar' && <Decidir titulo="Enviar ao escalão superior" botao="Enviar" cor="warning" campos={['documento']} rotuloDocumento="N.º do ofício de envio (opcional)" aviso="Imprima os documentos (para cada militar: a ficha de proposta e a síntese biográfica), assine e envie. Quando chegar a resposta, registe o extracto: é ele que actualiza as fichas." aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/submeter', d, 'Proposta enviada ao escalão superior.')} />}
       {modal === 'indeferir' && <Decidir titulo="Proposta indeferida pelo escalão superior" botao="Registar indeferimento" cor="danger" campos={['motivo', 'documento', 'dataDocumento']} rotuloDocumento="N.º do documento de resposta" aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/indeferir', d, 'Indeferimento registado.')} />}
       {modal === 'devolver' && <Decidir titulo="Proposta devolvida para correção" botao="Voltar à preparação" cor="secondary" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/devolver', d, 'A proposta voltou à preparação.')} />}
       {modal === 'cancelar' && <Decidir titulo="Cancelar a proposta" botao="Cancelar proposta" cor="danger" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/cancelar', d, 'Proposta cancelada.').then(() => navegar('/propostas'))} />}
@@ -122,7 +124,7 @@ function Adicionar({ p, cargos, aoFechar, aoAdicionar }) {
   const postos = pessoa?.ramo ? ref.postos[pessoa.ramo].filter((x) => x.grau > pessoa.grau && x.grau <= pessoa.grau + 2) : []
   const set = (k) => (v) => setItem({ ...item, [k]: v?.target ? v.target.value : v })
   return (
-    <Modal titulo="Adicionar à proposta" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!pessoa} onClick={() => aoAdicionar({ pessoaId: pessoa.id, ...item, cargoId: item.cargoId ? Number(item.cargoId) : undefined })}>Adicionar</button></>}>
+    <Modal titulo="Adicionar à proposta" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!pessoa} onClick={() => aoAdicionar({ pessoaId: pessoa.id, ...item, cargoId: item.cargoId ? Number(item.cargoId) : undefined })}>Adicionar</button></>}>
       <div className="row">
         <Campo rotulo="Pessoa" obrigatorio col="col-12">
           {pessoa ? <div><strong>{pessoa.postoAbreviatura} {pessoa.nome}</strong> <button type="button" className="btn btn-xs btn-secondary" onClick={() => setPessoa(null)}>mudar</button></div> : <EscolherPessoa filtro={FILTRO_TIPO[p.tipo]} excluir={p.itens.map((i) => i.pessoaId)} aoEscolher={setPessoa} />}
@@ -144,7 +146,7 @@ function Decidir({ titulo, botao, cor, campos, aviso, aoFechar, aoConfirmar, rot
   const [d, setD] = useState({ documento: '', dataDocumento: new Date().toISOString().slice(0, 10), entidade: '', motivo: '' })
   const corpo = Object.fromEntries(campos.map((k) => [k, d[k]]))
   return (
-    <Modal titulo={titulo} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Voltar</button><button type="button" className={`btn btn-${cor}`} onClick={() => aoConfirmar(corpo)}>{botao}</button></>}>
+    <Modal titulo={titulo} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Voltar</button><button type="button" className={`btn btn-${cor}`} onClick={() => aoConfirmar(corpo)}>{botao}</button></>}>
       {aviso && <div className="alert alert-info">{aviso}</div>}
       <div className="row">
         {campos.includes('documento') && <Campo rotulo={rotuloDocumento}><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>}

@@ -62,7 +62,7 @@ function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
     api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar('Utilizador guardado.')).catch((e) => setErro(e.message))
   }
   return (
-    <Modal titulo={u.id ? `Editar ${u.nome}` : 'Novo utilizador'} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
+    <Modal titulo={u.id ? `Editar ${u.nome}` : 'Novo utilizador'} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>

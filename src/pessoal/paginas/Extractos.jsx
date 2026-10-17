@@ -68,7 +68,7 @@ function NovoExtracto({ inicial, aoFechar, aoCriar }) {
     try { aoCriar(await api('/extractos', { metodo: 'POST', formulario: fd })) } catch (e) { setErro(e.message) }
   }
   return (
-    <Modal titulo="Registar extracto" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-light" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={criar} disabled={!d.numero || !d.data}><i className="fa fa-check me-1" />Registar e procurar os militares</button></>}>
+    <Modal titulo="Registar extracto" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={criar} disabled={!d.numero || !d.data}><i className="fa fa-check me-1" />Registar e procurar os militares</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
       <div className="row">
         <Campo rotulo="Tipo" obrigatorio col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.tiposExtracto} vazio={null} /></Campo>
