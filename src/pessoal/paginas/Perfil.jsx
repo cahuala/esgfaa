@@ -8,6 +8,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import { fichaPdf } from '../fichaPdf'
 import Tabela from '../componentes/Tabela'
+import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
@@ -318,6 +319,7 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
           </div>
           {editar && <button type="button" className="btn btn-sm btn-theme" onClick={guardar}>{p.processo ? 'Guardar' : 'Abrir processo (n.º automático)'}</button>}
         </Painel>
+        {p.processo?.estante && <OndeEsta p={p} />}
         <Painel titulo={falta.length ? `Por actualizar (${falta.length})` : 'Processo actualizado'} icone={falta.length ? 'fa-exclamation-triangle' : 'fa-check-circle'}>
           {falta.length ? <ul className="small mb-0 text-danger">{falta.map((f) => <li key={f}>{f}</li>)}</ul> : <p className="small text-success mb-0">Tem todos os dados e documentos essenciais.</p>}
         </Painel>
@@ -342,6 +344,18 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
         </Painel>
       </div>
     </div>
+  )
+}
+
+// a estante onde está a pasta, com ela destacada
+function OndeEsta({ p }) {
+  const navegar = useNavigate()
+  const { dados } = useDados(p.processo?.estante ? '/processos' : null)
+  const daEstante = (dados ?? []).filter((x) => x.estante === p.processo.estante)
+  return (
+    <Painel titulo={`Onde está a pasta: estante ${p.processo.estante}`} icone="fa-archive">
+      {!dados ? <Carregando /> : <Estante processos={daEstante} pesquisa={p.processo.numero} aoAbrir={(x) => navegar(`/pessoas/${x.id}?aba=processo`)} minimoPosicoes={Number(p.processo.posicao) || 10} />}
+    </Painel>
   )
 }
 

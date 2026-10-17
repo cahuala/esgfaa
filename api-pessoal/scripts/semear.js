@@ -193,7 +193,13 @@ async function main() {
   }
   // processos individuais numerados, com a localização no arquivo
   const todas = await bd.pessoa.findMany({ where: { vinculo: { not: 'domiciliar' } }, orderBy: { id: 'asc' } })
-  for (const [i, p] of todas.entries()) await bd.processo.create({ data: { pessoaId: p.id, numero: `PI-${String(i + 1).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(i / 40)), prateleira: String(1 + Math.floor((i % 40) / 10)), posicao: String(1 + (i % 10)), estado: aleatorio() < 0.85 ? 'encapado' : 'activo' } })
+  // arrumados nas estantes (10 posições por prateleira, 4 prateleiras por estante), com alguns lugares livres
+  let lugar = 0
+  for (const [i, p] of todas.entries()) {
+    if (aleatorio() < 0.12) lugar++
+    await bd.processo.create({ data: { pessoaId: p.id, numero: `PI-${String(i + 1).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(lugar / 40)), prateleira: String(1 + Math.floor((lugar % 40) / 10)), posicao: String(1 + (lugar % 10)), estado: aleatorio() < 0.85 ? 'encapado' : 'activo' } })
+    lugar++
+  }
 
   // contas de demonstração (utente) para o expediente e as mensagens: palavra-passe Escola2026demo
   const cifra = new CifraSenhas()

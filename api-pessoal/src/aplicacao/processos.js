@@ -1,6 +1,6 @@
 import { conflito, invalido, naoEncontrado } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
-import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
 
 export const TIPOS_DOCUMENTO = {
@@ -43,7 +43,7 @@ export class ServicoProcessos {
       const falta = dadosEmFalta(p, p.documentos)
       return {
         id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, fotoId: p.fotoId, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil',
-        unidadeNome: p.unidade?.nome ?? '', numero: p.processo?.numero ?? '', localizacao: p.processo ? [p.processo.estante, p.processo.prateleira, p.processo.posicao].filter(Boolean).join(' › ') : '',
+        unidadeNome: p.unidade?.nome ?? '', numero: p.processo?.numero ?? '', estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', localizacao: p.processo ? [p.processo.estante, p.processo.prateleira, p.processo.posicao].filter(Boolean).join(' › ') : '',
         estado: p.processo?.estado ?? '', estadoNome: ESTADOS_PROCESSO[p.processo?.estado] ?? 'Sem processo', documentos: p.documentos.length, emFalta: falta, completo: !falta.length,
       }
     })
@@ -56,6 +56,10 @@ export class ServicoProcessos {
     const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, include: { processo: true } })
     if (!p) throw naoEncontrado('Ficha não encontrada.')
     const dados = { estante, prateleira, posicao, estado, observacoes }
+    if (estante && prateleira && posicao) {
+      const ocupada = await this.bd.processo.findFirst({ where: { estante, prateleira, posicao, pessoaId: { not: pessoaId } }, include: { pessoa: { select: { nome: true } } } })
+      if (ocupada) throw conflito(`Essa posição da estante já tem o processo ${ocupada.numero} (${ocupada.pessoa.nome}).`)
+    }
     if (p.processo) return this.bd.processo.update({ where: { pessoaId }, data: dados })
     // n.º sequencial PI-00001; se dois pedidos chegarem ao mesmo tempo, tenta o seguinte
     for (let t = 0; t < 5; t++) {

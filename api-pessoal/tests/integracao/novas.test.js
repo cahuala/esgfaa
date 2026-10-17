@@ -87,6 +87,11 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.match(pi.numero, /^PI-\d{5}$/)
     const cat = (await adm.get('/api/processos')).body.find((x) => x.id === a.id)
     assert.deepEqual([cat.numero, cat.localizacao], [pi.numero, 'E2 › P4 › 17'])
+    assert.deepEqual([cat.estante, cat.prateleira, cat.posicao], ['E2', 'P4', '17'])
+    // na estante, cada posição tem uma só pasta
+    const dup = await adm.put(`/api/processos/${b.id}`).send({ estante: 'E2', prateleira: 'P4', posicao: '17' })
+    assert.equal(dup.status, 409)
+    assert.match(dup.body.erro, new RegExp(pi.numero))
     assert.ok(cat.emFalta.includes('Cópia do BI digitalizada'))
     // ficheiro que não é PDF/imagem é recusado
     assert.equal((await adm.post(`/api/pessoas/${a.id}/documentos`).field('tipo', 'bi').attach('ficheiro', Buffer.from('<html>'), 'bi.html')).status, 400)

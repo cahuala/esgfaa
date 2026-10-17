@@ -5,6 +5,7 @@ import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { nomeProprio } from './importacao.js'
+import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
 import { exigir } from './sessao.js'
 
@@ -40,7 +41,7 @@ const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilh
 const vaiParaPortal = (p) => p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
 
 export class ServicoPessoas {
-  constructor({ bd, auditoria, config, enviar = fetch, agora = () => new Date() }) {
+  constructor({ bd, auditoria, config, enviar = pedirJson, agora = () => new Date() }) {
     Object.assign(this, { bd, auditoria, config, enviar, agora })
   }
 
@@ -218,12 +219,13 @@ export class ServicoPessoas {
     if (!chave) throw new ErroDominio('A consulta do BI não está configurada (BI_API_KEY no servidor).', 'indisponivel')
     let j
     try {
-      const r = await this.enviar(`${url}?bi=${encodeURIComponent(bi)}`, { headers: { Authorization: `Basic ${chave}`, Accept: 'application/json' }, signal: AbortSignal.timeout(15_000) })
+      const r = await this.enviar(`${url}?bi=${encodeURIComponent(bi)}`, { headers: { Authorization: `Basic ${chave}`, Accept: 'application/json' }, timeout: 15_000 })
       j = await r.json().catch(() => null)
     } catch {
       throw new ErroDominio('O serviço do BI não respondeu. Tente mais tarde ou preencha à mão.', 'indisponivel')
     }
-    if (!j || Number(j.code) !== 200 || !j.data) throw naoEncontrado(j?.message || 'BI não encontrado na base de dados do Estado.')
+    // 204: o BI não existe na base de dados do Estado
+    if (!j || Number(j.code) !== 200 || !j.data) throw naoEncontrado(Number(j?.code) === 204 || !j?.message ? 'Não há dados deste BI na base de dados do Estado. Confirme o número.' : j.message)
     const x = j.data
     const junta = (...p) => p.map((v) => String(v ?? '').trim()).filter(Boolean).join(' ')
     const genero = /^f/i.test(x.gender_name ?? '') ? 'F' : /^m/i.test(x.gender_name ?? '') ? 'M' : null
