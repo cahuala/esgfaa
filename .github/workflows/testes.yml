@@ -29,6 +29,7 @@ jobs:
     env:
       DATABASE_URL_TESTE: postgresql://esgfaa:esgfaa_ci@localhost:5432/esgfaa_teste
       DATABASE_URL_E2E: postgresql://esgfaa:esgfaa_ci@localhost:5432/esgfaa_e2e
+      PESSOAL_DATABASE_URL_TESTE: postgresql://esgfaa:esgfaa_ci@localhost:5432/esgfaa_pessoal_teste
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,12 +39,15 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             api/package-lock.json
+            api-pessoal/package-lock.json
       - run: npm ci
       - run: npm ci
         working-directory: api
+      - run: npm ci
+        working-directory: api-pessoal
 
       - name: Base de dados dos testes ponta-a-ponta
-        run: PGPASSWORD=esgfaa_ci psql -h localhost -U esgfaa -d esgfaa_teste -c 'CREATE DATABASE esgfaa_e2e'
+        run: PGPASSWORD=esgfaa_ci psql -h localhost -U esgfaa -d esgfaa_teste -c 'CREATE DATABASE esgfaa_e2e' -c 'CREATE DATABASE esgfaa_pessoal_teste'
 
       - name: Lint
         run: npm run lint
@@ -51,6 +55,10 @@ jobs:
       - name: API (unidade e integração, com cobertura)
         run: npm run test:cobertura
         working-directory: api
+
+      - name: Sistema de Gestão de Pessoal (API interna)
+        run: npm test
+        working-directory: api-pessoal
 
       - name: Site e painel (Vitest)
         run: npm run test:cobertura

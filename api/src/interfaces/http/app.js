@@ -8,6 +8,7 @@ import { rotasPublicas } from './rotas/publico.js'
 import { rotasPortal } from './rotas/portal.js'
 import { rotasPacotes } from './rotas/pacotes.js'
 import { rotasLti } from './rotas/lti.js'
+import { rotasIntegracao } from './rotas/integracao.js'
 import { criarCacheConteudo } from './cacheConteudo.js'
 
 // Aplicação Express (sem arrancar o servidor: os testes usam-na diretamente)
@@ -49,6 +50,8 @@ export function criarApp(contentor, { registarErro } = {}) {
     exposedHeaders: ['X-Request-Id', 'Retry-After'],
     maxAge: 600,
   }))
+  // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
+  app.use('/api/integracao', semCache, rotasIntegracao({ servicos, config }))
   app.use(express.json({ limit: '2mb', strict: true }))
 
   // ficheiros carregados (imagens, vídeos, PDF)

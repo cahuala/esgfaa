@@ -77,6 +77,58 @@ export class ServicoRegistoPessoal {
   }
 
   /*
+    Contas enviadas pelo Sistema de Gestão de Pessoal (rede interna), já com a assinatura verificada.
+    Cria quem ainda não tem conta, atualiza o nome e os dados de quem tem, e desativa quem deixou de ser
+    docente/estudante ou saiu da Escola. O e-mail é a chave: a conta do portal não sabe mais nada da ficha.
+  */
+  async sincronizarDoPessoal(ctx, pessoas) {
+    const resultados = []
+    let criadas = 0
+    let atualizadas = 0
+    for (const p of pessoas) {
+      try {
+        const email = emailDaEscola(p.email, this.dominioEmail)
+        const t = escolha(p.tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
+        const existente = await this.contas.porEmail(email)
+        if (!existente) {
+          if (!p.ativo) {
+            resultados.push({ ref: p.ref, ok: true, contaId: null })
+            continue
+          }
+          const nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
+          let conta
+          for (let tentativa = 0; !conta; tentativa++) {
+            try {
+              const ano = this.relogio.agora().getFullYear()
+              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(email), dados: await this.#dadosConta(p.dados) })
+            } catch (erro) {
+              if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
+            }
+          }
+          criadas++
+          resultados.push({ ref: p.ref, ok: true, contaId: conta.id })
+          continue
+        }
+        if (existente.tipo !== t) throw new ErroValidacao(`Já existe uma conta de ${existente.tipo} com este e-mail.`)
+        if (p.nome) existente.nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
+        existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)) }
+        if (Boolean(p.ativo) !== existente.ativo) {
+          existente.ativo = Boolean(p.ativo)
+          if (!existente.ativo) existente.invalidarSessoes()
+        }
+        await this.contas.guardar(existente)
+        atualizadas++
+        resultados.push({ ref: p.ref, ok: true, contaId: existente.id })
+      } catch (e) {
+        if (!(e instanceof ErroValidacao)) throw e
+        resultados.push({ ref: p.ref, ok: false, erro: e.message })
+      }
+    }
+    if (criadas || atualizadas) await this.auditoria.registar(ctx, { acao: 'sincronizar_pessoal', colecao: 'contas_portal', alvoTitulo: 'Sistema de Gestão de Pessoal', detalhes: { criadas, atualizadas }, utilizador: null })
+    return { resultados }
+  }
+
+  /*
     Registo de várias pessoas de uma folha (CSV/Excel lido no navegador), todas do mesmo tipo.
     Com simular, só diz o que faria a cada linha. Quem já está registado não se repete.
   */

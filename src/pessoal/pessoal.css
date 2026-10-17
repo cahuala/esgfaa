@@ -1,0 +1,28 @@
+/* Sistema de Gestão de Pessoal: complementos ao Color Admin e à identidade do painel */
+.pes-cartao { display: block; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease; }
+.pes-cartao:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0, 0, 0, .15); color: #fff; }
+.pes-tabela-barra { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .75rem; }
+.pes-pesquisa { position: relative; min-width: 220px; flex: 0 1 320px; }
+.pes-pesquisa i { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); color: #999; font-size: .8rem; }
+.pes-pesquisa input { padding-left: 1.8rem; }
+.pes-tabela-conta { font-size: .8rem; color: #6c757d; }
+.pes-tabela-rodape { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .75rem; }
+.pes-tabela th { white-space: nowrap; }
+.pes-ordenar { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; white-space: nowrap; }
+.pes-clicavel tbody tr { cursor: pointer; }
+.pes-clicavel tbody tr:focus { outline: 2px solid var(--bs-theme, #2d5a3d); outline-offset: -2px; }
+.pes-condicoes { list-style: none; padding: 0; margin: .5rem 0 0; }
+.pes-condicoes li { display: flex; gap: .6rem; align-items: flex-start; padding: .35rem 0; border-bottom: 1px dashed rgba(0, 0, 0, .08); }
+.pes-condicoes li:last-child { border-bottom: 0; }
+.pes-condicoes i { margin-top: .2rem; font-size: 1.05rem; }
+.pes-aviso { position: fixed; right: 1rem; bottom: 1rem; z-index: 2000; max-width: 460px; display: flex; align-items: center; }
+.pes-sugestoes { z-index: 1060; max-height: 320px; overflow: auto; }
+.pes-ramo-EXE { background: #4b5320; color: #fff; }
+.pes-ramo-FAN { background: #4a90c2; color: #fff; }
+.pes-ramo-MGA { background: #1f3b73; color: #fff; }
+.pes-perfil .profile-header-cover { background-image: var(--esg-sede); background-size: cover; background-position: center; }
+.pes-perfil .profile-header-cover::before { background: linear-gradient(to bottom, rgba(0, 0, 0, .1), rgba(0, 0, 0, .75)); }
+.pes-foto { position: relative; display: flex; align-items: center; justify-content: center; background: #f2f3f4; overflow: hidden; }
+.pes-foto img { width: 100%; height: 100%; object-fit: cover; }
+.pes-foto-mudar { position: absolute; right: 4px; bottom: 4px; border: 0; border-radius: 50%; width: 30px; height: 30px; background: rgba(0, 0, 0, .6); color: #fff; }
+.pes-perfil .profile-header-tab .nav-link { border: 0; background: none; }

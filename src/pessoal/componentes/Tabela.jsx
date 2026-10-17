@@ -1,0 +1,129 @@
+import { useMemo, useState } from 'react'
+import { exportarExcel, exportarPdf } from '../exportar'
+
+const normalizar = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+const TAMANHOS = [10, 25, 50, 100]
+
+/*
+  Tabela de todas as listas: pesquisa em todas as colunas, ordenação ao clicar no título, paginação,
+  exportação para Excel e PDF (do que está filtrado, todas as páginas) e linhas clicáveis.
+  colunas: [{ chave, titulo, valor?(linha) (texto/número para ordenar, pesquisar e exportar), mostrar?(linha) (o que se vê),
+  ordenarPor?(linha) (outra chave para ordenar, ex.: o grau do posto), alinhar?: 'end' | 'center', exportar?: false }]
+*/
+export default function Tabela({ titulo, subtitulo, colunas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial }) {
+  const [pesquisa, setPesquisa] = useState('')
+  const [ordem, setOrdem] = useState(ordemInicial ?? null) // { chave, dir: 1 | -1 }
+  const [pagina, setPagina] = useState(1)
+  const [tamanho, setTamanho] = useState(porPagina)
+  const [aExportar, setAExportar] = useState('')
+  const valor = (c, l) => (c.valor ? c.valor(l) : l[c.chave])
+
+  const filtradas = useMemo(() => {
+    const termos = normalizar(pesquisa).split(/\s+/).filter(Boolean)
+    let r = termos.length ? linhas.filter((l) => { const t = normalizar(colunas.map((c) => valor(c, l)).join(' ')); return termos.every((x) => t.includes(x)) }) : linhas
+    if (ordem) {
+      const c = colunas.find((x) => x.chave === ordem.chave)
+      if (c) {
+        r = [...r].sort((a, b) => {
+          const va = c.ordenarPor ? c.ordenarPor(a) : valor(c, a)
+          const vb = c.ordenarPor ? c.ordenarPor(b) : valor(c, b)
+          if (va === vb) return 0
+          if (va === null || va === undefined || va === '') return 1
+          if (vb === null || vb === undefined || vb === '') return -1
+          return (typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), 'pt', { numeric: true })) * ordem.dir
+        })
+      }
+    }
+    return r
+  }, [linhas, pesquisa, ordem, colunas])
+
+  const paginas = Math.max(1, Math.ceil(filtradas.length / tamanho))
+  const atual = Math.min(pagina, paginas)
+  const visiveis = filtradas.slice((atual - 1) * tamanho, atual * tamanho)
+  const exportaveis = colunas.filter((c) => c.exportar !== false).map((c) => ({ titulo: c.titulo, valor: (l) => valor(c, l) }))
+
+  async function exportar(formato) {
+    setAExportar(formato)
+    try {
+      if (formato === 'excel') await exportarExcel(titulo, exportaveis, filtradas)
+      else await exportarPdf(titulo, exportaveis, filtradas, { subtitulo: [subtitulo, pesquisa && `pesquisa: «${pesquisa}»`].filter(Boolean).join(' · ') })
+    } finally {
+      setAExportar('')
+    }
+  }
+
+  const ordenar = (c) => setOrdem((o) => (o?.chave === c.chave ? (o.dir === 1 ? { chave: c.chave, dir: -1 } : null) : { chave: c.chave, dir: 1 }))
+  const numeros = Array.from({ length: paginas }, (_, i) => i + 1).filter((n) => n === 1 || n === paginas || Math.abs(n - atual) <= 2)
+
+  return (
+    <div className="pes-tabela">
+      <div className="pes-tabela-barra">
+        <div className="pes-pesquisa">
+          <i className="fa fa-search" />
+          <input type="search" className="form-control form-control-sm" placeholder="Pesquisar…" value={pesquisa} onChange={(e) => { setPesquisa(e.target.value); setPagina(1) }} aria-label={`Pesquisar em ${titulo}`} />
+        </div>
+        <span className="pes-tabela-conta">{filtradas.length === linhas.length ? `${linhas.length} registo(s)` : `${filtradas.length} de ${linhas.length}`}</span>
+        <div className="ms-auto d-flex gap-1 flex-wrap">
+          {acoes}
+          {!semExportar && (
+            <>
+              <button type="button" className="btn btn-sm btn-success" disabled={!filtradas.length || aExportar} onClick={() => exportar('excel')} title="Exportar para Excel">
+                <i className={`fa ${aExportar === 'excel' ? 'fa-spinner fa-spin' : 'fa-file-excel'} me-1`} />Excel
+              </button>
+              <button type="button" className="btn btn-sm btn-danger" disabled={!filtradas.length || aExportar} onClick={() => exportar('pdf')} title="Exportar para PDF">
+                <i className={`fa ${aExportar === 'pdf' ? 'fa-spinner fa-spin' : 'fa-file-pdf'} me-1`} />PDF
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="table-responsive">
+        <table className={`table table-hover table-striped align-middle mb-0 ${aoClicar ? 'pes-clicavel' : ''}`}>
+          <thead>
+            <tr>
+              {colunas.map((c) => (
+                <th key={c.chave} className={c.alinhar ? `text-${c.alinhar}` : ''} aria-sort={ordem?.chave === c.chave ? (ordem.dir === 1 ? 'ascending' : 'descending') : 'none'}>
+                  <button type="button" className="pes-ordenar" onClick={() => ordenar(c)}>
+                    {c.titulo}
+                    <i className={`fa ms-1 ${ordem?.chave === c.chave ? (ordem.dir === 1 ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-muted opacity-50'}`} />
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {visiveis.map((l) => (
+              <tr key={chave(l)} onClick={aoClicar ? () => aoClicar(l) : undefined} tabIndex={aoClicar ? 0 : undefined} onKeyDown={aoClicar ? (e) => { if (e.key === 'Enter') aoClicar(l) } : undefined}>
+                {colunas.map((c) => <td key={c.chave} className={c.alinhar ? `text-${c.alinhar}` : ''}>{c.mostrar ? c.mostrar(l) : valor(c, l) ?? '—'}</td>)}
+              </tr>
+            ))}
+            {!visiveis.length && <tr><td colSpan={colunas.length} className="text-center text-muted py-4">{pesquisa ? 'Nada corresponde à pesquisa.' : vazio}</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {filtradas.length > TAMANHOS[0] && (
+        <div className="pes-tabela-rodape">
+          <label className="d-flex align-items-center gap-2 small">
+            Mostrar
+            <select className="form-select form-select-sm w-auto" value={tamanho} onChange={(e) => { setTamanho(Number(e.target.value)); setPagina(1) }}>
+              {TAMANHOS.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            por página
+          </label>
+          <nav aria-label="Páginas" className="ms-auto">
+            <ul className="pagination pagination-sm mb-0">
+              <li className={`page-item ${atual === 1 ? 'disabled' : ''}`}><button type="button" className="page-link" onClick={() => setPagina(atual - 1)} aria-label="Anterior">‹</button></li>
+              {numeros.map((n, i) => (
+                <li key={n} className={`page-item ${n === atual ? 'active' : ''}`}>
+                  {i > 0 && n - numeros[i - 1] > 1 && <span className="page-link border-0 bg-transparent">…</span>}
+                  <button type="button" className="page-link" onClick={() => setPagina(n)}>{n}</button>
+                </li>
+              ))}
+              <li className={`page-item ${atual === paginas ? 'disabled' : ''}`}><button type="button" className="page-link" onClick={() => setPagina(atual + 1)} aria-label="Seguinte">›</button></li>
+            </ul>
+          </nav>
+        </div>
+      )}
+    </div>
+  )
+}

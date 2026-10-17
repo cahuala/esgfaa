@@ -115,6 +115,37 @@ Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-port
 
 Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
 
+## Sistema de Gestão de Pessoal (rede interna)
+
+Sistema próprio da Repartição de Pessoal e Quadros, **separado do site e do portal**: tem API própria (`api-pessoal/`, porta 3002), base de dados própria (`esgfaa_pessoal`) e aplicação própria (`pessoal/`). **Não vai para a internet**: a API recusa qualquer pedido que não venha das redes internas da Escola, e a publicação no GitHub Pages retira a aplicação.
+
+- **Militares dos três ramos** (Exército, Força Aérea e Marinha — com os nomes de posto de cada ramo e a equivalência entre eles) e **pessoal civil**. Daqui saem os docentes, os estudantes e os restantes funcionários.
+- **Carreiras segundo a Lei n.º 13/18** (Lei das Carreiras dos Militares das FAA). O sistema verifica cada **promoção** (tempo mínimo no posto do art. 97.º, modalidade do art. 98.º, cursos do art. 52.º, posto limite do quadro especial dos arts. 84.º–95.º, exclusões dos arts. 50.º, 63.º, 99.º e 103.º; distinção e título excepcional dos arts. 57.º e 58.º), cada **graduação** (arts. 64.º–67.º), cada **nomeação** (arts. 18.º–20.º), as **licenças** (arts. 31.º–41.º), a **reserva e a reforma** (arts. 110.º, 111.º e 114.º) e as **listas de antiguidade** (arts. 26.º e 29.º). Cada condição aparece com o artigo.
+- **Propostas** de promoção, graduação, nomeação, exoneração e progressão (civis): preparação → submissão → despacho. Quem não cumpre a lei não segue para despacho. Com a aprovação, as fichas e o histórico atualizam-se com o n.º do despacho.
+- **Painel** com mais de 20 gráficos (ramo, categoria, posto, escalões por ramo, forma de serviço, situação, faixa etária, habilitações, quadros especiais, unidades, províncias, reserva por ano, ocupação do quadro orgânico, licenças, propostas, movimentos dos últimos 12 meses…). **Tudo é clicável** e abre a lista já filtrada.
+- **Todas as tabelas** com pesquisa, ordenação, paginação, linhas clicáveis e exportação para **Excel e PDF**. Cada exportação fica registada na auditoria.
+- **Perfil do militar**: dados pessoais e militares, fotografia, carreira (o que falta para a promoção), histórico, cursos, graduações, licenças e propostas. Imprime-se em PDF (ficha individual).
+- **Quadro orgânico**: unidades, cargos, posto de cada cargo, lugares e quem os ocupa.
+- **Ligação ao portal (num só sentido)**: quando se regista ou altera um docente ou estudante com e-mail, a API interna envia à API do portal **só** o nome, o e-mail, o posto, o ramo, o NIP, o telefone e a unidade, num pedido assinado (HMAC-SHA256 com data, recusado se tiver mais de 5 minutos). O portal cria ou atualiza a conta; quem sai da Escola fica com a conta desativada. O portal nunca pede nada ao sistema de pessoal.
+- **Utilizadores e papéis próprios**: administrador, chefe (decide as propostas), operador (edita e prepara propostas) e consulta. Bloqueio da conta após 5 tentativas falhadas; auditoria de entradas, consultas de fichas, alterações, decisões e exportações.
+
+Pôr a correr (no servidor interno da Escola):
+
+```bash
+cd api-pessoal
+npm install
+# .env: DATABASE_URL, JWT_SECRET (32+ caracteres), ADMIN_EMAIL, ADMIN_PASSWORD,
+#       HOST (IP da rede interna), REDES_INTERNAS (ex.: 10.10.0.0/16), APP_DIR=../dist/pessoal
+npm start                   # aplica as migrações e arranca na porta 3002
+npm run semear              # (opcional) dados de demonstração
+```
+
+A aplicação constrói-se com `npm run build` na raiz (fica em `dist/pessoal`) e é servida pela própria API interna (`APP_DIR`). Em desenvolvimento: `npm run dev` em `api-pessoal/` e abrir `http://localhost:5173/pessoal/`.
+
+Para ligar ao portal, defina a mesma chave nos dois lados: `INTEGRACAO_CHAVE` (32+ caracteres) na API do portal e, na API interna, `INTEGRACAO_CHAVE` e `PORTAL_API_URL` (endereço da API do portal). Sem chave, a entrada no portal não existe.
+
+> As carreiras e categorias do **pessoal civil** seguem o regime geral da função pública e estão marcadas «a confirmar» até a Escola indicar a legislação que aplica.
+
 ## Segurança e acessos simultâneos
 
 **Testes de intrusão** (`api/tests/integracao/ataques.test.js`, `seguranca.test.js`, `sessao.test.js`, `rbac.test.js`, `ficheiros.test.js`), que correm em cada publicação. Cada ataque tem de ser recusado:

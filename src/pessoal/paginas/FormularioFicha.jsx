@@ -1,0 +1,148 @@
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { api } from '../api'
+import { useSessao } from '../sessao'
+import { Cabecalho, Campo, Carregando, Escolha, Painel } from '../componentes/Ui'
+
+const VAZIA = {
+  tipo: 'militar', vinculo: 'funcionario', nome: '', nomeGuerra: '', nip: '', numeroAgente: '', bi: '', dataNascimento: '', genero: '', estadoCivil: '', naturalidade: '', provincia: '', nacionalidade: 'Angolana', pai: '', mae: '',
+  email: '', telefone: '', morada: '', habilitacao: '', areaFormacao: '', unidadeId: '', cargoId: '', dataCargo: '',
+  ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
+  avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
+  carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '',
+}
+const CAMPOS = Object.keys(VAZIA)
+
+export default function FormularioFicha() {
+  const { id } = useParams()
+  const { ref, avisar } = useSessao()
+  const navegar = useNavigate()
+  const [d, setD] = useState(id ? null : VAZIA)
+  const [unidades, setUnidades] = useState([])
+  const [cargos, setCargos] = useState([])
+  const [erro, setErro] = useState(null)
+  const [aGuardar, setAGuardar] = useState(false)
+
+  useEffect(() => {
+    api('/unidades').then(setUnidades).catch(() => {})
+    api('/cargos').then(setCargos).catch(() => {})
+    if (id) api(`/pessoas/${id}`).then((p) => setD(Object.fromEntries(CAMPOS.map((k) => [k, p[k] ?? (typeof VAZIA[k] === 'boolean' ? VAZIA[k] : '')])))).catch((e) => setErro({ texto: e.message }))
+  }, [id])
+  if (!d) return erro ? <div className="alert alert-danger">{erro.texto}</div> : <Carregando />
+
+  const militar = d.tipo === 'militar'
+  const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? (v.target.type === 'checkbox' ? v.target.checked : v.target.value) : v }))
+  const txt = (k, extra = {}) => <input className={`form-control form-control-sm ${erro?.campo === k ? 'is-invalid' : ''}`} value={d[k] ?? ''} onChange={set(k)} {...extra} />
+  const data = (k) => txt(k, { type: 'date' })
+  const postos = ref.postos[d.ramo] ?? []
+  const quadros = ref.quadros[d.ramo] ?? []
+  const categoriasCivis = ref.carreirasCivis[d.carreiraCivil]?.categorias ?? []
+
+  async function guardar(e) {
+    e.preventDefault()
+    setErro(null)
+    setAGuardar(true)
+    const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId ? Number(d.cargoId) : null }
+    for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto']) if (corpo[k] === '') corpo[k] = null
+    if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
+    if (id) delete corpo.cargoId // o cargo muda por nomeação/exoneração
+    try {
+      const r = await api(id ? `/pessoas/${id}` : '/pessoas', { metodo: id ? 'PUT' : 'POST', corpo })
+      avisar(id ? 'Ficha guardada.' : 'Ficha criada.')
+      navegar(`/pessoas/${r.id}`)
+    } catch (x) {
+      setErro({ texto: x.message, campo: x.campo })
+      setAGuardar(false)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  return (
+    <form onSubmit={guardar}>
+      <Cabecalho titulo={id ? 'Editar ficha' : 'Nova ficha'} migalhas={[['Pessoal', '/pessoas'], [id ? d.nome : 'Nova ficha']]}>
+        <button type="button" className="btn btn-light" onClick={() => navegar(-1)}>Cancelar</button>
+        <button type="submit" className="btn btn-theme" disabled={aGuardar}><i className="fa fa-save me-1" />Guardar</button>
+      </Cabecalho>
+      {erro && <div className="alert alert-danger"><i className="fa fa-exclamation-circle me-2" />{erro.texto}</div>}
+
+      <Painel titulo="Identificação" icone="fa-id-card">
+        <div className="row">
+          <Campo rotulo="Tipo" obrigatorio col="col-md-3">
+            <div className="btn-group w-100" role="group">
+              {Object.entries(ref.tipos).map(([k, v]) => <button key={k} type="button" className={`btn btn-sm ${d.tipo === k ? 'btn-theme' : 'btn-outline-secondary'}`} onClick={() => set('tipo')(k)} disabled={Boolean(id)}>{v}</button>)}
+            </div>
+          </Campo>
+          <Campo rotulo="Vínculo à Escola" obrigatorio col="col-md-3" ajuda="Docentes e estudantes com e-mail recebem conta no Portal Académico."><Escolha valor={d.vinculo} aoMudar={set('vinculo')} opcoes={ref.vinculos} vazio={null} /></Campo>
+          <Campo rotulo="Nome completo" obrigatorio col="col-md-6">{txt('nome', { required: true, minLength: 5 })}</Campo>
+          {militar && <Campo rotulo="NIP" obrigatorio col="col-md-3">{txt('nip', { required: true })}</Campo>}
+          {!militar && <Campo rotulo="N.º de agente" col="col-md-3">{txt('numeroAgente')}</Campo>}
+          <Campo rotulo="Bilhete de identidade" col="col-md-3">{txt('bi')}</Campo>
+          {militar && <Campo rotulo="Nome de guerra" col="col-md-3">{txt('nomeGuerra')}</Campo>}
+          <Campo rotulo="E-mail institucional" col="col-md-3">{txt('email', { type: 'email', placeholder: 'nome@esgfaa.gov.ao' })}</Campo>
+        </div>
+      </Painel>
+
+      {militar && (
+        <Painel titulo="Situação militar (Lei n.º 13/18)" icone="fa-shield-alt">
+          <div className="row">
+            <Campo rotulo="Ramo" obrigatorio col="col-md-3"><Escolha valor={d.ramo} aoMudar={(v) => setD({ ...d, ramo: v, quadroEspecial: '' })} opcoes={Object.fromEntries(Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]))} vazio={null} /></Campo>
+            <Campo rotulo="Posto" obrigatorio col="col-md-3" ajuda="Nomes do ramo; os postos equivalem-se entre ramos."><Escolha valor={d.posto} aoMudar={set('posto')} opcoes={postos.map((p) => [p.id, `${p.nome} — ${ref.categorias[p.categoria].nome}`])} required /></Campo>
+            <Campo rotulo="Forma de prestação de serviço" obrigatorio col="col-md-3"><Escolha valor={d.fps} aoMudar={set('fps')} opcoes={ref.formasServico} vazio={null} /></Campo>
+            <Campo rotulo="Quadro especial" col="col-md-3" ajuda="Arma, serviço ou classe (arts. 84.º–95.º)."><Escolha valor={d.quadroEspecial} aoMudar={set('quadroEspecial')} opcoes={quadros.map((q) => [q.sigla, `${q.sigla} — ${q.nome}${q.comum ? ' (comum)' : ''}`])} /></Campo>
+            <Campo rotulo="Especialidade" col="col-md-3">{txt('especialidade')}</Campo>
+            <Campo rotulo="Situação" col="col-md-3"><Escolha valor={d.situacao} aoMudar={set('situacao')} opcoes={ref.situacoes} vazio={null} /></Campo>
+            <Campo rotulo="Efectividade de serviço" col="col-md-3"><Escolha valor={d.efectividade} aoMudar={set('efectividade')} opcoes={ref.efectividades} vazio={null} /></Campo>
+            <Campo rotulo="Na situação desde" col="col-md-3">{data('dataSituacao')}</Campo>
+            <Campo rotulo="Ingresso nas FAA" col="col-md-3">{data('dataIngresso')}</Campo>
+            <Campo rotulo="Ingresso no Quadro Permanente" col="col-md-3">{data('dataIngressoQP')}</Campo>
+            <Campo rotulo="Antiguidade no posto" col="col-md-3" ajuda="Data no documento de promoção (art. 29.º).">{data('dataAntiguidadePosto')}</Campo>
+          </div>
+        </Painel>
+      )}
+
+      {!militar && (
+        <Painel titulo="Situação profissional" icone="fa-briefcase">
+          <div className="row">
+            <Campo rotulo="Carreira" col="col-md-3"><Escolha valor={d.carreiraCivil} aoMudar={(v) => setD({ ...d, carreiraCivil: v, categoriaCivil: '' })} opcoes={Object.fromEntries(Object.entries(ref.carreirasCivis).map(([k, v]) => [k, v.nome]))} /></Campo>
+            <Campo rotulo="Categoria" col="col-md-3"><Escolha valor={d.categoriaCivil} aoMudar={set('categoriaCivil')} opcoes={categoriasCivis} /></Campo>
+            <Campo rotulo="Vínculo" col="col-md-3"><Escolha valor={d.vinculoCivil} aoMudar={set('vinculoCivil')} opcoes={ref.vinculosCivis} /></Campo>
+            <Campo rotulo="Admissão" col="col-md-3">{data('dataAdmissao')}</Campo>
+            <Campo rotulo="Na categoria desde" col="col-md-3">{data('dataCategoria')}</Campo>
+          </div>
+        </Painel>
+      )}
+
+      <Painel titulo="Dados pessoais" icone="fa-user">
+        <div className="row">
+          <Campo rotulo="Data de nascimento" col="col-md-3">{data('dataNascimento')}</Campo>
+          <Campo rotulo="Género" col="col-md-3"><Escolha valor={d.genero} aoMudar={set('genero')} opcoes={ref.generos} /></Campo>
+          <Campo rotulo="Estado civil" col="col-md-3"><Escolha valor={d.estadoCivil} aoMudar={set('estadoCivil')} opcoes={ref.estadosCivis} /></Campo>
+          <Campo rotulo="Nacionalidade" col="col-md-3">{txt('nacionalidade')}</Campo>
+          <Campo rotulo="Naturalidade (município)" col="col-md-3">{txt('naturalidade')}</Campo>
+          <Campo rotulo="Província" col="col-md-3"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
+          <Campo rotulo="Nome do pai" col="col-md-3">{txt('pai')}</Campo>
+          <Campo rotulo="Nome da mãe" col="col-md-3">{txt('mae')}</Campo>
+          <Campo rotulo="Telefone" col="col-md-3">{txt('telefone')}</Campo>
+          <Campo rotulo="Morada" col="col-md-9">{txt('morada')}</Campo>
+          <Campo rotulo="Habilitações literárias" col="col-md-3"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
+          <Campo rotulo="Área de formação" col="col-md-9">{txt('areaFormacao')}</Campo>
+        </div>
+      </Painel>
+
+      <Painel titulo="Na Escola" icone="fa-building">
+        <div className="row">
+          <Campo rotulo="Unidade" col="col-md-4"><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={unidades.map((u) => [u.id, u.nome])} vazio="Sem unidade" /></Campo>
+          {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, o cargo muda por proposta de nomeação."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.map((c) => [c.id, `${c.nome}${c.unidadeNome ? ` — ${c.unidadeNome}` : ''}`])} vazio="Sem cargo" /></Campo>}
+          {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
+          <div className="col-12 d-flex flex-wrap gap-4 my-2">
+            <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.avaliacaoFavoravel} onChange={set('avaliacaoFavoravel')} /> <span className="form-check-label">Avaliação favorável</span></label>
+            {militar && <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.aptidaoFisica} onChange={set('aptidaoFisica')} /> <span className="form-check-label">Apto física e psiquicamente</span></label>}
+            <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.processoPendente} onChange={set('processoPendente')} /> <span className="form-check-label">Processo disciplinar ou criminal pendente</span></label>
+            {id && <label className="form-check"><input type="checkbox" className="form-check-input" checked={!d.ativo} onChange={(e) => set('ativo')(!e.target.checked)} /> <span className="form-check-label text-danger">Já não serve na Escola</span></label>}
+          </div>
+          <Campo rotulo="Observações" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={d.observacoes} onChange={set('observacoes')} /></Campo>
+        </div>
+      </Painel>
+    </form>
+  )
+}

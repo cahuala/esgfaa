@@ -28,13 +28,17 @@
     "@tiptap/pm": "^3.31.4",
     "@tiptap/react": "^3.31.4",
     "@tiptap/starter-kit": "^3.31.4",
+    "chart.js": "4.5.1",
     "dompurify": "^3.4.16",
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.8",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.3.289",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
-    "react-router-dom": "^7.18.4"
+    "react-router-dom": "^7.18.4",
+    "write-excel-file": "4.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

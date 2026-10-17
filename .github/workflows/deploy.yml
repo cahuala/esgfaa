@@ -36,6 +36,8 @@ jobs:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}/
           # endereço da API (Settings → Secrets and variables → Actions → Variables → API_URL)
           VITE_API_URL: ${{ vars.API_URL }}
+      # o Sistema de Gestão de Pessoal é só da rede interna da Escola: nunca vai para a internet
+      - run: rm -rf dist/pessoal
       # o GitHub Pages serve 404.html em rotas desconhecidas; assim o React Router trata delas
       - run: cp dist/index.html dist/404.html
       # O painel só é publicado num endereço secreto (secret ADMIN_PATH, ex.: gestao-x7k4q9).

@@ -7,12 +7,14 @@ export default defineConfig({
   plugins: [react()],
   base: process.env.BASE_PATH || '/',
   build: {
-    // três aplicações: o site público, o painel de administração e o portal académico
+    // quatro aplicações: o site público, o painel de administração, o portal académico e o sistema de
+    // gestão de pessoal (este só para o servidor interno: o deploy do GitHub Pages retira-o)
     rollupOptions: {
       input: {
         site: resolve(import.meta.dirname, 'index.html'),
         p: resolve(import.meta.dirname, 'admin/index.html'),
         portal: resolve(import.meta.dirname, 'portal/index.html'),
+        pessoal: resolve(import.meta.dirname, 'pessoal/index.html'),
       },
     },
   },

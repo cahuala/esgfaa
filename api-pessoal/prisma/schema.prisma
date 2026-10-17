@@ -1,0 +1,266 @@
+// Sistema de Gestão de Pessoal da Escola Superior de Guerra — base de dados própria (rede interna).
+// Militares dos três ramos e pessoal civil; carreiras segundo a Lei n.º 13/18.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// quem usa o sistema (Repartição de Pessoal e Quadros, chefia, consulta)
+model Utilizador {
+  id           Int       @id @default(autoincrement())
+  nome         String
+  email        String    @unique
+  senha        String
+  papel        String // administrador | chefe | operador | consulta
+  ativo        Boolean   @default(true)
+  versaoToken  Int       @default(1) @map("versao_token")
+  falhas       Int       @default(0)
+  bloqueadoAte DateTime? @map("bloqueado_ate") @db.Timestamptz(3)
+  ultimoAcesso DateTime? @map("ultimo_acesso") @db.Timestamptz(3)
+  deveMudar    Boolean   @default(true) @map("deve_mudar")
+  criadoEm     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@map("utilizadores")
+}
+
+// órgãos e serviços da Escola (Direcção, departamentos, repartições…)
+model Unidade {
+  id      Int       @id @default(autoincrement())
+  nome    String
+  sigla   String    @default("")
+  paiId   Int?      @map("pai_id")
+  ordem   Int       @default(0)
+  pai     Unidade?  @relation("Arvore", fields: [paiId], references: [id], onDelete: SetNull)
+  filhos  Unidade[] @relation("Arvore")
+  cargos  Cargo[]
+  pessoas Pessoa[]
+
+  @@map("unidades")
+}
+
+// cargos do quadro orgânico (art. 18.º): o posto que lhes corresponde e quantos lugares têm
+model Cargo {
+  id             Int      @id @default(autoincrement())
+  nome           String
+  unidadeId      Int?     @map("unidade_id")
+  funcao         String   @default("execucao") // comando | direccao_chefia | estado_maior | execucao (art. 21.º)
+  tipo           String   @default("militar") // militar | civil | ambos
+  postoRequerido String?  @map("posto_requerido")
+  categoriaCivil String?  @map("categoria_civil")
+  vagas          Int      @default(1)
+  unidade        Unidade? @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  pessoas        Pessoa[]
+
+  @@map("cargos")
+}
+
+// a ficha de cada militar ou civil que serve na Escola (e dos estudantes dos cursos)
+model Pessoa {
+  id                   Int       @id @default(autoincrement())
+  tipo                 String // militar | civil
+  vinculo              String    @default("funcionario") // docente | estudante | funcionario
+  nome                 String
+  nomeGuerra           String    @default("") @map("nome_guerra")
+  nip                  String?   @unique
+  numeroAgente         String?   @unique @map("numero_agente")
+  bi                   String?   @unique
+  dataNascimento       DateTime? @map("data_nascimento") @db.Date
+  genero               String? // M | F
+  estadoCivil          String?   @map("estado_civil")
+  naturalidade         String    @default("")
+  provincia            String    @default("")
+  nacionalidade        String    @default("Angolana")
+  pai                  String    @default("")
+  mae                  String    @default("")
+  email                String?   @unique
+  telefone             String    @default("")
+  morada               String    @default("")
+  habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
+  areaFormacao         String    @default("") @map("area_formacao")
+  fotoId               String?   @map("foto_id")
+  unidadeId            Int?      @map("unidade_id")
+  cargoId              Int?      @map("cargo_id")
+  dataCargo            DateTime? @map("data_cargo") @db.Date
+  // militar (Lei n.º 13/18)
+  ramo                 String? // EXE | FAN | MGA
+  posto                String?
+  fps                  String? // QP | SMC | SMO | SMR
+  quadroEspecial       String?   @map("quadro_especial")
+  especialidade        String    @default("")
+  situacao             String?   @default("activo") // activo | reserva | reforma
+  efectividade         String?   @default("comissao_normal")
+  dataIngresso         DateTime? @map("data_ingresso") @db.Date
+  dataIngressoQP       DateTime? @map("data_ingresso_qp") @db.Date
+  dataAntiguidadePosto DateTime? @map("data_antiguidade_posto") @db.Date
+  dataSituacao         DateTime? @map("data_situacao") @db.Date
+  avaliacaoFavoravel   Boolean   @default(true) @map("avaliacao_favoravel")
+  aptidaoFisica        Boolean   @default(true) @map("aptidao_fisica")
+  processoPendente     Boolean   @default(false) @map("processo_pendente")
+  // civil
+  carreiraCivil        String?   @map("carreira_civil")
+  categoriaCivil       String?   @map("categoria_civil")
+  vinculoCivil         String?   @map("vinculo_civil") // nomeacao_definitiva | nomeacao_provisoria | contrato
+  dataAdmissao         DateTime? @map("data_admissao") @db.Date
+  dataCategoria        DateTime? @map("data_categoria") @db.Date
+  ativo                Boolean   @default(true) // continua na Escola
+  observacoes          String    @default("")
+  criadoEm             DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm         DateTime  @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  cargo         Cargo?         @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  cursos        Curso[]
+  eventos       Evento[]
+  graduacoes    Graduacao[]
+  licencas      Licenca[]
+  itens         ItemProposta[]
+  sincronizacao Sincronizacao?
+
+  @@index([tipo, ativo])
+  @@map("pessoas")
+}
+
+// cursos do militar (art. 48.º), incluindo os que são condição de promoção (art. 52.º)
+model Curso {
+  id             Int       @id @default(autoincrement())
+  pessoaId       Int       @map("pessoa_id")
+  chave          String? // curso de promoção previsto na lei (ex.: promocao_capitao)
+  nome           String
+  tipo           String    @default("formacao") // formacao | promocao | qualificacao | actualizacao | academico
+  local          String    @default("")
+  inicio         DateTime? @db.Date
+  fim            DateTime? @db.Date
+  aproveitamento Boolean?
+  classificacao  Decimal?  @db.Decimal(5, 2)
+  pessoa         Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@map("cursos")
+}
+
+// histórico da carreira: promoções, graduações, nomeações, exonerações, mudanças de situação…
+model Evento {
+  id            Int      @id @default(autoincrement())
+  pessoaId      Int      @map("pessoa_id")
+  tipo          String
+  data          DateTime @db.Date
+  postoAnterior String?  @map("posto_anterior")
+  postoNovo     String?  @map("posto_novo")
+  cargoNome     String   @default("") @map("cargo_nome")
+  descricao     String   @default("")
+  documento     String   @default("") // n.º da ordem, despacho…
+  entidade      String   @default("")
+  propostaId    Int?     @map("proposta_id")
+  criadoPor     String   @default("") @map("criado_por")
+  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa        Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, data])
+  @@map("eventos")
+}
+
+// graduações (arts. 64.º a 67.º)
+model Graduacao {
+  id         Int       @id @default(autoincrement())
+  pessoaId   Int       @map("pessoa_id")
+  posto      String
+  motivo     String    @default("")
+  inicio     DateTime  @db.Date
+  fim        DateTime? @db.Date
+  ativa      Boolean   @default(true)
+  propostaId Int?      @map("proposta_id")
+  pessoa     Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@map("graduacoes")
+}
+
+// licenças (arts. 31.º a 41.º)
+model Licenca {
+  id          Int      @id @default(autoincrement())
+  pessoaId    Int      @map("pessoa_id")
+  tipo        String
+  inicio      DateTime @db.Date
+  fim         DateTime @db.Date
+  dias        Int
+  despacho    String   @default("")
+  observacoes String   @default("")
+  criadoPor   String   @default("") @map("criado_por")
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa      Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, inicio])
+  @@map("licencas")
+}
+
+// propostas de promoção, nomeação, graduação e exoneração (militares) e de progressão e nomeação (civis)
+model Proposta {
+  id            Int            @id @default(autoincrement())
+  tipo          String
+  estado        String         @default("rascunho") // rascunho | submetida | aprovada | rejeitada | cancelada
+  titulo        String
+  fundamentacao String         @default("")
+  criadoPor     String         @map("criado_por")
+  submetidaEm   DateTime?      @map("submetida_em") @db.Timestamptz(3)
+  decididoPor   String         @default("") @map("decidido_por")
+  decididaEm    DateTime?      @map("decidida_em") @db.Timestamptz(3)
+  documento     String         @default("")
+  dataDocumento DateTime?      @map("data_documento") @db.Date
+  entidade      String         @default("")
+  motivo        String         @default("") // da rejeição ou do cancelamento
+  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  itens         ItemProposta[]
+
+  @@index([estado])
+  @@map("propostas")
+}
+
+model ItemProposta {
+  id                Int       @id @default(autoincrement())
+  propostaId        Int       @map("proposta_id")
+  pessoaId          Int       @map("pessoa_id")
+  postoAtual        String?   @map("posto_atual")
+  postoProposto     String?   @map("posto_proposto")
+  modalidade        String?
+  cargoId           Int?      @map("cargo_id")
+  categoriaAtual    String?   @map("categoria_atual")
+  categoriaProposta String?   @map("categoria_proposta")
+  inicio            DateTime? @db.Date
+  fim               DateTime? @db.Date
+  verificacao       Json      @default("{}") // resultado das regras da lei quando a proposta foi feita
+  justificacao      String    @default("")
+  proposta          Proposta  @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+  pessoa            Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@unique([propostaId, pessoaId])
+  @@map("itens_proposta")
+}
+
+// quem fez o quê (consultas e alterações)
+model Auditoria {
+  id         Int      @id @default(autoincrement())
+  quando     DateTime @default(now()) @db.Timestamptz(3)
+  utilizador String
+  acao       String
+  alvo       String   @default("")
+  detalhes   Json     @default("{}")
+  ip         String   @default("")
+
+  @@index([quando])
+  @@map("auditoria")
+}
+
+// envio dos docentes e estudantes para as contas do Portal Académico (num só sentido: daqui para lá)
+model Sincronizacao {
+  pessoaId        Int       @id @map("pessoa_id")
+  estado          String    @default("pendente") // pendente | enviado | erro
+  tentativas      Int       @default(0)
+  ultimaTentativa DateTime? @map("ultima_tentativa") @db.Timestamptz(3)
+  erro            String    @default("")
+  contaPortalId   Int?      @map("conta_portal_id")
+  pessoa          Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@map("sincronizacao")
+}
