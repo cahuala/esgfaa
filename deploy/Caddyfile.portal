@@ -1,0 +1,46 @@
+# Servidor público: páginas + API no mesmo domínio. O Caddy obtém e renova o certificado HTTPS sozinho
+# (o domínio tem de apontar para este servidor e as portas 80 e 443 têm de estar abertas).
+{$DOMINIO} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(self), microphone=(self), geolocation=()"
+		-Server
+	}
+
+	# a API e os ficheiros carregados (imagens das notícias, capas…)
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle /uploads/* {
+		reverse_proxy api:3001
+	}
+
+	# portal e painel: aplicações de uma página (as rotas do navegador caem no index.html de cada uma)
+	handle /portal/* {
+		root * /srv
+		try_files {path} /portal/index.html
+		file_server
+	}
+	handle /{$ADMIN_PATH}/* {
+		root * /srv
+		try_files {path} /{$ADMIN_PATH}/index.html
+		file_server
+	}
+
+	# o site
+	handle {
+		root * /srv
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

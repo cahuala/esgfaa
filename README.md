@@ -11,6 +11,9 @@ Três partes no mesmo repositório:
 
 O site funciona sem a API: usa os conteúdos de `src/data/`. Com a API ligada, passa a mostrar o que se edita no painel, e ativa gostos, comentários e contagem de visualizações.
 
+
+**Instalação em produção:** veja [docs/INSTALACAO.md](docs/INSTALACAO.md) (servidor público e servidor interno com Docker, HTTPS automático, chaves, cópias de segurança e lista de verificação). **Manual de utilização:** [docs/manual](docs/manual/index.html) (também em PDF).
+
 ## Correr no computador
 
 Precisa do Node.js 24 ou mais recente e do Docker (para o PostgreSQL).
@@ -142,12 +145,12 @@ Pôr a correr (no servidor interno da Escola):
 cd api-pessoal
 npm install
 # .env: DATABASE_URL, JWT_SECRET (32+ caracteres), ADMIN_EMAIL, ADMIN_PASSWORD,
-#       HOST (IP da rede interna), REDES_INTERNAS (ex.: 10.10.0.0/16), APP_DIR=../dist/pessoal
+#       HOST (IP da rede interna), REDES_INTERNAS (ex.: 10.10.0.0/16), APP_DIR=../dist-pessoal
 npm start                   # aplica as migrações e arranca na porta 3002
 npm run semear              # (opcional) dados de demonstração
 ```
 
-A aplicação constrói-se com `npm run build` na raiz (fica em `dist/pessoal`) e é servida pela própria API interna (`APP_DIR`). Em desenvolvimento: `npm run dev` em `api-pessoal/` e abrir `http://localhost:5173/pessoal/`.
+A aplicação constrói-se com `npm run build:pessoal` na raiz (fica em `dist-pessoal`, só com o que o sistema de pessoal precisa) e é servida pela própria API interna (`APP_DIR`). Em desenvolvimento: `npm run dev` em `api-pessoal/` e abrir `http://localhost:5173/pessoal/`.
 
 **Ligação ao portal em produção** (os docentes e estudantes registados no sistema interno passam a ter conta no portal):
 

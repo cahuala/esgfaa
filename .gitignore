@@ -39,3 +39,7 @@ CONTAS-DE-TESTE.md
 copias/
 *.esgc
 *.esgc.json
+
+# segredos da instalação em produção
+deploy/*.env
+dist-pessoal

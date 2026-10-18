@@ -7,7 +7,7 @@ import Escola2 from '../assets/Escola2.jpeg'
 import EscolaDeGuerra from '../assets/Escola De Guerra.png'
 import Foto2 from '../assets/Foto2.jpg'
 import Foto5 from '../assets/Foto5.jpg'
-import ZeGrande from '../assets/Zé Grande.jpg'
+import ZeGrande from '../assets/Ze-Grande.jpg'
 
 /*
   Cada notícia tem uma imagem de capa e um `conteudo` feito de blocos.

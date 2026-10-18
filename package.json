@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "traducoes:exportar": "node scripts/exportar-traducoes.mjs",
     "copias": "node scripts/copias.mjs",
+    "build:pessoal": "vite build && node scripts/preparar-pessoal.mjs",
     "test:tudo": "npm run lint && npm run test:api && npm test && npm run test:e2e"
   },
   "dependencies": {

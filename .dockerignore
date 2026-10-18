@@ -9,3 +9,13 @@ coverage
 test-results
 playwright-report
 .git
+api-pessoal/dados
+api-pessoal/tests
+**/.env
+deploy/*.env
+CONTAS-DE-TESTE.md
+copias
+*.esgc
+docs
+tests
+dist-pessoal

@@ -1,0 +1,15 @@
+# Servidor INTERNO do sistema de pessoal (só a rede da Escola). HTTPS com a autoridade interna do Caddy:
+# instale o certificado da raiz (docker compose ... cp web:/data/caddy/pki/authorities/local/root.crt .)
+# nos computadores da Repartição, ou troque «tls internal» pelo certificado da Escola.
+{$ENDERECO} {
+	tls internal
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+		-Server
+	}
+	reverse_proxy pessoal:3002
+}
