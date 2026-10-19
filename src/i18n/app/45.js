@@ -1,0 +1,16 @@
+// [português, inglês, francês, espanhol] — diplomas e certificados dos finalistas
+export default [
+  ["Documentos", "Documents", "Documents", "Documentos"],
+  ["Certificado (disciplinas e notas)", "Certificate (course units and grades)", "Certificat (unités et notes)", "Certificado (asignaturas y notas)"],
+  ["Diploma", "Diploma", "Diplôme", "Diploma"],
+  ["Curso desta turma", "This class's course", "Cours de cette classe", "Curso de esta clase"],
+  ["Edição (ex.: 17.º)", "Edition (e.g. 17th)", "Édition (ex. : 17e)", "Edición (ej.: 17.º)"],
+  ["Início do curso", "Course start", "Début du cours", "Inicio del curso"],
+  ["Fim do curso (data do documento)", "Course end (document date)", "Fin du cours (date du document)", "Fin del curso (fecha del documento)"],
+  ["Assina à esquerda", "Signs on the left", "Signe à gauche", "Firma a la izquierda"],
+  ["Assina à direita", "Signs on the right", "Signe à droite", "Firma a la derecha"],
+  ["Ao gerar, o certificado de conclusão fica registado (com código de verificação) e estes dados ficam guardados para os outros estudantes.", "On generating, the completion certificate is recorded (with a verification code) and these details are saved for the other students.", "À la génération, le certificat de fin d'études est enregistré (avec un code de vérification) et ces données sont gardées pour les autres étudiants.", "Al generar, el certificado de conclusión queda registrado (con código de verificación) y estos datos se guardan para los demás estudiantes."],
+  ["Gerar PDF", "Generate PDF", "Générer le PDF", "Generar PDF"],
+  ["Diploma e certificado", "Diploma and certificate", "Diplôme et certificat", "Diploma y certificado"],
+  ["Ainda não defendeu / não concluiu o curso", "Has not defended / completed the course yet", "N'a pas encore soutenu / terminé le cours", "Aún no ha defendido / concluido el curso"],
+]

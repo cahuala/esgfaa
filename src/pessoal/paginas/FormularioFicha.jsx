@@ -15,7 +15,7 @@ const VAZIA = {
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
   municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
-  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', localIncorporacao: '', voluntario: '',
+  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '',
 }
 const CAMPOS = Object.keys(VAZIA)
 
@@ -187,6 +187,9 @@ export default function FormularioFicha() {
           <Campo rotulo="Telefone alternativo" col="col-md-3">{txt('telefoneAlternativo')}</Campo>
           <Campo rotulo="Grupo sanguíneo" col="col-md-3"><Escolha valor={d.grupoSanguineo} aoMudar={set('grupoSanguineo')} opcoes={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} /></Campo>
           <Campo rotulo="Vencimento mensal (Kz)" col="col-md-3" ajuda="Para as declarações; fica cifrado.">{txt('vencimento', { type: 'number', step: '0.01', min: 0 })}</Campo>
+          <Campo rotulo="Banco" col="col-md-3">{txt('banco')}</Campo>
+          <Campo rotulo="IBAN" col="col-md-5" ajuda="Fica cifrado.">{txt('iban')}</Campo>
+          <Campo rotulo="Número de conta" col="col-md-4">{txt('numeroConta')}</Campo>
           <Campo rotulo="BI emitido em (local)" col="col-md-3">{txt('biLocalEmissao')}</Campo>
           <Campo rotulo="Data de emissão do BI" col="col-md-3">{data('biEmitidoEm')}</Campo>
           <Campo rotulo="Validade do BI" col="col-md-3">{data('biValidade')}</Campo>
@@ -200,6 +203,15 @@ export default function FormularioFicha() {
           <Campo rotulo="Área de formação" col="col-md-9">{txt('areaFormacao')}</Campo>
         </div>
       </Painel>
+
+      {d.vinculo === 'docente' && (
+        <Painel titulo="Docente" icone="fa-chalkboard-teacher">
+          <div className="row">
+            <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
+            <Campo rotulo="Categoria do docente" col="col-md-4"><input className="form-control form-control-sm" list="categorias-docente" value={d.categoriaDocente ?? ''} onChange={set('categoriaDocente')} /><datalist id="categorias-docente">{ref.categoriasDocente.map((c) => <option key={c} value={c} />)}</datalist></Campo>
+          </div>
+        </Painel>
+      )}
 
       <Painel titulo="Agregado familiar" icone="fa-users">
         <div className="row">

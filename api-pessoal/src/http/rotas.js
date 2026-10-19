@@ -218,6 +218,8 @@ export function rotas({ servicos: s, config }) {
   r.post('/utilizadores/contas-pessoas', validar({ body: E.contasPessoas }), async (req, res) => res.json(await s.sessao.criarContasPessoas(u(req), req.dados.body)))
   r.post('/utilizadores', validar({ body: E.utilizador }), async (req, res) => res.status(201).json(await s.sessao.criar(u(req), req.dados.body)))
   // documentos pessoais emitidos da ficha (declarações numeradas, guias, fichas) e quem os assina
+  r.get('/tabela-salarial', async (req, res) => res.json(await s.tabelaSalarial.ver(u(req))))
+  r.put('/tabela-salarial/:posto', validar({ params: z.object({ posto: z.string().max(40) }), body: z.object({ base: z.coerce.number().min(1).max(1e8) }) }), async (req, res) => res.json(await s.tabelaSalarial.alterarBase(u(req), req.dados.params.posto, req.dados.body.base)))
   r.get('/definicoes/assinaturas', async (req, res) => res.json(await s.documentosEmitidos.assinaturas(u(req))))
   r.put('/definicoes/assinaturas', validar({ body: E.assinaturas }), async (req, res) => res.json(await s.documentosEmitidos.guardarAssinaturas(u(req), req.dados.body)))
   r.get('/pessoas/:id/documentos-emitidos', validar({ params: E.pId }), async (req, res) => res.json(await s.documentosEmitidos.historico(u(req), req.dados.params.id)))

@@ -129,9 +129,16 @@ model Pessoa {
   // vencimento mensal em kwanzas (para as declarações) e n.º de segurança social
   vencimento           String    @default("") // cifrado
   inss                 String    @default("")
+  // dados bancários (para a folha de vencimentos): IBAN e conta cifrados
+  banco                String    @default("")
+  iban                 String    @default("") // cifrado
+  numeroConta          String    @default("") @map("numero_conta") // cifrado
   // incorporação (ficha individual do militar)
   localIncorporacao    String    @default("") @map("local_incorporacao")
   voluntario           Boolean?
+  // docentes (ficha de cadastramento dos docentes): efectivo ou colaborador e a categoria
+  tipoDocente          String?   @map("tipo_docente")
+  categoriaDocente     String    @default("") @map("categoria_docente")
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")

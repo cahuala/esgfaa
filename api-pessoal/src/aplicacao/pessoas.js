@@ -4,6 +4,7 @@ import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
@@ -43,8 +44,8 @@ const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilh
 const vaiParaPortal = (p) => p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
 
 export class ServicoPessoas {
-  constructor({ bd, auditoria, config, enviar = pedirJson, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, config, enviar, agora })
+  constructor({ bd, auditoria, config, tabelaSalarial, enviar = pedirJson, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, config, tabelaSalarial, enviar, agora })
   }
 
   async #todas(where) {
@@ -112,6 +113,7 @@ export class ServicoPessoas {
     f.cargo = p.cargo
     if (p.militarAlocado) f.militarAlocado = { ...p.militarAlocado, postoNome: nomeDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo) }
     f.limiteDomiciliares = p.tipo === 'militar' ? limiteDomiciliares(p.posto) : 0
+    if (p.tipo === 'militar' && this.tabelaSalarial) f.vencimentoTabela = vencimentoDoPosto(p.posto, p.fps, await this.tabelaSalarial.bases())
     f.eventos = p.eventos.map((e) => ({ ...e, tipoNome: TIPOS_EVENTO[e.tipo] ?? e.tipo, postoAnteriorNome: e.postoAnterior ? nomeDoPosto(e.postoAnterior, p.ramo) : '', postoNovoNome: e.postoNovo ? nomeDoPosto(e.postoNovo, p.ramo) : '' }))
     f.graduacoes = p.graduacoes.map((g) => ({ ...g, postoNome: nomeDoPosto(g.posto, p.ramo) }))
     f.cursos = p.cursos.map((c) => ({ ...c, chaveNome: CURSOS_PROMOCAO[c.chave] ?? '' }))
@@ -132,7 +134,8 @@ export class ServicoPessoas {
       x.efectividade ??= 'comissao_normal'
     }
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
-    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'localIncorporacao']) if (k in x) x[k] ??= ''
+    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente']) if (k in x) x[k] ??= ''
+    if (x.tipoDocente === '') x.tipoDocente = null
     // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
     if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''
     if ('vencimento' in d) x.vencimento = d.vencimento === '' || d.vencimento === null || d.vencimento === undefined ? '' : String(Number(d.vencimento))

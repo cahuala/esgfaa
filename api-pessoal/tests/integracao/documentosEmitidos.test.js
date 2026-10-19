@@ -43,4 +43,24 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const novo = { comandante: { cargo: 'O COMANDANTE DA ESG', nome: 'Nome Fictício do Comandante', posto: 'Tenente General' }, chefeRpq: { cargo: 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS', nome: 'Nome do Chefe', posto: 'Coronel' }, local: 'Luanda' }
     assert.deepEqual((await adm.put('/api/definicoes/assinaturas').send(novo).expect(200)).body.comandante, novo.comandante)
   })
+
+  it('tabela salarial como a do SIGP: componentes calculadas, só o vencimento base se altera', async () => {
+    const t = (await adm.get('/api/tabela-salarial').expect(200)).body
+    const qp = t.grupos.find((g) => g.fps === 'QP')
+    const cor = qp.linhas.find((l) => l.posto === 'coronel')
+    assert.deepEqual([cor.base, cor.condicaoMilitar, cor.representacao, cor.comandoChefia, cor.iliquido], [360000, 108000, 56008.72, 18000, 542008.72])
+    assert.equal(cor.caixaSS, 16260.26)
+    assert.equal(qp.linhas.find((l) => l.posto === 'brigadeiro').comandoChefia, 0)
+    const smo = t.grupos.find((g) => g.fps === 'SMO')
+    assert.deepEqual(smo.linhas.map((l) => l.posto), ['aspirante', 'subsargento', 'segundo_cabo', 'soldado'])
+    assert.equal(smo.linhas[0].comandoChefia, 0)
+    const novo = (await adm.put('/api/tabela-salarial/coronel').send({ base: 400000 }).expect(200)).body
+    assert.equal(novo.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'coronel').condicaoMilitar, 120000)
+    assert.equal((await adm.put('/api/tabela-salarial/inventado').send({ base: 1 })).status, 400)
+    const c = (await adm.post('/api/pessoas').send(militar({ nip: 'SAL001', posto: 'coronel', fps: 'QP', iban: 'AO06 0040 0000 1234', banco: 'BPC' })).expect(201)).body
+    const f = (await adm.get(`/api/pessoas/${c.id}`)).body
+    assert.equal(f.vencimentoTabela.base, 400000)
+    assert.equal(f.iban, 'AO06 0040 0000 1234')
+    assert.match((await amb.contentor.base.pessoa.findUnique({ where: { id: c.id }, select: { iban: true } })).iban, /^c1:/)
+  })
 })

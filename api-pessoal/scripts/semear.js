@@ -253,7 +253,7 @@ async function main() {
       biEmitidoEm: data(ano - entre(1, 5)), biLocalEmissao: 'Luanda',
       conjuge: p.estadoCivil === 'casado' ? `${p.genero === 'F' ? um(NOMES_M) : um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}` : '',
       agregado: p.vinculo === 'domiciliar' || !filhos.length ? '' : JSON.stringify(filhos),
-      vencimento: String(Math.round(salario * 100) / 100), inss: p.tipo === 'civil' ? String(entre(10000000, 99999999)) : '',
+      vencimento: String(Math.round(salario * 100) / 100), inss: p.tipo === 'civil' ? String(entre(10000000, 99999999)) : '', banco: ['BPC', 'BAI', 'BFA', 'BIC'][entre(0, 3)], iban: `AO06 0040 0000 ${String(entre(1000, 9999))} ${String(entre(1000, 9999))} 1012 ${entre(1, 9)}`, numeroConta: String(entre(100000000, 999999999)),
       ...(p.tipo === 'militar' ? { localIncorporacao: um(['Luanda', 'Huambo', 'Benguela', 'Lubango', 'Malanje']), voluntario: aleatorio() < 0.8 } : {}),
     } })
   }

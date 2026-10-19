@@ -1,6 +1,12 @@
 import { api } from './api'
 import { fotoBase64 } from './fotos'
-import Brasao from '../assets/Logo.png'
+// os documentos do sistema de pessoal levam o emblema das FAA (como no SIGP e nos modelos da Escola)
+import Brasao from '../assets/emblema-faa.png'
+
+// proporção do emblema (largura / altura), para o desenhar sem o deformar
+export const PROPORCAO_EMBLEMA = 368 / 520
+// desenha o emblema centrado em cx, com a altura h (mm)
+export const emblema = (doc, img, cx, y, h) => { if (img) doc.addImage(img, 'PNG', cx - (h * PROPORCAO_EMBLEMA) / 2, y, h * PROPORCAO_EMBLEMA, h) }
 
 const pt = (iso) => (iso ? new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toLocaleDateString('pt-PT') : '—')
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -13,7 +19,7 @@ async function imagem(url) {
     const img = new Image()
     img.onload = () => {
       // o brasão vai pequeno (o original é grande e repetia-se em cada página)
-      const k = Math.min(1, 240 / Math.max(img.width, img.height))
+      const k = Math.min(1, 360 / Math.max(img.width, img.height))
       const c = document.createElement('canvas')
       c.width = Math.round(img.width * k)
       c.height = Math.round(img.height * k)
@@ -40,7 +46,7 @@ async function novoDocumento() {
 // cabeçalho institucional: brasão ao centro e a cadeia hierárquica
 function cabecalho(doc, titulo) {
   const w = doc.internal.pageSize.getWidth()
-  if (brasao) doc.addImage(brasao, 'PNG', w / 2 - 9, 8, 18, 18)
+  emblema(doc, brasao, w / 2, 7, 20)
   doc.setFont('helvetica', 'bold').setFontSize(9.5)
   doc.text('REPÚBLICA DE ANGOLA', w / 2, 31, { align: 'center' })
   doc.text('FORÇAS ARMADAS ANGOLANAS', w / 2, 35.5, { align: 'center' })
@@ -205,7 +211,7 @@ export async function etiquetaProcesso(p) {
   const x = 20
   const y = 20
   doc.setLineWidth(0.6).rect(x, y, 60, 250)
-  if (brasao) doc.addImage(brasao, 'PNG', x + 20, y + 6, 20, 20)
+  emblema(doc, brasao, x + 30, y + 5, 22)
   doc.setFont('helvetica', 'bold').setFontSize(9).text(['FAA', 'ESCOLA SUPERIOR', 'DE GUERRA', 'R. PESSOAL E QUADROS'], x + 30, y + 34, { align: 'center' })
   doc.setFontSize(20).text(p.processo?.numero ?? 'PI-_____', x + 30, y + 64, { align: 'center' })
   doc.setFontSize(11).text(doc.splitTextToSize(p.nome.toUpperCase(), 54), x + 30, y + 84, { align: 'center' })

@@ -2,6 +2,7 @@ import { criarPrisma } from './infraestrutura/bd.js'
 import { CifraDados, comCifra } from './infraestrutura/cifraDados.js'
 import { ServicoDoisFatores } from './aplicacao/doisFatores.js'
 import { ServicoDocumentosEmitidos } from './aplicacao/documentosEmitidos.js'
+import { ServicoTabelaSalarial } from './aplicacao/tabelaSalarial.js'
 import { CifraSenhas } from './infraestrutura/cifra.js'
 import { Tokens } from './infraestrutura/tokens.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
@@ -29,7 +30,8 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const relogio = agora ? { agora } : {}
   const auditoria = new ServicoAuditoria({ bd })
   const doisFatores = new ServicoDoisFatores({ bd, auditoria, papeis: config.doisFatoresPapeis, ...relogio })
-  const pessoas = new ServicoPessoas({ bd, auditoria, config, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
+  const tabelaSalarial = new ServicoTabelaSalarial({ bd, auditoria })
+  const pessoas = new ServicoPessoas({ bd, auditoria, config, tabelaSalarial, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
   const ficheiros = new Ficheiros(config.pastaFicheiros)
   const servicos = {
     auditoria,
@@ -37,6 +39,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     doisFatores,
     documentosEmitidos: new ServicoDocumentosEmitidos({ bd, auditoria, ...relogio }),
     pessoas,
+    tabelaSalarial,
     propostas: new ServicoPropostas({ bd, auditoria, ...relogio }),
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),
     organica: new ServicoOrganica({ bd, auditoria }),

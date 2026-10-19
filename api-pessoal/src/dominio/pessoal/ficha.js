@@ -1,10 +1,13 @@
 import { CATEGORIAS, ESTADOS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, caminhoDaSituacao, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
 import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verificarPromocao } from './carreira.js'
 import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgressaoCivil } from './civis.js'
+import { vencimentoDoPosto } from './tabelaSalarial.js'
 
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
 export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário', domiciliar: 'Empregada(o) domiciliar' }
 export const HABILITACOES = { base: 'Ensino de base', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
+export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }
+export const CATEGORIAS_DOCENTE = ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático', 'Instrutor', 'Formador']
 export const GENEROS = { M: 'Masculino', F: 'Feminino' }
 export const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
 export const PROVINCIAS = ['Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando', 'Cubango', 'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire']
@@ -66,6 +69,7 @@ export function comDerivados(p, hoje = new Date()) {
     f.dataReserva = p.situacao === 'activo' ? rr?.reserva?.data ?? null : null
     f.dataReforma = p.situacao !== 'reforma' ? rr?.reforma?.data ?? null : null
     f.descricao = [f.postoAbreviatura, f.ramo].filter(Boolean).join(' · ')
+    f.vencimentoTabela = vencimentoDoPosto(p.posto, p.fps)
   } else {
     f.carreiraNome = CARREIRAS_CIVIS[p.carreiraCivil]?.nome ?? ''
     f.nivelCategoria = CARREIRAS_CIVIS[p.carreiraCivil]?.nivel ?? null
@@ -80,6 +84,7 @@ export function comDerivados(p, hoje = new Date()) {
     if (p.militarAlocado) f.militarAlocadoNome = `${abreviaturaDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo)} ${p.militarAlocado.nome}`
   }
   f.vinculoNome = VINCULOS[p.vinculo] ?? ''
+  f.tipoDocenteNome = TIPOS_DOCENTE[p.tipoDocente] ?? ''
   f.generoNome = GENEROS[p.genero] ?? ''
   f.habilitacaoNome = HABILITACOES[p.habilitacao] ?? ''
   delete f.biIndice // índice do BI (HMAC): fica no servidor

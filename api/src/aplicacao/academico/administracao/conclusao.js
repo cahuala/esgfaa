@@ -6,6 +6,13 @@ import { novoCodigo } from '../../../dominio/academico/conclusao/codigo.js'
   Conclusão do curso (Administração Escolar): trabalho de fim de curso dos finalistas,
   histórico académico de cada estudante e certificado de conclusão do curso.
 */
+const CHAVE_DOCUMENTOS = 'documentos-academicos'
+const PADRAO_DOCUMENTOS = {
+  directorEnsino: { cargo: 'O DIRECTOR DE ENSINO', nome: '', posto: '' },
+  comandante: { cargo: 'O COMANDANTE DA ESG', nome: '', posto: '' },
+  turmas: {}, // { [turmaId]: { edicao: '17.º', inicio: 'AAAA-MM-DD', fim: 'AAAA-MM-DD' } }
+}
+
 export class ServicoConclusaoCurso {
   constructor(dependencias) {
     Object.assign(this, dependencias)
@@ -63,6 +70,23 @@ export class ServicoConclusaoCurso {
   }
 
   // certificado de conclusão do curso: só com o curso concluído; emitir outra vez devolve o mesmo
+  /*
+    Diplomas e certificados: quem assina (Director de Ensino e Comandante) e, por turma, a edição do curso e
+    as datas em que decorreu. Só a Administração Escolar os define e imprime.
+  */
+  async documentosAcademicos(ctx) {
+    ctx.actor.exigir('academico.gerir')
+    return { ...PADRAO_DOCUMENTOS, ...((await this.paginas.ler(CHAVE_DOCUMENTOS)) ?? {}) }
+  }
+
+  async guardarDocumentosAcademicos(ctx, dados) {
+    ctx.actor.exigir('academico.gerir')
+    const atual = await this.documentosAcademicos(ctx)
+    const novo = { ...atual, ...dados, turmas: { ...atual.turmas, ...(dados.turmas ?? {}) } }
+    await this.paginas.guardar(CHAVE_DOCUMENTOS, novo, ctx.actor.id)
+    return novo
+  }
+
   async emitirCertificado(ctx, turmaId, estudanteId) {
     ctx.actor.exigir('academico.gerir')
     const turma = await this.#turma(turmaId)

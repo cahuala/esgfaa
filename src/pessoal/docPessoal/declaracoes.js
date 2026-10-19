@@ -1,3 +1,4 @@
+import { emblema } from '../documentos'
 import { LARGURA, M, MARGEM, TAM, assinatura, cabecalho, dataExtenso, kwanzas, kwanzasPorExtenso, novaPagina, paragrafo } from './base'
 
 /*
@@ -78,7 +79,7 @@ export function linhaPessoa(p) {
 export function guiaMarcha(d, p, o, quem) {
   const { doc } = d
   let y = novaPagina(d)
-  if (d.brasao) doc.addImage(d.brasao, 'PNG', 95, y - 4, 20, 20)
+  emblema(doc, d.brasao, 105, y - 6, 24)
   y += 20
   // cabeçalho em três colunas, dentro da moldura
   const x0 = MARGEM

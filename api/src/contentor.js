@@ -230,7 +230,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const administracaoEscolar = () => {
     const d = {
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias,
-      privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao,
+      privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
     }
     return {
       inscricoes: new ServicoInscricoes(d),

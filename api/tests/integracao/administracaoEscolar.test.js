@@ -99,6 +99,18 @@ describe('Administração Escolar: inscrições, TFC, conclusão do curso, hist�
     assert.equal(percurso.certificado.codigo, c.body.codigo)
   })
 
+  it('diplomas e certificados: quem assina e as datas do curso, só pela Administração Escolar', async () => {
+    const padrao = (await sec().get('/api/admin/academico/documentos-academicos').expect(200)).body
+    assert.equal(padrao.directorEnsino.cargo, 'O DIRECTOR DE ENSINO')
+    await sec().put('/api/admin/academico/documentos-academicos').send({ comandante: { cargo: 'O COMANDANTE DA ESG', nome: 'Nome Fictício', posto: 'Tenente-General' }, turmas: { [ano2.id]: { edicao: '31.º', inicio: '2026-10-21', fim: '2027-07-31' } } }).expect(200)
+    await sec().put('/api/admin/academico/documentos-academicos').send({ turmas: { [ano1.id]: { edicao: '30.º', inicio: '', fim: '' } } }).expect(200)
+    const d = (await sec().get('/api/admin/academico/documentos-academicos')).body
+    assert.deepEqual([d.comandante.nome, d.turmas[ano2.id].edicao, d.turmas[ano1.id].edicao], ['Nome Fictício', '31.º', '30.º'])
+    assert.equal((await sec().put('/api/admin/academico/documentos-academicos').send({ turmas: { [ano2.id]: { edicao: 'x', inicio: '21/10/2026', fim: '' } } })).status, 400)
+    const pq = await amb.criarUtilizador('pessoal_quadros')
+    assert.equal((await amb.com(pq.token).get('/api/admin/academico/documentos-academicos')).status, 403)
+  })
+
   it('documentos: pauta da turma, folha de presenças e lista para a prova', async () => {
     const g = (await sec().get(`/api/admin/academico/turmas/${ano2.id}/pauta-geral`)).body
     assert.deepEqual(g.cadeiras.map((c) => c.codigo), ['EST201', 'LOG202'])

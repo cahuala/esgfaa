@@ -53,6 +53,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   // conclusão do curso e documentos para imprimir
   r.get('/turmas/:id/finalistas', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.finalistas(ctx(req), req.dados.params.id)))
   r.put('/turmas/:id/tfc/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }), body: E.tfc }), async (req, res) => res.json(await a.conclusao.lancarTfc(ctx(req), req.dados.params.id, req.dados.params.estudanteId, req.dados.body)))
+  r.get('/documentos-academicos', async (req, res) => res.json(await a.conclusao.documentosAcademicos(ctx(req))))
+  r.put('/documentos-academicos', validar({ body: E.documentosAcademicos }), async (req, res) => res.json(await a.conclusao.guardarDocumentosAcademicos(ctx(req), req.dados.body)))
   r.post('/turmas/:id/certificados/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }) }), async (req, res) => res.status(201).json(await a.conclusao.emitirCertificado(ctx(req), req.dados.params.id, req.dados.params.estudanteId)))
   r.get('/estudantes/:id/historico', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.historico(ctx(req), req.dados.params.id)))
   r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))

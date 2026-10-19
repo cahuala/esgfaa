@@ -11,7 +11,10 @@ const civil = (p) => p.tipo === 'civil'
 const hoje = () => new Date().toISOString().slice(0, 10)
 
 const FINALIDADE = { campo: 'finalidade', rotulo: 'Finalidade (OBS)', tipo: 'texto', ajuda: 'Ex.: efeito de Actualização de Conta Bancária; obtenção de Visto para Portugal.' }
-const VALOR = (p, obrigatorio = false) => ({ campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? '', obrigatorio, ajuda: obrigatorio ? '' : 'Vazio = a declaração não fala do vencimento.' })
+const VALOR = (p, obrigatorio = false) => {
+  const tabela = p.vencimento ? null : p.vencimentoTabela?.iliquido
+  return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? tabela ?? '', obrigatorio, ajuda: tabela ? 'Proposto pela tabela salarial (ilíquido do posto): confirme com a folha de vencimentos.' : obrigatorio ? '' : 'Vazio = a declaração não fala do vencimento.' }
+}
 const DIAS = (n) => ({ campo: 'dias', rotulo: 'Dias', tipo: 'numero', inicial: n, obrigatorio: true })
 const INICIO = { campo: 'inicio', rotulo: 'A partir de', tipo: 'data', inicial: hoje(), obrigatorio: true }
 

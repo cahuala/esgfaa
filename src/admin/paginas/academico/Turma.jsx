@@ -9,6 +9,7 @@ import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
+import DocumentosEstudante from './DocumentosEstudante'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -26,9 +27,16 @@ function Turma() {
   const [copiar, setCopiar] = useState(false)
   const [importar, setImportar] = useState(false)
   const [passagem, setPassagem] = useState(false)
+  const [concluidos, setConcluidos] = useState(new Set())
+  const [documentos, setDocumentos] = useState(null)
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
+  // quem já concluiu o curso (defendeu o trabalho de fim de curso e tem as cadeiras feitas): só esses têm diploma e certificado
+  useEffect(() => {
+    if (!gerir || !t?.anoFinal) return
+    api(`/academico/turmas/${id}/finalistas`).then((r) => setConcluidos(new Set(r.linhas.filter((l) => l.conclusao.concluido).map((l) => l.estudante.id)))).catch(() => {})
+  }, [gerir, id, t?.anoFinal])
 
   const falhou = (e) => setAviso({ tipo: 'erro', texto: e.message })
 
@@ -58,6 +66,7 @@ function Turma() {
         </div>
       </div>
       {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} />}
+      {documentos && <DocumentosEstudante turma={t} estudante={documentos} fechar={() => setDocumentos(null)} />}
       {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
       <div className="row">
@@ -65,9 +74,9 @@ function Turma() {
           <Painel titulo={tx('Matrículas ({0})', { 0: t.matriculas.length })} corpo={false}>
             <div className="table-responsive">
               <table className="table table-striped align-middle mb-0">
-                <thead><tr><th>{tx('Estudante')}</th><th>{tx('N.º')}</th><th>{tx('Estado')}</th></tr></thead>
+                <thead><tr><th>{tx('Estudante')}</th><th>{tx('N.º')}</th><th>{tx('Estado')}</th>{gerir && <th className="text-end">{tx('Ações')}</th>}</tr></thead>
                 <tbody>
-                  {t.matriculas.length === 0 && <tr><td colSpan={3} className="text-center text-muted py-4">{tx('Sem estudantes matriculados.')}</td></tr>}
+                  {t.matriculas.length === 0 && <tr><td colSpan={gerir ? 4 : 3} className="text-center text-muted py-4">{tx('Sem estudantes matriculados.')}</td></tr>}
                   {t.matriculas.map((m) => (
                     <tr key={m.id}>
                       <td><Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="fw-bold" title={tx('Histórico académico')}>{m.estudante.nome}</Link><div className="small text-muted">{m.estudante.email}</div></td>
@@ -79,6 +88,11 @@ function Turma() {
                           </select>
                         ) : <span className={`badge ${ESTADOS[m.estado][0]}`}>{ESTADOS[m.estado][1]}</span>}
                       </td>
+                      {gerir && (
+                        <td className="text-end">
+                          <button type="button" className={`btn btn-xs ${concluidos.has(m.estudante.id) ? 'btn-success' : 'btn-white'}`} disabled={!concluidos.has(m.estudante.id)} onClick={() => setDocumentos(m.estudante)} title={concluidos.has(m.estudante.id) ? tx('Diploma e certificado') : tx('Ainda não defendeu / não concluiu o curso')}><i className="fa fa-award me-1" />{tx('Documentos')}</button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

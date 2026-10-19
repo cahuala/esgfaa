@@ -1,4 +1,5 @@
-import { brasaoPng } from '../documentos'
+import { brasaoPng, emblema } from '../documentos'
+import { paragrafo as paragrafoPdf } from '../../utils/pdfParagrafo'
 import { fotoBase64 } from '../fotos'
 
 /*
@@ -87,8 +88,8 @@ export function garantir(d, y, altura) {
 export function cabecalho(d, linhas = ['FORÇAS ARMADAS ANGOLANAS', 'ESTADO MAIOR GENERAL', 'ESCOLA SUPERIOR DE GUERRA'], y = 12) {
   const { doc } = d
   const w = 210
-  if (d.brasao) doc.addImage(d.brasao, 'PNG', w / 2 - 10, y, 20, 20)
-  let yy = y + 26
+  emblema(doc, d.brasao, w / 2, y - 2, 25)
+  let yy = y + 28
   linhas.forEach((l, i) => {
     const ultima = i === linhas.length - 1
     doc.setFont('times', ultima ? 'bold' : 'normal').setFontSize(TAM - 1)
@@ -108,64 +109,11 @@ export function titulo(d, texto, y, { sublinhado = true, tam = TAM + 1 } = {}) {
   return y + 10
 }
 
-/*
-  Parágrafo justificado com partes a negrito: partes = ['texto normal ', { b: 'TEXTO A NEGRITO' }, …].
-  Devolve o y depois do parágrafo.
-*/
+// parágrafo justificado com partes a negrito (o algoritmo está em utils/pdfParagrafo.js); muda de página se for preciso
 export function paragrafo(d, partes, y, { x = MARGEM, w = LARGURA, recuo = 12, entre = 6.6, justificar = true, tam = TAM } = {}) {
-  const { doc } = d
-  doc.setFontSize(tam)
-  const palavras = []
-  for (const p of partes) {
-    const b = typeof p === 'object'
-    const t = b ? p.b : p
-    const bocados = String(t).split(/(\s+)/)
-    for (const s of bocados) {
-      if (!s) continue
-      if (/^\s+$/.test(s)) palavras.push({ espaco: true })
-      else {
-        // juntar a pontuação colada à palavra anterior de outro estilo («NOME,»)
-        palavras.push({ t: s, b })
-      }
-    }
-  }
-  // agrupar em «tokens» separados por espaço (um token pode ter partes de estilos diferentes)
-  const tokens = []
-  let atual = []
-  for (const p of palavras) {
-    if (p.espaco) { if (atual.length) tokens.push(atual); atual = [] } else atual.push(p)
-  }
-  if (atual.length) tokens.push(atual)
-  const largura = (tok) => tok.reduce((s, p) => { doc.setFont('times', p.b ? 'bold' : 'normal'); return s + doc.getTextWidth(p.t) }, 0)
-  doc.setFont('times', 'normal')
-  const espaco = doc.getTextWidth(' ')
-  const linhas = []
-  let linha = []
-  let lw = 0
-  let primeira = true
-  for (const tok of tokens) {
-    const tw = largura(tok)
-    const disponivel = w - (primeira ? recuo : 0)
-    if (linha.length && lw + espaco + tw > disponivel) { linhas.push({ linha, lw, primeira }); linha = []; lw = 0; primeira = false }
-    lw += (linha.length ? espaco : 0) + tw
-    linha.push({ tok, tw })
-  }
-  if (linha.length) linhas.push({ linha, lw, primeira, ultima: true })
-  for (const l of linhas) {
-    y = garantir(d, y, entre)
-    const x0 = x + (l.primeira ? recuo : 0)
-    const disponivel = w - (l.primeira ? recuo : 0)
-    const extra = justificar && !l.ultima && l.linha.length > 1 ? (disponivel - l.lw) / (l.linha.length - 1) : 0
-    let xx = x0
-    for (const { tok, tw } of l.linha) {
-      let px = xx
-      for (const p of tok) { doc.setFont('times', p.b ? 'bold' : 'normal'); doc.text(p.t, px, y); px += doc.getTextWidth(p.t) }
-      xx += tw + espaco + extra
-    }
-    y += entre
-  }
-  doc.setFont('times', 'normal').setFontSize(TAM)
-  return y
+  const r = paragrafoPdf(d.doc, partes, y, { x, w, recuo, entre, justificar, tam, antesDaLinha: (yy) => garantir(d, yy, entre) })
+  d.doc.setFont('times', 'normal').setFontSize(TAM)
+  return r
 }
 
 /*

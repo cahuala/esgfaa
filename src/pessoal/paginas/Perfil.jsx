@@ -11,12 +11,26 @@ import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
 import Carregar from '../componentes/Carregar'
-import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
+import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
-const Dado = ({ r, v }) => <div className="col-sm-6 col-lg-4 mb-2"><div className="small text-muted">{r}</div><div className="fw-semibold">{v || v === 0 ? v : '—'}</div></div>
+// campo da ficha como no SIGP: rótulo pequeno em maiúsculas e o valor numa caixa
+const Dado = ({ r, v, cheio }) => (
+  <div className={`pes-campo ${cheio ? 'pes-campo-cheio' : ''}`}>
+    <div className="pes-campo-r">{r}</div>
+    <div className={`pes-campo-v ${v || v === 0 ? '' : 'pes-campo-vazio'}`}>{v || v === 0 ? v : '—'}</div>
+  </div>
+)
+const Grelha = ({ children }) => <div className="pes-grelha">{children}</div>
+const Bloco = ({ titulo, icone, acoes, children, corpo = true }) => (
+  <div className="pes-bloco">
+    <div className="pes-bloco-t"><span><i className={`fa ${icone} me-2`} />{titulo}</span>{acoes}</div>
+    {corpo ? <div className="pes-bloco-c">{children}</div> : children}
+  </div>
+)
 const KZ = (v) => (v || v === 0 ? `${Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz` : '—')
-const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['emitidos', 'Documentos emitidos', 'fa-file-alt'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['processo', 'Processo individual', 'fa-folder-open'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
+const iniciais = (n) => { const p = n.trim().split(/\s+/); return `${p[0]?.[0] ?? ''}${p.length > 1 ? p.at(-1)[0] : ''}`.toUpperCase() }
+const ABAS = [['identificacao', 'Identificação', 'fa-id-card'], ['militar', 'Militar', 'fa-shield-alt'], ['pessoal', 'Pessoal', 'fa-user'], ['bancario', 'Bancário', 'fa-university'], ['familiares', 'Familiares', 'fa-users'], ['formacao', 'Formação', 'fa-graduation-cap'], ['historico', 'Histórico', 'fa-history'], ['carreira', 'Carreira', 'fa-chevron-up'], ['licencas', 'Licenças', 'fa-plane-departure'], ['processo', 'Processo individual', 'fa-folder-open'], ['propostas', 'Propostas', 'fa-file-signature'], ['emitidos', 'Documentos emitidos', 'fa-file-alt']]
 
 export default function Perfil() {
   const { id } = useParams()
@@ -25,7 +39,7 @@ export default function Perfil() {
   const { dados: p, erro, recarregar: carregar } = useDados(`/pessoas/${id}`)
   const [foto, setFoto] = useState({ chave: null, url: null })
   const [params] = useSearchParams()
-  const [aba, setAba] = useState(params.get('aba') ?? 'resumo')
+  const [aba, setAba] = useState(params.get('aba') ?? 'identificacao')
   const [modal, setModal] = useState(null)
   const ficheiro = useRef(null)
   const chaveFoto = p?.fotoId ? `${p.id}/${p.fotoId}` : null
@@ -65,95 +79,124 @@ export default function Perfil() {
 
   return (
     <>
-      <Cabecalho titulo={militar ? 'Perfil do militar' : 'Perfil do funcionário civil'} migalhas={[['Pessoal', '/pessoas'], [p.nome]]}>
-        <button type="button" className="btn btn-white" onClick={() => navegar(-1)}><i className="fa fa-arrow-left me-1" />Voltar</button>
-        {editar && <button type="button" className="btn btn-danger" onClick={() => setModal({ documentos: true })}><i className="fa fa-file-pdf me-1" />Documentos</button>}
-        {editar && <Link to={`/pessoas/${p.id}/editar`} className="btn btn-theme"><i className="fa fa-pen me-1" />Editar ficha</Link>}
-      </Cabecalho>
-
-      <div className="profile pes-perfil mb-3">
-        <div className="profile-header">
-          <div className="profile-header-cover" />
-          <div className="profile-header-content">
-            <div className="profile-header-img pes-foto" onDragOver={(e) => { if (editar) e.preventDefault() }} onDrop={(e) => { if (editar) { e.preventDefault(); enviarFoto(e) } }} title={editar ? 'Arraste uma fotografia para aqui ou clique na câmara' : ''}>
-              {urlDaFoto ? <img src={urlDaFoto} alt={`Fotografia de ${p.nome}`} /> : <i className="fa fa-user fa-4x text-muted" />}
-              {editar && <button type="button" className="pes-foto-mudar" onClick={() => ficheiro.current.click()} title="Mudar fotografia"><i className="fa fa-camera" /></button>}
-              <input ref={ficheiro} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={enviarFoto} />
-            </div>
-            <div className="profile-header-info">
-              <h4 className="mt-0 mb-1">{militar && <span className="me-2">{p.postoNome}</span>}{p.nome}</h4>
-              <p className="mb-2">
-                {militar ? <>{p.ramoNome} · NIP {p.nip} · {p.categoriaNome}</> : <>{p.carreiraNome || 'Pessoal civil'} · {p.categoriaCivil || '—'} · N.º {p.numeroAgente || '—'}</>}
-              </p>
-              <div className="d-flex flex-wrap gap-1">
-                <span className="badge bg-light text-dark">{p.vinculoNome}</span>
-                {militar && <span className={`badge pes-ramo-${p.ramo}`}>{p.fpsNome}</span>}
-                {militar && <span className={`badge ${p.situacao === 'activo' ? (p.efectivo ? 'bg-success' : 'bg-info') : 'bg-warning text-dark'}`} title={p.situacaoCaminho}>{p.situacao === 'activo' && p.efectividadeNome ? p.efectividadeNome : p.situacaoNome}</span>}
-                {militar && p.estadoNome && <span className="badge bg-dark">{p.estadoNome}</span>}
-                {graduacaoAtiva && <span className="badge bg-warning text-dark">Graduado em {graduacaoAtiva.postoNome}</span>}
-                {p.elegivelPromocao && <span className="badge bg-success"><i className="fa fa-medal me-1" />Em condições de {militar ? `promoção a ${p.proximoPostoNome}` : `progressão a ${p.proximaCategoria}`}</span>}
-                {!p.ativo && <span className="badge bg-danger">Já não está na Escola</span>}
-                {p.processoPendente && <span className="badge bg-danger">Processo pendente</span>}
-              </div>
-            </div>
+      <div className="pes-ficha-hdr">
+        <div className="pes-ficha-avatar">{urlDaFoto ? <img src={urlDaFoto} alt="" /> : iniciais(p.nome)}</div>
+        <div className="pes-ficha-info">
+          <div className="pes-ficha-nip">{militar ? `NIP ${p.nip || '—'}` : `N.º de agente ${p.numeroAgente || '—'}`}</div>
+          <div className="pes-ficha-nome">{p.nome}</div>
+          <div className="pes-ficha-badges">
+            {militar ? <>
+              <span>{p.postoNome}</span><span>{p.fps}</span><span>{p.ramoNome}</span>
+              <span className={p.situacao === 'activo' ? 'pes-sit-activo' : 'pes-sit-outro'} title={p.situacaoCaminho}>{p.situacao === 'activo' && p.efectividadeNome ? p.efectividadeNome : p.situacaoNome}</span>
+              {p.estadoNome && <span>{p.estadoNome}</span>}
+            </> : <><span>{p.carreiraNome || 'Pessoal civil'}</span>{p.categoriaCivil && <span>{p.categoriaCivil}</span>}</>}
+            <span>{p.vinculoNome}</span>
+            {graduacaoAtiva && <span>Graduado em {graduacaoAtiva.postoNome}</span>}
+            {p.elegivelPromocao && <span className="pes-sit-activo"><i className="fa fa-medal me-1" />Em condições de {militar ? `promoção a ${p.proximoPostoNome}` : `progressão a ${p.proximaCategoria}`}</span>}
+            {!p.ativo && <span className="pes-sit-outro">Já não está na Escola</span>}
+            {p.processoPendente && <span className="pes-sit-outro">Processo pendente</span>}
           </div>
-          <ul className="profile-header-tab nav nav-tabs">
-            {ABAS.map(([k, t, ic]) => <li key={k} className="nav-item"><button type="button" className={`nav-link ${aba === k ? 'active' : ''}`} onClick={() => setAba(k)}><i className={`fa ${ic} me-1`} />{t}</button></li>)}
-          </ul>
+        </div>
+        <div className="pes-ficha-acoes">
+          <button type="button" className="pes-btn-hdr" onClick={() => navegar(-1)}><i className="fa fa-arrow-left" />Voltar</button>
+          {editar && <Link to={`/pessoas/${p.id}/editar`} className="pes-btn-hdr pes-btn-ouro"><i className="fa fa-user-edit" />Editar</Link>}
+          {editar && <button type="button" className="pes-btn-hdr" onClick={() => setModal({ documentos: true })}><i className="fa fa-file-signature" />Documentos</button>}
         </div>
       </div>
 
-      {aba === 'resumo' && (
+      <div className="pes-ficha-tabs" role="tablist">
+        {ABAS.map(([k, t, ic]) => (k === 'militar' && !militar ? [k, 'Profissional', 'fa-briefcase'] : [k, t, ic])).map(([k, t, ic]) => <button key={k} type="button" role="tab" aria-selected={aba === k} className={`pes-ftab ${aba === k ? 'active' : ''}`} onClick={() => setAba(k)}><i className={`fa ${ic}`} />{t}{k === 'familiares' && (p.agregado?.length ?? 0) > 0 && <span className="pes-ftab-n">{p.agregado.length}</span>}</button>)}
+      </div>
+
+      {aba === 'identificacao' && (
+        <div className="pes-ident">
+          <div className="text-center">
+            <div className="pes-ident-foto" onDragOver={(e) => { if (editar) e.preventDefault() }} onDrop={(e) => { if (editar) { e.preventDefault(); enviarFoto(e) } }} onClick={() => editar && ficheiro.current.click()} title={editar ? 'Clique (ou arraste uma fotografia) para alterar' : ''}>
+              {urlDaFoto ? <img src={urlDaFoto} alt={`Fotografia de ${p.nome}`} /> : <span className="pes-ident-iniciais">{iniciais(p.nome)}</span>}
+              {editar && <div className="pes-ident-mudar"><i className="fa fa-camera" />Alterar foto</div>}
+            </div>
+            <input ref={ficheiro} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={enviarFoto} />
+            <div className="pes-ident-nip">{militar ? `NIP ${p.nip || '—'}` : `N.º ${p.numeroAgente || '—'}`}</div>
+          </div>
+          <div>
+            <div className="pes-ident-cab">
+              <div className="pes-ident-nome">{p.nome}</div>
+              <div className="d-flex flex-wrap gap-1">
+                {militar && <span className="pes-etq">{p.postoNome}</span>}
+                {militar && <span className="pes-etq pes-etq-verde">{p.fpsNome}</span>}
+                <span className="pes-etq">{p.vinculoNome}</span>
+              </div>
+            </div>
+            <Grelha>
+              <Dado r="Nº de agente" v={p.numeroAgente} /><Dado r="Bilhete de identidade" v={p.bi} />
+              <Dado r="Data de nascimento" v={p.dataNascimento && <>{dataPt(p.dataNascimento)} <small className="text-muted">({p.idade} anos)</small></>} />
+              <Dado r="Nome do pai" v={p.pai} /><Dado r="Nome da mãe" v={p.mae} />
+              {militar && <Dado r="Incorporação" v={dataPt(p.dataIngresso)} />}
+              <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
+              <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
+              <Dado r="Cargo" cheio v={p.cargo?.nome && <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</>} />
+              {p.observacoes && <Dado r="Observações" cheio v={p.observacoes} />}
+            </Grelha>
+            {utilizador.pessoaId === p.id && <div className="mt-3"><OsMeusDados /></div>}
+            {p.militarAlocado && <Bloco titulo="Empregada(o) domiciliar de" icone="fa-house-user"><Link to={`/pessoas/${p.militarAlocado.id}`}>{p.militarAlocado.postoNome} {p.militarAlocado.nome}</Link><p className="small text-muted mb-0 mt-1">Não conta como trabalhador civil da Escola.</p></Bloco>}
+            {p.sincronizacao && (
+              <Bloco titulo="Conta no Portal Académico" icone="fa-exchange-alt">
+                <Estado estado={p.sincronizacao.estado} texto={{ pendente: 'Por enviar', enviado: 'Enviada', erro: 'Erro no envio' }[p.sincronizacao.estado]} />
+                {p.sincronizacao.erro && <div className="small text-danger mt-1">{p.sincronizacao.erro}</div>}
+              </Bloco>
+            )}
+          </div>
+        </div>
+      )}
+
+      {aba === 'militar' && (
         <div className="row">
           <div className="col-xl-8">
-            <Painel titulo="Dados pessoais" icone="fa-user">
-              <div className="row">
-                <Dado r="Nome completo" v={p.nome} /><Dado r="Nome de guerra" v={p.nomeGuerra} /><Dado r="Bilhete de identidade" v={p.bi} />
-                <Dado r="Data de nascimento" v={p.dataNascimento && `${dataPt(p.dataNascimento)} (${p.idade} anos)`} /><Dado r="Género" v={p.generoNome} /><Dado r="Estado civil" v={ref.estadosCivis[p.estadoCivil]} />
-                <Dado r="Naturalidade" v={[p.naturalidade, p.provincia].filter(Boolean).join(', ')} /><Dado r="Nacionalidade" v={p.nacionalidade} /><Dado r="Filiação" v={[p.pai, p.mae].filter(Boolean).join(' e ')} />
-                <Dado r="Telefone" v={p.telefone} /><Dado r="E-mail" v={p.email} /><Dado r="Morada" v={p.morada} />
-                <Dado r="Habilitações" v={p.habilitacaoNome} /><Dado r="Área de formação" v={p.areaFormacao} /><Dado r="Grupo sanguíneo" v={p.grupoSanguineo} />
-                <Dado r="BI emitido em" v={[p.biLocalEmissao, dataPt(p.biEmitidoEm)].filter(Boolean).join(', ')} /><Dado r="BI válido até" v={dataPt(p.biValidade)} /><Dado r="Telefone alternativo" v={p.telefoneAlternativo} />
-                <Dado r="Residência" v={[p.municipio, p.bairro, p.rua, p.casa && `casa n.º ${p.casa}`].filter(Boolean).join(', ')} /><Dado r="Caixa postal" v={p.caixaPostal} /><Dado r="N.º de segurança social (INSS)" v={p.inss} />
-              </div>
-            </Painel>
-            <Painel titulo="Agregado familiar" icone="fa-users">
-              <div className="row"><Dado r="Cônjuge" v={p.conjuge} /><Dado r="Local de serviço do cônjuge" v={p.conjugeLocalServico} /></div>
-              {p.agregado?.length > 0 ? (
-                <table className="table table-sm mb-0"><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>Nacionalidade</th><th>Profissão</th></tr></thead>
-                  <tbody>{p.agregado.map((a, i) => <tr key={i}><td>{a.nome}</td><td>{a.parentesco}</td><td>{dataPt(a.dataNascimento)}</td><td>{a.nacionalidade}</td><td>{a.profissao}</td></tr>)}</tbody></table>
-              ) : <p className="small text-muted mb-0">Sem filhos ou outros familiares registados.</p>}
-            </Painel>
-            <Painel titulo={militar ? 'Situação militar' : 'Situação profissional'} icone={militar ? 'fa-shield-alt' : 'fa-briefcase'}>
-              <div className="row">
-                {militar ? <>
-                  <Dado r="Ramo" v={p.ramoNome} /><Dado r="Posto" v={p.postoNome} /><Dado r="Categoria" v={p.categoriaNome} />
-                  <Dado r="Forma de prestação de serviço" v={`${p.fpsNome} (${ref.formasServico[p.fps]?.carreira})`} /><Dado r="Quadro especial" v={p.quadroNome} /><Dado r="Especialidade" v={p.especialidade} />
-                  <Dado r="Situação (Lei n.º 13/18)" v={p.situacaoCaminho ? `${p.situacaoCaminho} (${p.situacaoArtigo})` : ''} /><Dado r="Estado" v={p.estadoNome || 'Ao serviço'} /><Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} />
-                  <Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} /><Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
-                  <Dado r="Local de incorporação" v={p.localIncorporacao} /><Dado r="Condição de incorporação" v={p.voluntario === true ? 'Voluntário' : p.voluntario === false ? 'Não voluntário' : ''} /><Dado r="Vencimento mensal" v={p.vencimento ? KZ(p.vencimento) : ''} />
-                  <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} /><Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
-                </> : <>
+            {militar ? <>
+              <Bloco titulo="Situação actual" icone="fa-star">
+                <Grelha>
+                  <Dado r="Posto" v={<><span className="pes-etq">{p.postoNome}</span>{graduacaoAtiva && <span className="pes-etq pes-etq-roxo ms-1" title="Graduação (arts. 64.º a 67.º): não conta para a antiguidade">graduado: {graduacaoAtiva.postoNome}</span>}{p.processoPendente && <span className="pes-etq pes-etq-vermelho ms-1">processo em curso</span>}</>} />
+                  <Dado r="Situação (Lei n.º 13/18)" cheio v={p.situacaoCaminho ? `${p.situacaoCaminho} (${p.situacaoArtigo})` : p.situacaoNome} />
+                  <Dado r="Estado" v={p.estadoNome || 'Ao serviço'} />
+                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidade?.nome} />
+                </Grelha>
+              </Bloco>
+              <Bloco titulo="Classificação militar" icone="fa-shield-alt">
+                <Grelha>
+                  <Dado r="Ramo" v={p.ramoNome} /><Dado r="Categoria" v={p.categoriaNome} />
+                  <Dado r="FPS" v={`${p.fpsNome} (${ref.formasServico[p.fps]?.carreira})`} /><Dado r="Quadro especial" v={p.quadroNome} />
+                  <Dado r="Especialidade" v={p.especialidade} /><Dado r="Anos no posto" v={p.tempoNoPosto !== null && p.tempoNoPosto !== undefined ? anos(p.tempoNoPosto) : 'Falta a data de antiguidade no posto'} />
+                  <Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} /><Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} />
+                  <Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
+                  <Dado r="Local de incorporação" v={p.localIncorporacao} /><Dado r="Condição de incorporação" v={p.voluntario === true ? 'Voluntário' : p.voluntario === false ? 'Não voluntário' : ''} />
+                  <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} />
+                  <Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
+                </Grelha>
+              </Bloco>
+            </> : (
+              <Bloco titulo="Situação profissional" icone="fa-briefcase">
+                <Grelha>
                   <Dado r="Categoria" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
                   <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na classe desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
-                  {p.remuneracao && <><Dado r="Vencimento base da categoria" v={KZ(p.remuneracao.vencimentoBase)} /><Dado r="Subsídios (alimentação + transporte)" v={KZ(p.remuneracao.subsidioAlimentacao + p.remuneracao.subsidioTransporte)} /><Dado r={`Líquido de referência (SS ${p.remuneracao.percSegSocial}% · IRT ${p.remuneracao.percIrt}%)`} v={KZ(p.remuneracao.liquido)} /></>}
-                  <Dado r="Vencimento mensal" v={p.vencimento ? KZ(p.vencimento) : ''} />
                   <Dado r="Avaliação de desempenho" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} />
-                </>}
-              </div>
-            </Painel>
+                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidade?.nome} />
+                </Grelha>
+              </Bloco>
+            )}
+            {p.vinculo === 'docente' && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /></Grelha></Bloco>}
+            {p.limiteDomiciliares > 0 && (
+              <Bloco titulo="Trabalhadores domiciliares" icone="fa-house-user" acoes={<span className="pes-ftab-n">{p.domiciliares.length}/{p.limiteDomiciliares}</span>}>
+                {p.domiciliares.length ? (
+                  <table className="table table-sm mb-2"><thead><tr><th>Nome</th><th>Nº de agente</th><th>Telefone</th></tr></thead>
+                    <tbody>{p.domiciliares.map((d) => <tr key={d.id}><td><Link to={`/pessoas/${d.id}`} className="pes-pessoa fw-semibold"><Foto pessoaId={d.id} fotoId={d.fotoId} nome={d.nome} tamanho={26} />{d.nome}</Link></td><td>{d.numeroAgente}</td><td>{d.telefone}</td></tr>)}</tbody></table>
+                ) : <p className="small text-muted mb-2">Ainda não tem trabalhador(es) domiciliar(es) — tem direito a {p.limiteDomiciliares}, pelo posto actual.</p>}
+                {editar && p.domiciliares.length < p.limiteDomiciliares && <Link to={`/pessoas/nova?domiciliar=${p.id}`} className="btn btn-xs btn-outline-theme"><i className="fa fa-user-plus me-1" />Registar empregada(o) domiciliar</Link>}
+              </Bloco>
+            )}
           </div>
           <div className="col-xl-4">
-            <Painel titulo="Na Escola" icone="fa-building">
-              <div className="row">
-                <Dado r="Unidade" v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
-                <Dado r="Cargo" v={p.cargo?.nome} />
-                <Dado r="No cargo desde" v={dataPt(p.dataCargo)} />
-              </div>
-              {p.observacoes && <p className="small mb-0 mt-2 text-muted">{p.observacoes}</p>}
-            </Painel>
             {editar && pode('propor') && (
-              <Painel titulo="Ações" icone="fa-bolt">
+              <Bloco titulo="Ações" icone="fa-bolt">
                 <div className="d-grid gap-2">
                   {(militar ? ['promocao', 'graduacao', 'nomeacao', 'curso', 'exoneracao'] : ['progressao', 'nomeacao', 'curso', 'exoneracao']).filter((t) => t !== 'exoneracao' || p.cargoId).map((t) => (
                     <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => navegar(`/propostas/nova?tipo=${t}&pessoa=${p.id}`)}><i className="fa fa-file-signature me-2" />{t === 'curso' ? 'Propor para curso' : `Propor ${ref.tiposProposta[t].nome.toLowerCase()}`}</button>
@@ -161,55 +204,88 @@ export default function Perfil() {
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ licenca: true })}><i className="fa fa-plane-departure me-2" />Registar licença</button>
                   <button type="button" className="btn btn-outline-secondary text-start" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-2" />Lançar no histórico (louvor, punição…)</button>
                 </div>
-              </Painel>
-            )}
-            {utilizador.pessoaId === p.id && <OsMeusDados />}
-            {p.limiteDomiciliares > 0 && (
-              <Painel titulo={`Empregados domiciliares (${p.domiciliares.length} de ${p.limiteDomiciliares})`} icone="fa-house-user">
-                {p.domiciliares.map((d) => <Link key={d.id} to={`/pessoas/${d.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={d.id} fotoId={d.fotoId} nome={d.nome} tamanho={30} /><span className="small">{d.nome}{d.telefone && <span className="text-muted"> · {d.telefone}</span>}</span></Link>)}
-                {!p.domiciliares.length && <p className="small text-muted mb-1">Nenhum(a).</p>}
-                {editar && p.domiciliares.length < p.limiteDomiciliares && <Link to={`/pessoas/nova?domiciliar=${p.id}`} className="btn btn-xs btn-outline-theme mt-1"><i className="fa fa-plus me-1" />Registar empregada(o) domiciliar</Link>}
-              </Painel>
-            )}
-            {p.militarAlocado && (
-              <Painel titulo="Empregada(o) domiciliar de" icone="fa-house-user">
-                <Link to={`/pessoas/${p.militarAlocado.id}`}>{p.militarAlocado.postoNome} {p.militarAlocado.nome}</Link>
-                <p className="small text-muted mb-0 mt-1">Não conta como trabalhador civil da Escola.</p>
-              </Painel>
-            )}
-            {p.sincronizacao && (
-              <Painel titulo="Conta no Portal Académico" icone="fa-exchange-alt">
-                <Estado estado={p.sincronizacao.estado} texto={{ pendente: 'Por enviar', enviado: 'Enviada', erro: 'Erro no envio' }[p.sincronizacao.estado]} />
-                {p.sincronizacao.erro && <div className="small text-danger mt-1">{p.sincronizacao.erro}</div>}
-              </Painel>
+              </Bloco>
             )}
           </div>
         </div>
       )}
 
+      {aba === 'pessoal' && (
+        <>
+          <Bloco titulo="Filiação" icone="fa-users"><Grelha><Dado r="Nome do pai" v={p.pai} /><Dado r="Nome da mãe" v={p.mae} /></Grelha></Bloco>
+          <Bloco titulo="Dados pessoais" icone="fa-user">
+            <Grelha>
+              <Dado r="Nome completo" v={p.nome} /><Dado r="Nome de guerra" v={p.nomeGuerra} />
+              <Dado r="Data de nascimento" v={p.dataNascimento && `${dataPt(p.dataNascimento)} (${p.idade} anos)`} /><Dado r="Género" v={p.generoNome} />
+              <Dado r="Estado civil" v={ref.estadosCivis[p.estadoCivil]} /><Dado r="Naturalidade" v={[p.naturalidade, p.provincia].filter(Boolean).join(', ')} />
+              <Dado r="Nacionalidade" v={p.nacionalidade} /><Dado r="Grupo sanguíneo" v={p.grupoSanguineo} />
+              <Dado r="Habilitações" v={p.habilitacaoNome} /><Dado r="Área de formação" v={p.areaFormacao} />
+            </Grelha>
+          </Bloco>
+          <Bloco titulo="Bilhete de identidade" icone="fa-id-badge">
+            <Grelha><Dado r="Número" v={p.bi} /><Dado r="Emitido em" v={[p.biLocalEmissao, dataPt(p.biEmitidoEm)].filter(Boolean).join(', ')} /><Dado r="Válido até" v={dataPt(p.biValidade)} /></Grelha>
+          </Bloco>
+          <Bloco titulo="Contactos e residência" icone="fa-map-marker-alt">
+            <Grelha>
+              <Dado r="Telefone" v={p.telefone} /><Dado r="Telefone alternativo" v={p.telefoneAlternativo} /><Dado r="E-mail" v={p.email} />
+              <Dado r="Morada" v={p.morada} /><Dado r="Município" v={p.municipio} /><Dado r="Bairro" v={p.bairro} />
+              <Dado r="Rua" v={p.rua} /><Dado r="Casa n.º" v={p.casa} /><Dado r="Caixa postal" v={p.caixaPostal} />
+            </Grelha>
+          </Bloco>
+        </>
+      )}
+
+      {aba === 'bancario' && (
+        <>
+          <Bloco titulo="Dados bancários" icone="fa-university">
+            <Grelha><Dado r="Banco" v={p.banco} /><Dado r="IBAN" v={p.iban && <span className="font-monospace">{p.iban}</span>} /><Dado r="Número de conta" v={p.numeroConta && <span className="font-monospace">{p.numeroConta}</span>} /></Grelha>
+            {!p.banco && !p.iban && !p.numeroConta && <p className="small text-muted mb-0 mt-3"><i className="fa fa-info-circle me-1" />Sem dados bancários registados.</p>}
+          </Bloco>
+          <Bloco titulo="Vencimento" icone="fa-coins">
+            <Grelha>
+              <Dado r="Vencimento mensal (folha)" v={p.vencimento ? KZ(p.vencimento) : ''} />
+              {militar && p.vencimentoTabela && <><Dado r="Tabela salarial — vencimento base" v={KZ(p.vencimentoTabela.base)} /><Dado r="Tabela salarial — ilíquido" v={KZ(p.vencimentoTabela.iliquido)} /><Dado r="Tabela salarial — líquido" v={KZ(p.vencimentoTabela.liquido)} /></>}
+              {!militar && p.remuneracao && <><Dado r="Vencimento base da categoria" v={KZ(p.remuneracao.vencimentoBase)} /><Dado r="Subsídios (alimentação + transporte)" v={KZ(p.remuneracao.subsidioAlimentacao + p.remuneracao.subsidioTransporte)} /><Dado r={`Líquido de referência (SS ${p.remuneracao.percSegSocial}% · IRT ${p.remuneracao.percIrt}%)`} v={KZ(p.remuneracao.liquido)} /></>}
+              <Dado r="N.º de segurança social (INSS)" v={p.inss} />
+            </Grelha>
+            {militar && <p className="small text-muted mb-0 mt-3"><Link to="/tabela-salarial">Ver a tabela salarial por posto</Link></p>}
+          </Bloco>
+        </>
+      )}
+
+      {aba === 'familiares' && (
+        <Bloco titulo="Familiares registados" icone="fa-users" acoes={<span className="pes-ftab-n">{(p.agregado?.length ?? 0) + (p.conjuge ? 1 : 0)}</span>} corpo={false}>
+          <div className="pes-bloco-c pb-0"><Grelha><Dado r="Cônjuge" v={p.conjuge} /><Dado r="Local de serviço do cônjuge" v={p.conjugeLocalServico} /></Grelha></div>
+          {p.agregado?.length > 0 ? (
+            <div className="table-responsive mt-3"><table className="table table-hover mb-0"><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>Nacionalidade</th><th>Profissão</th></tr></thead>
+              <tbody>{p.agregado.map((a, i) => <tr key={i}><td className="fw-semibold">{a.nome}</td><td>{a.parentesco}</td><td>{dataPt(a.dataNascimento)}</td><td>{a.nacionalidade}</td><td>{a.profissao}</td></tr>)}</tbody></table></div>
+          ) : <div className="pes-vazio"><i className="fa fa-users" /><p>Nenhum familiar registado.{editar && <> <Link to={`/pessoas/${p.id}/editar`}>Acrescentar na ficha</Link>.</>}</p></div>}
+        </Bloco>
+      )}
+
       {aba === 'emitidos' && <DocumentosEmitidos pessoaId={p.id} />}
 
-      {modal?.documentos && <DocumentosPessoais p={p} aoFechar={fechar} aoEmitir={(n) => { fechar(); avisar(`${n} documento(s) gerado(s).`); if (aba === 'emitidos') setAba('resumo') }} />}
+      {modal?.documentos && <DocumentosPessoais p={p} aoFechar={fechar} aoEmitir={(n) => { fechar(); avisar(`${n} documento(s) gerado(s).`); if (aba === 'emitidos') setAba('identificacao') }} />}
 
       {aba === 'carreira' && (
         <div className="row">
           <div className="col-xl-7">
             {militar ? (
-              <Painel titulo={p.promocao.postoProposto ? `Promoção a ${p.promocao.postoPropostoNome}` : 'Promoção'} icone="fa-medal">
+              <Bloco titulo={p.promocao.postoProposto ? `Promoção a ${p.promocao.postoPropostoNome}` : 'Promoção'} icone="fa-medal">
                 {p.promocao.postoProposto ? <>
                   <p className="mb-2">Modalidade da lei: <strong>{ref.modalidades[p.promocao.modalidadeLegal]}</strong> · {p.promocao.elegivel ? <span className="text-success fw-bold">reúne as condições</span> : <span className="text-danger fw-bold">não reúne as condições</span>}</p>
                   <Condicoes condicoes={p.promocao.condicoes} />
                 </> : <p className="text-muted mb-0">{p.promocao.condicoes?.[0]?.detalhe || 'Não há posto acima a que possa ser promovido na sua forma de prestação de serviço.'}</p>}
-              </Painel>
+              </Bloco>
             ) : (
-              <Painel titulo={p.progressao.categoriaProposta ? `Progressão a ${p.progressao.categoriaProposta}` : 'Progressão'} icone="fa-medal">
+              <Bloco titulo={p.progressao.categoriaProposta ? `Progressão a ${p.progressao.categoriaProposta}` : 'Progressão'} icone="fa-medal">
                 <Condicoes condicoes={p.progressao.condicoes} />
-              </Painel>
+              </Bloco>
             )}
           </div>
           <div className="col-xl-5">
             {militar && p.reservaReforma && (
-              <Painel titulo="Reserva e reforma" icone="fa-hourglass-half">
+              <Bloco titulo="Reserva e reforma" icone="fa-hourglass-half">
                 <div className="row">
                   <Dado r="Idade" v={`${p.reservaReforma.idade} anos`} /><Dado r="Tempo de serviço" v={`${p.reservaReforma.tempoServico} anos`} />
                   <Dado r={`Reserva por idade${p.reservaReforma.reserva ? ` (${p.reservaReforma.reserva.idadeLimite} anos)` : ''}`} v={p.reservaReforma.reserva ? `${dataPt(p.reservaReforma.reserva.data)} · ${p.reservaReforma.reserva.artigo}` : 'Sem limite fixado para o posto'} />
@@ -217,10 +293,10 @@ export default function Perfil() {
                   {p.reservaReforma.reformaPorTempo && <Dado r="Reforma por 35 anos de serviço" v={dataPt(p.reservaReforma.reformaPorTempo.data)} />}
                   {p.reservaReforma.podeRequererReserva && <Dado r="Pode requerer a reserva" v={`Sim (${p.reservaReforma.podeRequererReserva.artigo})`} />}
                 </div>
-              </Painel>
+              </Bloco>
             )}
             {militar && (
-              <Painel titulo="Graduações (arts. 64.º a 67.º)" icone="fa-star-half-alt" corpo={false}>
+              <Bloco titulo="Graduações (arts. 64.º a 67.º)" icone="fa-star-half-alt" corpo={false}>
                 <table className="table mb-0">
                   <tbody>
                     {p.graduacoes.map((g) => (
@@ -233,14 +309,14 @@ export default function Perfil() {
                     {!p.graduacoes.length && <tr><td className="text-muted">Nunca foi graduado.</td></tr>}
                   </tbody>
                 </table>
-              </Painel>
+              </Bloco>
             )}
           </div>
         </div>
       )}
 
       {aba === 'historico' && (
-        <Painel titulo="Histórico da carreira" icone="fa-history" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-1" />Lançar</button>}>
+        <Bloco titulo="Histórico da carreira" icone="fa-history" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ evento: true })}><i className="fa fa-plus me-1" />Lançar</button>}>
           <Tabela titulo={`Histórico — ${p.nome}`} linhas={p.eventos} colunas={[
             { chave: 'data', titulo: 'Data', valor: (e) => e.data?.slice(0, 10), mostrar: (e) => dataPt(e.data) },
             { chave: 'tipo', titulo: 'Registo', valor: (e) => e.tipoNome, mostrar: (e) => <span className="badge bg-light text-dark border">{e.tipoNome}</span> },
@@ -249,11 +325,11 @@ export default function Perfil() {
             { chave: 'proposta', titulo: 'Proposta', valor: (e) => (e.propostaId ? `#${e.propostaId}` : ''), mostrar: (e) => (e.propostaId ? <Link to={`/propostas/${e.propostaId}`} onClick={(x) => x.stopPropagation()}>#{e.propostaId}</Link> : '') },
             ...(editar ? [{ chave: 'apagar', titulo: '', exportar: false, valor: () => '', mostrar: (e) => ref.eventosManuais.includes(e.tipo) && <button type="button" className="btn btn-xs btn-outline-danger" title="Apagar" onClick={() => api(`/pessoas/${p.id}/eventos/${e.id}`, { metodo: 'DELETE' }).then(() => depois('Registo apagado.')).catch((x) => avisar(x.message, 'erro'))}><i className="fa fa-trash" /></button> }] : []),
           ]} />
-        </Painel>
+        </Bloco>
       )}
 
-      {aba === 'cursos' && (
-        <Painel titulo="Cursos (art. 48.º)" icone="fa-graduation-cap" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ curso: {} })}><i className="fa fa-plus me-1" />Adicionar curso</button>}>
+      {aba === 'formacao' && (
+        <Bloco titulo="Cursos militares e outros (art. 48.º)" icone="fa-graduation-cap" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ curso: {} })}><i className="fa fa-plus me-1" />Adicionar curso</button>}>
           <Tabela titulo={`Cursos — ${p.nome}`} linhas={p.cursos} aoClicar={editar ? (c) => setModal({ curso: c }) : undefined} colunas={[
             { chave: 'nome', titulo: 'Curso', valor: (c) => c.nome, mostrar: (c) => <><strong>{c.nome}</strong>{c.chaveNome && <div className="small text-success"><i className="fa fa-medal me-1" />Condição de promoção: {c.chaveNome}</div>}</> },
             { chave: 'tipo', titulo: 'Tipo', valor: (c) => c.tipo },
@@ -262,11 +338,11 @@ export default function Perfil() {
             { chave: 'fim', titulo: 'Fim', valor: (c) => c.fim?.slice(0, 10), mostrar: (c) => dataPt(c.fim) },
             { chave: 'res', titulo: 'Resultado', valor: (c) => (c.aproveitamento === false ? 'Sem aproveitamento' : c.classificacao ? `${c.classificacao} valores` : 'Com aproveitamento') },
           ]} />
-        </Painel>
+        </Bloco>
       )}
 
       {aba === 'licencas' && (
-        <Painel titulo="Licenças" icone="fa-plane-departure" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ licenca: true })}><i className="fa fa-plus me-1" />Registar licença</button>}>
+        <Bloco titulo="Licenças" icone="fa-plane-departure" acoes={editar && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal({ licenca: true })}><i className="fa fa-plus me-1" />Registar licença</button>}>
           <Tabela titulo={`Licenças — ${p.nome}`} linhas={p.licencas} colunas={[
             { chave: 'tipo', titulo: 'Tipo', valor: (l) => ref.tiposLicenca[l.tipo] ?? l.tipo },
             { chave: 'inicio', titulo: 'Início', valor: (l) => l.inicio.slice(0, 10), mostrar: (l) => dataPt(l.inicio) },
@@ -274,13 +350,13 @@ export default function Perfil() {
             { chave: 'dias', titulo: 'Dias', valor: (l) => l.dias, alinhar: 'end' },
             { chave: 'despacho', titulo: 'Despacho', valor: (l) => l.despacho },
           ]} />
-        </Painel>
+        </Bloco>
       )}
 
       {aba === 'processo' && <ProcessoIndividual p={p} editar={editar} aoMudar={carregar} />}
 
       {aba === 'propostas' && (
-        <Painel titulo="Propostas em que entrou" icone="fa-file-signature">
+        <Bloco titulo="Propostas em que entrou" icone="fa-file-signature">
           <Tabela titulo={`Propostas — ${p.nome}`} linhas={p.itens} aoClicar={(i) => navegar(`/propostas/${i.proposta.id}`)} colunas={[
             { chave: 'n', titulo: 'N.º', valor: (i) => i.proposta.id },
             { chave: 'titulo', titulo: 'Proposta', valor: (i) => i.proposta.titulo },
@@ -289,7 +365,7 @@ export default function Perfil() {
             { chave: 'doc', titulo: 'Documento', valor: (i) => i.proposta.documento },
             { chave: 'data', titulo: 'Criada', valor: (i) => i.proposta.criadoEm.slice(0, 10), mostrar: (i) => dataPt(i.proposta.criadoEm) },
           ]} />
-        </Painel>
+        </Bloco>
       )}
 
       {modal?.licenca && <NovaLicenca pessoa={p} aoFechar={fechar} aoGuardar={() => depois('Licença registada.')} />}
@@ -321,14 +397,14 @@ function OsMeusDados() {
   }
   const pedir = () => api('/eu/pedidos-dados', { metodo: 'POST', corpo: f }).then(() => { setF({ ...f, texto: '' }); avisar('Pedido enviado à Repartição de Pessoal e Quadros.'); recarregar() }).catch((e) => avisar(e.message, 'erro'))
   return (
-    <Painel titulo="Os meus dados" icone="fa-user-shield">
+    <Bloco titulo="Os meus dados" icone="fa-user-shield">
       <p className="small">Os seus dados são tratados segundo a Lei n.º 22/11. <Link to="/privacidade">Política de privacidade</Link></p>
       <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={descarregar}><i className="fa fa-download me-1" />Descarregar os meus dados</button>
       <Escolha valor={f.tipo} aoMudar={(v) => setF({ ...f, tipo: v })} opcoes={TIPOS_PEDIDO} vazio={null} aria-label="Tipo de pedido" />
       <textarea className="form-control form-control-sm my-2" rows={3} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} placeholder="Diga o que pretende (ex.: a minha data de ingresso está errada)" aria-label="Descrição do pedido" />
       <button type="button" className="btn btn-sm btn-theme" disabled={f.texto.trim().length < 5} onClick={pedir}><i className="fa fa-paper-plane me-1" />Enviar pedido</button>
       {pedidos?.length > 0 && <ul className="list-unstyled small mt-3 mb-0">{pedidos.map((x) => <li key={x.id} className="border-top pt-2 mt-2"><span className={`badge ${x.estado === 'pendente' ? 'bg-warning text-dark' : x.estado === 'respondido' ? 'bg-success' : 'bg-secondary'} me-1`}>{ESTADOS_PEDIDO[x.estado]}</span><strong>{TIPOS_PEDIDO[x.tipo]}</strong><div className="text-muted">{x.texto}</div>{x.resposta && <div><i className="fa fa-reply me-1" />{x.resposta}</div>}</li>)}</ul>}
-    </Painel>
+    </Bloco>
   )
 }
 
@@ -363,7 +439,7 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
   return (
     <div className="row">
       <div className="col-xl-4">
-        <Painel titulo={p.processo ? `Processo ${p.processo.numero}` : 'Processo por abrir'} icone="fa-folder" acoes={<button type="button" className="btn btn-xs btn-secondary" onClick={() => etiquetaProcesso(p)}><i className="fa fa-tag me-1" />Etiqueta da lombada</button>}>
+        <Bloco titulo={p.processo ? `Processo ${p.processo.numero}` : 'Processo por abrir'} icone="fa-folder" acoes={<button type="button" className="btn btn-xs btn-secondary" onClick={() => etiquetaProcesso(p)}><i className="fa fa-tag me-1" />Etiqueta da lombada</button>}>
           <div className="row">
             <Campo rotulo="Estante" col="col-4"><input className="form-control form-control-sm" value={loc.estante} disabled={!editar} onChange={(e) => setLoc({ ...loc, estante: e.target.value })} /></Campo>
             <Campo rotulo="Prateleira" col="col-4"><input className="form-control form-control-sm" value={loc.prateleira} disabled={!editar} onChange={(e) => setLoc({ ...loc, prateleira: e.target.value })} /></Campo>
@@ -372,14 +448,14 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
             <Campo rotulo="Observações" col="col-12"><input className="form-control form-control-sm" value={loc.observacoes} disabled={!editar} onChange={(e) => setLoc({ ...loc, observacoes: e.target.value })} /></Campo>
           </div>
           {editar && <button type="button" className="btn btn-sm btn-theme" onClick={guardar}>{p.processo ? 'Guardar' : 'Abrir processo (n.º automático)'}</button>}
-        </Painel>
+        </Bloco>
         {p.processo?.estante && <OndeEsta p={p} />}
-        <Painel titulo={falta.length ? `Por actualizar (${falta.length})` : 'Processo actualizado'} icone={falta.length ? 'fa-exclamation-triangle' : 'fa-check-circle'}>
+        <Bloco titulo={falta.length ? `Por actualizar (${falta.length})` : 'Processo actualizado'} icone={falta.length ? 'fa-exclamation-triangle' : 'fa-check-circle'}>
           {falta.length ? <ul className="small mb-0 text-danger">{falta.map((f) => <li key={f}>{f}</li>)}</ul> : <p className="small text-success mb-0">Tem todos os dados e documentos essenciais.</p>}
-        </Painel>
+        </Bloco>
       </div>
       <div className="col-xl-8">
-        <Painel titulo={`Documentos digitalizados (${p.documentos.length})`} icone="fa-file-alt">
+        <Bloco titulo={`Documentos digitalizados (${p.documentos.length})`} icone="fa-file-alt">
           {editar && (
             <div className="row align-items-end border-bottom pb-2 mb-2">
               <Campo rotulo="Tipo" col="col-md-4"><Escolha valor={novo.tipo} aoMudar={(v) => setNovo({ ...novo, tipo: v })} opcoes={ref.tiposDocumento} vazio={null} /></Campo>
@@ -395,7 +471,7 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
             { chave: 'por', titulo: 'Junto por', valor: (d) => d.criadoPor },
             ...(editar ? [{ chave: 'x', titulo: '', exportar: false, valor: () => '', mostrar: (d) => <button type="button" className="btn btn-xs btn-outline-danger" title="Apagar" onClick={(e) => { e.stopPropagation(); if (window.confirm('Apagar este documento do processo?')) api(`/documentos/${d.id}`, { metodo: 'DELETE' }).then(aoMudar).catch((x) => avisar(x.message, 'erro')) }}><i className="fa fa-trash" /></button> }] : []),
           ]} />
-        </Painel>
+        </Bloco>
       </div>
     </div>
   )
@@ -407,9 +483,9 @@ function OndeEsta({ p }) {
   const { dados } = useDados(p.processo?.estante ? '/processos' : null)
   const daEstante = (dados ?? []).filter((x) => x.estante === p.processo.estante)
   return (
-    <Painel titulo={`Onde está a pasta: estante ${p.processo.estante}`} icone="fa-archive">
+    <Bloco titulo={`Onde está a pasta: estante ${p.processo.estante}`} icone="fa-archive">
       {!dados ? <Carregando /> : <Estante processos={daEstante} pesquisa={p.processo.numero} aoAbrir={(x) => navegar(`/pessoas/${x.id}?aba=processo`)} minimoPosicoes={Number(p.processo.posicao) || 10} />}
-    </Painel>
+    </Bloco>
   )
 }
 
@@ -478,7 +554,7 @@ function DocumentosEmitidos({ pessoaId }) {
   const { dados } = useDados(`/pessoas/${pessoaId}/documentos-emitidos`)
   if (!dados) return <Carregando />
   return (
-    <Painel titulo="Documentos emitidos" icone="fa-file-alt">
+    <Bloco titulo="Documentos emitidos" icone="fa-file-alt">
       {dados.length === 0 ? <p className="text-muted mb-0">Ainda não foi emitido nenhum documento. Use o botão «Documentos», em cima.</p> : (
         <table className="table table-sm mb-0">
           <thead><tr><th>Documento</th><th>N.º</th><th>Opções</th><th>Emitido por</th><th>Data</th></tr></thead>
@@ -493,6 +569,6 @@ function DocumentosEmitidos({ pessoaId }) {
           ))}</tbody>
         </table>
       )}
-    </Painel>
+    </Bloco>
   )
 }
