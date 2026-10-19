@@ -49,7 +49,7 @@ export class CifraDados {
 }
 
 // campos da ficha (modelo Pessoa) guardados cifrados; o BI tem também o índice (único)
-export const CAMPOS_CIFRADOS = ['bi', 'pai', 'mae', 'telefone', 'morada']
+export const CAMPOS_CIFRADOS = ['bi', 'pai', 'mae', 'telefone', 'morada', 'bairro', 'rua', 'casa', 'telefoneAlternativo', 'conjuge', 'agregado', 'vencimento']
 
 // prepara os dados de uma escrita: cifra os campos e calcula o índice do BI
 export function cifrarEscrita(cifra, dados) {

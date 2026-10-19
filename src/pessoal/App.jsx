@@ -25,6 +25,7 @@ import Extractos from './paginas/Extractos'
 import Extracto from './paginas/Extracto'
 import Domiciliares from './paginas/Domiciliares'
 import Documentos from './paginas/Documentos'
+import Assinaturas from './paginas/Assinaturas'
 import Expediente from './paginas/Expediente'
 import Mensagens from './paginas/Mensagens'
 import Privacidade from './paginas/Privacidade'
@@ -105,6 +106,7 @@ export default function App() {
           <Route path="/extractos" element={<Extractos />} />
           <Route path="/extractos/:id" element={<Extracto />} />
           <Route path="/domiciliares" element={<Domiciliares />} />
+          <Route path="/assinaturas" element={<Assinaturas />} />
           <Route path="/documentos" element={<Documentos />} />
           <Route path="/documentos/:grupo" element={<Documentos />} />
           <Route path="/expediente" element={<Expediente />} />

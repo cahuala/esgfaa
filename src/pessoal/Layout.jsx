@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
+import PesquisaGeral from './componentes/PesquisaGeral'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessao'
 import Brasao from '../assets/Logo.png'
@@ -55,6 +56,7 @@ export default function Layout({ children }) {
             <span className="icon-bar" /><span className="icon-bar" /><span className="icon-bar" />
           </button>
         </div>
+        {gestao && <div className="navbar-form flex-grow-1 d-none d-md-flex align-items-center px-3"><PesquisaGeral /></div>}
         <div className="navbar-nav">
           <div className="navbar-item d-none d-md-flex align-items-center me-2">
             <span className="badge bg-success-subtle text-success border border-success"><i className="fa fa-network-wired me-1" />Rede interna</span>
@@ -111,6 +113,7 @@ export default function Layout({ children }) {
 
             {pode('administrar') && <div className="menu-header">Administração</div>}
             {pode('administrar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
+            {pode('administrar') && <Item para="/assinaturas" icone="fa-signature" texto="Assinaturas dos documentos" />}
             {pode('administrar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
             {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}

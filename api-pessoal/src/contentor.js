@@ -1,6 +1,7 @@
 import { criarPrisma } from './infraestrutura/bd.js'
 import { CifraDados, comCifra } from './infraestrutura/cifraDados.js'
 import { ServicoDoisFatores } from './aplicacao/doisFatores.js'
+import { ServicoDocumentosEmitidos } from './aplicacao/documentosEmitidos.js'
 import { CifraSenhas } from './infraestrutura/cifra.js'
 import { Tokens } from './infraestrutura/tokens.js'
 import { ServicoAuditoria } from './aplicacao/auditoria.js'
@@ -34,6 +35,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     auditoria,
     sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), doisFatores, ...relogio }),
     doisFatores,
+    documentosEmitidos: new ServicoDocumentosEmitidos({ bd, auditoria, ...relogio }),
     pessoas,
     propostas: new ServicoPropostas({ bd, auditoria, ...relogio }),
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),

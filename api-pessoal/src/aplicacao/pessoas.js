@@ -95,7 +95,7 @@ export class ServicoPessoas {
       where: { id },
       include: {
         unidade: true, cargo: true, sincronizacao: true, processo: true,
-        militarAlocado: { select: { id: true, nome: true, posto: true, ramo: true } },
+        militarAlocado: { select: { id: true, nome: true, posto: true, ramo: true, nip: true } },
         domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, fotoId: true } },
         documentos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
         cursos: { orderBy: [{ fim: 'desc' }, { id: 'desc' }] },
@@ -132,7 +132,10 @@ export class ServicoPessoas {
       x.efectividade ??= 'comissao_normal'
     }
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
-    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes']) if (k in x) x[k] ??= ''
+    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'localIncorporacao']) if (k in x) x[k] ??= ''
+    // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
+    if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''
+    if ('vencimento' in d) x.vencimento = d.vencimento === '' || d.vencimento === null || d.vencimento === undefined ? '' : String(Number(d.vencimento))
     if (x.email) x.email = x.email.toLowerCase()
     // empregados domiciliares têm a categoria própria (Trabalhador Domiciliar)
     if (x.vinculo === 'domiciliar') Object.assign(x, { carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar' })

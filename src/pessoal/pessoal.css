@@ -137,3 +137,11 @@
 .pes-documento { transition: box-shadow 0.15s; }
 .pes-documento:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08); }
 .pes-documento-icone { flex: none; width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--bs-theme-bg-subtle, #e8efe9); color: var(--bs-theme, #1f3a2d); font-size: 18px; }
+
+/* pesquisa geral (topo) */
+.pes-pesquisa { width: 100%; max-width: 560px; }
+.pes-pesquisa input { padding-left: 2.1rem; border-radius: 20px; }
+.pes-pesquisa-icone { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--bs-secondary-color); }
+.pes-pesquisa-lista { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1060; background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 8px; max-height: 70vh; overflow-y: auto; }
+.pes-pesquisa-item { display: flex; gap: 0.6rem; align-items: center; width: 100%; padding: 0.45rem 0.75rem; border: 0; background: transparent; color: inherit; }
+.pes-pesquisa-item.activo { background: var(--bs-tertiary-bg); }

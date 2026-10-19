@@ -110,6 +110,28 @@ model Pessoa {
   email                String?   @unique
   telefone             String    @default("") // cifrado
   morada               String    @default("") // cifrado
+  // morada em partes (ficha individual): município, bairro, rua, casa n.º, caixa postal
+  municipio            String    @default("")
+  bairro               String    @default("") // cifrado
+  rua                  String    @default("") // cifrado
+  casa                 String    @default("") // cifrado
+  caixaPostal          String    @default("") @map("caixa_postal")
+  telefoneAlternativo  String    @default("") @map("telefone_alternativo") // cifrado
+  // bilhete de identidade: emissão e validade
+  biEmitidoEm          DateTime? @map("bi_emitido_em") @db.Date
+  biValidade           DateTime? @map("bi_validade") @db.Date
+  biLocalEmissao       String    @default("") @map("bi_local_emissao")
+  grupoSanguineo       String    @default("") @map("grupo_sanguineo")
+  // agregado familiar: cônjuge e [{ nome, parentesco, dataNascimento, nacionalidade, profissao }] (JSON cifrado)
+  conjuge              String    @default("") // cifrado
+  conjugeLocalServico  String    @default("") @map("conjuge_local_servico")
+  agregado             String    @default("") // cifrado (JSON)
+  // vencimento mensal em kwanzas (para as declarações) e n.º de segurança social
+  vencimento           String    @default("") // cifrado
+  inss                 String    @default("")
+  // incorporação (ficha individual do militar)
+  localIncorporacao    String    @default("") @map("local_incorporacao")
+  voluntario           Boolean?
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")
@@ -492,4 +514,29 @@ model PedidoDados {
   pessoa        Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@map("pedidos_dados")
+}
+
+// documentos emitidos (declarações, guias…): a numeração de cada série por ano e o registo de quem emitiu
+model DocumentoEmitido {
+  id         Int      @id @default(autoincrement())
+  pessoaId   Int      @map("pessoa_id")
+  tipo       String // declaracao_efectividade | guia_ferias | ficha_individual | …
+  serie      String   @default("") // série da numeração (declaracao); vazio = sem número
+  ano        Int
+  numero     Int?
+  dados      Json     @default("{}") // as opções escolhidas (finalidade, dias, destino…)
+  emitidoPor String   @map("emitido_por")
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@unique([serie, ano, numero])
+  @@index([pessoaId])
+  @@map("documentos_emitidos")
+}
+
+// definições do sistema (ex.: quem assina os documentos)
+model Definicao {
+  chave String @id
+  valor Json
+
+  @@map("definicoes")
 }

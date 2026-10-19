@@ -32,6 +32,8 @@ function situacaoDemo() {
 const entre = (a, b) => a + Math.floor(aleatorio() * (b - a + 1))
 const data = (ano, mes = entre(1, 12), dia = entre(1, 28)) => new Date(Date.UTC(ano, mes - 1, dia))
 
+// vencimento de referência por posto (demonstração)
+const POSTOS_SALARIO = { general: 2400000, tenente_general: 2100000, major_general: 1900000, brigadeiro: 1700000, coronel: 1300000, tenente_coronel: 1050000, major: 850000, capitao: 650000, tenente: 410000, alferes: 360000 }
 const NOMES_M = ['António', 'Manuel', 'João', 'José', 'Pedro', 'Francisco', 'Domingos', 'Afonso', 'Bernardo', 'Carlos', 'Mateus', 'Paulo', 'Miguel', 'Alberto', 'Joaquim', 'Adriano', 'Agostinho', 'Simão', 'Eduardo', 'Fernando', 'Lucas', 'Gaspar', 'Isaías', 'Valentim', 'Narciso']
 const NOMES_F = ['Maria', 'Ana', 'Luísa', 'Teresa', 'Isabel', 'Rosa', 'Helena', 'Joana', 'Esperança', 'Conceição', 'Domingas', 'Filomena', 'Madalena', 'Celeste', 'Graça']
 const APELIDOS = ['Kiala', 'Tchipa', 'Lopes', 'Neto', 'Santos', 'Cassoma', 'Mbala', 'Sebastião', 'Muteka', 'Kalunga', 'Ndala', 'Chilombo', 'Fernandes', 'Domingos', 'Kangamba', 'Mavinga', 'Sapalo', 'Tomás', 'Cambuta', 'Hossi', 'Quissanga', 'Bumba', 'Nzinga', 'Capitango', 'Ventura']
@@ -75,6 +77,7 @@ const IDADE_POSTO = { tenente_general: 58, brigadeiro: 53, coronel: 50, tenente_
 async function main() {
   if (await bd.pessoa.count()) {
     if (!forcar) return console.log('Já há fichas: nada a fazer (use --forcar para apagar e voltar a criar).')
+    await bd.documentoEmitido.deleteMany()
     await bd.proposta.deleteMany()
     await bd.extracto.deleteMany()
     await bd.expediente.deleteMany()
@@ -237,6 +240,29 @@ async function main() {
     const autor = i === 0 ? por('DIR') : contas[i % contas.length]
     if (autor) await bd.mensagem.create({ data: { conversaId: geral.id, autorId: autor.id, texto: f, criadoEm: new Date(Date.now() - (frases.length - i) * 600_000) } })
   }
+  // campos da ficha individual (modelos da ESG): residência, BI, agregado familiar, vencimento — tudo fictício
+  const MUNICIPIOS = ['Belas', 'Talatona', 'Kilamba Kiaxi', 'Viana', 'Cazenga', 'Maianga', 'Rangel']
+  const BAIRROS = ['Bairro Militar', 'Morro Bento', 'Nova Vida', 'Zango', 'Golf II', 'Benfica', 'Patriota']
+  const SANGUE = ['O+', 'O+', 'A+', 'B+', 'AB+', 'O-', 'A-']
+  for (const p of await bd.pessoa.findMany({ select: { id: true, tipo: true, vinculo: true, genero: true, estadoCivil: true, dataNascimento: true, posto: true } })) {
+    const nasc = p.dataNascimento ? p.dataNascimento.getFullYear() : ano - 40
+    const filhos = Array.from({ length: entre(0, 3) }, () => ({ nome: `${aleatorio() < 0.5 ? um(NOMES_M) : um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}`, parentesco: aleatorio() < 0.5 ? 'Filho' : 'Filha', dataNascimento: `${Math.min(ano - 1, nasc + entre(24, 38))}-0${entre(1, 9)}-1${entre(0, 9)}`, nacionalidade: 'Angolana', profissao: 'Estudante' }))
+    const salario = p.tipo === 'militar' ? (POSTOS_SALARIO[p.posto] ?? 250000) + entre(0, 90000) + entre(0, 99) / 100 : entre(110000, 260000) + entre(0, 99) / 100
+    await bd.pessoa.update({ where: { id: p.id }, data: {
+      municipio: um(MUNICIPIOS), bairro: um(BAIRROS), rua: `Rua ${entre(1, 40)}`, casa: String(entre(1, 300)), grupoSanguineo: um(SANGUE),
+      biEmitidoEm: data(ano - entre(1, 5)), biLocalEmissao: 'Luanda',
+      conjuge: p.estadoCivil === 'casado' ? `${p.genero === 'F' ? um(NOMES_M) : um(NOMES_F)} ${um(APELIDOS)} ${um(APELIDOS)}` : '',
+      agregado: p.vinculo === 'domiciliar' || !filhos.length ? '' : JSON.stringify(filhos),
+      vencimento: String(Math.round(salario * 100) / 100), inss: p.tipo === 'civil' ? String(entre(10000000, 99999999)) : '',
+      ...(p.tipo === 'militar' ? { localIncorporacao: um(['Luanda', 'Huambo', 'Benguela', 'Lubango', 'Malanje']), voluntario: aleatorio() < 0.8 } : {}),
+    } })
+  }
+  // quem assina os documentos (fictício, para demonstração)
+  await bd.definicao.upsert({ where: { chave: 'assinaturas' }, update: {}, create: { chave: 'assinaturas', valor: {
+    comandante: { cargo: 'O COMANDANTE DA ESG', nome: 'NOME DO COMANDANTE (DEMONSTRAÇÃO)', posto: 'TENENTE GENERAL' },
+    chefeRpq: { cargo: 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS', nome: 'NOME DO CHEFE (DEMONSTRAÇÃO)', posto: 'CORONEL' }, local: 'Luanda',
+  } } })
+
   console.log(`Criadas ${Object.keys(unidades).length} unidades, ${cargos.length} cargos, ${n} fichas, ${dom} domiciliares, ${contas.length} contas de demonstração (palavra-passe Escola2026demo).`)
 }
 

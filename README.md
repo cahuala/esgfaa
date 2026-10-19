@@ -150,6 +150,8 @@ npm start                   # aplica as migrações e arranca na porta 3002
 npm run semear              # (opcional) dados de demonstração
 ```
 
+**Ficha e documentos pessoais:** a pesquisa no topo encontra qualquer pessoa por nome, NIP, n.º de agente, BI, nome de guerra, posto, cargo, unidade, telefone ou e-mail. Na ficha, o botão **Documentos** abre a lista dos documentos que servem àquela pessoa (modelos da ESG): declarações de efectividade, salário e serviço (numeradas por ano, «N.º 402/26», válidas 90 dias), guias de marcha (férias, licença disciplinar, dispensa, apresentação) e fichas (individual do militar com a mecanográfica e o anexo, individual do civil, registo biográfico, disciplinar, avaliação individual — FAI, proposta de nomeação, processo individual de promoção — PIP). Escolhem-se vários e saem num PDF, em Times 14 com os dados em maiúsculas; cada emissão fica no separador «Documentos emitidos» e na auditoria. Quem assina define-se em *Administração → Assinaturas dos documentos*.
+
 A aplicação constrói-se com `npm run build:pessoal` na raiz (fica em `dist-pessoal`, só com o que o sistema de pessoal precisa) e é servida pela própria API interna (`APP_DIR`). Em desenvolvimento: `npm run dev` em `api-pessoal/` e abrir `http://localhost:5173/pessoal/`.
 
 **Ligação ao portal em produção** (os docentes e estudantes registados no sistema interno passam a ter conta no portal):

@@ -14,6 +14,8 @@ const VAZIA = {
   ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', estado: '', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
+  municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
+  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', localIncorporacao: '', voluntario: '',
 }
 const CAMPOS = Object.keys(VAZIA)
 
@@ -78,8 +80,9 @@ export default function FormularioFicha() {
     setAGuardar(true)
     const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId ? Number(d.cargoId) : null }
     corpo.militarAlocadoId = corpo.vinculo === 'domiciliar' && corpo.militarAlocadoId ? Number(corpo.militarAlocadoId) : null
-    for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto']) if (corpo[k] === '') corpo[k] = null
-    if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'estado', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
+    for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto', 'voluntario']) if (corpo[k] === '') corpo[k] = null
+    corpo.agregado = (corpo.agregado ?? []).filter((a) => a.nome?.trim()).map((a) => Object.fromEntries(Object.entries(a).filter(([, v]) => v !== '')))
+    if (!militar) for (const k of ['ramo', 'posto', 'fps', 'quadroEspecial', 'situacao', 'efectividade', 'estado', 'localIncorporacao', 'voluntario', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao']) delete corpo[k]
     if (id) delete corpo.cargoId // o cargo muda por nomeação/exoneração
     try {
       const r = await api(id ? `/pessoas/${id}` : '/pessoas', { metodo: id ? 'PUT' : 'POST', corpo })
@@ -150,6 +153,8 @@ export default function FormularioFicha() {
             <Campo rotulo="Ingresso nas FAA" col="col-md-3">{data('dataIngresso')}</Campo>
             <Campo rotulo="Ingresso no Quadro Permanente" col="col-md-3">{data('dataIngressoQP')}</Campo>
             <Campo rotulo="Antiguidade no posto" col="col-md-3" ajuda="Data no documento de promoção (art. 29.º).">{data('dataAntiguidadePosto')}</Campo>
+            <Campo rotulo="Local de incorporação" col="col-md-3">{txt('localIncorporacao')}</Campo>
+            <Campo rotulo="Condição de incorporação" col="col-md-3"><Escolha valor={d.voluntario === true ? 'sim' : d.voluntario === false ? 'nao' : ''} aoMudar={(v) => setD({ ...d, voluntario: v === 'sim' ? true : v === 'nao' ? false : '' })} opcoes={[['sim', 'Voluntário'], ['nao', 'Não voluntário']]} /></Campo>
           </div>
         </Painel>
       )}
@@ -163,6 +168,7 @@ export default function FormularioFicha() {
             <Campo rotulo="Vínculo" col="col-md-3"><Escolha valor={d.vinculoCivil} aoMudar={set('vinculoCivil')} opcoes={ref.vinculosCivis} /></Campo>
             <Campo rotulo="Admissão" col="col-md-3">{data('dataAdmissao')}</Campo>
             <Campo rotulo="Na classe desde" col="col-md-3">{data('dataCategoria')}</Campo>
+            <Campo rotulo="N.º de segurança social (INSS)" col="col-md-3">{txt('inss')}</Campo>
           </div>
         </Painel>
       )}
@@ -178,10 +184,48 @@ export default function FormularioFicha() {
           <Campo rotulo="Nome do pai" col="col-md-3">{txt('pai')}</Campo>
           <Campo rotulo="Nome da mãe" col="col-md-3">{txt('mae')}</Campo>
           <Campo rotulo="Telefone" col="col-md-3">{txt('telefone')}</Campo>
-          <Campo rotulo="Morada" col="col-md-9">{txt('morada')}</Campo>
+          <Campo rotulo="Telefone alternativo" col="col-md-3">{txt('telefoneAlternativo')}</Campo>
+          <Campo rotulo="Grupo sanguíneo" col="col-md-3"><Escolha valor={d.grupoSanguineo} aoMudar={set('grupoSanguineo')} opcoes={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} /></Campo>
+          <Campo rotulo="Vencimento mensal (Kz)" col="col-md-3" ajuda="Para as declarações; fica cifrado.">{txt('vencimento', { type: 'number', step: '0.01', min: 0 })}</Campo>
+          <Campo rotulo="BI emitido em (local)" col="col-md-3">{txt('biLocalEmissao')}</Campo>
+          <Campo rotulo="Data de emissão do BI" col="col-md-3">{data('biEmitidoEm')}</Campo>
+          <Campo rotulo="Validade do BI" col="col-md-3">{data('biValidade')}</Campo>
+          <Campo rotulo="Morada (localidade)" col="col-md-3">{txt('morada')}</Campo>
+          <Campo rotulo="Município" col="col-md-3">{txt('municipio')}</Campo>
+          <Campo rotulo="Bairro" col="col-md-3">{txt('bairro')}</Campo>
+          <Campo rotulo="Rua" col="col-md-3">{txt('rua')}</Campo>
+          <Campo rotulo="Casa n.º" col="col-md-1">{txt('casa')}</Campo>
+          <Campo rotulo="Caixa postal" col="col-md-2">{txt('caixaPostal')}</Campo>
           <Campo rotulo="Habilitações literárias" col="col-md-3"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
           <Campo rotulo="Área de formação" col="col-md-9">{txt('areaFormacao')}</Campo>
         </div>
+      </Painel>
+
+      <Painel titulo="Agregado familiar" icone="fa-users">
+        <div className="row">
+          <Campo rotulo="Nome do cônjuge" col="col-md-6">{txt('conjuge')}</Campo>
+          <Campo rotulo="Local de serviço do cônjuge" col="col-md-6">{txt('conjugeLocalServico')}</Campo>
+        </div>
+        <table className="table table-sm align-middle mb-2">
+          <thead><tr><th>Nome</th><th>Parentesco</th><th>Data de nascimento</th><th>Nacionalidade</th><th>Profissão</th><th /></tr></thead>
+          <tbody>
+            {(d.agregado ?? []).map((a, i) => {
+              const mudarA = (k) => (e) => setD({ ...d, agregado: d.agregado.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)) })
+              return (
+                <tr key={i}>
+                  <td><input className="form-control form-control-sm" value={a.nome ?? ''} onChange={mudarA('nome')} aria-label="Nome" /></td>
+                  <td><input className="form-control form-control-sm" value={a.parentesco ?? ''} onChange={mudarA('parentesco')} list="parentescos" aria-label="Parentesco" /></td>
+                  <td><input type="date" className="form-control form-control-sm" value={a.dataNascimento ?? ''} onChange={mudarA('dataNascimento')} aria-label="Data de nascimento" /></td>
+                  <td><input className="form-control form-control-sm" value={a.nacionalidade ?? ''} onChange={mudarA('nacionalidade')} aria-label="Nacionalidade" /></td>
+                  <td><input className="form-control form-control-sm" value={a.profissao ?? ''} onChange={mudarA('profissao')} aria-label="Profissão" /></td>
+                  <td><button type="button" className="btn btn-xs btn-outline-danger" onClick={() => setD({ ...d, agregado: d.agregado.filter((_, j) => j !== i) })} aria-label="Retirar"><i className="fa fa-times" /></button></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <datalist id="parentescos">{['Filho', 'Filha', 'Pai', 'Mãe', 'Irmão', 'Irmã', 'Sobrinho(a)', 'Neto(a)', 'Outro'].map((x) => <option key={x} value={x} />)}</datalist>
+        <button type="button" className="btn btn-xs btn-outline-theme" onClick={() => setD({ ...d, agregado: [...(d.agregado ?? []), { nome: '', parentesco: 'Filho', dataNascimento: '', nacionalidade: 'Angolana', profissao: '' }] })}><i className="fa fa-plus me-1" />Juntar familiar</button>
       </Painel>
 
       <Painel titulo="Na Escola" icone="fa-building">

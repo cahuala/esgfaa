@@ -34,9 +34,19 @@ export const pessoa = z.object({
   avaliacaoFavoravel: z.boolean().optional(), aptidaoFisica: z.boolean().optional(), processoPendente: z.boolean().optional(),
   carreiraCivil: opc(30).nullable(), categoriaCivil: opc(80).nullable(), vinculoCivil: opc(30).nullable(), dataAdmissao: dataOpc, dataCategoria: dataOpc,
   ativo: z.boolean().optional(), observacoes: opc(2000),
+  // ficha individual (modelos da ESG)
+  municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40),
+  biEmitidoEm: dataOpc, biValidade: dataOpc, biLocalEmissao: opc(80), grupoSanguineo: z.union([z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']), z.literal('')]).optional(),
+  conjuge: opc(150), conjugeLocalServico: opc(150),
+  agregado: z.array(z.object({ nome: txt(150, 1), parentesco: opc(40), dataNascimento: dataOpc, nacionalidade: opc(40), profissao: opc(80) }).strict()).max(30).optional(),
+  vencimento: z.union([z.coerce.number().min(0).max(1e9), z.literal(''), z.null()]).optional(), inss: opc(30),
+  localIncorporacao: opc(120), voluntario: z.union([z.boolean(), z.null()]).optional(),
 }).strict()
 export const editarPessoa = pessoa.partial().strict()
 
+const pessoaAssina = z.object({ cargo: txt(120), nome: txt(150), posto: txt(60) }).strict()
+export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoaAssina, local: txt(60, 2) }).strict()
+export const emitirDocumentos = z.object({ documentos: z.array(z.object({ tipo: txt(40, 1), dados: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])).optional() }).strict()).min(1).max(20) }).strict()
 export const filtrosPessoas = z.record(z.string(), z.string().max(60)).optional().default({})
 export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: z.enum(['formacao', 'promocao', 'qualificacao', 'actualizacao', 'academico']).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()
 export const evento = z.object({ tipo: txt(30), data, descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default('') }).strict()

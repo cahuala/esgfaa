@@ -9,11 +9,21 @@ export const GENEROS = { M: 'Masculino', F: 'Feminino' }
 export const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
 export const PROVINCIAS = ['Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando', 'Cubango', 'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire']
 
+// agregado familiar guardado como JSON (texto cifrado)
+function lerAgregado(v) {
+  if (Array.isArray(v)) return v
+  try {
+    return v ? JSON.parse(v) : []
+  } catch {
+    return []
+  }
+}
+
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const arred = (n) => (n === null || n === undefined ? null : Math.floor(n * 10) / 10)
 
 // datas como "AAAA-MM-DD" para o navegador
-const DATAS = ['dataNascimento', 'dataCargo', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao', 'dataAdmissao', 'dataCategoria']
+const DATAS = ['dataNascimento', 'dataCargo', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao', 'dataAdmissao', 'dataCategoria', 'biEmitidoEm', 'biValidade']
 
 /*
   Ficha com os campos calculados: nome do posto no ramo, categoria, idades e tempos, e a situação
@@ -23,6 +33,8 @@ export function comDerivados(p, hoje = new Date()) {
   const f = { ...p }
   for (const k of DATAS) f[k] = dia(p[k])
   f.idade = idade(p, hoje)
+  f.agregado = lerAgregado(p.agregado)
+  f.vencimento = p.vencimento ? Number(p.vencimento) : null
   f.unidadeNome = p.unidade?.nome ?? ''
   f.cargoNome = p.cargo?.nome ?? ''
   if (p.tipo === 'militar') {

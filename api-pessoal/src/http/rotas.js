@@ -217,6 +217,11 @@ export function rotas({ servicos: s, config }) {
   r.get('/utilizadores', async (req, res) => res.json(await s.sessao.listar(u(req))))
   r.post('/utilizadores/contas-pessoas', validar({ body: E.contasPessoas }), async (req, res) => res.json(await s.sessao.criarContasPessoas(u(req), req.dados.body)))
   r.post('/utilizadores', validar({ body: E.utilizador }), async (req, res) => res.status(201).json(await s.sessao.criar(u(req), req.dados.body)))
+  // documentos pessoais emitidos da ficha (declarações numeradas, guias, fichas) e quem os assina
+  r.get('/definicoes/assinaturas', async (req, res) => res.json(await s.documentosEmitidos.assinaturas(u(req))))
+  r.put('/definicoes/assinaturas', validar({ body: E.assinaturas }), async (req, res) => res.json(await s.documentosEmitidos.guardarAssinaturas(u(req), req.dados.body)))
+  r.get('/pessoas/:id/documentos-emitidos', validar({ params: E.pId }), async (req, res) => res.json(await s.documentosEmitidos.historico(u(req), req.dados.params.id)))
+  r.post('/pessoas/:id/documentos-emitidos', validar({ params: E.pId, body: E.emitirDocumentos }), async (req, res) => res.status(201).json(await s.documentosEmitidos.emitir(u(req), req.dados.params.id, req.dados.body.documentos)))
   r.post('/utilizadores/:id/2fa/repor', validar({ params: E.pId }), async (req, res) => res.json(await s.doisFatores.repor(u(req), req.dados.params.id)))
   r.put('/utilizadores/:id', validar({ params: E.pId, body: E.editarUtilizador }), async (req, res) => res.json(await s.sessao.editar(u(req), req.dados.params.id, req.dados.body)))
   r.get('/auditoria', validar({ query: z.object({ de: z.string().max(10).optional(), ate: z.string().max(10).optional(), utilizador: z.string().max(200).optional(), acao: z.string().max(40).optional() }) }), async (req, res) => res.json(await s.auditoria.listar(u(req), req.dados.query)))

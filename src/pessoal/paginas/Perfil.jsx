@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { abrirFicheiro, api, enviarComProgresso, urlFoto } from '../api'
-import { etiquetaProcesso, sinteseBiografica } from '../documentos'
+import { etiquetaProcesso } from '../documentos'
 import Foto from '../componentes/Foto'
 import { reduzirFoto } from '../fotos'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
-import { fichaPdf } from '../fichaPdf'
+import DocumentosPessoais from '../componentes/DocumentosPessoais'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
@@ -16,7 +16,7 @@ import { anos, dataPt } from '../formatar'
 
 const Dado = ({ r, v }) => <div className="col-sm-6 col-lg-4 mb-2"><div className="small text-muted">{r}</div><div className="fw-semibold">{v || v === 0 ? v : '—'}</div></div>
 const KZ = (v) => (v || v === 0 ? `${Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz` : '—')
-const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['processo', 'Processo individual', 'fa-folder-open'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
+const ABAS = [['resumo', 'Dados', 'fa-id-card'], ['emitidos', 'Documentos emitidos', 'fa-file-alt'], ['carreira', 'Carreira', 'fa-chevron-up'], ['historico', 'Histórico', 'fa-history'], ['processo', 'Processo individual', 'fa-folder-open'], ['cursos', 'Cursos', 'fa-graduation-cap'], ['licencas', 'Licenças', 'fa-plane-departure'], ['propostas', 'Propostas', 'fa-file-signature']]
 
 export default function Perfil() {
   const { id } = useParams()
@@ -66,8 +66,8 @@ export default function Perfil() {
   return (
     <>
       <Cabecalho titulo={militar ? 'Perfil do militar' : 'Perfil do funcionário civil'} migalhas={[['Pessoal', '/pessoas'], [p.nome]]}>
-        {pode('ver') && <button type="button" className="btn btn-danger" onClick={() => sinteseBiografica(p)}><i className="fa fa-file-pdf me-1" />Síntese biográfica</button>}
-        {pode('ver') && <button type="button" className="btn btn-outline-danger" onClick={() => fichaPdf(p, urlDaFoto)}><i className="fa fa-file-pdf me-1" />Ficha individual</button>}
+        <button type="button" className="btn btn-white" onClick={() => navegar(-1)}><i className="fa fa-arrow-left me-1" />Voltar</button>
+        {editar && <button type="button" className="btn btn-danger" onClick={() => setModal({ documentos: true })}><i className="fa fa-file-pdf me-1" />Documentos</button>}
         {editar && <Link to={`/pessoas/${p.id}/editar`} className="btn btn-theme"><i className="fa fa-pen me-1" />Editar ficha</Link>}
       </Cabecalho>
 
@@ -112,8 +112,17 @@ export default function Perfil() {
                 <Dado r="Data de nascimento" v={p.dataNascimento && `${dataPt(p.dataNascimento)} (${p.idade} anos)`} /><Dado r="Género" v={p.generoNome} /><Dado r="Estado civil" v={ref.estadosCivis[p.estadoCivil]} />
                 <Dado r="Naturalidade" v={[p.naturalidade, p.provincia].filter(Boolean).join(', ')} /><Dado r="Nacionalidade" v={p.nacionalidade} /><Dado r="Filiação" v={[p.pai, p.mae].filter(Boolean).join(' e ')} />
                 <Dado r="Telefone" v={p.telefone} /><Dado r="E-mail" v={p.email} /><Dado r="Morada" v={p.morada} />
-                <Dado r="Habilitações" v={p.habilitacaoNome} /><Dado r="Área de formação" v={p.areaFormacao} />
+                <Dado r="Habilitações" v={p.habilitacaoNome} /><Dado r="Área de formação" v={p.areaFormacao} /><Dado r="Grupo sanguíneo" v={p.grupoSanguineo} />
+                <Dado r="BI emitido em" v={[p.biLocalEmissao, dataPt(p.biEmitidoEm)].filter(Boolean).join(', ')} /><Dado r="BI válido até" v={dataPt(p.biValidade)} /><Dado r="Telefone alternativo" v={p.telefoneAlternativo} />
+                <Dado r="Residência" v={[p.municipio, p.bairro, p.rua, p.casa && `casa n.º ${p.casa}`].filter(Boolean).join(', ')} /><Dado r="Caixa postal" v={p.caixaPostal} /><Dado r="N.º de segurança social (INSS)" v={p.inss} />
               </div>
+            </Painel>
+            <Painel titulo="Agregado familiar" icone="fa-users">
+              <div className="row"><Dado r="Cônjuge" v={p.conjuge} /><Dado r="Local de serviço do cônjuge" v={p.conjugeLocalServico} /></div>
+              {p.agregado?.length > 0 ? (
+                <table className="table table-sm mb-0"><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>Nacionalidade</th><th>Profissão</th></tr></thead>
+                  <tbody>{p.agregado.map((a, i) => <tr key={i}><td>{a.nome}</td><td>{a.parentesco}</td><td>{dataPt(a.dataNascimento)}</td><td>{a.nacionalidade}</td><td>{a.profissao}</td></tr>)}</tbody></table>
+              ) : <p className="small text-muted mb-0">Sem filhos ou outros familiares registados.</p>}
             </Painel>
             <Painel titulo={militar ? 'Situação militar' : 'Situação profissional'} icone={militar ? 'fa-shield-alt' : 'fa-briefcase'}>
               <div className="row">
@@ -122,11 +131,13 @@ export default function Perfil() {
                   <Dado r="Forma de prestação de serviço" v={`${p.fpsNome} (${ref.formasServico[p.fps]?.carreira})`} /><Dado r="Quadro especial" v={p.quadroNome} /><Dado r="Especialidade" v={p.especialidade} />
                   <Dado r="Situação (Lei n.º 13/18)" v={p.situacaoCaminho ? `${p.situacaoCaminho} (${p.situacaoArtigo})` : ''} /><Dado r="Estado" v={p.estadoNome || 'Ao serviço'} /><Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} />
                   <Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} /><Dado r="Antiguidade no posto" v={dataPt(p.dataAntiguidadePosto)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
+                  <Dado r="Local de incorporação" v={p.localIncorporacao} /><Dado r="Condição de incorporação" v={p.voluntario === true ? 'Voluntário' : p.voluntario === false ? 'Não voluntário' : ''} /><Dado r="Vencimento mensal" v={p.vencimento ? KZ(p.vencimento) : ''} />
                   <Dado r="Avaliação" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} /><Dado r="Aptidão física e psíquica" v={p.aptidaoFisica ? 'Apto' : 'Não apto'} /><Dado r="Processo disciplinar/criminal" v={p.processoPendente ? 'Pendente' : 'Nenhum'} />
                 </> : <>
                   <Dado r="Categoria" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
                   <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na classe desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   {p.remuneracao && <><Dado r="Vencimento base da categoria" v={KZ(p.remuneracao.vencimentoBase)} /><Dado r="Subsídios (alimentação + transporte)" v={KZ(p.remuneracao.subsidioAlimentacao + p.remuneracao.subsidioTransporte)} /><Dado r={`Líquido de referência (SS ${p.remuneracao.percSegSocial}% · IRT ${p.remuneracao.percIrt}%)`} v={KZ(p.remuneracao.liquido)} /></>}
+                  <Dado r="Vencimento mensal" v={p.vencimento ? KZ(p.vencimento) : ''} />
                   <Dado r="Avaliação de desempenho" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} />
                 </>}
               </div>
@@ -175,6 +186,10 @@ export default function Perfil() {
           </div>
         </div>
       )}
+
+      {aba === 'emitidos' && <DocumentosEmitidos pessoaId={p.id} />}
+
+      {modal?.documentos && <DocumentosPessoais p={p} aoFechar={fechar} aoEmitir={(n) => { fechar(); avisar(`${n} documento(s) gerado(s).`); if (aba === 'emitidos') setAba('resumo') }} />}
 
       {aba === 'carreira' && (
         <div className="row">
@@ -455,5 +470,29 @@ function TerminarGraduacao({ p, g, aoFechar, aoGuardar }) {
         <Campo rotulo="Motivo"><input className="form-control form-control-sm" value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} /></Campo>
       </div>
     </Modal>
+  )
+}
+
+// documentos já emitidos desta pessoa (declarações numeradas, guias, fichas): quem e quando
+function DocumentosEmitidos({ pessoaId }) {
+  const { dados } = useDados(`/pessoas/${pessoaId}/documentos-emitidos`)
+  if (!dados) return <Carregando />
+  return (
+    <Painel titulo="Documentos emitidos" icone="fa-file-alt">
+      {dados.length === 0 ? <p className="text-muted mb-0">Ainda não foi emitido nenhum documento. Use o botão «Documentos», em cima.</p> : (
+        <table className="table table-sm mb-0">
+          <thead><tr><th>Documento</th><th>N.º</th><th>Opções</th><th>Emitido por</th><th>Data</th></tr></thead>
+          <tbody>{dados.map((d) => (
+            <tr key={d.id}>
+              <td>{d.nome}</td>
+              <td>{d.numero ? `${String(d.numero).padStart(3, '0')}/${String(d.ano).slice(-2)}` : '—'}</td>
+              <td className="small text-muted">{Object.entries(d.dados ?? {}).filter(([, v]) => v !== '' && v !== null).map(([k, v]) => `${k}: ${v}`).join(' · ')}</td>
+              <td className="small">{d.emitidoPor}</td>
+              <td className="small">{new Date(d.criadoEm).toLocaleString('pt-PT')}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      )}
+    </Painel>
   )
 }
