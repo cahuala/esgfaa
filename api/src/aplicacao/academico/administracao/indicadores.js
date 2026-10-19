@@ -44,7 +44,7 @@ export class ServicoIndicadores {
           id: c.id, codigo: c.codigo, nome: c.nome, turma: t.nome, turmaId: t.id,
           docentes: c.docentes.map((d) => d.nome), semDocente: c.docentes.length === 0,
           estudantes: linhas.length, aprovados: contar('aprovado') + contar('dispensado'), reprovados: contar('reprovado'),
-          exame: contar('exame'), recurso: contar('recurso'), emCurso: contar('em_curso'),
+          exame: contar('exame'), recurso: contar('recurso'), emCurso: contar('em_curso'), excluidos: contar('excluido'),
           taxaAprovacao: taxaAprovacao(linhas), media: media(linhas.map((l) => l.final)), assiduidade: media(assid),
         })
         for (const a of pautasEmAtraso(eventos, linhas, agora)) {

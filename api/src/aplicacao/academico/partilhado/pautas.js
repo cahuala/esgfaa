@@ -3,6 +3,7 @@ import { notaDosPares } from '../../../dominio/academico/atividades/workshops.js
 import { notaComposta, validarComposicao } from '../../../dominio/academico/avaliacao/composicao.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, resultadoDisciplina } from '../../../dominio/academico/avaliacao/resultado.js'
+import { assiduidade } from '../../../dominio/academico/atividades/presencas.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { notasDoTrabalhoVisiveis } from '../../../dominio/academico/atividades/trabalhos.js'
 import { estadoDosPrazos, mensagemFechado } from '../../../dominio/academico/avaliacao/prazosNotas.js'
@@ -113,15 +114,18 @@ export class ServicoPautas {
       ...questionarios.map((q) => ({ tipo: 'questionario', id: q.id, titulo: q.titulo })),
       ...workshops.map((w) => ({ tipo: 'workshop', id: w.id, titulo: w.titulo })),
     ]
-    const [estudantes, notas] = await Promise.all([
+    const [estudantes, notas, presencas] = await Promise.all([
       this.academico.estudantesDaPautaDaCadeira(cadeira),
       this.academico.pautaDaCadeira(cadeira.id),
+      this.academico.presencasDasCadeiras([cadeira.id]),
     ])
     return {
       cadeira, publicadas: cadeira.notasPublicadas, composicoes, atividades, prazos: await this.prazos(cadeira),
       linhas: estudantes.map((e) => {
         const n = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, notas[e.id]?.[k] ?? null]))
-        return { estudante: e, ...n, observacao: notas[e.id]?.observacao || '', ...resultadoDisciplina(n) }
+        // assiduidade: abaixo do mínimo, o estudante fica excluído por faltas
+        const a = assiduidade(presencas.filter((p) => p.estudanteId === e.id))
+        return { estudante: e, ...n, assiduidade: a, observacao: notas[e.id]?.observacao || '', ...resultadoDisciplina(n, { assiduidade: a }) }
       }),
     }
   }

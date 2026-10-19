@@ -130,6 +130,56 @@ export class ServicoTurmas {
     return { simulacao: simular, resumo, linhas: resultado }
   }
 
+  /*
+    Passagem de ano: da turma de um ano curricular para a do ano seguinte do mesmo curso.
+    Transita quem tem todas as cadeiras da turma aprovadas (ou dispensadas); não transita quem tem
+    cadeiras reprovadas ou excluídas por faltas; fica por decidir quem ainda tem pautas por fechar
+    (em curso, à espera de exame ou de recurso). Com executar = false só mostra o que aconteceria.
+    Ao executar: matrícula na turma de destino e a da turma de origem passa a «concluída».
+  */
+  async transicao(ctx, turmaId, { destinoId, executar = false }) {
+    ctx.actor.exigir('academico.gerir')
+    const [t, d] = await Promise.all([this.academico.turma(turmaId), this.academico.turma(Number(destinoId))])
+    if (!t) throw new NaoEncontrado('Turma não encontrada.')
+    if (!d) throw new ErroValidacao('Escolha a turma do ano seguinte.', { campo: 'destinoId' })
+    if (t.anoFinal) throw new ErroValidacao('É a turma de finalistas: o curso conclui-se em «Finalistas» (TFC e certificado), não passa a outro ano.')
+    if (d.curso !== t.curso || d.anoCurricular !== t.anoCurricular + 1) throw new ErroValidacao(`A turma de destino tem de ser do mesmo curso e do ${t.anoCurricular + 1}.º ano.`, { campo: 'destinoId' })
+    const [estudantes, cadeiras] = await Promise.all([this.academico.estudantesAtivosDaTurma(t.id), this.academico.cadeirasDasTurmas([t.id])])
+    if (!cadeiras.length) throw new ErroValidacao('A turma não tem cadeiras.')
+    const resultados = {}
+    for (const c of cadeiras) {
+      const pauta = await this.pautas.pauta(c)
+      for (const l of pauta.linhas) (resultados[l.estudante.id] ??= []).push({ codigo: c.codigo, nome: c.nome, situacao: l.situacao, final: l.final })
+    }
+    const NOMES = { reprovado: 'reprovada', excluido: 'excluído por faltas', em_curso: 'em curso', exame: 'falta o exame', recurso: 'falta o recurso' }
+    const linhas = estudantes.map((e) => {
+      const r = resultados[e.id] ?? []
+      const aprovadas = r.filter((x) => x.situacao === 'aprovado' || x.situacao === 'dispensado')
+      const falhadas = r.filter((x) => x.situacao === 'reprovado' || x.situacao === 'excluido')
+      const abertas = r.filter((x) => ['em_curso', 'exame', 'recurso'].includes(x.situacao))
+      const decisao = falhadas.length ? 'nao_transita' : abertas.length || aprovadas.length < cadeiras.length ? 'por_decidir' : 'transita'
+      return {
+        estudante: { id: e.id, nome: e.nome, numero: e.numero }, decisao, aprovadas: aprovadas.length, cadeiras: cadeiras.length,
+        pendentes: [...falhadas, ...abertas].map((x) => `${x.codigo} (${NOMES[x.situacao] ?? x.situacao})`),
+      }
+    })
+    const resumo = { transita: linhas.filter((l) => l.decisao === 'transita').length, nao_transita: linhas.filter((l) => l.decisao === 'nao_transita').length, por_decidir: linhas.filter((l) => l.decisao === 'por_decidir').length }
+    if (executar) {
+      const daOrigem = new Map((await this.academico.matriculasDaTurma(t.id)).map((m) => [m.estudante.id, m]))
+      for (const l of linhas.filter((x) => x.decisao === 'transita')) {
+        try {
+          await this.academico.matricular(l.estudante.id, d.id)
+        } catch (e) {
+          if (!(e instanceof Conflito) && e?.code !== 'P2002') throw e // já matriculado no destino
+        }
+        const m = daOrigem.get(l.estudante.id)
+        if (m) await this.academico.alterarMatricula(m.id, 'concluida')
+      }
+      await this.auditoria.registar(ctx, { acao: 'passagem_de_ano', colecao: 'turmas', alvoId: t.id, alvoTitulo: `${t.nome} → ${d.nome}`, detalhes: resumo })
+    }
+    return { origem: { id: t.id, nome: t.nome, anoLetivo: t.anoLetivo, anoCurricular: t.anoCurricular }, destino: { id: d.id, nome: d.nome, anoLetivo: d.anoLetivo, anoCurricular: d.anoCurricular }, executada: Boolean(executar), resumo, linhas }
+  }
+
   async alterarMatricula(ctx, id, { estado }) {
     ctx.actor.exigir('academico.gerir')
     const m = await this.academico.matricula(id)

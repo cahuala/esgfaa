@@ -28,6 +28,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/contas/importar', validar({ body: E.importarPessoas }), async (req, res) => res.json(await p.registo.importar(ctx(req), req.dados.body)))
   r.post('/turmas/:id/matricular', validar({ params: pId, body: E.matricularVarios }), async (req, res) => res.json(await a.turmas.matricularVarios(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/importar', validar({ params: pId, body: E.importarEstudantes }), async (req, res) => res.json(await a.turmas.importarEstudantes(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/turmas/:id/transicao', validar({ params: pId, body: E.transicao }), async (req, res) => res.json(await a.turmas.transicao(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/matriculas/:id', validar({ params: pId, body: E.matricula }), async (req, res) => res.json(await a.turmas.alterarMatricula(ctx(req), req.dados.params.id, req.dados.body)))
 
   r.post('/turmas/:id/cadeiras', validar({ params: pId, body: E.cadeira }), async (req, res) => res.status(201).json(await a.cadeiras.criarCadeira(ctx(req), req.dados.params.id, req.dados.body)))

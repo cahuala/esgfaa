@@ -6,6 +6,8 @@ export const TIPOS_PEDIDO = [
   'Certificado de notas',
   'Certificado de conclusão',
   'Segunda via do cartão de estudante',
+  'Revisão de prova (reclamação de nota)',
+  'Equivalência de unidades curriculares',
   'Outro',
 ]
 

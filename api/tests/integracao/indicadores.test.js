@@ -46,7 +46,10 @@ describe('painel de indicadores da Administração Escolar', () => {
     assert.equal(d.anoLetivo, '2026/2027')
     assert.deepEqual([d.geral.turmas, d.geral.estudantes, d.geral.cadeiras, d.geral.cadeirasSemDocente, d.geral.emRisco], [1, 2, 2, 1, 2])
     const est = d.cadeiras.find((c) => c.codigo === 'EST101')
-    assert.deepEqual([est.assiduidade, est.emCurso, est.docentes], [66.5, 2, ['Docente Prof Teste']])
+    // o Bruno (33 % de presenças) fica excluído por faltas
+    assert.deepEqual([est.assiduidade, est.emCurso, est.excluidos, est.docentes], [66.5, 1, 1, ['Docente Prof Teste']])
+    const pauta = (await sec().get(`/api/admin/academico/cadeiras/${cadeira.id}/pauta`)).body
+    assert.deepEqual(pauta.linhas.map((l) => [l.estudante.id, l.assiduidade, l.situacao]).sort((a, b) => a[0] - b[0]), [[contas.ana.id, 100, 'em_curso'], [contas.bruno.id, 33, 'excluido']].sort((a, b) => a[0] - b[0]))
     const ana = d.risco.find((x) => x.estudante.id === contas.ana.id)
     assert.deepEqual(ana.motivos.map((m) => m.tipo), ['nota'])
     const bruno = d.risco.find((x) => x.estudante.id === contas.bruno.id)

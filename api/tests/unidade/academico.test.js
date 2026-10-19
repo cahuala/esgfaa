@@ -26,6 +26,13 @@ describe('portal académico: regras', () => {
     for (const n of [-1, 20.5, 'abc', '1e9']) assert.throws(() => validarNota(n), ErroValidacao, String(n))
   })
 
+  it('menos de 75 % de presenças: excluído por faltas (sem dispensa, exame nem recurso); sem aulas registadas não se aplica', () => {
+    assert.deepEqual(resultadoDisciplina({ p1: 18, p2: 17 }, { assiduidade: 60 }), { mac: 17.5, final: null, situacao: 'excluido', classificacao: null })
+    assert.equal(resultadoDisciplina({ p1: 12, p2: 11, exame: 15 }, { assiduidade: 74 }).situacao, 'excluido')
+    assert.equal(resultadoDisciplina({ p1: 15, p2: 16 }, { assiduidade: 75 }).situacao, 'dispensado')
+    assert.equal(resultadoDisciplina({ p1: 15, p2: 16 }, { assiduidade: null }).situacao, 'dispensado')
+  })
+
   it('MAC ≥ 14 sem provas negativas dispensa do exame', () => {
     assert.deepEqual(resultadoDisciplina({ p1: 15, p2: 16 }), { mac: 15.5, final: 16, situacao: 'dispensado', classificacao: 'Bom' })
     // MAC 14 mas uma prova negativa: vai a exame

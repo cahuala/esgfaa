@@ -1,5 +1,6 @@
 import { notasVisiveis, resultadoDisciplina, COMPONENTES_NOTA } from '../../../dominio/academico/avaliacao/resultado.js'
 import { PercursoAcademico } from '../../../dominio/academico/conclusao/percurso.js'
+import { assiduidade } from '../../../dominio/academico/atividades/presencas.js'
 import { TrabalhoFimCurso } from '../../../dominio/academico/conclusao/tfc.js'
 
 /*
@@ -21,18 +22,22 @@ export class ServicoPercursos {
     const ativas = inscricoes.filter((i) => i.estado === 'ativa')
     const cadeiras = await this.academico.cadeirasDasTurmas(matriculas.map((m) => m.turma.id))
     const extra = await Promise.all(ativas.map((i) => this.academico.cadeira(i.cadeiraId)))
-    const notas = await this.academico.notasDoEstudante(estudanteId, [...cadeiras, ...extra].map((c) => c.id))
-    const linha = (c) => ({
-      cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, docente: c.docente?.nome || '', turma: c.turma?.nome, anoLetivo: c.turma?.anoLetivo },
-      ...(publicadas ? notasVisiveis(notas[c.id], c.notasPublicadas) : this.#todas(notas[c.id])),
-    })
+    const ids = [...cadeiras, ...extra].filter(Boolean).map((c) => c.id)
+    const [notas, presencas] = await Promise.all([this.academico.notasDoEstudante(estudanteId, ids), this.academico.presencasDoEstudante(estudanteId, ids)])
+    const linha = (c) => {
+      const a = assiduidade(presencas.filter((p) => p.cadeiraId === c.id))
+      return {
+        cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, docente: c.docente?.nome || '', turma: c.turma?.nome, anoLetivo: c.turma?.anoLetivo },
+        ...(publicadas ? notasVisiveis(notas[c.id], c.notasPublicadas, { assiduidade: a }) : this.#todas(notas[c.id], a)),
+      }
+    }
     const anos = matriculas.map((m) => ({ matricula: { id: m.id, estado: m.estado }, turma: m.turma, disciplinas: cadeiras.filter((c) => c.turmaId === m.turma.id).map(linha) }))
     const tfc = tfcs[0] ? new TrabalhoFimCurso(tfcs[0]) : null
     return new PercursoAcademico({ estudante, anos, inscricoes: extra.filter(Boolean).map(linha), tfc, certificado: certificados[0] || null })
   }
 
-  #todas(n) {
+  #todas(n, a = null) {
     const notas = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, n?.[k] ?? null]))
-    return { ...notas, ...resultadoDisciplina(notas), observacao: n?.observacao || '' }
+    return { ...notas, ...resultadoDisciplina(notas, { assiduidade: a }), assiduidade: a, observacao: n?.observacao || '' }
   }
 }

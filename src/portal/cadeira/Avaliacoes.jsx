@@ -61,13 +61,14 @@ function Pauta({ c, avisar }) {
   if (p.linhas.length === 0) return <Vazio>{tx('A turma não tem estudantes matriculados.')}</Vazio>
 
   const mudar = (id, k, v) => { setEdicao({ ...edicao, [id]: { ...edicao[id], [k]: v } }); setAlterado(true) }
-  const calculo = (id) => {
+  const calculo = (l) => {
+    const id = l.estudante.id
     const valores = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[id][k])]))
     const invalidas = COMPONENTES_NOTA.filter((k) => valores[k] === undefined)
     for (const k of invalidas) valores[k] = null
-    return { ...resultadoDisciplina(valores), invalidas }
+    return { ...resultadoDisciplina(valores, { assiduidade: l.assiduidade }), invalidas }
   }
-  const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, calculo(l.estudante.id)]))
+  const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, calculo(l)]))
   const contagem = Object.values(resultados).reduce((s, r) => ({ ...s, [r.situacao]: (s[r.situacao] || 0) + 1 }), {})
   const temInvalidas = Object.values(resultados).some((r) => r.invalidas.length)
 

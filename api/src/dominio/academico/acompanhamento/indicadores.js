@@ -1,10 +1,11 @@
 import { NOTA_MINIMA_APROVACAO } from '../avaliacao/nota.js'
+import { AVALIACAO } from '../avaliacao/resultado.js'
 
 /*
   Indicadores da Administração Escolar: estudantes em risco e pautas em atraso.
   Limiares escolhidos para a ESG (ajustáveis aqui):
 */
-export const ASSIDUIDADE_MINIMA = 75 // % de presenças abaixo da qual o estudante está em risco
+export const ASSIDUIDADE_MINIMA = AVALIACAO.assiduidadeMinima // % de presenças abaixo da qual fica excluído por faltas (e em risco)
 export const DIAS_SEM_ACESSO = 14 // dias sem entrar no portal
 export const DIAS_PARA_LANCAR = 15 // dias depois da prova para a nota estar lançada
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
+import { TIPOS_PEDIDO } from '../../../api/src/dominio/academico/secretaria/pedidos.js'
 import { FaDownload } from 'react-icons/fa'
 import { abrirFicheiro, api } from '../api'
 import { Aviso, Campo, Cartao, Carregando, Erro, Etiqueta, Titulo, Vazio } from '../componentes'
 import { dataHora } from '../formatar'
 import { t as tx } from '../../i18n/linguas'
 
-const TIPOS = [tx('Declaração de matrícula'), tx('Declaração de frequência'), tx('Certificado de notas'), tx('Certificado de conclusão'), tx('Segunda via do cartão de estudante'), tx('Outro')]
+// a lista do servidor (fonte única): o valor vai em português, só o rótulo se traduz
+const TIPOS = TIPOS_PEDIDO
 const ESTADOS = {
   pendente: { texto: tx('Pendente'), cor: 'cinzento' },
   em_tratamento: { texto: tx('Em tratamento'), cor: 'dourado' },
@@ -51,7 +53,7 @@ function Pedidos() {
               {lista.map((p) => (
                 <li key={p.id}>
                   <div className="p-linha-entre">
-                    <strong>{p.tipo}</strong>
+                    <strong>{tx(p.tipo)}</strong>
                     <Etiqueta cor={ESTADOS[p.estado]?.cor}>{ESTADOS[p.estado]?.texto || p.estado}</Etiqueta>
                   </div>
                   {p.motivo && <div className="p-texto-suave">{p.motivo}</div>}
@@ -74,7 +76,7 @@ function Pedidos() {
             {erroForm && <p className="p-erro" role="alert">{erroForm}</p>}
             <Campo id="tipo" rotulo={tx('Documento')}>
               <select id="tipo" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
-                {TIPOS.map((t) => <option key={t}>{t}</option>)}
+                {TIPOS.map((t) => <option key={t} value={t}>{tx(t)}</option>)}
               </select>
             </Campo>
             <Campo id="motivo" rotulo={f.tipo === 'Outro' ? tx('Descreva o pedido') : tx('Finalidade (opcional)')}>

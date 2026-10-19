@@ -40,13 +40,14 @@ function PautaAdmin({ cadeira, avisar }) {
   if (!p) return <Carregando />
   if (p.linhas.length === 0) return <div className="alert alert-info mb-0">{tx('A turma não tem estudantes matriculados.')}</div>
 
-  const resultado = (id) => {
+  const resultado = (l) => {
+    const id = l.estudante.id
     const v = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraNumero(edicao[id][k])]))
     const invalidas = COMPONENTES_NOTA.filter((k) => v[k] === undefined)
     for (const k of invalidas) v[k] = null
-    return { ...resultadoDisciplina(v), invalidas }
+    return { ...resultadoDisciplina(v, { assiduidade: l.assiduidade }), invalidas }
   }
-  const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, resultado(l.estudante.id)]))
+  const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, resultado(l)]))
   const invalida = Object.values(resultados).some((r) => r.invalidas.length)
 
   async function guardar() {

@@ -9,9 +9,11 @@ import { NOTA_MINIMA_APROVACAO, classificacao } from './nota.js'
   - MAC ≥ 14 sem nenhuma prova negativa: aprovado com dispensa de exame, nota final = MAC;
   - os restantes fazem exame na época normal: nota final = 40 % MAC + 60 % exame;
   - quem reprova no exame vai à época de recurso, com a mesma fórmula (o recurso substitui o exame);
-  - a nota final é arredondada às unidades; classificação: < 10 reprovado, 10–13 suficiente, 14–16 bom, 17–20 muito bom.
+  - a nota final é arredondada às unidades; classificação: < 10 reprovado, 10–13 suficiente, 14–16 bom, 17–20 muito bom;
+  - quem tem menos de assiduidadeMinima % de presenças nas aulas registadas (as faltas justificadas não
+    contam) fica excluído por faltas: não tem dispensa, exame nem recurso.
 */
-export const AVALIACAO = { macDispensa: 14, pesoMac: 0.4, pesoExame: 0.6 }
+export const AVALIACAO = { macDispensa: 14, pesoMac: 0.4, pesoExame: 0.6, assiduidadeMinima: 75 }
 
 export const COMPONENTES_NOTA = ['p1', 'p2', 'exame', 'recurso']
 
@@ -22,11 +24,16 @@ export const temNota = (v) => v !== null && v !== undefined && v !== ''
 /*
   Resultado de um estudante numa cadeira a partir das notas lançadas (null = ainda sem nota).
   situacao: em_curso (faltam provas) | dispensado | exame (aguarda exame) | recurso (aguarda recurso)
-            | aprovado | reprovado
+            | aprovado | reprovado | excluido (por faltas)
+  assiduidade: % de presenças na cadeira (null = sem aulas registadas: não se aplica).
 */
-export function resultadoDisciplina({ p1 = null, p2 = null, exame = null, recurso = null } = {}) {
+export function resultadoDisciplina({ p1 = null, p2 = null, exame = null, recurso = null } = {}, { assiduidade = null } = {}) {
   const v = (x) => (temNota(x) ? Number(x) : null)
   const [n1, n2, ne, nr] = [v(p1), v(p2), v(exame), v(recurso)]
+  if (assiduidade !== null && assiduidade !== undefined && assiduidade < AVALIACAO.assiduidadeMinima) {
+    const mac = n1 !== null && n2 !== null ? Math.round(((n1 + n2) / 2) * 10) / 10 : null
+    return { mac, final: null, situacao: 'excluido', classificacao: null }
+  }
   const vazio = { mac: null, final: null, situacao: 'em_curso', classificacao: null }
   if (n1 === null || n2 === null) return vazio
   const mac = Math.round(((n1 + n2) / 2) * 10) / 10
@@ -45,7 +52,7 @@ export function resultadoDisciplina({ p1 = null, p2 = null, exame = null, recurs
 }
 
 // o estudante só vê as componentes já publicadas pelo docente; o resultado conta só com essas
-export function notasVisiveis(linha, publicadas) {
+export function notasVisiveis(linha, publicadas, { assiduidade = null } = {}) {
   const notas = Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, publicadas.includes(k) ? linha?.[k] ?? null : null]))
-  return { ...notas, ...resultadoDisciplina(notas), observacao: publicadas.length ? linha?.observacao || '' : '' }
+  return { ...notas, ...resultadoDisciplina(notas, { assiduidade }), assiduidade, observacao: publicadas.length ? linha?.observacao || '' : '' }
 }

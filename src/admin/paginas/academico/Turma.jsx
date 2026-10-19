@@ -8,6 +8,7 @@ import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
+import PassagemAno from './PassagemAno'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -24,6 +25,7 @@ function Turma() {
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
   const [importar, setImportar] = useState(false)
+  const [passagem, setPassagem] = useState(false)
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
@@ -37,6 +39,7 @@ function Turma() {
     <>
       <CabecalhoPagina titulo={t.nome} subtitulo={tx('{0} · {1}.º ano', { 0: t.anoLetivo, 1: t.anoCurricular })} migalhas={[{ rotulo: tx('Turmas'), para: '/academico/turmas' }, { rotulo: t.nome }]}>
         {gerir && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> {tx('Matricular a partir de Excel/CSV')}</button>}
+        {gerir && !t.anoFinal && <button type="button" className="btn btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" /> {tx('Passagem de ano')}</button>}
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" /> {tx('Copiar cadeiras de outra turma')}</button>}
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> {tx('Turmas')}</Link>
       </CabecalhoPagina>
@@ -55,6 +58,7 @@ function Turma() {
         </div>
       </div>
       {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} />}
+      {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
       <div className="row">
         <div className="col-xl-6">

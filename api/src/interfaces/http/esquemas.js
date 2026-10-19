@@ -232,6 +232,7 @@ export const importarEstudantes = z.object({
   linhas: z.array(z.object({ nome: celula, email: celula, numero: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500),
 })
 export const importarPessoas = z.object({ tipo: texto(20).optional(), simular: z.boolean().optional(), linhas: z.array(z.object({ nome: celula, email: celula, posto: celula, ramo: celula, nip: celula, telefone: celula })).max(500) })
+export const transicao = z.object({ destinoId: idNumerico, executar: z.boolean().default(false) })
 export const matricularVarios = z.object({ estudanteIds: z.array(idNumerico).max(300) })
 
 // ---------- registos e relatórios ----------
