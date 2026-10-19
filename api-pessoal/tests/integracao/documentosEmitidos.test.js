@@ -63,4 +63,38 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     assert.equal(f.iban, 'AO06 0040 0000 1234')
     assert.match((await amb.contentor.base.pessoa.findUnique({ where: { id: c.id }, select: { iban: true } })).iban, /^c1:/)
   })
+
+  it('plano de férias: um mês por pessoa e ano, importação por NIP; a guia de férias regista a licença', async () => {
+    const m = (await adm.post('/api/pessoas').send(militar({ nip: 'FER001', dataIngresso: '2000-01-01' })).expect(201)).body
+    await adm.put('/api/plano-ferias').send({ ano: 2026, pessoaId: m.id, mes: 7 }).expect(200)
+    let v = (await adm.get('/api/plano-ferias?ano=2026').expect(200)).body
+    const l = v.linhas.find((x) => x.id === m.id)
+    assert.deepEqual([l.mes, l.dias, l.adicionais], [7, 30, 15])
+    const r = (await adm.post('/api/plano-ferias/importar').send({ ano: 2026, linhas: [{ identificador: 'FER001', mes: 'Agosto' }, { identificador: 'NAOEXISTE', mes: '3' }, { identificador: 'FER001', mes: 'Brumário' }] }).expect(200)).body
+    assert.equal(r.feitos, 1)
+    assert.equal(r.avisos.length, 2)
+    v = (await adm.get('/api/plano-ferias?ano=2026').expect(200)).body
+    assert.equal(v.linhas.find((x) => x.id === m.id).mes, 8)
+    const f = (await adm.get(`/api/pessoas/${m.id}`)).body
+    assert.deepEqual(f.planoFerias, [{ ano: 2026, mes: 8 }])
+    assert.equal(f.diasFerias, 30)
+    await adm.post(`/api/pessoas/${m.id}/documentos-emitidos`).send({ documentos: [{ tipo: 'guia_ferias', dados: { inicio: '2026-08-01', dias: 30 } }] }).expect(201)
+    const lic = (await adm.get(`/api/licencas?pessoaId=${m.id}`).expect(200)).body
+    assert.deepEqual(lic.map((x) => [x.tipo, x.inicio, x.fim, x.dias]), [['ferias', '2026-08-01', '2026-08-30', 30]])
+    await adm.post(`/api/pessoas/${m.id}/documentos-emitidos`).send({ documentos: [{ tipo: 'guia_ferias', dados: { inicio: '2026-08-01', dias: 30 } }] }).expect(201)
+    assert.equal((await adm.get(`/api/licencas?pessoaId=${m.id}`)).body.length, 1)
+    await adm.put('/api/plano-ferias').send({ ano: 2026, pessoaId: m.id, mes: null }).expect(200)
+    assert.equal((await adm.get('/api/plano-ferias?ano=2026')).body.linhas.find((x) => x.id === m.id).mes, null)
+  })
+
+  it('tabela salarial dos civis: vencimento base por categoria, líquido nas declarações', async () => {
+    const t = (await adm.get('/api/tabela-salarial-civis').expect(200)).body
+    const aux = t.find((x) => x.categoria === 'auxiliar_servicos_gerais')
+    assert.deepEqual([aux.vencimentoBase, aux.liquido], [150000, 150000 + 9000 + 6000 - 4500 - 10500])
+    const novo = (await adm.put('/api/tabela-salarial-civis/auxiliar_servicos_gerais').send({ base: 160000 }).expect(200)).body
+    assert.equal(novo.find((x) => x.categoria === 'auxiliar_servicos_gerais').vencimentoBase, 160000)
+    assert.equal((await adm.put('/api/tabela-salarial-civis/docente').send({ base: 1 })).status, 400)
+    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'funcionario', nome: 'Maria Teresa Kiala', genero: 'F', carreiraCivil: 'auxiliar_servicos_gerais', categoriaCivil: 'Auxiliar de Serviços Gerais de 2.ª Classe' }).expect(201)).body
+    assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.remuneracao.vencimentoBase, 160000)
+  })
 })

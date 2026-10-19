@@ -9,8 +9,11 @@ import { Modal } from './Ui'
   com as suas opções, e saem todos num PDF (Times 14, dados em maiúsculas). As declarações são numeradas e
   cada emissão fica registada no histórico de documentos emitidos e na auditoria.
 */
-function Opcao({ o, valor, aoMudar }) {
+function Opcao({ o, valor, valores, aoMudar }) {
   const id = `op-${o.campo}`
+  // calculado (ex.: o fim das férias) e aviso: só se mostram, não se escrevem
+  if (o.tipo === 'aviso') { const t = o.texto(valores); return t ? <div className="alert alert-warning py-1 px-2 small mb-2"><i className="fa fa-info-circle me-1" />{t}</div> : null }
+  if (o.tipo === 'calculado') return <div className="mb-2"><div className="form-label small mb-0">{o.rotulo}</div><div className="form-control form-control-sm bg-light fw-bold">{o.calcular(valores) || '—'}</div></div>
   const comum = { id, className: 'form-control form-control-sm', value: valor ?? '', onChange: (e) => aoMudar(e.target.value), required: o.obrigatorio }
   return (
     <div className="mb-2">
@@ -53,7 +56,11 @@ export default function DocumentosPessoais({ p, aoFechar, aoEmitir }) {
     }
     setAGerar(true)
     try {
-      const escolhas = escolhidos.map((c) => ({ tipo: c.tipo, dados: Object.fromEntries(Object.entries(sel[c.tipo]).map(([k, v]) => [k, c.opcoes(p).find((o) => o.campo === k)?.tipo === 'numero' && v !== '' ? Number(v) : v])) }))
+      const escolhas = escolhidos.map((c) => {
+        const ops = c.opcoes(p)
+        const tipoDe = (k) => ops.find((o) => o.campo === k)?.tipo
+        return { tipo: c.tipo, dados: Object.fromEntries(Object.entries(sel[c.tipo]).filter(([k]) => !['aviso', 'calculado'].includes(tipoDe(k))).map(([k, v]) => [k, tipoDe(k) === 'numero' && v !== '' ? Number(v) : v])) }
+      })
       if (escolhas.length) {
         const [emitidos, quem] = await Promise.all([api(`/pessoas/${p.id}/documentos-emitidos`, { metodo: 'POST', corpo: { documentos: escolhas } }), api('/definicoes/assinaturas')])
         await gerarDocumentosPessoais(p, escolhas, emitidos, quem)
@@ -93,7 +100,7 @@ export default function DocumentosPessoais({ p, aoFechar, aoEmitir }) {
                     <input type="checkbox" className="form-check-input" checked={Boolean(sel[c.tipo])} onChange={() => alternar(c)} />
                     <span className="form-check-label">{c.nome}</span>
                   </label>
-                  {sel[c.tipo] && c.opcoes(p).length > 0 && <div className="mt-2 ps-4">{c.opcoes(p).map((o) => <Opcao key={o.campo} o={o} valor={sel[c.tipo][o.campo]} aoMudar={(v) => mudar(c.tipo, o.campo, v)} />)}</div>}
+                  {sel[c.tipo] && c.opcoes(p).length > 0 && <div className="mt-2 ps-4">{c.opcoes(p).map((o) => <Opcao key={o.campo} o={o} valor={sel[c.tipo][o.campo]} valores={sel[c.tipo]} aoMudar={(v) => mudar(c.tipo, o.campo, v)} />)}</div>}
                 </div>
               ))}
               {g === 'fichas' && (

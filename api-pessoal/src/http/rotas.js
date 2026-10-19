@@ -220,6 +220,11 @@ export function rotas({ servicos: s, config }) {
   // documentos pessoais emitidos da ficha (declarações numeradas, guias, fichas) e quem os assina
   r.get('/tabela-salarial', async (req, res) => res.json(await s.tabelaSalarial.ver(u(req))))
   r.put('/tabela-salarial/:posto', validar({ params: z.object({ posto: z.string().max(40) }), body: z.object({ base: z.coerce.number().min(1).max(1e8) }) }), async (req, res) => res.json(await s.tabelaSalarial.alterarBase(u(req), req.dados.params.posto, req.dados.body.base)))
+  r.get('/plano-ferias', validar({ query: z.object({ ano: z.coerce.number().int().min(2000).max(2100), unidadeId: z.string().regex(/^\d+$/).optional(), tipo: z.enum(['militar', 'civil']).optional() }) }), async (req, res) => res.json(await s.planoFerias.ver(u(req), req.dados.query)))
+  r.put('/plano-ferias', validar({ body: z.object({ ano: z.number().int().min(2000).max(2100), pessoaId: z.number().int().positive(), mes: z.number().int().min(1).max(12).nullable() }) }), async (req, res) => res.json(await s.planoFerias.definir(u(req), req.dados.body)))
+  r.post('/plano-ferias/importar', validar({ body: z.object({ ano: z.number().int().min(2000).max(2100), linhas: z.array(z.object({ identificador: z.union([z.string(), z.number()]).transform(String), mes: z.union([z.string(), z.number()]).transform(String) })).max(5000) }) }), async (req, res) => res.json(await s.planoFerias.importar(u(req), req.dados.body)))
+  r.get('/tabela-salarial-civis', async (req, res) => res.json(await s.tabelaSalarial.verCivis(u(req))))
+  r.put('/tabela-salarial-civis/:categoria', validar({ params: z.object({ categoria: z.string().max(40) }), body: z.object({ base: z.coerce.number().min(1).max(1e8) }) }), async (req, res) => res.json(await s.tabelaSalarial.alterarBaseCivil(u(req), req.dados.params.categoria, req.dados.body.base)))
   r.get('/definicoes/assinaturas', async (req, res) => res.json(await s.documentosEmitidos.assinaturas(u(req))))
   r.put('/definicoes/assinaturas', validar({ body: E.assinaturas }), async (req, res) => res.json(await s.documentosEmitidos.guardarAssinaturas(u(req), req.dados.body)))
   r.get('/pessoas/:id/documentos-emitidos', validar({ params: E.pId }), async (req, res) => res.json(await s.documentosEmitidos.historico(u(req), req.dados.params.id)))

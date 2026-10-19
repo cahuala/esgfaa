@@ -1,4 +1,4 @@
-import { M, novoDocumento, rodape } from './base'
+import { M, dataExtenso, kwanzas, novoDocumento } from './base'
 import { declaracao, guiaMarcha } from './declaracoes'
 import { anexoFichaIndividual, fichaAvaliacao, fichaDisciplinar, fichaIndividualCivil, fichaIndividualMilitar, fichaMecanografica, fichaRegistoBiografico, processoPromocao, propostaNomeacao } from './fichas'
 
@@ -11,24 +11,50 @@ const civil = (p) => p.tipo === 'civil'
 const hoje = () => new Date().toISOString().slice(0, 10)
 
 const FINALIDADE = { campo: 'finalidade', rotulo: 'Finalidade (OBS)', tipo: 'texto', ajuda: 'Ex.: efeito de Actualização de Conta Bancária; obtenção de Visto para Portugal.' }
-const VALOR = (p, obrigatorio = false) => {
-  const tabela = p.vencimento ? null : p.vencimentoTabela?.iliquido
-  return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? tabela ?? '', obrigatorio, ajuda: tabela ? 'Proposto pela tabela salarial (ilíquido do posto): confirme com a folha de vencimentos.' : obrigatorio ? '' : 'Vazio = a declaração não fala do vencimento.' }
+// vencimento da tabela salarial (líquido): do posto (militares) ou da categoria (civis)
+export const vencimentoDaTabela = (p) => (militar(p) ? p.vencimentoTabela?.liquido : p.remuneracao?.liquido) ?? null
+/*
+  O vencimento escreve-se ao emitir; se ficar vazio, vai o da ficha e, sem ele, o líquido da tabela salarial.
+  Nas declarações de efectividade e de serviço pode escolher-se não falar do vencimento.
+*/
+const VALOR = (p) => {
+  const tabela = vencimentoDaTabela(p)
+  return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? '', ajuda: `Vazio = ${p.vencimento ? 'o da ficha' : tabela ? `o da tabela salarial (${kwanzas(tabela)} KZ líquido)` : 'sem vencimento (falta a tabela)'}.` }
 }
+const COM_VENCIMENTO = { campo: 'comVencimento', rotulo: 'Fala do vencimento?', tipo: 'escolha', inicial: 'Sim', valores: ['Sim', 'Não'] }
 const DIAS = (n) => ({ campo: 'dias', rotulo: 'Dias', tipo: 'numero', inicial: n, obrigatorio: true })
 const INICIO = { campo: 'inicio', rotulo: 'A partir de', tipo: 'data', inicial: hoje(), obrigatorio: true }
+const somarDias = (iso, n) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + Number(n) - 1); return d.toISOString().slice(0, 10) }
+// fim calculado (art. 32.º): o último dia do período, contado a partir do início
+const FIM = { campo: 'fim', rotulo: 'Termina em (automático)', tipo: 'calculado', calcular: (v) => (v.inicio && Number(v.dias) > 0 ? dataExtenso(somarDias(v.inicio, v.dias)) : '') }
+/*
+  Guia de férias: sai do plano de férias (início no dia 1 do mês planeado, os dias a que tem direito).
+  Fora do plano escreve-se o início e o fim conta-se sozinho pela lei (Lei n.º 13/18, art. 32.º).
+*/
+function opcoesFerias(p) {
+  const ano = new Date().getFullYear()
+  const plano = (p.planoFerias ?? []).find((x) => x.ano === ano) ?? (p.planoFerias ?? []).find((x) => x.ano === ano + 1)
+  const inicio = plano ? `${plano.ano}-${String(plano.mes).padStart(2, '0')}-01` : hoje()
+  const dias = p.diasFerias ?? 30
+  const aviso = (v) => {
+    if (!plano) return `Não está no plano de férias de ${ano}: escreva o início; o fim conta-se pelos ${v.dias || dias} dias a que tem direito (art. 32.º).`
+    const fora = v.inicio && v.inicio.slice(0, 7) !== inicio.slice(0, 7)
+    return fora ? `Fora do plano (planeado para ${dataExtenso(inicio).slice(6)}): o fim conta-se pelos ${v.dias || dias} dias (art. 32.º).` : `Do plano de férias: ${dataExtenso(inicio).slice(6)}, ${dias} dias.`
+  }
+  return [{ campo: 'inicio', rotulo: 'A partir de', tipo: 'data', inicial: inicio, obrigatorio: true }, DIAS(dias), FIM, { campo: 'aviso', tipo: 'aviso', texto: aviso }]
+}
 
 export const GRUPOS_DOC = [['declaracoes', 'Declarações'], ['guias', 'Guias de marcha'], ['fichas', 'Fichas']]
 
 export const CATALOGO = [
-  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Declaração de efectividade', para: (p) => militar(p), opcoes: (p) => [FINALIDADE, VALOR(p), ...(p.vinculo === 'estudante' ? [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome ?? '' }] : [])],
+  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Declaração de efectividade', para: (p) => militar(p), opcoes: (p) => [FINALIDADE, COM_VENCIMENTO, VALOR(p), ...(p.vinculo === 'estudante' ? [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome || p.unidadeNome || '' }] : [])],
     desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade' }, q) },
-  { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Declaração de salário', para: militar, opcoes: (p) => [VALOR(p, true), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
-  { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Declaração de serviço', para: civil, opcoes: (p) => [VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
+  { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Declaração de salário', para: militar, opcoes: (p) => [VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
+  { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Declaração de serviço', para: civil, opcoes: (p) => [COM_VENCIMENTO, VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
 
-  { tipo: 'guia_ferias', grupo: 'guias', nome: 'Guia de marcha — férias', para: (p) => p.vinculo !== 'domiciliar', opcoes: () => [DIAS(30), INICIO], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'ferias' }, q) },
-  { tipo: 'guia_licenca', grupo: 'guias', nome: 'Guia de marcha — licença disciplinar', para: militar, opcoes: () => [DIAS(15), INICIO], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'licenca' }, q) },
-  { tipo: 'guia_dispensa', grupo: 'guias', nome: 'Guia de marcha — dispensa', para: () => true, opcoes: () => [DIAS(5), INICIO, { campo: 'motivo', rotulo: 'A fim de tratar', tipo: 'escolha', inicial: 'Assuntos Pessoais', valores: ['Assuntos Pessoais', 'Assunto Familiar', 'Assuntos de Saúde'] }, { campo: 'provincia', rotulo: 'Na província de', tipo: 'texto', inicial: '' }], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'dispensa' }, q) },
+  { tipo: 'guia_ferias', grupo: 'guias', nome: 'Guia de marcha — férias', para: (p) => p.vinculo !== 'domiciliar', opcoes: opcoesFerias, desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'ferias' }, q) },
+  { tipo: 'guia_licenca', grupo: 'guias', nome: 'Guia de marcha — férias adicionais (licença disciplinar, 15 dias)', para: militar, opcoes: () => [DIAS(15), INICIO, FIM], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'licenca' }, q) },
+  { tipo: 'guia_dispensa', grupo: 'guias', nome: 'Guia de marcha — dispensa', para: () => true, opcoes: () => [DIAS(5), INICIO, FIM, { campo: 'motivo', rotulo: 'A fim de tratar', tipo: 'escolha', inicial: 'Assuntos Pessoais', valores: ['Assuntos Pessoais', 'Assunto Familiar', 'Assuntos de Saúde'] }, { campo: 'provincia', rotulo: 'Na província de', tipo: 'texto', inicial: '' }], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'dispensa' }, q) },
   { tipo: 'guia_apresentacao', grupo: 'guias', nome: 'Guia de marcha — apresentação', para: (p) => p.vinculo !== 'domiciliar', opcoes: () => [{ campo: 'destino', rotulo: 'Apresentar-se à', tipo: 'texto', obrigatorio: true, ajuda: 'Ex.: Direcção de Pessoal e Quadros do Comando do Exército' }, { campo: 'referencia', rotulo: 'Em conformidade com', tipo: 'texto', ajuda: 'Ex.: Ofício nº 7028/11.RGC/DPPQ/EMGFAA/2025' }, { campo: 'fundamento', rotulo: 'Motivo', tipo: 'texto' }, DIAS(7)], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'apresentacao' }, q) },
 
   { tipo: 'ficha_individual', grupo: 'fichas', nome: 'Ficha individual', para: () => true, opcoes: () => [], desenhar: async (d, p) => (militar(p) ? (await fichaIndividualMilitar(d, p), anexoFichaIndividual(d, p)) : fichaIndividualCivil(d, p)) },
@@ -47,9 +73,11 @@ export async function gerarDocumentosPessoais(p, escolhas, emitidos, quem) {
   const d = await novoDocumento()
   for (const [i, e] of escolhas.entries()) {
     const c = CATALOGO.find((x) => x.tipo === e.tipo)
-    await c.desenhar(d, p, { ...e.dados, numero: emitidos[i]?.numero, ano: emitidos[i]?.ano }, quem)
+    const o = { ...e.dados, numero: emitidos[i]?.numero, ano: emitidos[i]?.ano }
+    // vencimento: o escrito, o da ficha ou o da tabela salarial; ou nenhum, se se escolheu não falar dele
+    if (c.grupo === 'declaracoes') o.valor = o.comVencimento === 'Não' ? null : o.valor || p.vencimento || vencimentoDaTabela(p)
+    await c.desenhar(d, p, o, quem)
   }
-  rodape(d)
   const nome = `${M(p.nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()}-documentos-${new Date().toISOString().slice(0, 10)}.pdf`
   d.doc.save(nome)
 }

@@ -1,4 +1,5 @@
 import { brasaoPng, emblema } from '../documentos'
+import Logo from '../../assets/Logo.png'
 import { paragrafo as paragrafoPdf } from '../../utils/pdfParagrafo'
 import { fotoBase64 } from '../fotos'
 
@@ -64,37 +65,77 @@ export function kwanzasPorExtenso(v) {
 }
 
 // ---------- documento ----------
+// emblema da ESG (para a marca-d'água das declarações e guias, em tons de cinzento, e para o anexo)
+let logo = null
+function carregarLogo() {
+  return new Promise((ok) => {
+    const img = new Image()
+    img.onload = () => {
+      const k = Math.min(1, 500 / img.width)
+      const fazer = (filtro) => {
+        const c = document.createElement('canvas')
+        c.width = Math.round(img.width * k)
+        c.height = Math.round(img.height * k)
+        const g = c.getContext('2d')
+        g.filter = filtro
+        g.drawImage(img, 0, 0, c.width, c.height)
+        return c.toDataURL('image/png')
+      }
+      ok({ cor: fazer('none'), cinza: fazer('grayscale(1)'), proporcao: img.width / img.height })
+    }
+    img.onerror = () => ok(null)
+    img.src = Logo
+  })
+}
+
 export async function novoDocumento() {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   doc.setFont('times', 'normal').setFontSize(TAM)
-  return { doc, autoTable, brasao: await brasaoPng(), paginas: 0 }
+  logo ??= await carregarLogo()
+  return { doc, autoTable, brasao: await brasaoPng(), logo, paginas: 0 }
+}
+
+// marca-d'água: o emblema da ESG ao centro, muito claro (como nos modelos)
+export function marcaDagua(d, cx, cy, h, opacidade = 0.08) {
+  const { doc, logo: l } = d
+  if (!l) return
+  doc.saveGraphicsState()
+  doc.setGState(new doc.GState({ opacity: opacidade }))
+  doc.addImage(l.cinza, 'PNG', cx - (h * l.proporcao) / 2, cy - h / 2, h * l.proporcao, h)
+  doc.restoreGraphicsState()
+}
+
+// emblema da ESG a cores (anexo à ficha individual)
+export function logoEsg(d, cx, y, h) {
+  const { doc, logo: l } = d
+  if (l) doc.addImage(l.cor, 'PNG', cx - (h * l.proporcao) / 2, y, h * l.proporcao, h)
 }
 
 // cada documento começa numa página nova (no mesmo PDF)
 export function novaPagina(d) {
-  if (d.paginas++ > 0) d.doc.addPage()
+  if (d.paginas++ > 0) d.doc.addPage('a4', 'portrait')
   d.doc.setFont('times', 'normal').setFontSize(TAM).setTextColor(0).setDrawColor(0).setLineWidth(0.25)
   return 18
 }
 
 export function garantir(d, y, altura) {
   if (y + altura <= FUNDO) return y
-  d.doc.addPage()
+  d.doc.addPage('a4', 'portrait')
   return 20
 }
 
-// cabeçalho: brasão e as três linhas (a última sublinhada); devolve o y seguinte
-export function cabecalho(d, linhas = ['FORÇAS ARMADAS ANGOLANAS', 'ESTADO MAIOR GENERAL', 'ESCOLA SUPERIOR DE GUERRA'], y = 12) {
+// cabeçalho das declarações (como nos modelos): emblema das FAA e as três linhas, a última a negrito
+export function cabecalho(d, linhas = ['FORÇAS ARMADAS ANGOLANAS', 'ESTADO MAIOR GENERAL', 'ESCOLA SUPERIOR DE GUERRA'], y = 24, { sublinhar = false } = {}) {
   const { doc } = d
   const w = 210
-  emblema(doc, d.brasao, w / 2, y - 2, 25)
-  let yy = y + 28
+  emblema(doc, d.brasao, w / 2, y, 27)
+  let yy = y + 34
   linhas.forEach((l, i) => {
     const ultima = i === linhas.length - 1
     doc.setFont('times', ultima ? 'bold' : 'normal').setFontSize(TAM - 1)
     doc.text(l, w / 2, yy, { align: 'center' })
-    if (ultima) { const lw = doc.getTextWidth(l); doc.setLineWidth(0.3).line(w / 2 - lw / 2, yy + 1, w / 2 + lw / 2, yy + 1) }
+    if (ultima && sublinhar) { const lw = doc.getTextWidth(l); doc.setLineWidth(0.3).line(w / 2 - lw / 2, yy + 1, w / 2 + lw / 2, yy + 1) }
     yy += 5.6
   })
   doc.setFont('times', 'normal').setFontSize(TAM)
@@ -230,10 +271,7 @@ export async function foto(d, p, x, y, w = 30, h = 36) {
   else d.doc.setLineWidth(0.3).rect(x, y, w, h)
 }
 
-export function rodape(d, texto = 'RPQ/ESG/EMGFAA') {
-  const n = d.doc.getNumberOfPages()
-  for (let i = 1; i <= n; i++) {
-    d.doc.setPage(i)
-    d.doc.setFont('times', 'normal').setFontSize(8).setTextColor(110).text(texto, MARGEM, 292).text(`${i}/${n}`, 190, 292, { align: 'right' }).setTextColor(0)
-  }
+// referência pequena ao fundo da página (as guias de marcha têm «RPQ/ESG/CP3 OP.MG»)
+export function referencia(d, texto, x = MARGEM, y = 290) {
+  d.doc.setFont('times', 'normal').setFontSize(6.5).setTextColor(90).text(texto, x, y).setTextColor(0).setFontSize(TAM)
 }

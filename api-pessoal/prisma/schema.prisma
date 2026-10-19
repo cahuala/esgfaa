@@ -178,6 +178,7 @@ model Pessoa {
   eventos        Evento[]
   graduacoes     Graduacao[]
   licencas       Licenca[]
+  planoFerias    PlanoFerias[]
   itens          ItemProposta[]
   sincronizacao  Sincronizacao?
   militarAlocado Pessoa?            @relation("Domiciliares", fields: [militarAlocadoId], references: [id], onDelete: SetNull)
@@ -261,6 +262,20 @@ model Licenca {
 
   @@index([pessoaId, inicio])
   @@map("licencas")
+}
+
+// plano de férias (como no SIGP): o mês de férias de cada pessoa em cada ano; as guias de férias saem dele
+model PlanoFerias {
+  id        Int      @id @default(autoincrement())
+  ano       Int
+  pessoaId  Int      @map("pessoa_id")
+  mes       Int // 1 a 12
+  criadoPor String   @default("") @map("criado_por")
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa    Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@unique([ano, pessoaId])
+  @@map("plano_ferias")
 }
 
 // propostas de promoção, nomeação, graduação e exoneração (militares) e de progressão e nomeação (civis)

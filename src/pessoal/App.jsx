@@ -27,6 +27,8 @@ import Domiciliares from './paginas/Domiciliares'
 import Documentos from './paginas/Documentos'
 import Assinaturas from './paginas/Assinaturas'
 import TabelaSalarial from './paginas/TabelaSalarial'
+import TabelaSalarialCivis from './paginas/TabelaSalarialCivis'
+import PlanoFerias from './paginas/PlanoFerias'
 import Expediente from './paginas/Expediente'
 import Mensagens from './paginas/Mensagens'
 import Privacidade from './paginas/Privacidade'
@@ -109,6 +111,8 @@ export default function App() {
           <Route path="/domiciliares" element={<Domiciliares />} />
           <Route path="/assinaturas" element={<Assinaturas />} />
           <Route path="/tabela-salarial" element={<TabelaSalarial />} />
+          <Route path="/tabela-salarial-civis" element={<TabelaSalarialCivis />} />
+          <Route path="/plano-ferias" element={<PlanoFerias />} />
           <Route path="/documentos" element={<Documentos />} />
           <Route path="/documentos/:grupo" element={<Documentos />} />
           <Route path="/expediente" element={<Expediente />} />

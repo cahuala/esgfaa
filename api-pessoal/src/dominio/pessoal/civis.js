@@ -23,13 +23,15 @@ export const CARREIRAS_CIVIS = {
 export const CATEGORIA_ANTIGA = { tecnica_superior: 'tecnico_superior', tecnica: 'tecnico_medio', tecnica_media: 'tecnico_medio', administrativa: 'administrativo', auxiliar: 'auxiliar_escritorio', operaria: 'auxiliar_servicos_gerais' }
 
 // remuneração de referência da categoria : base + subsídios, e os descontos
-export function remuneracaoDaCategoria(chave) {
+// bases = vencimentos base alterados na tabela salarial dos civis (por categoria)
+export function remuneracaoDaCategoria(chave, bases = {}) {
   const c = CARREIRAS_CIVIS[chave]
-  if (!c?.vencimentoBase) return null
-  const bruto = c.vencimentoBase + c.subsidioAlimentacao + c.subsidioTransporte
-  const segSocial = Math.round(c.vencimentoBase * c.percSegSocial) / 100
-  const irt = Math.round(c.vencimentoBase * c.percIrt) / 100
-  return { vencimentoBase: c.vencimentoBase, subsidioAlimentacao: c.subsidioAlimentacao, subsidioTransporte: c.subsidioTransporte, bruto, segSocial, irt, liquido: bruto - segSocial - irt, percSegSocial: c.percSegSocial, percIrt: c.percIrt }
+  const vencimentoBase = Number(bases[chave] ?? c?.vencimentoBase)
+  if (!c || !vencimentoBase) return null
+  const bruto = vencimentoBase + c.subsidioAlimentacao + c.subsidioTransporte
+  const segSocial = Math.round(vencimentoBase * c.percSegSocial) / 100
+  const irt = Math.round(vencimentoBase * c.percIrt) / 100
+  return { vencimentoBase, subsidioAlimentacao: c.subsidioAlimentacao, subsidioTransporte: c.subsidioTransporte, bruto, segSocial, irt, liquido: bruto - segSocial - irt, percSegSocial: c.percSegSocial, percIrt: c.percIrt }
 }
 
 export const VINCULOS_CIVIS = { nomeacao_definitiva: 'Nomeação definitiva', nomeacao_provisoria: 'Nomeação provisória', contrato: 'Contrato' }

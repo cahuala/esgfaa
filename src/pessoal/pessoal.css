@@ -215,3 +215,31 @@
   .pes-ficha-acoes, .pes-ficha-badges { justify-content: center; }
   .pes-ident { grid-template-columns: 1fr; }
 }
+/* registo da ficha em passos (como no SIGP) */
+.pes-passos { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 0; margin-bottom: 20px; background: #fff; border: 1px solid #e5e2d8; border-radius: 12px; padding: 16px 20px; }
+.pes-passo-g { display: flex; align-items: center; }
+.pes-passo { display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 0; background: none; }
+.pes-passo-n { width: 34px; height: 34px; border-radius: 50%; background: #eeeae0; color: #6c757d; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; border: 2px solid #e5e2d8; transition: all .2s; }
+.pes-passo.activo .pes-passo-n { background: #861d0c; color: #fff; border-color: #861d0c; box-shadow: 0 0 0 4px rgba(134, 29, 12, .15); }
+.pes-passo.feito .pes-passo-n { background: #28a745; color: #fff; border-color: #28a745; }
+.pes-passo-t { font-size: 12px; font-weight: 600; color: #6c757d; white-space: nowrap; }
+.pes-passo.activo .pes-passo-t { color: #861d0c; }
+.pes-passo.feito .pes-passo-t { color: #28a745; }
+.pes-passo-linha { width: 40px; height: 3px; border-radius: 2px; background: #e5e2d8; }
+.pes-passo-linha.feito { background: #28a745; }
+.pes-fsec { background: #fff; border: 1px solid #e5e2d8; border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
+.pes-fsec-t { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid #e5e2d8; background: #faf8f2; font-size: 14px; font-weight: 700; color: #861d0c; }
+.pes-fsec-i { width: 32px; height: 32px; border-radius: 50%; background: rgba(192, 152, 32, .14); color: #c09820; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.pes-fsec-c { padding: 18px; }
+.pes-btn-juntar { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; border: 1.5px dashed #c09820; background: rgba(192, 152, 32, .05); color: #8a6d12; font-size: 12px; font-weight: 600; }
+.pes-btn-juntar:hover { background: rgba(192, 152, 32, .12); border-style: solid; }
+.pes-passos-nav { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 24px; }
+@media (max-width: 768px) { .pes-passo-t { display: none; } .pes-passo-linha { width: 16px; } }
+/* plano de férias (como no SIGP) */
+.pes-pf { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.pes-pf th, .pes-pf td { border: 1px solid #eee; padding: 6px 8px; text-align: center; }
+.pes-pf th { background: #faf8f2; font-size: 10px; text-transform: uppercase; color: #6c757d; position: sticky; top: 0; }
+.pes-pf td.pes-pf-nome { text-align: left; font-weight: 600; min-width: 280px; }
+.pes-pf td.pes-pf-mes { cursor: pointer; width: 6%; }
+.pes-pf td.pes-pf-mes:hover { background: #fdf6e3; }
+.pes-pf-on { background: #861d0c; color: #fff; border-radius: 4px; display: inline-block; width: 22px; height: 22px; line-height: 22px; font-weight: 700; }

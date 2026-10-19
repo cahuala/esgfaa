@@ -70,6 +70,13 @@ export class ServicoDocumentosEmitidos {
         }
       }
     }
+    // a guia de férias fica também registada como licença de férias (se ainda não estiver)
+    for (const d of documentos.filter((x) => x.tipo === 'guia_ferias' && /^\d{4}-\d{2}-\d{2}$/.test(x.dados?.inicio ?? '') && Number(x.dados?.dias) > 0)) {
+      const inicio = new Date(`${d.dados.inicio}T00:00:00Z`)
+      const fim = new Date(inicio.getTime() + (Number(d.dados.dias) - 1) * 86_400_000)
+      const ja = await this.bd.licenca.findFirst({ where: { pessoaId, tipo: 'ferias', inicio: { lte: fim }, fim: { gte: inicio } } })
+      if (!ja) await this.bd.licenca.create({ data: { pessoaId, tipo: 'ferias', inicio, fim, dias: Number(d.dados.dias), despacho: 'Guia de marcha (plano de férias)', criadoPor: u.email } })
+    }
     await this.auditoria.registar(u, 'emitir_documentos', `${p.nome} (#${p.id})`, { documentos: documentos.map((d) => d.tipo) })
     return r.map((x) => ({ id: x.id, tipo: x.tipo, nome: TIPOS_DOCUMENTO_PESSOAL[x.tipo].nome, numero: x.numero, ano: x.ano, criadoEm: x.criadoEm }))
   }

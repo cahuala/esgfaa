@@ -95,7 +95,9 @@ export default function Layout({ children }) {
               <Item para="/antiguidade" icone="fa-list-ol" texto="Listas de antiguidade" />
               <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
               <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
-              <Item para="/tabela-salarial" icone="fa-coins" texto="Tabela salarial" />
+              <Item para="/plano-ferias" icone="fa-umbrella-beach" texto="Plano de férias" />
+              <Item para="/tabela-salarial" icone="fa-coins" texto="Tabela salarial (militares)" />
+              <Item para="/tabela-salarial-civis" icone="fa-coins" texto="Tabela salarial (civis)" />
 
               <div className="menu-header">Documentos</div>
               <Item para="/documentos/efectividade" icone="fa-table" texto="Efectividade" />

@@ -5,6 +5,8 @@ import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
+import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
+import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
 import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
@@ -114,6 +116,11 @@ export class ServicoPessoas {
     if (p.militarAlocado) f.militarAlocado = { ...p.militarAlocado, postoNome: nomeDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo) }
     f.limiteDomiciliares = p.tipo === 'militar' ? limiteDomiciliares(p.posto) : 0
     if (p.tipo === 'militar' && this.tabelaSalarial) f.vencimentoTabela = vencimentoDoPosto(p.posto, p.fps, await this.tabelaSalarial.bases())
+    // plano de férias (as guias de férias saem dele) e os dias a que tem direito (art. 32.º)
+    f.planoFerias = (await this.bd.planoFerias.findMany({ where: { pessoaId: p.id }, orderBy: { ano: 'desc' }, take: 5 })).map(({ ano, mes }) => ({ ano, mes }))
+    f.diasFerias = diasDeFerias(p, hoje)
+    f.feriasAdicionais = feriasAdicionais(p, hoje)
+    if (p.tipo === 'civil' && this.tabelaSalarial) f.remuneracao = remuneracaoDaCategoria(p.carreiraCivil, await this.tabelaSalarial.basesCivis())
     f.eventos = p.eventos.map((e) => ({ ...e, tipoNome: TIPOS_EVENTO[e.tipo] ?? e.tipo, postoAnteriorNome: e.postoAnterior ? nomeDoPosto(e.postoAnterior, p.ramo) : '', postoNovoNome: e.postoNovo ? nomeDoPosto(e.postoNovo, p.ramo) : '' }))
     f.graduacoes = p.graduacoes.map((g) => ({ ...g, postoNome: nomeDoPosto(g.posto, p.ramo) }))
     f.cursos = p.cursos.map((c) => ({ ...c, chaveNome: CURSOS_PROMOCAO[c.chave] ?? '' }))
