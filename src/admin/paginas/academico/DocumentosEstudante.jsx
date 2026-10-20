@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api'
-import { gerarDiplomas } from './documentos/diplomas'
+import { MODELOS_CERTIFICADO, MODELOS_DIPLOMA, gerarDiplomas, modelosDoCurso } from './documentos/diplomas'
 import { t as tx } from '../../../i18n/linguas'
 
 /*
@@ -15,7 +15,9 @@ function DocumentosEstudante({ turma, estudante, fechar }) {
   const [aGerar, setAGerar] = useState(false)
   useEffect(() => { api('/academico/documentos-academicos').then(setCfg).catch((e) => setErro(e.message)) }, [])
 
-  const daTurma = cfg?.turmas?.[turma.id] ?? { edicao: '', inicio: '', fim: '' }
+  // os modelos do curso (Estratégia e Arte Operativa: certificado com tabela e diploma decorado; os outros: lista e «Atesta-se»)
+  const padrao = modelosDoCurso(String(turma.curso ?? '').replace(/-/g, ' '))
+  const daTurma = { edicao: '', inicio: '', fim: '', modeloCertificado: padrao.certificado, modeloDiploma: padrao.diploma, ...(cfg?.turmas?.[turma.id] ?? {}) }
   const mudarTurma = (campo, v) => setCfg({ ...cfg, turmas: { ...cfg.turmas, [turma.id]: { ...daTurma, [campo]: v } } })
   const mudarQuem = (quem, campo, v) => setCfg({ ...cfg, [quem]: { ...cfg[quem], [campo]: v } })
   const escolhidos = Object.keys(docs).filter((k) => docs[k])
@@ -69,6 +71,11 @@ function DocumentosEstudante({ turma, estudante, fechar }) {
                   <div className="col-md-4"><label className="form-label small mb-0" htmlFor="de-edicao">{tx('Edição (ex.: 17.º)')}</label><input id="de-edicao" className="form-control form-control-sm" value={daTurma.edicao} maxLength={20} onChange={(e) => mudarTurma('edicao', e.target.value)} /></div>
                   <div className="col-md-4"><label className="form-label small mb-0" htmlFor="de-inicio">{tx('Início do curso')}</label><input id="de-inicio" type="date" className="form-control form-control-sm" value={daTurma.inicio} onChange={(e) => mudarTurma('inicio', e.target.value)} required /></div>
                   <div className="col-md-4"><label className="form-label small mb-0" htmlFor="de-fim">{tx('Fim do curso (data do documento)')}</label><input id="de-fim" type="date" className="form-control form-control-sm" value={daTurma.fim} onChange={(e) => mudarTurma('fim', e.target.value)} required /></div>
+                </div>
+                <h6 className="fw-bold">{tx('Modelos')}</h6>
+                <div className="row g-2 mb-3">
+                  <div className="col-md-6"><label className="form-label small mb-0" htmlFor="de-mc">{tx('Certificado')}</label><select id="de-mc" className="form-select form-select-sm" value={daTurma.modeloCertificado} onChange={(e) => mudarTurma('modeloCertificado', e.target.value)}>{Object.entries(MODELOS_CERTIFICADO).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}</select></div>
+                  <div className="col-md-6"><label className="form-label small mb-0" htmlFor="de-md">{tx('Diploma')}</label><select id="de-md" className="form-select form-select-sm" value={daTurma.modeloDiploma} onChange={(e) => mudarTurma('modeloDiploma', e.target.value)}>{Object.entries(MODELOS_DIPLOMA).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}</select></div>
                 </div>
                 <div className="row">
                   {assinante('directorEnsino', tx('Assina à esquerda'))}

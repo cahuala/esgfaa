@@ -13,7 +13,7 @@ export const traduzirTextos = z.object({ lingua: z.enum(['en', 'fr', 'es']), tex
 const assinante = z.object({ cargo: texto(120), nome: texto(150), posto: texto(60) })
 export const documentosAcademicos = z.object({
   directorEnsino: assinante.optional(), comandante: assinante.optional(),
-  turmas: z.record(z.string().regex(/^\d+$/), z.object({ edicao: texto(20), inicio: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]), fim: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]) })).optional(),
+  turmas: z.record(z.string().regex(/^\d+$/), z.object({ edicao: texto(20), inicio: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]), fim: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]), modeloCertificado: z.enum(['tabela', 'lista', '']).optional(), modeloDiploma: z.enum(['atesta', 'outorga', '']).optional() })).optional(),
 })
 export const entrar = z.object({ email: texto(254).default(''), senha: texto(200).default(''), codigo: texto(20).optional() })
 export const codigo2fa = z.object({ codigo: texto(20) })

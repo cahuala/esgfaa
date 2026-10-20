@@ -13,4 +13,9 @@ export default [
   ["Gerar PDF", "Generate PDF", "Générer le PDF", "Generar PDF"],
   ["Diploma e certificado", "Diploma and certificate", "Diplôme et certificat", "Diploma y certificado"],
   ["Ainda não defendeu / não concluiu o curso", "Has not defended / completed the course yet", "N'a pas encore soutenu / terminé le cours", "Aún no ha defendido / concluido el curso"],
+  ["Modelos", "Templates", "Modèles", "Modelos"],
+  ["Com tipo de avaliação e classificação (Estratégia e Arte Operativa)", "With assessment type and grade (Strategy and Operational Art)", "Avec type d'évaluation et mention (Stratégie et Art opératif)", "Con tipo de evaluación y calificación (Estrategia y Arte Operativo)"],
+  ["Disciplinas e valores em duas colunas (Comando e Direcção, CoaMP, Estado-Maior Conjunto)", "Course units and marks in two columns (Command and Staff, CoaMP, Joint Staff)", "Unités et notes sur deux colonnes (Commandement et Direction, CoaMP, État-major interarmées)", "Asignaturas y notas en dos columnas (Mando y Dirección, CoaMP, Estado Mayor Conjunto)"],
+  ["«Atesta-se que…» (todos os cursos)", "«This attests that…» (all courses)", "«Il est attesté que…» (tous les cours)", "«Se certifica que…» (todos los cursos)"],
+  ["«A ESG outorga o presente diploma…» (cursos dos oficiais generais)", "«The ESG awards this diploma…» (general officers' courses)", "«L'ESG décerne le présent diplôme…» (cours des officiers généraux)", "«La ESG otorga el presente diploma…» (cursos de oficiales generales)"],
 ]
