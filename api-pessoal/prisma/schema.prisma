@@ -91,6 +91,8 @@ model Pessoa {
   id                   Int       @id @default(autoincrement())
   tipo                 String // militar | civil
   vinculo              String    @default("funcionario") // docente | estudante | funcionario | domiciliar
+  // na Escola pode ter mais de uma função: o militar funcionário que também é professor, ou também é aluno
+  outrosVinculos       String[]  @default([]) @map("outros_vinculos")
   // empregada(o) domiciliar: o oficial superior ou general a quem está afecta (não conta como trabalhador civil)
   militarAlocadoId     Int?      @map("militar_alocado_id")
   nome                 String
@@ -168,26 +170,32 @@ model Pessoa {
   dataAdmissao         DateTime? @map("data_admissao") @db.Date
   dataCategoria        DateTime? @map("data_categoria") @db.Date
   ativo                Boolean   @default(true) // continua na Escola
+  // histórico dos efectivos da Escola: quando entrou e, se já saiu, quando, porquê e para onde
+  dataEntradaEscola    DateTime? @map("data_entrada_escola") @db.Date
+  dataSaidaEscola      DateTime? @map("data_saida_escola") @db.Date
+  motivoSaida          String    @default("") @map("motivo_saida")
+  destinoSaida         String    @default("") @map("destino_saida")
   observacoes          String    @default("")
   criadoEm             DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm         DateTime  @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
-  unidade        Unidade?           @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
-  cargo          Cargo?             @relation(fields: [cargoId], references: [id], onDelete: SetNull)
-  cursos         Curso[]
-  eventos        Evento[]
-  graduacoes     Graduacao[]
-  licencas       Licenca[]
-  planoFerias    PlanoFerias[]
-  itens          ItemProposta[]
-  sincronizacao  Sincronizacao?
-  militarAlocado Pessoa?            @relation("Domiciliares", fields: [militarAlocadoId], references: [id], onDelete: SetNull)
-  domiciliares   Pessoa[]           @relation("Domiciliares")
-  processo       Processo?
-  documentos     DocumentoPessoal[]
-  itensExtracto  ItemExtracto[]
-  utilizador     Utilizador?
-  pedidosDados   PedidoDados[]
+  unidade            Unidade?           @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  cargo              Cargo?             @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  cursos             Curso[]
+  eventos            Evento[]
+  graduacoes         Graduacao[]
+  licencas           Licenca[]
+  planoFerias        PlanoFerias[]
+  documentosEmitidos DocumentoEmitido[]
+  itens              ItemProposta[]
+  sincronizacao      Sincronizacao?
+  militarAlocado     Pessoa?            @relation("Domiciliares", fields: [militarAlocadoId], references: [id], onDelete: SetNull)
+  domiciliares       Pessoa[]           @relation("Domiciliares")
+  processo           Processo?
+  documentos         DocumentoPessoal[]
+  itensExtracto      ItemExtracto[]
+  utilizador         Utilizador?
+  pedidosDados       PedidoDados[]
 
   @@index([tipo, ativo])
   @@map("pessoas")
@@ -540,15 +548,19 @@ model PedidoDados {
 
 // documentos emitidos (declarações, guias…): a numeração de cada série por ano e o registo de quem emitiu
 model DocumentoEmitido {
-  id         Int      @id @default(autoincrement())
-  pessoaId   Int      @map("pessoa_id")
-  tipo       String // declaracao_efectividade | guia_ferias | ficha_individual | …
-  serie      String   @default("") // série da numeração (declaracao); vazio = sem número
-  ano        Int
-  numero     Int?
-  dados      Json     @default("{}") // as opções escolhidas (finalidade, dias, destino…)
-  emitidoPor String   @map("emitido_por")
-  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id              Int       @id @default(autoincrement())
+  pessoaId        Int       @map("pessoa_id")
+  tipo            String // declaracao_efectividade | guia_ferias | ficha_individual | …
+  serie           String    @default("") // série da numeração (declaracao); vazio = sem número
+  ano             Int
+  numero          Int?
+  dados           Json      @default("{}") // as opções escolhidas (finalidade, dias, destino…)
+  emitidoPor      String    @map("emitido_por")
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  // controlo das declarações (como no SIGP): quantas vezes se imprimiu e a última
+  impressoes      Int       @default(0)
+  ultimaImpressao DateTime? @map("ultima_impressao") @db.Timestamptz(3)
+  pessoa          Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@unique([serie, ano, numero])
   @@index([pessoaId])

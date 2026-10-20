@@ -213,6 +213,21 @@ async function main() {
     lugar++
   }
 
+  // histórico dos efectivos: a data de entrada na Escola e alguns que já saíram (fictícios)
+  for (const p of await bd.pessoa.findMany({ select: { id: true, dataCargo: true, dataAdmissao: true } })) {
+    await bd.pessoa.update({ where: { id: p.id }, data: { dataEntradaEscola: p.dataCargo ?? p.dataAdmissao ?? data(ano - entre(1, 8)) } })
+  }
+  const motivos = [['Transferência', 'Comando do Exército'], ['Passagem à reserva', ''], ['Fim do curso', 'Estado-Maior General'], ['Transferência', 'Força Aérea Nacional — Base Aérea de Luanda'], ['Passagem à reforma', '']]
+  const saem = await bd.pessoa.findMany({ where: { tipo: 'militar', vinculo: 'funcionario', cargoId: null }, take: motivos.length, select: { id: true } })
+  for (const [i, p] of saem.entries()) {
+    await bd.pessoa.update({ where: { id: p.id }, data: { ativo: false, dataSaidaEscola: data(ano - entre(0, 3)), motivoSaida: motivos[i][0], destinoSaida: motivos[i][1] } })
+    await bd.evento.create({ data: { pessoaId: p.id, tipo: 'saida', data: new Date(), descricao: [motivos[i][0], motivos[i][1] && `Destino: ${motivos[i][1]}`].filter(Boolean).join(' · '), criadoPor: 'semear' } })
+  }
+  // alguns oficiais que também dão aulas na Escola
+  for (const p of await bd.pessoa.findMany({ where: { tipo: 'militar', vinculo: 'funcionario', ativo: true, posto: { in: ['coronel', 'tenente_coronel'] } }, take: 4, select: { id: true } })) {
+    await bd.pessoa.update({ where: { id: p.id }, data: { outrosVinculos: ['docente'] } })
+  }
+
   // contas de demonstração (utente) para o expediente e as mensagens: palavra-passe Escola2026demo
   const cifra = new CifraSenhas()
   const senha = await cifra.cifrar('Escola2026demo')

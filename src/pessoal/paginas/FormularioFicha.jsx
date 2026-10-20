@@ -16,6 +16,7 @@ const VAZIA = {
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
   municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
   conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '',
+  outrosVinculos: [], dataEntradaEscola: '', dataSaidaEscola: '', motivoSaida: '', destinoSaida: '',
 }
 const CAMPOS = Object.keys(VAZIA)
 // os passos do registo (como no SIGP); o segundo chama-se «Profissional» nos civis
@@ -174,7 +175,16 @@ export default function FormularioFicha() {
                     {Object.entries(ref.tipos).map(([k, v]) => <button key={k} type="button" className={`btn btn-sm ${d.tipo === k ? 'btn-theme' : 'btn-outline-secondary'}`} onClick={() => set('tipo')(k)} disabled={Boolean(id)}>{v}</button>)}
                   </div>
                 </Campo>
-                <Campo rotulo="Vínculo à Escola" obrigatorio col="col-md-3" ajuda="Docentes e estudantes com e-mail recebem conta no Portal Académico."><Escolha valor={d.vinculo} aoMudar={set('vinculo')} opcoes={Object.fromEntries(Object.entries(ref.vinculos).filter(([k]) => k !== 'domiciliar' || d.tipo === 'civil'))} vazio={null} /></Campo>
+                <Campo rotulo="Função principal na Escola" obrigatorio col="col-md-3" ajuda="Docentes e estudantes (também os que o são além da função principal) com e-mail recebem conta no Portal Académico."><Escolha valor={d.vinculo} aoMudar={set('vinculo')} opcoes={Object.fromEntries(Object.entries(ref.vinculos).filter(([k]) => k !== 'domiciliar' || d.tipo === 'civil'))} vazio={null} /></Campo>
+                {d.vinculo !== 'domiciliar' && (
+                  <Campo rotulo="Também é" col="col-md-6" ajuda="Na Escola pode ter mais de uma função: o funcionário que também é professor, ou também é aluno de um curso.">
+                    <div className="d-flex flex-wrap gap-3 pt-1">
+                      {[['funcionario', 'Funcionário'], ['docente', 'Docente (professor)'], ['estudante', 'Aluno (discente)']].filter(([k]) => k !== d.vinculo).map(([k, t]) => (
+                        <label key={k} className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={(d.outrosVinculos ?? []).includes(k)} onChange={(e) => setD({ ...d, outrosVinculos: e.target.checked ? [...(d.outrosVinculos ?? []), k] : (d.outrosVinculos ?? []).filter((x) => x !== k) })} /> <span className="form-check-label">{t}</span></label>
+                      ))}
+                    </div>
+                  </Campo>
+                )}
                 {d.vinculo === 'domiciliar' && <Campo rotulo="Afecta(o) ao oficial" obrigatorio col="col-md-6" ajuda="Só oficiais superiores e generais, dentro do limite do posto. Não conta como trabalhador civil."><Escolha valor={String(d.militarAlocadoId ?? '')} aoMudar={set('militarAlocadoId')} opcoes={oficiais.filter((o) => o.livres > 0 || String(o.id) === String(d.militarAlocadoId)).map((o) => [String(o.id), `${o.postoNome} ${o.nome} (${o.alocados}/${o.limite})`])} vazio="Escolha o oficial" /></Campo>}
                 <Campo rotulo="Nome completo" obrigatorio col="col-md-6">{txt('nome', { required: true, minLength: 5 })}</Campo>
                 {militar && <Campo rotulo="NIP" obrigatorio col="col-md-3">{txt('nip', { required: true })}</Campo>}
@@ -225,7 +235,7 @@ export default function FormularioFicha() {
           </div>
         </Seccao>
       )}
-      {atual === 'servico' && d.vinculo === 'docente' && (
+      {atual === 'servico' && (d.vinculo === 'docente' || (d.outrosVinculos ?? []).includes('docente')) && (
         <Seccao titulo="Docente" icone="fa-chalkboard-teacher">
           <div className="row">
             <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
@@ -318,12 +328,18 @@ export default function FormularioFicha() {
             <Campo rotulo="Unidade (orgânica)" col="col-md-4"><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={arvore.opcoes} vazio="Sem unidade" /></Campo>
             {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, o cargo muda por proposta de nomeação."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])} vazio="Sem cargo" /></Campo>}
             {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
+            <Campo rotulo="Na Escola desde" col="col-md-4" ajuda="Data de apresentação na ESG (para o histórico dos efectivos).">{data('dataEntradaEscola')}</Campo>
             <div className="col-12 d-flex flex-wrap gap-4 my-2">
               <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.avaliacaoFavoravel} onChange={set('avaliacaoFavoravel')} /> <span className="form-check-label">Avaliação favorável</span></label>
               {militar && <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.aptidaoFisica} onChange={set('aptidaoFisica')} /> <span className="form-check-label">Apto física e psiquicamente</span></label>}
               <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.processoPendente} onChange={set('processoPendente')} /> <span className="form-check-label">Processo disciplinar ou criminal pendente</span></label>
               {id && <label className="form-check"><input type="checkbox" className="form-check-input" checked={!d.ativo} onChange={(e) => set('ativo')(!e.target.checked)} /> <span className="form-check-label text-danger">Já não serve na Escola</span></label>}
             </div>
+            {id && !d.ativo && <>
+              <Campo rotulo="Saiu da Escola em" col="col-md-3" ajuda="Vazio = hoje.">{data('dataSaidaEscola')}</Campo>
+              <Campo rotulo="Motivo da saída" col="col-md-5"><input className="form-control form-control-sm" list="motivos-saida" value={d.motivoSaida ?? ''} onChange={set('motivoSaida')} /><datalist id="motivos-saida">{['Transferência', 'Fim do curso', 'Passagem à reserva', 'Passagem à reforma', 'Exoneração', 'Fim do contrato', 'Rescisão por iniciativa do funcionário', 'Falecimento'].map((x) => <option key={x} value={x} />)}</datalist></Campo>
+              <Campo rotulo="Destino" col="col-md-4" ajuda="Para onde foi (unidade, órgão…).">{txt('destinoSaida')}</Campo>
+            </>}
             <Campo rotulo="Observações" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={d.observacoes} onChange={set('observacoes')} /></Campo>
           </div>
         </Seccao>
@@ -333,7 +349,7 @@ export default function FormularioFicha() {
         <Seccao titulo="Revisão e confirmação" icone="fa-check-circle">
           <p className="text-muted small">Reveja os dados antes de {id ? 'guardar' : 'registar'}. Para corrigir, clique no passo lá em cima.</p>
           <div className="pes-grelha">
-            <R r="Tipo" v={ref.tipos[d.tipo]} /><R r="Vínculo" v={nomes(ref.vinculos, d.vinculo)} /><R r="Nome completo" v={d.nome} />
+            <R r="Tipo" v={ref.tipos[d.tipo]} /><R r="Funções na Escola" v={[d.vinculo, ...(d.outrosVinculos ?? [])].map((k) => nomes(ref.vinculos, k)).join(' · ')} /><R r="Nome completo" v={d.nome} />
             {militar ? <><R r="NIP" v={d.nip} /><R r="Posto" v={postos.find((x) => x.id === d.posto)?.nome} /><R r="Ramo · FPS" v={`${ref.ramos[d.ramo]?.nome ?? ''} · ${d.fps}`} /></> : <><R r="N.º de agente" v={d.numeroAgente} /><R r="Categoria" v={ref.carreirasCivis[d.carreiraCivil]?.nome} /><R r="Classe" v={d.categoriaCivil} /></>}
             <R r="Bilhete de identidade" v={d.bi} /><R r="Data de nascimento" v={d.dataNascimento && new Date(d.dataNascimento).toLocaleDateString('pt-PT')} /><R r="Telefone" v={d.telefone} />
             <R r="Pai" v={d.pai} /><R r="Mãe" v={d.mae} /><R r="Cônjuge" v={d.conjuge} />

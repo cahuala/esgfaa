@@ -100,6 +100,8 @@ export default function Layout({ children }) {
               <Item para="/tabela-salarial-civis" icone="fa-coins" texto="Tabela salarial (civis)" />
 
               <div className="menu-header">Documentos</div>
+              <Item para="/declaracoes" icone="fa-file-signature" texto="Declarações" />
+              <Item para="/historico-efectivos" icone="fa-archive" texto="Histórico dos efectivos" />
               <Item para="/documentos/efectividade" icone="fa-table" texto="Efectividade" />
               <Item para="/documentos/propostas" icone="fa-file-signature" texto="Pessoal proposto" />
               <Item para="/documentos/listas" icone="fa-list" texto="Listas" />

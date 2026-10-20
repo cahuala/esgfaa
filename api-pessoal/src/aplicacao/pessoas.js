@@ -3,7 +3,7 @@ import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { PROVINCIAS, comDerivados, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
@@ -44,7 +44,7 @@ const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
 // precisa de conta no portal: docentes e estudantes com e-mail
-const vaiParaPortal = (p) => p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
+const vaiParaPortal = (p) => p.ativo && vinculosDe(p).some((v) => ['docente', 'estudante'].includes(v)) && Boolean(p.email)
 
 export class ServicoPessoas {
   constructor({ bd, auditoria, config, tabelaSalarial, enviar = pedirJson, agora = () => new Date() }) {
@@ -62,10 +62,12 @@ export class ServicoPessoas {
   async listar(u, f = {}) {
     exigir(u, 'ver')
     const where = { ativo: f.ativo === 'nao' ? false : f.ativo === 'todos' ? undefined : true }
-    for (const k of ['tipo', 'vinculo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'estado', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
+    for (const k of ['tipo', 'ramo', 'posto', 'fps', 'situacao', 'efectividade', 'estado', 'genero', 'provincia', 'habilitacao', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'quadroEspecial', 'estadoCivil']) if (f[k]) where[k] = f[k]
     if (f.cargoId) where.cargoId = f.cargoId === 'nenhum' ? null : Number(f.cargoId)
     // a unidade é uma árvore: filtrar por uma unidade inclui as suas subunidades
     if (f.unidadeId) where.unidadeId = f.unidadeId === 'nenhum' ? null : { in: await this.#comSubunidades(Number(f.unidadeId)) }
+    // o vínculo conta também quando é uma das outras funções (o funcionário que também é docente)
+    if (f.vinculo) where.OR = [{ vinculo: f.vinculo }, ...(f.vinculo === 'domiciliar' ? [] : [{ outrosVinculos: { has: f.vinculo } }])]
     // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem
     if (!f.vinculo) where.vinculo = { not: 'domiciliar' }
     if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
@@ -154,6 +156,12 @@ export class ServicoPessoas {
     if (x.email) x.email = x.email.toLowerCase()
     // empregados domiciliares têm a categoria própria (Trabalhador Domiciliar)
     if (x.vinculo === 'domiciliar') Object.assign(x, { carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar' })
+    // outras funções na Escola: sem repetir a principal; a domiciliar não acumula
+    if ('outrosVinculos' in d) x.outrosVinculos = x.vinculo === 'domiciliar' ? [] : [...new Set(d.outrosVinculos ?? [])].filter((v) => v !== x.vinculo)
+    for (const k of ['motivoSaida', 'destinoSaida']) if (k in x) x[k] ??= ''
+    // saiu da Escola: fica a data de saída (hoje, se não se escreveu outra); voltou: apaga a saída
+    if (x.ativo === false && !x.dataSaidaEscola) x.dataSaidaEscola = new Date(this.agora().toISOString().slice(0, 10))
+    if (x.ativo === true) Object.assign(x, { dataSaidaEscola: null, motivoSaida: '', destinoSaida: '' })
     return x
   }
 
@@ -222,8 +230,9 @@ export class ServicoPessoas {
       else if (n.situacao === 'activo' && antes.efectividade && n.efectividade !== antes.efectividade) await evento('situacao', `${EFECTIVIDADES[antes.efectividade]?.nome} → ${EFECTIVIDADES[n.efectividade]?.nome}`)
       if ((antes.estado ?? null) !== (n.estado ?? null)) await evento('estado', `${ESTADOS[antes.estado] ?? 'Ao serviço'} → ${ESTADOS[n.estado] ?? 'Ao serviço'}`)
       if (antes.posto && n.posto !== antes.posto) await evento('correcao', 'Posto corrigido na ficha (sem proposta).', { postoAnterior: antes.posto, postoNovo: n.posto })
-      if (antes.ativo && !n.ativo) await evento('saida', d.observacoes || 'Deixou de servir na Escola.')
-      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
+      if (antes.ativo && !n.ativo) await evento('saida', [n.motivoSaida, n.destinoSaida && `Destino: ${n.destinoSaida}`].filter(Boolean).join(' · ') || d.observacoes || 'Deixou de servir na Escola.')
+      if (!antes.ativo && n.ativo) await evento('colocacao', 'Voltou a servir na Escola.')
+      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
       if (vaiParaPortal(antes) && !vaiParaPortal(n)) {
         await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })

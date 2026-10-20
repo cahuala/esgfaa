@@ -34,6 +34,8 @@ export const pessoa = z.object({
   avaliacaoFavoravel: z.boolean().optional(), aptidaoFisica: z.boolean().optional(), processoPendente: z.boolean().optional(),
   carreiraCivil: opc(30).nullable(), categoriaCivil: opc(80).nullable(), vinculoCivil: opc(30).nullable(), dataAdmissao: dataOpc, dataCategoria: dataOpc,
   ativo: z.boolean().optional(), observacoes: opc(2000),
+  outrosVinculos: z.array(z.enum(['docente', 'estudante', 'funcionario'])).max(3).optional(),
+  dataEntradaEscola: dataOpc, dataSaidaEscola: dataOpc, motivoSaida: opc(300), destinoSaida: opc(200),
   // ficha individual (modelos da ESG)
   municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40),
   biEmitidoEm: dataOpc, biValidade: dataOpc, biLocalEmissao: opc(80), grupoSanguineo: z.union([z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']), z.literal('')]).optional(),

@@ -227,6 +227,8 @@ export function rotas({ servicos: s, config }) {
   r.put('/tabela-salarial-civis/cargos', validar({ body: z.object({ chave: z.string().min(1).max(200), vencimento: z.coerce.number().min(1).max(1e8).nullable() }) }), async (req, res) => res.json(await s.tabelaSalarial.alterarCargoCivil(u(req), req.dados.body.chave, req.dados.body.vencimento)))
   r.get('/tabela-salarial-civis', async (req, res) => res.json(await s.tabelaSalarial.verCivis(u(req))))
   r.put('/tabela-salarial-civis/:categoria', validar({ params: z.object({ categoria: z.string().max(40) }), body: z.object({ base: z.coerce.number().min(1).max(1e8) }) }), async (req, res) => res.json(await s.tabelaSalarial.alterarBaseCivil(u(req), req.dados.params.categoria, req.dados.body.base)))
+  r.get('/declaracoes', validar({ query: z.object({ q: z.string().max(100).optional(), tipo: z.string().max(40).optional(), de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }) }), async (req, res) => res.json(await s.documentosEmitidos.declaracoes(u(req), req.dados.query)))
+  r.post('/declaracoes/impressoes', validar({ body: z.object({ ids: z.array(z.number().int().positive()).min(1).max(500) }) }), async (req, res) => res.json(await s.documentosEmitidos.registarImpressao(u(req), req.dados.body.ids)))
   r.get('/definicoes/assinaturas', async (req, res) => res.json(await s.documentosEmitidos.assinaturas(u(req))))
   r.put('/definicoes/assinaturas', validar({ body: E.assinaturas }), async (req, res) => res.json(await s.documentosEmitidos.guardarAssinaturas(u(req), req.dados.body)))
   r.get('/pessoas/:id/documentos-emitidos', validar({ params: E.pId }), async (req, res) => res.json(await s.documentosEmitidos.historico(u(req), req.dados.params.id)))

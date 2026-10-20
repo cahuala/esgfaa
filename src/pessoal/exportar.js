@@ -22,110 +22,105 @@ export async function exportarExcel(titulo, colunas, linhas) {
   registar(titulo, 'excel', linhas.length)
 }
 
+// tabela simples em PDF, no mesmo modelo das listas da Escola (cabeçalho, título sublinhado, assinatura)
 export async function exportarPdf(titulo, colunas, linhas, { subtitulo = '' } = {}) {
-  const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
-  const doc = new jsPDF({ orientation: colunas.length > 6 ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' })
-  const w = doc.internal.pageSize.getWidth()
-  const brasao = await brasaoPng()
-  emblema(doc, brasao, 20, 4, 17)
-  doc.setFont('helvetica', 'bold').setFontSize(11).text('ESCOLA SUPERIOR DE GUERRA', w / 2, 12, { align: 'center' })
-  doc.setFont('helvetica', 'normal').setFontSize(9).text('Repartição de Pessoal e Quadros — Sistema de Gestão de Pessoal', w / 2, 17, { align: 'center' })
-  doc.setFont('helvetica', 'bold').setFontSize(13).text(titulo, 14, 27)
-  doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(90).text(`${subtitulo ? `${subtitulo} · ` : ''}${linhas.length} registo(s) · ${hoje()}`, 14, 32)
-  doc.setTextColor(0)
-  autoTable(doc, {
-    startY: 36,
-    head: [colunas.map((c) => c.titulo)],
-    body: linhas.map((l) => colunas.map((c) => { const v = c.valor(l); return v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'Sim' : 'Não') : String(v) })),
-    styles: { fontSize: 7.5, cellPadding: 1.6, overflow: 'linebreak' },
-    headStyles: { fillColor: [31, 58, 45], textColor: 255, fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [244, 246, 244] },
-    margin: { left: 14, right: 14, bottom: 14 },
-    didDrawPage: () => {
-      const h = doc.internal.pageSize.getHeight()
-      doc.setFontSize(7).setTextColor(120)
-      doc.text('Documento interno — uso exclusivo da Escola Superior de Guerra', 14, h - 7)
-      doc.text(`Página ${doc.getNumberOfPages()}`, w - 14, h - 7, { align: 'right' })
-      doc.setTextColor(0)
-    },
-  })
-  doc.save(nomeFicheiro(titulo, 'pdf'))
-  registar(titulo, 'pdf', linhas.length)
+  await documentoPdf({ titulo, subtitulo, orientacao: colunas.length > 6 ? 'landscape' : 'portrait', seccoes: [{ colunas: colunas.map((c) => ({ ...c, alinhar: c.alinhar === 'right' ? 'right' : c.alinhar })), linhas }] })
 }
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const texto = (v) => (v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'Sim' : 'Não') : String(v))
 
 /*
-  Documento oficial com secções (listas, mapas): cabeçalho com o brasão e a cadeia hierárquica, uma tabela
-  por secção (com linha de totais, se houver), assinatura do Chefe da Repartição e páginas numeradas.
-  d = { titulo, subtitulo, seccoes: [{ titulo, colunas: [{ titulo, valor(linha, i), alinhar }], linhas, totais }],
+  Listas e mapas da Repartição, como o modelo da Escola («Lista geral do pessoal civil»): «VISTO / O
+  COMANDANTE DA ESG» à esquerda, o emblema e as três linhas ao centro (a última sublinhada), o título
+  sublinhado, a tabela (N/O 01, 02…; as datas em D/M/A, uma coluna para cada) e, no fim, a data e a
+  assinatura do Chefe da Repartição de Pessoal e Quadros.
+  d = { titulo, subtitulo, seccoes: [{ titulo, colunas: [{ titulo, valor(linha, i), alinhar, largura, data }], linhas, totais }],
         orientacao: 'portrait' | 'landscape', assinatura, nota }
 */
+const partes = (v) => { const t = v ? String(v).slice(0, 10) : ''; return /^\d{4}-\d{2}-\d{2}$/.test(t) ? [t.slice(8, 10), t.slice(5, 7), t.slice(0, 4)] : /^\d{2}\/\d{2}\/\d{4}$/.test(t) ? t.split('/') : ['', '', ''] }
 export async function documentoPdf(d) {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
-  const largas = d.seccoes.some((s) => s.colunas.length > 7)
-  const doc = new jsPDF({ orientation: d.orientacao ?? (largas ? 'landscape' : 'portrait'), unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ orientation: d.orientacao ?? 'landscape', unit: 'mm', format: 'a4' })
   const w = doc.internal.pageSize.getWidth()
+  const h = doc.internal.pageSize.getHeight()
   const brasao = await brasaoPng()
-  emblema(doc, brasao, w / 2, 5, 19)
-  doc.setFont('helvetica', 'bold').setFontSize(9)
-  doc.text('REPÚBLICA DE ANGOLA', w / 2, 27, { align: 'center' })
-  doc.text('FORÇAS ARMADAS ANGOLANAS', w / 2, 31, { align: 'center' })
-  doc.text('ESCOLA SUPERIOR DE GUERRA', w / 2, 35, { align: 'center' })
-  doc.setFont('helvetica', 'normal').setFontSize(8.5).text('Repartição de Pessoal e Quadros', w / 2, 39, { align: 'center' })
-  doc.setFont('helvetica', 'bold').setFontSize(12.5).text(doc.splitTextToSize(d.titulo.toUpperCase(), w - 40), w / 2, 47, { align: 'center' })
+  const quem = await api('/definicoes/assinaturas').catch(() => ({}))
+  // cabeçalho do modelo
+  doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text('O COMANDANTE DA ESG', 38, 24, { align: 'center' })
+  emblema(doc, brasao, w / 2, 6, 17)
+  doc.setFont('helvetica', 'normal').setFontSize(8.5).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' })
+  doc.setFont('helvetica', 'italic').text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
+  doc.setFont('helvetica', 'normal').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
+  const sub = (t, y) => { const tw = doc.getTextWidth(t); doc.setLineWidth(0.25).line(w / 2 - tw / 2, y + 0.9, w / 2 + tw / 2, y + 0.9) }
+  sub('ESCOLA SUPERIOR DE GUERRA', 36)
+  doc.setFontSize(9.5)
+  const tit = doc.splitTextToSize(d.titulo.toUpperCase(), w - 60)
+  doc.text(tit, w / 2, 44, { align: 'center' })
+  tit.forEach((l, i) => sub(l, 44 + i * 4.4))
+  let y = 44 + tit.length * 4.4 + 1
+  if (d.subtitulo) { doc.setFontSize(8).setTextColor(70).text(d.subtitulo, w / 2, y + 1.5, { align: 'center' }).setTextColor(0); y += 4 }
+  y += 3
   const total = d.seccoes.reduce((n, s) => n + (s.contar === false ? 0 : s.linhas.length), 0)
-  // mapas (só quadros de totais): não se contam registos
-  const mapa = d.seccoes.every((s) => s.contar === false)
-  doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(80)
-  doc.text([d.subtitulo, mapa ? '' : `${total} registo(s)`, `Situação em ${hoje()}`].filter(Boolean).join(' · '), w / 2, 53, { align: 'center' })
-  doc.setTextColor(0).setLineWidth(0.3).line(14, 56, w - 14, 56)
-  let y = 61
   if (!d.seccoes.some((s) => s.linhas.length)) {
-    doc.setFontSize(10).text('Sem registos para os critérios escolhidos.', 14, y + 4)
+    doc.setFontSize(9).text('Sem registos para os critérios escolhidos.', 14, y + 4)
     y += 10
   }
   for (const s of d.seccoes) {
     if (!s.linhas.length && !s.mostrarVazia) continue
-    if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 18 }
+    if (y > h - 30) { doc.addPage(); y = 16 }
     if (s.titulo) {
-      doc.setFont('helvetica', 'bold').setFontSize(10).text(`${s.titulo}${s.contar === false ? '' : ` (${s.linhas.length})`}`, 14, y)
-      y += 2
+      doc.setFont('helvetica', 'bold').setFontSize(8.5).text(`${s.titulo}${s.contar === false ? '' : ` (${s.linhas.length})`}`, 14, y + 1)
+      y += 3
+    }
+    // as colunas de datas abrem-se em três (D/M/A), como no modelo
+    const temDatas = s.colunas.some((c) => c.data)
+    const head = temDatas
+      ? [s.colunas.map((c) => (c.data ? { content: c.titulo.toUpperCase(), colSpan: 3 } : { content: c.titulo.toUpperCase(), rowSpan: 2 })), s.colunas.filter((c) => c.data).map(() => ({ content: 'D/M/A', colSpan: 3 }))]
+      : [s.colunas.map((c) => c.titulo.toUpperCase())]
+    const linha = (l, i) => s.colunas.flatMap((c) => (c.data ? partes(c.valor(l, i)) : [texto(c.valor(l, i))]))
+    const estilos = {}
+    let k = 0
+    for (const c of s.colunas) {
+      if (c.data) { for (let j = 0; j < 3; j++) estilos[k++] = { halign: 'center', cellWidth: j === 2 ? 10 : 7 } } else estilos[k++] = { halign: c.alinhar ?? 'left', ...(c.largura ? { cellWidth: c.largura } : {}) }
     }
     autoTable(doc, {
       startY: y,
-      head: [s.colunas.map((c) => c.titulo)],
-      body: s.linhas.map((l, i) => s.colunas.map((c) => texto(c.valor(l, i)))),
-      foot: s.totais ? [s.totais.map((v, i) => ({ content: texto(v), styles: { halign: s.colunas[i]?.alinhar ?? 'left' } }))] : undefined,
+      head,
+      body: s.linhas.map(linha),
+      foot: s.totais ? [s.totais.flatMap((v, i) => (s.colunas[i]?.data ? [{ content: '', colSpan: 3 }] : [{ content: texto(v), styles: { halign: s.colunas[i]?.alinhar ?? 'left' } }]))] : undefined,
       showFoot: 'lastPage',
       theme: 'grid',
-      styles: { fontSize: 7.6, cellPadding: 1.4, overflow: 'linebreak', lineColor: [200, 205, 200] },
-      headStyles: { fillColor: [31, 58, 45], textColor: 255, fontStyle: 'bold', halign: 'center' },
-      footStyles: { fillColor: [232, 236, 231], textColor: 0, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [247, 248, 247] },
-      columnStyles: Object.fromEntries(s.colunas.map((c, i) => [i, { halign: c.alinhar ?? 'left', ...(c.largura ? { cellWidth: c.largura } : {}) }])),
-      margin: { left: 14, right: 14, top: 16, bottom: 16 },
+      styles: { font: 'helvetica', fontSize: 7.4, cellPadding: 1.3, overflow: 'linebreak', lineColor: [60, 60, 60], lineWidth: 0.15, textColor: 0, valign: 'middle' },
+      headStyles: { fillColor: 255, textColor: 0, fontStyle: 'normal', halign: 'center', fontSize: 7 },
+      footStyles: { fillColor: 255, textColor: 0, fontStyle: 'bold' },
+      columnStyles: estilos,
+      margin: { left: 14, right: 14, top: 14, bottom: 14 },
     })
-    y = doc.lastAutoTable.finalY + 7
+    y = doc.lastAutoTable.finalY + 6
   }
   if (d.nota) {
     doc.setFontSize(7.5).setTextColor(90).text(doc.splitTextToSize(d.nota, w - 28), 14, y).setTextColor(0)
     y += 8
   }
+  // «ESCOLA SUPERIOR DE GUERRA em Luanda, 21 de Abril de 2026» e o Chefe da Repartição
   if (d.assinatura !== false) {
-    if (y > doc.internal.pageSize.getHeight() - 42) { doc.addPage(); y = 25 }
+    if (y > h - 42) { doc.addPage(); y = 25 }
     const agora = new Date()
-    doc.setFontSize(9).text(`Luanda, aos ${agora.getDate()} de ${MESES[agora.getMonth()]} de ${agora.getFullYear()}`, w - 14, y + 2, { align: 'right' })
-    doc.setFont('helvetica', 'bold').setFontSize(8.5).text('O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS', w / 2, y + 14, { align: 'center' })
-    doc.setFont('helvetica', 'normal').line(w / 2 - 35, y + 32, w / 2 + 35, y + 32)
+    const resto = ` em ${quem.local || 'Luanda'}, ${agora.getDate()} de ${MESES[agora.getMonth()]} de ${agora.getFullYear()}`
+    doc.setFont('helvetica', 'normal').setFontSize(9)
+    const w1 = doc.getTextWidth('ESCOLA SUPERIOR DE GUERRA')
+    const w2 = doc.getTextWidth(resto)
+    doc.text('ESCOLA SUPERIOR DE GUERRA', w / 2 - (w1 + w2) / 2, y + 6).text(resto, w / 2 - (w1 + w2) / 2 + w1, y + 6)
+    const c = quem.chefeRpq ?? {}
+    doc.text((c.cargo || 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS').toUpperCase(), w / 2, y + 20, { align: 'center' })
+    if (c.nome) doc.text(c.nome.toUpperCase(), w / 2, y + 34, { align: 'center' })
+    if (c.posto) doc.text(`**${c.posto.toUpperCase()}**`, w / 2, y + 39, { align: 'center' })
   }
   const n = doc.getNumberOfPages()
   for (let i = 1; i <= n; i++) {
     doc.setPage(i)
-    const h = doc.internal.pageSize.getHeight()
-    doc.setFontSize(7).setTextColor(120).text('Documento interno — uso exclusivo da Escola Superior de Guerra (Lei n.º 22/11)', 14, h - 7)
-    doc.text(`Página ${i} de ${n}`, w - 14, h - 7, { align: 'right' }).setTextColor(0)
+    doc.setFont('helvetica', 'normal').setFontSize(6.5).setTextColor(90).text(`Pág. ${i}/${n}`, w - 14, h - 6, { align: 'right' }).setTextColor(0)
   }
   doc.save(nomeFicheiro(d.titulo, 'pdf'))
   registar(d.titulo, 'pdf', total)

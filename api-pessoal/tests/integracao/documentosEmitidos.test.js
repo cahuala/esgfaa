@@ -112,4 +112,40 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     await adm.put('/api/tabela-salarial-civis/cargos').send({ chave: l.chave, vencimento: null }).expect(200)
     assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.vencimentoCargo, null)
   })
+
+  it('o militar pode ser funcionário e também docente e aluno; aparece nas listas de cada função', async () => {
+    const m = (await adm.post('/api/pessoas').send(militar({ nip: 'VIN001', vinculo: 'funcionario', outrosVinculos: ['docente', 'estudante', 'funcionario'] })).expect(201)).body
+    const f = (await adm.get(`/api/pessoas/${m.id}`)).body
+    assert.deepEqual(f.vinculos, ['funcionario', 'docente', 'estudante'])
+    assert.equal(f.vinculoNome, 'Funcionário · Docente · Estudante')
+    assert.ok(f.docente && f.discente)
+    assert.ok((await adm.get('/api/pessoas?vinculo=docente')).body.some((x) => x.id === m.id))
+    assert.ok((await adm.get('/api/pessoas?vinculo=estudante')).body.some((x) => x.id === m.id))
+    assert.equal((await adm.post('/api/pessoas').send(militar({ nip: 'VIN002', outrosVinculos: ['domiciliar'] }))).status, 400)
+  })
+
+  it('histórico dos efectivos: quem sai fica com a data, o motivo e o destino; ao voltar apaga-se a saída', async () => {
+    const m = (await adm.post('/api/pessoas').send(militar({ nip: 'SAI001', dataEntradaEscola: '2020-03-01' })).expect(201)).body
+    await adm.put(`/api/pessoas/${m.id}`).send({ ativo: false, motivoSaida: 'Transferência', destinoSaida: 'Comando do Exército', dataSaidaEscola: '2026-09-30' }).expect(200)
+    let f = (await adm.get(`/api/pessoas/${m.id}`)).body
+    assert.deepEqual([f.ativo, f.dataEntradaEscola, f.dataSaidaEscola, f.motivoSaida, f.destinoSaida], [false, '2020-03-01', '2026-09-30', 'Transferência', 'Comando do Exército'])
+    assert.ok(f.eventos.some((e) => e.tipo === 'saida' && /Transferência/.test(e.descricao)))
+    assert.ok((await adm.get('/api/pessoas?ativo=todos')).body.some((x) => x.id === m.id))
+    await adm.put(`/api/pessoas/${m.id}`).send({ ativo: true }).expect(200)
+    f = (await adm.get(`/api/pessoas/${m.id}`)).body
+    assert.deepEqual([f.ativo, f.dataSaidaEscola, f.motivoSaida], [true, null, ''])
+  })
+
+  it('controlo das declarações: lista com filtros e impressões contadas', async () => {
+    const l = (await adm.get('/api/declaracoes').expect(200)).body
+    assert.ok(l.length >= 3)
+    assert.ok(l.every((x) => x.tipo.startsWith('declaracao_') && x.referencia.startsWith('Nº')))
+    const primeira = l.find((x) => x.finalidade === 'Actualização de Conta Bancária')
+    assert.equal(primeira.pessoa.nome, p.nome)
+    assert.equal((await adm.get('/api/declaracoes?q=conta bancária')).body.length, 1)
+    assert.equal((await adm.get('/api/declaracoes?de=2000-01-01&ate=2000-12-31')).body.length, 0)
+    await adm.post('/api/declaracoes/impressoes').send({ ids: [primeira.id] }).expect(200)
+    await adm.post('/api/declaracoes/impressoes').send({ ids: [primeira.id] }).expect(200)
+    assert.equal((await adm.get('/api/declaracoes')).body.find((x) => x.id === primeira.id).impressoes, 2)
+  })
 })

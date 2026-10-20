@@ -16,11 +16,10 @@ const numero = (t) => Number(String(t).replace(/\s/g, '').replace(',', '.')) || 
 */
 export default function TabelaSalarialCivis() {
   const [vista, setVista] = useState('cargos')
-  const separadores = (
-    <div className="btn-group btn-group-sm mb-3" role="group" aria-label="Tabela">
-      {[['cargos', 'Por cargo'], ['categorias', 'Por categoria']].map(([k, t]) => <button key={k} type="button" className={`btn ${vista === k ? 'btn-theme' : 'btn-white'}`} onClick={() => setVista(k)}>{t}</button>)}
-    </div>
-  )
+  // a tabela por categoria (vale quando o cargo não tem vencimento) abre-se por um botão, como uma página à parte
+  const separadores = vista === 'cargos'
+    ? <button type="button" className="btn btn-white" onClick={() => setVista('categorias')}><i className="fa fa-layer-group me-1" />Por categoria</button>
+    : <button type="button" className="btn btn-white" onClick={() => setVista('cargos')}><i className="fa fa-arrow-left me-1" />Por cargo</button>
   return vista === 'cargos' ? <PorCargo separadores={separadores} /> : <PorCategoria separadores={separadores} />
 }
 
@@ -38,7 +37,8 @@ function PorCargo({ separadores }) {
 
   async function guardar(l) {
     const t = valores[l.chave]
-    const vencimento = String(t ?? '').trim() === '' ? null : numero(t)
+    // 0,00 (como no SIGP, o cargo sem valor) = vale o vencimento da categoria
+    const vencimento = numero(t ?? '') > 0 ? numero(t) : null
     setAGuardar(l.chave)
     try {
       await api('/tabela-salarial-civis/cargos', { metodo: 'PUT', corpo: { chave: l.chave, vencimento } })
@@ -51,19 +51,19 @@ function PorCargo({ separadores }) {
       setAGuardar(null)
     }
   }
-  const colunas = [{ titulo: 'Cargo', valor: (l) => l.nome }, { titulo: 'Lugares', valor: (l) => `${l.ocupados}/${l.lugares}`, alinhar: 'center' }, { titulo: 'Vencimento Base (Líquido)', valor: (l) => (l.vencimento ? KZ(l.vencimento) : 'pela categoria'), alinhar: 'right' }]
+  const colunas = [{ titulo: 'Cargo', valor: (l) => l.nome }, { titulo: 'Vencimento Base (Líquido)', valor: (l) => KZ(l.vencimento ?? 0), alinhar: 'right' }]
 
   return (
     <>
-      <Cabecalho titulo={<><i className="fa fa-table me-2 pes-ouro" />Tabela Salarial de Civis por Cargo</>} subtitulo={`${dados.length} cargos`} migalhas={[['Carreiras'], ['Tabela salarial (civis)']]}>
+      <Cabecalho titulo={<><i className="fa fa-table me-2 pes-ouro" />Tabela Salarial de Civis por Cargo</>} subtitulo={`${dados.length} cargos · Vencimento líquido usado nas Declarações quando o funcionário não tem folha processada nem vencimento próprio`} migalhas={[['Carreiras'], ['Tabela salarial (civis)']]}>
+        {separadores}
         <button type="button" className="btn btn-white" onClick={() => exportarExcel('Tabela Salarial de Civis por Cargo', colunas, linhas)}><i className="fa fa-file-excel me-1 text-success" />Excel</button>
         <button type="button" className="btn btn-white" onClick={() => exportarPdf('Tabela Salarial de Civis por Cargo', colunas, linhas)}><i className="fa fa-file-pdf me-1 text-danger" />PDF</button>
       </Cabecalho>
-      {separadores}
       <div className="pes-info mb-3">
         <i className="fa fa-info-circle me-1" />
         Ordem de prioridade do salário que vai na Declaração de serviço: <b>o vencimento escrito ao emitir</b> → <b>o vencimento próprio do funcionário</b> (ficha) → <b>o vencimento do cargo</b> (esta tabela) → <b>a categoria</b>.
-        {alterar && <> Escreva o vencimento e clique <i className="fa fa-save" /> para guardar; deixe vazio para valer a categoria.</>}
+        {alterar && <> Escreva o vencimento e clique <i className="fa fa-save" /> para guardar; com 0,00 vale a categoria.</>}
       </div>
       <div className="card mb-3"><div className="card-body py-2">
         <div className="pes-pesquisa"><i className="fa fa-search" /><input className="form-control form-control-sm" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar por cargo…" aria-label="Pesquisar por cargo" /></div>
@@ -71,17 +71,16 @@ function PorCargo({ separadores }) {
       <div className="card">
         <div className="pes-sal-corpo">
           <table className="pes-sal">
-            <thead><tr><th>Cargo</th><th className="text-center">Lugares</th><th>Vencimento Base (Líquido)</th>{alterar && <th style={{ width: 50 }} />}</tr></thead>
+            <thead><tr><th>Cargo</th><th>Vencimento Base (Líquido)</th>{alterar && <th style={{ width: 50 }} />}</tr></thead>
             <tbody>
-              {!linhas.length && <tr><td colSpan={4} className="text-center text-muted py-5">{dados.length ? `Nada para «${q}».` : 'Ainda não há cargos civis na orgânica.'}</td></tr>}
+              {!linhas.length && <tr><td colSpan={3} className="text-center text-muted py-5">{dados.length ? `Nada para «${q}».` : 'Ainda não há cargos civis na orgânica.'}</td></tr>}
               {linhas.map((l) => {
                 const editado = valores[l.chave] !== undefined
                 return (
                   <tr key={l.chave}>
-                    <td><strong>{l.nome}</strong>{l.unidades > 1 && <small className="text-muted"> ({l.unidades} unidades)</small>}</td>
-                    <td style={{ textAlign: 'center' }}>{l.ocupados}/{l.lugares}</td>
+                    <td><strong>{l.nome}</strong>{l.lugares > 0 && <small className="text-muted"> · {l.ocupados}/{l.lugares} na orgânica</small>}</td>
                     <td>{alterar
-                      ? <input className="pes-sal-base" style={{ width: 140 }} value={editado ? valores[l.chave] : l.vencimento ? KZ(l.vencimento) : ''} placeholder="pela categoria" aria-label={`Vencimento de ${l.nome}`} onChange={(e) => setValores({ ...valores, [l.chave]: e.target.value.replace(/[^0-9.,\s]/g, '') })} onKeyDown={(e) => { if (e.key === 'Enter') guardar(l) }} />
+                      ? <input className="pes-sal-base" style={{ width: 140 }} value={editado ? valores[l.chave] : KZ(l.vencimento ?? 0)} aria-label={`Vencimento de ${l.nome}`} onChange={(e) => setValores({ ...valores, [l.chave]: e.target.value.replace(/[^0-9.,\s]/g, '') })} onKeyDown={(e) => { if (e.key === 'Enter') guardar(l) }} />
                       : l.vencimento ? KZ(l.vencimento) : <span className="text-muted">pela categoria</span>}</td>
                     {alterar && <td><button type="button" className="pes-sal-calc" onClick={() => guardar(l)} disabled={aGuardar === l.chave} title="Guardar"><i className={`fa ${aGuardar === l.chave ? 'fa-spinner fa-spin' : 'fa-save'}`} /></button></td>}
                   </tr>

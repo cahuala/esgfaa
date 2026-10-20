@@ -64,7 +64,7 @@ export class ServicoPainel {
     return {
       totais: {
         total: todos.length, militares: mil.length, civis: civ.length,
-        docentes: todos.filter((p) => p.vinculo === 'docente').length, estudantes: todos.filter((p) => p.vinculo === 'estudante').length, funcionarios: todos.filter((p) => p.vinculo === 'funcionario').length,
+        docentes: todos.filter((p) => p.docente).length, estudantes: todos.filter((p) => p.discente).length, funcionarios: todos.filter((p) => p.vinculo === 'funcionario').length,
         oficiais: mil.filter((p) => p.grupo === 'oficiais').length, sargentos: mil.filter((p) => p.grupo === 'sargentos').length, pracas: mil.filter((p) => p.grupo === 'pracas').length,
         mulheres: mulheres.length, mulheresMilitares: milF.length, mulheresOficiais: milF.filter((p) => p.grupo === 'oficiais').length,
         domiciliares,

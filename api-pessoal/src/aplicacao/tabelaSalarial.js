@@ -59,7 +59,7 @@ export class ServicoTabelaSalarial {
     exigir(u, 'ver')
     const bases = await this.basesCargos()
     const cargos = await this.bd.cargo.findMany({ where: { tipo: { in: ['civil', 'ambos'] } }, include: { _count: { select: { pessoas: true } } } })
-    const porNome = new Map()
+    const porNome = new Map(CARGOS_CIVIS_SIGP.map((nome) => [chaveCargo(nome), { chave: chaveCargo(nome), nome, lugares: 0, ocupados: 0, unidades: 0 }]))
     for (const c of cargos) {
       const k = chaveCargo(c.nome)
       const l = porNome.get(k) ?? { chave: k, nome: c.nome.trim(), lugares: 0, ocupados: 0, unidades: 0 }
@@ -73,7 +73,7 @@ export class ServicoTabelaSalarial {
 
   async alterarCargoCivil(u, chave, valor) {
     exigir(u, 'administrar')
-    const existe = (await this.bd.cargo.findMany({ where: { tipo: { in: ['civil', 'ambos'] } }, select: { nome: true } })).some((c) => chaveCargo(c.nome) === chave)
+    const existe = CARGOS_CIVIS_SIGP.some((n) => chaveCargo(n) === chave) || (await this.bd.cargo.findMany({ where: { tipo: { in: ['civil', 'ambos'] } }, select: { nome: true } })).some((c) => chaveCargo(c.nome) === chave)
     if (!existe) throw invalido('Cargo civil desconhecido.')
     const bases = { ...(await this.basesCargos()) }
     if (valor === null) delete bases[chave]
@@ -83,6 +83,22 @@ export class ServicoTabelaSalarial {
     return this.verCivisCargos(u)
   }
 }
+
+// catálogo de funções civis do SIGP (o mesmo da tabela salarial dos civis por cargo); juntam-se os da orgânica
+export const CARGOS_CIVIS_SIGP = [
+  'Secretária', 'Secretário-Executivo', 'Assistente Administrativo', 'Escriturário-Dactilógrafo', 'Recepcionista', 'Telefonista',
+  'Contínuo', 'Fiel de Armazém', 'Arquivista', 'Bibliotecário', 'Documentalista', 'Tradutor-Intérprete',
+  'Contabilista', 'Tesoureiro', 'Técnico de Recursos Humanos', 'Técnico de Aprovisionamento', 'Técnico de Estatística', 'Técnico de Informática',
+  'Programador', 'Operador de Computadores', 'Analista de Sistemas', 'Electricista', 'Electrotécnico', 'Canalizador',
+  'Carpinteiro', 'Marceneiro', 'Pedreiro', 'Pintor da Construção Civil', 'Serralheiro', 'Soldador',
+  'Mecânico de Automóveis', 'Bate-Chapas', 'Motorista de Ligeiros', 'Motorista de Pesados', 'Operador de Máquinas', 'Cozinheiro',
+  'Ajudante de Cozinha', 'Copeiro', 'Empregado de Mesa', 'Padeiro', 'Nutricionista', 'Médico',
+  'Enfermeiro', 'Técnico de Análises Clínicas', 'Técnico de Farmácia', 'Fisioterapeuta', 'Psicólogo', 'Assistente Social',
+  'Professor do Ensino Primário', 'Professor do Ensino Secundário', 'Educador de Infância', 'Jardineiro', 'Trabalhador de Limpeza', 'Auxiliar de Serviços Gerais',
+  'Lavadeiro-Engomador', 'Costureira', 'Alfaiate', 'Barbeiro', 'Guarda de Instalações', 'Vigilante',
+  'Fotógrafo', 'Desenhador', 'Jornalista', 'Locutor', 'Técnico de Som', 'Operador de Câmara',
+  'Veterinário', 'Agrónomo',
+]
 
 // «Auxiliar de Limpeza » e «auxiliar de limpeza» são o mesmo cargo
 export const chaveCargo = (nome) => String(nome ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ')

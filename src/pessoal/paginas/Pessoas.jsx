@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useDados } from '../useDados'
 import { useArvore } from '../arvore'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
 import Foto from '../componentes/Foto'
+import EscolherLista from '../componentes/EscolherLista'
 import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
@@ -16,6 +17,7 @@ export default function Pessoas() {
   const navegar = useNavigate()
   const [params, setParams] = useSearchParams()
   const filtros = useMemo(() => Object.fromEntries(params), [params])
+  const [listas, setListas] = useState(false)
   const { dados: linhas, erro } = useDados('/pessoas', filtros)
   const arvore = useArvore()
 
@@ -58,6 +60,7 @@ export default function Pessoas() {
 
   return (
     <>
+      {listas && <EscolherLista pessoas={linhas} descricao={descricao} aoFechar={() => setListas(false)} />}
       <Cabecalho titulo="Pessoal" subtitulo="fichas de militares e civis" migalhas={[['Pessoal']]}>
         {pode('editar') && <Link to="/importar" className="btn btn-outline-theme"><i className="fa fa-file-import me-2" />Importar Excel</Link>}
         {pode('editar') && <Link to="/pessoas/nova" className="btn btn-theme"><i className="fa fa-user-plus me-2" />Nova ficha</Link>}
@@ -86,7 +89,8 @@ export default function Pessoas() {
       <Painel corpo={false}>
         <div className="panel-body">
           {!linhas ? <Carregando /> : (
-            <Tabela titulo={filtros.tipo === 'civil' ? 'Pessoal civil' : filtros.tipo === 'militar' ? 'Pessoal militar' : 'Pessoal da Escola'} subtitulo={descricao} colunas={colunas} linhas={linhas} aoClicar={(p) => navegar(`/pessoas/${p.id}`)} ordemInicial={{ chave: 'posto', dir: 1 }} />
+            <Tabela titulo={filtros.tipo === 'civil' ? 'Pessoal civil' : filtros.tipo === 'militar' ? 'Pessoal militar' : 'Pessoal da Escola'} subtitulo={descricao} colunas={colunas} linhas={linhas} aoClicar={(p) => navegar(`/pessoas/${p.id}`)} ordemInicial={{ chave: 'posto', dir: 1 }}
+              acoes={<button type="button" className="btn btn-sm btn-theme" disabled={!linhas.length} onClick={() => setListas(true)} title="Escolher o tipo de lista a imprimir"><i className="fa fa-print me-1" />Documentos</button>} />
           )}
         </div>
       </Painel>

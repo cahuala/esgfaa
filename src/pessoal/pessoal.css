@@ -243,3 +243,12 @@
 .pes-pf td.pes-pf-mes { cursor: pointer; width: 6%; }
 .pes-pf td.pes-pf-mes:hover { background: #fdf6e3; }
 .pes-pf-on { background: #861d0c; color: #fff; border-radius: 4px; display: inline-block; width: 22px; height: 22px; line-height: 22px; font-weight: 700; }
+/* ligações: sem azul nem sublinhado (como no SIGP); ao passar o rato só aparece a mão */
+.app-content a:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link),
+.app-content .btn-link,
+.modal a:not(.btn),
+.pes-pesquisa-geral a { color: inherit; text-decoration: none; cursor: pointer; }
+.app-content a:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):hover,
+.app-content .btn-link:hover { color: inherit; text-decoration: none; }
+.pes-ouro-escuro { color: #861d0c; }
+.pes-dec-pessoa { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: #faf8f2; border: 1.5px solid #ebddb4; border-radius: 8px; }

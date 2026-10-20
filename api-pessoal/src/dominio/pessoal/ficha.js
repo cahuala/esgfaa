@@ -4,6 +4,8 @@ import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgr
 import { vencimentoDoPosto } from './tabelaSalarial.js'
 
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
+// a função principal e as outras (sem repetir); a domiciliar não acumula
+export const vinculosDe = (p) => (p.vinculo === 'domiciliar' ? ['domiciliar'] : [...new Set([p.vinculo, ...(p.outrosVinculos ?? [])].filter(Boolean))])
 export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário', domiciliar: 'Empregada(o) domiciliar' }
 export const HABILITACOES = { base: 'Ensino de base', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }
@@ -26,7 +28,7 @@ const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const arred = (n) => (n === null || n === undefined ? null : Math.floor(n * 10) / 10)
 
 // datas como "AAAA-MM-DD" para o navegador
-const DATAS = ['dataNascimento', 'dataCargo', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao', 'dataAdmissao', 'dataCategoria', 'biEmitidoEm', 'biValidade']
+const DATAS = ['dataNascimento', 'dataEntradaEscola', 'dataSaidaEscola', 'dataCargo', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataSituacao', 'dataAdmissao', 'dataCategoria', 'biEmitidoEm', 'biValidade']
 
 /*
   Ficha com os campos calculados: nome do posto no ramo, categoria, idades e tempos, e a situação
@@ -83,7 +85,11 @@ export function comDerivados(p, hoje = new Date()) {
     f.descricao = p.vinculo === 'domiciliar' ? 'Empregada(o) domiciliar' : p.categoriaCivil || 'Civil'
     if (p.militarAlocado) f.militarAlocadoNome = `${abreviaturaDoPosto(p.militarAlocado.posto, p.militarAlocado.ramo)} ${p.militarAlocado.nome}`
   }
-  f.vinculoNome = VINCULOS[p.vinculo] ?? ''
+  // todas as funções na Escola (a principal e as outras): «Funcionário · Docente»
+  f.vinculos = vinculosDe(p)
+  f.vinculoNome = f.vinculos.map((v) => VINCULOS[v]).filter(Boolean).join(' · ')
+  f.docente = f.vinculos.includes('docente')
+  f.discente = f.vinculos.includes('estudante')
   f.tipoDocenteNome = TIPOS_DOCENTE[p.tipoDocente] ?? ''
   f.generoNome = GENEROS[p.genero] ?? ''
   f.habilitacaoNome = HABILITACOES[p.habilitacao] ?? ''

@@ -1,5 +1,6 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { exigir } from './sessao.js'
+import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 
 /*
   Documentos pessoais emitidos a partir da ficha (declarações, guias de marcha, fichas…). Cada emissão fica
@@ -85,5 +86,30 @@ export class ServicoDocumentosEmitidos {
     exigir(u, 'ver')
     const l = await this.bd.documentoEmitido.findMany({ where: { pessoaId }, orderBy: { criadoEm: 'desc' }, take: 200 })
     return l.map((x) => ({ id: x.id, tipo: x.tipo, nome: TIPOS_DOCUMENTO_PESSOAL[x.tipo]?.nome ?? x.tipo, numero: x.numero, ano: x.ano, dados: x.dados, emitidoPor: x.emitidoPor, criadoEm: x.criadoEm }))
+  }
+
+  /*
+    Controlo das declarações (como no SIGP): todas as emitidas, com o número, a finalidade, quem emitiu e
+    quantas vezes se imprimiram. q procura no nome, NIP, n.º de agente ou n.º da declaração.
+  */
+  async declaracoes(u, { q = '', tipo = '', de = '', ate = '' } = {}) {
+    exigir(u, 'ver')
+    const where = { serie: 'declaracao', ...(tipo ? { tipo } : {}) }
+    if (de || ate) where.criadoEm = { ...(de ? { gte: new Date(`${de}T00:00:00Z`) } : {}), ...(ate ? { lte: new Date(`${ate}T23:59:59Z`) } : {}) }
+    const l = await this.bd.documentoEmitido.findMany({ where, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: 2000, include: { pessoa: { select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, ramo: true, fotoId: true, vinculo: true, cargo: { select: { nome: true } } } } } })
+    const termo = q.trim().toLowerCase()
+    const linhas = l.map((x) => ({
+      id: x.id, tipo: x.tipo, nome: TIPOS_DOCUMENTO_PESSOAL[x.tipo]?.nome ?? x.tipo, numero: x.numero, ano: x.ano, referencia: `Nº${String(x.numero).padStart(3, '0')}/${String(x.ano).slice(-2)}`,
+      finalidade: x.dados?.finalidade ?? '', dados: x.dados, emitidoPor: x.emitidoPor, criadoEm: x.criadoEm, impressoes: x.impressoes, ultimaImpressao: x.ultimaImpressao,
+      pessoa: { ...x.pessoa, postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : '', cargoNome: x.pessoa.cargo?.nome ?? '', cargo: undefined },
+    }))
+    return termo ? linhas.filter((x) => [x.pessoa.nome, x.pessoa.nip, x.pessoa.numeroAgente, x.referencia, x.finalidade, x.nome].some((v) => String(v ?? '').toLowerCase().includes(termo))) : linhas
+  }
+
+  async registarImpressao(u, ids) {
+    exigir(u, 'editar')
+    const r = await this.bd.documentoEmitido.updateMany({ where: { id: { in: ids } }, data: { impressoes: { increment: 1 }, ultimaImpressao: this.agora() } })
+    await this.auditoria.registar(u, 'imprimir_declaracoes', `${r.count} declaração(ões)`, { ids })
+    return { impressas: r.count }
   }
 }

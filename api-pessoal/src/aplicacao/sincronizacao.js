@@ -23,9 +23,11 @@ export class ServicoSincronizacao {
   }
 
   #conteudo(p, contaId) {
-    const ativo = p.ativo && ['docente', 'estudante'].includes(p.vinculo) && Boolean(p.email)
+    // o militar que é funcionário e também docente ou aluno tem conta no portal (aluno, se estiver num curso)
+    const vs = [p.vinculo, ...(p.outrosVinculos ?? [])]
+    const ativo = p.ativo && vs.some((v) => ['docente', 'estudante'].includes(v)) && Boolean(p.email)
     return {
-      ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'estudante' ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
+      ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'docente' ? 'docente' : vs.includes('estudante') ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
       dados: { posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : '', ramo: p.ramo ?? '', nip: p.nip ?? '', telefone: p.telefone ?? '', departamento: p.unidade?.nome ?? '' },
     }
   }
@@ -40,7 +42,7 @@ export class ServicoSincronizacao {
   // volta a pôr na fila todos os docentes e estudantes (ex.: depois de ligar o portal pela primeira vez)
   async reenviarTodos(u) {
     exigir(u, 'administrar')
-    const ids = (await this.bd.pessoa.findMany({ where: { vinculo: { in: ['docente', 'estudante'] }, email: { not: null } }, select: { id: true } })).map((p) => p.id)
+    const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }], email: { not: null } }, select: { id: true } })).map((p) => p.id)
     for (const id of ids) await this.bd.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
     await this.auditoria.registar(u, 'reenviar_portal', `${ids.length} pessoa(s)`)
     return { emFila: ids.length }

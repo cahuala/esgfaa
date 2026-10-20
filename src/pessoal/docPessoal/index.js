@@ -47,7 +47,7 @@ function opcoesFerias(p) {
 export const GRUPOS_DOC = [['declaracoes', 'Declarações'], ['guias', 'Guias de marcha'], ['fichas', 'Fichas']]
 
 export const CATALOGO = [
-  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Declaração de efectividade', para: (p) => militar(p), opcoes: (p) => [FINALIDADE, COM_VENCIMENTO, VALOR(p), ...(p.vinculo === 'estudante' ? [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome || p.unidadeNome || '' }] : [])],
+  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Declaração de efectividade', para: (p) => militar(p), opcoes: (p) => [FINALIDADE, COM_VENCIMENTO, VALOR(p), ...(p.discente || p.vinculo === 'estudante' ? [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome || (p.vinculo === 'estudante' ? p.unidadeNome : '') || '', ajuda: p.vinculo === 'estudante' ? '' : 'Também é aluno: escreva o curso para a declaração dizer «Como Discente do …»; vazio = não fala do curso.' }] : [])],
     desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade' }, q) },
   { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Declaração de salário', para: militar, opcoes: (p) => [VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
   { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Declaração de serviço', para: civil, opcoes: (p) => [COM_VENCIMENTO, VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
@@ -70,14 +70,19 @@ export const documentosPara = (p) => CATALOGO.filter((c) => c.para(p))
 
 // escolhas: [{ tipo, dados }]; emitidos: o que o servidor registou (com o número das declarações)
 export async function gerarDocumentosPessoais(p, escolhas, emitidos, quem) {
+  const nome = `${M(p.nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()}-documentos-${new Date().toISOString().slice(0, 10)}.pdf`
+  await gerarLote(escolhas.map((escolha, i) => ({ p, escolha, emitido: emitidos[i] })), quem, nome)
+}
+
+// vários documentos (de uma ou mais pessoas) num só PDF: [{ p, escolha: { tipo, dados }, emitido: { numero, ano } }]
+export async function gerarLote(itens, quem, nomeFicheiro) {
   const d = await novoDocumento()
-  for (const [i, e] of escolhas.entries()) {
+  for (const { p, escolha: e, emitido } of itens) {
     const c = CATALOGO.find((x) => x.tipo === e.tipo)
-    const o = { ...e.dados, numero: emitidos[i]?.numero, ano: emitidos[i]?.ano }
+    const o = { ...e.dados, numero: emitido?.numero, ano: emitido?.ano }
     // vencimento: o escrito, o da ficha ou o da tabela salarial; ou nenhum, se se escolheu não falar dele
     if (c.grupo === 'declaracoes') o.valor = o.comVencimento === 'Não' ? null : o.valor || p.vencimento || vencimentoDaTabela(p)
     await c.desenhar(d, p, o, quem)
   }
-  const nome = `${M(p.nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()}-documentos-${new Date().toISOString().slice(0, 10)}.pdf`
-  d.doc.save(nome)
+  d.doc.save(nomeFicheiro)
 }

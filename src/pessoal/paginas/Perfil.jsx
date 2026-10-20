@@ -135,6 +135,8 @@ export default function Perfil() {
               <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
               <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
               <Dado r="Cargo" cheio v={p.cargo?.nome && <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</>} />
+              <Dado r="Na Escola desde" v={dataPt(p.dataEntradaEscola || p.dataCargo || p.dataAdmissao)} />
+              {!p.ativo && <Dado r="Saiu da Escola" cheio v={[dataPt(p.dataSaidaEscola), p.motivoSaida, p.destinoSaida && `destino: ${p.destinoSaida}`].filter((x) => x && x !== '—').join(' · ')} />}
               {p.observacoes && <Dado r="Observações" cheio v={p.observacoes} />}
             </Grelha>
             {utilizador.pessoaId === p.id && <div className="mt-3"><OsMeusDados /></div>}
@@ -183,7 +185,7 @@ export default function Perfil() {
                 </Grelha>
               </Bloco>
             )}
-            {p.vinculo === 'docente' && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /></Grelha></Bloco>}
+            {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /></Grelha></Bloco>}
             {p.limiteDomiciliares > 0 && (
               <Bloco titulo="Trabalhadores domiciliares" icone="fa-house-user" acoes={<span className="pes-ftab-n">{p.domiciliares.length}/{p.limiteDomiciliares}</span>}>
                 {p.domiciliares.length ? (

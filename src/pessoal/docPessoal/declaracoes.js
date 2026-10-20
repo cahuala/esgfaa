@@ -44,7 +44,7 @@ export function declaracao(d, p, o, quem) {
     const o2 = p.militarAlocado
     corpo = ['Para os devidos efeitos e fins achados convenientes, declara-se que ', ...identificacao(p), ' é empregada(o) domiciliar do Senhor(a), NIP: ', { b: M(o2?.nip ?? '') }, ' – ', { b: M(o2?.postoNome ?? '') }, ' – ', { b: `${M(o2?.nome ?? '')},` }, ' encontra-se em efectivo serviço nas ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ', na Escola Superior de Guerra/EMG/FAA', ...vencimento(o, 'o salário mensal'), '.']
   } else {
-    const discente = p.vinculo === 'estudante' && o.curso ? [', Como Discente do ', o.curso, ' na Escola Superior de Guerra/EMG/FAA'] : [', na Escola Superior de Guerra/EMG/FAA']
+    const discente = (p.discente || p.vinculo === 'estudante') && o.curso ? [', Como Discente do ', o.curso, ' na Escola Superior de Guerra/EMG/FAA'] : [', na Escola Superior de Guerra/EMG/FAA']
     corpo = ['Para os devidos efeitos e fins achados convenientes, declara-se que ', ...identificacao(p), ' encontra-se em efectivo serviço nas ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ...discente, ...vencimento(o), '.']
   }
   y = paragrafo(d, corpo, y, { x: X, w: W })

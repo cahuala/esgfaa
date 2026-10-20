@@ -17,7 +17,7 @@ export const porHierarquia = (a, b) => (b.grau ?? -1) - (a.grau ?? -1)
 
 function colunas(ctx) {
   return {
-    n: { titulo: 'N.º', valor: (_, i) => i + 1, alinhar: 'center', largura: 9 },
+    n: { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 },
     posto: { titulo: 'Posto / categoria', valor: (p) => (militar(p) ? p.postoNome : p.categoriaCivil || p.carreiraNome || 'Civil') },
     nome: { titulo: 'Nome', valor: (p) => p.nome },
     id: { titulo: 'NIP / N.º agente', valor: (p) => p.nip || p.numeroAgente || '' },
@@ -28,12 +28,12 @@ function colunas(ctx) {
     estado: { titulo: 'Estado', valor: (p) => (militar(p) ? p.estadoNome || 'Ao serviço' : '') },
     genero: { titulo: 'Género', valor: (p) => p.generoNome, alinhar: 'center' },
     idade: { titulo: 'Idade', valor: (p) => p.idade ?? '', alinhar: 'center' },
-    nascimento: { titulo: 'Nascimento', valor: (p) => pt(p.dataNascimento), alinhar: 'center' },
+    nascimento: { titulo: 'Nascimento', valor: (p) => p.dataNascimento, data: true },
     vinculo: { titulo: 'Vínculo', valor: (p) => p.vinculoNome },
     habilitacao: { titulo: 'Habilitações', valor: (p) => [p.habilitacaoNome, p.areaFormacao].filter(Boolean).join(' — ') },
     telefone: { titulo: 'Telefone', valor: (p) => p.telefone || '' },
     email: { titulo: 'E-mail', valor: (p) => p.email || '' },
-    antiguidade: { titulo: 'Antiguidade no posto', valor: (p) => pt(p.dataAntiguidadePosto), alinhar: 'center' },
+    antiguidade: { titulo: 'Antiguidade no posto', valor: (p) => p.dataAntiguidadePosto, data: true },
     naturalidade: { titulo: 'Naturalidade', valor: (p) => [p.naturalidade, p.provincia].filter(Boolean).join(', ') },
   }
 }
@@ -198,7 +198,7 @@ function propostos(ctx, { tipo, estado = '' }) {
 
 function licencas(ctx) {
   const C = colunas(ctx)
-  const cols = [C.n, { titulo: 'Posto / categoria', valor: (x) => x.postoNome }, { titulo: 'Nome', valor: (x) => x.nome }, { titulo: 'NIP / N.º agente', valor: (x) => x.identificacao }, { titulo: 'Início', valor: (x) => pt(x.inicio), alinhar: 'center' }, { titulo: 'Fim', valor: (x) => pt(x.fim), alinhar: 'center' }, { titulo: 'Dias', valor: (x) => x.dias ?? '', alinhar: 'center' }]
+  const cols = [C.n, { titulo: 'Posto / categoria', valor: (x) => x.postoNome }, { titulo: 'Nome', valor: (x) => x.nome }, { titulo: 'NIP / N.º agente', valor: (x) => x.identificacao }, { titulo: 'Início', valor: (x) => x.inicio, data: true }, { titulo: 'Fim', valor: (x) => x.fim, data: true }, { titulo: 'Dias', valor: (x) => x.dias ?? '', alinhar: 'center' }]
   const ids = new Set(ctx.pessoas.map((p) => p.id))
   const l = ctx.licencas.filter((x) => ids.has(x.pessoaId))
   return { titulo: 'Licenças em curso', subtitulo: subtituloBase(ctx), seccoes: seccoesPor(l, (x) => x.tipoNome, [], cols).map((s) => ({ ...s, linhas: s.linhas })) }
@@ -214,7 +214,7 @@ function aniversariantes(ctx, { mes }) {
 function reservaReforma(ctx, { ano }) {
   const C = colunas(ctx)
   const mil = ctx.pessoas.filter(militar)
-  const cols = (campo) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade, C.idade, { titulo: 'Data prevista', valor: (p) => pt(p[campo]), alinhar: 'center' }]
+  const cols = (campo) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade, C.idade, { titulo: 'Data prevista', valor: (p) => p[campo], data: true }]
   const noAno = (campo) => mil.filter((p) => p[campo] && p[campo].slice(0, 4) <= ano && (p[campo].slice(0, 4) === ano || p[campo] < new Date().toISOString().slice(0, 10))).sort((a, b) => a[campo].localeCompare(b[campo]))
   return {
     titulo: `Passagem à reserva e à reforma — ${ano}`, subtitulo: subtituloBase(ctx, 'Pelos limites de idade e de tempo da Lei n.º 13/18 (inclui os atrasados)'), orientacao: 'landscape',
@@ -267,14 +267,14 @@ export const DOCUMENTOS = [
   { id: 'lista-civis', grupo: 'listas', titulo: 'Lista geral do pessoal civil', icone: 'fa-id-card-alt', descricao: 'O modelo da Escola: N.º de agente, INSS, nome, categoria, nascimento, admissão e habilitações.', fazer: (ctx) => {
     const l = ctx.pessoas.filter((p) => p.tipo === 'civil' && p.vinculo !== 'domiciliar').sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
     const M = (v) => String(v ?? '').toLocaleUpperCase('pt')
-    return { titulo: 'Lista geral do pessoal civil da Escola Superior de Guerra', subtitulo: subtituloBase(ctx), orientacao: 'landscape', seccoes: [{ colunas: [
-      { titulo: 'Nº', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 }, { titulo: 'Desp. Nº', valor: () => '' }, { titulo: 'Nº Agente', valor: (p) => p.numeroAgente }, { titulo: 'Nº INSS', valor: (p) => p.inss },
-      { titulo: 'Nome', valor: (p) => M(p.nome) }, { titulo: 'Categoria', valor: (p) => M(p.categoriaCivil || p.carreiraNome) }, { titulo: 'Nascimento', valor: (p) => pt(p.dataNascimento), alinhar: 'center' },
-      { titulo: 'Admissão', valor: (p) => pt(p.dataAdmissao), alinhar: 'center' }, { titulo: 'Habilitações literárias', valor: (p) => M(p.habilitacaoNome) },
+    return { titulo: 'Lista geral do pessoal civil da ESG/EMGFAA', orientacao: 'landscape', seccoes: [{ colunas: [
+      { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 }, { titulo: 'Desp. Nº', valor: () => '', largura: 16 }, { titulo: 'Nº Agente', valor: (p) => p.numeroAgente, largura: 18 }, { titulo: 'Nº INSS', valor: (p) => p.inss, largura: 20 },
+      { titulo: 'Nome', valor: (p) => M(p.nome) }, { titulo: 'Nascimento', valor: (p) => p.dataNascimento, data: true }, { titulo: 'Categoria', valor: (p) => M(p.categoriaCivil || p.carreiraNome) },
+      { titulo: 'Admissão', valor: (p) => p.dataAdmissao, data: true }, { titulo: 'Habilitações literárias', valor: (p) => M(p.habilitacaoNome), largura: 32 },
     ], linhas: l }] }
   } },
-  { id: 'docentes', grupo: 'listas', titulo: 'Corpo docente', icone: 'fa-chalkboard-teacher', descricao: 'Docentes militares e civis, com habilitações.', fazer: simples('Corpo docente', (p) => p.vinculo === 'docente', (C) => [C.n, C.posto, C.nome, C.id, C.habilitacao, C.unidade, C.telefone]) },
-  { id: 'estudantes', grupo: 'listas', titulo: 'Estudantes (cursantes)', icone: 'fa-user-graduate', descricao: 'Militares e civis a frequentar cursos da Escola.', fazer: simples('Estudantes', (p) => p.vinculo === 'estudante', (C) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade]) },
+  { id: 'docentes', grupo: 'listas', titulo: 'Corpo docente', icone: 'fa-chalkboard-teacher', descricao: 'Docentes militares e civis, com habilitações.', fazer: simples('Corpo docente', (p) => p.docente ?? p.vinculo === 'docente', (C) => [C.n, C.posto, C.nome, C.id, C.habilitacao, C.unidade, C.telefone]) },
+  { id: 'estudantes', grupo: 'listas', titulo: 'Estudantes (cursantes)', icone: 'fa-user-graduate', descricao: 'Militares e civis a frequentar cursos da Escola.', fazer: simples('Estudantes', (p) => p.discente ?? p.vinculo === 'estudante', (C) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade]) },
   { id: 'habilitacao', grupo: 'listas', titulo: 'Por habilitações literárias', icone: 'fa-certificate', descricao: 'Do doutoramento ao ensino de base.', fazer: agrupada('Pessoal por habilitações literárias', (p) => p.habilitacao || 'nenhuma', (c) => [...Object.keys(c.ref.habilitacoes).reverse(), 'nenhuma'], (c, k) => c.ref.habilitacoes[k] ?? 'Por indicar', (C) => [C.n, C.posto, C.nome, C.id, { titulo: 'Área de formação', valor: (p) => p.areaFormacao }, C.unidade]) },
   { id: 'provincia', grupo: 'listas', titulo: 'Por província de naturalidade', icone: 'fa-map-marker-alt', descricao: 'Pessoal agrupado pela província onde nasceu.', fazer: agrupada('Pessoal por província de naturalidade', (p) => p.provincia || 'Por indicar', (c) => [...c.ref.provincias, 'Por indicar'], (c, k) => k, (C) => [C.n, C.posto, C.nome, C.id, C.naturalidade, C.unidade]) },
   { id: 'idade', grupo: 'listas', titulo: 'Por faixa etária', icone: 'fa-birthday-cake', descricao: 'Menos de 30, 30 a 39, 40 a 49, 50 a 59 e 60 anos ou mais.', fazer: agrupada('Pessoal por faixa etária', faixa, () => FAIXAS.map(([k]) => k), (c, k) => FAIXAS.find(([x]) => x === k)[1], (C) => [C.n, C.posto, C.nome, C.id, C.nascimento, C.idade, C.unidade]) },
@@ -289,7 +289,7 @@ export const DOCUMENTOS = [
   { id: 'domiciliares', grupo: 'listas', titulo: 'Empregados domiciliares', icone: 'fa-house-user', descricao: 'Por oficial a quem estão afectos.', precisa: 'domiciliares', fazer: (ctx) => {
     const C = colunas(ctx)
     const l = ctx.domiciliares
-    return { titulo: 'Empregados domiciliares', subtitulo: subtituloBase(ctx), seccoes: seccoesPor(l, (p) => p.militarAlocadoNome || 'Sem oficial indicado', [], [C.n, C.nome, C.id, { titulo: 'BI', valor: (p) => p.bi || '' }, { titulo: 'Admissão', valor: (p) => pt(p.dataAdmissao), alinhar: 'center' }, C.telefone]).map((s) => ({ ...s, linhas: s.linhas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt')) })) }
+    return { titulo: 'Empregados domiciliares', subtitulo: subtituloBase(ctx), seccoes: seccoesPor(l, (p) => p.militarAlocadoNome || 'Sem oficial indicado', [], [C.n, C.nome, C.id, { titulo: 'BI', valor: (p) => p.bi || '' }, { titulo: 'Admissão', valor: (p) => p.dataAdmissao, data: true }, C.telefone]).map((s) => ({ ...s, linhas: s.linhas.sort((a, b) => a.nome.localeCompare(b.nome, 'pt')) })) }
   } },
   { id: 'contactos', grupo: 'listas', titulo: 'Lista de contactos', icone: 'fa-address-book', descricao: 'Telefone e e-mail, por unidade.', fazer: (ctx) => {
     const C = colunas(ctx)
