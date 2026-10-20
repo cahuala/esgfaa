@@ -73,7 +73,7 @@
 /* escala linear 1 a 5 */
 .gf-escala {
   display: grid;
-  grid-template-columns: minmax(70px, 1fr) repeat(5, minmax(44px, 64px)) minmax(70px, 1fr);
+  grid-template-columns: minmax(70px, 1fr) repeat(var(--gf-n, 5), minmax(30px, 64px)) minmax(70px, 1fr);
   align-items: end;
   font-size: 14px;
 }
@@ -104,6 +104,29 @@
 }
 .gf-texto:focus { border-bottom: 2px solid var(--gf-cor); padding-bottom: 5px; }
 
+/* resposta curta, data e hora, lista pendente e "Outra:" */
+.gf-curta { width: 50%; min-width: 220px; }
+.gf-data { width: auto; min-width: 180px; }
+.gf-lista { width: auto; min-width: 220px; max-width: 100%; }
+.gf-outra { flex: 1; min-width: 120px; }
+
+/* grelha (linhas × colunas): desliza só ela no telemóvel */
+.gf-grelha-caixa { overflow-x: auto; margin: 0 -8px; }
+.gf-grelha { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 14px; }
+.gf-grelha th { font-weight: 400; color: var(--gf-suave); text-align: center; padding: 4px 8px; min-width: 64px; }
+.gf-grelha tbody th { text-align: left; color: inherit; min-width: 120px; }
+.gf-grelha tbody tr { background: color-mix(in srgb, var(--gf-suave) 6%, transparent); }
+.gf-grelha td { text-align: center; padding: 10px 8px; }
+.gf-grelha td input { margin: 0 auto; }
+
+/* secção (uma página) e progresso */
+.gf-seccao { border-top: 6px solid var(--gf-cor); }
+.gf-seccao-n { font-size: 12.5px; color: var(--gf-suave); margin-bottom: 4px; }
+.gf-seccao-titulo { margin: 0 0 8px; font-size: 20px; font-weight: 500; }
+.gf-progresso { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--gf-suave); }
+.gf-progresso-barra { flex: 1; max-width: 220px; height: 10px; border-radius: 5px; background: var(--gf-linha); overflow: hidden; }
+.gf-progresso-barra i { display: block; height: 100%; background: var(--gf-cor); transition: width 0.2s; }
+
 /* falta responder */
 .gf-falta { border-color: var(--gf-erro); }
 .gf-falta::before { background: var(--gf-erro) !important; }
@@ -123,7 +146,7 @@
   .gf-notas { margin: 16px -16px 0; padding: 12px 16px 0; }
   .gf-titulo { font-size: 24px; }
   /* no telemóvel as pontas da escala vão para cima e para baixo dos números */
-  .gf-escala { grid-template-columns: repeat(5, 1fr); row-gap: 4px; }
+  .gf-escala { grid-template-columns: repeat(var(--gf-n, 5), 1fr); row-gap: 4px; }
   .gf-escala-ponta { grid-column: 1 / -1; padding: 0; text-align: left !important; }
   .gf-escala-ponta:last-child { text-align: right !important; }
 }
@@ -232,3 +255,21 @@
   .gf-tipo { width: 100%; }
   .gf-modelo-texto { width: 100%; }
 }
+
+/* editor: secções, descrição, "Obrigatória", lista numerada e os dois botões de juntar */
+.gf-campo-seccao { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.gf-campo-descricao { font-size: 13px; color: var(--gf-suave); }
+.gf-seccao-editar { display: flex; flex-direction: column; gap: 8px; }
+.gf-novos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gf-numero { flex: none; width: 20px; text-align: right; font-size: 14px; color: var(--gf-suave); }
+.gf-ligacao { color: #1a73e8; cursor: pointer; }
+.gf-ligacao:hover { text-decoration: underline; }
+.gf-modelo-curto { width: 45%; }
+.gf-obrigatoria-interruptor { display: flex; align-items: center; padding-left: 0; }
+.gf-obrigatoria-interruptor .form-check-input { margin: 0; float: none; }
+@media (max-width: 575px) {
+  .gf-novos { grid-template-columns: 1fr; }
+  .gf-curta, .gf-modelo-curto { width: 100%; min-width: 0; }
+}
+/* o interruptor do Bootstrap não leva o tamanho das caixas do formulário */
+.gf .form-switch .form-check-input[type='checkbox'] { width: 2.2em; height: 1.2em; border-radius: 2em; }

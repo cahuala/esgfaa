@@ -28,7 +28,7 @@ function Satisfacao() {
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
 
-  const novo = (modelo) => setEditar({ titulo: '', descricao: '', publico: 'todos', turmaIds: [], fecha: '', perguntas: [{ tipo: 'escala', texto: '' }], ...(modelo ? structuredClone(d.modelos[modelo]) : {}) })
+  const novo = (modelo) => setEditar({ titulo: '', descricao: '', publico: 'todos', turmaIds: [], fecha: '', perguntas: [{ tipo: 'escolha', texto: '', opcoes: [''], obrigatoria: true }], ...(modelo ? structuredClone(d.modelos[modelo]) : {}) })
   async function lancar(i) {
     if (!(await confirmar(tx('Lançar "{0}" a {1} pessoa(s)? Depois de lançado, as perguntas já não mudam.', { 0: i.titulo, 1: i.destinatarios }), { titulo: tx('Lançar inquérito'), botao: tx('Lançar') }))) return
     await api(`/academico/satisfacao/${i.id}/lancar`, { metodo: 'POST' }).then((r) => { setAviso({ texto: tx('Inquérito lançado: {0} pessoa(s) avisada(s) no portal.', { 0: r.destinatarios }) }); carregar() }).catch(falhou)
@@ -39,12 +39,17 @@ function Satisfacao() {
   }
   const verResultados = (i) => api(`/academico/satisfacao/${i.id}/resultados`).then(setResultados).catch(falhou)
   function exportar(r) {
-    const linhas = r.resultados.perguntas.flatMap((p, k) => {
-      if (p.tipo === 'escala') return [[k + 1, p.texto, tx('Média'), String(p.media ?? '').replace('.', ','), ...p.distribuicao]]
-      if (p.tipo === 'escolha') return p.opcoes.map((o, j) => [k + 1, p.texto, o, p.contagens[j], `${p.percentagens[j]}%`])
-      return p.comentarios.map((c) => [k + 1, p.texto, tx('Comentário'), c])
+    // número de cada pergunta sem contar as secções
+    let n = 0
+    const linhas = r.resultados.perguntas.flatMap((p) => {
+      if (p.tipo === 'seccao') return [[], [tx('Secção'), p.texto]]
+      n++
+      if (p.tipo === 'escala') return [[n, p.texto, tx('Média'), String(p.media ?? '').replace('.', ','), ...p.distribuicao]]
+      if (p.tipo === 'escolha') return [...p.opcoes.map((o, j) => [n, p.texto, o, p.contagens[j], `${p.percentagens[j]}%`]), ...(p.outras || []).map((o) => [n, p.texto, tx('Outra:'), o])]
+      if (p.tipo === 'grelha') return p.linhas.flatMap((l, i) => p.colunas.map((c, j) => [n, p.texto, `${l} — ${c}`, p.contagens[i][j]]))
+      return p.comentarios.map((c) => [n, p.texto, tx('Resposta'), c])
     })
-    descarregarCsv(`inquerito-${r.id}`, [[r.titulo], [`${r.resultados.total} respostas de ${r.destinatarios} destinatários`], [], ['N.º', 'Pergunta', 'Opção', 'Valor', '1', '2', '3', '4', '5'], ...linhas])
+    descarregarCsv(`inquerito-${r.id}`, [[r.titulo], [`${r.resultados.total} respostas de ${r.destinatarios} destinatários`], [], ['N.º', 'Pergunta', 'Opção', 'Valor', tx('Distribuição (do menor ao maior)')], ...linhas])
   }
 
   return (
@@ -64,7 +69,7 @@ function Satisfacao() {
               {d.inqueritos.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">{tx('Ainda não há inquéritos. Comece por um modelo.')}</td></tr>}
               {d.inqueritos.map((i) => (
                 <tr key={i.id}>
-                  <td><b>{i.titulo}</b><div className="small text-muted">{i.perguntas.length} {tx('pergunta(s)')}</div></td>
+                  <td><b>{i.titulo}</b><div className="small text-muted">{i.perguntas.filter((p) => p.tipo !== 'seccao').length} {tx('pergunta(s)')}{i.perguntas.some((p) => p.tipo === 'seccao') ? ` · ${i.perguntas.filter((p) => p.tipo === 'seccao').length} ${tx('secção(ões)')}` : ''}</div></td>
                   <td className="small">{tx(d.publicos[i.publico])}{i.turmaIds.length ? tx(' · {0} turma(s)', { 0: i.turmaIds.length }) : ''}</td>
                   <td className="text-center">{i.respostas} / {i.destinatarios}</td>
                   <td className="small">{dataLocal(i.fecha)}</td>

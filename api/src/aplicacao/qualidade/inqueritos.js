@@ -1,5 +1,5 @@
 import { NaoEncontrado, SemPermissao, Conflito } from '../../dominio/comum/erros.js'
-import { limparRespostasInquerito, mediaGlobal, resultadosInquerito } from '../../dominio/comum/opiniao.js'
+import { contarPerguntas, limparRespostasInquerito, mediaGlobal, resultadosInquerito } from '../../dominio/comum/opiniao.js'
 import { InqueritoInstitucional, MODELOS, PUBLICOS } from '../../dominio/qualidade/inquerito.js'
 
 /*
@@ -82,7 +82,7 @@ export class ServicoInqueritosInstitucionais {
     const agora = this.relogio.agora()
     const meus = (await this.qualidade.listar({ soLancados: true })).filter((i) => i.destinadoA(ctx.conta, turmas) && i.estado(agora) === 'aberto')
     const feitos = await this.qualidade.respondidos(ctx.conta.id, meus.map((i) => i.id))
-    return meus.map((i) => ({ id: i.id, titulo: i.titulo, descricao: i.descricao, fecha: i.fecha, perguntas: i.perguntas.length, respondido: feitos.has(i.id) }))
+    return meus.map((i) => ({ id: i.id, titulo: i.titulo, descricao: i.descricao, fecha: i.fecha, perguntas: contarPerguntas(i.perguntas), respondido: feitos.has(i.id) }))
   }
 
   async #doPortal(ctx, id) {
