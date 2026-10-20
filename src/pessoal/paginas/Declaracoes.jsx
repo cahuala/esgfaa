@@ -77,7 +77,7 @@ async function comprovantes(lista, utilizador) {
 
 /*
   Declarações (como no SIGP): solicitar uma nova (a pessoa e as finalidades, várias de uma vez), confirmar
-  os dados (salário, IBAN, banco) e registar; em baixo, as registadas agrupadas por pessoa, com quantas e
+  os dados (o salário; o IBAN só nas dos bancos) e registar; em baixo, as registadas agrupadas por pessoa, com quantas e
   quantas impressas, a última impressão, reimprimir, imprimir e tirar comprovantes das seleccionadas e a
   relação das emitidas num período.
 */
@@ -303,7 +303,6 @@ function NovaDeclaracao({ aoEmitir }) {
               <div className="pes-dec-pessoa mt-3">
                 <div className="pes-dec-av">{iniciais(p.nome)}</div>
                 <div className="flex-grow-1"><div className="fw-bold pes-ouro-escuro">{p.nome}</div><div className="small text-muted">{quemE(p)} · {p.vinculoNome}{p.cargo?.nome ? ` · ${p.cargo.nome}` : ''}</div></div>
-                <div className="text-end small text-muted"><div className="font-monospace">{p.iban || 'Sem IBAN na ficha'}</div><div>{p.banco || ''}</div></div>
               </div>
             )}
           </div>
@@ -349,8 +348,7 @@ function NovaDeclaracao({ aoEmitir }) {
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Modelo</div><div className="pes-campo-v">{modeloAtual?.nome}</div></div>
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Finalidade(s)</div><div className="pes-campo-v fw-semibold">{nomesFins.join('  ·  ')}</div></div>
             <div className="pes-campo"><div className="pes-campo-r">Salário líquido (KZ)</div><input type="number" step="0.01" min="0" className="form-control" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={tabela ? kwanzas(tabela) : ''} /><div className="form-text small">{valor === '' ? (salario ? `Vai ${kwanzas(salario)} Kz (${p.vencimento ? 'da ficha' : 'da tabela salarial'}).` : 'Sem tabela: escreva o salário.') : 'Vai o que escreveu.'}</div></div>
-            <div className="pes-campo"><div className="pes-campo-r">IBAN</div><div className={`pes-campo-v font-monospace ${p.iban ? '' : 'pes-campo-vazio'}`}>{p.iban || 'Sem IBAN registado na ficha'}</div></div>
-            <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Banco</div><div className={`pes-campo-v ${p.banco ? '' : 'pes-campo-vazio'}`}>{p.banco || '—'}</div></div>
+            {precisaIban && <div className="pes-campo"><div className="pes-campo-r">IBAN (declarações dos bancos)</div><div className={`pes-campo-v font-monospace ${p.iban ? '' : 'pes-campo-vazio'}`}>{p.iban || 'Sem IBAN registado na ficha'}</div></div>}
             {modeloAtual?.discente && <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Discente do (curso)</div><input className="form-control" value={curso} onChange={(e) => setCurso(e.target.value)} /></div>}
           </div>
           {precisaIban && !p.iban && <div className="alert alert-warning py-2 small mt-3 mb-0"><i className="fa fa-exclamation-triangle me-1" />As declarações para o banco levam o IBAN: escreva-o primeiro na ficha (Família e banco), ou a declaração sai com o espaço em branco.</div>}
