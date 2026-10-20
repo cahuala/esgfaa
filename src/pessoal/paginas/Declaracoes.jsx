@@ -12,25 +12,36 @@ import { documentoPdf, exportarExcel } from '../exportar'
 import { dataPt } from '../formatar'
 
 /*
-  As finalidades (como no SIGP), cada uma com o seu modelo: os bancos têm os modelos próprios; as outras
-  saem na declaração de efectividade (militares) ou de serviço (civis), com a finalidade escrita.
+  Os modelos de declaração da ESG (a caixa do canto de cada modelo diz para quem é) e as finalidades que
+  vão na «OBS». Cada finalidade escolhida dá uma declaração (como no SIGP). Os modelos dos bancos (do SIGP)
+  têm o texto próprio e não levam OBS.
 */
 const militar = (p) => p.tipo === 'militar'
+const modelosPara = (p) => (p.vinculo === 'domiciliar'
+  ? [{ id: 'domiciliar', nome: 'Para empregada(o) domiciliar (civil)', tipo: 'declaracao_servico', dados: { comVencimento: 'Sim' } }]
+  : militar(p)
+    ? [
+        { id: 'efectividade', nome: 'Para efectivo militar — efectividade', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Não' } },
+        { id: 'efectividade_venc', nome: 'Para efectivo militar — com o vencimento', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Sim' } },
+        ...(p.discente || p.vinculo === 'estudante' ? [{ id: 'discente', nome: 'Para discentes', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Sim' }, discente: true }] : []),
+        { id: 'salario', nome: 'Declaração de salário', tipo: 'declaracao_salario', dados: { comVencimento: 'Sim' } },
+      ]
+    : [
+        { id: 'servico_venc', nome: 'Para civil — com o vencimento', tipo: 'declaracao_servico', dados: { comVencimento: 'Sim' } },
+        { id: 'servico', nome: 'Para civil — para confirmar a efectividade', tipo: 'declaracao_servico', dados: { comVencimento: 'Não' } },
+      ])
 const FINALIDADES = [
-  ['Crédito', [
-    { id: 'credito_pessoal', nome: 'Crédito Pessoal (BFA)', tipo: () => 'declaracao_bfa_credito', banco: true },
-    { id: 'adiantamento', nome: 'Adiantamento Salarial (BFA)', tipo: () => 'declaracao_bfa_adiantamento', banco: true },
-    { id: 'bpc_salario', nome: 'BPC Salário', tipo: () => 'declaracao_bpc_salario', banco: true },
-    { id: 'bpc_credito', nome: 'Crédito Bancário (BPC)', tipo: () => 'declaracao_bpc_credito', banco: true },
+  ['Finalidades da ESG (OBS)', [
+    { id: 'conta', nome: 'Efeito de Actualização de Conta Bancária', obs: () => 'Efeito de Actualização de Conta Bancária' },
+    { id: 'visto', nome: 'Efeito de obtenção de Visto para…', obs: (x) => `efeito de obtenção de Visto para ${x.pais || '________'}`, pais: true },
+    { id: 'devidos', nome: 'Para os devidos efeitos (sem OBS)', obs: () => '' },
+    { id: 'outra', nome: 'Outra finalidade (escrever)', obs: (x) => x.outra, escrever: true },
   ]],
-  ['Efectividade / Rendimento', [
-    { id: 'efectividade', nome: 'Declaração de Efectividade', tipo: (p) => (militar(p) ? 'declaracao_efectividade' : 'declaracao_servico'), dados: { comVencimento: 'Não', semObs: true } },
-    { id: 'rendimento', nome: 'Declaração de Rendimento', tipo: (p) => (militar(p) ? 'declaracao_salario' : 'declaracao_servico'), dados: { comVencimento: 'Sim', semObs: true } },
-  ]],
-  ['Outras', [
-    { id: 'ordenado_especial', nome: 'Ordenado Especial', tipo: (p) => (militar(p) ? 'declaracao_efectividade' : 'declaracao_servico'), dados: { comVencimento: 'Sim', finalidade: 'efeitos de Ordenado Especial' } },
-    { id: 'administrativos', nome: 'Administrativos', tipo: (p) => (militar(p) ? 'declaracao_efectividade' : 'declaracao_servico'), dados: { comVencimento: 'Não', finalidade: 'efeitos Administrativos' } },
-    { id: 'outra', nome: 'Outra finalidade (escrever)', tipo: (p) => (militar(p) ? 'declaracao_efectividade' : 'declaracao_servico'), dados: { comVencimento: 'Sim' }, escrever: true },
+  ['Bancos (modelos do SIGP)', [
+    { id: 'credito_pessoal', nome: 'Crédito Pessoal (BFA)', tipo: 'declaracao_bfa_credito', banco: true },
+    { id: 'adiantamento', nome: 'Adiantamento Salarial (BFA)', tipo: 'declaracao_bfa_adiantamento', banco: true },
+    { id: 'bpc_salario', nome: 'BPC Salário', tipo: 'declaracao_bpc_salario', banco: true },
+    { id: 'bpc_credito', nome: 'Crédito Bancário (BPC)', tipo: 'declaracao_bpc_credito', banco: true },
   ]],
 ]
 const TODAS = FINALIDADES.flatMap(([, l]) => l)
@@ -76,19 +87,21 @@ export default function Declaracoes() {
   const { dados, erro, recarregar } = useDados('/declaracoes', filtros)
   const [marcadas, setMarcadas] = useState(new Set())
   const [aberto, setAberto] = useState(null)
+  const [aba, setAba] = useState('por_imprimir')
   const [aImprimir, setAImprimir] = useState(false)
   const editar = pode('editar')
 
   // as declarações de cada pessoa juntas (como no SIGP)
   const grupos = useMemo(() => {
     const m = new Map()
-    for (const x of dados ?? []) {
+    for (const x of (dados ?? []).filter((d) => (aba === 'todas' ? true : aba === 'impressas' ? d.impressoes > 0 : !d.impressoes))) {
       const g = m.get(x.pessoa.id) ?? { pessoa: x.pessoa, itens: [] }
       g.itens.push(x)
       m.set(x.pessoa.id, g)
     }
     return [...m.values()]
-  }, [dados])
+  }, [dados, aba])
+  const nPor = (dados ?? []).filter((x) => !x.impressoes).length
 
   async function imprimir(lista) {
     setAImprimir(true)
@@ -130,6 +143,9 @@ export default function Declaracoes() {
             <button type="button" className="btn btn-xs btn-white" disabled={!seleccionadas.length} onClick={() => comprovantes(seleccionadas, utilizador?.nome)}><i className="fa fa-receipt me-1" />Comprovantes seleccionados {seleccionadas.length ? `(${seleccionadas.length})` : ''}</button>
             <button type="button" className="btn btn-xs btn-white" disabled={!seleccionadas.length || aImprimir} onClick={() => imprimir(seleccionadas)}><i className={`fa ${aImprimir ? 'fa-spinner fa-spin' : 'fa-print'} me-1`} />Imprimir seleccionadas {seleccionadas.length ? `(${seleccionadas.length})` : ''}</button>
           </div>
+        </div>
+        <div className="pes-ficha-tabs mb-0 px-3 pt-2" role="tablist">
+          {[['por_imprimir', 'Por imprimir', 'fa-hourglass-half', nPor], ['impressas', 'Impressas', 'fa-check-circle', (dados?.length ?? 0) - nPor], ['todas', 'Todas', 'fa-list', dados?.length ?? 0]].map(([k, t, ic, n]) => <button key={k} type="button" role="tab" aria-selected={aba === k} className={`pes-ftab ${aba === k ? 'active' : ''}`} onClick={() => { setAba(k); setMarcadas(new Set()) }}><i className={`fa ${ic}`} />{t} <span className="pes-ftab-n">{n}</span></button>)}
         </div>
         <div className="pes-bloco-c d-flex flex-wrap gap-2 align-items-center border-bottom">
           <div className="pes-pesquisa flex-grow-1"><i className="fa fa-search" /><input className="form-control form-control-sm" value={filtros.q} onChange={(e) => setFiltros({ ...filtros, q: e.target.value })} placeholder="Pesquisar por NIP, nome, tipo ou nº de documento…" aria-label="Pesquisar declarações" /></div>
@@ -207,6 +223,9 @@ function NovaDeclaracao({ aoEmitir }) {
   const [q, setQ] = useState('')
   const [p, setP] = useState(null)
   const [fins, setFins] = useState([])
+  const [modelo, setModelo] = useState('')
+  const [pais, setPais] = useState('Portugal')
+  const [imprimirLogo, setImprimirLogo] = useState(false)
   const [outra, setOutra] = useState('')
   const [valor, setValor] = useState('')
   const [curso, setCurso] = useState('')
@@ -222,13 +241,14 @@ function NovaDeclaracao({ aoEmitir }) {
     try {
       const ficha = await api(`/pessoas/${x.id}`)
       setP(ficha)
+      setModelo(modelosPara(ficha)[0]?.id ?? '')
       setValor(ficha.vencimento ?? '')
       setCurso((ficha.cursos ?? []).find((c) => !c.fim)?.nome || (ficha.vinculo === 'estudante' ? ficha.unidadeNome : '') || '')
     } catch (e) {
       avisar(e.message, 'erro')
     }
   }
-  const limpar = () => { setP(null); setFins([]); setOutra(''); setValor(''); setConfirmar(false) }
+  const limpar = () => { setP(null); setFins([]); setOutra(''); setValor(''); setModelo(''); setConfirmar(false) }
   function abrir() {
     if (!p) { avisar('Pesquise e seleccione um militar ou funcionário.', 'erro'); return }
     if (!fins.length) { avisar('Seleccione pelo menos uma finalidade.', 'erro'); return }
@@ -238,15 +258,22 @@ function NovaDeclaracao({ aoEmitir }) {
   async function emitir() {
     setAEmitir(true)
     try {
+      const m = modelosPara(p).find((x) => x.id === modelo) ?? modelosPara(p)[0]
       const escolhas = fins.map((id) => {
         const f = TODAS.find((x) => x.id === id)
-        const dadosDoc = { ...(f.dados ?? {}), finalidade: f.escrever ? outra.trim() : f.dados?.finalidade ?? f.nome, ...(valor !== '' ? { valor: Number(valor) } : {}), ...(curso && f.tipo(p) === 'declaracao_efectividade' && (p.discente || p.vinculo === 'estudante') ? { curso } : {}) }
-        return { tipo: f.tipo(p), dados: dadosDoc }
+        const venc = valor !== '' ? { valor: Number(valor) } : {}
+        // os modelos dos bancos têm o texto próprio; os da ESG levam a finalidade na OBS
+        if (f.banco) return { tipo: f.tipo, dados: { finalidade: f.nome, ...venc } }
+        const obs = f.obs({ pais, outra: outra.trim() })
+        return { tipo: m.tipo, dados: { ...m.dados, finalidade: obs, ...(obs ? {} : { semObs: true }), ...venc, ...(m.discente && curso ? { curso } : {}) } }
       })
       const [emitidos, quem] = await Promise.all([api(`/pessoas/${p.id}/documentos-emitidos`, { metodo: 'POST', corpo: { documentos: escolhas } }), api('/definicoes/assinaturas')])
-      await gerarLote(escolhas.map((escolha, i) => ({ p, escolha, emitido: emitidos[i] })), quem, `declaracoes-${p.nome.split(' ')[0].toLowerCase()}-${hojeIso()}.pdf`)
-      await api('/declaracoes/impressoes', { metodo: 'POST', corpo: { ids: emitidos.map((x) => x.id) } })
-      avisar(`${emitidos.length} declaração(ões) registada(s): ${emitidos.map((x) => `Nº${String(x.numero).padStart(3, '0')}/${String(x.ano).slice(-2)}`).join(', ')}.`)
+      // como no SIGP: regista-se o pedido; imprime-se logo, ou depois (fica em «Por imprimir»)
+      if (imprimirLogo) {
+        await gerarLote(escolhas.map((escolha, i) => ({ p, escolha, emitido: emitidos[i] })), quem, `declaracoes-${p.nome.split(' ')[0].toLowerCase()}-${hojeIso()}.pdf`)
+        await api('/declaracoes/impressoes', { metodo: 'POST', corpo: { ids: emitidos.map((x) => x.id) } })
+      }
+      avisar(`${emitidos.length} declaração(ões) registada(s): ${emitidos.map((x) => `Nº${String(x.numero).padStart(3, '0')}/${String(x.ano).slice(-2)}`).join(', ')}${imprimirLogo ? ' e impressa(s)' : ' — em «Por imprimir»'}.`)
       limpar()
       aoEmitir()
     } catch (e) {
@@ -255,7 +282,8 @@ function NovaDeclaracao({ aoEmitir }) {
       setAEmitir(false)
     }
   }
-  const nomesFins = fins.map((id) => (id === 'outra' ? outra.trim() || 'Outra' : TODAS.find((x) => x.id === id)?.nome))
+  const nomesFins = fins.map((id) => (id === 'outra' ? outra.trim() || 'Outra' : id === 'visto' ? `Visto para ${pais}` : TODAS.find((x) => x.id === id)?.nome))
+  const modeloAtual = p ? modelosPara(p).find((x) => x.id === modelo) : null
   const precisaIban = fins.some((id) => TODAS.find((x) => x.id === id)?.banco)
 
   return (
@@ -280,6 +308,12 @@ function NovaDeclaracao({ aoEmitir }) {
             )}
           </div>
           <div className="col-lg-7">
+            {p && <>
+              <label className="form-label small fw-bold mb-1">Modelo de declaração</label>
+              <div className="d-flex flex-wrap gap-2 mb-3">
+                {modelosPara(p).map((m) => <label key={m.id} className={`pes-modelo ${modelo === m.id ? 'activo' : ''}`}><input type="radio" name="modelo-dec" className="form-check-input me-1" checked={modelo === m.id} onChange={() => setModelo(m.id)} />{m.nome}</label>)}
+              </div>
+            </>}
             <label className="form-label small fw-bold mb-1">Finalidade(s) da declaração <span className="fw-normal text-muted">(pode seleccionar várias)</span></label>
             <div className="pes-fins">
               {FINALIDADES.map(([g, l]) => (
@@ -294,12 +328,15 @@ function NovaDeclaracao({ aoEmitir }) {
                 </div>
               ))}
             </div>
-            {fins.includes('outra') && <input className="form-control form-control-sm mt-2" value={outra} onChange={(e) => setOutra(e.target.value)} placeholder="Ex.: obtenção de Visto para Portugal" aria-label="Outra finalidade" />}
+            {fins.includes('visto') && <input className="form-control form-control-sm mt-2" value={pais} onChange={(e) => setPais(e.target.value)} placeholder="País do visto" aria-label="País do visto" />}
+            {fins.includes('outra') && <input className="form-control form-control-sm mt-2" value={outra} onChange={(e) => setOutra(e.target.value)} placeholder="Ex.: efeito de Arrendamento" aria-label="Outra finalidade" />}
+            <div className="form-text small">Cada finalidade dá uma declaração. As da ESG saem no modelo escolhido, com a finalidade na OBS.</div>
           </div>
         </div>
         <div className="d-flex gap-2 mt-3">
           <button type="button" className="btn btn-theme" onClick={abrir}><i className="fa fa-save me-1" />Registar declaração</button>
           <button type="button" className="btn btn-white" onClick={limpar}><i className="fa fa-times me-1" />Limpar</button>
+          <label className="form-check ms-2 align-self-center mb-0"><input type="checkbox" className="form-check-input" checked={imprimirLogo} onChange={(e) => setImprimirLogo(e.target.checked)} /> <span className="form-check-label small">Imprimir logo (senão fica em «Por imprimir»)</span></label>
         </div>
       </div>
       {confirmar && p && (
@@ -309,11 +346,12 @@ function NovaDeclaracao({ aoEmitir }) {
         </>}>
           <div className="pes-dec-pessoa mb-3"><Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} tamanho={50} /><div><div className="fw-bold pes-ouro-escuro">{p.nome}</div><div className="small text-muted">{quemE(p)} · {p.vinculoNome}</div></div></div>
           <div className="pes-grelha">
+            <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Modelo</div><div className="pes-campo-v">{modeloAtual?.nome}</div></div>
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Finalidade(s)</div><div className="pes-campo-v fw-semibold">{nomesFins.join('  ·  ')}</div></div>
             <div className="pes-campo"><div className="pes-campo-r">Salário líquido (KZ)</div><input type="number" step="0.01" min="0" className="form-control" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={tabela ? kwanzas(tabela) : ''} /><div className="form-text small">{valor === '' ? (salario ? `Vai ${kwanzas(salario)} Kz (${p.vencimento ? 'da ficha' : 'da tabela salarial'}).` : 'Sem tabela: escreva o salário.') : 'Vai o que escreveu.'}</div></div>
             <div className="pes-campo"><div className="pes-campo-r">IBAN</div><div className={`pes-campo-v font-monospace ${p.iban ? '' : 'pes-campo-vazio'}`}>{p.iban || 'Sem IBAN registado na ficha'}</div></div>
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Banco</div><div className={`pes-campo-v ${p.banco ? '' : 'pes-campo-vazio'}`}>{p.banco || '—'}</div></div>
-            {(p.discente || p.vinculo === 'estudante') && fins.some((id) => TODAS.find((x) => x.id === id)?.tipo(p) === 'declaracao_efectividade') && <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Discente do (curso)</div><input className="form-control" value={curso} onChange={(e) => setCurso(e.target.value)} /></div>}
+            {modeloAtual?.discente && <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Discente do (curso)</div><input className="form-control" value={curso} onChange={(e) => setCurso(e.target.value)} /></div>}
           </div>
           {precisaIban && !p.iban && <div className="alert alert-warning py-2 small mt-3 mb-0"><i className="fa fa-exclamation-triangle me-1" />As declarações para o banco levam o IBAN: escreva-o primeiro na ficha (Família e banco), ou a declaração sai com o espaço em branco.</div>}
           <div className="pes-info small mt-3 mb-0"><i className="fa fa-info-circle me-1" />Verifique os dados acima antes de confirmar o registo da declaração. Cada finalidade dá uma declaração com o número seguinte do ano.</div>

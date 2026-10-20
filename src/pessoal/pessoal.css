@@ -269,3 +269,5 @@
 .pes-dec-n { background: #861d0c; color: #fff; border-radius: 10px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; }
 .pes-badge-mil { background: #e3f2fd; color: #1565c0; font-size: 9px; }
 .pes-badge-civ { background: #f3e5f5; color: #6a1b9a; font-size: 9px; }
+.pes-modelo { border: 1.5px solid #e5e2d8; border-radius: 8px; padding: 6px 10px; font-size: 12.5px; cursor: pointer; background: #fff; }
+.pes-modelo.activo { border-color: #c09820; background: #faf8f2; font-weight: 600; }
