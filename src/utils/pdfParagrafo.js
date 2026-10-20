@@ -3,8 +3,9 @@
   Parágrafo justificado com partes a negrito: partes = ['texto normal ', { b: 'TEXTO A NEGRITO' }, …].
   Devolve o y depois do parágrafo.
 */
-export function paragrafo(doc, partes, y, { x, w, recuo = 12, entre = 6.6, justificar = true, tam = 14, estilo = 'normal', antesDaLinha = (yy) => yy, centrar = false } = {}) {
-  const fonte = (b) => (b ? (estilo === 'italic' ? 'bolditalic' : 'bold') : estilo)
+// familia: outra letra (ex.: a cursiva dos diplomas); negritoFalso: a letra não tem negrito e desenha-se com contorno
+export function paragrafo(doc, partes, y, { x, w, recuo = 12, entre = 6.6, justificar = true, tam = 14, estilo = 'normal', antesDaLinha = (yy) => yy, centrar = false, familia = 'times', negritoFalso = false } = {}) {
+  const fonte = (b) => (negritoFalso ? 'normal' : b ? (estilo === 'italic' ? 'bolditalic' : 'bold') : estilo)
   doc.setFontSize(tam)
   const palavras = []
   for (const p of partes) {
@@ -27,8 +28,8 @@ export function paragrafo(doc, partes, y, { x, w, recuo = 12, entre = 6.6, justi
     if (p.espaco) { if (atual.length) tokens.push(atual); atual = [] } else atual.push(p)
   }
   if (atual.length) tokens.push(atual)
-  const largura = (tok) => tok.reduce((s, p) => { doc.setFont('times', fonte(p.b)); return s + doc.getTextWidth(p.t) }, 0)
-  doc.setFont('times', estilo)
+  const largura = (tok) => tok.reduce((s, p) => { doc.setFont(familia, fonte(p.b)); return s + doc.getTextWidth(p.t) }, 0)
+  doc.setFont(familia, negritoFalso ? 'normal' : estilo)
   const espaco = doc.getTextWidth(' ')
   const linhas = []
   let linha = []
@@ -50,7 +51,7 @@ export function paragrafo(doc, partes, y, { x, w, recuo = 12, entre = 6.6, justi
     let xx = x0
     for (const { tok, tw } of l.linha) {
       let px = xx
-      for (const p of tok) { doc.setFont('times', fonte(p.b)); doc.text(p.t, px, y); px += doc.getTextWidth(p.t) }
+      for (const p of tok) { doc.setFont(familia, fonte(p.b)); doc.setLineWidth(0.22); doc.text(p.t, px, y, negritoFalso && p.b ? { renderingMode: "fillThenStroke" } : undefined); px += doc.getTextWidth(p.t) }
       xx += tw + espaco + extra
     }
     y += entre

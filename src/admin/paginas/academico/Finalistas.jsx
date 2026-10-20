@@ -10,7 +10,8 @@ const valor = (v) => (v === null || v === undefined ? '—' : Number(v).toLocale
   Finalistas da turma (último ano): lançar o trabalho de fim de curso (tema, orientador, júri,
   defesa e nota), ver o que falta para concluir o curso e emitir o certificado de conclusão.
 */
-function Finalistas({ turma, gerir, avisar }) {
+// mostrar: os estudantes que a pesquisa da turma deixa ver (sem ela, todos)
+function Finalistas({ turma, gerir, avisar, mostrar }) {
   const [d, setD] = useState(null)
   const [aberto, setAberto] = useState(null)
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
@@ -25,7 +26,7 @@ function Finalistas({ turma, gerir, avisar }) {
           <thead><tr><th>{tx('Estudante')}</th><th>{tx('Trabalho de fim de curso')}</th><th className="text-center">{tx('Nota TFC')}</th><th className="text-center">{tx('Cadeiras')}</th><th>{tx('Conclusão')}</th><th /></tr></thead>
           <tbody>
             {!d && <tr><td colSpan={6} className="text-center text-muted py-3">{tx('A carregar…')}</td></tr>}
-            {d?.linhas.map((l) => (
+            {d?.linhas.filter((l) => !mostrar || mostrar.has(l.estudante.id)).map((l) => (
               <LinhaFinalista key={l.estudante.id} l={l} turma={turma} gerir={gerir} aberta={aberto === l.estudante.id}
                 alternar={() => setAberto(aberto === l.estudante.id ? null : l.estudante.id)} avisar={avisar} carregar={carregar} />
             ))}

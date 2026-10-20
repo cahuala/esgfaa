@@ -18,4 +18,11 @@ export default [
   ["Disciplinas e valores em duas colunas (Comando e Direcção, CoaMP, Estado-Maior Conjunto)", "Course units and marks in two columns (Command and Staff, CoaMP, Joint Staff)", "Unités et notes sur deux colonnes (Commandement et Direction, CoaMP, État-major interarmées)", "Asignaturas y notas en dos columnas (Mando y Dirección, CoaMP, Estado Mayor Conjunto)"],
   ["«Atesta-se que…» (todos os cursos)", "«This attests that…» (all courses)", "«Il est attesté que…» (tous les cours)", "«Se certifica que…» (todos los cursos)"],
   ["«A ESG outorga o presente diploma…» (cursos dos oficiais generais)", "«The ESG awards this diploma…» (general officers' courses)", "«L'ESG décerne le présent diplôme…» (cours des officiers généraux)", "«La ESG otorga el presente diploma…» (cursos de oficiales generales)"],
+  ["Pesquisar militar: nome, NIP, posto, ramo, n.º ou e-mail", "Search officer: name, NIP, rank, branch, no. or e-mail", "Rechercher un militaire : nom, NIP, grade, armée, n° ou e-mail", "Buscar militar: nombre, NIP, grado, rama, n.º o correo"],
+  ["Pesquisar militares da turma", "Search the class's officers", "Rechercher les militaires de la classe", "Buscar militares de la clase"],
+  ["{0} estudante(s)", "{0} student(s)", "{0} étudiant(s)", "{0} estudiante(s)"],
+  ["Ninguém encontrado para «{0}».", "Nobody found for «{0}».", "Personne trouvé pour «{0}».", "Nadie encontrado para «{0}»."],
+  ["Recuar", "Back", "Précédent", "Atrás"],
+  ["{0}–{1} de {2} · página {3} de {4}", "{0}–{1} of {2} · page {3} of {4}", "{0}–{1} sur {2} · page {3} sur {4}", "{0}–{1} de {2} · página {3} de {4}"],
+  ["Avançar", "Next", "Suivant", "Siguiente"],
 ]

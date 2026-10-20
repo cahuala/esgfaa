@@ -16,6 +16,8 @@ import { t as tx } from '../../../i18n/linguas'
 const DIAS = ['', tx('Segunda'), tx('Terça'), tx('Quarta'), tx('Quinta'), tx('Sexta'), tx('Sábado')]
 const ESTADOS = { ativa: ['bg-success', tx('Ativa')], suspensa: ['bg-warning text-dark', tx('Suspensa')], concluida: ['bg-info', tx('Concluída')], anulada: ['bg-secondary', tx('Anulada')] }
 
+const POR_PAGINA = 15
+
 // uma turma: matrículas, cadeiras (período, docentes alocados) e horário
 function Turma() {
   const { id } = useParams()
@@ -39,9 +41,18 @@ function Turma() {
   }, [gerir, id, t?.anoFinal])
 
   const falhou = (e) => setAviso({ tipo: 'erro', texto: e.message })
+  const [procura, setProcura] = useState('')
+  const [pagina, setPagina] = useState(1)
 
   if (erro) return <Erro texto={erro} />
   if (!t) return <Carregando />
+  // procurar na turma: por todas as formas (nome, NIP, posto, ramo, n.º de estudante, e-mail), sem acentos
+  const semAcento = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const termos = semAcento(procura).split(/\s+/).filter(Boolean)
+  const encontradas = t.matriculas.filter((m) => { const tudo = semAcento([m.estudante.nome, m.estudante.numero, m.estudante.email, ...Object.values(m.estudante.dados ?? {})].join(' ')); return termos.every((x) => tudo.includes(x)) })
+  const paginas = Math.max(1, Math.ceil(encontradas.length / POR_PAGINA))
+  const atual = Math.min(pagina, paginas)
+  const visiveis = encontradas.slice((atual - 1) * POR_PAGINA, atual * POR_PAGINA)
 
   return (
     <>
@@ -51,6 +62,13 @@ function Turma() {
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" /> {tx('Copiar cadeiras de outra turma')}</button>}
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> {tx('Turmas')}</Link>
       </CabecalhoPagina>
+      <div className="card mb-3"><div className="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+        <div className="input-group flex-grow-1" style={{ maxWidth: 560 }}>
+          <span className="input-group-text"><i className="fa fa-search" /></span>
+          <input type="search" className="form-control" value={procura} onChange={(e) => { setProcura(e.target.value); setPagina(1) }} placeholder={tx('Pesquisar militar: nome, NIP, posto, ramo, n.º ou e-mail')} aria-label={tx('Pesquisar militares da turma')} />
+        </div>
+        <span className="small text-muted ms-auto">{encontradas.length === t.matriculas.length ? tx('{0} estudante(s)', { 0: t.matriculas.length }) : tx('{0} de {1}', { 0: encontradas.length, 1: t.matriculas.length })}</span>
+      </div></div>
       {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
       <div className="panel panel-inverse">
         <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-print me-2" />{tx('Documentos da turma')}</h4></div>
@@ -65,7 +83,7 @@ function Turma() {
           )}
         </div>
       </div>
-      {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} />}
+      {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} mostrar={procura.trim() ? new Set(encontradas.map((m) => m.estudante.id)) : null} />}
       {documentos && <DocumentosEstudante turma={t} estudante={documentos} fechar={() => setDocumentos(null)} />}
       {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
@@ -77,9 +95,10 @@ function Turma() {
                 <thead><tr><th>{tx('Estudante')}</th><th>{tx('N.º')}</th><th>{tx('Estado')}</th>{gerir && <th className="text-end">{tx('Ações')}</th>}</tr></thead>
                 <tbody>
                   {t.matriculas.length === 0 && <tr><td colSpan={gerir ? 4 : 3} className="text-center text-muted py-4">{tx('Sem estudantes matriculados.')}</td></tr>}
-                  {t.matriculas.map((m) => (
+                  {t.matriculas.length > 0 && !encontradas.length && <tr><td colSpan={gerir ? 4 : 3} className="text-center text-muted py-4">{tx('Ninguém encontrado para «{0}».', { 0: procura })}</td></tr>}
+                  {visiveis.map((m) => (
                     <tr key={m.id}>
-                      <td><Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="fw-bold" title={tx('Histórico académico')}>{m.estudante.nome}</Link><div className="small text-muted">{m.estudante.email}</div></td>
+                      <td><Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="fw-bold" title={tx('Histórico académico')}>{m.estudante.nome}</Link><div className="small text-muted">{[m.estudante.dados?.posto, m.estudante.dados?.nip && `NIP ${m.estudante.dados.nip}`, m.estudante.dados?.ramo].filter(Boolean).join(' · ') || m.estudante.email}</div></td>
                       <td className="font-monospace">{m.estudante.numero}</td>
                       <td>
                         {gerir ? (
@@ -98,6 +117,13 @@ function Turma() {
                 </tbody>
               </table>
             </div>
+            {paginas > 1 && (
+              <div className="d-flex align-items-center gap-2 p-2 border-top">
+                <button type="button" className="btn btn-sm btn-white" disabled={atual <= 1} onClick={() => setPagina(atual - 1)}><i className="fa fa-chevron-left me-1" />{tx('Recuar')}</button>
+                <span className="small text-muted mx-auto">{tx('{0}–{1} de {2} · página {3} de {4}', { 0: (atual - 1) * POR_PAGINA + 1, 1: Math.min(atual * POR_PAGINA, encontradas.length), 2: encontradas.length, 3: atual, 4: paginas })}</span>
+                <button type="button" className="btn btn-sm btn-white" disabled={atual >= paginas} onClick={() => setPagina(atual + 1)}>{tx('Avançar')}<i className="fa fa-chevron-right ms-1" /></button>
+              </div>
+            )}
           </Painel>
           {gerir && <MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} />}
         </div>
