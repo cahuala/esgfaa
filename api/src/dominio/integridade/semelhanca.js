@@ -154,14 +154,19 @@ const MAX_EXCERTO = 1500
 /*
   Compara o texto analisado com as fontes candidatas.
   a: { texto, tokens }; fontes: [{ id, texto, tokens }].
-  Devolve a percentagem total, a de cada fonte e os trechos coincidentes (posições no texto analisado
-  e o excerto correspondente da fonte).
+  parecidas: frases parafraseadas ou traduzidas já encontradas ([{ inicio, fim, fonte, excerto, tipo, valor }],
+  posições no texto analisado); só contam nas palavras que a comparação exacta não cobriu.
+  Devolve a percentagem total (e a exacta, a de paráfrase e a de tradução), a de cada fonte e os trechos
+  coincidentes (posições no texto analisado, o excerto da fonte e o tipo: exacto, parafrase ou traducao).
 */
-export function comparar(a, fontes) {
+export function comparar(a, fontes, { parecidas = [] } = {}) {
   const total = a.tokens.length
-  if (!total) return { percentagem: 0, fontes: [], trechos: [] }
+  if (!total) return { percentagem: 0, percentagemExacta: 0, percentagemParafrase: 0, percentagemTraducao: 0, fontes: [], trechos: [] }
   const ps = pedacos(a.tokens)
-  const porFonte = fontes.map((f) => {
+  const ids = [...new Set([...fontes.map((f) => f.id), ...parecidas.map((x) => x.fonte)])]
+  const porId = new Map(fontes.map((f) => [f.id, f]))
+  const porFonte = ids.map((id) => {
+    const f = porId.get(id) ?? { id, tokens: [], texto: '' }
     const onde = new Map()
     for (const x of pedacos(f.tokens)) if (!onde.has(x.h)) onde.set(x.h, x.p)
     const coberto = new Uint8Array(total)
@@ -176,37 +181,64 @@ export function comparar(a, fontes) {
     }
     let n = 0
     for (const v of coberto) n += v
-    return { f, coberto, posFonte, n }
-  }).filter((x) => x.n > 0).sort((x, y) => y.n - x.n)
+    // frases parecidas desta fonte: as palavras do trabalho dentro de cada uma (2 = paráfrase, 3 = tradução)
+    const parecida = new Int32Array(total).fill(-1)
+    const minhas = parecidas.filter((x) => x.fonte === id)
+    let np = 0
+    minhas.forEach((x, q) => {
+      // frase já quase toda copiada à letra desta fonte: fica como cópia exacta
+      let dentro = 0
+      let iguais = 0
+      for (let i = 0; i < total; i++) if (a.tokens[i].i >= x.inicio && a.tokens[i].f <= x.fim) { dentro++; iguais += coberto[i] }
+      if (dentro && iguais / dentro >= 0.5) return
+      for (let i = 0; i < total; i++) {
+        // a frase inteira (também as palavras que ficaram iguais), para se ver como um só trecho
+        if (a.tokens[i].i >= x.inicio && a.tokens[i].f <= x.fim && parecida[i] < 0) { parecida[i] = q; if (!coberto[i]) np++ }
+      }
+    })
+    return { f, coberto, posFonte, n, parecida, minhas, np }
+  }).filter((x) => x.n + x.np > 0).sort((x, y) => (y.n + y.np) - (x.n + x.np))
 
-  // cada palavra fica atribuída à fonte que mais cobre o texto
+  // cada palavra fica atribuída à fonte que mais cobre o texto: primeiro a cópia exacta, depois as frases parecidas
   const dono = new Int32Array(total).fill(-1)
-  porFonte.forEach((x, k) => { for (let i = 0; i < total; i++) if (x.coberto[i] && dono[i] < 0) dono[i] = k })
+  const tipo = new Uint8Array(total) // 1 exacto, 2 paráfrase, 3 tradução
+  porFonte.forEach((x, k) => { for (let i = 0; i < total; i++) if (x.coberto[i] && dono[i] < 0) { dono[i] = k; tipo[i] = 1 } })
+  // nas frases parecidas, também as palavras iguais à mesma fonte passam a ser da frase parafraseada (ou traduzida)
+  porFonte.forEach((x, k) => { for (let i = 0; i < total; i++) if (x.parecida[i] >= 0 && (dono[i] < 0 || dono[i] === k)) { dono[i] = k; tipo[i] = x.minhas[x.parecida[i]].tipo === 'traducao' ? 3 : 2 } })
 
+  const NOMES = { 1: 'exacto', 2: 'parafrase', 3: 'traducao' }
   const trechos = []
   for (let i = 0; i < total;) {
     if (dono[i] < 0) { i++; continue }
     const k = dono[i]
-    let j = i
-    while (j + 1 < total && dono[j + 1] === k) j++
     const x = porFonte[k]
-    const posicoes = []
-    for (let q = i; q <= j; q++) if (x.posFonte[q] >= 0) posicoes.push(x.posFonte[q])
-    const ft = x.f.tokens
-    const fi = Math.min(...posicoes)
-    const ff = Math.min(Math.max(...posicoes), ft.length - 1)
-    trechos.push({
-      inicio: a.tokens[i].i, fim: a.tokens[j].f, palavras: j - i + 1, fonte: x.f.id,
-      excerto: x.f.texto.slice(ft[fi].i, ft[ff].f).slice(0, MAX_EXCERTO),
-    })
+    let j = i
+    // a mesma fonte e o mesmo tipo; nas parecidas, a mesma frase
+    while (j + 1 < total && dono[j + 1] === k && tipo[j + 1] === tipo[i] && (tipo[i] === 1 || x.parecida[j + 1] === x.parecida[i])) j++
+    let excerto
+    let valor
+    if (tipo[i] === 1) {
+      const posicoes = []
+      for (let q = i; q <= j; q++) if (x.posFonte[q] >= 0) posicoes.push(x.posFonte[q])
+      const ft = x.f.tokens
+      const fi = Math.min(...posicoes)
+      const ff = Math.min(Math.max(...posicoes), ft.length - 1)
+      excerto = x.f.texto.slice(ft[fi].i, ft[ff].f)
+    } else {
+      const p = x.minhas[x.parecida[i]]
+      excerto = p.excerto
+      valor = p.valor
+    }
+    trechos.push({ inicio: a.tokens[i].i, fim: a.tokens[j].f, palavras: j - i + 1, fonte: x.f.id, tipo: NOMES[tipo[i]], excerto: excerto.slice(0, MAX_EXCERTO), ...(valor !== undefined ? { semelhanca: valor } : {}) })
     i = j + 1
   }
-  let cobertas = 0
-  for (const d of dono) if (d >= 0) cobertas++
+  const contar = (t) => { let n = 0; for (let i = 0; i < total; i++) if (dono[i] >= 0 && (t === 0 || tipo[i] === t)) n++; return n }
   const pct = (n) => Math.round((n / total) * 1000) / 10
+  // cada fonte com tudo o que tem em comum com o trabalho (mesmo o que outra fonte também tem)
+  const porFonteFinal = porFonte.map((x) => ({ id: x.f.id, percentagem: pct(x.n + x.np), palavras: x.n + x.np }))
   return {
-    percentagem: pct(cobertas),
-    fontes: porFonte.map((x) => ({ id: x.f.id, percentagem: pct(x.n), palavras: x.n })).filter((x) => x.percentagem >= 0.5 || x.palavras >= 15),
+    percentagem: pct(contar(0)), percentagemExacta: pct(contar(1)), percentagemParafrase: pct(contar(2)), percentagemTraducao: pct(contar(3)),
+    fontes: porFonteFinal.filter((x) => x.percentagem >= 0.5 || x.palavras >= 15),
     trechos,
   }
 }

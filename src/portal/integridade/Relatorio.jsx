@@ -130,6 +130,7 @@ function Relatorio({ r }) {
               <span>{r.fontes.length} {tx('fonte(s) ·')} {r.trechos.length} {tx('trecho(s)')}</span>
             </div>
             <div className="small mt-2"><Internet i={r.internet} /></div>
+            <Verificacoes v={r.verificacoes} />
             <div className="small text-muted mt-2">
               <i className="fa fa-info-circle me-1" />
               {tx('Comparado com os trabalhos entregues no portal, as obras digitais da biblioteca, o repositório de referência')}{r.internet?.estado === 'feita' ? tx(' e páginas da internet') : ''}.
@@ -177,9 +178,9 @@ function Relatorio({ r }) {
             ) : p.ia ? (
               <mark key={k} className="o-ia" title={`IA: ${p.ia.probabilidade}%${p.ia.motivo ? ` — ${p.ia.motivo}` : ''}`}><sup>{tx('IA')} {p.ia.probabilidade}%</sup>{p.texto}</mark>
             ) : p.trecho ? (
-              <mark key={k} style={{ '--o-cor': cor[p.trecho.fonte] }} className={`${foco && foco !== p.trecho.fonte ? 'esbatido' : ''} ${aberto?.k === p.trecho.k ? 'ativo' : ''}`}
-                onClick={() => setAberto(aberto?.k === p.trecho.k ? null : p.trecho)} title={tx('Fonte {0}: {1}', { 0: numero[p.trecho.fonte], 1: fonte[p.trecho.fonte]?.titulo })}>
-                <sup>{numero[p.trecho.fonte]}</sup>{p.texto}
+              <mark key={k} style={{ '--o-cor': cor[p.trecho.fonte] }} className={`${foco && foco !== p.trecho.fonte ? 'esbatido' : ''} ${aberto?.k === p.trecho.k ? 'ativo' : ''} ${p.trecho.tipo === 'parafrase' || p.trecho.tipo === 'traducao' ? p.trecho.tipo : ''}`}
+                onClick={() => setAberto(aberto?.k === p.trecho.k ? null : p.trecho)} title={`${tx('Fonte {0}: {1}', { 0: numero[p.trecho.fonte], 1: fonte[p.trecho.fonte]?.titulo })}${TIPO_TRECHO[p.trecho.tipo] ? ` — ${tx(TIPO_TRECHO[p.trecho.tipo])}` : ''}`}>
+                <sup>{numero[p.trecho.fonte]}{p.trecho.tipo === 'parafrase' ? ' ≈' : p.trecho.tipo === 'traducao' ? ` ${tx('trad.')}` : ''}</sup>{p.texto}
               </mark>
             ) : <span key={k}>{p.texto}</span>))}
           </div>
@@ -189,7 +190,7 @@ function Relatorio({ r }) {
       {t && (
         <div className="o-comparar" style={{ '--o-cor': cor[t.fonte] }} role="dialog" aria-label={tx('Comparar trecho')}>
           <div className="d-flex align-items-center gap-2 px-3 pt-3">
-            <b className="flex-grow-1 small">{tx('Fonte')} {numero[t.fonte]}: {fonte[t.fonte]?.titulo}<span className="d-block text-muted fw-normal">{t.palavras} {tx('palavras coincidentes')}</span></b>
+            <b className="flex-grow-1 small">{tx('Fonte')} {numero[t.fonte]}: {fonte[t.fonte]?.titulo}<span className="d-block text-muted fw-normal">{t.tipo === 'parafrase' ? tx('Frase parafraseada (semelhança de {0}%): as mesmas ideias pela mesma ordem, com outras palavras', { 0: t.semelhanca }) : t.tipo === 'traducao' ? tx('Tradução (semelhança de {0}%): a frase traduzida automaticamente coincide com a fonte noutra língua', { 0: t.semelhanca }) : `${t.palavras} ${tx('palavras coincidentes')}`}</span></b>
             <button type="button" className="btn-close" onClick={() => setAberto(null)} aria-label={tx('Fechar')} />
           </div>
           <div className="o-comparar-corpo">
@@ -251,6 +252,31 @@ function CartaoNormas({ normas, verNoTexto }) {
         </div>
       )}
     </div>
+  )
+}
+
+const TIPO_TRECHO = { parafrase: 'paráfrase', traducao: 'tradução' }
+const ESTADO_TRADUCAO = {
+  'sem-servico': 'tradutor do servidor não configurado (LibreTranslate)', desligada: 'não pedida nesta análise',
+  'outra-lingua': 'só se faz para trabalhos em português', erro: 'falhou',
+}
+
+// o que esta análise verificou (e o que ficou de fora), para o docente saber até onde vai a percentagem
+function Verificacoes({ v }) {
+  if (!v?.exacta) return null
+  const p = v.percentagens ?? {}
+  const pct = (x) => `${String(x ?? 0).replace('.', ',')}%`
+  const item = (ok, icone, texto) => <li className={ok ? '' : 'text-muted'}><i className={`fa ${ok ? 'fa-check text-success' : 'fa-minus'} me-1`} /><i className={`fa ${icone} me-1`} />{texto}</li>
+  const tr = v.traducao ?? {}
+  return (
+    <ul className="o-verificacoes small mt-2">
+      {item(true, 'fa-clone', `${tx('Cópia exacta')}: ${pct(p.exacta)}`)}
+      {item(v.parafrase, 'fa-random', v.parafrase ? `${tx('Paráfrase')}: ${pct(p.parafrase)}` : tx('Paráfrase: não verificada'))}
+      {item(tr.estado === 'feita', 'fa-language', tr.estado === 'feita'
+        ? `${tx('Tradução')} (${(tr.linguas ?? []).map((l) => l.toUpperCase()).join(', ') || '—'}): ${pct(p.traducao)}`
+        : `${tx('Tradução')}: ${tx(ESTADO_TRADUCAO[tr.estado] ?? 'não verificada')}`)}
+      {v.ocr && <li className="text-warning"><i className="fa fa-file-image me-1" />{tx('Lido por reconhecimento de texto (OCR): confirme os trechos, a leitura pode ter erros.')}</li>}
+    </ul>
   )
 }
 

@@ -1330,30 +1330,32 @@ model DocumentoIntegridade {
 
 model ImpressaoIntegridade {
   documentoId Int @map("documento_id")
+  tipo        Int @default(0) @db.SmallInt // 0 = exacta (5 palavras); 1 = aproximada (radicais, para paráfrases e traduções)
   posicao     Int
   hash        Int
 
   documento DocumentoIntegridade @relation(fields: [documentoId], references: [id], onDelete: Cascade)
 
-  @@id([documentoId, posicao])
-  @@index([hash])
+  @@id([documentoId, tipo, posicao])
+  @@index([tipo, hash])
   @@map("integridade_impressoes")
 }
 
 model AnaliseIntegridade {
-  id          Int       @id @default(autoincrement())
-  documentoId Int       @map("documento_id")
-  estado      String    @default("pendente") // pendente | concluida | erro
-  percentagem Decimal?  @db.Decimal(5, 1)
-  fontes      Json      @default("[]")
-  trechos     Json      @default("[]")
-  opcoes      Json      @default("{}")
-  erro        String    @default("")
-  internet    Json      @default("{}") // pesquisa na web: { estado, frases, paginas, erro }
-  ia          Json      @default("{}") // utilização de IA: { local, claude }
-  normas      Json      @default("{}") // normas APA (citações e referências) e caracteres disfarçados
-  criadaEm    DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
-  concluidaEm DateTime? @map("concluida_em") @db.Timestamptz(3)
+  id           Int       @id @default(autoincrement())
+  documentoId  Int       @map("documento_id")
+  estado       String    @default("pendente") // pendente | concluida | erro
+  percentagem  Decimal?  @db.Decimal(5, 1)
+  fontes       Json      @default("[]")
+  trechos      Json      @default("[]")
+  opcoes       Json      @default("{}")
+  erro         String    @default("")
+  internet     Json      @default("{}") // pesquisa na web: { estado, frases, paginas, erro }
+  ia           Json      @default("{}") // utilização de IA: { local, claude }
+  normas       Json      @default("{}") // normas APA (citações e referências) e caracteres disfarçados
+  verificacoes Json      @default("{}") // o que se verificou: { exacta, parafrase, traducao: { estado, linguas }, ocr }
+  criadaEm     DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
+  concluidaEm  DateTime? @map("concluida_em") @db.Timestamptz(3)
 
   documento DocumentoIntegridade @relation(fields: [documentoId], references: [id], onDelete: Cascade)
 

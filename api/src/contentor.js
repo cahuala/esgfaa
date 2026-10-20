@@ -100,6 +100,7 @@ import { ServicoCirculacao } from './aplicacao/biblioteca/circulacao.js'
 import { RepositorioIntegridade } from './infraestrutura/repositorios/integridade.js'
 import { ServicoOriginalidade } from './aplicacao/integridade/originalidade.js'
 import { extrairTexto } from './infraestrutura/texto/extrair.js'
+import { criarOcr } from './infraestrutura/texto/ocr.js'
 import { PesquisaBrave } from './infraestrutura/web/pesquisaBrave.js'
 import { obterPagina } from './infraestrutura/web/paginas.js'
 import { ClienteClaude } from './infraestrutura/ia/claude.js'
@@ -196,6 +197,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
   const originalidade = new ServicoOriginalidade({
     pesquisaWeb: ext.pesquisaWeb, obterPagina: ext.obterPagina, claude: ext.claude, pesquisasPorDocumento: config.pesquisaWeb?.porDocumento ?? 8,
+    // tradução (paráfrase noutra língua) e OCR dos PDF digitalizados: correm no servidor (o Claude só se autorizado)
+    tradutor: ext.tradutor, ocr: 'ocr' in externos ? externos.ocr : criarOcr(),
     integridade: r.integridade, academico: r.academico, contas: r.contasPortal, biblioteca: r.biblioteca, privados, extrair: extrairTexto, apoio, auditoria, relogio,
     registarErro: (x) => console.error(JSON.stringify(x)),
   })

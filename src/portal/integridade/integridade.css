@@ -35,6 +35,9 @@
 [data-bs-theme='dark'] .o-documento { background: #1d1b18; color: #e9e4da; }
 .o-documento mark { background: color-mix(in srgb, var(--o-cor) 22%, transparent); border-bottom: 2px solid var(--o-cor); color: inherit; padding: 1px 0; cursor: pointer; border-radius: 2px; }
 .o-documento mark:hover, .o-documento mark.ativo { background: color-mix(in srgb, var(--o-cor) 40%, transparent); }
+.o-documento mark.parafrase { background: color-mix(in srgb, var(--o-cor) 12%, transparent); border-bottom-style: dashed; }
+.o-documento mark.traducao { background: color-mix(in srgb, var(--o-cor) 12%, transparent); border-bottom-style: dotted; border-bottom-width: 3px; }
+.o-verificacoes { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .o-documento mark.esbatido { background: transparent; border-bottom-color: color-mix(in srgb, var(--o-cor) 35%, transparent); }
 .o-documento sup { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; color: #fff; background: var(--o-cor); border-radius: 3px; padding: 0 4px; margin-right: 3px; vertical-align: 3px; }
 .o-comparar { position: fixed; right: 24px; bottom: 24px; width: min(520px, calc(100vw - 48px)); z-index: 1060; border-radius: 10px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); background: var(--bs-body-bg); border-top: 4px solid var(--o-cor); }

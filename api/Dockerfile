@@ -2,6 +2,8 @@
 #   docker build -f api/Dockerfile -t esgfaa-api .
 #   docker run -p 3001:3001 -v esgfaa-dados:/app/api/dados --env-file api/.env esgfaa-api
 FROM node:24-alpine
+# reconhecimento de texto (OCR) dos PDF digitalizados no anti-plágio: Tesseract (pt, en, fr) e pdftoppm
+RUN apk add --no-cache tesseract-ocr tesseract-ocr-data-por tesseract-ocr-data-eng tesseract-ocr-data-fra poppler-utils
 WORKDIR /app
 COPY package.json ./
 COPY src/data ./src/data
