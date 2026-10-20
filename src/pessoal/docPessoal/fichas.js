@@ -90,44 +90,44 @@ function nova(d, orientacao = 'portrait') {
 export async function fichaIndividualMilitar(d, p) {
   const { doc } = d
   novaPagina(d)
-  H(doc, 10.5).text('FICHA INDIVIDUAL', 99.7, 14, { align: 'center' })
+  H(doc, 13).text('FICHA INDIVIDUAL', 99.7, 14, { align: 'center' })
   traco(doc, 0.4).rect(18.3, 22.8, 173.4, 260.9)
-  H(doc, 8).text('I – DADOS GERAIS', 101.3, 28.8, { align: 'center' })
+  H(doc, 10.5).text('I – DADOS GERAIS', 101.3, 28.8, { align: 'center' })
   const campos = [['1. NOME COMPLETO', p.nome, 42.2], ['2. ALCUNHA', p.nomeGuerra, 58.6], ['3. FILHO DE', p.pai, 74.8], ['4. E DE', p.mae, 90.7]]
-  for (const [r, v, y] of campos) { H(doc, 7.5).text(r, 27.4, y); caixa(doc, 26.8, y + 2.2, 111, 7, v) }
+  for (const [r, v, y] of campos) { H(doc, 10).text(r, 27.4, y); caixa(doc, 26.8, y + 2.2, 111, 7, v) }
   // fotografia, grupo sanguíneo, indicador direito e assinatura
   traco(doc).rect(141.6, 34.9, 41.8, 69.4)
   doc.line(171.4, 34.9, 171.4, 104.3).line(141.6, 65, 171.4, 65).line(141.6, 73.9, 171.4, 73.9)
-  if (!(await fotoEm(doc, p, 141.6, 34.9, 29.8, 30.1))) H(doc, 7.5).text('Foto', 156.5, 49.8, { align: 'center' })
-  H(doc, 7).text('Grupo. Sang', 156.5, 67.8, { align: 'center' })
+  if (!(await fotoEm(doc, p, 141.6, 34.9, 29.8, 30.1))) H(doc, 10).text('Foto', 156.5, 49.8, { align: 'center' })
+  H(doc, 9.5).text('Grupo. Sang', 156.5, 67.8, { align: 'center' })
   valor(doc, p.grupoSanguineo, 142.6, 72.6, 27.8, { centrar: true, tam: 8 })
-  H(doc, 7).text('Indicador', 156.5, 88.6, { align: 'center' }).text('Direito', 156.5, 92, { align: 'center' }).text('Ass', 177.4, 102.6, { align: 'center' })
+  H(doc, 9.5).text('Indicador', 156.5, 88.6, { align: 'center' }).text('Direito', 156.5, 92, { align: 'center' }).text('Ass', 177.4, 102.6, { align: 'center' })
   // 5. esposa e filhos
-  H(doc, 7.5).text('5. NOME DA ESPOSA, DOS FILHOS E SUAS IDADES', 27.4, 111.3)
+  H(doc, 10).text('5. NOME DA ESPOSA, DOS FILHOS E SUAS IDADES', 27.4, 111.3)
   traco(doc).rect(27.4, 114.8, 156.3, 66)
   const fam = [...(p.conjuge ? [`${p.conjuge} (cônjuge)`] : []), ...familia(p).map((a) => `${a.nome}${a.parentesco ? ` (${a.parentesco})` : ''}${a.idade ? ` — ${a.idade}` : ''}`)]
   for (let i = 0; i < 10; i++) {
     if (i) doc.setLineWidth(0.2).line(27.4, 114.8 + i * 6.6, 183.7, 114.8 + i * 6.6)
     valor(doc, fam[i], 29, 114.8 + i * 6.6 + 4.6, 153, { tam: 8.5 })
   }
-  H(doc, 7.5).text('6. RESIDÊNCIA (PROVÍNCIA, LOCALIDADE, BAIRRO RUA/LARGO, NÚMERO)', 28.1, 183.9)
+  H(doc, 10).text('6. RESIDÊNCIA (PROVÍNCIA, LOCALIDADE, BAIRRO RUA/LARGO, NÚMERO)', 28.1, 183.9)
   traco(doc).rect(28.1, 186.4, 156.6, 16.5).line(28.1, 194.6, 184.7, 194.6)
   const res = doc.setFont('helvetica', 'bold').setFontSize(8.5).splitTextToSize(M(residencia(p)), 152)
   valor(doc, res[0], 29.6, 192, 153, { tam: 8.5 })
   valor(doc, res.slice(1).join(' '), 29.6, 200.2, 153, { tam: 8.5 })
   // II
-  H(doc, 7.5).text('II – SITUAÇÃO RELACIONADA COM O CUMPRIMENTO DO SERVIÇO MILITAR', 28.7, 206)
-  H(doc, 7.5).text('7. LOCAL DE INCORPORAÇÃO', 28.7, 217.5).text('8. DATA DE INCORPORAÇÃO', 120, 215.4)
+  H(doc, 10).text('II – SITUAÇÃO RELACIONADA COM O CUMPRIMENTO DO SERVIÇO MILITAR', 28.7, 206)
+  H(doc, 10).text('7. LOCAL DE INCORPORAÇÃO', 28.7, 217.5).text('8. DATA DE INCORPORAÇÃO', 120, 215.4)
   caixa(doc, 28.7, 220.4, 55.8, 6.6, p.localIncorporacao, { tam: 8.5 })
   celulas(doc, 115, 218.4, 23.4, 6.6, partesData(p.dataIngresso), { tam: 8.5 })
-  H(doc, 7.5).text('10. INSPECÇÃO MÉDICA', 126, 229.6).text('9. CONDIÇÕES DE INCORPORAÇÃO', 28.7, 235.6)
-  H(doc, 7.5).text('VOLUNTÁRIO', 29, 244.4).text('N/VOLUNTÁRIO', 79.4, 244.4).text('FEZ', 129, 244.4).text('N/FEZ', 156.2, 244.4)
+  H(doc, 10).text('10. INSPECÇÃO MÉDICA', 126, 229.6).text('9. CONDIÇÕES DE INCORPORAÇÃO', 28.7, 235.6)
+  H(doc, 10).text('VOLUNTÁRIO', 29, 244.4).text('N/VOLUNTÁRIO', 79.4, 244.4).text('FEZ', 129, 244.4).text('N/FEZ', 156.2, 244.4)
   const x = (cond) => (cond ? 'X' : '')
   caixa(doc, 28.1, 246.2, 31.1, 6.6, x(p.voluntario === true), { centrar: true })
   caixa(doc, 79.1, 246.2, 30.5, 6.6, x(p.voluntario === false), { centrar: true })
   caixa(doc, 117.2, 246.2, 30.8, 6.6, x(p.aptidaoFisica === true), { centrar: true })
   caixa(doc, 155.8, 246.2, 30.2, 6.6, x(p.aptidaoFisica === false), { centrar: true })
-  H(doc, 7.5).text('11. ESPECIALIDADE MILITAR', 29.4, 261.4).text('12. PATENTE', 143.5, 261.4)
+  H(doc, 10).text('11. ESPECIALIDADE MILITAR', 29.4, 261.4).text('12. PATENTE', 143.5, 261.4)
   caixa(doc, 30.3, 264.2, 64, 6.8, p.especialidade || p.quadroNome, { tam: 8.5 })
   caixa(doc, 122.6, 264.2, 63, 6.8, p.postoNome, { tam: 8.5 })
 }
@@ -137,9 +137,10 @@ export function fichaMecanografica(d, p) {
   const { doc } = d
   novaPagina(d)
   traco(doc).rect(69.7, 21.2, 74.5, 9.5).rect(70.5, 22, 72.9, 7.9)
-  H(doc, 10.5).text('FICHA MECANOGRÁFICA', 107, 27.6, { align: 'center' })
+  H(doc, 12.5).text('FICHA MECANOGRÁFICA', 107, 27.6, { align: 'center' })
   traco(doc, 0.4).rect(19.9, 39, 170.2, 241.5)
-  const L = (t, y) => H(doc, 8.5).text(t, 32.6, y)
+  // o rótulo ao nível da caixa ao lado (como no modelo)
+  const L = (t, y) => H(doc, 11).text(t, 32.6, y + 3)
   L('1. NIP', 51.4)
   const nip = String(p.nip ?? '').replace(/\s/g, '')
   const n = Math.max(8, nip.length)
@@ -148,18 +149,18 @@ export function fichaMecanografica(d, p) {
   L('3. Nome do Pai', 78.6); caixa(doc, 64, 76.4, 123, 7, p.pai)
   L('4. Nome da Mãe', 92.9); caixa(doc, 64.6, 91, 122.4, 7, p.mae)
   L('5. Data de Nascimento', 105.9); celulas(doc, 79.2, 102.4, 19.1, 7, partesData(p.dataNascimento))
-  L('6. Local de Nascimento', 118.6)
-  valor(doc, p.naturalidade, 70, 118.6, 100, { tam: 8.5 })
-  H(doc, 8.5).text('Província', 38.9, 128); caixa(doc, 63, 124.9, 90.7, 7.6, p.provincia)
+  L('6. Local de Nascimento', 116.6)
+  valor(doc, p.naturalidade, 80, 119.6, 100, { tam: 8.5 })
+  H(doc, 11).text('Província', 38.9, 131); caixa(doc, 63, 124.9, 90.7, 7.6, p.provincia)
   L('7. Estado Civil', 140.7); caixa(doc, 63, 137.6, 90.7, 7.6, ec(p))
   L('8. Nome do Cônjuge', 153.4); caixa(doc, 75.7, 150.3, 90.3, 7.6, p.conjuge)
   L('9. Habilitações Literárias', 166.1); caixa(doc, 83.9, 163.6, 90.7, 7.6, habilitacoes(p))
-  H(doc, 8.5).text('Dia', 108.5, 182.6, { align: 'center' }).text('Mês', 127.9, 182.6, { align: 'center' }).text('Ano', 147.3, 182.6, { align: 'center' })
+  H(doc, 11).text('Dia', 108.5, 182.6, { align: 'center' }).text('Mês', 127.9, 182.6, { align: 'center' }).text('Ano', 147.3, 182.6, { align: 'center' })
   const curso = (tipos) => (p.cursos ?? []).find((c) => c.tipo === 'academico' && tipos.some((t) => new RegExp(t, 'i').test(c.nome)))
   const medio = ['medio', 'bacharelato', 'licenciatura', 'mestrado', 'doutoramento'].includes(p.habilitacao)
-  H(doc, 8.5).text('a)  Ensino Médio ou PUNIV', 37.3, 188.9); celulas(doc, 98.8, 185.8, 19.4, 7.2, medio ? partesData(curso(['médio', 'puniv'])?.fim) : ['', '', ''])
-  H(doc, 8.5).text('b)  Ensino Superior', 37.3, 212.7); celulas(doc, 98.8, 209.2, 19.4, 7.2, partesData(curso(['licenc', 'bachar', 'mestr', 'doutor', 'superior'])?.fim))
-  H(doc, 8.5).text('c)  Especialização', 37.3, 236.5); celulas(doc, 98.8, 233, 19.4, 7.2, partesData(curso(['especial', 'pós', 'pos-'])?.fim))
+  H(doc, 11).text('a)  Ensino Médio ou PUNIV', 37.3, 191); celulas(doc, 98.8, 185.8, 19.4, 7.2, medio ? partesData(curso(['médio', 'puniv'])?.fim) : ['', '', ''])
+  H(doc, 11).text('b)  Ensino Superior', 37.3, 214.8); celulas(doc, 98.8, 209.2, 19.4, 7.2, partesData(curso(['licenc', 'bachar', 'mestr', 'doutor', 'superior'])?.fim))
+  H(doc, 11).text('c)  Especialização', 37.3, 238.6); celulas(doc, 98.8, 233, 19.4, 7.2, partesData(curso(['especial', 'pós', 'pos-'])?.fim))
   L('10. Data de início do Serviço Militar', 255.5); celulas(doc, 103.6, 252, 19.3, 7, partesData(p.dataIngresso))
   doc.setLineWidth(0.3).line(19.9, 262.2, 190.1, 262.2)
   L('11. Data de ingresso nas F.A.A', 268.6); celulas(doc, 103.6, 265.6, 19.3, 7, partesData(p.dataIngressoQP || p.dataIngresso))
@@ -167,10 +168,10 @@ export function fichaMecanografica(d, p) {
   novaPagina(d)
   traco(doc, 0.4).rect(18.3, 9.5, 173.7, 259.3)
   const lista = (titulo, y, valores) => {
-    H(doc, 8.5).text(titulo, 32.6, y)
+    H(doc, 11).text(titulo, 32.6, y)
     for (let i = 0; i < 6; i++) {
       const yy = y + 5.4 + i * 8.1
-      H(doc, 8.5).text(`${String.fromCharCode(97 + i)})`, 39.9, yy + 4.2)
+      H(doc, 11).text(`${String.fromCharCode(97 + i)})`, 39.9, yy + 4.2)
       caixa(doc, 44.6, yy, 143.3, 5.8, valores[i], { tam: 8.5 })
     }
   }
@@ -181,7 +182,7 @@ export function fichaMecanografica(d, p) {
   lista('14. Promoções', 155, promocoes(p).map((e) => `${e.postoNovoNome} — ${dataPt(e.data)}${e.documento ? ` (${e.documento})` : ''}`))
   linha(doc, 'Assinatura', '', 32.6, 223.2, 184, { tam: 8.5 })
   const [dd, mm, aa] = partesData(new Date().toISOString())
-  H(doc, 8.5).text(`Data   ${dd} / ${mm} / ${aa}`, 32.6, 237.4)
+  H(doc, 11).text(`Data   ${dd} / ${mm} / ${aa}`, 32.6, 237.4)
 }
 
 // ---------- militar: anexo à ficha individual ----------
@@ -224,58 +225,63 @@ export async function fichaIndividualCivil(d, p) {
   const { doc } = d
   novaPagina(d)
   emblema(doc, d.brasao, 105, 14.3, 20.6)
-  H(doc, 8.5).text('FORÇAS ARMADAS ANGOLANAS', 105, 39.3, { align: 'center' }).text('ESTADO MAIOR GENERAL', 105, 44.4, { align: 'center' })
-  sublinhado(doc, 'REPARTIÇÃO DE PESSOAL CIVIL', 105, 49.8)
-  H(doc, 9.5, 'bold'); sublinhado(doc, 'FICHA INDIVIDUAL', 105, 69.4)
-  traco(doc).rect(160.2, 53.3, 27.6, 34.2)
-  await fotoEm(doc, p, 160.2, 53.3, 27.6, 34.2)
-  const o = { fonte: 'times', tam: 8.5, tamV: 9 }
-  const R = (t, x, y) => T(doc, 8.5).text(t, x, y)
-  linha(doc, 'PROCESSO Nº', p.processo?.numero ?? '', 120.9, 98.3, 186.2, o)
-  linha(doc, 'NOME', p.nome, 23, 108.1, 119.3, o); linha(doc, 'ESTADO CIVIL', ec(p), 120.9, 108.1, 186.5, o)
-  linha(doc, 'FILIAÇÃO', p.pai, 23, 115.4, 186.5, o)
-  linha(doc, 'E DE', p.mae, 23, 122.4, 186.5, o)
+  H(doc, 11).text('FORÇAS ARMADAS ANGOLANAS', 105, 41.8, { align: 'center' }).text('ESTADO MAIOR GENERAL', 105, 47, { align: 'center' })
+  H(doc, 11); sublinhado(doc, 'REPARTIÇÃO DE PESSOAL CIVIL', 105, 52.4)
+  H(doc, 12, 'bold'); sublinhado(doc, 'FICHA INDIVIDUAL', 105, 72)
+  traco(doc).rect(160.2, 55.2, 27.6, 34.2)
+  await fotoEm(doc, p, 160.2, 55.2, 27.6, 34.2)
+  const o = { fonte: 'times', tam: 10.5, tamV: 10 }
+  // as linhas do formulário como no modelo: a primeira a 101 mm e 7,5 mm entre elas
+  const Y = (y) => 101 + (y - 98.3) * 1.035
+  const lin = (r, v, x, y, xf, op) => linha(doc, r, v, x, Y(y), xf, op)
+  const R = (t, x, y) => T(doc, 10.5).text(t, x, Y(y))
+  lin('PROCESSO Nº', p.processo?.numero ?? '', 120.9, 98.3, 186.2, o)
+  lin('NOME', p.nome, 23, 108.1, 119.3, o); lin('ESTADO CIVIL', ec(p), 120.9, 108.1, 186.5, o)
+  lin('FILIAÇÃO', p.pai, 23, 115.4, 186.5, o)
+  lin('E DE', p.mae, 23, 122.4, 186.5, o)
   const [d1, m1, a1] = partesData(p.dataNascimento)
   R('DATA DE NASCIMENTO', 23, 129.3)
-  valor(doc, `${d1} / ${m1} / ${a1}`, 62, 129, 52, { fonte: 'times', tam: 9 })
-  doc.setLineWidth(0.2).line(61, 130.1, 114, 130.1)
+  valor(doc, `${d1} / ${m1} / ${a1}`, 68, Y(129), 46, { fonte: 'times', tam: 10 })
+  doc.setLineWidth(0.2).line(67, Y(130.1), 114, Y(130.1))
   const local = [p.naturalidade, p.provincia].filter(Boolean).join(', ')
-  linha(doc, 'LOCAL DE NASCIMENTO', local, 115.8, 129.3, 186.5, o)
-  linha(doc, '', '', 23, 136.6, 56.5, o)
-  linha(doc, 'BILHETE DE IDENTIDADE Nº', p.bi, 57.5, 136.6, 161.1, o)
+  lin('LOCAL DE NASCIMENTO', local, 115.8, 129.3, 186.5, o)
+  lin('', '', 23, 136.6, 56.5, o)
+  lin('BILHETE DE IDENTIDADE Nº', p.bi, 57.5, 136.6, 161.1, o)
   R('EMITIDO EM', 162.7, 136.6)
-  linha(doc, '', p.biLocalEmissao, 23, 143.9, 76.5, o)
+  lin('', p.biLocalEmissao, 23, 143.9, 76.5, o)
   const [d2, m2, a2] = partesData(p.biEmitidoEm)
-  linha(doc, 'AOS', d2 ? `${d2}/${m2}/${a2}` : '', 77.8, 143.9, 142, o)
+  lin('AOS', d2 ? `${d2}/${m2}/${a2}` : '', 77.8, 143.9, 142, o)
   R('LOCAL DE TRABALHO', 143.7, 143.9)
-  linha(doc, '', p.unidadeNome || 'ESCOLA SUPERIOR DE GUERRA', 23, 150.9, 167.5, o)
+  lin('', p.unidadeNome || 'ESCOLA SUPERIOR DE GUERRA', 23, 150.9, 167.5, o)
   R('DATA DE', 168.4, 150.9)
   const [d3, m3, a3] = partesData(p.dataAdmissao)
-  linha(doc, 'ADMISSÃO', d3 ? `${d3}/${m3}/${a3}` : '', 23, 158.2, 92, o)
-  linha(doc, 'FUNÇÃO/CATEGORIA', funcaoCategoria(p), 93, 158.2, 186.5, o)
-  linha(doc, 'MORADA', p.morada || p.provincia, 23, 165.5, 113.6, o); linha(doc, 'MUNICÍPIO', p.municipio, 114.5, 165.5, 186.5, o)
-  linha(doc, 'BAIRRO', p.bairro, 23, 172.8, 112.6, o); linha(doc, 'RUA', p.rua, 113.6, 172.8, 186.5, o)
-  linha(doc, 'CASA Nº', p.casa, 23, 179.7, 72.4, o); linha(doc, 'TELEFONE', p.telefone, 73.3, 179.7, 133.9, o); linha(doc, 'CAIXA POSTAL', p.caixaPostal, 134.8, 179.7, 186.5, o)
-  T(doc, 8.5); sublinhado(doc, 'AGREGADO FAMILIAR', 105, 188.1)
+  lin('ADMISSÃO', d3 ? `${d3}/${m3}/${a3}` : '', 23, 158.2, 92, o)
+  lin('FUNÇÃO/CATEGORIA', funcaoCategoria(p), 93, 158.2, 186.5, o)
+  lin('MORADA', p.morada || p.provincia, 23, 165.5, 113.6, o); lin('MUNICÍPIO', p.municipio, 114.5, 165.5, 186.5, o)
+  lin('BAIRRO', p.bairro, 23, 172.8, 112.6, o); lin('RUA', p.rua, 113.6, 172.8, 186.5, o)
+  lin('CASA Nº', p.casa, 23, 179.7, 72.4, o); lin('TELEFONE', p.telefone, 73.3, 179.7, 133.9, o); lin('CAIXA POSTAL', p.caixaPostal, 134.8, 179.7, 186.5, o)
+  T(doc, 10.5); sublinhado(doc, 'AGREGADO FAMILIAR', 105, 197)
   // tabela do agregado
   const cx = [12.8, 65.4, 100, 116.8, 157.3, 189.4]
-  traco(doc).rect(12.8, 198.9, 176.6, 70.3).line(12.8, 211.9, 189.4, 211.9)
-  for (const xx of cx.slice(1, -1)) doc.line(xx, 198.9, xx, 269.2)
-  T(doc, 6.5, 'bold')
-  ;['NOME', 'G.PARENTESCO', 'IDADE', 'NACIONALIDADE', 'PROFISSÃO'].forEach((t, i) => doc.text(t, (cx[i] + cx[i + 1]) / 2, 207, { align: 'center', charSpace: 0.4 }))
+  const t0 = 208
+  const t1 = t0 + 13.3
+  traco(doc).rect(12.8, t0, 176.6, 13.3 + 8 * 7.4).line(12.8, t1, 189.4, t1)
+  for (const xx of cx.slice(1, -1)) doc.line(xx, t0, xx, t1 + 8 * 7.4)
+  T(doc, 8, 'bold')
+  ;['NOME', 'G.PARENTESCO', 'IDADE', 'NACIONALIDADE', 'PROFISSÃO'].forEach((t, i) => doc.text(t, (cx[i] + cx[i + 1]) / 2, t0 + 8.3, { align: 'center', charSpace: 0.4 }))
   const ag = [...(p.conjuge ? [{ nome: p.conjuge, parentesco: 'Cônjuge' }] : []), ...familia(p)]
   for (let i = 0; i < 8; i++) {
-    const y = 211.9 + i * 7.16
+    const y = t1 + i * 7.4
     if (i) doc.setLineWidth(0.2).line(12.8, y, 189.4, y)
     const a = ag[i]
-    if (a) [a.nome, a.parentesco, a.idade, a.nacionalidade, a.profissao].forEach((v, k) => valor(doc, v, cx[k] + 1.2, y + 4.8, cx[k + 1] - cx[k] - 2.4, { fonte: 'times', tam: 8, centrar: k > 0 }))
+    if (a) [a.nome, a.parentesco, a.idade, a.nacionalidade, a.profissao].forEach((v, k) => valor(doc, v, cx[k] + 1.2, y + 5, cx[k + 1] - cx[k] - 2.4, { fonte: 'times', tam: 9, centrar: k > 0 }))
   }
   // 2.ª página
   novaPagina(d)
   traco(doc).rect(22, 16.8, 169.6, 11.7)
-  H(doc, 9).text('FICHA INDIVIDUAL', 106.8, 24.2, { align: 'center' })
+  H(doc, 11).text('FICHA INDIVIDUAL', 106.8, 24.6, { align: 'center' })
   traco(doc).rect(20, 32.7, 170, 241.5)
-  const P = (r, v, y) => linha(doc, r, v, 24.5, y, 187.8, { tam: 7.5, tamV: 8 })
+  const P = (r, v, y) => linha(doc, r, v, 24.5, y, 187.8, { tam: 10.5, tamV: 9.5 })
   const B = (y) => doc.setLineWidth(0.2).setDrawColor(60).line(24.5, y, 187.8, y).setDrawColor(0)
   P('NOME COMPLETO', p.nome, 37.1)
   P('DATA DE NASCIMENTO', dataPt(p.dataNascimento), 41.8)
@@ -293,13 +299,13 @@ export async function fichaIndividualCivil(d, p) {
   P('MOTIVO DA SUA DEMISSÃO', '', 119.3); B(124.2); B(129)
   P('AGREGADO FAMILIAR (IDADE E PROFISSÃO)', '', 133.8)
   const af = familia(p)
-  ;[139, 144.2, 149.4].forEach((y, i) => { B(y); valor(doc, af[i] && [af[i].nome, af[i].idade, af[i].profissao].filter(Boolean).join(' — '), 25.5, y - 1, 160, { tam: 8 }) })
+  ;[139, 144.2, 149.4].forEach((y, i) => { B(y); valor(doc, af[i] && [af[i].nome, af[i].idade, af[i].profissao].filter(Boolean).join(' — '), 25.5, y - 1, 160, { tam: 9.5 }) })
   P('ESTADO CIVIL', ec(p), 155)
   P('LOCAL DE SERVIÇO (ESPOSA) MARIDO', p.conjugeLocalServico, 159.8); B(165.6)
   P('ENDEREÇO FAMILIAR', residencia(p), 174); B(179.4); B(184.2)
   P('OUTROS DADOS (REGISTO DO RESUMO DISCIPLINAR LABORAL)', '', 188.3)
   for (const y of [193.6, 198.6, 203.6, 208.6, 213.6]) B(y)
-  H(doc, 8).text('ASSINATURA', 105, 240.6, { align: 'center' })
+  H(doc, 10.5).text('ASSINATURA', 105, 240.6, { align: 'center' })
   doc.setLineWidth(0.25).line(69, 247.3, 141, 247.3)
 }
 
@@ -308,22 +314,22 @@ export function fichaDisciplinar(d, p) {
   const { doc } = d
   novaPagina(d)
   emblema(doc, d.brasao, 105, 19, 22)
-  H(doc, 8.5).text('FORÇAS ARMADAS ANGOLANAS', 105, 46.3, { align: 'center' }).text('ESTADO MAIOR GENERAL', 105, 51.4, { align: 'center' })
-  H(doc, 8.5, 'bold'); sublinhado(doc, 'ESCOLA SUPERIOR DE GUERRA', 105, 56.4)
-  H(doc, 9.5, 'bold'); sublinhado(doc, 'FICHA DISCIPLINAR', 105, 75.1)
-  linha(doc, 'NOME', p.nome, 22.3, 81.5, 185.8, { tam: 8.5 })
-  linha(doc, 'CATEGORIA', p.tipo === 'militar' ? p.postoNome : p.categoriaCivil || p.carreiraNome, 22.3, 88.8, 185.8, { tam: 8.5 })
-  linha(doc, 'LOCAL DE TRABALHO', p.unidadeNome || 'ESCOLA SUPERIOR DE GUERRA', 22.3, 96.4, 185.8, { tam: 8.5 })
+  H(doc, 11).text('FORÇAS ARMADAS ANGOLANAS', 105, 46.3, { align: 'center' }).text('ESTADO MAIOR GENERAL', 105, 51.4, { align: 'center' })
+  H(doc, 11, 'bold'); sublinhado(doc, 'ESCOLA SUPERIOR DE GUERRA', 105, 56.4)
+  H(doc, 12.5, 'bold'); sublinhado(doc, 'FICHA DISCIPLINAR', 105, 75.1)
+  linha(doc, 'NOME', p.nome, 22.3, 84.5, 185.8, { tam: 11 })
+  linha(doc, 'CATEGORIA', p.tipo === 'militar' ? p.postoNome : p.categoriaCivil || p.carreiraNome, 22.3, 92, 185.8, { tam: 11 })
+  linha(doc, 'LOCAL DE TRABALHO', p.unidadeNome || 'ESCOLA SUPERIOR DE GUERRA', 22.3, 99.6, 185.8, { tam: 11 })
   const cx = [19.1, 30.8, 98.3, 119.3, 150.3, 190.9]
   traco(doc, 0.4).rect(19.1, 107.8, 171.8, 169.6)
   traco(doc).line(19.1, 127.4, 190.9, 127.4)
   for (const x of cx.slice(1, -1)) doc.line(x, 107.8, x, 277.4)
-  T(doc, 7.5, 'bold')
-  doc.text('N/O', 24.95, 113, { align: 'center' })
-  doc.text('REGISTO DE OCORRÊNCIAS', 64.5, 114, { align: 'center' })
-  doc.text('DATA', 108.8, 116, { align: 'center' })
-  doc.text(['ASSIN.DA', 'ENT.EMPR.'], 134.8, 113.5, { align: 'center', lineHeightFactor: 1.6 })
-  doc.text(['ASSIN.DO', 'TRABALHADOR'], 170.6, 113.5, { align: 'center', lineHeightFactor: 1.6 })
+  T(doc, 11, 'bold')
+  doc.text('N/O', 24.95, 116, { align: 'center' })
+  doc.text('REGISTO DE OCORRÊNCIAS', 64.5, 117, { align: 'center' })
+  doc.text('DATA', 108.8, 119, { align: 'center' })
+  doc.text(['ASSIN.DA', 'ENT.EMPR.'], 134.8, 116, { align: 'center', lineHeightFactor: 1.7 })
+  doc.text(['ASSIN.DO', 'TRABALHADOR'], 170.6, 116, { align: 'center', lineHeightFactor: 1.7 })
   const oc = (p.eventos ?? []).filter((e) => ['punicao', 'condenacao', 'louvor', 'condecoracao'].includes(e.tipo))
   for (let i = 0; i < 19; i++) {
     const y = 127.4 + i * 7.895
@@ -344,30 +350,30 @@ function blocoFai(doc, n, titulo, y0, y1, { centrar = false } = {}) {
   const x0 = 25
   const x1 = 185
   traco(doc).rect(x0, y0, x1 - x0, y1 - y0).line(x0, y0 + 4, x1, y0 + 4).line(x0 + 19, y0, x0 + 19, y0 + 4)
-  H(doc, 6.3).text(n, x0 + 9.5, y0 + 3, { align: 'center' })
-  H(doc, 6.3).text(titulo, centrar ? (x0 + 19 + x1) / 2 : x0 + 20.5, y0 + 3, { align: centrar ? 'center' : 'left' })
+  H(doc, 8).text(n, x0 + 9.5, y0 + 3, { align: 'center' })
+  H(doc, 8).text(titulo, centrar ? (x0 + 19 + x1) / 2 : x0 + 20.5, y0 + 3, { align: centrar ? 'center' : 'left' })
   for (let y = y0 + 8; y < y1 - 5; y += 4) doc.setLineWidth(0.15).line(x0, y, x1, y)
-  H(doc, 6).text('POSTO, NIP, NOME, DATA', (x0 + x1) / 2, y1 - 1.3, { align: 'center' })
+  H(doc, 8).text('POSTO, NIP, NOME, DATA', (x0 + x1) / 2, y1 - 1.3, { align: 'center' })
 }
 export function fichaAvaliacao(d, p) {
   const { doc } = d
   novaPagina(d)
   const x0 = 25
   const x1 = 185
-  H(doc, 6.8).text('FORÇAS ARMADAS ANGOLANAS', 105, 14, { align: 'center' }).text('FICHA DE AVALIAÇÃO INDIVIDUAL', 105, 17.5, { align: 'center' }).text('(FAI)', 105, 21, { align: 'center' })
+  H(doc, 9).text('FORÇAS ARMADAS ANGOLANAS', 105, 14, { align: 'center' }).text('FICHA DE AVALIAÇÃO INDIVIDUAL', 105, 17.5, { align: 'center' }).text('(FAI)', 105, 21, { align: 'center' })
   // 01 identificação
   traco(doc).rect(x0, 23.1, 160, 34.9)
-  H(doc, 6.3).text('01', x0 + 9.5, 25.6, { align: 'center' }).text('IDENTIFICAÇÃO DO AVALIADO', 105, 25.6, { align: 'center' })
-  const o = { tam: 6.5, tamV: 8 }
+  H(doc, 8).text('01', x0 + 9.5, 25.6, { align: 'center' }).text('IDENTIFICAÇÃO DO AVALIADO', 105, 25.6, { align: 'center' })
+  const o = { tam: 8.5, tamV: 9 }
   linha(doc, 'UNIDADE:', p.unidadeNome || 'ESCOLA SUPERIOR DE GUERRA', x0 + 0.8, 30.2, x1 - 1, o)
   linha(doc, 'POSTO:', p.postoNome, x0 + 0.8, 37.8, 77, o); linha(doc, 'NIP:', p.nip, 78.8, 37.8, 127.5, o); linha(doc, 'ASC:', p.quadroEspecial, 129, 37.8, x1 - 1, o)
   linha(doc, 'NOME:', p.nome, x0 + 0.8, 45.4, x1 - 1, o)
   linha(doc, 'FUNÇÃO:', p.cargoNome, x0 + 0.8, 53, 148, o); linha(doc, 'QE:', p.quadroEspecial, 149.5, 53, x1 - 1, o)
   // 02 data e forma
   traco(doc).rect(x0, 61.8, 160, 29.2)
-  H(doc, 6.3).text('02', x0 + 9.5, 64.3, { align: 'center' }).text('DATA E FORMA DE AVALIAÇÃO', 105, 64.3, { align: 'center' })
-  H(doc, 6.5).text('DATA DE REFERÊNCIA DA AVALIAÇÃO ______/______/________  a  ______/______/________', x0 + 0.8, 70)
-  H(doc, 6.5).text('AVALIAÇÃO PERIÓDICA', x0 + 0.8, 77.5).text('AVALIAÇÃO EXTRAORDINÁRIA', 95.6, 77.5)
+  H(doc, 8).text('02', x0 + 9.5, 64.3, { align: 'center' }).text('DATA E FORMA DE AVALIAÇÃO', 105, 64.3, { align: 'center' })
+  H(doc, 8.5).text('DATA DE REFERÊNCIA DA AVALIAÇÃO ______/______/________  a  ______/______/________', x0 + 0.8, 70)
+  H(doc, 8.5).text('AVALIAÇÃO PERIÓDICA', x0 + 0.8, 77.5).text('AVALIAÇÃO EXTRAORDINÁRIA', 95.6, 77.5)
   traco(doc).rect(63.6, 74.9, 7.6, 3.5).rect(146, 74.9, 8, 3.5)
   linha(doc, 'OBS:', '', x0 + 0.8, 81.5, x1 - 1, o)
   doc.setLineWidth(0.2).line(x0 + 0.8, 86.6, x1 - 1, 86.6)
@@ -380,24 +386,24 @@ export function fichaAvaliacao(d, p) {
   doc.line(x0, g0 + 3.9, x1, g0 + 3.9).line(cN, g0 + 7.6, x1, g0 + 7.6).line(x0, g0 + 11.4, x1, g0 + 11.4)
   doc.line(cF, g0, cF, g0 + 78.6).line(cN, g0 + 3.9, cN, g0 + 78.6)
   for (let i = 1; i < 12; i++) doc.setLineWidth(i % 4 ? 0.15 : 0.3).line(cN + i * wc, g0 + (i % 4 ? 7.6 : 3.9), cN + i * wc, g0 + 78.6)
-  H(doc, 6.3).text('03', x0 + 9.5, g0 + 2.9, { align: 'center' }).text('GRELHA DE AVALIAÇÃO', (cF + x1) / 2, g0 + 2.9, { align: 'center' })
-  H(doc, 6.3).text('FACTORES', (cF + cN) / 2, g0 + 8.6, { align: 'center' })
+  H(doc, 8).text('03', x0 + 9.5, g0 + 2.9, { align: 'center' }).text('GRELHA DE AVALIAÇÃO', (cF + x1) / 2, g0 + 2.9, { align: 'center' })
+  H(doc, 8).text('FACTORES', (cF + cN) / 2, g0 + 8.6, { align: 'center' })
   ;['1º AVALIADOR', '2º AVALIADOR', 'CMDTE-DIR-CH'].forEach((t, i) => doc.text(t, cN + (i * 4 + 2) * wc, g0 + 6.6, { align: 'center' }))
-  for (let i = 0; i < 12; i++) H(doc, 5.8).text(String([5, 10, 15, 20][i % 4]), cN + (i + 0.5) * wc, g0 + 10.4, { align: 'center' })
+  for (let i = 0; i < 12; i++) H(doc, 7.5).text(String([5, 10, 15, 20][i % 4]), cN + (i + 0.5) * wc, g0 + 10.4, { align: 'center' })
   const fr = 3.925
   FACTORES.forEach((f, i) => {
     const y = g0 + 11.4 + i * fr
     doc.setLineWidth(0.15).line(x0, y + fr, x1, y + fr)
-    H(doc, 6).text(`F${i + 1}`, x0 + 9.5, y + 2.9, { align: 'center' }).text(f, cF + 1, y + 2.9)
+    H(doc, 8).text(`F${i + 1}`, x0 + 9.5, y + 2.9, { align: 'center' }).text(f, cF + 1, y + 2.9)
   })
-  H(doc, 6.3).text('04', x0 + 9.5, g0 + 76.4, { align: 'center' }).text('MÉDIA FINAL', (cF + cN) / 2, g0 + 76.4, { align: 'center' })
+  H(doc, 8).text('04', x0 + 9.5, g0 + 76.4, { align: 'center' }).text('MÉDIA FINAL', (cF + cN) / 2, g0 + 76.4, { align: 'center' })
   // 05 parecer do conselho
   traco(doc).rect(x0, 177.5, 160, 50.7).line(x0, 181.5, x1, 181.5).line(cF, 177.5, cF, 181.5)
-  H(doc, 6.3).text('05', x0 + 9.5, 180.4, { align: 'center' }).text('PARECER DO CONSELHO DA ASC:', cF + 1.5, 180.4)
+  H(doc, 8).text('05', x0 + 9.5, 180.4, { align: 'center' }).text('PARECER DO CONSELHO DA ASC:', cF + 1.5, 180.4)
   for (let y = 185.5; y < 214; y += 4) doc.setLineWidth(0.15).line(x0, y, x1, y)
-  H(doc, 6.3).text('O PRESIDENTE', 62, 218.7, { align: 'center' }).text('O SECRETÁRIO', 150, 218.7, { align: 'center' })
+  H(doc, 8).text('O PRESIDENTE', 62, 218.7, { align: 'center' }).text('O SECRETÁRIO', 150, 218.7, { align: 'center' })
   doc.setLineWidth(0.2).line(30, 223.5, 95, 223.5).line(117, 223.5, 182, 223.5)
-  H(doc, 6).text('POSTO, NIP, NOME, DATA', 62, 226.6, { align: 'center' }).text('POSTO, NIP, NOME, DATA', 150, 226.6, { align: 'center' })
+  H(doc, 8).text('POSTO, NIP, NOME, DATA', 62, 226.6, { align: 'center' }).text('POSTO, NIP, NOME, DATA', 150, 226.6, { align: 'center' })
   blocoFai(doc, '06', '1º AVALIADOR - FUNÇÃO:', 232.4, 263.1)
   // 2.ª página
   novaPagina(d)
@@ -410,22 +416,22 @@ export function fichaAvaliacao(d, p) {
   doc.line(x0, a0 + 3.5, x1, a0 + 3.5).line(cols[4] - 29.6, a0 + 7, x1, a0 + 7).line(x0, a0 + 10.5, x1, a0 + 10.5)
   doc.line(cols[1], a0 + 3.5, cols[1], a0 + 61.2).line(cols[2], a0 + 10.5, cols[2], a0 + 61.2).line(cols[3], a0 + 3.5, cols[3], a0 + 61.2).line(cols[4], a0 + 7, cols[4], a0 + 61.2).line(cols[5], a0 + 7, cols[5], a0 + 61.2)
   doc.line(x0 + 19, a0, x0 + 19, a0 + 3.5)
-  H(doc, 6.3).text('09', x0 + 9.5, a0 + 2.6, { align: 'center' }).text('ÁREAS PREFERENCIAIS DE EMPREGO DO AVALIADO', (x0 + 19 + x1) / 2, a0 + 2.6, { align: 'center' })
-  H(doc, 5.8).text('(ASSINALE A 1ª, 2ª E 3ª OPÇÃO)', (cols[1] + cols[3]) / 2, a0 + 6.3, { align: 'center' }).text('INDICAÇÃO', (cols[3] + x1) / 2, a0 + 5.8, { align: 'center' })
-  H(doc, 5.8).text('PREFERÊNCIA', (cols[0] + cols[1]) / 2, a0 + 6.3, { align: 'center' })
+  H(doc, 8).text('09', x0 + 9.5, a0 + 2.6, { align: 'center' }).text('ÁREAS PREFERENCIAIS DE EMPREGO DO AVALIADO', (x0 + 19 + x1) / 2, a0 + 2.6, { align: 'center' })
+  H(doc, 7.5).text('(ASSINALE A 1ª, 2ª E 3ª OPÇÃO)', (cols[1] + cols[3]) / 2, a0 + 6.3, { align: 'center' }).text('INDICAÇÃO', (cols[3] + x1) / 2, a0 + 5.8, { align: 'center' })
+  H(doc, 7.5).text('PREFERÊNCIA', (cols[0] + cols[1]) / 2, a0 + 6.3, { align: 'center' })
   ;['1º Avaliador', '2º Avaliador', 'Cmdte'].forEach((t, i) => doc.text(t, (cols[3 + i] + cols[4 + i]) / 2, a0 + 9.5, { align: 'center' }))
   const areas = ['COMANDO/DIRECÇÃO/CHEFIA', 'PESSOAL', 'INFORMAÇÕES/SEGURANÇA', 'OPERAÇÕES/PLANEAMENTO', 'LOGÍSTICA', 'DOCÊNCIA/INSTRUÇÃO', 'TÉCNICAS', 'ADMINISTRATIVO', 'LOGÍSTICA']
   const ar = (61.2 - 10.5) / 9
   areas.forEach((t, i) => {
     const y = a0 + 10.5 + i * ar
     if (i) doc.setLineWidth(0.15).line(i === 5 ? cols[1] : cols[2], y, x1, y)
-    H(doc, 5.8).text(t, (cols[2] + cols[3]) / 2, y + ar / 2 + 1, { align: 'center' })
+    H(doc, 7.5).text(t, (cols[2] + cols[3]) / 2, y + ar / 2 + 1, { align: 'center' })
     traco(doc, 0.2).rect(cols[0] + 6, y + 1.3, 6, 3)
     for (let k = 3; k < 6; k++) doc.rect((cols[k] + cols[k + 1]) / 2 - 3, y + 1.3, 6, 3)
   })
   doc.setLineWidth(0.3).line(cols[0], a0 + 10.5 + 5 * ar, cols[2], a0 + 10.5 + 5 * ar)
-  H(doc, 5.8).text('ESTADO', cols[1] + 3.2, a0 + 10.5 + 2.5 * ar + 4, { angle: 90 }).text('MAIOR', cols[1] + 6.4, a0 + 10.5 + 2.5 * ar + 3.4, { angle: 90 })
-  H(doc, 5.8).text('EXECUÇÃO', cols[1] + 5.4, a0 + 10.5 + 7 * ar + 5, { angle: 90 })
+  H(doc, 7.5).text('ESTADO', cols[1] + 3.2, a0 + 10.5 + 2.5 * ar + 4, { angle: 90 }).text('MAIOR', cols[1] + 6.4, a0 + 10.5 + 2.5 * ar + 3.4, { angle: 90 })
+  H(doc, 7.5).text('EXECUÇÃO', cols[1] + 5.4, a0 + 10.5 + 7 * ar + 5, { angle: 90 })
   blocoFai(doc, '10', 'O AVALIADO', 153.7, 206, { centrar: true })
   blocoFai(doc, '11', 'O CHEFE DO ORGÃO DE PESSOAL E QUADROS', 207.6, 260, { centrar: true })
 }
@@ -492,12 +498,12 @@ export async function processoPromocao(d, p) {
   novaPagina(d)
   const x0 = 18.6
   const x1 = 191.3
-  T(doc, 9, 'bold'); sublinhado(doc, 'PROCESSO INDIVIDUAL DE PROMOÇÃO (PIP)', 103.8, 22.8)
+  T(doc, 11.5, 'bold'); sublinhado(doc, 'PROCESSO INDIVIDUAL DE PROMOÇÃO (PIP)', 103.8, 22.8)
   traco(doc).roundedRect(163.4, 14.3, 27.9, 28.5, 3, 3)
   await fotoEm(doc, p, 164, 15, 26.7, 27.1)
   doc.setLineWidth(0.25).line(30.6, 33, 159, 33)
-  valor(doc, [p.postoNome, p.nome, p.nip && `NIP ${p.nip}`].filter(Boolean).join(' — '), 31, 32, 127, { fonte: 'times', tam: 9 })
-  const L = (r, v, x, y, xf) => { H(doc, 7.5).text(r, x, y); const w = doc.getTextWidth(r); valor(doc, v, x + w + 1.5, y, xf - x - w - 2.5, { tam: 8 }) }
+  valor(doc, [p.postoNome, p.nome, p.nip && `NIP ${p.nip}`].filter(Boolean).join(' — '), 31, 32, 127, { fonte: 'times', tam: 11.5 })
+  const L = (r, v, x, y, xf) => { H(doc, 10).text(r, x, y); const w = doc.getTextWidth(r); valor(doc, v, x + w + 1.5, y, xf - x - w - 2.5, { tam: 10.5 }) }
   blocoPip(doc, 'BLOCO 1 – Dados Pessoais', 30.6, 40.6)
   traco(doc).rect(x0, 44.4, x1 - x0, 25.3)
   L('Data de Nascimento:', dataPt(p.dataNascimento), 21.1, 48.2, 107)
@@ -513,40 +519,40 @@ export async function processoPromocao(d, p) {
   traco(doc).rect(x0, 116.3, x1 - x0, 44.4).line(109.5, 116.3, 109.5, 160.7)
   const F = ['F1- Integridade de Carácter:', 'F2 – Relação Humana e Cooperação', 'F3 – Auto Confiança e Autodomínio', 'F4 – Iniciativa:', 'F5  - Sentido do Dever e de Disciplina', 'F6 – Poder de Comunicação', 'F7 – Dedicação e Empenho na Função', 'F8 – Planeamento e Organização:', 'F9 - Aptidão Técnico Profissional:', 'F10 – Julgamento:', 'F11– Decisão:', 'F12 – Condição Física:', 'F13  - Cultura Geral:', 'F14 – Cultura Militar:', 'F15 – Determinação e Perseverança:', 'F16 – Adaptabilidade:']
   for (const [lado, xt, xg] of [[0, 20.5, 84.2], [1, 111, 163.4]]) {
-    H(doc, 6.5).text('5  10  15  20', xg + 7.6, 121.4, { align: 'center' })
+    H(doc, 8.5).text('5  10  15  20', xg + 7.6, 121.4, { align: 'center' })
     for (let i = 0; i < 8; i++) {
-      H(doc, 6).text(F[lado * 8 + i], xt, 125.5 + i * 3.65 + 1.2)
+      H(doc, 8).text(F[lado * 8 + i], xt, 125.5 + i * 3.65 + 1.2)
       for (let k = 0; k < 4; k++) doc.setLineWidth(0.15).rect(xg + k * 3.8, 123.6 + i * 3.65, 3.8, 3.65)
     }
   }
-  H(doc, 6.5, 'bolditalic').text('Média:', 20.5, 156.6); doc.setLineWidth(0.15).line(29, 156.8, 60, 156.8)
+  H(doc, 8.5, 'bolditalic').text('Média:', 20.5, 156.6); doc.setLineWidth(0.15).line(29, 156.8, 60, 156.8)
   blocoPip(doc, 'BLOCO 4 – Dados do quadro Especial', 30.6, 167.7)
   traco(doc).rect(x0, 170.5, x1 - x0, 38.7)
   L('Vacatura no Quadro Especial de:', p.quadroNome, 21.4, 174.4, x1 - 1)
-  H(doc, 7.5, 'bold').text('Previsto no QE:', 74.7, 181.4, { align: 'right' }).text('Existente no QE:', 74.7, 188.4, { align: 'right' }).text('Vagas no QE:', 74.7, 195.4, { align: 'right' })
-  H(doc, 7.5, 'bold').text('- Posição na Lista de Antiguidade:', 21.4, 202.4).text('Nº NA ASC:', 101.6, 202.4).text('Nº NO POSTO:', 149.5, 202.4)
+  H(doc, 10, 'bold').text('Previsto no QE:', 74.7, 181.4, { align: 'right' }).text('Existente no QE:', 74.7, 188.4, { align: 'right' }).text('Vagas no QE:', 74.7, 195.4, { align: 'right' })
+  H(doc, 10, 'bold').text('- Posição na Lista de Antiguidade:', 21.4, 202.4).text('Nº NA ASC:', 101.6, 202.4).text('Nº NO POSTO:', 149.5, 202.4)
   blocoPip(doc, 'BLOCO 5 – Histórico de Promoção', 30.6, 212.7)
   traco(doc).rect(x0, 216.8, x1 - x0, 59.6)
   const pr = promocoes(p)
   for (let i = 0; i < 8; i++) {
     const y = 220.6 + i * 6.98
-    H(doc, 7.5).text(String(i + 1), 21.7, y)
+    H(doc, 10).text(String(i + 1), 21.7, y)
     doc.setLineWidth(0.15).line(24, y + 0.8, 188.8, y + 0.8)
-    if (pr[i]) valor(doc, `${pr[i].postoNovoNome} — ${dataPt(pr[i].data)}${pr[i].documento ? ` (${pr[i].documento})` : ''}`, 25, y, 162, { tam: 8 })
+    if (pr[i]) valor(doc, `${pr[i].postoNovoNome} — ${dataPt(pr[i].data)}${pr[i].documento ? ` (${pr[i].documento})` : ''}`, 25, y, 162, { tam: 10.5 })
   }
   // 2.ª página
   novaPagina(d)
   const caixaLinhas = (y0, y1, linhas, valores = []) => {
     traco(doc).rect(17.1, y0, 175.9, y1 - y0)
-    linhas.forEach((y, i) => { doc.setLineWidth(0.15).line(19.5, y, 190.5, y); valor(doc, valores[i], 20.5, y - 1, 168, { tam: 8 }) })
+    linhas.forEach((y, i) => { doc.setLineWidth(0.15).line(19.5, y, 190.5, y); valor(doc, valores[i], 20.5, y - 1, 168, { tam: 10.5 }) })
   }
   blocoPip(doc, 'BLOCO 6 – Curso de Promoção ou outro que se equipare', 16.4, 21.6)
   const cp = (p.cursos ?? []).filter((c) => c.tipo === 'promocao' || c.chave).map((c) => `${c.nome}${c.fim ? ` — ${dataPt(c.fim)}` : ''}${c.aproveitamento === false ? ' (sem aproveitamento)' : ''}`)
   caixaLinhas(29.2, 52.9, [34.2, 39.6, 44.4], cp)
   blocoPip(doc, 'BLOCO 7 – Desempenho de Funções Obrigatórias', 16.4, 57.4)
   traco(doc).rect(17.1, 63.1, 175.9, 26.6)
-  H(doc, 6.8).text('1 Comando de companhia e de outro cargo que se equipare no QE, num período mínimo de um ano', 19.6, 67.8).text('SIM  NÃO', 186.6, 67.8, { align: 'right' })
-  H(doc, 6.8).text('2 Professor, instrutor ou outro cargo cargo que se equipare dentro do QE, pelo menos dois anos', 19.6, 78.6)
+  H(doc, 9).text('1 Comando de companhia e de outro cargo que se equipare no QE, num período mínimo de um ano', 19.6, 67.8).text('SIM  NÃO', 186.6, 67.8, { align: 'right' })
+  H(doc, 9).text('2 Professor, instrutor ou outro cargo cargo que se equipare dentro do QE, pelo menos dois anos', 19.6, 78.6)
   for (const y of [72.3, 78]) traco(doc, 0.2).rect(175.6, y, 4.3, 3.2).rect(183.4, y, 4.3, 3.2)
   blocoPip(doc, 'BLOCO 8 – Avaliação Médica', 18.3, 93.5)
   caixaLinhas(98.9, 122.4, [104.3, 110.6, 116], [p.aptidaoFisica ? 'APTO' : ''])
@@ -555,8 +561,8 @@ export async function processoPromocao(d, p) {
   caixaLinhas(134.4, 157.9, [139.6, 145, 150.4], [pu.length ? pu.map((e) => `${e.descricao}${e.pena ? ` — ${e.pena}` : ''} (${dataPt(e.data)})`).join('; ') : p.processoPendente ? 'PROCESSO PENDENTE' : 'NADA CONSTA'])
   blocoPip(doc, 'BLOCO 10 – Conclusão:', 17.1, 165.8)
   caixaLinhas(171.5, 197.2, [176.9, 182.6, 188.3, 194], [p.promocao?.elegivel ? `EM CONDIÇÕES DE PROMOÇÃO A ${M(p.promocao.postoPropostoNome)}` : ''])
-  T(doc, 8.5).text('DATA ____/__________/20____', 124.2, 211.8)
-  T(doc, 8.5).text('O OFICIAL RESPONSAVEL', 102.6, 229.5, { align: 'center' })
+  T(doc, 11).text('DATA ____/__________/20____', 124.2, 211.8)
+  T(doc, 11).text('O OFICIAL RESPONSAVEL', 102.6, 229.5, { align: 'center' })
   doc.setLineWidth(0.2).line(70.9, 236.2, 134.3, 236.2).line(83.6, 242.5, 121.7, 242.5)
 }
 

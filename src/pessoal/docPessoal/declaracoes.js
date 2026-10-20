@@ -8,9 +8,10 @@ import { M, TAM, cabecalho, dataExtenso, kwanzas, kwanzasPorExtenso, marcaDagua,
 */
 const militar = (p) => p.tipo === 'militar'
 const ano2 = (ano) => String(ano).slice(-2)
-// margens das declarações (o texto fica numa coluna mais estreita, como no modelo)
-const X = 28
-const W = 210 - 2 * X
+// margens das declarações, medidas no modelo: 36 mm à esquerda e 28 mm à direita; 1.ª linha recuada 15 mm
+const X = 36
+const W = 210 - X - 28
+const RECUO = 15
 
 // «o Senhor(a), NIP: 101056813 – TENENTE – CARLOS HENRIQUES SEBASTIÃO JORGE,»
 export function identificacao(p) {
@@ -47,24 +48,26 @@ export function declaracao(d, p, o, quem) {
     const discente = (p.discente || p.vinculo === 'estudante') && o.curso ? [', Como Discente do ', o.curso, ' na Escola Superior de Guerra/EMG/FAA'] : [', na Escola Superior de Guerra/EMG/FAA']
     corpo = ['Para os devidos efeitos e fins achados convenientes, declara-se que ', ...identificacao(p), ' encontra-se em efectivo serviço nas ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ...discente, ...vencimento(o), '.']
   }
-  y = paragrafo(d, corpo, y, { x: X, w: W })
+  y = paragrafo(d, corpo, y, { x: X, w: W, recuo: RECUO })
   y += 7
   const local = militar(p) && !domiciliar ? 'nesta Unidade Militar' : 'neste Estabelecimento de Ensino Militar'
-  y = paragrafo(d, [`Por ser verdade e me ter sido solicitado, mandei passar a presente declaração que por mim vai assinada e autenticada, com o carimbo a óleo em uso ${local}.`], y, { x: X, w: W })
+  y = paragrafo(d, [`Por ser verdade e me ter sido solicitado, mandei passar a presente declaração que por mim vai assinada e autenticada, com o carimbo a óleo em uso ${local}.`], y, { x: X, w: W, recuo: RECUO })
   // a finalidade vai na OBS (a efectividade e o rendimento simples não a têm)
-  if (o.finalidade && !o.semObs) {
-    y += 6
-    doc.setFont('times', 'bold').setFontSize(TAM).text('OBS:', X + 12, y)
+  // (os espaços daqui para baixo são os do modelo)
+  const obs = o.finalidade && !o.semObs
+  if (obs) {
+    y += 11
+    doc.setFont('times', 'bold').setFontSize(TAM).text('OBS:', X + RECUO, y)
     const w = doc.getTextWidth('OBS: ')
-    y = paragrafo(d, [`A presente destina-se para ${o.finalidade.replace(/\.$/, '')}.`], y, { x: X + 12 + w, w: W - 12 - w, recuo: 0 })
+    y = paragrafo(d, [`A presente destina-se para ${o.finalidade.replace(/\.$/, '')}.`], y, { x: X + RECUO + w, w: W - RECUO - w, recuo: 0 })
   }
   // validade (o modelo usa letra sem serifa nesta caixa)
-  y += 9
+  y += obs ? 18 : 24
   const v = 'Válida por um período de (90) Noventa Dias'
   doc.setFont('helvetica', 'bold').setFontSize(11)
   const vw = doc.getTextWidth(v) + 8
   doc.setLineWidth(0.4).rect(105 - vw / 2, y - 5.2, vw, 7.8).text(v, 105, y, { align: 'center' })
-  y += 18
+  y += 21
   // «ESG em Luanda, 24 de Junho de 2026.» (civis: «Escola Superior de Guerra em Luanda, …»)
   const quemEmite = militar(p) && !domiciliar ? 'ESG' : 'Escola Superior de Guerra'
   const resto = ` em ${quem.local || 'Luanda'}, ${dataExtenso(o.data)}.`
@@ -73,7 +76,7 @@ export function declaracao(d, p, o, quem) {
   const w2 = doc.setFont('times', 'normal').getTextWidth(resto)
   doc.setFont('times', 'bold').text(quemEmite, 105 - (w1 + w2) / 2, y)
   doc.setFont('times', 'normal').text(resto, 105 - (w1 + w2) / 2 + w1, y)
-  y += 15
+  y += 17
   const c = quem.comandante ?? {}
   doc.setFont('times', 'bold').text(M(c.cargo || 'O COMANDANTE DA ESG'), 105, y, { align: 'center' })
   if (c.nome) doc.text(M(c.nome), 105, y + 13, { align: 'center' })
@@ -110,21 +113,26 @@ export function linhaPessoa(p) {
 export function guiaMarcha(d, p, o, quem) {
   const { doc } = d
   novaPagina(d)
-  marcaDagua(d, 105, 150, 150, 0.1)
-  emblema(doc, d.brasao, 105, 9, 18)
-  const x0 = 18
-  const w = 174
-  const topo = 30
+  // o emblema e a marca-d'água ao centro do quadro (como no modelo)
+  marcaDagua(d, 110, 150, 150, 0.1)
+  emblema(doc, d.brasao, 111, 9, 16)
+  // medidas tiradas do modelo digitalizado (mm): quadro de 19 a 200, cabeçalho de 26 a 56; letra do corpo 15
+  const x0 = 19
+  const w = 181
+  const topo = 26
+  const alto = 30
+  const T = TAM + 1
+  const L = 6.4 // entre linhas
   // cabeçalho em três colunas
-  const col = [70, 55, 49]
-  doc.setLineWidth(0.35).rect(x0, topo, w, 26)
-  doc.line(x0 + col[0], topo, x0 + col[0], topo + 26).line(x0 + col[0] + col[1], topo, x0 + col[0] + col[1], topo + 26)
+  const col = [69, 57, 55]
+  doc.setLineWidth(0.35).rect(x0, topo, w, alto)
+  doc.line(x0 + col[0], topo, x0 + col[0], topo + alto).line(x0 + col[0] + col[1], topo, x0 + col[0] + col[1], topo + alto)
   doc.setFont('times', 'normal').setFontSize(11)
-  doc.text('FORÇAS ARMADAS ANGOLANAS', x0 + col[0] / 2, topo + 10, { align: 'center' }).text('ESTADO-MAIOR GENERAL', x0 + col[0] / 2, topo + 19, { align: 'center' })
-  doc.text('GUIA DE MARCHA', x0 + col[0] + col[1] / 2, topo + 10, { align: 'center' }).text('INDIVIDUAL', x0 + col[0] + col[1] / 2, topo + 19, { align: 'center' })
-  doc.text('UEO - ESG', x0 + col[0] + col[1] + col[2] / 2, topo + 8, { align: 'center' })
-  doc.setFontSize(TAM)
-  let y = topo + 35
+  doc.text('FORÇAS ARMADAS ANGOLANAS', x0 + col[0] / 2, topo + 15, { align: 'center' }).text('ESTADO-MAIOR GENERAL', x0 + col[0] / 2, topo + 25, { align: 'center' })
+  doc.text('GUIA DE MARCHA', x0 + col[0] + col[1] / 2, topo + 14, { align: 'center' }).text('INDIVIDUAL', x0 + col[0] + col[1] / 2, topo + 23.5, { align: 'center' })
+  doc.text('UEO - ESG', x0 + col[0] + col[1] + col[2] / 2, topo + 12.5, { align: 'center' })
+  doc.setFontSize(T)
+  let y = topo + alto + 4.5
   const ano = new Date(o.inicio || Date.now()).getFullYear()
   const discenteOuCivil = !militar(p) || p.vinculo === 'estudante'
   const lei = `Ao abrigo do estabelecido no Artigo 32º da Lei 13/018, de 29 de Outubro, Lei das Carreiras dos Militares, e em conformidade com o Plano de Férias para os Efectivos da UEO, em Comissão Normal de Serviço no EMG, superiormente aprovado para o ano de ${ano};`
@@ -148,24 +156,24 @@ export function guiaMarcha(d, p, o, quem) {
   }[o.tipo]
   const xi = x0 + 3
   const wi = w - 6
-  y = paragrafo(d, intro, y, { x: xi, w: wi, recuo: 0 })
-  y += 3
-  y = paragrafo(d, [marcha], y, { x: xi, w: wi, recuo: 0, justificar: false })
+  y = paragrafo(d, intro, y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
   y += 4
+  y = paragrafo(d, [marcha], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
+  y += 8
   // «A fim de Gozar Férias ________» (a linha vai até ao fim do quadro)
-  y = paragrafo(d, [fim], y, { x: xi, w: wi, recuo: 0, justificar: false })
-  doc.setFont('times', 'normal').setFontSize(TAM)
+  y = paragrafo(d, [fim], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
+  doc.setFont('times', 'normal').setFontSize(T)
   const ult = doc.splitTextToSize(fim, wi).at(-1)
   const xf = xi + doc.getTextWidth(ult) + 2
-  if (xf < xi + wi - 6) doc.setLineWidth(0.2).line(xf, y - 6.6 + 0.8, xi + wi, y - 6.6 + 0.8)
-  y += 4
-  y = paragrafo(d, linhaPessoa(p), y, { x: xi, w: wi, recuo: 0 })
-  y += 3
-  y = paragrafo(d, ['Utilizando as seguintes vias: Todas vias possíveis'], y, { x: xi, w: wi, recuo: 0, justificar: false })
-  doc.setLineWidth(0.3).line(x0 + 2, y - 1, x0 + w - 2, y - 1)
-  y += 8
-  doc.setFont('times', 'normal').setFontSize(TAM - 1).text('OUTRAS INDICAÇÕES', xi, y).setFontSize(TAM)
-  y += 7
+  if (xf < xi + wi - 6) doc.setLineWidth(0.2).line(xf, y - L + 0.8, xi + wi, y - L + 0.8)
+  y += 6
+  y = paragrafo(d, linhaPessoa(p), y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
+  y += 4.6
+  y = paragrafo(d, ['Utilizando as seguintes vias: Todas vias possíveis'], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
+  doc.setLineWidth(0.3).line(x0 + 2, y + 2, x0 + w - 2, y + 2)
+  y += 12.9
+  doc.setFont('times', 'normal').setFontSize(T).text('OUTRAS INDICAÇÕES', xi, y)
+  y += 10
   const [quemE, o2, regresso] = designacao(p)
   const dias = String(o.dias || (o.tipo === 'ferias' ? 30 : o.tipo === 'licenca' ? 15 : 5)).padStart(2, '0')
   const inicio = dataExtenso(o.inicio)
@@ -175,19 +183,21 @@ export function guiaMarcha(d, p, o, quem) {
     dispensa: `encontra-se dispensad${o2}, por um período de ${dias} dias, a partir do dia ${inicio}, fim dos quais deverá regressar ${regresso}.`,
     apresentacao: `segue apresentar-se à ${o.destino || ''}, por um período de ${dias} dias.`,
   }[o.tipo]
-  y = paragrafo(d, [o.tipo === 'apresentacao' ? `${quemE}, ${estado}` : `${quemE} acima mencionad${o2} ${estado}`], y, { x: xi, w: wi, recuo: 0 })
-  doc.setLineWidth(0.3).line(x0 + 2, y - 1, x0 + w - 2, y - 1)
+  y = paragrafo(d, [o.tipo === 'apresentacao' ? `${quemE}, ${estado}` : `${quemE} acima mencionad${o2} ${estado}`], y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
+  doc.setLineWidth(0.3).line(x0 + 2, y + 1, x0 + w - 2, y + 1)
   // data e assinatura (como no modelo, sem negrito)
-  y += 20
+  y += 22
   const c = quem.comandante ?? {}
-  doc.setFont('times', 'normal').setFontSize(TAM)
-  doc.text(`${M(quem.local || 'Luanda')}, ${M(dataExtenso(o.data))}`, 105, y, { align: 'center' })
-  doc.text(M(c.cargo || 'O COMANDANTE DA ESG'), 105, y + 14, { align: 'center' })
-  if (c.nome) doc.text(M(c.nome), 105, y + 28, { align: 'center' })
-  if (c.posto) doc.text(`**${M(c.posto)}**`, 105, y + 35, { align: 'center' })
-  const fundo = Math.max(y + 48, 268)
+  const meio = x0 + w / 2
+  doc.setFont('times', 'normal').setFontSize(T)
+  doc.text(`${M(quem.local || 'Luanda')}, ${M(dataExtenso(o.data))}`, meio, y, { align: 'center' })
+  doc.text(M(c.cargo || 'O COMANDANTE DA ESG'), meio, y + 14.7, { align: 'center' })
+  if (c.nome) doc.text(M(c.nome), meio, y + 25.8, { align: 'center' })
+  if (c.posto) doc.text(`**${M(c.posto)}**`, meio, y + 34.2, { align: 'center' })
+  const fundo = Math.max(y + 53, 269)
   doc.setLineWidth(0.35).rect(x0, topo, w, fundo - topo)
-  referencia(d, 'RPQ/ESG/CP3 OP.MG', x0, fundo + 6)
+  doc.setFontSize(TAM)
+  referencia(d, 'RPQ/ESG/CP3 OP.MG', x0, fundo + 13)
 }
 
 /*
