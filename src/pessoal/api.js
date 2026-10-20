@@ -39,6 +39,7 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario, consulta
   if (!r.ok) {
     const e = new Error(d.erro || `Erro ${r.status}`)
     e.codigo = d.codigo
+    e.estado = r.status
     e.campo = d.campo
     throw e
   }

@@ -148,4 +148,13 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     await adm.post('/api/declaracoes/impressoes').send({ ids: [primeira.id] }).expect(200)
     assert.equal((await adm.get('/api/declaracoes')).body.find((x) => x.id === primeira.id).impressoes, 2)
   })
+
+  it('declarações para os bancos (modelos do SIGP) na mesma série; ficha do docente colaborador', async () => {
+    const r = (await adm.post(`/api/pessoas/${p.id}/documentos-emitidos`).send({ documentos: [{ tipo: 'declaracao_bfa_credito', dados: { finalidade: 'Crédito Pessoal (BFA)' } }, { tipo: 'declaracao_bpc_salario' }, { tipo: 'ficha_docente' }] }).expect(201)).body
+    assert.ok(r[0].numero > 0 && r[1].numero === r[0].numero + 1 && r[2].numero === null)
+    assert.ok((await adm.get('/api/declaracoes?q=BFA')).body.some((x) => x.tipo === 'declaracao_bfa_credito'))
+    const d = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Docente Colaborador Teste', tipoDocente: 'colaborador', funcaoActual: 'Investigador do CEEA', paisNascimento: 'Portugal', agregado: [{ nome: 'Filho Teste', parentesco: 'Filho(a)', bi: '001234567LA041', genero: 'M' }] }).expect(201)).body
+    const f = (await adm.get(`/api/pessoas/${d.id}`)).body
+    assert.deepEqual([f.tipoDocente, f.funcaoActual, f.paisNascimento, f.agregado[0].genero], ['colaborador', 'Investigador do CEEA', 'Portugal', 'M'])
+  })
 })

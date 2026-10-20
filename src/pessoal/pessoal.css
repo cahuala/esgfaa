@@ -252,3 +252,20 @@
 .app-content .btn-link:hover { color: inherit; text-decoration: none; }
 .pes-ouro-escuro { color: #861d0c; }
 .pes-dec-pessoa { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: #faf8f2; border: 1.5px solid #ebddb4; border-radius: 8px; }
+/* página não encontrada */
+.pes-404 { max-width: 620px; margin: 40px auto; text-align: center; background: #fff; border: 1px solid #e5e2d8; border-radius: 14px; padding: 36px 30px; box-shadow: 0 6px 24px rgba(0, 0, 0, .05); }
+.pes-404 h2 { color: #861d0c; font-weight: 700; margin-bottom: 8px; }
+.pes-404-ic { width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%; background: #faf8f2; border: 2px solid #ebddb4; display: flex; align-items: center; justify-content: center; font-size: 38px; color: #c09820; }
+/* familiares (como no SIGP): cabeçalho escuro no formulário de adicionar */
+.pes-fam-form { background: #fff; border: 1px solid #e5e2d8; border-radius: 10px; margin-bottom: 16px; overflow: hidden; }
+.pes-fam-t { background: linear-gradient(135deg, #861d0c, #a01510); color: #fff; padding: 11px 16px; font-weight: 700; font-size: 13px; }
+/* declarações (como no SIGP) */
+.pes-fins { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 16px; border: 1.5px solid #e5e2d8; border-radius: 8px; padding: 10px 14px; background: #fff; }
+.pes-fins-t { font-size: 11px; font-weight: 700; color: #6c757d; margin-bottom: 4px; }
+.pes-dec-av { width: 50px; height: 50px; border-radius: 50%; background: #ebddb4; color: #861d0c; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.pes-dec-grp { cursor: pointer; }
+.pes-dec-grp:hover { background: #faf8f2; }
+.pes-dec-det > td { background: #fdfbf5; padding: 0 0 0 70px !important; }
+.pes-dec-n { background: #861d0c; color: #fff; border-radius: 10px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; }
+.pes-badge-mil { background: #e3f2fd; color: #1565c0; font-size: 9px; }
+.pes-badge-civ { background: #f3e5f5; color: #6a1b9a; font-size: 9px; }

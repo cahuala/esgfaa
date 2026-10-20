@@ -51,7 +51,8 @@ export function declaracao(d, p, o, quem) {
   y += 7
   const local = militar(p) && !domiciliar ? 'nesta Unidade Militar' : 'neste Estabelecimento de Ensino Militar'
   y = paragrafo(d, [`Por ser verdade e me ter sido solicitado, mandei passar a presente declaração que por mim vai assinada e autenticada, com o carimbo a óleo em uso ${local}.`], y, { x: X, w: W })
-  if (o.finalidade) {
+  // a finalidade vai na OBS (a efectividade e o rendimento simples não a têm)
+  if (o.finalidade && !o.semObs) {
     y += 6
     doc.setFont('times', 'bold').setFontSize(TAM).text('OBS:', X + 12, y)
     const w = doc.getTextWidth('OBS: ')
@@ -101,7 +102,8 @@ export function linhaPessoa(p) {
   // o discente: «DISCENTE DO 31º CURSO SUPERIOR DE COMANDO E DIRECÇÃO» (o curso em curso, ou a unidade do curso)
   const curso = p.vinculo === 'estudante' ? (p.cursos ?? []).find((c) => !c.fim)?.nome || p.unidadeNome : ''
   const funcao = curso ? `DISCENTE DO ${curso}` : [p.cargoNome, p.unidadeNome && `DA ${p.unidadeNome}`].filter(Boolean).join(' ')
-  if (militar(p)) return [`${sr} – `, { b: [M(p.postoNome), p.ramo, p.fps, p.quadroEspecial, p.nip].filter(Boolean).map(M).join(' – ') }, ' – ', { b: M(p.nome) }, ' – ', { b: `${M(funcao || 'EFECTIVO')}/ESG/EMGFAA.` }]
+  // nas guias o posto vai abreviado («1.º SARG.», «TEN.-COR.»)
+  if (militar(p)) return [`${sr} – `, { b: [M(p.postoAbreviatura || p.postoNome), p.ramo, p.fps, p.quadroEspecial, p.nip].filter(Boolean).map(M).join(' – ') }, ' – ', { b: M(p.nome) }, ' – ', { b: `${M(funcao || 'EFECTIVO')}/ESG/EMGFAA.` }]
   return [`${sr} – `, { b: 'CIVIL' }, ' – ', { b: M(p.nome) }, ' – ', { b: `${M(funcao || p.categoriaCivil || 'FUNCIONÁRIO')} DA ESCOLA SUPERIOR DE GUERRA/EMGFAA.` }]
 }
 
@@ -186,4 +188,67 @@ export function guiaMarcha(d, p, o, quem) {
   const fundo = Math.max(y + 48, 268)
   doc.setLineWidth(0.35).rect(x0, topo, w, fundo - topo)
   referencia(d, 'RPQ/ESG/CP3 OP.MG', x0, fundo + 6)
+}
+
+/*
+  Declarações para os bancos (os modelos do SIGP, com o cabeçalho e a assinatura da ESG): crédito pessoal e
+  adiantamento salarial (BFA), BPC Salário e crédito bancário (BPC). o.banco = 'bfa_credito' | 'bfa_adiantamento' |
+  'bpc_salario' | 'bpc_credito'. Militares: «Posto-NIP Nome … efectivo do Quadro Permanente das FAA»; civis:
+  «Nome … efectivo do Quadro das FAA com a categoria de …».
+*/
+const BANCOS = {
+  bfa_credito: { banco: 'BANCO DE FOMENTO ANGOLA', sigla: 'BFA', finalidade: 'ao Crédito Pessoal ao abrigo do protocolo celebrado entre as FAA e o BFA' },
+  bfa_adiantamento: { banco: 'BANCO DE FOMENTO ANGOLA', sigla: 'BFA', finalidade: 'ao Adiantamento Salarial ao abrigo do protocolo celebrado entre as FAA e o BFA' },
+  bpc_salario: { banco: 'BANCO DE POUPANÇA E CRÉDITO', sigla: 'BPC', finalidade: 'ao BPC Salário ao abrigo do protocolo celebrado entre as FAA e o BPC' },
+  bpc_credito: { banco: 'BANCO DE POUPANÇA E CRÉDITO', sigla: 'BPC', finalidade: 'ao Crédito Bancário ao abrigo do protocolo celebrado entre as FAA e o BPC' },
+}
+export function declaracaoBanco(d, p, o, quem) {
+  const { doc } = d
+  const b = BANCOS[o.banco]
+  novaPagina(d)
+  marcaDagua(d, 105, 192, 92, 0.06)
+  let y = cabecalho(d)
+  // «AO / BANCO DE FOMENTO ANGOLA / LUANDA», à direita
+  doc.setFont('times', 'bold').setFontSize(TAM)
+  doc.text('AO', 128, y + 4).text(b.banco, 128, y + 10.5).text('LUANDA', 128, y + 17)
+  y += 24
+  doc.setFont('times', 'bolditalic').text(`Nº${String(o.numero ?? '').padStart(3, '0')}/${ano2(o.ano ?? new Date().getFullYear())}/RPQ/ESG/EMGFAA`, X, y)
+  y += 9
+  const mil = militar(p)
+  const nasc = p.dataNascimento ? dataExtenso(p.dataNascimento) : '___/___/______'
+  const sal = o.valor ? `${kwanzas(o.valor)}` : '____________'
+  const quemE = mil
+    ? ['o (a) Senhor(a) ', { b: `${M(p.postoNome)} – ${M(p.nip)} – ${M(p.nome)}` }]
+    : ['o (a) Senhor(a) ', { b: M(p.nome) }]
+  const efectivo = mil
+    ? [`, é efectivo do ${p.fpsNome || 'Quadro Permanente'} das `, { b: 'FORÇAS ARMADAS ANGOLANAS' }, ', em serviço na Escola Superior de Guerra/EMG/FAA,']
+    : [', é efectivo do Quadro das ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ', em serviço na Escola Superior de Guerra/EMG/FAA, com a categoria de ', { b: M(p.categoriaCivil || p.carreiraNome || '') }, ',']
+  const bpc = b.sigla === 'BPC'
+  y = paragrafo(d, [`Com finalidade de habilitar-se ${b.finalidade}, declara-se que `, ...quemE, `, nascido(a) aos ${nasc}, filho(a) de `, { b: M(p.pai || '__________') }, ' e de ', { b: M(p.mae || '__________') }, ...efectivo, ' e aufere um salário líquido mensal de ', { b: `${sal} kwanzas` },
+    bpc ? ' sem interrupção, estando elegível para, ao abrigo do protocolo assinado entre o BPC, S.A. e a nossa instituição, aceder ao crédito de vencimentos mediante a vossa análise de risco individual e procedimentos a cumprir de forma obrigatória.' : '.'], y, { x: X, w: W })
+  y += 3
+  const iban = { b: M(p.iban || '____________________________') }
+  y = paragrafo(d, bpc
+    ? ['Compromete-se também a nossa instituição a manter o salário domiciliado junto da vossa instituição, depositado na Conta/IBAN ', iban, ' e, na eventualidade de qualquer alteração relevante da relação jurídico-contratual com o funcionário, informar o Banco de modo a mitigar o risco de incumprimento de responsabilidades junto da vossa instituição.']
+    : ['Conforme as instruções irrevogáveis recebidas do interessado, a partir desta data, os seus vencimentos serão mensalmente depositados na conta/IBAN nº ', iban, ' aberta no BFA, enquanto o mesmo se mantiver como membro das FAA. Reconhece-se que, apenas com autorização expressa do BFA, esta instrução poderá ser alterada ou cancelada.'], y, { x: X, w: W })
+  y += 3
+  y = paragrafo(d, ['Por ter sido solicitada, mandei passar a presente declaração que vai por mim assinada e autenticada com o carimbo a óleo em uso nesta Instituição.'], y, { x: X, w: W })
+  y += 7
+  const v = 'VÁLIDO POR UM PERÍODO DE 90 DIAS'
+  doc.setFont('helvetica', 'bold').setFontSize(11)
+  const vw = doc.getTextWidth(v) + 8
+  doc.setLineWidth(0.4).rect(105 - vw / 2, y - 5.2, vw, 7.8).text(v, 105, y, { align: 'center' })
+  y += 14
+  const resto = ` em ${quem.local || 'Luanda'}, ${dataExtenso(o.data)}.`
+  doc.setFont('times', 'bold').setFontSize(TAM)
+  const w1 = doc.getTextWidth('ESG')
+  const w2 = doc.setFont('times', 'normal').getTextWidth(resto)
+  doc.setFont('times', 'bold').text('ESG', 105 - (w1 + w2) / 2, y)
+  doc.setFont('times', 'normal').text(resto, 105 - (w1 + w2) / 2 + w1, y)
+  y += 12
+  const c = quem.comandante ?? {}
+  doc.setFont('times', 'bold').text(M(c.cargo || 'O COMANDANTE DA ESG'), 105, y, { align: 'center' })
+  if (c.nome) doc.text(M(c.nome), 105, y + 13, { align: 'center' })
+  if (c.posto) doc.text(`**${M(c.posto)}**`, 105, y + 19.5, { align: 'center' })
+  doc.setFont('times', 'normal')
 }

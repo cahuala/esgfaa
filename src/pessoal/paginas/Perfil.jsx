@@ -7,11 +7,12 @@ import { reduzirFoto } from '../fotos'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import DocumentosPessoais from '../componentes/DocumentosPessoais'
+import Familiares from '../componentes/Familiares'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
 import Carregar from '../componentes/Carregar'
-import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal } from '../componentes/Ui'
+import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, NaoEncontrado } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
 // campo da ficha como no SIGP: rótulo pequeno em maiúsculas e o valor numa caixa
@@ -36,11 +37,12 @@ export default function Perfil() {
   const { id } = useParams()
   const { ref, pode, avisar, utilizador } = useSessao()
   const navegar = useNavigate()
-  const { dados: p, erro, recarregar: carregar } = useDados(`/pessoas/${id}`)
+  const { dados: p, erro, naoExiste, recarregar: carregar } = useDados(`/pessoas/${id}`)
   const [foto, setFoto] = useState({ chave: null, url: null })
   const [params] = useSearchParams()
   const [aba, setAba] = useState(params.get('aba') ?? 'identificacao')
   const [modal, setModal] = useState(null)
+  const [aGravarFam, setAGravarFam] = useState(false)
   const ficheiro = useRef(null)
   const chaveFoto = p?.fotoId ? `${p.id}/${p.fotoId}` : null
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function Perfil() {
     if (e.target?.value) e.target.value = ''
   }
 
+  if (naoExiste) return <NaoEncontrado titulo="Ficha não encontrada" texto={`Não há nenhuma ficha com o número ${id}. Pode ter sido apagada, ou o endereço está errado.`} />
   if (erro) return <Erro texto={erro} aoRepetir={carregar} />
   if (!p) return <Carregando />
   const militar = p.tipo === 'militar'
@@ -185,7 +188,7 @@ export default function Perfil() {
                 </Grelha>
               </Bloco>
             )}
-            {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /></Grelha></Bloco>}
+            {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} />{p.tipoDocente === 'colaborador' && <Dado r="Função ou cargo actual (fora da Escola)" cheio v={p.funcaoActual} />}</Grelha></Bloco>}
             {p.limiteDomiciliares > 0 && (
               <Bloco titulo="Trabalhadores domiciliares" icone="fa-house-user" acoes={<span className="pes-ftab-n">{p.domiciliares.length}/{p.limiteDomiciliares}</span>}>
                 {p.domiciliares.length ? (
@@ -255,15 +258,21 @@ export default function Perfil() {
         </>
       )}
 
-      {aba === 'familiares' && (
-        <Bloco titulo="Familiares registados" icone="fa-users" acoes={<span className="pes-ftab-n">{(p.agregado?.length ?? 0) + (p.conjuge ? 1 : 0)}</span>} corpo={false}>
-          <div className="pes-bloco-c pb-0"><Grelha><Dado r="Cônjuge" v={p.conjuge} /><Dado r="Local de serviço do cônjuge" v={p.conjugeLocalServico} /></Grelha></div>
-          {p.agregado?.length > 0 ? (
-            <div className="table-responsive mt-3"><table className="table table-hover mb-0"><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>Nacionalidade</th><th>Profissão</th></tr></thead>
-              <tbody>{p.agregado.map((a, i) => <tr key={i}><td className="fw-semibold">{a.nome}</td><td>{a.parentesco}</td><td>{dataPt(a.dataNascimento)}</td><td>{a.nacionalidade}</td><td>{a.profissao}</td></tr>)}</tbody></table></div>
-          ) : <div className="pes-vazio"><i className="fa fa-users" /><p>Nenhum familiar registado.{editar && <> <Link to={`/pessoas/${p.id}/editar`}>Acrescentar na ficha</Link>.</>}</p></div>}
-        </Bloco>
-      )}
+      {aba === 'familiares' && <>
+        {(p.conjuge || p.conjugeLocalServico) && <Bloco titulo="Cônjuge" icone="fa-ring"><Grelha><Dado r="Cônjuge" v={p.conjuge} /><Dado r="Local de serviço do cônjuge" v={p.conjugeLocalServico} /></Grelha></Bloco>}
+        <Familiares lista={p.agregado ?? []} editar={editar} aGravar={aGravarFam} aoMudar={async (agregado) => {
+          setAGravarFam(true)
+          try {
+            await api(`/pessoas/${p.id}`, { metodo: 'PUT', corpo: { agregado: agregado.map((x) => Object.fromEntries(Object.entries(x).filter(([k, v]) => v !== '' && v !== null && k !== 'idade'))) } })
+            avisar('Familiares actualizados.')
+            carregar()
+          } catch (x) {
+            avisar(x.message, 'erro')
+          } finally {
+            setAGravarFam(false)
+          }
+        }} />
+      </>}
 
       {aba === 'emitidos' && <DocumentosEmitidos pessoaId={p.id} />}
 

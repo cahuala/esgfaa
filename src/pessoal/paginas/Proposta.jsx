@@ -5,6 +5,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import { exportarPdf } from '../exportar'
 import { fichasDeProposta } from '../documentos'
+import { documentosDaProposta, gerarLote } from '../docPessoal'
 import Foto from '../componentes/Foto'
 import EscolherPessoa from '../componentes/EscolherPessoa'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
@@ -35,6 +36,17 @@ export default function Proposta() {
     }
   }
 
+  // as fichas do modelo da ESG para cada pessoa da proposta: proposta de nomeação ou PIP
+  async function fichasModelo(doc) {
+    try {
+      const [quem, ...fichas] = await Promise.all([api('/definicoes/assinaturas'), ...p.itens.map((i) => api(`/pessoas/${i.pessoaId}`))])
+      const itens = p.itens.map((i, k) => ({ p: fichas[k], escolha: { tipo: doc.tipo, dados: { cargoProposto: nomeCargo(i.cargoId) || i.cargoPropostoNome || '', unidadeProposta: cargos.find((c) => c.id === i.cargoId)?.unidadeNome || 'Escola Superior de Guerra', fundamento: i.justificacao || p.fundamentacao || '' } } }))
+      await gerarLote(itens, quem, `proposta-${p.id}-${doc.tipo}.pdf`)
+    } catch (e) {
+      avisar(e.message, 'erro')
+    }
+  }
+
   if (erro) return <Erro texto={erro} />
   if (!p) return <Carregando />
   const preparacao = p.estado === 'rascunho'
@@ -55,6 +67,7 @@ export default function Proposta() {
     <>
       <Cabecalho titulo={`Proposta n.º ${p.id}`} subtitulo={p.tipoNome} migalhas={[['Propostas', '/propostas'], [`N.º ${p.id}`]]}>
         <button type="button" className="btn btn-danger" onClick={imprimir} disabled={!p.itens.length}><i className="fa fa-file-pdf me-1" />PDF</button>
+        {documentosDaProposta(p.tipo).map((doc) => <button key={doc.tipo} type="button" className="btn btn-theme" disabled={!p.itens.length || p.itens.some((i) => !i.ramo)} onClick={() => fichasModelo(doc)} title={`O modelo da ESG, um para cada militar da proposta`}><i className="fa fa-file-alt me-1" />{doc.tipo === 'processo_promocao' ? 'Processos de promoção (PIP)' : 'Propostas de nomeação'}</button>)}
         <button type="button" className="btn btn-danger" onClick={() => fichasDeProposta(p, cargos).catch((e) => avisar(e.message, 'erro'))} title="Para cada militar: a ficha de proposta e a síntese biográfica" disabled={!p.itens.length}><i className="fa fa-print me-1" />Imprimir documentos</button>
         {preparacao && pode('propor') && <button type="button" className="btn btn-warning" onClick={() => setModal('enviar')} disabled={!p.itens.length}><i className="fa fa-paper-plane me-1" />Enviar ao escalão superior</button>}
         {p.estado === 'enviada' && pode('editar') && <button type="button" className="btn btn-success" onClick={() => navegar(`/extractos?proposta=${p.id}&tipo=${p.tipo}`)}><i className="fa fa-file-contract me-1" />Registar o extracto</button>}

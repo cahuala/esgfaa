@@ -1,6 +1,6 @@
 import { M, dataExtenso, kwanzas, novoDocumento } from './base'
-import { declaracao, guiaMarcha } from './declaracoes'
-import { anexoFichaIndividual, fichaAvaliacao, fichaDisciplinar, fichaIndividualCivil, fichaIndividualMilitar, fichaMecanografica, fichaRegistoBiografico, processoPromocao, propostaNomeacao } from './fichas'
+import { declaracao, declaracaoBanco, guiaMarcha } from './declaracoes'
+import { fichaDocente, anexoFichaIndividual, fichaAvaliacao, fichaDisciplinar, fichaIndividualCivil, fichaIndividualMilitar, fichaMecanografica, fichaRegistoBiografico, processoPromocao, propostaNomeacao } from './fichas'
 
 /*
   Documentos pessoais que se tiram da ficha (botão «Documentos»): para quem servem, as opções que pedem e
@@ -52,21 +52,30 @@ export const CATALOGO = [
   { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Declaração de salário', para: militar, opcoes: (p) => [VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
   { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Declaração de serviço', para: civil, opcoes: (p) => [COM_VENCIMENTO, VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
 
+  // as declarações para os bancos (modelos do SIGP): militares e civis
+  ...[['bfa_credito', 'Crédito Pessoal (BFA)'], ['bfa_adiantamento', 'Adiantamento Salarial (BFA)'], ['bpc_salario', 'BPC Salário'], ['bpc_credito', 'Crédito Bancário (BPC)']].map(([b, nome]) => ({
+    tipo: `declaracao_${b}`, grupo: 'declaracoes', nome: `Declaração — ${nome}`, banco: true, para: (p) => p.vinculo !== 'domiciliar', opcoes: (p) => [VALOR(p)],
+    desenhar: (d, p, o, q) => declaracaoBanco(d, p, { ...o, banco: b }, q),
+  })),
+
   { tipo: 'guia_ferias', grupo: 'guias', nome: 'Guia de marcha — férias', para: (p) => p.vinculo !== 'domiciliar', opcoes: opcoesFerias, desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'ferias' }, q) },
   { tipo: 'guia_licenca', grupo: 'guias', nome: 'Guia de marcha — férias adicionais (licença disciplinar, 15 dias)', para: militar, opcoes: () => [DIAS(15), INICIO, FIM], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'licenca' }, q) },
   { tipo: 'guia_dispensa', grupo: 'guias', nome: 'Guia de marcha — dispensa', para: () => true, opcoes: () => [DIAS(5), INICIO, FIM, { campo: 'motivo', rotulo: 'A fim de tratar', tipo: 'escolha', inicial: 'Assuntos Pessoais', valores: ['Assuntos Pessoais', 'Assunto Familiar', 'Assuntos de Saúde'] }, { campo: 'provincia', rotulo: 'Na província de', tipo: 'texto', inicial: '' }], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'dispensa' }, q) },
   { tipo: 'guia_apresentacao', grupo: 'guias', nome: 'Guia de marcha — apresentação', para: (p) => p.vinculo !== 'domiciliar', opcoes: () => [{ campo: 'destino', rotulo: 'Apresentar-se à', tipo: 'texto', obrigatorio: true, ajuda: 'Ex.: Direcção de Pessoal e Quadros do Comando do Exército' }, { campo: 'referencia', rotulo: 'Em conformidade com', tipo: 'texto', ajuda: 'Ex.: Ofício nº 7028/11.RGC/DPPQ/EMGFAA/2025' }, { campo: 'fundamento', rotulo: 'Motivo', tipo: 'texto' }, DIAS(7)], desenhar: (d, p, o, q) => guiaMarcha(d, p, { ...o, tipo: 'apresentacao' }, q) },
 
   { tipo: 'ficha_individual', grupo: 'fichas', nome: 'Ficha individual', para: () => true, opcoes: () => [], desenhar: async (d, p) => (militar(p) ? (await fichaIndividualMilitar(d, p), anexoFichaIndividual(d, p)) : fichaIndividualCivil(d, p)) },
+  { tipo: 'ficha_docente', grupo: 'fichas', nome: 'Ficha para cadastramento dos docentes', para: (p) => Boolean(p.docente), opcoes: () => [], desenhar: (d, p) => fichaDocente(d, p) },
   { tipo: 'ficha_mecanografica', grupo: 'fichas', nome: 'Ficha mecanográfica', para: militar, opcoes: () => [], desenhar: (d, p) => fichaMecanografica(d, p) },
   { tipo: 'ficha_registo_biografico', grupo: 'fichas', nome: 'Ficha de registo biográfico', para: civil, opcoes: () => [], desenhar: (d, p) => fichaRegistoBiografico(d, p) },
   { tipo: 'ficha_disciplinar', grupo: 'fichas', nome: 'Ficha disciplinar', para: () => true, opcoes: () => [], desenhar: (d, p) => fichaDisciplinar(d, p) },
   { tipo: 'ficha_avaliacao', grupo: 'fichas', nome: 'Ficha de avaliação individual (FAI)', para: militar, opcoes: () => [], desenhar: (d, p) => fichaAvaliacao(d, p) },
-  { tipo: 'proposta_nomeacao', grupo: 'fichas', nome: 'Proposta de nomeação', para: militar, opcoes: () => [{ campo: 'cargoProposto', rotulo: 'Cargo proposto', tipo: 'texto', obrigatorio: true }, { campo: 'unidadeProposta', rotulo: 'U/E/O do cargo', tipo: 'texto', inicial: 'Escola Superior de Guerra' }, { campo: 'fundamento', rotulo: 'Fundamento da proposta', tipo: 'texto' }], desenhar: (d, p, o, q) => propostaNomeacao(d, p, o, q) },
-  { tipo: 'processo_promocao', grupo: 'fichas', nome: 'Processo individual de promoção (PIP)', para: militar, opcoes: () => [], desenhar: (d, p) => processoPromocao(d, p) },
+  { tipo: 'proposta_nomeacao', grupo: 'fichas', nome: 'Proposta de nomeação', proposta: 'nomeacao', para: militar, opcoes: () => [{ campo: 'cargoProposto', rotulo: 'Cargo proposto', tipo: 'texto', obrigatorio: true }, { campo: 'unidadeProposta', rotulo: 'U/E/O do cargo', tipo: 'texto', inicial: 'Escola Superior de Guerra' }, { campo: 'fundamento', rotulo: 'Fundamento da proposta', tipo: 'texto' }], desenhar: (d, p, o, q) => propostaNomeacao(d, p, o, q) },
+  { tipo: 'processo_promocao', grupo: 'fichas', nome: 'Processo individual de promoção (PIP)', proposta: 'promocao', para: militar, opcoes: () => [], desenhar: (d, p) => processoPromocao(d, p) },
 ]
 
-export const documentosPara = (p) => CATALOGO.filter((c) => c.para(p))
+// os da ficha (a proposta de nomeação e o PIP saem na tela da proposta de nomeação ou de promoção)
+export const documentosPara = (p) => CATALOGO.filter((c) => !c.proposta && c.para(p))
+export const documentosDaProposta = (tipo) => CATALOGO.filter((c) => c.proposta === tipo)
 
 // escolhas: [{ tipo, dados }]; emitidos: o que o servidor registou (com o número das declarações)
 export async function gerarDocumentosPessoais(p, escolhas, emitidos, quem) {

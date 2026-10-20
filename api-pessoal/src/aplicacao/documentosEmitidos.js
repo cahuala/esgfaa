@@ -11,6 +11,10 @@ export const TIPOS_DOCUMENTO_PESSOAL = {
   declaracao_efectividade: { nome: 'Declaração de efectividade', serie: 'declaracao' },
   declaracao_salario: { nome: 'Declaração de salário', serie: 'declaracao' },
   declaracao_servico: { nome: 'Declaração de serviço', serie: 'declaracao' },
+  declaracao_bfa_credito: { nome: 'Declaração — Crédito Pessoal (BFA)', serie: 'declaracao' },
+  declaracao_bfa_adiantamento: { nome: 'Declaração — Adiantamento Salarial (BFA)', serie: 'declaracao' },
+  declaracao_bpc_salario: { nome: 'Declaração — BPC Salário', serie: 'declaracao' },
+  declaracao_bpc_credito: { nome: 'Declaração — Crédito Bancário (BPC)', serie: 'declaracao' },
   guia_ferias: { nome: 'Guia de marcha — férias' },
   guia_licenca: { nome: 'Guia de marcha — licença disciplinar' },
   guia_dispensa: { nome: 'Guia de marcha — dispensa' },
@@ -23,6 +27,7 @@ export const TIPOS_DOCUMENTO_PESSOAL = {
   proposta_nomeacao: { nome: 'Proposta de nomeação' },
   processo_promocao: { nome: 'Processo individual de promoção (PIP)' },
   sintese_biografica: { nome: 'Síntese biográfica' },
+  ficha_docente: { nome: 'Ficha para cadastramento dos docentes' },
 }
 
 const ASSINATURAS = {

@@ -3,9 +3,10 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, urlFoto } from '../api'
 import { reduzirFoto } from '../fotos'
 import Carregar from '../componentes/Carregar'
+import Familiares from '../componentes/Familiares'
 import { useSessao } from '../sessao'
 import { useArvore } from '../arvore'
-import { Cabecalho, Campo, Carregando, Escolha } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Escolha, NaoEncontrado } from '../componentes/Ui'
 import { EscolhaSituacao } from '../componentes/Situacao'
 
 const VAZIA = {
@@ -15,7 +16,7 @@ const VAZIA = {
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
   municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
-  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '',
+  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '', funcaoActual: '', paisNascimento: 'Angola',
   outrosVinculos: [], dataEntradaEscola: '', dataSaidaEscola: '', motivoSaida: '', destinoSaida: '',
 }
 const CAMPOS = Object.keys(VAZIA)
@@ -62,8 +63,10 @@ export default function FormularioFicha() {
   useEffect(() => { if (d?.vinculo === 'domiciliar' && !oficiais.length) api('/domiciliares').then(setOficiais).catch(() => {}) }, [d?.vinculo, oficiais.length])
   useEffect(() => {
     api('/cargos').then(setCargos).catch(() => {})
-    if (id) api(`/pessoas/${id}`).then((p) => setD(Object.fromEntries(CAMPOS.map((k) => [k, p[k] ?? (typeof VAZIA[k] === 'boolean' ? VAZIA[k] : '')])))).catch((e) => setErro({ texto: e.message }))
+    if (id) api(`/pessoas/${id}`).then((p) => setD(Object.fromEntries(CAMPOS.map((k) => [k, p[k] ?? (typeof VAZIA[k] === 'boolean' ? VAZIA[k] : '')]))))
+      .catch((e) => setErro({ texto: e.message, naoExiste: e.estado === 404 }))
   }, [id])
+  if (!d && erro?.naoExiste) return <NaoEncontrado titulo="Ficha não encontrada" texto={`Não há nenhuma ficha com o número ${id} para editar. Pode ter sido apagada, ou o endereço está errado.`} />
   if (!d) return erro ? <div className="alert alert-danger">{erro.texto}</div> : <Carregando />
 
   const militar = d.tipo === 'militar'
@@ -240,6 +243,7 @@ export default function FormularioFicha() {
           <div className="row">
             <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
             <Campo rotulo="Categoria do docente" col="col-md-4"><input className="form-control form-control-sm" list="categorias-docente" value={d.categoriaDocente ?? ''} onChange={set('categoriaDocente')} /><datalist id="categorias-docente">{ref.categoriasDocente.map((c) => <option key={c} value={c} />)}</datalist></Campo>
+            {d.tipoDocente === 'colaborador' && <Campo rotulo="Função ou cargo actual (fora da Escola)" col="col-md-5" ajuda="O colaborador (militar ou civil) dá aulas na Escola mas serve noutro lado: ex.: Chefe do Departamento de Ensino da Força Aérea.">{txt('funcaoActual')}</Campo>}
           </div>
         </Seccao>
       )}
@@ -252,6 +256,7 @@ export default function FormularioFicha() {
             <Campo rotulo="Estado civil" col="col-md-3"><Escolha valor={d.estadoCivil} aoMudar={set('estadoCivil')} opcoes={ref.estadosCivis} /></Campo>
             <Campo rotulo="Grupo sanguíneo" col="col-md-3"><Escolha valor={d.grupoSanguineo} aoMudar={set('grupoSanguineo')} opcoes={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} /></Campo>
             <Campo rotulo="Nacionalidade" col="col-md-3">{txt('nacionalidade')}</Campo>
+            <Campo rotulo="País de nascimento" col="col-md-3">{txt('paisNascimento')}</Campo>
             <Campo rotulo="Naturalidade (município)" col="col-md-3">{txt('naturalidade')}</Campo>
             <Campo rotulo="Província" col="col-md-3"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
             <Campo rotulo="Habilitações literárias" col="col-md-3"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
@@ -282,35 +287,13 @@ export default function FormularioFicha() {
       </>}
 
       {atual === 'familia' && <>
-        <Seccao titulo="Agregado familiar" icone="fa-users">
+        <Seccao titulo="Cônjuge" icone="fa-ring">
           <div className="row">
             <Campo rotulo="Nome do cônjuge" col="col-md-6">{txt('conjuge')}</Campo>
             <Campo rotulo="Local de serviço do cônjuge" col="col-md-6">{txt('conjugeLocalServico')}</Campo>
           </div>
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-2">
-              <thead><tr><th>Nome</th><th>Parentesco</th><th>Data de nascimento</th><th>Nacionalidade</th><th>Profissão</th><th /></tr></thead>
-              <tbody>
-                {(d.agregado ?? []).map((a, i) => {
-                  const mudarA = (k) => (e) => setD({ ...d, agregado: d.agregado.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)) })
-                  return (
-                    <tr key={i}>
-                      <td><input className="form-control form-control-sm" value={a.nome ?? ''} onChange={mudarA('nome')} aria-label="Nome" /></td>
-                      <td><input className="form-control form-control-sm" value={a.parentesco ?? ''} onChange={mudarA('parentesco')} list="parentescos" aria-label="Parentesco" /></td>
-                      <td><input type="date" className="form-control form-control-sm" value={a.dataNascimento ?? ''} onChange={mudarA('dataNascimento')} aria-label="Data de nascimento" /></td>
-                      <td><input className="form-control form-control-sm" value={a.nacionalidade ?? ''} onChange={mudarA('nacionalidade')} aria-label="Nacionalidade" /></td>
-                      <td><input className="form-control form-control-sm" value={a.profissao ?? ''} onChange={mudarA('profissao')} aria-label="Profissão" /></td>
-                      <td><button type="button" className="btn btn-xs btn-outline-danger" onClick={() => setD({ ...d, agregado: d.agregado.filter((_, j) => j !== i) })} aria-label="Retirar"><i className="fa fa-times" /></button></td>
-                    </tr>
-                  )
-                })}
-                {!(d.agregado ?? []).length && <tr><td colSpan={6} className="text-muted small text-center py-3">Sem filhos ou outros familiares. Use «Juntar familiar».</td></tr>}
-              </tbody>
-            </table>
-          </div>
-          <datalist id="parentescos">{['Filho', 'Filha', 'Pai', 'Mãe', 'Irmão', 'Irmã', 'Sobrinho(a)', 'Neto(a)', 'Outro'].map((x) => <option key={x} value={x} />)}</datalist>
-          <button type="button" className="pes-btn-juntar" onClick={() => setD({ ...d, agregado: [...(d.agregado ?? []), { nome: '', parentesco: 'Filho', dataNascimento: '', nacionalidade: 'Angolana', profissao: '' }] })}><i className="fa fa-plus me-1" />Juntar familiar</button>
         </Seccao>
+        <Familiares lista={d.agregado ?? []} aoMudar={(agregado) => setD({ ...d, agregado })} />
         <Seccao titulo="Dados bancários e vencimento" icone="fa-university">
           <div className="row">
             <Campo rotulo="Banco" col="col-md-3">{txt('banco')}</Campo>

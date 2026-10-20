@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { api, definirAoExpirar, marcarSessao, temSessao } from './api'
 import { ContextoSessao } from './sessao'
-import { Aviso, Carregando } from './componentes/Ui'
+import { Aviso, Carregando, NaoEncontrado } from './componentes/Ui'
 import Layout from './Layout'
 import Entrar from './paginas/Entrar'
 import DoisFatores from './componentes/DoisFatores'
@@ -38,6 +38,12 @@ import PedidosDados from './paginas/PedidosDados'
 import Utilizadores from './paginas/Utilizadores'
 import Auditoria from './paginas/Auditoria'
 import Portal from './paginas/Portal'
+
+// o formulário recomeça quando se muda de ficha (sem ficar com os dados da anterior)
+function FichaPorId() {
+  const { id } = useParams()
+  return <FormularioFicha key={id} />
+}
 
 export default function App() {
   const [utilizador, setUtilizador] = useState(null)
@@ -95,7 +101,7 @@ export default function App() {
           <Route path="/pessoas" element={<Pessoas />} />
           <Route path="/pessoas/nova" element={<FormularioFicha />} />
           <Route path="/pessoas/:id" element={<Perfil />} />
-          <Route path="/pessoas/:id/editar" element={<FormularioFicha />} />
+          <Route path="/pessoas/:id/editar" element={<FichaPorId />} />
           <Route path="/propostas" element={<Propostas />} />
           <Route path="/propostas/nova" element={<NovaProposta />} />
           <Route path="/propostas/:id" element={<Proposta />} />
@@ -129,7 +135,7 @@ export default function App() {
           <Route path="/senha" element={<MudarSenha />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/pedidos-dados" element={<PedidosDados />} />
-          <Route path="*" element={<div className="alert alert-warning">Página não encontrada.</div>} />
+          <Route path="*" element={<NaoEncontrado />} />
         </Routes>
       </Layout>
     )

@@ -40,10 +40,10 @@ export const pessoa = z.object({
   municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40),
   biEmitidoEm: dataOpc, biValidade: dataOpc, biLocalEmissao: opc(80), grupoSanguineo: z.union([z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']), z.literal('')]).optional(),
   conjuge: opc(150), conjugeLocalServico: opc(150),
-  agregado: z.array(z.object({ nome: txt(150, 1), parentesco: opc(40), dataNascimento: dataOpc, nacionalidade: opc(40), profissao: opc(80) }).strict()).max(30).optional(),
+  agregado: z.array(z.object({ nome: txt(150, 1), parentesco: opc(40), dataNascimento: dataOpc, nacionalidade: opc(40), profissao: opc(80), bi: opc(20), genero: z.union([z.enum(['M', 'F']), z.literal('')]).optional() }).strict()).max(30).optional(),
   vencimento: z.union([z.coerce.number().min(0).max(1e9), z.literal(''), z.null()]).optional(), inss: opc(30), banco: opc(80), iban: opc(40), numeroConta: opc(40),
   localIncorporacao: opc(120), voluntario: z.union([z.boolean(), z.null()]).optional(),
-  tipoDocente: z.union([z.enum(['efectivo', 'colaborador']), z.literal(''), z.null()]).optional(), categoriaDocente: opc(60),
+  tipoDocente: z.union([z.enum(['efectivo', 'colaborador']), z.literal(''), z.null()]).optional(), categoriaDocente: opc(60), funcaoActual: opc(200), paisNascimento: opc(60),
 }).strict()
 export const editarPessoa = pessoa.partial().strict()
 

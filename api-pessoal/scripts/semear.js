@@ -223,9 +223,15 @@ async function main() {
     await bd.pessoa.update({ where: { id: p.id }, data: { ativo: false, dataSaidaEscola: data(ano - entre(0, 3)), motivoSaida: motivos[i][0], destinoSaida: motivos[i][1] } })
     await bd.evento.create({ data: { pessoaId: p.id, tipo: 'saida', data: new Date(), descricao: [motivos[i][0], motivos[i][1] && `Destino: ${motivos[i][1]}`].filter(Boolean).join(' · '), criadoPor: 'semear' } })
   }
-  // alguns oficiais que também dão aulas na Escola
+  // docentes: efectivos (da Escola) e colaboradores (militares e civis de fora, com a função que têm lá)
+  for (const [i, p] of (await bd.pessoa.findMany({ where: { vinculo: 'docente' }, select: { id: true } })).entries()) {
+    await bd.pessoa.update({ where: { id: p.id }, data: { tipoDocente: i % 4 === 3 ? 'colaborador' : 'efectivo', categoriaDocente: um(['Assistente', 'Professor auxiliar', 'Professor associado']), ...(i % 4 === 3 ? { funcaoActual: 'Docente da Universidade Agostinho Neto' } : {}) } })
+  }
+  await bd.pessoa.create({ data: { tipo: 'militar', vinculo: 'docente', tipoDocente: 'colaborador', categoriaDocente: 'Professor auxiliar', funcaoActual: 'Chefe do Departamento de Ensino da Força Aérea Nacional', nome: 'Edmundo Kiala Sapalo', nip: '200901', genero: 'M', dataNascimento: data(1978), ramo: 'FAN', posto: 'coronel', fps: 'QP', dataIngresso: data(1999), habilitacao: 'mestrado', areaFormacao: 'Ciências Militares', provincia: 'Huíla', telefone: '+244 923 000 111', email: 'colaborador.fan@esgfaa.gov.ao', dataEntradaEscola: data(ano - 2) } })
+  await bd.pessoa.create({ data: { tipo: 'civil', vinculo: 'docente', tipoDocente: 'colaborador', categoriaDocente: 'Professor associado', funcaoActual: 'Investigador do Centro de Estudos Estratégicos de Angola', nome: 'Prof.ª Helena Cassoma Ndala', genero: 'F', dataNascimento: data(1975), carreiraCivil: 'docente', categoriaCivil: 'Professor Associado', vinculoCivil: 'contrato', habilitacao: 'doutoramento', areaFormacao: 'Relações Internacionais', provincia: 'Luanda', telefone: '+244 912 000 222', dataEntradaEscola: data(ano - 1) } })
+  // alguns oficiais que também dão aulas na Escola (docentes efectivos)
   for (const p of await bd.pessoa.findMany({ where: { tipo: 'militar', vinculo: 'funcionario', ativo: true, posto: { in: ['coronel', 'tenente_coronel'] } }, take: 4, select: { id: true } })) {
-    await bd.pessoa.update({ where: { id: p.id }, data: { outrosVinculos: ['docente'] } })
+    await bd.pessoa.update({ where: { id: p.id }, data: { outrosVinculos: ['docente'], tipoDocente: 'efectivo', categoriaDocente: 'Professor auxiliar' } })
   }
 
   // contas de demonstração (utente) para o expediente e as mensagens: palavra-passe Escola2026demo

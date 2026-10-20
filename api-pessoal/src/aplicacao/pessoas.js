@@ -148,7 +148,7 @@ export class ServicoPessoas {
       x.efectividade ??= 'comissao_normal'
     }
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
-    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente']) if (k in x) x[k] ??= ''
+    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente', 'funcaoActual', 'paisNascimento']) if (k in x) x[k] ??= ''
     if (x.tipoDocente === '') x.tipoDocente = null
     // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
     if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''

@@ -273,7 +273,13 @@ export const DOCUMENTOS = [
       { titulo: 'Admissão', valor: (p) => p.dataAdmissao, data: true }, { titulo: 'Habilitações literárias', valor: (p) => M(p.habilitacaoNome), largura: 32 },
     ], linhas: l }] }
   } },
-  { id: 'docentes', grupo: 'listas', titulo: 'Corpo docente', icone: 'fa-chalkboard-teacher', descricao: 'Docentes militares e civis, com habilitações.', fazer: simples('Corpo docente', (p) => p.docente ?? p.vinculo === 'docente', (C) => [C.n, C.posto, C.nome, C.id, C.habilitacao, C.unidade, C.telefone]) },
+  { id: 'docentes', grupo: 'listas', titulo: 'Corpo docente', icone: 'fa-chalkboard-teacher', descricao: 'Efectivos e colaboradores, militares e civis, com a categoria e as habilitações.', fazer: (ctx) => {
+    const doc = ctx.pessoas.filter((p) => p.docente ?? p.vinculo === 'docente').sort(porHierarquia)
+    const C = colunas(ctx)
+    const cols = [C.n, C.posto, C.nome, C.id, { titulo: 'Militar / civil', valor: (p) => (militar(p) ? `Militar (${p.ramo})` : 'Civil'), alinhar: 'center' }, { titulo: 'Categoria do docente', valor: (p) => p.categoriaDocente || '' }, C.habilitacao, { titulo: 'Função ou cargo', valor: (p) => p.funcaoActual || p.cargoNome || '' }, C.telefone]
+    const grupo = (t) => doc.filter((p) => (t ? p.tipoDocente === t : !p.tipoDocente))
+    return { titulo: 'Corpo docente da Escola Superior de Guerra', subtitulo: subtituloBase(ctx), orientacao: 'landscape', seccoes: [{ titulo: 'Docentes efectivos', colunas: cols, linhas: grupo('efectivo') }, { titulo: 'Docentes colaboradores', colunas: cols, linhas: grupo('colaborador') }, { titulo: 'Tipo de docente por indicar', colunas: cols, linhas: grupo(null) }] }
+  } },
   { id: 'estudantes', grupo: 'listas', titulo: 'Estudantes (cursantes)', icone: 'fa-user-graduate', descricao: 'Militares e civis a frequentar cursos da Escola.', fazer: simples('Estudantes', (p) => p.discente ?? p.vinculo === 'estudante', (C) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade]) },
   { id: 'habilitacao', grupo: 'listas', titulo: 'Por habilitações literárias', icone: 'fa-certificate', descricao: 'Do doutoramento ao ensino de base.', fazer: agrupada('Pessoal por habilitações literárias', (p) => p.habilitacao || 'nenhuma', (c) => [...Object.keys(c.ref.habilitacoes).reverse(), 'nenhuma'], (c, k) => c.ref.habilitacoes[k] ?? 'Por indicar', (C) => [C.n, C.posto, C.nome, C.id, { titulo: 'Área de formação', valor: (p) => p.areaFormacao }, C.unidade]) },
   { id: 'provincia', grupo: 'listas', titulo: 'Por província de naturalidade', icone: 'fa-map-marker-alt', descricao: 'Pessoal agrupado pela província onde nasceu.', fazer: agrupada('Pessoal por província de naturalidade', (p) => p.provincia || 'Por indicar', (c) => [...c.ref.provincias, 'Por indicar'], (c, k) => k, (C) => [C.n, C.posto, C.nome, C.id, C.naturalidade, C.unidade]) },

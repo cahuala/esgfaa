@@ -141,6 +141,9 @@ model Pessoa {
   // docentes (ficha de cadastramento dos docentes): efectivo ou colaborador e a categoria
   tipoDocente          String?   @map("tipo_docente")
   categoriaDocente     String    @default("") @map("categoria_docente")
+  // docente colaborador (militar ou civil de fora da Escola): a função ou o cargo que tem lá fora
+  funcaoActual         String    @default("") @map("funcao_actual")
+  paisNascimento       String    @default("Angola") @map("pais_nascimento")
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")

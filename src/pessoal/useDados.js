@@ -13,10 +13,10 @@ export function useDados(caminho, consulta) {
     if (!chave) return undefined
     let vivo = true
     const [c, q] = [chave.slice(0, chave.indexOf('?')), JSON.parse(chave.slice(chave.indexOf('?') + 1))]
-    api(c, { consulta: q }).then((dados) => vivo && setR({ chave, dados })).catch((e) => vivo && setR({ chave, erro: e.message }))
+    api(c, { consulta: q }).then((dados) => vivo && setR({ chave, dados })).catch((e) => vivo && setR({ chave, erro: e.message, estado: e.estado }))
     return () => { vivo = false }
   }, [chave, versao])
   const recarregar = useCallback(() => setVersao((v) => v + 1), [])
   const atual = r.chave === chave ? r : null
-  return { dados: atual?.dados ?? null, erro: atual?.erro ?? '', recarregar }
+  return { dados: atual?.dados ?? null, erro: atual?.erro ?? '', naoExiste: atual?.estado === 404, recarregar }
 }

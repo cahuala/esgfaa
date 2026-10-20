@@ -794,3 +794,43 @@ export function fichaRegistoBiografico(d, p) {
     ;[dd, mm, aa].forEach((v, k) => valor(doc, v, ...posR(i, 3 + k), { tam: 7, centrar: true }))
   })
 }
+
+// ---------- ficha para cadastramento dos docentes (efectivos e colaboradores, militares e civis) ----------
+export function fichaDocente(d, p) {
+  const { doc } = d
+  novaPagina(d)
+  const x = 35.5
+  const xf = 182
+  const o = { fonte: 'times', tam: 10.5, tamV: 10.5 }
+  T(doc, 11).text('FICHA PARA CADASTRAMENTO DOS DOCENTES.', 108, 41.5, { align: 'center' })
+  T(doc, 10.5).text('DADOS PESSOAIS', x, 50.6)
+  const mil = p.tipo === 'militar'
+  linha(doc, 'NOME COMPLETO', p.nome, x, 59.5, xf, o)
+  linha(doc, 'FILHO DE', p.pai, x, 67.6, xf, o)
+  linha(doc, 'E DE', p.mae, x, 76, xf, o)
+  linha(doc, 'BI Nº', p.bi, x, 84.5, xf, o)
+  linha(doc, 'DATA DE EMISSÃO', dataPt(p.biEmitidoEm), x, 93, xf, o)
+  linha(doc, 'DATA DE VALIDAÇÃO', dataPt(p.biValidade), x, 101.5, xf, o)
+  linha(doc, 'LOCAL DE EMISSÃO', p.biLocalEmissao, x, 110, xf, o)
+  linha(doc, 'PAÍS DE NASCIMENTO', p.paisNascimento || 'Angola', x, 118.4, xf, o)
+  linha(doc, 'PROVÍNCIA', p.provincia, x, 126.7, 104, o); linha(doc, 'MUNICÍPIO', p.naturalidade || p.municipio, 105, 126.7, xf, o)
+  linha(doc, 'RESIDÊNCIA', p.morada || p.municipio, x, 135.4, 100, o); linha(doc, 'DATA DE NASCIMENTO', dataPt(p.dataNascimento), 101, 135.4, xf, o)
+  linha(doc, 'ESTADO CIVIL', ec(p), x, 143.4, 104, o); linha(doc, 'SEXO', p.genero === 'F' ? 'Feminino' : p.genero === 'M' ? 'Masculino' : '', 105, 143.4, xf, o)
+  linha(doc, 'GRUPO SANGUÍNEO', p.grupoSanguineo, x, 152, 91, o); linha(doc, 'HABILITAÇÃO LITERÁRIA', HAB[p.habilitacao] ?? '', 92, 152, xf, o)
+  linha(doc, 'TEL PRINCIPAL', p.telefone, x, 160.4, 104, o); linha(doc, 'TEL ALTERNATIVO', p.telefoneAlternativo, 105, 160.4, xf, o)
+  T(doc, 10.5).text('E-MAIL', x, 169)
+  doc.setLineWidth(0.2).setDrawColor(60).line(x + doc.getTextWidth('E-MAIL') + 1, 169.8, xf, 169.8).setDrawColor(0)
+  // o e-mail vai em minúsculas
+  if (p.email) T(doc, 10.5, 'bold').text(p.email, x + doc.setFont('times', 'normal').getTextWidth('E-MAIL') + 2, 168.7)
+  const marca = (t, xx, y, sim) => { T(doc, 10.5).text(t, xx, y); const bx = xx + doc.getTextWidth(t) + 1.5; traco(doc, 0.25).rect(bx, y - 3.2, 3.6, 3.6); if (sim) T(doc, 10, 'bold').text('X', bx + 1.8, y - 0.2, { align: 'center' }) }
+  T(doc, 10.5).text('CONDIÇÃO:', x, 177.3)
+  marca('MILITAR', x + 21, 177.3, mil); marca('CIVIL', x + 47, 177.3, !mil)
+  linha(doc, 'NIP', mil ? p.nip : '', x, 185.8, 78, o); linha(doc, 'RAMO', mil ? p.ramoNome : '', 79, 185.8, 131, o); linha(doc, 'PATENTE', mil ? p.postoNome : '', 132, 185.8, xf, o)
+  linha(doc, 'DATA DE INCORPORAÇÃO', mil ? dataPt(p.dataIngresso) : '', x, 194.5, 136, o)
+  // colaborador: a função lá fora; efectivo: o cargo na Escola
+  linha(doc, 'FUNÇÃO OU CARGO ACTUAL', p.funcaoActual || p.cargoNome, x, 203, xf, o)
+  T(doc, 10.5).text('DADOS ACADEMICOS', x, 212)
+  T(doc, 10.5).text('TIPO DE DOCENTE:', x, 220.3)
+  marca('EFECTIVO', x + 34, 220.3, p.tipoDocente === 'efectivo'); marca('COLABORADOR', x + 72, 220.3, p.tipoDocente === 'colaborador')
+  linha(doc, 'CATEGORIA DO DOCENTE', p.categoriaDocente, x, 228.8, xf, o)
+}

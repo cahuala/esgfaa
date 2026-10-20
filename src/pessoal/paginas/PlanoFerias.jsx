@@ -104,39 +104,103 @@ export default function PlanoFerias() {
         </div>
       )}
       <p className="small text-muted mt-2">Férias: 30 dias por ano (Lei n.º 13/18, art. 32.º), mais 15 dias para os militares com mais de 20 anos de serviço. A guia de férias de cada um sai da ficha («Documentos»): o início é o dia 1 do mês planeado; fora do plano escreve-se o início e o fim conta-se sozinho.</p>
-      {carregar && <CarregarPlano ano={ano} aoFechar={() => setCarregar(false)} aoCarregar={(r) => { setCarregar(false); avisar(`${r.feitos} pessoa(s) actualizada(s) no plano de férias.${r.avisos.length ? ` Avisos: ${r.avisos.slice(0, 5).join(' | ')}` : ''}`, r.avisos.length ? 'erro' : undefined); recarregar() }} />}
+      {carregar && <CarregarPlano ano={ano} linhas={dados?.linhas ?? []} unidade={unidade} aoFechar={() => setCarregar(false)} aoCarregar={(r) => { setCarregar(false); avisar(`${r.feitos} pessoa(s) actualizada(s) no plano de férias.${r.avisos.length ? ` Avisos: ${r.avisos.slice(0, 5).join(' | ')}` : ''}`, r.avisos.length ? 'erro' : undefined); recarregar() }} />}
     </>
   )
 }
 
-function CarregarPlano({ ano, aoFechar, aoCarregar }) {
+const semAcento = (t) => String(t ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+// «Julho», «jul», «7» → 7
+function mesDe(t) {
+  const x = semAcento(t)
+  if (/^\d{1,2}$/.test(x)) return Number(x) >= 1 && Number(x) <= 12 ? Number(x) : null
+  const i = MESES_LONGOS.findIndex((m) => x.length >= 3 && semAcento(m).startsWith(x.slice(0, 3)))
+  return i >= 0 ? i + 1 : null
+}
+
+/*
+  Carregar o plano de um Excel: lê-se o ficheiro (NIP ou n.º de agente e o mês), mostra-se o que se
+  encontrou, já seleccionado (quem não está registado ou tem o mês errado fica de fora), e aplica-se.
+*/
+function CarregarPlano({ ano, linhas, unidade, aoFechar, aoCarregar }) {
   const [erro, setErro] = useState('')
+  const [lidas, setLidas] = useState(null)
+  const [sel, setSel] = useState(new Set())
   const [aTrabalhar, setATrabalhar] = useState(false)
+  const porIdent = new Map(linhas.flatMap((l) => [[String(l.nip ?? ''), l], [String(l.numeroAgente ?? ''), l]]).filter(([k]) => k))
+
   async function escolher(f) {
     setErro('')
-    setATrabalhar(true)
     try {
       const tabela = /\.xlsx$/i.test(f.name) ? await lerXlsx(await f.arrayBuffer()) : /\.(csv|txt)$/i.test(f.name) ? lerCsv(await f.text()) : null
       if (!tabela?.length) throw new Error('Use um Excel (.xlsx) ou CSV com as colunas «nip» (ou «agente») e «mes».')
       const [cab, ...corpo] = tabela
-      const col = (re) => cab.findIndex((c) => re.test(String(c).trim().toLowerCase()))
+      const col = (re) => cab.findIndex((c) => re.test(semAcento(c)))
       const ci = col(/^(nip|n\.?º? ?agente|agente|identifica)/)
-      const cm = col(/^m[eê]s/)
+      const cm = col(/^mes/)
       if (ci < 0 || cm < 0) throw new Error('Faltam as colunas «nip» (ou «agente») e «mes» na primeira linha.')
-      const linhas = corpo.filter((r) => r[ci]).map((r) => ({ identificador: String(r[ci]), mes: String(r[cm] ?? '') }))
-      aoCarregar(await api('/plano-ferias/importar', { metodo: 'POST', corpo: { ano, linhas } }))
+      const l = corpo.filter((r) => String(r[ci] ?? '').trim()).map((r, i) => {
+        const ident = String(r[ci]).trim()
+        const pessoa = porIdent.get(ident)
+        const mes = mesDe(r[cm])
+        return { n: i + 2, ident, mesTexto: String(r[cm] ?? ''), mes, pessoa, problema: !pessoa ? (unidade ? 'Não está nesta unidade (ou não está registado)' : 'Não está registado') : !mes ? 'Mês inválido' : '' }
+      })
+      setLidas(l)
+      setSel(new Set(l.filter((x) => !x.problema).map((x) => x.n)))
     } catch (e) {
       setErro(e.message)
-    } finally {
+    }
+  }
+  async function aplicar() {
+    setATrabalhar(true)
+    try {
+      const escolhidas = lidas.filter((x) => sel.has(x.n))
+      aoCarregar(await api('/plano-ferias/importar', { metodo: 'POST', corpo: { ano, linhas: escolhidas.map((x) => ({ identificador: x.ident, mes: String(x.mes) })) } }))
+    } catch (e) {
+      setErro(e.message)
       setATrabalhar(false)
     }
   }
+  async function modelo() {
+    const { default: writeXlsxFile } = await import('write-excel-file/browser')
+    const cab = ['nip', 'nome', 'mes'].map((t) => ({ value: t, fontWeight: 'bold' }))
+    const corpo = linhas.map((l) => [{ value: String((l.tipo === 'militar' ? l.nip : l.numeroAgente) ?? ''), type: String }, { value: l.nome, type: String }, l.mes ? { value: MESES_LONGOS[l.mes - 1], type: String } : null])
+    await writeXlsxFile([cab, ...corpo], { columns: [{ width: 14 }, { width: 40 }, { width: 14 }], sheet: `Plano ${ano}` }).toFile(`plano-ferias-${ano}${unidade ? `-${unidade.sigla || unidade.nome}` : ''}.xlsx`.replace(/\s+/g, '-'))
+  }
+  const validas = lidas?.filter((x) => !x.problema) ?? []
   return (
-    <Modal titulo={`Carregar o plano de férias — ${ano}`} aoFechar={aoFechar}>
+    <Modal titulo={`Carregar o plano de férias — ${ano}${unidade ? ` — ${unidade.nome}` : ''}`} aoFechar={aoFechar} largo
+      rodape={<>
+        <button type="button" className="btn btn-white me-auto" onClick={modelo}><i className="fa fa-file-download me-1" />Descarregar o modelo ({linhas.length} pessoas)</button>
+        <button type="button" className="btn btn-white" onClick={aoFechar}>Fechar</button>
+        {lidas && <button type="button" className="btn btn-theme" disabled={!sel.size || aTrabalhar} onClick={aplicar}><i className={`fa ${aTrabalhar ? 'fa-spinner fa-spin' : 'fa-check'} me-1`} />Marcar as férias de {sel.size} pessoa(s)</button>}
+      </>}>
       {erro && <div className="alert alert-danger py-2">{erro}</div>}
-      <p className="small text-muted">O ficheiro tem, na primeira linha, as colunas <b>nip</b> (ou <b>agente</b>, para os civis) e <b>mes</b> (o nome do mês ou o número de 1 a 12). Aplica-se ao ano <b>{ano}</b>.</p>
-      <table className="table table-sm table-bordered w-auto small"><thead><tr><th>nip</th><th>mes</th></tr></thead><tbody><tr><td>100253568</td><td>Julho</td></tr><tr><td>22589632</td><td>8</td></tr></tbody></table>
-      <Carregar aceitar=".xlsx,.csv,.txt" maxMb={10} compacto icone="fa-file-excel" titulo="Arraste o Excel para aqui" ajuda="Excel (.xlsx) ou CSV" aoEscolher={escolher} desativado={aTrabalhar} />
+      {!lidas ? <>
+        <p className="small text-muted">O ficheiro tem, na primeira linha, as colunas <b>nip</b> (ou <b>agente</b>, para os civis) e <b>mes</b> (o nome do mês ou o número de 1 a 12). Pode descarregar o modelo já com as pessoas{unidade ? ' desta unidade' : ''}, escrever o mês de cada uma e carregá-lo aqui.</p>
+        <table className="table table-sm table-bordered w-auto small"><thead><tr><th>nip</th><th>nome</th><th>mes</th></tr></thead><tbody><tr><td>100253568</td><td>(opcional)</td><td>Julho</td></tr><tr><td>22589632</td><td /><td>8</td></tr></tbody></table>
+        <Carregar aceitar=".xlsx,.csv,.txt" maxMb={10} compacto icone="fa-file-excel" titulo="Arraste o Excel para aqui" ajuda="Excel (.xlsx) ou CSV" aoEscolher={escolher} />
+      </> : <>
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <span className="small">{lidas.length} linha(s) lidas · <b className="text-success">{validas.length} encontradas</b>{lidas.length > validas.length && <> · <b className="text-danger">{lidas.length - validas.length} com problemas</b></>}</span>
+          <button type="button" className="btn btn-link btn-sm ms-auto p-0" onClick={() => setSel(sel.size === validas.length ? new Set() : new Set(validas.map((x) => x.n)))}>{sel.size === validas.length ? 'Nenhuma' : 'Todas'}</button>
+          <button type="button" className="btn btn-link btn-sm p-0" onClick={() => setLidas(null)}>Outro ficheiro</button>
+        </div>
+        <div className="table-responsive" style={{ maxHeight: 400 }}>
+          <table className="table table-sm align-middle mb-0">
+            <thead><tr><th /><th>Linha</th><th>NIP / agente</th><th>Nome</th><th>Mês</th><th>Agora</th></tr></thead>
+            <tbody>{lidas.map((x) => (
+              <tr key={x.n} className={x.problema ? 'table-danger' : ''}>
+                <td><input type="checkbox" className="form-check-input" disabled={Boolean(x.problema)} checked={sel.has(x.n)} onChange={() => setSel((s) => { const n = new Set(s); if (n.has(x.n)) n.delete(x.n); else n.add(x.n); return n })} aria-label={`Linha ${x.n}`} /></td>
+                <td className="small text-muted">{x.n}</td><td className="font-monospace small">{x.ident}</td>
+                <td>{x.pessoa ? x.pessoa.nome : <span className="small text-danger">{x.problema}</span>}</td>
+                <td>{x.mes ? <span className="pes-pf-on" style={{ width: 'auto', padding: '0 8px' }}>{MESES_LONGOS[x.mes - 1]}</span> : <span className="small text-danger">{x.mesTexto || '—'} (mês inválido)</span>}</td>
+                <td className="small text-muted">{x.pessoa?.mes ? MESES_LONGOS[x.pessoa.mes - 1] : '—'}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </>}
     </Modal>
   )
 }

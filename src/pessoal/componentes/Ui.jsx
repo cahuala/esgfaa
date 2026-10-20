@@ -58,6 +58,22 @@ export function Modal({ titulo, aoFechar, children, rodape, largo = false }) {
   )
 }
 
+// página ou ficha que não existe: mensagem clara, com o caminho de volta e o contacto do suporte técnico
+export function NaoEncontrado({ titulo = 'Página não encontrada', texto = 'O endereço que abriu não existe ou já não está disponível.' }) {
+  return (
+    <div className="pes-404">
+      <div className="pes-404-ic"><i className="fa fa-compass" /></div>
+      <h2>{titulo}</h2>
+      <p className="text-muted">{texto}</p>
+      <p className="small text-muted">Se chegou aqui por uma ligação do sistema ou o problema continuar, contacte o <b>suporte técnico</b> (Repartição de Pessoal e Quadros / Centro de Informática da ESG), indicando o endereço: <code>{window.location.hash.slice(1) || '/'}</code></p>
+      <div className="d-flex gap-2 justify-content-center mt-3">
+        <button type="button" className="btn btn-white" onClick={() => window.history.back()}><i className="fa fa-arrow-left me-1" />Voltar</button>
+        <Link to="/" className="btn btn-theme"><i className="fa fa-home me-1" />Ir para o painel</Link>
+      </div>
+    </div>
+  )
+}
+
 export const Carregando = () => <div className="text-center text-muted py-5"><i className="fa fa-spinner fa-spin fa-2x" /></div>
 
 export function Erro({ texto, aoRepetir }) {
