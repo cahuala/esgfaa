@@ -243,30 +243,8 @@
   color: var(--texto-suave);
   max-width: 75ch;
 }
-.organograma {
-  margin-top: 24px;
-}
-.topo {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 20px 24px;
-  background: var(--superficie);
-  border-radius: var(--raio);
-  box-shadow: var(--sombra);
-}
-.topoBrasao {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-}
-.topo h3 {
-  font-size: 17px;
-}
-.topo p {
-  margin-top: 2px;
-  font-size: 14px;
-  color: var(--texto-suave);
+.organogramaBloco {
+  margin-top: 36px;
 }
 .ramos {
   margin-top: 20px;

@@ -357,6 +357,15 @@ export const PAGINAS = {
       ] },
       { titulo: tx('III. Estrutura'), campos: [
         { nome: 'estrutura.introducao', rotulo: tx('Introdução'), tipo: 'textarea', linhas: 2 },
+        { nome: 'estrutura.orgaos', rotulo: tx('Organograma (órgãos e dependências)'), tipo: 'objetos', rotuloItem: tx('Órgão'), ajuda: tx('Sai na secção «Direção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.'), campos: [
+          { nome: 'nome', rotulo: tx('Órgão'), tipo: 'texto', largura: 'metade', obrigatorio: true },
+          { nome: 'sigla', rotulo: tx('Sigla'), tipo: 'texto', largura: 'terco' },
+          { nome: 'dependeDe', rotulo: tx('Depende de'), tipo: 'selecao', opcoes: 'irmaos', largura: 'metade', ajuda: tx('Vazio: fica no topo do organograma.') },
+          { nome: 'tipo', rotulo: tx('Tipo'), tipo: 'selecao', largura: 'terco', opcoes: [{ valor: 'linha', rotulo: tx('Linha (hierarquia)') }, { valor: 'apoio', rotulo: tx('Apoio (assessoria)') }] },
+          { nome: 'responsavel', rotulo: tx('Responsável'), tipo: 'selecao', opcoes: 'pessoas', largura: 'metade' },
+          { nome: 'ligacao', rotulo: tx('Ligação (opcional)'), tipo: 'texto', largura: 'metade', ajuda: tx('Página do site (ex.: /Cursos) ou endereço completo.') },
+          { nome: 'texto', rotulo: tx('Missão'), tipo: 'texto' },
+        ] },
         { nome: 'estrutura.ramos', rotulo: tx('Áreas e órgãos'), tipo: 'objetos', rotuloItem: tx('Área'), campos: [
           { nome: 'titulo', rotulo: tx('Área'), tipo: 'texto' },
           { nome: 'orgaos', rotulo: tx('Órgãos'), tipo: 'objetos', rotuloItem: tx('Órgão'), campos: [

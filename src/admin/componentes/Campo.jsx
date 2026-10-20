@@ -120,7 +120,10 @@ function Controlo({ id, campo, valor, onChange, contexto }) {
     case 'selecao': {
       const opcoes = campo.opcoes === 'pessoas'
         ? (contexto?.pessoas || []).map((p) => ({ valor: p.id, rotulo: `${p.nome}${p.cargo ? ` — ${p.cargo}` : ''}` }))
-        : campo.opcoes === 'posicoesBanner' ? POSICOES_BANNER : campo.opcoes
+        : campo.opcoes === 'posicoesBanner' ? POSICOES_BANNER
+          // os outros itens da mesma lista (o organograma: de que órgão depende este)
+          : campo.opcoes === 'irmaos' ? (contexto?.irmaos || []).map((n) => ({ valor: n, rotulo: n }))
+            : campo.opcoes
       return (
         <select id={id} className="form-select" value={valor ?? ''} onChange={(e) => onChange(e.target.value)} required={campo.obrigatorio}>
           <option value="">{tx('— escolher —')}</option>
@@ -276,6 +279,17 @@ function ListaTexto({ valor, onChange, multilinha }) {
   )
 }
 
+// muda um item; se lhe mudou o nome, os outros que apontavam para ele (opções «irmaos») passam a apontar para o nome novo
+function mudarItem(campo, valor, i, v) {
+  const antes = valor[i]?.nome
+  const refs = campo.campos.filter((c) => c.opcoes === 'irmaos').map((c) => c.nome)
+  return valor.map((x, j) => {
+    if (j === i) return v
+    if (!antes || antes === v.nome || !refs.length) return x
+    return refs.reduce((y, k) => (y[k] === antes ? { ...y, [k]: v.nome } : y), x)
+  })
+}
+
 function ListaObjetos({ campo, valor, onChange, contexto }) {
   const vazio = () => Object.fromEntries(campo.campos.map((c) => [c.nome, c.tipo === 'objetos' || c.tipo === 'listaTexto' ? [] : c.tipo === 'booleano' ? false : '']))
   return (
@@ -286,7 +300,7 @@ function ListaObjetos({ campo, valor, onChange, contexto }) {
             <span className="badge bg-gray-600">{campo.rotuloItem || tx('Item')} {i + 1}</span>
             <BotoesItem i={i} total={valor.length} onMover={(a, d) => onChange(mover(valor, a, d))} onRemover={(a) => onChange(valor.filter((_, j) => j !== a))} />
           </div>
-          <Formulario campos={campo.campos} valor={item} onChange={(v) => onChange(valor.map((x, j) => (j === i ? v : x)))} contexto={contexto} />
+          <Formulario campos={campo.campos} valor={item} onChange={(v) => onChange(mudarItem(campo, valor, i, v))} contexto={{ ...contexto, irmaos: valor.filter((x, j) => j !== i && x?.nome).map((x) => x.nome) }} />
         </div>
       ))}
       <button type="button" className="btn btn-sm btn-default" onClick={() => onChange([...valor, vazio()])}>

@@ -102,6 +102,18 @@ const institucional = {
   estrutura: {
     introducao: 'Sob a direção do Comando, a Escola organiza-se em três áreas — ensino, investigação e cooperação, e apoio — cada uma com órgãos de missão própria.',
     comando: 'Dirige a Escola e define as orientações estratégicas de ensino, investigação e cooperação.',
+    // o organograma: cada órgão diz de quem depende (vazio = topo) e se é de linha ou de apoio
+    orgaos: [
+      { nome: 'Comando da Escola', sigla: '', responsavel: 'carlos-vieira', dependeDe: '', tipo: 'linha', texto: 'Dirige a Escola e define as orientações estratégicas.', ligacao: '' },
+      { nome: 'Gabinete do Comandante', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'apoio', texto: 'Apoio directo ao Comando e expediente.', ligacao: '' },
+      { nome: 'Gabinete de Comunicação', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'apoio', texto: 'Imprensa, eventos, publicações e redes sociais.', ligacao: '/Noticias' },
+      { nome: 'Direção de Ensino', sigla: '', responsavel: 'ana-baptista', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Planeia os cursos, os planos curriculares e a avaliação.', ligacao: '/Cursos' },
+      { nome: 'Corpo Docente', sigla: '', responsavel: 'isabel-fortunato', dependeDe: 'Direção de Ensino', tipo: 'linha', texto: 'Docentes militares e civis.', ligacao: '' },
+      { nome: 'Secretaria Académica', sigla: '', responsavel: '', dependeDe: 'Direção de Ensino', tipo: 'linha', texto: 'Matrículas, certificados e calendário.', ligacao: '' },
+      { nome: 'Departamento de Investigação', sigla: '', responsavel: 'miguel-santos', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Estratégia, segurança e defesa.', ligacao: '/Artigos' },
+      { nome: 'Cooperação Internacional', sigla: '', responsavel: 'jose-manuel', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Protocolos e intercâmbio com instituições parceiras.', ligacao: '' },
+      { nome: 'Serviços de Apoio', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Logística, instalações e recursos administrativos.', ligacao: '' },
+    ],
     ramos: [
       { titulo: 'Ensino', orgaos: [
         { nome: 'Direção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },

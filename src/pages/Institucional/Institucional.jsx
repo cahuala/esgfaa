@@ -5,7 +5,8 @@ import CtaBanner from '../../components/CTABanner/CtaBanner'
 import { useConteudo } from '../../conteudo/contexto'
 import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import { iniciais } from '../../utils/texto'
-import Brasao from '../../assets/Logo.png'
+import Organograma from '../../components/Organograma/Organograma'
+import { orgaosDe } from '../../components/Organograma/orgaos'
 import styles from './Institucional.module.css'
 import { t } from '../../i18n/linguas'
 
@@ -27,7 +28,6 @@ function Institucional() {
   const { ramos } = pagina.estrutura
   const ativa = useSeccaoAtiva(idsSeccoes)
   const comandante = pessoas[0] || { nome: '', cargo: '' }
-  const subdiretora = pessoas.find((p) => p.cargo?.startsWith('Subdiretora'))
   const direcao = pessoas.slice(1)
 
   return (
@@ -146,34 +146,20 @@ function Institucional() {
             <TituloSeccao rotulo={t('Organização e Estrutura')}>{t('Como a Escola está organizada')}</TituloSeccao>
             <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
-            <div className={styles.organograma}>
-              <div className={styles.topo}>
-                <img src={Brasao} alt="" className={styles.topoBrasao} />
-                <div>
-                  <span className={styles.rotulo}>{t('Órgão de direção')}</span>
-                  <h3>{t('Comando da Escola')}</h3>
-                  <p>
-                    {comandante.nome} · {comandante.cargo}
-                    {subdiretora && <><br />{subdiretora.nome} · {subdiretora.cargo}</>}
-                  </p>
+            <div className={styles.ramos}>
+              {ramos.map((r) => (
+                <div key={r.titulo} className={styles.ramo}>
+                  <h4>{r.titulo}</h4>
+                  <ul>
+                    {r.orgaos.map((o) => (
+                      <li key={o.nome}>
+                        <strong>{o.nome}</strong>
+                        <span>{o.texto}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-
-              <div className={styles.ramos}>
-                {ramos.map((r) => (
-                  <div key={r.titulo} className={styles.ramo}>
-                    <h4>{r.titulo}</h4>
-                    <ul>
-                      {r.orgaos.map((o) => (
-                        <li key={o.nome}>
-                          <strong>{o.nome}</strong>
-                          <span>{o.texto}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </section>
 
@@ -193,6 +179,11 @@ function Institucional() {
                   <span>{comandante.cargo}</span>
                 </div>
               </div>
+            </div>
+
+            <div className={styles.organogramaBloco}>
+              <h3 className={styles.subtitulo}>{t('Organograma da Escola')}</h3>
+              <Organograma orgaos={orgaosDe(pagina.estrutura, t('Comando da Escola'))} pessoas={pessoas} />
             </div>
 
             <div className={styles.diretorio}>

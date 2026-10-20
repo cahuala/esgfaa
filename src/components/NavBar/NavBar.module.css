@@ -192,3 +192,23 @@
     display: none;
   }
 }
+/* telemóveis estreitos: o nome encolhe (passa a duas linhas) para os botões caberem sem a página fugir para o lado */
+@media (max-width: 440px) {
+  .nav {
+    gap: 10px;
+  }
+  .acoes {
+    gap: 6px;
+  }
+  .marca {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .logo {
+    width: 38px;
+    height: 38px;
+  }
+  .nome {
+    font-size: 13px;
+  }
+}

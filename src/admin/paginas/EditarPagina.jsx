@@ -4,6 +4,7 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { PAGINAS } from '../esquemas'
 import { Formulario } from '../componentes/Campo'
+import { orgaosDe } from '../../components/Organograma/orgaos'
 import { Aviso, CabecalhoPagina, Carregando, Erro } from '../componentes/Ui'
 import Traducoes from '../componentes/Traducoes'
 import { t as tx } from '../../i18n/linguas'
@@ -26,7 +27,11 @@ function EditarPagina() {
   const carregar = useCallback(() => {
     if (!def) return
     Promise.all([api(`/paginas/${chave}`), api('/colecoes/pessoas')])
-      .then(([p, lista]) => {
+      .then(([pg, lista]) => {
+        // página guardada antes do organograma: começa com o que o site já mostra (tirado das áreas)
+        const p = chave === 'institucional' && pg?.estrutura && !pg.estrutura.orgaos?.length
+          ? { ...pg, estrutura: { ...pg.estrutura, orgaos: orgaosDe(pg.estrutura).map((o) => ({ sigla: '', responsavel: '', dependeDe: '', tipo: 'linha', ligacao: '', texto: '', ...o })) } }
+          : pg
         setDados(p)
         setOriginal(JSON.stringify(p))
         setPessoas(lista)

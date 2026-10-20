@@ -1,0 +1,15 @@
+// [português, inglês, francês, espanhol] — organograma da Escola (site e painel)
+export default [
+  ["Organograma (órgãos e dependências)", "Organisation chart (bodies and reporting lines)", "Organigramme (organes et dépendances)", "Organigrama (órganos y dependencias)"],
+  ["Sai na secção «Direção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.", "Shown in the «Leadership / Command» section. A body with no «Reports to» goes at the top; support bodies sit beside the one they report to.", "Affiché dans la section «Direction / Commandement». L'organe sans «Dépend de» est en haut ; les organes d'appui sont à côté de celui dont ils dépendent.", "Aparece en la sección «Dirección / Mando». El órgano sin «Depende de» queda arriba; los de apoyo quedan al lado de aquel del que dependen."],
+  ["Depende de", "Reports to", "Dépend de", "Depende de"],
+  ["Vazio: fica no topo do organograma.", "Empty: goes at the top of the chart.", "Vide : en haut de l'organigramme.", "Vacío: queda arriba del organigrama."],
+  ["Linha (hierarquia)", "Line (hierarchy)", "Ligne (hiérarchie)", "Línea (jerarquía)"],
+  ["Apoio (assessoria)", "Support (advisory)", "Appui (conseil)", "Apoyo (asesoría)"],
+  ["Responsável", "Head", "Responsable", "Responsable"],
+  ["Ligação (opcional)", "Link (optional)", "Lien (facultatif)", "Enlace (opcional)"],
+  ["Página do site (ex.: /Cursos) ou endereço completo.", "Site page (e.g. /Cursos) or full address.", "Page du site (ex. : /Cursos) ou adresse complète.", "Página del sitio (ej.: /Cursos) o dirección completa."],
+  ["Órgãos de apoio", "Support bodies", "Organes d'appui", "Órganos de apoyo"],
+  ["Órgão de apoio (assessoria)", "Support body (advisory)", "Organe d'appui (conseil)", "Órgano de apoyo (asesoría)"],
+  ["Organograma da Escola", "School organisation chart", "Organigramme de l'École", "Organigrama de la Escuela"],
+]

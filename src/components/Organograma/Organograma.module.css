@@ -1,0 +1,199 @@
+/* organograma: o topo ao centro, as dependências directas numa fila ligada por traços, o resto em lista */
+.organograma {
+  margin-top: 24px;
+}
+.organograma ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.topo {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.raiz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--superficie);
+  border: 1px solid var(--linha-forte);
+  border-top: 3px solid var(--marca);
+  border-radius: var(--raio);
+  color: var(--texto);
+  text-decoration: none;
+  text-align: left;
+  width: 100%;
+}
+.caixaTopo {
+  align-items: center;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: var(--sombra);
+  padding: 16px 20px;
+}
+.caixaApoio {
+  border-style: dashed;
+  border-top: 3px dashed var(--dourado);
+  background: var(--fundo-suave);
+}
+.comLigacao:hover,
+.comLigacao:focus-visible {
+  border-color: var(--marca);
+  box-shadow: var(--sombra);
+}
+.foto {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--fundo-cinza);
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin-bottom: 6px;
+}
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nome {
+  font-size: 14px;
+  font-weight: 600;
+}
+.caixaTopo .nome {
+  font-size: 16px;
+}
+.nome abbr {
+  text-decoration: none;
+  color: var(--marca);
+}
+.responsavel {
+  font-size: 12.5px;
+  color: var(--texto);
+}
+.texto {
+  font-size: 12.5px;
+  color: var(--texto-suave);
+}
+
+/* apoio: ao lado do órgão de que depende, com traço interrompido */
+.apoio {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px dashed var(--linha-forte);
+  width: 100%;
+  max-width: 640px;
+}
+.apoio > li {
+  flex: 1 1 180px;
+  max-width: 260px;
+}
+
+/* linha: as dependências directas do topo, em fila, com o traço que as liga */
+.linha {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 22px !important;
+  padding-top: 22px !important;
+}
+.linha::before {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  height: 22px;
+  border-left: 2px solid var(--linha-forte);
+}
+.linha > .n1 {
+  position: relative;
+}
+.linha > .n1::before {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  height: 22px;
+  border-left: 2px solid var(--linha-forte);
+}
+.linha > .n1::after {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: -7px;
+  right: -7px;
+  border-top: 2px solid var(--linha-forte);
+}
+.linha > .n1:first-child::after {
+  left: 50%;
+}
+.linha > .n1:last-child::after {
+  right: 50%;
+}
+.linha > .n1:only-child::after {
+  display: none;
+}
+.n1 > .apoio {
+  max-width: none;
+}
+
+/* os níveis abaixo: lista com um traço à esquerda */
+.lista {
+  margin: 8px 0 0 12px !important;
+  padding-left: 12px !important;
+  border-left: 2px solid var(--linha-forte);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.n2 .caixa {
+  border-top-width: 1px;
+  padding: 8px 10px;
+}
+.n2 .nome {
+  font-size: 13px;
+}
+
+.legenda {
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--texto-suave);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tracejado {
+  width: 28px;
+  border-top: 2px dashed var(--dourado);
+}
+
+/* no telemóvel a fila passa a coluna, ligada por um traço à esquerda */
+@media (max-width: 680px) {
+  .linha {
+    grid-template-columns: 1fr;
+    padding-left: 14px !important;
+    border-left: 2px solid var(--linha-forte);
+    padding-top: 0 !important;
+    margin-top: 14px !important;
+  }
+  .linha::before,
+  .linha > .n1::before,
+  .linha > .n1::after {
+    display: none;
+  }
+}
