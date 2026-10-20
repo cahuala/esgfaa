@@ -13,6 +13,7 @@ import { formatarDataLonga } from '../../utils/datas'
 import { ancora, subtitulosDe, tempoLeitura } from '../../utils/texto'
 import styles from './NoticiaDetalhe.module.css'
 import { t } from '../../i18n/linguas'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 
 // Notícia completa, como o "news detail" do modelo Corporate
 function NoticiaDetalhe() {
@@ -36,6 +37,7 @@ function NoticiaDetalhe() {
   return (
     <main>
       <BarraLeitura />
+      <CabecalhoEditorial faixa migalhas={[{ label: t('Notícias'), to: '/Noticias' }, { label: noticia.categoria || t('Notícia') }]} titulo={t('Notícias')} />
 
       <div className={`contentor ${styles.grelha}`}>
         <article className={styles.principal}>

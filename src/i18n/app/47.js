@@ -1,4 +1,4 @@
-// [português, inglês, francês, espanhol] — organograma da Escola (site e painel)
+// [português, inglês, francês, espanhol] — organograma da Escola e imagens do topo (site e painel)
 export default [
   ["Organograma (órgãos e dependências)", "Organisation chart (bodies and reporting lines)", "Organigramme (organes et dépendances)", "Organigrama (órganos y dependencias)"],
   ["Sai na secção «Direção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.", "Shown in the «Leadership / Command» section. A body with no «Reports to» goes at the top; support bodies sit beside the one they report to.", "Affiché dans la section «Direction / Commandement». L'organe sans «Dépend de» est en haut ; les organes d'appui sont à côté de celui dont ils dépendent.", "Aparece en la sección «Dirección / Mando». El órgano sin «Depende de» queda arriba; los de apoyo quedan al lado de aquel del que dependen."],
@@ -12,4 +12,9 @@ export default [
   ["Órgãos de apoio", "Support bodies", "Organes d'appui", "Órganos de apoyo"],
   ["Órgão de apoio (assessoria)", "Support body (advisory)", "Organe d'appui (conseil)", "Órgano de apoyo (asesoría)"],
   ["Organograma da Escola", "School organisation chart", "Organigramme de l'École", "Organigrama de la Escuela"],
+  ["Imagens do topo", "Header images", "Images d'en-tête", "Imágenes de cabecera"],
+  ["Fotografia do topo de cada secção", "Header photo of each section", "Photo d'en-tête de chaque section", "Fotografía de cabecera de cada sección"],
+  ["A Escola (Institucional)", "The School (About)", "L'École (Institutionnel)", "La Escuela (Institucional)"],
+  ["Outras páginas", "Other pages", "Autres pages", "Otras páginas"],
+  ["Vazio: fica a fotografia que vem com o site.", "Empty: the photo that comes with the site is used.", "Vide : la photo fournie avec le site est utilisée.", "Vacío: se usa la fotografía que viene con el sitio."],
 ]

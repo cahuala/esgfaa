@@ -14,6 +14,7 @@ import { descarregarCalendario } from '../../utils/calendario'
 import ed from '../../styles/editorial.module.css'
 import styles from './Eventos.module.css'
 import { t } from '../../i18n/linguas'
+import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 
 function EventoDetalhe() {
   const { id } = useParams()
@@ -30,6 +31,7 @@ function EventoDetalhe() {
 
   return (
     <main className={ed.pagina}>
+      <CabecalhoEditorial faixa migalhas={[{ label: t('Agenda'), to: '/Eventos' }, { label: evento.categoria || t('Evento') }]} titulo={t('Agenda')} />
       <div className={`contentor ${styles.evento}`}>
         <article>
           <Link to="/Eventos" className={styles.voltar}>

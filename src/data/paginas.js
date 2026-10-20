@@ -143,6 +143,9 @@ const cursos = {
   calendario: calendarioAdmissao,
 }
 
-const paginas = { home, institucional, contactos, cursos, privacidade }
+// fotografias do topo das secções: vazio = as que vêm com o site (components/CabecalhoEditorial/imagensTopo.js)
+const cabecalhos = {}
+
+const paginas = { home, institucional, contactos, cursos, privacidade, cabecalhos }
 
 export default paginas

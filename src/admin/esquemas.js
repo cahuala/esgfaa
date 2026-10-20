@@ -444,6 +444,16 @@ export const PAGINAS = {
       ] },
     ],
   },
+  // fotografia do topo de cada secção do site (vazio = a fotografia que vem com o site)
+  cabecalhos: {
+    titulo: tx('Imagens do topo'), icone: 'fa-image', rota: '/Institucional',
+    grupos: [
+      { titulo: tx('Fotografia do topo de cada secção'), campos: [
+        ...[['institucional', tx('A Escola (Institucional)')], ['cursos', tx('Cursos')], ['noticias', tx('Notícias')], ['artigos', tx('Artigos')], ['eventos', tx('Eventos')], ['revista', tx('Revista')], ['contactos', tx('Contactos')], ['privacidade', tx('Política de privacidade')], ['geral', tx('Outras páginas')]]
+          .map(([k, r]) => ({ nome: k, rotulo: r, tipo: 'imagem', largura: 'metade', recomendado: TAMANHOS.sede, ajuda: tx('Vazio: fica a fotografia que vem com o site.') })),
+      ] },
+    ],
+  },
 }
 
 export const POSICOES_BANNER = [

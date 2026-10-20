@@ -2,7 +2,7 @@ import { ErroValidacao } from '../comum/erros.js'
 import { validarUrls } from '../comum/urls.js'
 import { verificarEstrutura } from '../comum/estrutura.js'
 
-export const PAGINAS = ['home', 'institucional', 'contactos', 'cursos', 'privacidade']
+export const PAGINAS = ['home', 'institucional', 'contactos', 'cursos', 'privacidade', 'cabecalhos']
 
 export function validarPagina(chave, dados) {
   if (!PAGINAS.includes(chave)) throw new ErroValidacao('Página desconhecida.')
