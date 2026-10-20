@@ -1,0 +1,48 @@
+/* aviso flutuante (canto inferior esquerdo; o direito é do botão de voltar ao topo) */
+.aviso {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 900;
+  width: min(380px, calc(100vw - 32px));
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--linha);
+  border-top: 4px solid var(--marca);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-forte);
+  padding: 14px 16px;
+  font-size: 14px;
+}
+.topo { display: flex; gap: 12px; align-items: flex-start; }
+.icone { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--tinte-marca); color: var(--marca); font-weight: 700; font-size: 18px; }
+.texto { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.texto span { font-size: 12.5px; color: var(--texto-suave); }
+.fechar, .fecharJanela { border: 0; background: none; color: var(--texto-suave); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.fechar:hover, .fecharJanela:hover { color: var(--texto); }
+.lista { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lista li { border-top: 1px solid var(--linha); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.item { display: flex; flex-direction: column; gap: 2px; }
+.item span { font-size: 12.5px; color: var(--texto-suave); }
+.acoes { display: flex; align-items: center; gap: 14px; }
+.responder { border: 0; border-radius: var(--raio); background: var(--marca); color: #fff; padding: 7px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.responder:hover { background: var(--marca-escura); }
+.noPortal { color: var(--marca); font-weight: 600; text-decoration: none; font-size: 13px; }
+.noPortal:hover { text-decoration: underline; }
+.mais { margin-top: 10px; border: 0; background: none; color: var(--marca); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; }
+
+/* janela com o formulário */
+.fundo { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, 0.55); overflow-y: auto; padding: 24px 16px; }
+.janela { position: relative; max-width: 800px; margin: 0 auto; background: var(--fundo-cinza); border-radius: var(--raio); padding: 40px 14px 14px; }
+.fecharJanela { position: absolute; top: 8px; right: 12px; font-size: 28px; }
+.erro { margin: 0 auto 12px; max-width: 770px; padding: 10px 14px; border-radius: var(--raio); background: var(--tinte-marca); color: var(--marca-escura); }
+.espera { text-align: center; color: var(--texto-suave); padding: 40px 0; }
+
+/* o formulário vem do portal (Bootstrap): aqui os botões e a lista com o estilo do site */
+.janela :global(.btn) { border: 1px solid var(--linha-forte); border-radius: var(--raio); background: var(--superficie); color: var(--texto); font: inherit; font-weight: 600; cursor: pointer; }
+.janela :global(.btn-theme) { background: var(--marca); border-color: var(--marca); color: #fff; }
+.janela :global(.btn:disabled) { opacity: 0.6; }
+.janela :global(.form-select) { padding: 8px 10px; border: 1px solid var(--linha-forte); border-radius: var(--raio); background: var(--superficie); color: var(--texto); font: inherit; }
+.janela :global(.d-flex) { display: flex; }
+.janela :global(.gap-2) { gap: 8px; }
+.janela :global(.fa) { display: none; }

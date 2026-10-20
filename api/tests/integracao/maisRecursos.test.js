@@ -142,12 +142,19 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     assert.equal((await portal('prof').put('/api/portal/atividades/capitulo').send({ tipo: 'inquerito', id: daProf.id, secaoId: null })).status, 403)
     assert.equal((await portal('prof').delete(`/api/portal/inqueritos/${daProf.id}`)).status, 403)
 
+    // o aviso do site: as duas avaliações por responder (com a cadeira e o docente)
+    const pend = (await portal('ana').get('/api/portal/inqueritos-pendentes')).body.avaliacoes
+    assert.equal(pend.length, 2)
+    assert.ok(pend.every((x) => x.cadeira.id && x.tipo === 'avaliacao'))
+    assert.deepEqual((await portal('prof').get('/api/portal/inqueritos-pendentes')).body.avaliacoes, [])
+
     const v = (await portal('ana').get(`/api/portal/inqueritos/${daProf.id}`)).body
     assert.equal(v.perguntas.length, 10)
     const completas = { 0: 5, 1: 4, 2: 5, 3: 4, 4: 5, 5: 3, 6: 4, 7: 5, 8: 'Aulas muito práticas.', 9: '' }
     assert.equal((await portal('ana').post(`/api/portal/inqueritos/${daProf.id}/respostas`).send({ respostas: { 0: 5 } })).status, 400) // faltam afirmações
     assert.equal((await portal('ana').post(`/api/portal/inqueritos/${daProf.id}/respostas`).send({ respostas: completas })).status, 200)
     assert.equal((await portal('ana').post(`/api/portal/inqueritos/${daProf.id}/respostas`).send({ respostas: completas })).status, 409)
+    assert.deepEqual((await portal('ana').get('/api/portal/inqueritos-pendentes')).body.avaliacoes.map((x) => x.id), pend.filter((x) => x.id !== daProf.id).map((x) => x.id))
     await portal('bruno').post(`/api/portal/inqueritos/${daProf.id}/respostas`).send({ respostas: { ...completas, 0: 3, 8: 'Bom docente.' } })
 
     // antes do fecho, o docente não vê nada; o colega nunca vê

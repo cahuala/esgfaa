@@ -201,6 +201,15 @@ export function rotasPortal({ servicos, config, privados }) {
   r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.ver(ctx(req), req.dados.params.id)))
   r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))
+  // tudo o que a pessoa tem por responder (inquéritos da Escola e avaliação dos docentes): aviso no site e no portal
+  r.get('/inqueritos-pendentes', async (req, res) => {
+    const c = ctx(req)
+    const [escola, cadeiras] = await Promise.all([iq.doPortal(c), e.painel.cadeiras(c)])
+    res.json({
+      escola: escola.filter((i) => !i.respondido).map((i) => ({ id: i.id, tipo: 'escola', titulo: i.titulo, descricao: i.descricao, fecha: i.fecha, perguntas: i.perguntas })),
+      avaliacoes: await q.pendentes(c, cadeiras),
+    })
+  })
   r.put('/atividades/restricoes', validar({ body: E.restricoes }), async (req, res) => res.json(await e.organizacao.restricoes(ctx(req), req.dados.body)))
   r.put('/atividades/capitulo', validar({ body: E.moverAtividade }), async (req, res) => { await e.organizacao.moverAtividade(ctx(req), req.dados.body); res.status(204).end() })
   // ferramentas externas (LTI 1.3): as que o docente pode usar, e o início do lançamento

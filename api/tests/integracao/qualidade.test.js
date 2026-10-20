@@ -51,11 +51,18 @@ describe('inquéritos institucionais de satisfação', () => {
     const n = (await portal('ana').get('/api/portal/notificacoes')).body
     assert.ok((n.lista || n).some((x) => x.tipo === 'inquerito'))
 
+    // o aviso do site («tem inquéritos por responder»): a Ana tem este; a Carla nada
+    const pend = (await portal('ana').get('/api/portal/inqueritos-pendentes')).body
+    assert.deepEqual([pend.escola.map((x) => x.id), pend.avaliacoes], [[i.id], []])
+    assert.deepEqual((await portal('carla').get('/api/portal/inqueritos-pendentes')).body, { escola: [], avaliacoes: [] })
+
     const respostas = (escalas, escolha, texto) => ({ 0: escalas[0], 1: escalas[1], 2: escalas[2], 3: escalas[3], 4: escalas[4], 5: [escolha], 6: texto })
     assert.equal((await portal('ana').post(`/api/portal/inqueritos-escola/${i.id}/respostas`).send({ respostas: { 0: 5 } })).status, 400)
     const v = (await portal('ana').post(`/api/portal/inqueritos-escola/${i.id}/respostas`).send({ respostas: respostas([5, 4, 3, 5, 4], 1, 'Mais livros') })).body
     assert.deepEqual([v.respondido, v.podeResponder], [true, false])
     assert.equal((await portal('ana').post(`/api/portal/inqueritos-escola/${i.id}/respostas`).send({ respostas: respostas([1, 1, 1, 1, 1], 0, '') })).status, 409)
+    // depois de responder, o aviso desaparece
+    assert.deepEqual((await portal('ana').get('/api/portal/inqueritos-pendentes')).body.escola, [])
     await portal('bruno').post(`/api/portal/inqueritos-escola/${i.id}/respostas`).send({ respostas: respostas([3, 2, 3, 3, 4], 1, '') })
 
     const r = (await escola.get(`/api/admin/academico/satisfacao/${i.id}/resultados`)).body

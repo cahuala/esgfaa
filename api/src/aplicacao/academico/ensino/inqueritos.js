@@ -141,6 +141,23 @@ export class ServicoInqueritos {
     return this.ver(ctx, i.id)
   }
 
+  // avaliações dos docentes por responder (estudante), nas cadeiras dadas: para o aviso no site e no portal
+  async pendentes(ctx, cadeiras) {
+    if (ctx.conta.tipo !== 'estudante') return []
+    const r = []
+    for (const c of cadeiras) {
+      const abertos = (await this.inqueritos.inqueritos(c.id)).filter((i) => i.tipo === 'avaliacao' && !this.#fechado(i))
+      if (!abertos.length) continue
+      const feitos = await this.inqueritos.respondidos(ctx.conta.id, abertos.map((i) => i.id))
+      for (const i of abertos.filter((x) => !feitos.has(x.id))) {
+        // só o que o estudante pode abrir (visível e sem restrições por cumprir)
+        const pode = await this.disponibilidade.exigir(c.id, ctx.conta.id, 'inquerito', i.id).then(() => true, () => false)
+        if (pode) r.push({ id: i.id, tipo: 'avaliacao', titulo: i.titulo, fecha: i.fecha, docente: i.docente ?? '', cadeira: { id: c.id, nome: c.nome, codigo: c.codigo } })
+      }
+    }
+    return r
+  }
+
   // ---------- Administração Escolar: avaliação dos docentes ----------
 
   /*

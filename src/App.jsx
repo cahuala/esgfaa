@@ -5,6 +5,7 @@ import GestorScroll from './components/GestorScroll/GestorScroll'
 import Carregamento from './components/Carregamento/Carregamento'
 import Rastreio from './components/Rastreio/Rastreio'
 import Publicidade from './components/Publicidade/Publicidade'
+import InqueritoPendente from './components/InqueritoPendente/InqueritoPendente'
 import Home from './pages/Home/Home'
 import Institucional from './pages/Institucional/Institucional'
 import Noticias from './pages/Noticias/Noticias'
@@ -50,6 +51,7 @@ function App() {
         <Route path="*" element={<NaoEncontrado />} />
       </Routes>
       <Publicidade posicao="rodape" />
+      <InqueritoPendente />
        <Footer/>
     </div>
   )
