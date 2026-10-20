@@ -205,66 +205,54 @@ function diplomaAtesta(d, c, o) {
   codigo(doc, c, W, H - 15)
 }
 
-// ---------- diploma «A ESG outorga o presente diploma…» (cursos dos oficiais generais), decorado ----------
-function fita(doc, x, y, w, h, vertical) {
-  const tons = [[120, 85, 30], [176, 141, 52], [222, 190, 110], [245, 222, 150], [222, 190, 110], [176, 141, 52], [120, 85, 30]]
-  tons.forEach((t, i) => {
-    doc.setFillColor(...t)
-    if (vertical) doc.rect(x + (i * w) / tons.length, y, w / tons.length + 0.2, h, 'F')
-    else doc.rect(x, y + (i * h) / tons.length, w, h / tons.length + 0.2, 'F')
-  })
+// ---------- diploma «A ESG outorga o presente diploma…» (cursos dos oficiais generais) ----------
+/*
+  O fundo é o próprio diploma da Escola digitalizado (fitas, selo, arabescos, emblema, «DIPLOMA» e os textos
+  fixos), sem o que muda de pessoa para pessoa; por cima escreve-se o nome (em letra manuscrita, como no
+  original), o curso, a classificação, as datas e o rótulo do Director. As posições são as do original.
+*/
+async function base64(url) {
+  const r = await fetch(url)
+  const bytes = new Uint8Array(await r.arrayBuffer())
+  let bin = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(bin)
 }
-// arabesco simétrico com as linhas finas para os lados, como no modelo
-function floreado(doc, cx, y, larg) {
-  doc.setDrawColor(130, 100, 40).setLineWidth(0.35)
-  for (const s of [-1, 1]) {
-    doc.lines([[s * 8, -5, s * 18, 5, s * 26, 0], [s * 6, -4, s * 12, 3, s * 18, -1]], cx, y, [1, 1], 'S')
-    doc.lines([[s * 6, 4, s * 14, -4, s * 22, 1]], cx, y + 2, [1, 1], 'S')
-    doc.circle(cx + s * 26, y, 1.2, 'S')
-    doc.line(cx + s * 30, y - 1.5, cx + s * larg, y - 1.5)
-  }
-  doc.circle(cx, y, 1.6, 'S').setDrawColor(0)
+async function prepararGenerais(d) {
+  if (d.fundoGenerais) return
+  const [{ default: fundo }, { default: letra }] = await Promise.all([import('../../../../assets/diploma-generais.jpg'), import('../../../../assets/fontes/GreatVibes-Regular.ttf?url')])
+  const [f, l] = await Promise.all([base64(fundo), base64(letra)])
+  d.fundoGenerais = `data:image/jpeg;base64,${f}`
+  d.doc.addFileToVFS('GreatVibes-Regular.ttf', l)
+  d.doc.addFont('GreatVibes-Regular.ttf', 'GreatVibes', 'normal')
 }
 function diplomaOutorga(d, c, o) {
   const { doc } = d
-  const { W, H } = folha(d, 'portrait')
-  doc.setFillColor(248, 236, 190).rect(0, 0, W, H, 'F')
-  doc.setFillColor(243, 226, 170).rect(6, 6, W - 12, H - 12, 'F')
-  fita(doc, 26, 0, 16, H, true)
-  fita(doc, 0, 236, W, 15, false)
-  fita(doc, 26, 236, 16, 15, true)
-  // o selo de lacre no cruzamento das fitas
-  doc.setFillColor(150, 20, 25).circle(34, 243.5, 13, 'F')
-  doc.setFillColor(185, 35, 40).circle(34, 243.5, 10, 'F')
-  doc.setFillColor(140, 15, 20).circle(34, 243.5, 7, 'F')
-  doc.setDrawColor(215, 80, 80).setLineWidth(0.4).circle(34, 243.5, 8.5, 'S').setDrawColor(0)
-  const cx = 122
-  img(doc, d.logo, cx, 22, 28)
-  doc.setFont('helvetica', 'bold').setFontSize(7.5)
-  ;['FORÇAS ARMADAS ANGOLANAS', 'ESTADO-MAIOR GENERAL', 'ESCOLA SUPERIOR DE GUERRA'].forEach((l, i) => doc.text(l, cx, 54 + i * 3.4, { align: 'center' }))
-  floreado(doc, cx, 66, 78)
-  doc.setFont('times', 'normal').setFontSize(46).setTextColor(40, 30, 20).text('DIPLOMA', cx, 89, { align: 'center' }).setTextColor(0)
-  floreado(doc, cx, 100, 78)
-  doc.setFont('times', 'normal').setFontSize(11.5).text(['A ESCOLA SUPERIOR DE GUERRA OUTORGA O PRESENTE', 'DIPLOMA AO;'], cx, 118, { align: 'center', lineHeightFactor: 1.45 })
-  doc.setDrawColor(90).setLineWidth(0.25).line(cx - 34, 126, cx + 34, 126).setDrawColor(0)
-  // o posto e o nome (no modelo, em letra manuscrita)
+  folha(d, 'portrait')
+  doc.addImage(d.fundoGenerais, 'JPEG', 0, 0, 210, 297)
+  const cx = 123.2
+  const tinta = [35, 30, 28]
+  doc.setTextColor(...tinta)
+  // o posto e o nome, em letra manuscrita
   const nome = [c.estudante.dados?.posto, nomeLimpo(c.estudante)].filter(Boolean).join(' ')
-  let t = 22
-  doc.setFont('times', 'bolditalic')
-  while (t > 13 && doc.setFontSize(t).getTextWidth(nome) > 150) t -= 0.5
-  doc.text(nome, cx, 150, { align: 'center' })
-  doc.setFont('times', 'normal').setFontSize(11.5).text('PELA CONCLUSÃO DO', cx, 170, { align: 'center' })
-  doc.setFontSize(13.5).text(doc.splitTextToSize(M(curso(c, o)), 160), cx, 178, { align: 'center' })
+  let t = 40
+  doc.setFont('GreatVibes', 'normal')
+  while (t > 22 && doc.setFontSize(t).getTextWidth(nome) > 140) t -= 1
+  doc.text(nome, cx, 154, { align: 'center' })
+  doc.setFont('times', 'normal').setFontSize(13.3).text('PELA CONCLUSÃO DO', cx, 168.9, { align: 'center' })
+  const curs = M(curso(c, o)).replace(/(\d+)\.?º/, '$1º')
+  let tc = 17.5
+  while (tc > 11 && doc.setFontSize(tc).getTextWidth(curs) > 150) tc -= 0.5
+  doc.text(curs, cx, 178.9, { align: 'center' })
   const classif = M(c.percurso?.conclusao?.classificacaoFinal || '')
-  doc.setFontSize(11).text(doc.splitTextToSize(`COM A CLASSIFICAÇÃO DE ${classif}, QUE DECORREU DE ${M(dataLonga(o.inicio))} À ${M(dataLonga(o.fim))}.`, 150), cx, 186, { align: 'center', lineHeightFactor: 1.4 })
-  doc.text(`LUANDA, ${M(dataLonga(o.fim))}`, cx, 202, { align: 'center' })
-  doc.setFontSize(9.5).text('O DIRECTOR DOS A. ACADÉMICOS', 92, 216, { align: 'center' }).text('O COMANDANTE DA ESG', 170, 216, { align: 'center' })
-  doc.setDrawColor(80).setLineWidth(0.25).line(64, 228, 120, 228).line(142, 228, 198, 228).setDrawColor(0)
-  doc.setFontSize(8.5)
-  if (o.directorEnsino?.nome) doc.text(M(o.directorEnsino.nome), 92, 232, { align: 'center' })
-  if (o.comandante?.nome) doc.text(M(o.comandante.nome), 170, 232, { align: 'center' })
-  floreado(doc, cx, 272, 60)
-  doc.setFont('helvetica', 'normal').setFontSize(6.5).setTextColor(110).text(`Código de verificação: ${c.codigo}`, cx, 287, { align: 'center' }).setTextColor(0)
+  // como no original: a classificação numa linha e as datas na seguinte
+  doc.setFontSize(12.5).text(`COM A CLASSIFICAÇÃO DE ${classif}, QUE DECORREU DE`, cx, 186.1, { align: 'center' }).text(`${M(dataLonga(o.inicio))} À ${M(dataLonga(o.fim))}.`, cx, 191.8, { align: 'center' })
+  doc.setFontSize(13).text(`LUANDA, ${M(dataLonga(o.fim))}`, cx, 203.7, { align: 'center' })
+  // o rótulo e a linha do Director (o Comandante já está no fundo)
+  doc.setFontSize(10.6).text('O DIRECTOR DOS A. ACADÉMICOS', 70, 227.5, { align: 'center' })
+  doc.setDrawColor(70).setLineWidth(0.3).line(40.8, 242.8, 97.5, 242.8).setDrawColor(0)
+  doc.setTextColor(0)
+  doc.setFont('helvetica', 'normal').setFontSize(5.5).setTextColor(120).text(`Código de verificação: ${c.codigo}`, cx, 293, { align: 'center' }).setTextColor(0)
 }
 
 // documentos: ['certificado', 'diploma']; um PDF para o estudante, com os modelos do curso (ou os da turma)
@@ -272,6 +260,7 @@ export async function gerarDiplomas(c, o, documentos) {
   const d = await novo()
   const m = { ...modelosDoCurso(c.curso), ...(o.modeloCertificado ? { certificado: o.modeloCertificado } : {}), ...(o.modeloDiploma ? { diploma: o.modeloDiploma } : {}) }
   if (documentos.includes('certificado')) (m.certificado === 'tabela' ? certificadoTabela : certificadoLista)(d, c, o)
+  if (documentos.includes('diploma') && m.diploma === 'outorga') await prepararGenerais(d)
   if (documentos.includes('diploma')) (m.diploma === 'outorga' ? diplomaOutorga : diplomaAtesta)(d, c, o)
   const nome = c.estudante.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()
   d.doc.save(`${nome}-${documentos.join('-')}.pdf`)
