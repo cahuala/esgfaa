@@ -128,6 +128,12 @@ model Pessoa {
   conjuge              String    @default("") // cifrado
   conjugeLocalServico  String    @default("") @map("conjuge_local_servico")
   agregado             String    @default("") // cifrado (JSON)
+  /**
+   * registo biográfico (ficha de registo biográfico dos civis, também para os militares): estudos, línguas,
+   * últimos locais de trabalho, colocações, situação militar, situação médica, classificação de serviço,
+   * assiduidade e outras informações. JSON cifrado.
+   */
+  registo              String    @default("") // cifrado (JSON)
   // vencimento mensal em kwanzas (para as declarações) e n.º de segurança social
   vencimento           String    @default("") // cifrado
   inss                 String    @default("")
@@ -233,6 +239,7 @@ model Evento {
   descricao     String   @default("")
   documento     String   @default("") // n.º da ordem, despacho…
   entidade      String   @default("")
+  pena          String   @default("") // punição ou condenação: a pena aplicada
   propostaId    Int?     @map("proposta_id")
   criadoPor     String   @default("") @map("criado_por")
   criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)

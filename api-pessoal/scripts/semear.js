@@ -182,9 +182,19 @@ async function main() {
           provincia: um(PROVINCIAS), email: `c${agente}@esgfaa.gov.ao`, telefone: `+244 9${entre(10, 99)} ${entre(100, 999)} ${entre(100, 999)}`, habilitacao: um(['medio', 'medio', 'licenciatura']),
           unidadeId: c.unidadeId, cargoId: c.id, dataCargo: admissao, carreiraCivil: carreira, categoriaCivil: cats[Math.min(cats.length - 2, entre(0, 3))], vinculoCivil: um(['nomeacao_definitiva', 'nomeacao_definitiva', 'contrato']),
           dataAdmissao: admissao, dataCategoria: data(ano - entre(1, 6)),
+          // o registo biográfico (estudos, línguas, situação militar e médica, assiduidade, classificação)
+          registo: JSON.stringify({
+            estudos: [{ classe: '9.ª', ano: String(ano - entre(28, 35)) }, { classe: '12.ª', ano: String(ano - entre(24, 27)) }],
+            linguas: [{ lingua: 'Inglês', nivel: um(['B', 'R']) }, { lingua: 'Francês', nivel: 'R' }],
+            situacaoMilitar: { tipo: genero === 'M' ? um(['disponibilidade', 'isento', 'adiado']) : 'isento', desde: '', reiniciou: '' },
+            saude: { dador: aleatorio() < 0.3, defeitoFisico: '', doencas: '' },
+            assiduidade: [1, 2, 3].map((k) => ({ ano: String(ano - k), justificadas: String(entre(0, 6)), injustificadas: String(entre(0, 2)) })),
+            classificacoes: [1, 2].map((k) => ({ ano: String(ano - k), ponderacao: um(['Bom', 'Muito Bom']), pontos: String(entre(14, 19)) })),
+          }),
         },
       })
       await bd.evento.create({ data: { pessoaId: p.id, tipo: 'admissao', data: admissao, descricao: 'Admissão na Escola Superior de Guerra', criadoPor: 'semear' } })
+      if (aleatorio() < 0.15) await bd.evento.create({ data: { pessoaId: p.id, tipo: 'punicao', data: data(ano - entre(1, 3)), descricao: 'Faltas injustificadas ao serviço', pena: um(['Repreensão registada', 'Multa']), entidade: 'Director dos Serviços Gerais', criadoPor: 'semear' } })
       n++
     }
   }

@@ -15,6 +15,14 @@ export const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uni
 export const PROVINCIAS = ['Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando', 'Cubango', 'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire']
 
 // agregado familiar guardado como JSON (texto cifrado)
+function lerRegisto(v) {
+  if (v && typeof v === 'object') return v
+  try {
+    return v ? JSON.parse(v) : {}
+  } catch {
+    return {}
+  }
+}
 function lerAgregado(v) {
   if (Array.isArray(v)) return v
   try {
@@ -39,6 +47,7 @@ export function comDerivados(p, hoje = new Date()) {
   for (const k of DATAS) f[k] = dia(p[k])
   f.idade = idade(p, hoje)
   f.agregado = lerAgregado(p.agregado)
+  f.registo = lerRegisto(p.registo)
   f.vencimento = p.vencimento ? Number(p.vencimento) : null
   f.unidadeNome = p.unidade?.nome ?? ''
   f.cargoNome = p.cargo?.nome ?? ''

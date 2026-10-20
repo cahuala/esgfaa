@@ -157,4 +157,18 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const f = (await adm.get(`/api/pessoas/${d.id}`)).body
     assert.deepEqual([f.tipoDocente, f.funcaoActual, f.paisNascimento, f.agregado[0].genero], ['colaborador', 'Investigador do CEEA', 'Portugal', 'M'])
   })
+
+  it('registo biográfico (cifrado) e disciplina dos civis: punições e condenações com a pena', async () => {
+    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'funcionario', nome: 'Civil Disciplina Teste' }).expect(201)).body
+    const registo = { estudos: [{ classe: '12.ª', ano: '2001' }], linguas: [{ lingua: 'Inglês', nivel: 'B' }], situacaoMilitar: { tipo: 'isento', desde: '', reiniciou: '' }, saude: { dador: true, defeitoFisico: '', doencas: '' }, assiduidade: [{ ano: '2025', justificadas: '2', injustificadas: '1' }], outrasInformacoes: 'Nada a assinalar.' }
+    await adm.put(`/api/pessoas/${c.id}`).send({ registo }).expect(200)
+    assert.equal((await adm.put(`/api/pessoas/${c.id}`).send({ registo: { linguas: [{ lingua: 'Inglês', nivel: 'X' }] } })).status, 400)
+    await adm.post(`/api/pessoas/${c.id}/eventos`).send({ tipo: 'punicao', data: '2025-03-10', descricao: 'Faltas injustificadas', pena: 'Repreensão registada', entidade: 'Director' }).expect(201)
+    await adm.post(`/api/pessoas/${c.id}/eventos`).send({ tipo: 'condenacao', data: '2024-06-01', descricao: 'Crime', pena: 'Pena suspensa', entidade: 'Tribunal Provincial' }).expect(201)
+    const f = (await adm.get(`/api/pessoas/${c.id}`)).body
+    assert.deepEqual([f.registo.estudos[0].classe, f.registo.situacaoMilitar.tipo, f.registo.saude.dador, f.registo.assiduidade[0].injustificadas], ['12.ª', 'isento', true, '1'])
+    assert.deepEqual(f.eventos.filter((e) => ['punicao', 'condenacao'].includes(e.tipo)).map((e) => [e.tipo, e.pena]).sort(), [['condenacao', 'Pena suspensa'], ['punicao', 'Repreensão registada']])
+    const bruto = await amb.contentor.base.pessoa.findUnique({ where: { id: c.id }, select: { registo: true } })
+    assert.match(bruto.registo, /^c1:/)
+  })
 })

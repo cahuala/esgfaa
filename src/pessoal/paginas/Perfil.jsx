@@ -8,6 +8,8 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import DocumentosPessoais from '../componentes/DocumentosPessoais'
 import Familiares from '../componentes/Familiares'
+import Disciplina from '../componentes/Disciplina'
+import RegistoBiografico from '../componentes/RegistoBiografico'
 import PesquisaGeral from '../componentes/PesquisaGeral'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
@@ -32,7 +34,7 @@ const Bloco = ({ titulo, icone, acoes, children, corpo = true }) => (
 )
 const KZ = (v) => (v || v === 0 ? `${Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} Kz` : '—')
 const iniciais = (n) => { const p = n.trim().split(/\s+/); return `${p[0]?.[0] ?? ''}${p.length > 1 ? p.at(-1)[0] : ''}`.toUpperCase() }
-const ABAS = [['identificacao', 'Identificação', 'fa-id-card'], ['militar', 'Militar', 'fa-shield-alt'], ['pessoal', 'Pessoal', 'fa-user'], ['bancario', 'Bancário', 'fa-university'], ['familiares', 'Familiares', 'fa-users'], ['formacao', 'Formação', 'fa-graduation-cap'], ['historico', 'Histórico', 'fa-history'], ['carreira', 'Carreira', 'fa-chevron-up'], ['licencas', 'Licenças', 'fa-plane-departure'], ['processo', 'Processo individual', 'fa-folder-open'], ['propostas', 'Propostas', 'fa-file-signature'], ['emitidos', 'Documentos emitidos', 'fa-file-alt']]
+const ABAS = [['identificacao', 'Identificação', 'fa-id-card'], ['militar', 'Militar', 'fa-shield-alt'], ['pessoal', 'Pessoal', 'fa-user'], ['bancario', 'Bancário', 'fa-university'], ['familiares', 'Familiares', 'fa-users'], ['disciplina', 'Disciplina e assiduidade', 'fa-gavel'], ['biografico', 'Registo biográfico', 'fa-address-book'], ['formacao', 'Formação', 'fa-graduation-cap'], ['historico', 'Histórico', 'fa-history'], ['carreira', 'Carreira', 'fa-chevron-up'], ['licencas', 'Licenças', 'fa-plane-departure'], ['processo', 'Processo individual', 'fa-folder-open'], ['propostas', 'Propostas', 'fa-file-signature'], ['emitidos', 'Documentos emitidos', 'fa-file-alt']]
 
 export default function Perfil() {
   const { id } = useParams()
@@ -275,6 +277,9 @@ export default function Perfil() {
           }
         }} />
       </>}
+
+      {aba === 'disciplina' && <Disciplina p={p} editar={editar} aoMudar={carregar} />}
+      {aba === 'biografico' && <RegistoBiografico p={p} editar={editar} aoMudar={carregar} />}
 
       {aba === 'emitidos' && <DocumentosEmitidos pessoaId={p.id} />}
 

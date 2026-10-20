@@ -40,6 +40,17 @@ export const pessoa = z.object({
   municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40),
   biEmitidoEm: dataOpc, biValidade: dataOpc, biLocalEmissao: opc(80), grupoSanguineo: z.union([z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']), z.literal('')]).optional(),
   conjuge: opc(150), conjugeLocalServico: opc(150),
+  registo: z.object({
+    estudos: z.array(z.object({ classe: opc(30), ano: opc(20) }).strict()).max(6).optional(),
+    linguas: z.array(z.object({ lingua: opc(30), nivel: z.union([z.enum(['MB', 'B', 'R']), z.literal('')]).optional() }).strict()).max(4).optional(),
+    locaisAnteriores: z.array(z.object({ local: opc(150), de: opc(10), ate: opc(10), profissao: opc(100) }).strict()).max(3).optional(),
+    colocacoes: z.array(z.object({ categoria: opc(100), despacho: opc(60), data: opc(10), dr: opc(40), inicio: opc(10), situacao: opc(80), colocacao: opc(120), responsabilidade: opc(150) }).strict()).max(6).optional(),
+    situacaoMilitar: z.object({ tipo: z.union([z.enum(['adiado', 'disponibilidade', 'isento', 'nao_apto', 'refratario', 'militar']), z.literal('')]).optional(), desde: opc(10), reiniciou: opc(10) }).strict().optional(),
+    saude: z.object({ dador: z.union([z.boolean(), z.null()]).optional(), defeitoFisico: opc(200), doencas: opc(300) }).strict().optional(),
+    classificacoes: z.array(z.object({ ano: opc(4), ponderacao: opc(20), pontos: opc(20) }).strict()).max(20).optional(),
+    assiduidade: z.array(z.object({ ano: opc(4), justificadas: opc(5), injustificadas: opc(5) }).strict()).max(40).optional(),
+    outrasInformacoes: opc(4000),
+  }).strict().optional(),
   agregado: z.array(z.object({ nome: txt(150, 1), parentesco: opc(40), dataNascimento: dataOpc, nacionalidade: opc(40), profissao: opc(80), bi: opc(20), genero: z.union([z.enum(['M', 'F']), z.literal('')]).optional() }).strict()).max(30).optional(),
   vencimento: z.union([z.coerce.number().min(0).max(1e9), z.literal(''), z.null()]).optional(), inss: opc(30), banco: opc(80), iban: opc(40), numeroConta: opc(40),
   localIncorporacao: opc(120), voluntario: z.union([z.boolean(), z.null()]).optional(),
@@ -52,7 +63,7 @@ export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoa
 export const emitirDocumentos = z.object({ documentos: z.array(z.object({ tipo: txt(40, 1), dados: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])).optional() }).strict()).min(1).max(20) }).strict()
 export const filtrosPessoas = z.record(z.string(), z.string().max(60)).optional().default({})
 export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: z.enum(['formacao', 'promocao', 'qualificacao', 'actualizacao', 'academico']).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()
-export const evento = z.object({ tipo: txt(30), data, descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default('') }).strict()
+export const evento = z.object({ tipo: txt(30), data, descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default(''), pena: txt(300).default('') }).strict()
 export const fimGraduacao = z.object({ fim: data, motivo: txt(500).default('') })
 
 const item = z.object({ pessoaId: id, postoProposto: opc(30), modalidade: opc(20), cargoId: idOpc, inicio: dataOpc, fim: dataOpc, justificacao: txt(1000).default('') }).strict()

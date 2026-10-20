@@ -32,12 +32,13 @@ export const TIPOS_EVENTO = {
   transferencia: 'Transferência',
   louvor: 'Louvor',
   condecoracao: 'Condecoração',
-  punicao: 'Punição',
+  punicao: 'Punição disciplinar',
+  condenacao: 'Condenação criminal',
   saida: 'Saída da Escola',
   correcao: 'Correção de dados',
   outro: 'Outro',
 }
-export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'despromocao', 'outro']
+export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
 const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
@@ -152,6 +153,7 @@ export class ServicoPessoas {
     if (x.tipoDocente === '') x.tipoDocente = null
     // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
     if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''
+    if ('registo' in d) x.registo = d.registo ? JSON.stringify(d.registo) : ''
     if ('vencimento' in d) x.vencimento = d.vencimento === '' || d.vencimento === null || d.vencimento === undefined ? '' : String(Number(d.vencimento))
     if (x.email) x.email = x.email.toLowerCase()
     // empregados domiciliares têm a categoria própria (Trabalhador Domiciliar)
@@ -319,11 +321,11 @@ export class ServicoPessoas {
   }
 
   // registos do histórico lançados à mão (louvores, punições, transferências…)
-  async adicionarEvento(u, pessoaId, { tipo, data, descricao, documento, entidade }) {
+  async adicionarEvento(u, pessoaId, { tipo, data, descricao, documento, entidade, pena = '' }) {
     exigir(u, 'editar')
     await this.#existe(pessoaId)
     if (!EVENTOS_MANUAIS.includes(tipo)) throw invalido('Este tipo de registo faz-se por proposta.', 'tipo')
-    const e = await this.bd.evento.create({ data: { pessoaId, tipo, data: new Date(data), descricao, documento, entidade, criadoPor: u.email } })
+    const e = await this.bd.evento.create({ data: { pessoaId, tipo, data: new Date(data), descricao, documento, entidade, pena, criadoPor: u.email } })
     await this.auditoria.registar(u, 'adicionar_evento', `${TIPOS_EVENTO[tipo]} (ficha #${pessoaId})`)
     return e
   }
