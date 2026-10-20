@@ -32,7 +32,8 @@ function ResultadosInquerito({ resultados, media }) {
       ) : (
         <div key={i}>
           <div className="fw-bold">{p.texto}</div>
-          {p.respostas !== undefined && <div className="small text-muted mb-2">{p.respostas} {tx('resposta(s)')}</div>}
+          {/* só nas perguntas a que nem todos responderam (as não obrigatórias) */}
+          {p.respostas !== undefined && p.respostas !== resultados.total && <div className="small text-muted mb-2">{tx('{0} de {1} responderam', { 0: p.respostas, 1: resultados.total })}</div>}
           {p.tipo === 'escolha' && (
             <>
               {p.opcoes.map((o, j) => <Barra key={j} rotulo={o} n={p.contagens[j]} pct={p.percentagens[j]} />)}

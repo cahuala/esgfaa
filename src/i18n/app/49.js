@@ -39,4 +39,5 @@ export default [
   ["Escala linear", "Linear scale", "Échelle linéaire", "Escala lineal"],
   ["Grelha de escolha múltipla", "Multiple choice grid", "Grille à choix multiples", "Cuadrícula de varias opciones"],
   ["Grelha de caixas de verificação", "Checkbox grid", "Grille de cases à cocher", "Cuadrícula de casillas"],
+  ["{0} de {1} responderam", "{0} of {1} answered", "{0} sur {1} ont répondu", "{0} de {1} respondieron"],
 ]
