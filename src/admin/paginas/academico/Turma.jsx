@@ -9,6 +9,7 @@ import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
+import FotoConta from '../../componentes/FotoConta'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -128,8 +129,10 @@ function Turma() {
                   return (
                     <tr key={m.id}>
                       <td>
-                        <div className="fw-bold">{m.estudante.nome}</div>
-                        <div className="small text-muted">{[d.posto, d.nip && `NIP ${d.nip}`, d.ramo].filter(Boolean).join(' · ') || m.estudante.email}</div>
+                        <div className="d-flex align-items-center gap-2">
+                          <FotoConta id={m.estudante.id} nome={m.estudante.nome} temFoto={m.estudante.temFoto} tamanho={38} />
+                          <div><div className="fw-bold">{m.estudante.nome}</div><div className="small text-muted">{[d.posto, d.nip && `NIP ${d.nip}`, d.ramo].filter(Boolean).join(' · ') || m.estudante.email}</div></div>
+                        </div>
                       </td>
                       <td className="font-monospace small">{m.estudante.numero}</td>
                       <td>

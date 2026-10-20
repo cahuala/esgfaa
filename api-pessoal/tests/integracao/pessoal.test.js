@@ -179,9 +179,19 @@ describe('Envio para o Portal Académico', () => {
       const enviado = JSON.parse(op.body).pessoas[0]
       assert.deepEqual([enviado.tipo, enviado.email, enviado.ativo, enviado.dados.posto], ['docente', 'kiala@esgfaa.gov.ao', true, 'Capitão'])
       assert.equal(enviado.dataNascimento, undefined) // o resto da ficha não sai
+      assert.equal(enviado.foto, undefined) // sem fotografia, não vai nada
+      // a fotografia vai quando muda, e só uma vez
+      const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(300, 1)])
+      await adm.put(`/api/pessoas/${d.id}/foto`).attach('foto', jpg, 'f.jpg').expect(200)
+      await amb.contentor.servicos.sincronizacao.enviarPendentes()
+      const comFoto = JSON.parse(pedidos.at(-1).op.body).pessoas[0]
+      assert.equal(Buffer.from(comFoto.foto.dados, 'base64').length, jpg.length)
+      await adm.put(`/api/pessoas/${d.id}`).send({ telefone: '+244 923 111 222' }).expect(200)
+      await amb.contentor.servicos.sincronizacao.enviarPendentes()
+      assert.equal(JSON.parse(pedidos.at(-1).op.body).pessoas[0].foto, undefined)
       await adm.put(`/api/pessoas/${d.id}`).send({ ativo: false }).expect(200)
       await amb.contentor.servicos.sincronizacao.enviarPendentes()
-      assert.equal(JSON.parse(pedidos[1].op.body).pessoas[0].ativo, false)
+      assert.equal(JSON.parse(pedidos.at(-1).op.body).pessoas[0].ativo, false)
     } finally { await amb.fechar() }
   })
 })

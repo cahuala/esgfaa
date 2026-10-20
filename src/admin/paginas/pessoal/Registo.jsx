@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import FotoConta from '../../componentes/FotoConta'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
@@ -104,8 +105,8 @@ function Registo() {
                       <tr key={c.id} className={editar === c.id ? 'table-active' : ''}>
                         <td>
                           {c.tipo === 'estudante' && pode('academico.ver')
-                            ? <Link to={`/academico/documentos/estudante/${c.id}/historico`} className="fw-bold" title={tx('Histórico académico')}>{c.nome}</Link>
-                            : <span className="fw-bold">{c.nome}</span>}
+                            ? <Link to={`/academico/documentos/estudante/${c.id}/historico`} className="fw-bold" title={tx('Histórico académico')}><FotoConta id={c.id} nome={c.nome} temFoto={c.temFoto} tamanho={30} /> {c.nome}</Link>
+                            : <span className="fw-bold"><FotoConta id={c.id} nome={c.nome} temFoto={c.temFoto} tamanho={30} /> {c.nome}</span>}
                           <div className="small text-muted">{c.tipo === 'docente' ? tx('Docente') : tx('Estudante')} · {c.email}</div>
                         </td>
                         <td className="font-monospace">{c.numero}</td>

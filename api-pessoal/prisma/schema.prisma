@@ -356,6 +356,8 @@ model Sincronizacao {
   ultimaTentativa DateTime? @map("ultima_tentativa") @db.Timestamptz(3)
   erro            String    @default("")
   contaPortalId   Int?      @map("conta_portal_id")
+  // a fotografia que o portal já tem (só se envia outra vez quando muda)
+  fotoEnviada     String    @default("") @map("foto_enviada")
   pessoa          Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@map("sincronizacao")

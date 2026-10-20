@@ -205,6 +205,9 @@ model ContaPortal {
   senha              String
   ativo              Boolean       @default(true)
   dados              Json          @default("{}") // posto, ramo, telefone, …
+  // a fotografia que vem do Sistema de Gestão de Pessoal (na pasta privada); fotoId = a do Pessoal
+  fotoCaminho        String?       @map("foto_caminho")
+  fotoId             String?       @map("foto_id")
   criadoEm           DateTime      @default(now()) @map("criado_em") @db.Timestamptz(3)
   ultimoAcesso       DateTime?     @map("ultimo_acesso") @db.Timestamptz(3)
   tokenCalendario    String?       @unique @map("token_calendario") // assinatura do calendário (iCal), sem sessão

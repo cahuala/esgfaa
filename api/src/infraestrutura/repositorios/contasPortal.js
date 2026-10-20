@@ -6,7 +6,7 @@ import { eDuplicado } from '../bd/prisma.js'
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 
 export const paraConta = (l) => l && new ContaPortal({
-  id: l.id, tipo: l.tipo, numero: l.numero, nome: l.nome, email: l.email, senha: l.senha, ativo: l.ativo, dados: l.dados,
+  id: l.id, tipo: l.tipo, numero: l.numero, nome: l.nome, email: l.email, senha: l.senha, ativo: l.ativo, dados: l.dados, temFoto: Boolean(l.fotoCaminho),
   criadoEm: iso(l.criadoEm), ultimoAcesso: iso(l.ultimoAcesso), tentativasFalhadas: l.tentativasFalhadas,
   bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha,
 })
@@ -14,6 +14,15 @@ export const paraConta = (l) => l && new ContaPortal({
 export class RepositorioContasPortal {
   constructor({ prisma }) {
     this.prisma = prisma
+  }
+
+  // a fotografia (vinda do Pessoal): { fotoCaminho, fotoId } ou null
+  async foto(id) {
+    return this.prisma.contaPortal.findUnique({ where: { id }, select: { fotoCaminho: true, fotoId: true } })
+  }
+
+  async guardarFoto(id, fotoCaminho, fotoId) {
+    await this.prisma.contaPortal.update({ where: { id }, data: { fotoCaminho, fotoId } })
   }
 
   async tokenCalendario(id) {

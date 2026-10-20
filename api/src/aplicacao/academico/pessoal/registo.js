@@ -81,6 +81,32 @@ export class ServicoRegistoPessoal {
     Cria quem ainda não tem conta, atualiza o nome e os dados de quem tem, e desativa quem deixou de ser
     docente/estudante ou saiu da Escola. O e-mail é a chave: a conta do portal não sabe mais nada da ficha.
   */
+  // fotografia que vem do Pessoal: { id, dados (base64) } guarda-se na pasta privada; null apaga-a
+  async #fotoDoPessoal(contaId, foto) {
+    if (foto === undefined || !this.privados) return
+    const atual = await this.contas.foto(contaId)
+    if (foto === null) {
+      if (atual?.fotoCaminho) this.privados.apagar(this.privados.absoluto(atual.fotoCaminho))
+      await this.contas.guardarFoto(contaId, null, null)
+      return
+    }
+    if (atual?.fotoId === foto.id) return
+    const dados = Buffer.from(foto.dados, 'base64')
+    const tipo = [['image/jpeg', [0xff, 0xd8, 0xff]], ['image/png', [0x89, 0x50, 0x4e, 0x47]], ['image/webp', [0x52, 0x49, 0x46, 0x46]]].find(([, a]) => a.every((b, i) => dados[i] === b))?.[0]
+    if (!tipo) throw new ErroValidacao('A fotografia não é JPG, PNG nem WEBP.')
+    const { caminho } = this.privados.guardar(dados, tipo)
+    if (atual?.fotoCaminho) this.privados.apagar(this.privados.absoluto(atual.fotoCaminho))
+    await this.contas.guardarFoto(contaId, caminho, foto.id)
+  }
+
+  // a fotografia de uma conta, para o painel (quem pode ver o registo) e para o próprio no portal
+  async fotoDaConta(ctx, contaId, { propria = false } = {}) {
+    if (!propria) ctx.actor.exigir('pessoal.ver', 'academico.ver')
+    const f = await this.contas.foto(contaId)
+    if (!f?.fotoCaminho || !this.privados) throw new NaoEncontrado('Sem fotografia.')
+    return { caminho: this.privados.absoluto(f.fotoCaminho), tipo: f.fotoCaminho.endsWith('.png') ? 'image/png' : f.fotoCaminho.endsWith('.webp') ? 'image/webp' : 'image/jpeg', nome: 'foto' }
+  }
+
   async sincronizarDoPessoal(ctx, pessoas) {
     const resultados = []
     let criadas = 0
@@ -112,6 +138,7 @@ export class ServicoRegistoPessoal {
               if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
             }
           }
+          await this.#fotoDoPessoal(conta.id, p.foto)
           criadas++
           resultados.push({ ref: p.ref, ok: true, contaId: conta.id })
           continue
@@ -124,6 +151,7 @@ export class ServicoRegistoPessoal {
           if (!existente.ativo) existente.invalidarSessoes()
         }
         await this.contas.guardar(existente)
+        await this.#fotoDoPessoal(existente.id, p.foto)
         atualizadas++
         resultados.push({ ref: p.ref, ok: true, contaId: existente.id })
       } catch (e) {

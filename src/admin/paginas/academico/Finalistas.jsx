@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { Painel } from '../../componentes/Ui'
+import FotoConta from '../../componentes/FotoConta'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const valor = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { maximumFractionDigits: 2 }))
@@ -57,7 +58,7 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar })
   return (
     <>
       <tr>
-        <td><b>{l.estudante.nome}</b><div className="small text-muted">{l.estudante.numero}</div></td>
+        <td><div className="d-flex align-items-center gap-2"><FotoConta id={l.estudante.id} nome={l.estudante.nome} tamanho={34} /><div><b>{l.estudante.nome}</b><div className="small text-muted">{l.estudante.numero}</div></div></div></td>
         <td className="small">{l.tfc ? l.tfc.tema : <span className="text-muted">{tx('Por lançar')}</span>}</td>
         <td className="text-center fw-bold">{valor(l.tfc?.nota)}</td>
         <td className="text-center">{l.resumo.aprovadas}/{l.resumo.disciplinas}</td>

@@ -9,7 +9,7 @@ export class ContaPortal extends Utilizador {
   publico() {
     return {
       id: this.id, tipo: this.tipo, numero: this.numero, nome: this.nome, email: this.email,
-      ativo: Boolean(this.ativo), dados: this.dados || {}, criadoEm: this.criadoEm, ultimoAcesso: this.ultimoAcesso,
+      ativo: Boolean(this.ativo), dados: this.dados || {}, temFoto: Boolean(this.temFoto), criadoEm: this.criadoEm, ultimoAcesso: this.ultimoAcesso,
     }
   }
 }

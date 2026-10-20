@@ -43,6 +43,7 @@ export function rotasPortal({ servicos, config, privados }) {
 
   r.post('/traduzir', validar({ body: E.traduzirTextos }), async (req, res) => res.json(await servicos.traducaoDados.traduzir(ctx(req), req.dados.body)))
   r.get('/eu', async (req, res) => res.json(await servicos.sessaoPortal.eu(ctx(req))))
+  r.get('/eu/foto', async (req, res) => enviarFicheiro(req, res, await servicos.pessoal.registo.fotoDaConta(ctx(req), ctx(req).conta.id, { propria: true }), { soLeitura: true }))
   r.post('/sair', async (req, res) => { await servicos.sessaoPortal.sair(ctx(req)); res.status(204).end() })
   r.put('/eu/senha', validar({ body: E.mudarSenha }), async (req, res) => res.json(await servicos.sessaoPortal.mudarSenha(ctx(req), req.dados.body)))
 

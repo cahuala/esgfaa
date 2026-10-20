@@ -64,8 +64,8 @@ export class RepositorioAcademico {
 
   async matriculasDaTurma(turmaId) {
     // com o posto, o ramo e o NIP (para procurar na turma)
-    const linhas = await this.prisma.matricula.findMany({ where: { turmaId }, include: { estudante: { select: { ...contaResumo.select, dados: true } } }, orderBy: { estudante: { nome: 'asc' } } })
-    return linhas.map((m) => ({ id: m.id, estado: m.estado, criadaEm: iso(m.criadaEm), estudante: { ...m.estudante, dados: m.estudante.dados ?? {} } }))
+    const linhas = await this.prisma.matricula.findMany({ where: { turmaId }, include: { estudante: { select: { ...contaResumo.select, dados: true, fotoCaminho: true } } }, orderBy: { estudante: { nome: 'asc' } } })
+    return linhas.map((m) => ({ id: m.id, estado: m.estado, criadaEm: iso(m.criadaEm), estudante: { id: m.estudante.id, nome: m.estudante.nome, numero: m.estudante.numero, email: m.estudante.email, dados: m.estudante.dados ?? {}, temFoto: Boolean(m.estudante.fotoCaminho) } }))
   }
 
   async matriculasDoEstudante(estudanteId) {

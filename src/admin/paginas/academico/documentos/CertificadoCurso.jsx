@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../../api'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../../../componentes/Ui'
+import FotoConta from '../../../componentes/FotoConta'
 import { MODELOS_CERTIFICADO, MODELOS_DIPLOMA, gerarDiplomas, modelosDe, oficialGeneral } from './diplomas'
 import { t as tx } from '../../../../i18n/linguas'
 
@@ -78,8 +79,13 @@ function CertificadoCurso() {
       <div className="row">
         <div className="col-xl-4">
           <Painel titulo={tx('O estudante')}>
-            <div className="fw-bold">{[e.dados?.posto, nome].filter(Boolean).join(' ')}</div>
-            <div className="small text-muted">{[e.dados?.nip && `NIP ${e.dados.nip}`, e.dados?.ramo, e.numero].filter(Boolean).join(' · ')}</div>
+            <div className="d-flex align-items-center gap-3">
+              <FotoConta id={e.id} nome={e.nome} tamanho={64} />
+              <div>
+                <div className="fw-bold">{[e.dados?.posto, nome].filter(Boolean).join(' ')}</div>
+                <div className="small text-muted">{[e.dados?.nip && `NIP ${e.dados.nip}`, e.dados?.ramo, e.numero].filter(Boolean).join(' · ')}</div>
+              </div>
+            </div>
             <div className="mt-2"><span className="badge bg-success">{tx('Concluiu o curso')}</span> <span className="small">{tx('Média final')}: <b>{Number(c.media).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</b> ({c.percurso?.conclusao?.classificacaoFinal})</span></div>
             <div className="small text-muted mt-1">{tx('Código de verificação')}: <span className="font-monospace">{c.codigo}</span></div>
           </Painel>

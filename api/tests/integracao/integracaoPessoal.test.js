@@ -36,6 +36,21 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await amb.contentor.repositorios.contasPortal.porEmail(p.email)).ativo, false)
   })
 
+  it('a fotografia vem do Pessoal: guarda-se, vê-se no painel e no portal, e apaga-se', async () => {
+    const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]).toString('base64')
+    const p = { ref: 'pessoal-70', tipo: 'estudante', nome: 'Major Foto de Teste', email: 'foto.teste@esgfaa.gov.ao', ativo: true, foto: { id: 'abc.jpg', dados: jpg } }
+    const contaId = (await enviar([p]).expect(200)).body.resultados[0].contaId
+    const adm = amb.com(await amb.entrar())
+    const f = await adm.get(`/api/admin/academico/contas/${contaId}/foto`).expect(200)
+    assert.equal(f.headers['content-type'], 'image/jpeg')
+    assert.ok((await adm.get('/api/admin/academico/contas?tipo=estudante')).body.find((c) => c.id === contaId).temFoto)
+    const portal = amb.com((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: p.email })).body.token)
+    assert.equal((await portal.get('/api/portal/eu/foto')).status, 200)
+    assert.equal((await enviar([{ ...p, foto: { id: 'x.jpg', dados: Buffer.from('não é imagem').toString('base64') } }])).body.resultados[0].ok, false)
+    await enviar([{ ...p, foto: null }]).expect(200)
+    assert.equal((await adm.get(`/api/admin/academico/contas/${contaId}/foto`)).status, 404)
+  })
+
   it('mudança de e-mail: a conta é reconhecida pelo id e não se cria outra', async () => {
     const p = { ref: 'pessoal-50', tipo: 'docente', nome: 'Major Carlos Mendes Neto', email: 'c.mendes@esgfaa.gov.ao', ativo: true }
     const contaId = (await enviar([p]).expect(200)).body.resultados[0].contaId

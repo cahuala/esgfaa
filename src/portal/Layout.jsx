@@ -5,6 +5,11 @@ import Sede from '../assets/Escola De Guerra.png'
 import { useTema } from '../tema/useTema'
 import { useSessao } from './sessaoContexto'
 import { iniciais } from './formatar'
+import FotoConta from '../admin/componentes/FotoConta'
+import { comSessao as comSessaoPortal } from './api'
+
+// a fotografia do próprio (vinda do Pessoal), com as iniciais se não houver
+const FotoPortal = ({ conta, grande }) => (conta.temFoto ? <FotoConta caminho="/api/portal/eu/foto" sessao={comSessaoPortal} nome={conta.nome} tamanho={grande ? 56 : 30} /> : <span className={`admin-avatar ${grande ? 'admin-avatar-grande' : ''}`}>{iniciais(conta.nome)}</span>)
 import CabecalhoAvisos from './CabecalhoAvisos'
 import { t as tx } from '../i18n/linguas'
 import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
@@ -108,7 +113,7 @@ function Layout({ children }) {
           <SeletorLinguaPainel />
           <div ref={caixa} className={`navbar-item navbar-user dropdown esg-menu-utilizador ${menuConta ? 'show' : ''}`}>
             <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center p-conta-botao" aria-expanded={menuConta} onClick={() => setContaEm(menuConta ? null : pathname)}>
-              <span className="admin-avatar">{iniciais(conta.nome)}</span>
+              <FotoPortal conta={conta} grande={false} />
               <span>
                 <span className="d-none d-md-inline fw-bold">{conta.nome}</span>
                 <b className="caret" />
@@ -117,7 +122,7 @@ function Layout({ children }) {
             {menuConta && (
               <div className="dropdown-menu dropdown-menu-end show esg-menu-lista" data-bs-popper="static">
                 <div className="esg-menu-cabecalho">
-                  <span className="admin-avatar admin-avatar-grande">{iniciais(conta.nome)}</span>
+                  <FotoPortal conta={conta} grande />
                   <div>
                     <strong>{conta.nome}</strong>
                     <small>{conta.email}</small>
@@ -144,7 +149,7 @@ function Layout({ children }) {
               <div className="esg-marca-nome">{tx('Escola Superior de Guerra')}</div>
               <div className="esg-marca-sub">{tx('Portal Académico')}</div>
               <Link to="/perfil" className="esg-marca-utilizador">
-                <span className="admin-avatar admin-avatar-grande">{iniciais(conta.nome)}</span>
+                <FotoPortal conta={conta} grande />
                 <span>
                   <strong>{conta.nome}</strong>
                   <small>{papel}{turma ? ` · ${turma}` : ''}</small>

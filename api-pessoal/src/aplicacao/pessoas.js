@@ -353,7 +353,9 @@ export class ServicoPessoas {
     exigir(u, 'editar')
     await this.#existe(pessoaId)
     const antes = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, select: { fotoId: true } })
-    await this.bd.pessoa.update({ where: { id: pessoaId }, data: { fotoId } })
+    const n = await this.bd.pessoa.update({ where: { id: pessoaId }, data: { fotoId } })
+    // a fotografia nova vai também para a conta do Portal Académico (docentes e estudantes)
+    if (vaiParaPortal(n)) await this.#marcarSincronizacao(this.bd, n)
     await this.auditoria.registar(u, 'mudar_foto', `ficha #${pessoaId}`)
     return antes.fotoId
   }
