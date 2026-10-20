@@ -428,3 +428,16 @@ body {
   background: var(--esg-vermelho);
   color: #fff;
 }
+
+/* página da turma: resumo, separadores e os passos dos finalistas */
+.tm-resumo { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e6e6e6; border-radius: 10px; padding: 12px 14px; height: 100%; }
+.tm-resumo-ic { width: 44px; height: 44px; border-radius: 10px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: none; }
+.tm-resumo-n { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.tm-resumo-r { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: #555; }
+.tm-resumo-d { font-size: 11.5px; color: #888; }
+.tm-abas .nav-link { font-weight: 600; color: #555; border: 0; border-bottom: 3px solid transparent; background: none; }
+.tm-abas .nav-link.active { color: var(--bs-theme, #c0392b); border-bottom-color: var(--bs-theme, #c0392b); background: none; }
+.tm-tabela td { padding-top: .65rem; padding-bottom: .65rem; }
+.tm-passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tm-passos > div { background: #fff; border: 1px solid #e6e6e6; border-radius: 10px; padding: 10px 12px 10px 46px; position: relative; font-size: 13px; }
+.tm-passos b { position: absolute; left: 12px; top: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--bs-theme, #c0392b); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
@@ -9,7 +9,6 @@ import AvaliacaoDocentes from './AvaliacaoDocentes'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
-import DocumentosEstudante from './DocumentosEstudante'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -18,27 +17,44 @@ const ESTADOS = { ativa: ['bg-success', tx('Ativa')], suspensa: ['bg-warning tex
 
 const POR_PAGINA = 15
 
-// uma turma: matrículas, cadeiras (período, docentes alocados) e horário
+// cartão do resumo da turma (número grande e o que é)
+function Resumo({ icone, cor, valor, rotulo, detalhe }) {
+  return (
+    <div className="col-6 col-lg-3">
+      <div className="tm-resumo">
+        <span className={`tm-resumo-ic bg-${cor}`}><i className={`fa ${icone}`} /></span>
+        <div><div className="tm-resumo-n">{valor}</div><div className="tm-resumo-r">{rotulo}</div>{detalhe && <div className="tm-resumo-d">{detalhe}</div>}</div>
+      </div>
+    </div>
+  )
+}
+
+/*
+  Uma turma, organizada por separadores: os estudantes (procurar, estado da matrícula, histórico, certificado e
+  diploma de quem concluiu), os finalistas (trabalho de fim de curso), as cadeiras e o horário, os documentos
+  da turma e a avaliação dos docentes. O resumo em cima diz logo quantos são e quantos concluíram.
+*/
 function Turma() {
   const { id } = useParams()
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
+  const [params, setParams] = useSearchParams()
   const [t, setT] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
   const [importar, setImportar] = useState(false)
   const [passagem, setPassagem] = useState(false)
-  const [concluidos, setConcluidos] = useState(new Set())
-  const [documentos, setDocumentos] = useState(null)
+  const [matricular, setMatricular] = useState(false)
+  const [conclusao, setConclusao] = useState(new Map())
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
-  // quem já concluiu o curso (defendeu o trabalho de fim de curso e tem as cadeiras feitas): só esses têm diploma e certificado
+  // a conclusão do curso de cada finalista (só esses têm certificado e diploma)
   useEffect(() => {
-    if (!gerir || !t?.anoFinal) return
-    api(`/academico/turmas/${id}/finalistas`).then((r) => setConcluidos(new Set(r.linhas.filter((l) => l.conclusao.concluido).map((l) => l.estudante.id)))).catch(() => {})
-  }, [gerir, id, t?.anoFinal])
+    if (!t?.anoFinal) return
+    api(`/academico/turmas/${id}/finalistas`).then((r) => setConclusao(new Map(r.linhas.map((l) => [l.estudante.id, l.conclusao])))).catch(() => {})
+  }, [id, t?.anoFinal])
 
   const falhou = (e) => setAviso({ tipo: 'erro', texto: e.message })
   const [procura, setProcura] = useState('')
@@ -46,60 +62,76 @@ function Turma() {
 
   if (erro) return <Erro texto={erro} />
   if (!t) return <Carregando />
+  const aba = params.get('aba') || 'estudantes'
+  const irPara = (k) => setParams(k === 'estudantes' ? {} : { aba: k }, { replace: true })
   // procurar na turma: por todas as formas (nome, NIP, posto, ramo, n.º de estudante, e-mail), sem acentos
-  const semAcento = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const semAcento = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   const termos = semAcento(procura).split(/\s+/).filter(Boolean)
   const encontradas = t.matriculas.filter((m) => { const tudo = semAcento([m.estudante.nome, m.estudante.numero, m.estudante.email, ...Object.values(m.estudante.dados ?? {})].join(' ')); return termos.every((x) => tudo.includes(x)) })
   const paginas = Math.max(1, Math.ceil(encontradas.length / POR_PAGINA))
   const atual = Math.min(pagina, paginas)
   const visiveis = encontradas.slice((atual - 1) * POR_PAGINA, atual * POR_PAGINA)
+  const ativas = t.matriculas.filter((m) => m.estado === 'ativa').length
+  const concluiram = [...conclusao.values()].filter((c) => c.concluido).length
+  const ABAS = [
+    ['estudantes', tx('Estudantes'), 'fa-user-graduate', t.matriculas.length],
+    ...(t.anoFinal ? [['finalistas', tx('Finalistas e TFC'), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
+    ['cadeiras', tx('Cadeiras e horário'), 'fa-book', t.cadeiras.length],
+    ['documentos', tx('Documentos da turma'), 'fa-print', null],
+    ...(t.cadeiras.length ? [['avaliacao', tx('Avaliação dos docentes'), 'fa-star-half-alt', null]] : []),
+  ]
 
   return (
     <>
       <CabecalhoPagina titulo={t.nome} subtitulo={tx('{0} · {1}.º ano', { 0: t.anoLetivo, 1: t.anoCurricular })} migalhas={[{ rotulo: tx('Turmas'), para: '/academico/turmas' }, { rotulo: t.nome }]}>
-        {gerir && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> {tx('Matricular a partir de Excel/CSV')}</button>}
-        {gerir && !t.anoFinal && <button type="button" className="btn btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" /> {tx('Passagem de ano')}</button>}
-        {gerir && <button type="button" className="btn btn-theme" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" /> {tx('Copiar cadeiras de outra turma')}</button>}
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> {tx('Turmas')}</Link>
       </CabecalhoPagina>
-      <div className="card mb-3"><div className="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
-        <div className="input-group flex-grow-1" style={{ maxWidth: 560 }}>
-          <span className="input-group-text"><i className="fa fa-search" /></span>
-          <input type="search" className="form-control" value={procura} onChange={(e) => { setProcura(e.target.value); setPagina(1) }} placeholder={tx('Pesquisar militar: nome, NIP, posto, ramo, n.º ou e-mail')} aria-label={tx('Pesquisar militares da turma')} />
-        </div>
-        <span className="small text-muted ms-auto">{encontradas.length === t.matriculas.length ? tx('{0} estudante(s)', { 0: t.matriculas.length }) : tx('{0} de {1}', { 0: encontradas.length, 1: t.matriculas.length })}</span>
-      </div></div>
-      {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
-      <div className="panel panel-inverse">
-        <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-print me-2" />{tx('Documentos da turma')}</h4></div>
-        <div className="panel-body d-flex flex-wrap gap-2 align-items-center">
-          <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
-          <span className="text-muted small">{tx('Por cadeira (pauta, folha de presenças, lista para a prova): botões em cada cadeira abaixo.')}</span>
-          {gerir && (
-            <label className="form-check form-switch ms-auto mb-0">
-              <input className="form-check-input" type="checkbox" checked={Boolean(t.anoFinal)} onChange={(e) => api(`/academico/turmas/${t.id}`, { metodo: 'PUT', corpo: { anoFinal: e.target.checked } }).then(carregar).catch(falhou)} />
-              <span className="form-check-label fw-bold">{tx('Turma de finalistas (último ano: trabalho de fim de curso)')}</span>
-            </label>
-          )}
-        </div>
+
+      <div className="row g-2 mb-3">
+        <Resumo icone="fa-user-graduate" cor="primary" valor={t.matriculas.length} rotulo={tx('Estudantes')} detalhe={tx('{0} com matrícula ativa', { 0: ativas })} />
+        <Resumo icone="fa-book" cor="info" valor={t.cadeiras.length} rotulo={tx('Cadeiras')} detalhe={tx('{0} docente(s)', { 0: new Set(t.cadeiras.flatMap((c) => (c.docentes ?? []).map((d) => d.id))).size })} />
+        {t.anoFinal
+          ? <Resumo icone="fa-award" cor="success" valor={`${concluiram}/${conclusao.size}`} rotulo={tx('Concluíram o curso')} detalhe={tx('podem receber certificado e diploma')} />
+          : <Resumo icone="fa-level-up-alt" cor="warning" valor={`${t.anoCurricular}.º`} rotulo={tx('Ano do curso')} detalhe={tx('não é a turma de finalistas')} />}
+        <Resumo icone="fa-calendar" cor="secondary" valor={t.anoLetivo} rotulo={tx('Ano letivo')} detalhe={t.anoFinal ? tx('turma de finalistas') : ''} />
       </div>
-      {t.anoFinal && <Finalistas turma={t} gerir={gerir} avisar={setAviso} mostrar={procura.trim() ? new Set(encontradas.map((m) => m.estudante.id)) : null} />}
-      {documentos && <DocumentosEstudante turma={t} estudante={documentos} fechar={() => setDocumentos(null)} />}
-      {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
-      {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
-      <div className="row">
-        <div className="col-xl-6">
-          <Painel titulo={tx('Matrículas ({0})', { 0: t.matriculas.length })} corpo={false}>
-            <div className="table-responsive">
-              <table className="table table-striped align-middle mb-0">
-                <thead><tr><th>{tx('Estudante')}</th><th>{tx('N.º')}</th><th>{tx('Estado')}</th>{gerir && <th className="text-end">{tx('Ações')}</th>}</tr></thead>
-                <tbody>
-                  {t.matriculas.length === 0 && <tr><td colSpan={gerir ? 4 : 3} className="text-center text-muted py-4">{tx('Sem estudantes matriculados.')}</td></tr>}
-                  {t.matriculas.length > 0 && !encontradas.length && <tr><td colSpan={gerir ? 4 : 3} className="text-center text-muted py-4">{tx('Ninguém encontrado para «{0}».', { 0: procura })}</td></tr>}
-                  {visiveis.map((m) => (
+
+      <ul className="nav nav-tabs tm-abas mb-3" role="tablist">
+        {ABAS.map(([k, rot, ic, n]) => (
+          <li key={k} className="nav-item"><button type="button" role="tab" aria-selected={aba === k} className={`nav-link ${aba === k ? 'active' : ''}`} onClick={() => irPara(k)}><i className={`fa ${ic} me-1`} />{rot}{n !== null && <span className="badge bg-secondary ms-1">{n}</span>}</button></li>
+        ))}
+      </ul>
+
+      {aba === 'estudantes' && (
+        <Painel titulo={tx('Estudantes da turma')} corpo={false} acoes={gerir && <>
+          <button type="button" className="btn btn-xs btn-theme" onClick={() => setMatricular(!matricular)}><i className={`fa ${matricular ? 'fa-times' : 'fa-user-plus'} me-1`} />{matricular ? tx('Fechar') : tx('Matricular estudantes')}</button>
+          <button type="button" className="btn btn-xs btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" />{tx('Do Excel/CSV')}</button>
+          {!t.anoFinal && <button type="button" className="btn btn-xs btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" />{tx('Passagem de ano')}</button>}
+        </>}>
+          {matricular && gerir && <div className="p-3 border-bottom bg-light"><MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} /></div>}
+          <div className="p-3 border-bottom d-flex flex-wrap gap-2 align-items-center">
+            <div className="input-group flex-grow-1" style={{ maxWidth: 560 }}>
+              <span className="input-group-text"><i className="fa fa-search" /></span>
+              <input type="search" className="form-control" value={procura} onChange={(e) => { setProcura(e.target.value); setPagina(1) }} placeholder={tx('Pesquisar militar: nome, NIP, posto, ramo, n.º ou e-mail')} aria-label={tx('Pesquisar militares da turma')} />
+            </div>
+            <span className="small text-muted ms-auto">{encontradas.length === t.matriculas.length ? tx('{0} estudante(s)', { 0: t.matriculas.length }) : tx('{0} de {1}', { 0: encontradas.length, 1: t.matriculas.length })}</span>
+          </div>
+          <div className="table-responsive">
+            <table className="table align-middle mb-0 tm-tabela">
+              <thead><tr><th>{tx('Militar')}</th><th>{tx('N.º')}</th><th>{tx('Matrícula')}</th>{t.anoFinal && <th>{tx('Curso')}</th>}<th className="text-end">{tx('Ações')}</th></tr></thead>
+              <tbody>
+                {t.matriculas.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-5"><i className="fa fa-user-graduate fa-2x d-block mb-2 opacity-25" />{tx('Ainda não há estudantes nesta turma.')}{gerir && <> {tx('Use «Matricular estudantes».')}</>}</td></tr>}
+                {t.matriculas.length > 0 && !encontradas.length && <tr><td colSpan={5} className="text-center text-muted py-4">{tx('Ninguém encontrado para «{0}».', { 0: procura })}</td></tr>}
+                {visiveis.map((m) => {
+                  const c = conclusao.get(m.estudante.id)
+                  const d = m.estudante.dados ?? {}
+                  return (
                     <tr key={m.id}>
-                      <td><Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="fw-bold" title={tx('Histórico académico')}>{m.estudante.nome}</Link><div className="small text-muted">{[m.estudante.dados?.posto, m.estudante.dados?.nip && `NIP ${m.estudante.dados.nip}`, m.estudante.dados?.ramo].filter(Boolean).join(' · ') || m.estudante.email}</div></td>
-                      <td className="font-monospace">{m.estudante.numero}</td>
+                      <td>
+                        <div className="fw-bold">{m.estudante.nome}</div>
+                        <div className="small text-muted">{[d.posto, d.nip && `NIP ${d.nip}`, d.ramo].filter(Boolean).join(' · ') || m.estudante.email}</div>
+                      </td>
+                      <td className="font-monospace small">{m.estudante.numero}</td>
                       <td>
                         {gerir ? (
                           <select className="form-select form-select-sm w-auto" value={m.estado} aria-label={tx('Estado da matrícula de {0}', { 0: m.estudante.nome })} onChange={(e) => api(`/academico/matriculas/${m.id}`, { metodo: 'PUT', corpo: { estado: e.target.value } }).then(carregar).catch(falhou)}>
@@ -107,33 +139,72 @@ function Turma() {
                           </select>
                         ) : <span className={`badge ${ESTADOS[m.estado][0]}`}>{ESTADOS[m.estado][1]}</span>}
                       </td>
-                      {gerir && (
-                        <td className="text-end">
-                          <button type="button" className={`btn btn-xs ${concluidos.has(m.estudante.id) ? 'btn-success' : 'btn-white'}`} disabled={!concluidos.has(m.estudante.id)} onClick={() => setDocumentos(m.estudante)} title={concluidos.has(m.estudante.id) ? tx('Diploma e certificado') : tx('Ainda não defendeu / não concluiu o curso')}><i className="fa fa-award me-1" />{tx('Documentos')}</button>
-                        </td>
-                      )}
+                      {t.anoFinal && <td>{!c ? <span className="small text-muted">—</span> : c.concluido ? <span className="badge bg-success"><i className="fa fa-check me-1" />{tx('Concluiu')} · {Number(c.mediaFinal).toLocaleString('pt-PT')}</span> : <span className="badge bg-light text-dark border" title={c.emFalta.join('\n')}>{tx('Falta: {0}', { 0: c.emFalta.length })}</span>}</td>}
+                      <td className="text-end text-nowrap">
+                        <Link to={`/academico/documentos/estudante/${m.estudante.id}/historico`} className="btn btn-xs btn-white me-1" title={tx('Histórico académico')}><i className="fa fa-scroll me-1" />{tx('Histórico')}</Link>
+                        {gerir && (c?.concluido
+                          ? <Link to={`/academico/documentos/turma/${t.id}/certificado/${m.estudante.id}`} className="btn btn-xs btn-success"><i className="fa fa-award me-1" />{tx('Certificado e diploma')}</Link>
+                          : <button type="button" className="btn btn-xs btn-white" disabled title={t.anoFinal ? tx('Ainda não defendeu / não concluiu o curso') : tx('Só na turma de finalistas, depois de concluir o curso')}><i className="fa fa-award me-1" />{tx('Certificado e diploma')}</button>)}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {paginas > 1 && (
+            <div className="d-flex align-items-center gap-2 p-2 border-top">
+              <button type="button" className="btn btn-sm btn-white" disabled={atual <= 1} onClick={() => setPagina(atual - 1)}><i className="fa fa-chevron-left me-1" />{tx('Recuar')}</button>
+              <span className="small text-muted mx-auto">{tx('{0}–{1} de {2} · página {3} de {4}', { 0: (atual - 1) * POR_PAGINA + 1, 1: Math.min(atual * POR_PAGINA, encontradas.length), 2: encontradas.length, 3: atual, 4: paginas })}</span>
+              <button type="button" className="btn btn-sm btn-white" disabled={atual >= paginas} onClick={() => setPagina(atual + 1)}>{tx('Avançar')}<i className="fa fa-chevron-right ms-1" /></button>
             </div>
-            {paginas > 1 && (
-              <div className="d-flex align-items-center gap-2 p-2 border-top">
-                <button type="button" className="btn btn-sm btn-white" disabled={atual <= 1} onClick={() => setPagina(atual - 1)}><i className="fa fa-chevron-left me-1" />{tx('Recuar')}</button>
-                <span className="small text-muted mx-auto">{tx('{0}–{1} de {2} · página {3} de {4}', { 0: (atual - 1) * POR_PAGINA + 1, 1: Math.min(atual * POR_PAGINA, encontradas.length), 2: encontradas.length, 3: atual, 4: paginas })}</span>
-                <button type="button" className="btn btn-sm btn-white" disabled={atual >= paginas} onClick={() => setPagina(atual + 1)}>{tx('Avançar')}<i className="fa fa-chevron-right ms-1" /></button>
-              </div>
-            )}
-          </Painel>
-          {gerir && <MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} />}
+          )}
+        </Painel>
+      )}
+
+      {aba === 'finalistas' && t.anoFinal && <>
+        <div className="tm-passos mb-3">
+          <div><b>1</b>{tx('Lance o trabalho de fim de curso (botão TFC): tema, orientador, júri, defesa e nota.')}</div>
+          <div><b>2</b>{tx('Quando tem todas as cadeiras e o TFC aprovados, aparece «Concluído».')}</div>
+          <div><b>3</b>{tx('Carregue em «Certificado» para ver e imprimir o certificado e o diploma.')}</div>
         </div>
-        <div className="col-xl-6">
-          {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
-          {t.cadeiras.length === 0 && <div className="alert alert-info">{tx('Ainda não há cadeiras nesta turma.')}</div>}
-          {gerir && <NovaCadeira turma={t} carregar={carregar} avisar={setAviso} />}
+        <Finalistas turma={t} gerir={gerir} avisar={setAviso} />
+      </>}
+
+      {aba === 'cadeiras' && (
+        <div className="row">
+          <div className="col-xl-8">
+            {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+            {t.cadeiras.length === 0 && <div className="alert alert-info">{tx('Ainda não há cadeiras nesta turma.')}</div>}
+          </div>
+          <div className="col-xl-4">
+            {gerir && <NovaCadeira turma={t} carregar={carregar} avisar={setAviso} />}
+            {gerir && <button type="button" className="btn btn-white w-100" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" />{tx('Copiar cadeiras de outra turma')}</button>}
+          </div>
         </div>
-      </div>
-      {t.cadeiras.length > 0 && <AvaliacaoDocentes turma={t} gerir={gerir} avisar={setAviso} />}
+      )}
+
+      {aba === 'documentos' && (
+        <Painel titulo={tx('Documentos da turma')}>
+          <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
+            <span className="text-muted small">{tx('Por cadeira (pauta, folha de presenças, lista para a prova): em «Cadeiras e horário».')}</span>
+          </div>
+          {gerir && (
+            <label className="form-check form-switch mb-0">
+              <input className="form-check-input" type="checkbox" checked={Boolean(t.anoFinal)} onChange={(e) => api(`/academico/turmas/${t.id}`, { metodo: 'PUT', corpo: { anoFinal: e.target.checked } }).then(carregar).catch(falhou)} />
+              <span className="form-check-label fw-bold">{tx('Turma de finalistas (último ano: trabalho de fim de curso)')}</span>
+              <div className="small text-muted">{tx('Na turma de finalistas lança-se o trabalho de fim de curso e tiram-se o certificado e o diploma.')}</div>
+            </label>
+          )}
+        </Painel>
+      )}
+
+      {aba === 'avaliacao' && t.cadeiras.length > 0 && <AvaliacaoDocentes turma={t} gerir={gerir} avisar={setAviso} />}
+
+      {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
+      {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
+      {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

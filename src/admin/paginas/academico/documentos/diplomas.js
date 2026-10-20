@@ -19,13 +19,19 @@ const num = (v) => Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2,
 const valores = (v) => `${num(v)} Valores`
 const M = (t) => String(t ?? '').toLocaleUpperCase('pt')
 
-// o modelo de cada curso (pelo nome), se a turma não disser outro
-export const modelosDoCurso = (curso = '') => {
-  const generais = /estrat[ée]gia\s+e\s+arte\s+operativa|oficia(l|is)\s+generais/i.test(curso)
-  return { certificado: generais ? 'tabela' : 'lista', diploma: generais ? 'outorga' : 'atesta' }
-}
+// oficial general: Brigadeiro, Tenente-General, General, General de Exército/Aviação, Contra-, Vice-Almirante, Almirante…
+export const oficialGeneral = (posto = '') => /brigadeiro|general|almirante/i.test(String(posto))
+/*
+  Os modelos de cada estudante: o certificado pelo curso (Estratégia e Arte Operativa: com tabela; os outros:
+  em duas colunas); o diploma pela categoria (oficiais generais: «Atesta-se que…»; os outros militares: o
+  diploma decorado «A ESG outorga…»).
+*/
+export const modelosDe = (curso = '', posto = '') => ({
+  certificado: /estrat[ée]gia\s+e\s+arte\s+operativa/i.test(curso) ? 'tabela' : 'lista',
+  diploma: oficialGeneral(posto) ? 'atesta' : 'outorga',
+})
 export const MODELOS_CERTIFICADO = { tabela: 'Com tipo de avaliação e classificação (Estratégia e Arte Operativa)', lista: 'Disciplinas e valores em duas colunas (Comando e Direcção, CoaMP, Estado-Maior Conjunto)' }
-export const MODELOS_DIPLOMA = { atesta: '«Atesta-se que…» (todos os cursos)', outorga: '«A ESG outorga o presente diploma…» (cursos dos oficiais generais)' }
+export const MODELOS_DIPLOMA = { atesta: '«Atesta-se que…» (oficiais generais)', outorga: '«A ESG outorga o presente diploma…» (militares que não são oficiais generais)' }
 
 async function novo() {
   const { jsPDF } = await import('jspdf')
@@ -226,16 +232,18 @@ function diplomaOutorga(d, c, o) {
   doc.setFont('helvetica', 'normal').setFontSize(5.5).setTextColor(120).text(`Código de verificação: ${c.codigo}`, cx, 293, { align: 'center' }).setTextColor(0)
 }
 
-// documentos: ['certificado', 'diploma']; um PDF para o estudante, com os modelos do curso (ou os da turma)
-export async function gerarDiplomas(c, o, documentos) {
+// documentos: ['certificado', 'diploma']; um PDF para o estudante. previa: devolve o endereço do PDF (para ver no ecrã)
+export async function gerarDiplomas(c, o, documentos, { previa = false } = {}) {
   const d = await novo()
-  const m = { ...modelosDoCurso(c.curso), ...(o.modeloCertificado ? { certificado: o.modeloCertificado } : {}), ...(o.modeloDiploma ? { diploma: o.modeloDiploma } : {}) }
+  const m = { ...modelosDe(c.curso, c.estudante.dados?.posto), ...(o.modeloCertificado ? { certificado: o.modeloCertificado } : {}), ...(o.modeloDiploma ? { diploma: o.modeloDiploma } : {}) }
   // primeiro os fundos e as letras; depois as páginas
   if (documentos.includes('certificado')) await prepararModelo(d, m.certificado)
   if (documentos.includes('diploma') && m.diploma === 'atesta') await prepararModelo(d, 'atesta')
   if (documentos.includes('diploma') && m.diploma === 'outorga') await prepararGenerais(d)
   if (documentos.includes('certificado')) (m.certificado === 'tabela' ? certificadoTabela : certificadoLista)(d, c, o)
   if (documentos.includes('diploma')) (m.diploma === 'outorga' ? diplomaOutorga : diplomaAtesta)(d, c, o)
+  if (previa) return d.doc.output('bloburl')
   const nome = c.estudante.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()
   d.doc.save(`${nome}-${documentos.join('-')}.pdf`)
+  return null
 }
