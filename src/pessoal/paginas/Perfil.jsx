@@ -8,6 +8,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import DocumentosPessoais from '../componentes/DocumentosPessoais'
 import Familiares from '../componentes/Familiares'
+import PesquisaGeral from '../componentes/PesquisaGeral'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
@@ -82,6 +83,7 @@ export default function Perfil() {
 
   return (
     <>
+      <PesquisaGeral grande />
       <div className="pes-ficha-hdr">
         <div className="pes-ficha-avatar">{urlDaFoto ? <img src={urlDaFoto} alt="" /> : iniciais(p.nome)}</div>
         <div className="pes-ficha-info">
