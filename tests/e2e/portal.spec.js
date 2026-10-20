@@ -61,11 +61,13 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Criar turma' }).click()
   await page.getByRole('row', { name: new RegExp(`CEM E2E ${sufixo}`) }).getByRole('link', { name: 'Abrir' }).click()
 
+  await page.getByRole('button', { name: 'Matricular estudantes' }).click()
   await page.getByLabel('Pesquisar estudantes registados').fill(estudante)
   await page.getByRole('checkbox', { name: 'Maj. Estudante Teste' }).check()
   await page.getByRole('button', { name: /Matricular 1 estudante/ }).click()
   await expect(page.getByText(/1 estudante\(s\) matriculado\(s\)/)).toBeVisible()
 
+  await page.getByRole('tab', { name: /Cadeiras e horário/ }).click()
   await page.getByLabel('Código').fill('EST101')
   await page.getByLabel('Nome', { exact: true }).fill('Estratégia Militar')
   await page.getByLabel('Período').selectOption('anual')
