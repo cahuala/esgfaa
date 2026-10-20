@@ -7,6 +7,7 @@ import { PROVINCIAS, comDerivados, problemaNaFicha } from '../dominio/pessoal/fi
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
+import { chaveCargo } from './tabelaSalarial.js'
 import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
@@ -120,7 +121,11 @@ export class ServicoPessoas {
     f.planoFerias = (await this.bd.planoFerias.findMany({ where: { pessoaId: p.id }, orderBy: { ano: 'desc' }, take: 5 })).map(({ ano, mes }) => ({ ano, mes }))
     f.diasFerias = diasDeFerias(p, hoje)
     f.feriasAdicionais = feriasAdicionais(p, hoje)
-    if (p.tipo === 'civil' && this.tabelaSalarial) f.remuneracao = remuneracaoDaCategoria(p.carreiraCivil, await this.tabelaSalarial.basesCivis())
+    if (p.tipo === 'civil' && this.tabelaSalarial) {
+      f.remuneracao = remuneracaoDaCategoria(p.carreiraCivil, await this.tabelaSalarial.basesCivis())
+      // vencimento do cargo (tabela dos civis por cargo), antes do da categoria
+      f.vencimentoCargo = p.cargo ? (await this.tabelaSalarial.basesCargos())[chaveCargo(p.cargo.nome)] ?? null : null
+    }
     f.eventos = p.eventos.map((e) => ({ ...e, tipoNome: TIPOS_EVENTO[e.tipo] ?? e.tipo, postoAnteriorNome: e.postoAnterior ? nomeDoPosto(e.postoAnterior, p.ramo) : '', postoNovoNome: e.postoNovo ? nomeDoPosto(e.postoNovo, p.ramo) : '' }))
     f.graduacoes = p.graduacoes.map((g) => ({ ...g, postoNome: nomeDoPosto(g.posto, p.ramo) }))
     f.cursos = p.cursos.map((c) => ({ ...c, chaveNome: CURSOS_PROMOCAO[c.chave] ?? '' }))

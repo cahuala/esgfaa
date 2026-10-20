@@ -11,8 +11,8 @@ const civil = (p) => p.tipo === 'civil'
 const hoje = () => new Date().toISOString().slice(0, 10)
 
 const FINALIDADE = { campo: 'finalidade', rotulo: 'Finalidade (OBS)', tipo: 'texto', ajuda: 'Ex.: efeito de Actualização de Conta Bancária; obtenção de Visto para Portugal.' }
-// vencimento da tabela salarial (líquido): do posto (militares) ou da categoria (civis)
-export const vencimentoDaTabela = (p) => (militar(p) ? p.vencimentoTabela?.liquido : p.remuneracao?.liquido) ?? null
+// vencimento da tabela salarial (líquido): do posto (militares); do cargo e, sem ele, da categoria (civis)
+export const vencimentoDaTabela = (p) => (militar(p) ? p.vencimentoTabela?.liquido : p.vencimentoCargo ?? p.remuneracao?.liquido) ?? null
 /*
   O vencimento escreve-se ao emitir; se ficar vazio, vai o da ficha e, sem ele, o líquido da tabela salarial.
   Nas declarações de efectividade e de serviço pode escolher-se não falar do vencimento.

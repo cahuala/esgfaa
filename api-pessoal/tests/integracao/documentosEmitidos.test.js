@@ -97,4 +97,19 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'funcionario', nome: 'Maria Teresa Kiala', genero: 'F', carreiraCivil: 'auxiliar_servicos_gerais', categoriaCivil: 'Auxiliar de Serviços Gerais de 2.ª Classe' }).expect(201)).body
     assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.remuneracao.vencimentoBase, 160000)
   })
+
+  it('tabela salarial dos civis por cargo (como no SIGP): o vencimento do cargo vai para a ficha', async () => {
+    const cg = (await adm.post('/api/cargos').send({ nome: 'Operador de Computador', tipo: 'civil', funcao: 'execucao', vagas: 2 }))
+    assert.ok([200, 201].includes(cg.status), JSON.stringify(cg.body))
+    const t = (await adm.get('/api/tabela-salarial-civis/cargos').expect(200)).body
+    const l = t.find((x) => x.nome === 'Operador de Computador')
+    assert.deepEqual([l.lugares, l.vencimento], [2, null])
+    const novo = (await adm.put('/api/tabela-salarial-civis/cargos').send({ chave: l.chave, vencimento: 172408.5 }).expect(200)).body
+    assert.equal(novo.find((x) => x.chave === l.chave).vencimento, 172408.5)
+    assert.equal((await adm.put('/api/tabela-salarial-civis/cargos').send({ chave: 'inventado', vencimento: 1 })).status, 400)
+    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'funcionario', nome: 'Jodiana Suja Manuel', genero: 'F', carreiraCivil: 'tecnico_medio', cargoId: cg.body.id })).body
+    assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.vencimentoCargo, 172408.5)
+    await adm.put('/api/tabela-salarial-civis/cargos').send({ chave: l.chave, vencimento: null }).expect(200)
+    assert.equal((await adm.get(`/api/pessoas/${c.id}`)).body.vencimentoCargo, null)
+  })
 })
