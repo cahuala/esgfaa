@@ -8,6 +8,8 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import DocumentosPessoais from '../componentes/DocumentosPessoais'
 import Familiares from '../componentes/Familiares'
+import CartaoMulticaixa from '../componentes/CartaoMulticaixa'
+import { BANCOS, bancoDe } from '../bancos'
 import Disciplina from '../componentes/Disciplina'
 import RegistoBiografico from '../componentes/RegistoBiografico'
 import PesquisaGeral from '../componentes/PesquisaGeral'
@@ -247,8 +249,14 @@ export default function Perfil() {
       {aba === 'bancario' && (
         <>
           <Bloco titulo="Dados bancários" icone="fa-university">
-            <Grelha><Dado r="Banco" v={p.banco} /><Dado r="IBAN" v={p.iban && <span className="font-monospace">{p.iban}</span>} /><Dado r="Número de conta" v={p.numeroConta && <span className="font-monospace">{p.numeroConta}</span>} /></Grelha>
-            {!p.banco && !p.iban && !p.numeroConta && <p className="small text-muted mb-0 mt-3"><i className="fa fa-info-circle me-1" />Sem dados bancários registados.</p>}
+            {!p.banco && !p.iban && !p.numeroConta ? <p className="small text-muted mb-0"><i className="fa fa-info-circle me-1" />Sem dados bancários registados.</p> : (
+              <div className="row g-4 align-items-center">
+                <div className="col-md-5"><CartaoMulticaixa p={p} /></div>
+                <div className="col-md-7">
+                  <Grelha><Dado r="Banco" v={[p.banco, BANCOS[bancoDe(p.banco)]?.nome].filter((x, i, l) => x && l.indexOf(x) === i).join(' — ')} /><Dado r="IBAN" v={p.iban && <span className="font-monospace">{p.iban}</span>} /><Dado r="Número de conta" v={p.numeroConta && <span className="font-monospace">{p.numeroConta}</span>} /></Grelha>
+                </div>
+              </div>
+            )}
           </Bloco>
           <Bloco titulo="Vencimento" icone="fa-coins">
             <Grelha>
