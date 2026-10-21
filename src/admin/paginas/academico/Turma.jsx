@@ -6,6 +6,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { PERIODOS } from './comum'
 import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
+import PlanoCursoTurma from './PlanoCursoTurma'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
@@ -78,6 +79,7 @@ function Turma() {
     ['estudantes', tx('Estudantes'), 'fa-user-graduate', t.matriculas.length],
     ...(t.anoFinal ? [['finalistas', tx('Finalistas e TFC'), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
     ['cadeiras', tx('Cadeiras e horário'), 'fa-book', t.cadeiras.length],
+    ['plano', tx('Plano de curso'), 'fa-clipboard-list', null],
     ['documentos', tx('Documentos da turma'), 'fa-print', null],
     ...(t.cadeiras.length ? [['avaliacao', tx('Avaliação dos docentes'), 'fa-star-half-alt', null]] : []),
   ]
@@ -203,6 +205,7 @@ function Turma() {
         </Painel>
       )}
 
+      {aba === 'plano' && <PlanoCursoTurma turma={t} gerir={gerir} avisar={setAviso} aoMudar={carregar} />}
       {aba === 'avaliacao' && t.cadeiras.length > 0 && <AvaliacaoDocentes turma={t} gerir={gerir} avisar={setAviso} />}
 
       {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}

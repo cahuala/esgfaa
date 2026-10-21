@@ -35,7 +35,7 @@ describe('portal: regra de avaliação partilhada com a API', () => {
     expect(resultadoDisciplina({ p1: 14, p2: 16 }).situacao).toBe('dispensado')
     expect(resultadoDisciplina({ p1: 12, p2: 13, exame: 11 }).final).toBe(12)
     expect(resultadoDisciplina({ p1: 14, p2: 16 }, { assiduidade: 50 }).situacao).toBe('excluido')
-    expect(Object.keys(SITUACOES)).toEqual(['em_curso', 'dispensado', 'exame', 'recurso', 'aprovado', 'reprovado', 'excluido'])
+    expect(Object.keys(SITUACOES)).toEqual(['em_curso', 'dispensado', 'exame', 'recurso', 'aprovado', 'reprovado', 'excluido', 'recuperacao', 'sem_provas'])
     expect(REGRA).toMatch(/40 % MAC \+ 60 % exame/)
     expect(REGRA).toMatch(/75 % de presenças/)
   })

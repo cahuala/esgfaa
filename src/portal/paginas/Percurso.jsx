@@ -47,6 +47,8 @@ function Percurso() {
         </div>
       </div>
 
+      {p.planoCurso && <PlanoCurso pc={p.planoCurso} conclusao={p.conclusao} />}
+
       {p.anos.length === 0 ? <Vazio>{tx('Ainda não tem matrículas.')}</Vazio> : (
         <div className="timeline p-percurso">
           {[...p.anos].reverse().map((a) => {
@@ -140,6 +142,35 @@ function Percurso() {
       )}
       <p className="p-legenda">{REGRA} {tx('Só contam as notas já publicadas.')}</p>
     </>
+  )
+}
+
+// a classificação pelo plano de curso da ESG: os blocos, a média ponderada, a nota final e a menção
+function PlanoCurso({ pc, conclusao }) {
+  const formula = { ponderada: tx('média dos blocos ponderada pelos coeficientes'), percentagem: tx('média dos blocos com pesos em percentagem'), media: tx('média das unidades curriculares') }[pc.formula]
+  return (
+    <div className="card mb-3">
+      <div className="card-header fw-bold"><i className="fa fa-clipboard-list me-2" />{pc.nome}</div>
+      <div className="card-body">
+        {pc.blocos.length > 0 && (
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-3">
+              <thead><tr><th>{tx('Bloco')}</th><th className="text-center">{tx('UC')}</th><th className="text-center">{tx('Coeficiente')}</th><th className="text-center">{tx('Nota do bloco')}</th></tr></thead>
+              <tbody>{pc.blocos.map((b) => (
+                <tr key={b.sigla}><td><b>{b.sigla}</b> — {b.nome}</td><td className="text-center">{b.ucs}</td><td className="text-center">{String(b.coeficiente).replace('.', ',')}</td><td className="text-center"><Nota valor={b.nota} />{b.nota !== null && !b.aprovado && <small className="d-block text-danger">{tx('abaixo de 10')}</small>}</td></tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        <div className="d-flex flex-wrap gap-4 align-items-end">
+          <div><div className="text-muted small">{tx('Média')} ({formula})</div><div className="fs-20px fw-bold"><Nota valor={pc.media} /></div></div>
+          {pc.ajuste ? <div><div className="text-muted small">{tx('Ajuste do Comandante')}</div><div className="fs-20px fw-bold">{pc.ajuste > 0 ? '+' : ''}{String(pc.ajuste).replace('.', ',')}</div></div> : null}
+          <div><div className="text-muted small">{tx('Nota final')}</div><div className="fs-20px fw-bold"><Nota valor={pc.final} forte /></div></div>
+          <div><div className="text-muted small">{tx('Menção')}</div><div className="fs-20px fw-bold">{pc.mencao || '—'}</div></div>
+        </div>
+        {!conclusao.concluido && conclusao.emFalta?.length > 0 && <div className="small text-muted mt-3"><b>{tx('Para concluir o curso:')}</b> {conclusao.emFalta.join(' · ')}</div>}
+      </div>
+    </div>
   )
 }
 

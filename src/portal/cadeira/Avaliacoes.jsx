@@ -4,13 +4,27 @@ import { api } from '../api'
 import { Cartao, Vazio } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import Composicao from './Composicao'
+import { MinhasNotasEsg, PautaEsg } from './PautaEsg'
 import { exportarPautaExcel } from '../exportarPauta'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
 function Avaliacoes(props) {
-  return props.eDocente ? <Pauta {...props} /> : <MinhasNotas {...props} />
+  const [notasEsg, setNotasEsg] = useState(null)
+  // turma com plano de curso da ESG: provas TAI/TAG em vez de 1.ª/2.ª prova, exame e recurso
+  if (props.eDocente) return <PautaOuEsg {...props} />
+  if (props.c.notas?.modo === 'esg') return <MinhasNotasEsg c={props.c} n={notasEsg ?? props.c.notas} pedir={api} avisar={props.avisar} aoMudar={setNotasEsg} />
+  return <MinhasNotas {...props} />
+}
+
+// a pauta do docente: a da ESG (provas) se a turma tiver plano de curso, senão a clássica
+function PautaOuEsg(props) {
+  const [modo, setModo] = useState(null)
+  const { c } = props
+  useEffect(() => { api(`/cadeiras/${c.id}/pauta`).then((r) => setModo(r.modo === 'esg' ? 'esg' : 'classica')).catch(() => setModo('classica')) }, [c.id])
+  if (!modo) return <p className="p-texto-suave">{tx('A carregar a pauta…')}</p>
+  return modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} /> : <Pauta {...props} />
 }
 
 // estudante: as suas notas nesta disciplina, em linha

@@ -72,6 +72,9 @@ import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.j
 import { ServicoPrazosNotas } from './aplicacao/academico/administracao/prazosNotas.js'
 import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { RepositorioPrazosNotas } from './infraestrutura/repositorios/prazosNotas.js'
+import { RepositorioPlanosCurso } from './infraestrutura/repositorios/planosCurso.js'
+import { ServicoAvaliacaoEsg } from './aplicacao/academico/partilhado/avaliacaoEsg.js'
+import { ServicoPlanosCurso } from './aplicacao/academico/administracao/planosCurso.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
 import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
@@ -139,6 +142,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     academico: new RepositorioAcademico({ prisma }),
     recursos: new RepositorioRecursosCadeira({ prisma }),
     prazosNotas: new RepositorioPrazosNotas({ prisma }),
+    planosCurso: new RepositorioPlanosCurso({ prisma }),
     comunicacao: new RepositorioComunicacao({ prisma }),
     copias: new RepositorioCopias({ prisma }),
     inqueritos: new RepositorioInqueritos({ prisma }),
@@ -177,9 +181,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     // avisos no telemóvel (os testes trazem um falso; null desliga)
     push: 'push' in externos ? externos.push : criarPush(config),
   })
-  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio })
+  // avaliação pelos planos de curso da ESG (TAI/TAG, blocos, coeficientes): nas turmas com plano
+  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg })
 
-  const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao })
+  const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao, esg })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
   // serviços externos opcionais: sem chave ficam desligados (os testes substituem-nos)
   // Lei n.º 22/11: a IA e a pesquisa externas (fora de Angola) só com autorização expressa (DADOS_FORA_DE_ANGOLA=sim)
@@ -208,7 +214,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     const pacotes = new ServicoPacotes({ pacotes: r.pacotes, academico: r.academico, recursos: r.recursos, contas: r.contasPortal, apoio, disponibilidade, registos, privados, segredo: config.segredoJwt })
     const d = {
       lti, pacotes, academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, grupos: r.grupos, workshops: r.workshops, contas: r.contasPortal,
-      registos, pautas, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade, jitsiUrl: config.jitsiUrl,
+      registos, pautas, esg, notificacoes, copias, disponibilidade, privados, auditoria, relogio, acesso, apoio, percursos, certificadosCurso: r.conclusao, filtroHtml: filtrarHtml, originalidade, jitsiUrl: config.jitsiUrl,
     }
     return {
       painel: new ServicoPainel(d),
@@ -232,7 +238,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // casos de uso da Administração Escolar (painel)
   const administracaoEscolar = () => {
     const d = {
-      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, notificacoes, copias, copiasRepo: r.copias,
+      contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, esg, planosCurso: r.planosCurso, notificacoes, copias, copiasRepo: r.copias,
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
     }
     return {
@@ -242,6 +248,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       turmas: new ServicoTurmas(d),
       cadeiras: new ServicoCadeiras(d),
       pautas: new ServicoPautasAdministracao(d),
+      planosCurso: new ServicoPlanosCurso(d),
       calendario: new ServicoCalendarioAcademico(d),
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),

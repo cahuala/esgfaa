@@ -19,8 +19,12 @@ const media = (valores) => (valores.length ? Math.round((valores.reduce((s, v) =
   Cada disciplina: { cadeira: { id, codigo, nome, horas, … }, p1, p2, mac, exame, recurso, final, situacao, classificacao }.
 */
 export class PercursoAcademico {
-  constructor({ estudante = null, anos = [], inscricoes = [], tfc = null, certificado = null }) {
-    Object.assign(this, { estudante, anos, inscricoes, tfc, certificado })
+  /*
+    planoCurso: o resultado pelo plano de curso da ESG (blocos, coeficientes, menção), quando a turma o tem;
+    nesse caso a conclusão, a média final e a classificação vêm do plano.
+  */
+  constructor({ estudante = null, anos = [], inscricoes = [], tfc = null, certificado = null, planoCurso = null }) {
+    Object.assign(this, { estudante, anos, inscricoes, tfc, certificado, planoCurso })
   }
 
   static resumir(linhas) {
@@ -63,6 +67,7 @@ export class PercursoAcademico {
 
   // o que falta para concluir o curso
   get emFalta() {
+    if (this.planoCurso) return this.planoCurso.emFalta
     const falta = this.unidadesCurriculares.filter((l) => !aprovada(l)).map((l) => `${l.cadeira.codigo} ${l.cadeira.nome}`)
     if (!this.tfc) falta.push('Trabalho de fim de curso (por lançar)')
     else if (!this.tfc.aprovado) falta.push(this.tfc.defendido ? 'Trabalho de fim de curso (reprovado)' : 'Trabalho de fim de curso (por defender)')
@@ -70,10 +75,12 @@ export class PercursoAcademico {
   }
 
   get concluido() {
+    if (this.planoCurso) return this.planoCurso.concluido
     return this.disciplinasConcluidas && Boolean(this.tfc?.aprovado)
   }
 
   get mediaFinal() {
+    if (this.planoCurso) return this.planoCurso.concluido ? this.planoCurso.final : null
     if (!this.concluido) return null
     const notas = this.unidadesCurriculares.map((l) => Number(l.final))
     const soma = notas.reduce((s, v) => s + v, 0) + this.tfc.nota * CONCLUSAO_CURSO.pesoTfc
@@ -81,6 +88,7 @@ export class PercursoAcademico {
   }
 
   get classificacaoFinal() {
+    if (this.planoCurso) return this.planoCurso.concluido ? this.planoCurso.mencao : null
     return this.mediaFinal === null ? null : classificacao(Math.round(this.mediaFinal))
   }
 
@@ -92,6 +100,7 @@ export class PercursoAcademico {
       resumo: this.resumo,
       tfc: this.tfc && { ...this.tfc, aprovado: this.tfc.aprovado, classificacao: this.tfc.classificacao },
       conclusao: { concluido: this.concluido, mediaFinal: this.mediaFinal, classificacaoFinal: this.classificacaoFinal, emFalta: this.emFalta },
+      planoCurso: this.planoCurso && { nome: this.planoCurso.plano.nome, termo: this.planoCurso.plano.termo, formula: this.planoCurso.plano.formula, blocos: this.planoCurso.blocos, media: this.planoCurso.media, ajuste: this.planoCurso.ajuste, final: this.planoCurso.final, mencao: this.planoCurso.mencao },
       certificado: this.certificado,
     }
   }

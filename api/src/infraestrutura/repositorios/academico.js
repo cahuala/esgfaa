@@ -23,6 +23,7 @@ const cadeiraLinha = (c) => {
     id: c.id, turmaId: c.turmaId, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, descricao: c.descricao,
     programa: c.programa ?? '', programaFicheiroId: c.programaFicheiroId ?? null,
     notasPublicadas: c.notasPublicadas ?? [],
+    bloco: c.bloco ?? '', creditos: c.creditos ?? 0, horasContacto: c.horasContacto ?? 0, horasNaoContacto: c.horasNaoContacto ?? 0, tii: Boolean(c.tii),
     docentes, docente: regente,
     turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo, anoCurricular: c.turma.anoCurricular } : undefined,
   }

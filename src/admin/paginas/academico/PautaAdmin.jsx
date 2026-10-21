@@ -6,6 +6,7 @@ import { Carregando } from '../../componentes/Ui'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../../../portal/regraAvaliacao'
 import Composicao from '../../../portal/cadeira/Composicao'
 import { exportarPautaExcel } from '../../../portal/exportarPauta'
+import { PautaEsg } from '../../../portal/cadeira/PautaEsg'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const COR = { cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }
@@ -32,12 +33,15 @@ function PautaAdmin({ cadeira, avisar }) {
 
   const aplicar = useCallback((r) => {
     setP(r)
+    if (r.modo === 'esg') return
     setEdicao(Object.fromEntries(r.linhas.map((l) => [l.estudante.id, { ...Object.fromEntries(COMPONENTES_NOTA.map((k) => [k, paraTexto(l[k])])), observacao: l.observacao }])))
     setAlterado(false)
   }, [])
   useEffect(() => { api(`/academico/cadeiras/${cadeira.id}/pauta`).then(aplicar).catch((e) => avisar({ tipo: 'erro', texto: e.message })) }, [cadeira.id, aplicar, avisar])
 
   if (!p) return <Carregando />
+  // turma com plano de curso da ESG: as provas TAI/TAG
+  if (p.modo === 'esg') return <PautaEsg c={cadeira} avisar={avisar} pedir={api} base={`/academico/cadeiras/${cadeira.id}`} />
   if (p.linhas.length === 0) return <div className="alert alert-info mb-0">{tx('A turma não tem estudantes matriculados.')}</div>
 
   const resultado = (l) => {

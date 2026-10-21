@@ -83,6 +83,7 @@ export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(2
 export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: texto(20).optional() })
 export const cadeira = z.object({
   codigo: texto(40).optional(), nome: texto(200).optional(), periodo: texto(10).optional(), horas: textoLivre(6), descricao: texto(3000).optional(),
+  bloco: texto(12).optional(), creditos: textoLivre(4), horasContacto: textoLivre(5), horasNaoContacto: textoLivre(5), tii: z.boolean().optional(),
 })
 export const alocacao = z.object({
   docentes: z.array(z.object({ docenteId: idNumerico, papel: texto(20).optional(), horas: textoLivre(6) })).max(20),
@@ -293,3 +294,14 @@ export const verificarDocumento = z.object({ titulo: texto(300).optional(), auto
 export const alvoTraducao = z.object({ colecao: z.enum(['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'revistas', 'paginas']), id })
 export const alvoTraducaoLingua = alvoTraducao.extend({ lingua: z.enum(['en', 'fr', 'es']) })
 export const traducao = z.object({ textos: z.record(z.string().max(300), z.string().max(60_000)).default({}), estado: z.enum(['rascunho', 'publicada']).default('rascunho') })
+
+// planos de curso da ESG: o plano, as provas (TAI/TAG) e as notas
+export const planoCurso = z.object({
+  curso: texto(120), anoLetivo: texto(20), nome: texto(200), termo: texto(20).optional(), formula: texto(20),
+  blocos: z.array(z.object({ sigla: texto(12), nome: texto(120), coeficiente: z.union([z.number(), texto(10)]) })).max(20).optional(),
+  ajusteMaximo: z.union([z.number(), texto(6)]).optional(), exigirBlocos: z.boolean().optional(), exigirTesteEscrito: z.boolean().optional(), faltasMaximas: z.union([z.number(), texto(4)]).optional(),
+})
+export const modeloPlano = z.object({ modelo: texto(40) })
+export const provaUc = z.object({ tipo: texto(4).optional(), forma: texto(20).optional(), titulo: texto(150).optional(), data: z.union([texto(10), z.literal(''), z.null()]).optional() })
+export const notasProva = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, nota: z.union([z.number(), texto(6), z.null()]).optional(), recuperacao: z.union([z.number(), texto(6), z.null()]).optional() })).max(500) })
+export const publicarProva = z.object({ publicar: z.boolean() })

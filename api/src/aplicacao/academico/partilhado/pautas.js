@@ -15,8 +15,8 @@ import { SemPermissao } from '../../../dominio/comum/erros.js'
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio }) {
-    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio })
+  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio, esg = null }) {
+    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio, esg })
   }
 
   // o dia de hoje na hora de Luanda (AAAA-MM-DD)
@@ -78,6 +78,7 @@ export class ServicoPautas {
 
   // recalcula e grava na pauta as componentes calculadas (chamado ao abrir a pauta e quando chegam notas novas)
   async sincronizar(cadeira) {
+    if (await this.modoEsg(cadeira)) return {}
     const composicoes = await this.academico.composicoes(cadeira.id)
     if (!Object.keys(composicoes).length) return composicoes
     const estudantes = (await this.academico.estudantesDaPautaDaCadeira(cadeira)).map((e) => e.id)
@@ -104,8 +105,14 @@ export class ServicoPautas {
     return this.pauta(cadeira)
   }
 
+  // a turma segue um plano de curso da ESG? (então a pauta é a das provas TAI/TAG)
+  async modoEsg(cadeira) {
+    return Boolean(this.esg && (await this.esg.planoDaCadeira(cadeira)))
+  }
+
   // matriz: estudantes × componentes, com MAC, nota final, situação e classificação
   async pauta(cadeira) {
+    if (await this.modoEsg(cadeira)) return this.esg.pauta(cadeira)
     const composicoes = await this.sincronizar(cadeira)
     const [trabalhos, questionarios] = await Promise.all([this.academico.trabalhos(cadeira.id), this.recursos.questionarios(cadeira.id)])
     const workshops = this.workshops ? await this.workshops.workshops(cadeira.id) : []

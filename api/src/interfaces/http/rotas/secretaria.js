@@ -75,6 +75,21 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await a.pautas.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))
   r.put('/cadeiras/:id/pauta/composicao', validar({ params: pId, body: E.composicao }), async (req, res) => res.json(await a.pautas.definirComposicao(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/cadeiras/:id/pauta/publicacao', validar({ params: pId, body: E.publicacaoNotas }), async (req, res) => res.json(await a.pautas.publicarNotas(ctx(req), req.dados.params.id, req.dados.body.publicadas)))
+  // planos de curso da ESG: o plano, os modelos 2026/2027, a pauta geral e as provas TAI/TAG de cada UC
+  const pc = a.planosCurso
+  const pProva = z.object({ id: E.idNumerico, prova: E.idNumerico })
+  r.get('/planos-curso', async (req, res) => res.json(await pc.listar(ctx(req))))
+  r.post('/planos-curso', validar({ body: E.planoCurso }), async (req, res) => res.status(201).json(await pc.guardar(ctx(req), null, req.dados.body)))
+  r.put('/planos-curso/:id', validar({ params: pId, body: E.planoCurso }), async (req, res) => res.json(await pc.guardar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.delete('/planos-curso/:id', validar({ params: pId }), async (req, res) => { await pc.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/turmas/:id/plano-curso', validar({ params: pId }), async (req, res) => res.json(await pc.daTurma(ctx(req), req.dados.params.id)))
+  r.post('/turmas/:id/plano-curso', validar({ params: pId, body: E.modeloPlano }), async (req, res) => res.status(201).json(await pc.carregarModelo(ctx(req), req.dados.params.id, req.dados.body.modelo)))
+  r.get('/turmas/:id/pauta-plano', validar({ params: pId }), async (req, res) => res.json(await pc.pautaGeral(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/provas', validar({ params: pId, body: E.provaUc }), async (req, res) => res.status(201).json(await pc.criarProva(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/cadeiras/:id/provas/:prova', validar({ params: pProva, body: E.provaUc }), async (req, res) => res.json(await pc.editarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body)))
+  r.delete('/cadeiras/:id/provas/:prova', validar({ params: pProva }), async (req, res) => res.json(await pc.apagarProva(ctx(req), req.dados.params.id, req.dados.params.prova)))
+  r.put('/cadeiras/:id/provas/:prova/notas', validar({ params: pProva, body: E.notasProva }), async (req, res) => res.json(await pc.notasProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.linhas)))
+  r.put('/cadeiras/:id/provas/:prova/publicacao', validar({ params: pProva, body: E.publicarProva }), async (req, res) => res.json(await pc.publicarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.publicar)))
   r.post('/cadeiras/:id/horarios', validar({ params: pId, body: E.horario }), async (req, res) => res.status(201).json(await a.cadeiras.criarHorario(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/horarios/:id', validar({ params: pId }), async (req, res) => { await a.cadeiras.apagarHorario(ctx(req), req.dados.params.id); res.status(204).end() })
 

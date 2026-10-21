@@ -14,8 +14,18 @@ export class ServicoCadeiras {
     if (!Number.isInteger(horas) || horas < 0 || horas > 1000) throw new ErroValidacao('Horas inválidas.', { campo: 'horas' })
     const codigo = texto(dados.codigo, 'codigo', 'Código', { min: 2, max: 20 }).toUpperCase()
     if (!/^[A-Z0-9-]+$/.test(codigo)) throw new ErroValidacao('O código só tem letras, números e hífens.', { campo: 'codigo' })
+    const inteiro = (v, campo, rotulo, max) => {
+      const n = Number(v ?? 0)
+      if (!Number.isInteger(n) || n < 0 || n > max) throw new ErroValidacao(`${rotulo} inválido(as).`, { campo })
+      return n
+    }
+    // plano de curso da ESG: bloco, créditos (UCréd), horas de contacto e de não contacto, UC do TII
+    const horasContacto = inteiro(dados.horasContacto, 'horasContacto', 'Horas de contacto', 1000)
+    const horasNaoContacto = inteiro(dados.horasNaoContacto, 'horasNaoContacto', 'Horas de não contacto', 1000)
     return {
-      codigo, horas,
+      codigo, horas: horasContacto + horasNaoContacto > 0 && !horas ? horasContacto + horasNaoContacto : horas,
+      bloco: String(dados.bloco ?? '').trim().toUpperCase().slice(0, 12), creditos: inteiro(dados.creditos, 'creditos', 'Unidades de crédito', 80),
+      horasContacto, horasNaoContacto, tii: Boolean(dados.tii),
       periodo: escolha(String(dados.periodo ?? '1'), 'periodo', 'Período', Object.keys(PERIODOS)),
       nome: texto(dados.nome, 'nome', 'Nome', { min: 3, max: 150 }),
       descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
@@ -127,7 +137,7 @@ export class ServicoCadeiras {
       let alvo = existentes.find((x) => x.codigo === o.codigo)
       let criada = false
       if (!alvo) {
-        const nova = await this.academico.criarCadeira({ turmaId: destino.id, codigo: o.codigo, nome: o.nome, periodo: o.periodo, horas: o.horas, descricao: o.descricao })
+        const nova = await this.academico.criarCadeira({ turmaId: destino.id, codigo: o.codigo, nome: o.nome, periodo: o.periodo, horas: o.horas, descricao: o.descricao, bloco: o.bloco, creditos: o.creditos, horasContacto: o.horasContacto, horasNaoContacto: o.horasNaoContacto, tii: o.tii })
         alvo = await this.academico.cadeira(nova.id)
         criada = true
       } else if (await this.copiasRepo.temConteudos(alvo.id)) {

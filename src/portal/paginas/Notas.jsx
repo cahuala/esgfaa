@@ -5,7 +5,7 @@ import { api } from '../api'
 import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
-import { PERIODOS, REGRA } from '../regraAvaliacao'
+import { PERIODOS, REGRA, REGRA_ESG } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
@@ -39,7 +39,8 @@ function Notas() {
             <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo={tx('POR CONCLUIR')} valor={lista.length - concluidas.length} nota={tx('Ver percurso académico')} para="/percurso" /></div>
           </div>
 
-          <Cartao titulo={<><i className="fa fa-table me-2" />{tx('Boletim de notas')}</>} corpo={false}>
+          {lista.some((l) => l.modo === 'esg') && <BoletimEsg lista={lista.filter((l) => l.modo === 'esg')} semestres={semestres} />}
+          {lista.some((l) => l.modo !== 'esg') && <Cartao titulo={<><i className="fa fa-table me-2" />{tx('Boletim de notas')}</>} corpo={false}>
             <div className="table-responsive">
               <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz">
                 <thead>
@@ -57,7 +58,7 @@ function Notas() {
                 {semestres.map((s) => (
                   <tbody key={s}>
                     {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={8}>{PERIODOS[s]}</th></tr>}
-                    {lista.filter((l) => l.cadeira.periodo === s).map((l) => (
+                    {lista.filter((l) => l.cadeira.periodo === s && l.modo !== 'esg').map((l) => (
                       <tr key={l.cadeira.id}>
                         <th scope="row" className="p-matriz-nome">
                           <Link to={`/cadeiras/${l.cadeira.id}?separador=avaliacoes`}>{l.cadeira.nome}</Link>
@@ -79,10 +80,55 @@ function Notas() {
                 ))}
               </table>
             </div>
-          </Cartao>
-          <p className="p-legenda">{REGRA} {tx('Escala de 0 a 20. “—” = nota ainda não publicada.')}</p>
+          </Cartao>}
+          {lista.some((l) => l.modo !== 'esg') && <p className="p-legenda">{REGRA} {tx('Escala de 0 a 20. “—” = nota ainda não publicada.')}</p>}
         </>
       ))}
+    </>
+  )
+}
+
+// boletim pelo plano de curso da ESG: as provas (TAI/TAG) publicadas, a nota da UC e a menção
+function BoletimEsg({ lista, semestres }) {
+  return (
+    <>
+      <Cartao titulo={<><i className="fa fa-table me-2" />{tx('Boletim de notas — plano de curso da ESG')}</>} corpo={false}>
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover align-middle text-center mb-0 p-matriz">
+            <thead>
+              <tr>
+                <th scope="col" className="p-matriz-nome">{tx('Unidade curricular')}</th>
+                <th scope="col">{tx('Bloco')}</th>
+                <th scope="col">{tx('UCréd')}</th>
+                <th scope="col">{tx('Provas (TAI / TAG)')}</th>
+                <th scope="col" className="p-matriz-final">{tx('Nota da UC')}</th>
+                <th scope="col">{tx('Situação')}</th>
+              </tr>
+            </thead>
+            {semestres.map((s) => (
+              <tbody key={s}>
+                {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={6}>{PERIODOS[s]}</th></tr>}
+                {lista.filter((l) => l.cadeira.periodo === s).map((l) => (
+                  <tr key={l.cadeira.id}>
+                    <th scope="row" className="p-matriz-nome">
+                      <Link to={`/cadeiras/${l.cadeira.id}?separador=avaliacoes`}>{l.cadeira.nome}</Link>
+                      <small>{l.cadeira.codigo}{l.cadeira.docente && ` · ${l.cadeira.docente}`}</small>
+                    </th>
+                    <td>{l.cadeira.bloco || '—'}</td>
+                    <td>{l.cadeira.creditos || '—'}</td>
+                    <td className="text-start small">
+                      {l.tii ? tx('Trabalho de Investigação Individual') : l.provas.length ? l.provas.map((p) => <span key={p.id} className="me-2 text-nowrap"><span className={`badge ${p.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{p.tipo}</span>{p.titulo}: <Nota valor={p.recuperacao !== null ? Math.max(p.nota ?? 0, Math.min(p.recuperacao, 10)) : p.nota} /></span>) : <span className="text-muted">{tx('nenhuma publicada')}</span>}
+                    </td>
+                    <td className="p-matriz-final"><Nota valor={l.final} forte /></td>
+                    <td><Situacao situacao={l.situacao} />{l.mencao && l.situacao === 'aprovado' && <small className="p-classificacao">{l.mencao}</small>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      </Cartao>
+      <p className="p-legenda">{REGRA_ESG} {tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
     </>
   )
 }

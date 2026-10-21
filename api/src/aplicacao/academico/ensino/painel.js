@@ -114,7 +114,7 @@ export class ServicoPainel {
         }
       }),
       meuGrupo: await this.grupos.grupoDe(cadeira.id, conta.id),
-      notas: notasVisiveis(minhasNotas[cadeira.id], cadeira.notasPublicadas),
+      notas: this.esg && (await this.esg.planoDaCadeira(cadeira)) ? await this.esg.doEstudante(conta.id, cadeira) : notasVisiveis(minhasNotas[cadeira.id], cadeira.notasPublicadas),
       presencas,
       assiduidade: assiduidade(presencas),
     }

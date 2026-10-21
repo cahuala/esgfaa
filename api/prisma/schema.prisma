@@ -234,6 +234,7 @@ model ContaPortal {
   mensagensEnviadas           Mensagem[]                  @relation("enviadas")
   mensagensRecebidas          Mensagem[]                  @relation("recebidas")
   notas                       NotaPauta[]
+  notasAvaliacao              NotaAvaliacaoUc[]
   entregas                    Entrega[]
   presencas                   Presenca[]
   pedidos                     Pedido[]
@@ -311,6 +312,12 @@ model UnidadeCurricular {
   programa           String   @default("") // programa da cadeira escrito no portal (HTML filtrado)
   programaFicheiroId String?  @map("programa_ficheiro_id") // ou em documento (PDF, Word)
   notasPublicadas    String[] @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
+  // planos de curso da ESG: bloco de UC, unidades de crédito, horas de contacto e de não contacto; tii = a nota vem do TII
+  bloco              String   @default("")
+  creditos           Int      @default(0)
+  horasContacto      Int      @default(0) @map("horas_contacto")
+  horasNaoContacto   Int      @default(0) @map("horas_nao_contacto")
+  tii                Boolean  @default(false)
 
   turma            Turma              @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   docentes         Docencia[]
@@ -337,6 +344,7 @@ model UnidadeCurricular {
   inscricoes       InscricaoCadeira[]
 
   prazosNotas PrazoNotas[]
+  avaliacoes  AvaliacaoUc[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -1564,4 +1572,61 @@ model PedidoDados {
 
   @@index([estado])
   @@map("pedidos_dados")
+}
+
+// ---------- Planos de curso da ESG (avaliação por TAI/TAG, blocos e coeficientes) ----------
+
+// o plano de um curso num ano lectivo: as turmas desse curso e ano seguem estas regras
+model PlanoCurso {
+  id                 Int      @id @default(autoincrement())
+  curso              String // identificador do curso (coleção "cursos"), como na turma
+  anoLetivo          String   @map("ano_letivo")
+  nome               String
+  termo              String   @default("discente") // auditor | discente
+  formula            String   @default("ponderada") // ponderada | percentagem | media
+  blocos             Json     @default("[]") // [{ sigla, nome, coeficiente }]
+  ajusteMaximo       Decimal  @default(0) @map("ajuste_maximo") @db.Decimal(4, 2)
+  exigirBlocos       Boolean  @default(true) @map("exigir_blocos")
+  exigirTesteEscrito Boolean  @default(true) @map("exigir_teste_escrito")
+  faltasMaximas      Int      @default(10) @map("faltas_maximas") // % de faltas justificadas admitidas
+  criadoEm           DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm       DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@unique([curso, anoLetivo])
+  @@map("planos_curso")
+}
+
+// uma prova de avaliação de uma UC (TAI ou TAG)
+model AvaliacaoUc {
+  id          Int       @id @default(autoincrement())
+  cadeiraId   Int       @map("cadeira_id")
+  tipo        String // TAI | TAG
+  forma       String    @default("teste") // teste | relatorio | oral | trabalho
+  titulo      String
+  data        String? // AAAA-MM-DD
+  ordem       Int       @default(0)
+  publicadaEm DateTime? @map("publicada_em") @db.Timestamptz(3)
+  criadaEm    DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+  notas   NotaAvaliacaoUc[]
+
+  @@index([cadeiraId])
+  @@map("avaliacoes_uc")
+}
+
+model NotaAvaliacaoUc {
+  avaliacaoId         Int       @map("avaliacao_id")
+  estudanteId         Int       @map("estudante_id")
+  nota                Decimal?  @db.Decimal(4, 2)
+  recuperacao         Decimal?  @db.Decimal(4, 2) // teste de recuperação (conta no máximo 10)
+  recuperacaoPedidaEm DateTime? @map("recuperacao_pedida_em") @db.Timestamptz(3)
+  atualizadaEm        DateTime  @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz(3)
+
+  avaliacao AvaliacaoUc @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+
+  @@id([avaliacaoId, estudanteId])
+  @@index([estudanteId])
+  @@map("notas_avaliacao_uc")
 }

@@ -114,6 +114,14 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await e.pautaDocente.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))
   r.put('/cadeiras/:id/pauta/composicao', validar({ params: pId, body: E.composicao }), async (req, res) => res.json(await e.pautaDocente.definirComposicao(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/cadeiras/:id/pauta/publicacao', validar({ params: pId, body: E.publicacaoNotas }), async (req, res) => res.json(await e.pautaDocente.publicarNotas(ctx(req), req.dados.params.id, req.dados.body.publicadas)))
+  // plano de curso da ESG: provas TAI/TAG (docente) e pedido de teste de recuperação (estudante)
+  const pProva = z.object({ id: E.idNumerico, prova: E.idNumerico })
+  r.post('/cadeiras/:id/provas', validar({ params: pId, body: E.provaUc }), async (req, res) => res.status(201).json(await e.pautaDocente.criarProva(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/cadeiras/:id/provas/:prova', validar({ params: pProva, body: E.provaUc }), async (req, res) => res.json(await e.pautaDocente.editarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body)))
+  r.delete('/cadeiras/:id/provas/:prova', validar({ params: pProva }), async (req, res) => res.json(await e.pautaDocente.apagarProva(ctx(req), req.dados.params.id, req.dados.params.prova)))
+  r.put('/cadeiras/:id/provas/:prova/notas', validar({ params: pProva, body: E.notasProva }), async (req, res) => res.json(await e.pautaDocente.notasProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.linhas)))
+  r.put('/cadeiras/:id/provas/:prova/publicacao', validar({ params: pProva, body: E.publicarProva }), async (req, res) => res.json(await e.pautaDocente.publicarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.publicar)))
+  r.post('/cadeiras/:id/provas/:prova/recuperacao', validar({ params: pProva }), async (req, res) => res.json(await e.pautaDocente.pedirRecuperacao(ctx(req), req.dados.params.id, req.dados.params.prova)))
 
   r.post('/cadeiras/:id/trabalhos', ficheiro, validar({ params: pId, body: E.trabalho }), async (req, res) => {
     res.status(201).json(await e.trabalhos.criarTrabalho(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro))

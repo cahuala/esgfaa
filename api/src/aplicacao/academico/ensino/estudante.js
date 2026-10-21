@@ -15,12 +15,14 @@ export class ServicoEstudante {
     const cadeiras = await this.apoio.minhasCadeiras(ctx.conta)
     for (const c of cadeiras) await this.pautas.sincronizar(c) // componentes calculadas em dia
     const notas = await this.academico.notasDoEstudante(ctx.conta.id, cadeiras.map((c) => c.id))
-    // boletim em matriz: uma linha por disciplina, uma coluna por componente
-    return cadeiras.map((c) => ({
-      cadeira: { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, docente: c.docente?.nome || '' },
-      publicadas: c.notasPublicadas,
-      ...notasVisiveis(notas[c.id], c.notasPublicadas),
-    }))
+    // boletim em matriz: uma linha por disciplina, uma coluna por componente (ou as provas TAI/TAG, no plano da ESG)
+    const linhas = []
+    for (const c of cadeiras) {
+      const cadeira = { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, docente: c.docente?.nome || '', bloco: c.bloco, creditos: c.creditos }
+      if (this.esg && (await this.esg.planoDaCadeira(c))) linhas.push({ cadeira, ...(await this.esg.doEstudante(ctx.conta.id, c)) })
+      else linhas.push({ cadeira, publicadas: c.notasPublicadas, ...notasVisiveis(notas[c.id], c.notasPublicadas) })
+    }
+    return linhas
   }
 
   /*
