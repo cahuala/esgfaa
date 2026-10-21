@@ -9,6 +9,7 @@ const categoriaDoCargo = (c) => (c.tipo === 'civil' || !c.postoRequerido ? 'civi
 export const TIPOS_UNIDADE = { direccao: 'Direcção', gabinete: 'Gabinete', departamento: 'Departamento', reparticao: 'Repartição', seccao: 'Secção', servico: 'Serviço', companhia: 'Companhia', curso: 'Curso', outro: 'Outro' }
 const vazio = () => Object.fromEntries(COLUNAS_PLANEAMENTO.map(([k]) => [k, 0]))
 import { exigir } from './sessao.js'
+import { comparadorHierarquico, posicoesDasUnidades } from '../dominio/pessoal/ordem.js'
 
 // quadro orgânico da Escola: unidades (órgãos e serviços) e os cargos de cada uma, com os lugares
 export class ServicoOrganica {
@@ -94,13 +95,17 @@ export class ServicoOrganica {
     const andar = (uid, nivel) => { const x = unidades.find((y) => y.id === uid); ramo.push({ id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: TIPOS_UNIDADE[x.tipo] ?? '', nivel }); for (const f of unidades.filter((y) => y.paiId === uid)) andar(f.id, nivel + 1) }
     andar(id, 0)
     const ids = ramo.map((x) => x.id)
-    const SELECT = { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true }
+    const SELECT = { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } }
     const [cargos, pessoas] = await Promise.all([
       this.bd.cargo.findMany({ where: { unidadeId: { in: ids } }, include: { pessoas: { where: { ativo: true }, select: SELECT } }, orderBy: [{ funcao: 'asc' }, { nome: 'asc' }] }),
       this.bd.pessoa.findMany({ where: { unidadeId: { in: ids }, ativo: true, vinculo: { not: 'domiciliar' } }, select: SELECT, orderBy: { nome: 'asc' } }),
     ])
     const nomeCargo = new Map(cargos.map((c) => [c.id, c.nome]))
-    const pessoa = (p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, ident: p.nip || p.numeroAgente || '', tipo: p.tipo, vinculo: p.vinculo, genero: p.genero, descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', grau: POSTOS[p.posto]?.grau ?? 0, ramo: p.ramo, unidadeId: p.unidadeId, cargoNome: p.cargoId ? nomeCargo.get(p.cargoId) ?? '' : '' })
+    const cmp = comparadorHierarquico(posicoesDasUnidades(unidades))
+    pessoas.sort(cmp)
+    const ordem = new Map(pessoas.map((p, i) => [p.id, i + 1]))
+    for (const c of cargos) c.pessoas.sort(cmp)
+    const pessoa = (p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, ident: p.nip || p.numeroAgente || '', tipo: p.tipo, vinculo: p.vinculo, genero: p.genero, descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', grau: POSTOS[p.posto]?.grau ?? 0, ramo: p.ramo, unidadeId: p.unidadeId, cargoNome: p.cargoId ? nomeCargo.get(p.cargoId) ?? '' : '', hierarquia: ordem.get(p.id) })
     const cargo = (c) => ({ id: c.id, nome: c.nome, unidadeId: c.unidadeId, funcao: c.funcao, funcaoNome: FUNCOES[c.funcao] ?? '', tipo: c.tipo, postoRequeridoNome: c.postoRequerido ? nomeDoPosto(c.postoRequerido) : c.categoriaCivil || 'Civil', categoria: CATEGORIAS[categoriaDoCargo(c)]?.nome ?? 'Civil', vagas: c.vagas, ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length), excesso: Math.max(0, c.pessoas.length - c.vagas), ocupantes: c.pessoas.map(pessoa) })
     const nomeUnidade = new Map(ramo.map((x) => [x.id, x.sigla || x.nome]))
     return {

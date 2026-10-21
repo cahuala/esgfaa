@@ -51,6 +51,8 @@ export function comDerivados(p, hoje = new Date()) {
   f.vencimento = p.vencimento ? Number(p.vencimento) : null
   f.unidadeNome = p.unidade?.nome ?? ''
   f.cargoNome = p.cargo?.nome ?? ''
+  // a função do cargo (comando, direcção/chefia, estado-maior, execução): conta para a ordem hierárquica
+  f.funcao = p.cargo?.funcao ?? null
   if (p.tipo === 'militar') {
     const posto = POSTOS[p.posto]
     f.postoNome = nomeDoPosto(p.posto, p.ramo)

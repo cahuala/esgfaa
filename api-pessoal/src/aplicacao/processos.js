@@ -2,6 +2,8 @@ import { conflito, invalido, naoEncontrado } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
+import { ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
+import { posicoesUnidades } from './ordem.js'
 
 export const TIPOS_DOCUMENTO = {
   bi: 'Bilhete de Identidade', foto: 'Fotografia', certificado: 'Certificado de habilitações', diploma: 'Diploma de curso militar',
@@ -38,16 +40,18 @@ export class ServicoProcessos {
 
   async catalogo(u, { incompletos } = {}) {
     exigir(u, 'ver')
-    const l = await this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, include: { processo: true, unidade: { select: { nome: true } }, documentos: { select: { tipo: true } } }, orderBy: { nome: 'asc' } })
+    const l = await this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, include: { processo: true, unidade: { select: { nome: true } }, cargo: { select: { funcao: true } }, documentos: { select: { tipo: true } } }, orderBy: { nome: 'asc' } })
     const r = l.map((p) => {
       const falta = dadosEmFalta(p, p.documentos)
       return {
+        posto: p.posto, unidadeId: p.unidadeId, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto,
         id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, fotoId: p.fotoId, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil',
         unidadeNome: p.unidade?.nome ?? '', numero: p.processo?.numero ?? '', estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', localizacao: p.processo ? [p.processo.estante, p.processo.prateleira, p.processo.posicao].filter(Boolean).join(' › ') : '',
         estado: p.processo?.estado ?? '', estadoNome: ESTADOS_PROCESSO[p.processo?.estado] ?? 'Sem processo', documentos: p.documentos.length, emFalta: falta, completo: !falta.length,
       }
     })
-    return incompletos ? r.filter((x) => !x.completo) : r
+    const ordenada = ordenarPorHierarquia(r, await posicoesUnidades(this.bd))
+    return incompletos ? ordenada.filter((x) => !x.completo) : ordenada
   }
 
   async guardar(u, pessoaId, { estante = '', prateleira = '', posicao = '', estado = 'activo', observacoes = '' }) {

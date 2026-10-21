@@ -12,6 +12,8 @@ import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
 import { exigir } from './sessao.js'
+import { comparadorHierarquico, ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
+import { posicoesUnidades } from './ordem.js'
 
 // tipos de registo no histórico (os das propostas e os que se lançam à mão)
 export const TIPOS_EVENTO = {
@@ -40,7 +42,7 @@ export const TIPOS_EVENTO = {
 }
 export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
-const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
+const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
@@ -84,7 +86,7 @@ export class ServicoPessoas {
     }
     if (f.reservaAte) lista = lista.filter((p) => p.dataReserva && p.dataReserva <= `${f.reservaAte}-12-31`)
     if (f.semCargo) lista = lista.filter((p) => !p.cargoId)
-    return lista.map(({ cursos, eventos, ...p }) => (void cursos, void eventos, p))
+    return ordenarPorHierarquia(lista.map(({ cursos, eventos, ...p }) => (void cursos, void eventos, p)), await posicoesUnidades(this.bd))
   }
 
   async #comSubunidades(id) {
@@ -284,12 +286,14 @@ export class ServicoPessoas {
   // oficiais superiores e generais com as(os) suas(seus) domiciliares e os lugares livres
   async domiciliares(u) {
     exigir(u, 'ver')
-    const oficiais = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { not: 'reforma' } }, include: { domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, bi: true, dataAdmissao: true, fotoId: true } } } })
-    return oficiais.filter(temDireitoDomiciliar).map((m) => ({
+    const posicoes = await posicoesUnidades(this.bd)
+    const oficiais = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { not: 'reforma' } }, include: { cargo: { select: { funcao: true } }, domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, bi: true, dataAdmissao: true, fotoId: true } } } })
+    return ordenarPorHierarquia(oficiais.filter(temDireitoDomiciliar).map((m) => ({
+      unidadeId: m.unidadeId, funcao: m.cargo?.funcao, dataAntiguidadePosto: m.dataAntiguidadePosto,
       id: m.id, nome: m.nome, nip: m.nip, ramo: m.ramo, postoNome: nomeDoPosto(m.posto, m.ramo), grau: comDerivados(m).grau, fotoId: m.fotoId,
       limite: limiteDomiciliares(m.posto), alocados: m.domiciliares.length, livres: Math.max(0, limiteDomiciliares(m.posto) - m.domiciliares.length),
       domiciliares: m.domiciliares.map((x) => ({ ...x, dataAdmissao: x.dataAdmissao?.toISOString().slice(0, 10) ?? null })),
-    })).sort((a, b) => b.grau - a.grau || a.nome.localeCompare(b.nome))
+    })), posicoes)
   }
 
   async porIdentificacao(ident) {
@@ -381,11 +385,12 @@ export class ServicoPessoas {
     const hoje = this.agora()
     const lista = await this.bd.pessoa.findMany({ where: { tipo, ativo: true }, include: { ...INCLUIR_LISTA, eventos: { select: { tipo: true, data: true } } }, orderBy: { nome: 'asc' } })
     const emPropostaAberta = new Set((await this.bd.itemProposta.findMany({ where: { proposta: { estado: { in: ['rascunho', 'enviada'] }, tipo: { in: ['promocao', 'progressao'] } } }, select: { pessoaId: true } })).map((i) => i.pessoaId))
-    return lista.map((p) => {
+    const posicoes = await posicoesUnidades(this.bd)
+    return ordenarPorHierarquia(lista.map((p) => {
       const v = tipo === 'militar' ? verificarPromocao({ ...p, historico: p.eventos }, { hoje }) : verificarProgressaoCivil(p, { hoje })
       const f = comDerivados(p, hoje)
-      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoId: p.cargoId, cargoNome: f.cargoNome, grau: f.grau, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto) }
-    }).filter((x) => x.proposto)
+      return { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, categoriaCivil: p.categoriaCivil, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoId: p.cargoId, cargoNome: f.cargoNome, grau: f.grau, tempoNoPosto: f.tempoNoPosto ?? f.tempoNaCategoria, elegivel: v.elegivel, proposto: v.postoProposto ? nomeDoPosto(v.postoProposto, p.ramo) : v.categoriaProposta, modalidade: v.modalidade ?? null, emProposta: emPropostaAberta.has(p.id), faltas: v.condicoes.filter((c) => c.estado === 'falta').map((c) => c.texto), confirmar: v.condicoes.filter((c) => c.estado === 'confirmar').map((c) => c.texto), funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto }
+    }).filter((x) => x.proposto), posicoes)
   }
 
   // militares que passam à reserva ou à reforma nos próximos anos (art. 111.º e 114.º)
@@ -393,18 +398,20 @@ export class ServicoPessoas {
     exigir(u, 'ver')
     const hoje = this.agora()
     const limite = `${hoje.getUTCFullYear() + anos}-12-31`
-    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { in: ['activo', 'reserva'] } }, include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true } } } })
+    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { in: ['activo', 'reserva'] } }, include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } } } })
     const r = []
+    const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
     for (const p of lista) {
       const rr = reservaEReforma(p, hoje)
       const f = comDerivados(p, hoje)
-      const base = { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ramo: p.ramo, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome }
+      const base = { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ramo: p.ramo, posto: p.posto, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto }
       // com a data já passada fica marcado «em atraso»: a situação na ficha ainda não foi mudada
       const hojeTxt = hoje.toISOString().slice(0, 10)
       if (p.situacao === 'activo' && rr?.reserva && rr.reserva.data <= limite) r.push({ ...base, passagem: 'reserva', data: rr.reserva.data, artigo: rr.reserva.artigo, idadeLimite: rr.reserva.idadeLimite, atrasado: rr.reserva.data < hojeTxt })
       const reforma = [rr?.reforma?.data, rr?.reformaPorTempo?.data].filter(Boolean).sort()[0]
       if (reforma && reforma <= limite) r.push({ ...base, passagem: 'reforma', data: reforma, artigo: 'art. 114.º', atrasado: reforma < hojeTxt })
     }
-    return r.sort((a, b) => a.data.localeCompare(b.data))
+    // pelo ano da passagem; no mesmo ano, pela hierarquia
+    return r.sort((a, b) => a.data.slice(0, 4).localeCompare(b.data.slice(0, 4)) || cmp(a, b))
   }
 }

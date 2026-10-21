@@ -34,8 +34,8 @@ export class ServicoPlanoFerias {
     const hoje = this.agora()
     const linhas = lista.map((p) => ({
       id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, grau: p.grau ?? 0,
-      categoriaCivil: p.categoriaCivil, unidadeNome: p.unidadeNome, fotoId: p.fotoId, mes: mes.get(p.id) ?? null, dias: diasDeFerias(p, hoje), adicionais: feriasAdicionais(p, hoje),
-    })).sort((a, b) => (a.tipo === b.tipo ? (b.grau - a.grau) || a.nome.localeCompare(b.nome) : a.tipo === 'militar' ? -1 : 1))
+      categoriaCivil: p.categoriaCivil, unidadeNome: p.unidadeNome, fotoId: p.fotoId, mes: mes.get(p.id) ?? null, dias: diasDeFerias(p, hoje), adicionais: feriasAdicionais(p, hoje), hierarquia: p.hierarquia,
+    })) // a lista vem já pela ordem hierárquica (posto, unidade, função, antiguidade)
     return { ano, linhas, planeados: linhas.filter((l) => l.mes).length }
   }
 

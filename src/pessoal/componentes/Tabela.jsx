@@ -9,6 +9,7 @@ const TAMANHOS = [10, 25, 50, 100]
   exportação para Excel e PDF (do que está filtrado, todas as páginas) e linhas clicáveis.
   colunas: [{ chave, titulo, valor?(linha) (texto/número para ordenar, pesquisar e exportar), mostrar?(linha) (o que se vê),
   ordenarPor?(linha) (outra chave para ordenar, ex.: o grau do posto), alinhar?: 'end' | 'center', exportar?: false }]
+  Sem ordem escolhida, as linhas ficam pela ordem em que vêm (as listas de pessoal vêm pela ordem hierárquica).
 */
 export default function Tabela({ titulo, subtitulo, colunas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial }) {
   const [pesquisa, setPesquisa] = useState('')
@@ -24,9 +25,12 @@ export default function Tabela({ titulo, subtitulo, colunas, linhas, aoClicar, c
     if (ordem) {
       const c = colunas.find((x) => x.chave === ordem.chave)
       if (c) {
+        // o posto ordena-se pela ordem hierárquica do servidor (posto, unidade na orgânica, função, antiguidade)
+        const hier = c.chave === 'posto' && r.length > 0 && r.every((l) => l.hierarquia)
+        const chaveDe = (l) => (hier ? l.hierarquia : c.ordenarPor ? c.ordenarPor(l) : valor(c, l))
         r = [...r].sort((a, b) => {
-          const va = c.ordenarPor ? c.ordenarPor(a) : valor(c, a)
-          const vb = c.ordenarPor ? c.ordenarPor(b) : valor(c, b)
+          const va = chaveDe(a)
+          const vb = chaveDe(b)
           if (va === vb) return 0
           if (va === null || va === undefined || va === '') return 1
           if (vb === null || vb === undefined || vb === '') return -1

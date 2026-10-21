@@ -3,6 +3,8 @@ import { MODALIDADES, verificarGraduacao, verificarNomeacao, verificarPromocao }
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { POSTOS, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
+import { comparadorHierarquico } from '../dominio/pessoal/ordem.js'
+import { posicoesUnidades } from './ordem.js'
 
 export const TIPOS_PROPOSTA = {
   promocao: { nome: 'Promoção', pessoal: 'militar' },
@@ -83,29 +85,11 @@ export class ServicoPropostas {
     return { ...base, categoriaProposta: v.categoriaProposta, verificacao: v }
   }
 
-  /*
-    Ordem dos militares na proposta (e nos documentos): o posto mais alto primeiro; no mesmo posto, pela ordem
-    da unidade na orgânica (a Direcção antes dos Serviços Gerais, a unidade antes das suas subunidades); depois
-    a função (comando, direcção/chefia, estado-maior, execução); depois a antiguidade no posto e o nome.
-    Os civis (progressão) pela categoria proposta, depois a unidade e o nome.
-  */
+  // ordem dos militares na proposta e nos documentos: a regra hierárquica de todas as listas (dominio/pessoal/ordem.js)
   async #ordenar(pr) {
-    const unidades = await this.bd.unidade.findMany({ select: { id: true, paiId: true, ordem: true, nome: true } })
-    const filhos = new Map()
-    for (const u of unidades) { const k = u.paiId ?? 0; if (!filhos.has(k)) filhos.set(k, []); filhos.get(k).push(u) }
-    const pos = new Map()
-    const visitar = (k) => { for (const u of (filhos.get(k) ?? []).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt'))) { if (pos.has(u.id)) continue; pos.set(u.id, pos.size); visitar(u.id) } }
-    visitar(0)
-    const FUNCAO = { comando: 0, direccao_chefia: 1, estado_maior: 2, execucao: 3 }
-    const grau = (posto) => POSTOS[posto]?.grau ?? -1
-    const data = (d) => (d ? new Date(d).getTime() : Infinity)
-    const chave = (i) => [-grau(i.postoAtual || i.pessoa.posto), pos.get(i.pessoa.unidadeId) ?? 9999, FUNCAO[i.pessoa.cargo?.funcao] ?? 4, data(i.pessoa.dataAntiguidadePosto)]
-    pr.itens.sort((a, b) => {
-      const ka = chave(a)
-      const kb = chave(b)
-      for (let k = 0; k < ka.length; k++) if (ka[k] !== kb[k]) return ka[k] - kb[k]
-      return a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt')
-    })
+    const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
+    const como = (i) => ({ ...i.pessoa, posto: i.postoAtual || i.pessoa.posto })
+    pr.itens.sort((a, b) => cmp(como(a), como(b)))
     return pr
   }
 
@@ -141,10 +125,14 @@ export class ServicoPropostas {
     const where = { proposta: { ...(tipo ? { tipo } : {}), estado: estado ? estado : { in: ABERTAS } } }
     const l = await this.bd.itemProposta.findMany({
       where, orderBy: [{ propostaId: 'desc' }, { id: 'asc' }],
-      include: { proposta: true, pessoa: { include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true } } } } },
+      include: { proposta: true, pessoa: { include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } } } } },
     })
+    // pela ordem hierárquica (o posto da proposta, a unidade, a função, a antiguidade)
+    const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
+    l.sort((a, b) => cmp({ ...a.pessoa, posto: a.postoAtual || a.pessoa.posto }, { ...b.pessoa, posto: b.postoAtual || b.pessoa.posto }))
     const cargos = new Map((await this.bd.cargo.findMany({ where: { id: { in: [...new Set(l.map((i) => i.cargoId).filter(Boolean))] } }, select: { id: true, nome: true } })).map((c) => [c.id, c.nome]))
-    return l.map((i) => ({
+    return l.map((i, k) => ({
+      hierarquia: k + 1,
       propostaId: i.propostaId, titulo: i.proposta.titulo, tipo: i.proposta.tipo, tipoNome: TIPOS_PROPOSTA[i.proposta.tipo]?.nome, estado: i.proposta.estado, estadoNome: ESTADOS_PROPOSTA[i.proposta.estado], curso: i.proposta.curso,
       pessoaId: i.pessoaId, nome: i.pessoa.nome, tipoPessoa: i.pessoa.tipo, nip: i.pessoa.nip, numeroAgente: i.pessoa.numeroAgente, ramo: i.pessoa.ramo, genero: i.pessoa.genero,
       postoAtualNome: i.postoAtual ? nomeDoPosto(i.postoAtual, i.pessoa.ramo) : '', grau: POSTOS[i.postoAtual]?.grau ?? 0, postoPropostoNome: i.postoProposto ? nomeDoPosto(i.postoProposto, i.pessoa.ramo) : '',

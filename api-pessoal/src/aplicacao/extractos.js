@@ -4,6 +4,8 @@ import { proximoPosto } from '../dominio/pessoal/carreira.js'
 import { proximaCategoria } from '../dominio/pessoal/civis.js'
 import { aplicarAlteracao } from './alteracoes.js'
 import { exigir } from './sessao.js'
+import { comparadorHierarquico } from '../dominio/pessoal/ordem.js'
+import { posicoesUnidades } from './ordem.js'
 
 export const TIPOS_EXTRACTO = { promocao: 'Promoção', nomeacao: 'Nomeação', graduacao: 'Graduação', exoneracao: 'Exoneração', reserva: 'Passagem à reserva', reforma: 'Passagem à reforma', progressao: 'Progressão (civis)', curso: 'Nomeação para curso', outro: 'Outro' }
 const TIPO_DOCUMENTO = { promocao: 'extracto_promocao', nomeacao: 'extracto_nomeacao', graduacao: 'extracto_graduacao', exoneracao: 'extracto_exoneracao', reserva: 'extracto_reserva', reforma: 'extracto_reforma', progressao: 'extracto_progressao', curso: 'extracto_curso', outro: 'extracto' }
@@ -33,6 +35,9 @@ export class ServicoExtractos {
     const e = await this.bd.extracto.findUnique({ where: { id }, include: { itens: { include: { pessoa: { include: { cargo: true, unidade: true } } }, orderBy: { id: 'asc' } } } })
     if (!e) throw naoEncontrado('Extracto não encontrado.')
     const cargos = new Map((await this.bd.cargo.findMany({ select: { id: true, nome: true } })).map((c) => [c.id, c.nome]))
+    // pela ordem hierárquica (posto, unidade, função, antiguidade)
+    const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
+    e.itens.sort((a, b) => cmp(a.pessoa, b.pessoa))
     return {
       ...e, data: dia(e.data), tipoNome: TIPOS_EXTRACTO[e.tipo], temTexto: Boolean(e.texto.trim()), texto: undefined,
       itens: e.itens.map((i) => ({

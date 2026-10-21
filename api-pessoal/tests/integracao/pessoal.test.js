@@ -126,7 +126,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.ok(l.some((x) => x.pessoaId === p.id))
   })
 
-  it('a proposta lista os militares pelo posto e, no mesmo posto, pela ordem da unidade na orgânica', async () => {
+  it('as propostas e as listas vão pelo posto e, no mesmo posto, pela ordem da unidade na orgânica', async () => {
     const dir = (await adm.post('/api/unidades').send({ nome: 'Comando da Escola', ordem: 0 }).expect(201)).body
     const sg = (await adm.post('/api/unidades').send({ nome: 'Serviços Gerais', ordem: 5 }).expect(201)).body
     const gab = (await adm.post('/api/unidades').send({ nome: 'Gabinete do Comandante', paiId: dir.id, ordem: 1 }).expect(201)).body
@@ -141,6 +141,10 @@ describe('Sistema de Gestão de Pessoal', () => {
     const l = (await adm.get(`/api/propostas/${pr.id}`).expect(200)).body.itens
     // o Comando (e o seu Gabinete) antes dos Serviços Gerais; o capitão depois de todos os tenentes-coronéis
     assert.deepEqual(l.map((i) => i.nome), ['Tenente-Coronel Comando', 'Tenente-Coronel Gabinete', 'Tenente-Coronel Serviços', 'Capitão Comando'])
+    // a mesma ordem na lista do pessoal (e o número «hierarquia» que as tabelas usam)
+    const todos = (await adm.get(`/api/pessoas?tipo=militar`).expect(200)).body.filter((p) => [a, b, c, d].some((x) => x.id === p.id))
+    assert.deepEqual(todos.map((p) => p.nome), ['Tenente-Coronel Comando', 'Tenente-Coronel Gabinete', 'Tenente-Coronel Serviços', 'Capitão Comando'])
+    assert.ok(todos.every((p, i) => i === 0 || p.hierarquia > todos[i - 1].hierarquia))
   })
 
   it('civil: progressão na carreira por proposta', async () => {

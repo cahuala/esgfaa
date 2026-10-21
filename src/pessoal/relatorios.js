@@ -10,7 +10,8 @@ const pt = (iso) => (iso ? new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toL
 const militar = (p) => p.tipo === 'militar'
 
 // militares do mais graduado e mais antigo para o mais moderno; depois os civis pela categoria
-export const porHierarquia = (a, b) => (b.grau ?? -1) - (a.grau ?? -1)
+// a ordem hierárquica que o servidor calcula (posto, unidade na orgânica, função, antiguidade, nome): «hierarquia»
+export const porHierarquia = (a, b) => (a.hierarquia && b.hierarquia ? a.hierarquia - b.hierarquia : (b.grau ?? -1) - (a.grau ?? -1) || String(a.nome).localeCompare(String(b.nome), 'pt'))
   || (b.nivelCategoria ?? 0) - (a.nivelCategoria ?? 0)
   || String(a.dataAntiguidadePosto ?? a.dataCategoria ?? '9').localeCompare(String(b.dataAntiguidadePosto ?? b.dataCategoria ?? '9'))
   || a.nome.localeCompare(b.nome, 'pt')
@@ -174,7 +175,7 @@ const faixa = (p) => FAIXAS.find(([k]) => { const [a, b] = k.split('-').map(Numb
 function propostos(ctx, { tipo, estado = '' }) {
   const C = colunas(ctx)
   const ref = ctx.ref
-  const l = ctx.propostos.filter((i) => i.tipo === tipo).sort((a, b) => b.grau - a.grau || a.nome.localeCompare(b.nome, 'pt'))
+  const l = ctx.propostos.filter((i) => i.tipo === tipo).sort(porHierarquia)
   const idn = { titulo: 'NIP / N.º agente', valor: (i) => i.nip || i.numeroAgente || '' }
   const atual = { titulo: 'Posto / categoria', valor: (i) => i.postoAtualNome || i.categoriaAtual || '' }
   const prop = { titulo: 'Proposta', valor: (i) => `N.º ${i.propostaId}`, alinhar: 'center' }
@@ -265,7 +266,7 @@ export const DOCUMENTOS = [
   { id: 'categoria', grupo: 'listas', titulo: 'Militares por categoria', icone: 'fa-layer-group', descricao: 'Oficiais generais, superiores, capitães, subalternos, sargentos e praças.', fazer: agrupada('Militares por categoria', (p) => (militar(p) ? p.categoria : null), (c) => Object.keys(c.ref.categorias), (c, k) => c.ref.categorias[k]?.nome ?? k, (C) => [C.n, C.posto, C.nome, C.id, C.ramo, C.unidade, C.cargo]) },
   { id: 'civis', grupo: 'listas', titulo: 'Pessoal civil por categoria', icone: 'fa-briefcase', descricao: 'Técnicos superiores, técnicos médios, administrativos, auxiliares e docentes civis.', fazer: agrupada('Pessoal civil por categoria', (p) => (militar(p) ? null : p.carreiraNome || 'Sem categoria'), (c) => Object.values(c.ref.carreirasCivis).sort((a, b) => b.nivel - a.nivel).map((x) => x.nome), (c, k) => k, (C) => [C.n, { ...C.posto, titulo: 'Classe' }, C.nome, C.id, C.unidade, C.cargo, C.habilitacao]) },
   { id: 'lista-civis', grupo: 'listas', titulo: 'Lista geral do pessoal civil', icone: 'fa-id-card-alt', descricao: 'O modelo da Escola: N.º de agente, INSS, nome, categoria, nascimento, admissão e habilitações.', fazer: (ctx) => {
-    const l = ctx.pessoas.filter((p) => p.tipo === 'civil' && p.vinculo !== 'domiciliar').sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
+    const l = ctx.pessoas.filter((p) => p.tipo === 'civil' && p.vinculo !== 'domiciliar').sort(porHierarquia)
     const M = (v) => String(v ?? '').toLocaleUpperCase('pt')
     return { titulo: 'Lista geral do pessoal civil da ESG/EMGFAA', orientacao: 'landscape', seccoes: [{ colunas: [
       { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 }, { titulo: 'Desp. Nº', valor: () => '', largura: 16 }, { titulo: 'Nº Agente', valor: (p) => p.numeroAgente, largura: 18 }, { titulo: 'Nº INSS', valor: (p) => p.inss, largura: 20 },

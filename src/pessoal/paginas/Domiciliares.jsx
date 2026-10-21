@@ -12,7 +12,7 @@ export default function Domiciliares() {
   const navegar = useNavigate()
   const { dados, erro } = useDados('/domiciliares')
   const colunas = useMemo(() => [
-    { chave: 'oficial', titulo: 'Oficial', valor: (o) => o.nome, ordenarPor: (o) => 100 - o.grau, mostrar: (o) => <span className="pes-pessoa"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} /><span><strong>{o.postoNome}</strong> {o.nome}<div className="small text-muted">NIP {o.nip} · {o.ramo}</div></span></span> },
+    { chave: 'oficial', titulo: 'Oficial', valor: (o) => o.nome, ordenarPor: (o) => o.hierarquia ?? 100 - o.grau, mostrar: (o) => <span className="pes-pessoa"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} /><span><strong>{o.postoNome}</strong> {o.nome}<div className="small text-muted">NIP {o.nip} · {o.ramo}</div></span></span> },
     { chave: 'limite', titulo: 'Limite do posto', valor: (o) => o.limite, alinhar: 'center' },
     { chave: 'alocados', titulo: 'Afectas(os)', valor: (o) => o.alocados, alinhar: 'center' },
     { chave: 'livres', titulo: 'Livres', valor: (o) => o.livres, alinhar: 'center', mostrar: (o) => <span className={o.livres ? 'text-success fw-bold' : 'text-muted'}>{o.livres}</span> },
