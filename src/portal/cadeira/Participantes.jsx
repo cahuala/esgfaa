@@ -12,7 +12,7 @@ function Participantes({ c, avisar }) {
   if (!p) return <Carregando />
   const todos = [
     ...p.docentes.map((d) => ({ ...d, funcao: d.papel === 'regente' ? tx('Regente') : tx('Assistente'), cor: 'bg-dark' })),
-    ...p.estudantes.map((e) => ({ ...e, funcao: tx('Estudante'), cor: 'bg-gray-500' })),
+    ...p.estudantes.map((e) => ({ ...e, funcao: tx(c?.termos?.pessoa || 'Estudante'), cor: 'bg-gray-500' })),
   ].filter((x) => !filtro || `${x.nome} ${x.numero || ''} ${x.email}`.toLowerCase().includes(filtro.toLowerCase()))
   return (
     <Cartao titulo={<><i className="fa fa-users me-2" />{tx('Participantes (')}{p.docentes.length + p.estudantes.length})</>} corpo={false}>

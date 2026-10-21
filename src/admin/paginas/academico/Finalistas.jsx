@@ -12,7 +12,8 @@ const valor = (v) => (v === null || v === undefined ? '—' : Number(v).toLocale
   defesa e nota), ver o que falta para concluir o curso e emitir o certificado de conclusão.
 */
 // mostrar: os estudantes que a pesquisa da turma deixa ver (sem ela, todos)
-function Finalistas({ turma, gerir, avisar, mostrar }) {
+const PADRAO = { pessoa: 'Estudante', trabalho: { sigla: 'TFC', nome: 'Trabalho de fim de curso' } }
+function Finalistas({ turma, gerir, avisar, mostrar, termos = PADRAO }) {
   const [d, setD] = useState(null)
   const [aberto, setAberto] = useState(null)
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
@@ -21,14 +22,14 @@ function Finalistas({ turma, gerir, avisar, mostrar }) {
 
   const concluidos = d ? d.linhas.filter((l) => l.conclusao.concluido).length : 0
   return (
-    <Painel titulo={tx('Finalistas: trabalho de fim de curso e conclusão{0}', { 0: d ? tx(' ({0} de {1} concluídos)', { 0: concluidos, 1: d.linhas.length }) : '' })} corpo={false}>
+    <Painel titulo={tx('Finalistas: {0} e conclusão{1}', { 0: tx(termos.trabalho.nome).toLowerCase(), 1: d ? tx(' ({0} de {1} concluídos)', { 0: concluidos, 1: d.linhas.length }) : '' })} corpo={false}>
       <div className="table-responsive">
         <table className="table table-striped align-middle mb-0">
-          <thead><tr><th>{tx('Estudante')}</th><th>{tx('Trabalho de fim de curso')}</th><th className="text-center">{tx('Nota TFC')}</th><th className="text-center">{tx('Cadeiras')}</th><th>{tx('Conclusão')}</th><th /></tr></thead>
+          <thead><tr><th>{tx(termos.pessoa)}</th><th>{tx(termos.trabalho.nome)}</th><th className="text-center">{tx('Nota {0}', { 0: termos.trabalho.sigla })}</th><th className="text-center">{tx('Cadeiras')}</th><th>{tx('Conclusão')}</th><th /></tr></thead>
           <tbody>
             {!d && <tr><td colSpan={6} className="text-center text-muted py-3">{tx('A carregar…')}</td></tr>}
             {d?.linhas.filter((l) => !mostrar || mostrar.has(l.estudante.id)).map((l) => (
-              <LinhaFinalista key={l.estudante.id} l={l} turma={turma} gerir={gerir} aberta={aberto === l.estudante.id}
+              <LinhaFinalista key={l.estudante.id} l={l} turma={turma} gerir={gerir} termos={termos} aberta={aberto === l.estudante.id}
                 alternar={() => setAberto(aberto === l.estudante.id ? null : l.estudante.id)} avisar={avisar} carregar={carregar} />
             ))}
           </tbody>
@@ -38,7 +39,7 @@ function Finalistas({ turma, gerir, avisar, mostrar }) {
   )
 }
 
-function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar }) {
+function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar, termos = PADRAO }) {
   const [f, setF] = useState({ tema: l.tfc?.tema || '', orientador: l.tfc?.orientador || '', juri: l.tfc?.juri || '', dataDefesa: l.tfc?.dataDefesa || '', nota: l.tfc?.nota ?? '', observacao: l.tfc?.observacao || '' })
   const [aGuardar, setAGuardar] = useState(false)
   async function guardar(e) {
@@ -46,7 +47,7 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar })
     setAGuardar(true)
     try {
       await api(`/academico/turmas/${turma.id}/tfc/${l.estudante.id}`, { metodo: 'PUT', corpo: { ...f, dataDefesa: f.dataDefesa || null, nota: f.nota === '' ? null : f.nota } })
-      avisar({ texto: tx('Trabalho de fim de curso de {0} guardado.', { 0: l.estudante.nome }) })
+      avisar({ texto: tx('{0} de {1} guardado.', { 0: termos.trabalho.sigla, 1: l.estudante.nome }) })
       carregar()
     } catch (falha) {
       avisar({ tipo: 'erro', texto: falha.message })
@@ -70,7 +71,7 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar })
         <td className="text-end text-nowrap">
           <Link to={`/academico/documentos/estudante/${l.estudante.id}/historico`} className="btn btn-xs btn-white me-1" title={tx('Histórico académico')}><i className="fa fa-scroll" /></Link>
           {c.concluido && gerir && <Link to={`/academico/documentos/turma/${turma.id}/certificado/${l.estudante.id}`} className="btn btn-xs btn-success me-1"><i className="fa fa-award me-1" />{l.certificado ? tx('Certificado') : tx('Emitir certificado')}</Link>}
-          {gerir && <button type="button" className={`btn btn-xs ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{aberta ? tx('Fechar') : 'TFC'}</button>}
+          {gerir && <button type="button" className={`btn btn-xs ${aberta ? 'btn-dark' : 'btn-white'}`} onClick={alternar}>{aberta ? tx('Fechar') : termos.trabalho.sigla}</button>}
         </td>
       </tr>
       {aberta && (
@@ -83,7 +84,7 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar })
               <div className="col-md-2"><label className="form-label fw-bold" htmlFor={`def-${l.estudante.id}`}>{tx('Data da defesa')}</label><input id={`def-${l.estudante.id}`} type="date" className="form-control" value={f.dataDefesa} onChange={(e) => setF({ ...f, dataDefesa: e.target.value })} /></div>
               <div className="col-md-1"><label className="form-label fw-bold" htmlFor={`nota-${l.estudante.id}`}>{tx('Nota')}</label><input id={`nota-${l.estudante.id}`} className="form-control" inputMode="decimal" value={f.nota} onChange={(e) => setF({ ...f, nota: e.target.value })} aria-label={tx('Nota do TFC de {0}', { 0: l.estudante.nome })} /></div>
               <div className="col-12"><input className="form-control" value={f.observacao} onChange={(e) => setF({ ...f, observacao: e.target.value })} placeholder={tx('Observação (opcional)')} aria-label={tx('Observação')} /></div>
-              <div className="col-12"><button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar trabalho de fim de curso')}</button></div>
+              <div className="col-12"><button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar o {0}', { 0: termos.trabalho.sigla })}</button></div>
             </form>
           </td>
         </tr>

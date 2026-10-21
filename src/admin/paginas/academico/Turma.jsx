@@ -76,9 +76,11 @@ function Turma() {
   const visiveis = encontradas.slice((atual - 1) * POR_PAGINA, atual * POR_PAGINA)
   const ativas = t.matriculas.filter((m) => m.estado === 'ativa').length
   const concluiram = [...conclusao.values()].filter((c) => c.concluido).length
+  // os termos do curso: auditores/discentes e TII/TFC (pelo plano de curso da turma)
+  const curso = t.termos ?? { pessoas: 'Estudantes', pessoa: 'Estudante', trabalho: { sigla: 'TFC', nome: 'Trabalho de fim de curso' } }
   const ABAS = [
-    ['estudantes', tx('Estudantes'), 'fa-user-graduate', t.matriculas.length],
-    ...(t.anoFinal ? [['finalistas', tx('Finalistas e TFC'), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
+    ['estudantes', tx(curso.pessoas), 'fa-user-graduate', t.matriculas.length],
+    ...(t.anoFinal ? [['finalistas', tx('Finalistas e {0}', { 0: curso.trabalho.sigla }), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
     ['cadeiras', tx('Cadeiras e horário'), 'fa-book', t.cadeiras.length],
     ['plano', tx('Plano de curso'), 'fa-clipboard-list', null],
     ['documentos', tx('Documentos da turma'), 'fa-print', null],
@@ -92,7 +94,7 @@ function Turma() {
       </CabecalhoPagina>
 
       <div className="row g-2 mb-3">
-        <Resumo icone="fa-user-graduate" cor="primary" valor={t.matriculas.length} rotulo={tx('Estudantes')} detalhe={tx('{0} com matrícula ativa', { 0: ativas })} />
+        <Resumo icone="fa-user-graduate" cor="primary" valor={t.matriculas.length} rotulo={tx(curso.pessoas)} detalhe={tx('{0} com matrícula ativa', { 0: ativas })} />
         <Resumo icone="fa-book" cor="info" valor={t.cadeiras.length} rotulo={tx('Cadeiras')} detalhe={tx('{0} docente(s)', { 0: new Set(t.cadeiras.flatMap((c) => (c.docentes ?? []).map((d) => d.id))).size })} />
         {t.anoFinal
           ? <Resumo icone="fa-award" cor="success" valor={`${concluiram}/${conclusao.size}`} rotulo={tx('Concluíram o curso')} detalhe={tx('podem receber certificado e diploma')} />
@@ -107,7 +109,7 @@ function Turma() {
       </ul>
 
       {aba === 'estudantes' && (
-        <Painel titulo={tx('Estudantes da turma')} corpo={false} acoes={gerir && <>
+        <Painel titulo={tx('{0} da turma', { 0: tx(curso.pessoas) })} corpo={false} acoes={gerir && <>
           <button type="button" className="btn btn-xs btn-theme" onClick={() => setMatricular(!matricular)}><i className={`fa ${matricular ? 'fa-times' : 'fa-user-plus'} me-1`} />{matricular ? tx('Fechar') : tx('Matricular estudantes')}</button>
           <button type="button" className="btn btn-xs btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" />{tx('Do Excel/CSV')}</button>
           {!t.anoFinal && <button type="button" className="btn btn-xs btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" />{tx('Passagem de ano')}</button>}
@@ -170,11 +172,11 @@ function Turma() {
 
       {aba === 'finalistas' && t.anoFinal && <>
         <div className="tm-passos mb-3">
-          <div><b>1</b>{tx('Lance o trabalho de fim de curso (botão TFC): tema, orientador, júri, defesa e nota.')}</div>
-          <div><b>2</b>{tx('Quando tem todas as cadeiras e o TFC aprovados, aparece «Concluído».')}</div>
+          <div><b>1</b>{tx('Lance o {0} (botão {1}): tema, orientador, júri, defesa e nota.', { 0: tx(curso.trabalho.nome).toLowerCase(), 1: curso.trabalho.sigla })}</div>
+          <div><b>2</b>{t.temPlano ? tx('Quando o Conselho de Curso homologa a classificação, aparece «Concluído».') : tx('Quando tem todas as cadeiras e o TFC aprovados, aparece «Concluído».')}</div>
           <div><b>3</b>{tx('Carregue em «Certificado» para ver e imprimir o certificado e o diploma.')}</div>
         </div>
-        <Finalistas turma={t} gerir={gerir} avisar={setAviso} />
+        <Finalistas turma={t} gerir={gerir} avisar={setAviso} termos={curso} />
       </>}
 
       {aba === 'cadeiras' && (

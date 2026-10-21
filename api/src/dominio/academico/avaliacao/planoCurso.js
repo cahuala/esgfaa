@@ -136,6 +136,21 @@ export const TEMPOS_ESCOLARES = [['08:30', '09:20'], ['09:30', '10:20'], ['10:30
 // os intervalos de tempos seguidos (do 1.º ao 1.º, do 1.º ao 2.º, …): [{ de, ate, inicio, fim }]
 export const BLOCOS_DE_TEMPOS = TEMPOS_ESCOLARES.flatMap((_, i) => TEMPOS_ESCOLARES.slice(i).map((__, k) => ({ de: i + 1, ate: i + k + 1, inicio: TEMPOS_ESCOLARES[i][0], fim: TEMPOS_ESCOLARES[i + k][1] })))
 
+/*
+  Os termos de cada curso: quem o frequenta (auditor no CSCD e no CEAO, discente no CEMC e no COAMP) e o
+  trabalho final (a UC marcada como TII: «TII — Trabalho de Investigação Individual», ou «TFC — Trabalho
+  de Fim do Curso» no COAMP). Sem plano: estudante e trabalho de fim de curso.
+*/
+export function termosDoPlano(plano, cadeiras = []) {
+  const tii = cadeiras.find((c) => c.tii)
+  if (!plano) return { termo: 'estudante', pessoa: 'Estudante', pessoas: 'Estudantes', trabalho: { sigla: 'TFC', nome: 'Trabalho de fim de curso' } }
+  const auditor = plano.termo === 'auditor'
+  return {
+    termo: auditor ? 'auditor' : 'discente', pessoa: auditor ? 'Auditor' : 'Discente', pessoas: auditor ? 'Auditores' : 'Discentes',
+    trabalho: { sigla: tii?.codigo || 'TII', nome: tii?.nome || 'Trabalho de Investigação Individual' },
+  }
+}
+
 // ---------- faltas ----------
 
 /*

@@ -5,6 +5,7 @@ import { entregaAtrasada, estadoPrazo, prazoDe } from '../../../dominio/academic
 import { faseWorkshop } from '../../../dominio/academico/atividades/workshops.js'
 import { notasVisiveis } from '../../../dominio/academico/avaliacao/resultado.js'
 import { notasDoTrabalhoVisiveis, semCorrecao } from '../../../dominio/academico/atividades/trabalhos.js'
+import { termosDoPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 // Página inicial do portal e página de cada cadeira (vista do estudante ou do docente).
 export class ServicoPainel {
@@ -75,8 +76,10 @@ export class ServicoPainel {
       ...i, fechado: Boolean(i.fecha && new Date(i.fecha) <= agora), numeroPerguntas: perguntas.length,
       ...(eDocente ? { respostas } : { respondido: respondidos.has(i.id) }),
     }))
+    // os termos do curso (auditor/discente, TII/TFC), pelo plano de curso da turma
+    const planoCadeira = this.esg ? await this.esg.planoDaCadeira(cadeira) : null
     const base = {
-      ...cadeira, materiais, avisos, horario, questionarios, inqueritos, eventos,
+      ...cadeira, termos: termosDoPlano(planoCadeira), materiais, avisos, horario, questionarios, inqueritos, eventos,
       workshops: await this.#workshopsDaVista(todosWorkshops.filter(visivel('workshop')).map(comAcesso('workshop')), conta, agora),
       secoes: (eDocente ? secoes : secoes.filter((x) => x.visivel)).map((x) => ({
         id: x.id, ordem: x.ordem, titulo: x.titulo, resumo: x.resumo, visivel: x.visivel,

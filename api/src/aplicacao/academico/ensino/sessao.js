@@ -1,6 +1,7 @@
 import { ContaBloqueada, ErroValidacao, NaoAutenticado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../../../dominio/identidade/utilizador.js'
 import { validarSenha } from '../../../dominio/identidade/politicaSenha.js'
+import { termosDoPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 const CREDENCIAIS_ERRADAS = 'E-mail ou palavra-passe incorretos.'
 const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
@@ -56,7 +57,14 @@ export class ServicoSessaoPortal {
   async eu(ctx) {
     const c = ctx.conta
     const matriculas = c.tipo === 'estudante' ? await this.academico.matriculasDoEstudante(c.id) : []
-    return { ...c.publico(), deveMudarSenha: c.deveMudarSenha, matriculas }
+    // o estudante de uma turma com plano de curso da ESG é «auditor» ou «discente» (a turma ativa mais recente)
+    let termos = null
+    const ativa = matriculas.find((m) => m.estado === 'ativa')
+    if (ativa && this.esg) {
+      const plano = await this.esg.planos.daTurma(ativa.turma)
+      if (plano) termos = termosDoPlano(plano, await this.academico.cadeirasDasTurmas([ativa.turma.id]))
+    }
+    return { ...c.publico(), deveMudarSenha: c.deveMudarSenha, matriculas, termos }
   }
 
   async sair(ctx) {

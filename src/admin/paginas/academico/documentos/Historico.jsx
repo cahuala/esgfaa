@@ -59,7 +59,7 @@ function Historico() {
         </section>
       ))}
       {h.inscricoes.length > 0 && (<><h2 className="h6 fw-bold mt-3 mb-1">Unidades curriculares frequentadas por inscrição</h2>{tabela(h.inscricoes)}</>)}
-      <h2 className="h6 fw-bold mt-3 mb-1">Trabalho de fim de curso</h2>
+      <h2 className="h6 fw-bold mt-3 mb-1">{h.planoCurso?.trabalho ? `${h.planoCurso.trabalho.nome} (${h.planoCurso.trabalho.sigla})` : 'Trabalho de fim de curso'}</h2>
       {h.tfc ? (
         <div className="of-campos">
           <div style={{ gridColumn: '1 / -1' }}><b>Tema:</b> {h.tfc.tema}</div>

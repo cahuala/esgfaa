@@ -130,7 +130,7 @@ function Percurso() {
         <Cartao titulo={<><i className="fa fa-graduation-cap me-2" />{tx('Conclusão do curso')}</>}>
           {p.tfc && (
             <div className="mb-2">
-              <div className="small text-muted">{tx('Trabalho de fim de curso')}</div>
+              <div className="small text-muted">{p.planoCurso?.trabalho ? `${p.planoCurso.trabalho.sigla} — ${tx(p.planoCurso.trabalho.nome)}` : tx('Trabalho de fim de curso')}</div>
               <b>{p.tfc.tema}</b>
               <div className="small">{p.tfc.orientador && `Orientador: ${p.tfc.orientador} · `}{p.tfc.nota !== null ? tx('Nota: {0} valores ({1})', { 0: nota(p.tfc.nota), 1: p.tfc.classificacao }) : tx('Por defender')}</div>
             </div>

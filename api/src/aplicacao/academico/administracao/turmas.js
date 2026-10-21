@@ -1,5 +1,6 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
+import { termosDoPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
 import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados.js'
 
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
@@ -57,7 +58,9 @@ export class ServicoTurmas {
     if (!t) throw new NaoEncontrado('Turma não encontrada.')
     const [matriculas, cadeiras] = await Promise.all([this.academico.matriculasDaTurma(t.id), this.academico.cadeirasDasTurmas([t.id])])
     const horarios = await this.academico.horariosDasCadeiras(cadeiras.map((c) => c.id))
-    return { ...t, matriculas, cadeiras: cadeiras.map((c) => ({ ...c, horarios: horarios.filter((h) => h.cadeiraId === c.id) })) }
+    // os termos do curso (auditor/discente, TII/TFC), pelo plano de curso da turma
+    const plano = this.planosCurso ? await this.planosCurso.daTurma(t) : null
+    return { ...t, matriculas, cadeiras: cadeiras.map((c) => ({ ...c, horarios: horarios.filter((h) => h.cadeiraId === c.id) })), termos: termosDoPlano(plano, cadeiras), temPlano: Boolean(plano) }
   }
 
   async matricular(ctx, turmaId, { estudanteId }) {

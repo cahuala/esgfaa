@@ -63,7 +63,8 @@ function Layout({ children }) {
     }
   }, [menuConta])
 
-  const papel = eDocente ? tx('Docente') : tx('Estudante')
+  // numa turma com plano de curso da ESG: «Auditor» ou «Discente»
+  const papel = eDocente ? tx('Docente') : tx(conta.termos?.pessoa || 'Estudante')
   const turma = conta.matriculas?.find((m) => m.estado === 'ativa')?.turma?.nome
 
   return (
