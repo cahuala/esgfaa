@@ -9,8 +9,12 @@ import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 */
 export const TIPOS_DOCUMENTO_PESSOAL = {
   declaracao_efectividade: { nome: 'Declaração de efectividade', serie: 'declaracao' },
+  declaracao_efectividade_vencimento: { nome: 'Declaração de efectividade (com o vencimento)', serie: 'declaracao' },
+  declaracao_efectividade_discente: { nome: 'Declaração de efectividade (discente)', serie: 'declaracao' },
   declaracao_salario: { nome: 'Declaração de salário', serie: 'declaracao' },
   declaracao_servico: { nome: 'Declaração de serviço', serie: 'declaracao' },
+  declaracao_servico_efectividade: { nome: 'Declaração de serviço (confirmar a efectividade)', serie: 'declaracao' },
+  declaracao_servico_domiciliar: { nome: 'Declaração de serviço (empregada(o) domiciliar)', serie: 'declaracao' },
   declaracao_bfa_credito: { nome: 'Declaração — Crédito Pessoal (BFA)', serie: 'declaracao' },
   declaracao_bfa_adiantamento: { nome: 'Declaração — Adiantamento Salarial (BFA)', serie: 'declaracao' },
   declaracao_bpc_salario: { nome: 'Declaração — BPC Salário', serie: 'declaracao' },

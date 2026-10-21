@@ -1,4 +1,5 @@
 import { brasaoPng, emblema } from '../documentos'
+import EmblemaFaa from '../../assets/emblema-faa.png'
 import Logo from '../../assets/Logo.png'
 import { paragrafo as paragrafoPdf } from '../../utils/pdfParagrafo'
 import { fotoBase64 } from '../fotos'
@@ -65,9 +66,10 @@ export function kwanzasPorExtenso(v) {
 }
 
 // ---------- documento ----------
-// emblema da ESG (para a marca-d'água das declarações e guias, em tons de cinzento, e para o anexo)
+// emblema da ESG (anexo à ficha) e o das FAA em tons de cinzento (o fundo das declarações e das guias)
 let logo = null
-function carregarLogo() {
+let fundo = null
+function carregarLogo(src = Logo) {
   return new Promise((ok) => {
     const img = new Image()
     img.onload = () => {
@@ -84,7 +86,7 @@ function carregarLogo() {
       ok({ cor: fazer('none'), cinza: fazer('grayscale(1)'), proporcao: img.width / img.height })
     }
     img.onerror = () => ok(null)
-    img.src = Logo
+    img.src = src
   })
 }
 
@@ -93,12 +95,13 @@ export async function novoDocumento() {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   doc.setFont('times', 'normal').setFontSize(TAM)
   logo ??= await carregarLogo()
-  return { doc, autoTable, brasao: await brasaoPng(), logo, paginas: 0 }
+  fundo ??= await carregarLogo(EmblemaFaa)
+  return { doc, autoTable, brasao: await brasaoPng(), logo, fundo, paginas: 0 }
 }
 
-// marca-d'água: o emblema da ESG ao centro, muito claro (como nos modelos)
+// marca-d'água: o emblema das FAA ao centro, muito claro (como nos modelos)
 export function marcaDagua(d, cx, cy, h, opacidade = 0.08) {
-  const { doc, logo: l } = d
+  const { doc, fundo: l } = d
   if (!l) return
   doc.saveGraphicsState()
   doc.setGState(new doc.GState({ opacity: opacidade }))

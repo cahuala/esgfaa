@@ -4,7 +4,7 @@ import { M, TAM, cabecalho, dataExtenso, kwanzas, kwanzasPorExtenso, marcaDagua,
 /*
   Declarações e guias de marcha, desenhadas como os modelos da ESG (Times 14, dados em maiúsculas).
   Declarações: de efectividade (militar, discente), de salário (militar) e de serviço (civil, empregada(o)
-  domiciliar); numeradas por ano («Nº402/26»), válidas por 90 dias, com a marca-d'água da ESG.
+  domiciliar); numeradas por ano («Nº402/26»), válidas por 90 dias, com a marca-d'água das FAA.
 */
 const militar = (p) => p.tipo === 'militar'
 const ano2 = (ano) => String(ano).slice(-2)
@@ -87,7 +87,7 @@ export function declaracao(d, p, o, quem) {
 /*
   Guias de marcha individual (como os modelos): férias e férias adicionais (art. 32.º da Lei n.º 13/18),
   dispensa (militar, civil, discente) e apresentação noutra unidade. Num quadro até ao fundo da folha, com
-  o emblema das FAA por cima e a marca-d'água da ESG. o = { tipo, dias, inicio, motivo, provincia, destino, referencia }.
+  o emblema das FAA por cima e outro, grande e claro, ao fundo. o = { tipo, dias, inicio, motivo, provincia, destino, referencia }.
 */
 function designacao(p, variante) {
   const a = p.genero === 'F' ? 'A' : 'O'

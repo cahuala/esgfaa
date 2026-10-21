@@ -18,17 +18,17 @@ import { dataPt } from '../formatar'
 */
 const militar = (p) => p.tipo === 'militar'
 const modelosPara = (p) => (p.vinculo === 'domiciliar'
-  ? [{ id: 'domiciliar', nome: 'Para empregada(o) domiciliar (civil)', tipo: 'declaracao_servico', dados: { comVencimento: 'Sim' } }]
+  ? [{ id: 'domiciliar', nome: 'Para empregada(o) domiciliar (civil)', tipo: 'declaracao_servico_domiciliar', dados: { comVencimento: 'Sim' } }]
   : militar(p)
     ? [
         { id: 'efectividade', nome: 'Para efectivo militar — efectividade', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Não' } },
-        { id: 'efectividade_venc', nome: 'Para efectivo militar — com o vencimento', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Sim' } },
-        ...(p.discente || p.vinculo === 'estudante' ? [{ id: 'discente', nome: 'Para discentes', tipo: 'declaracao_efectividade', dados: { comVencimento: 'Sim' }, discente: true }] : []),
+        { id: 'efectividade_venc', nome: 'Para efectivo militar — com o vencimento', tipo: 'declaracao_efectividade_vencimento', dados: { comVencimento: 'Sim' } },
+        ...(p.discente || p.vinculo === 'estudante' ? [{ id: 'discente', nome: 'Para discentes', tipo: 'declaracao_efectividade_discente', dados: { comVencimento: 'Sim' }, discente: true }] : []),
         { id: 'salario', nome: 'Declaração de salário', tipo: 'declaracao_salario', dados: { comVencimento: 'Sim' } },
       ]
     : [
         { id: 'servico_venc', nome: 'Para civil — com o vencimento', tipo: 'declaracao_servico', dados: { comVencimento: 'Sim' } },
-        { id: 'servico', nome: 'Para civil — para confirmar a efectividade', tipo: 'declaracao_servico', dados: { comVencimento: 'Não' } },
+        { id: 'servico', nome: 'Para civil — para confirmar a efectividade', tipo: 'declaracao_servico_efectividade', dados: { comVencimento: 'Sim' }, semObs: true },
       ])
 const FINALIDADES = [
   ['Finalidades da ESG (OBS)', [

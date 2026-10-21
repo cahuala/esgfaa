@@ -21,11 +21,12 @@ const VALOR = (p) => {
   const tabela = vencimentoDaTabela(p)
   return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? '', ajuda: `Vazio = ${p.vencimento ? 'o da ficha' : tabela ? `o da tabela salarial (${kwanzas(tabela)} KZ líquido)` : 'sem vencimento (falta a tabela)'}.` }
 }
-const COM_VENCIMENTO = { campo: 'comVencimento', rotulo: 'Fala do vencimento?', tipo: 'escolha', inicial: 'Sim', valores: ['Sim', 'Não'] }
+const semDomiciliar = (f) => (p) => f(p) && p.vinculo !== 'domiciliar'
+// o dia que vai no documento («ESG em Luanda, 24 de Junho de 2026»): por defeito hoje, mas pode ser outro
+const DATA_DOC = { campo: 'data', rotulo: 'Data', tipo: 'data', inicial: hoje(), obrigatorio: true }
 const DIAS = (n) => ({ campo: 'dias', rotulo: 'Dias', tipo: 'numero', inicial: n, obrigatorio: true })
 const INICIO = { campo: 'inicio', rotulo: 'A partir de', tipo: 'data', inicial: hoje(), obrigatorio: true }
-// o dia que vai na guia («LUANDA, 31 DE MARÇO DE 2026»): por defeito hoje, mas pode ser outro
-const DATA_GUIA = { campo: 'data', rotulo: 'Data da guia', tipo: 'data', inicial: hoje(), obrigatorio: true }
+const DATA_GUIA = { ...DATA_DOC, rotulo: 'Data da guia' }
 const opcoesDispensa = (motivo) => [INICIO, DIAS(5), FIM, { campo: 'motivo', rotulo: 'A fim de tratar', tipo: 'escolha', inicial: motivo, valores: ['Assuntos Pessoais', 'Assunto Familiar', 'Assuntos de Saúde'] }, { campo: 'provincia', rotulo: 'Na província de', tipo: 'texto', inicial: '' }, DATA_GUIA]
 const somarDias = (iso, n) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + Number(n) - 1); return d.toISOString().slice(0, 10) }
 // fim calculado (art. 32.º): o último dia do período, contado a partir do início
@@ -50,10 +51,14 @@ function opcoesFerias(p) {
 export const GRUPOS_DOC = [['declaracoes', 'Declarações'], ['guias', 'Guias de marcha'], ['fichas', 'Fichas']]
 
 export const CATALOGO = [
-  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Declaração de efectividade', para: (p) => militar(p), opcoes: (p) => [FINALIDADE, COM_VENCIMENTO, VALOR(p), ...(p.discente || p.vinculo === 'estudante' ? [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome || (p.vinculo === 'estudante' ? p.unidadeNome : '') || '', ajuda: p.vinculo === 'estudante' ? '' : 'Também é aluno: escreva o curso para a declaração dizer «Como Discente do …»; vazio = não fala do curso.' }] : [])],
-    desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade' }, q) },
-  { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Declaração de salário', para: militar, opcoes: (p) => [VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
-  { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Declaração de serviço', para: civil, opcoes: (p) => [COM_VENCIMENTO, VALOR(p), FINALIDADE], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
+  // os sete modelos de declaração da ESG (a caixa do canto do modelo diz para quem é)
+  { tipo: 'declaracao_efectividade', grupo: 'declaracoes', nome: 'Efectividade — para efectivo militar', para: semDomiciliar(militar), semVencimento: true, opcoes: () => [DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade', semObs: true }, q) },
+  { tipo: 'declaracao_efectividade_vencimento', grupo: 'declaracoes', nome: 'Efectividade com o vencimento — para efectivo militar', para: semDomiciliar(militar), opcoes: (p) => [VALOR(p), FINALIDADE, DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade' }, q) },
+  { tipo: 'declaracao_efectividade_discente', grupo: 'declaracoes', nome: 'Efectividade — para discentes', para: (p) => militar(p) && Boolean(p.discente || p.vinculo === 'estudante'), opcoes: (p) => [{ campo: 'curso', rotulo: 'Discente do (curso)', tipo: 'texto', obrigatorio: true, inicial: (p.cursos ?? []).find((c) => !c.fim)?.nome || (p.vinculo === 'estudante' ? p.unidadeNome : '') || '' }, VALOR(p), FINALIDADE, DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'efectividade' }, q) },
+  { tipo: 'declaracao_salario', grupo: 'declaracoes', nome: 'Salário — para efectivo militar', para: semDomiciliar(militar), opcoes: (p) => [VALOR(p), FINALIDADE, DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'salario' }, q) },
+  { tipo: 'declaracao_servico', grupo: 'declaracoes', nome: 'Serviço — para civil', para: semDomiciliar(civil), opcoes: (p) => [VALOR(p), FINALIDADE, DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
+  { tipo: 'declaracao_servico_efectividade', grupo: 'declaracoes', nome: 'Serviço — para civil, para confirmar a efectividade', para: semDomiciliar(civil), opcoes: (p) => [VALOR(p), DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico', semObs: true }, q) },
+  { tipo: 'declaracao_servico_domiciliar', grupo: 'declaracoes', nome: 'Serviço — para empregada(o) domiciliar (civil)', para: (p) => p.vinculo === 'domiciliar', opcoes: (p) => [VALOR(p), FINALIDADE, DATA_DOC], desenhar: (d, p, o, q) => declaracao(d, p, { ...o, tipo: 'servico' }, q) },
 
   // as declarações para os bancos (modelos do SIGP): militares e civis
   ...[['bfa_credito', 'Crédito Pessoal (BFA)'], ['bfa_adiantamento', 'Adiantamento Salarial (BFA)'], ['bpc_salario', 'BPC Salário'], ['bpc_credito', 'Crédito Bancário (BPC)']].map(([b, nome]) => ({
@@ -99,7 +104,7 @@ export async function gerarLote(itens, quem, nomeFicheiro) {
     const c = CATALOGO.find((x) => x.tipo === e.tipo)
     const o = { ...e.dados, numero: emitido?.numero, ano: emitido?.ano }
     // vencimento: o escrito, o da ficha ou o da tabela salarial; ou nenhum, se se escolheu não falar dele
-    if (c.grupo === 'declaracoes') o.valor = o.comVencimento === 'Não' ? null : o.valor || p.vencimento || vencimentoDaTabela(p)
+    if (c.grupo === 'declaracoes') o.valor = c.semVencimento || o.comVencimento === 'Não' ? null : o.valor || p.vencimento || vencimentoDaTabela(p)
     await c.desenhar(d, p, o, quem)
   }
   d.doc.save(nomeFicheiro)
