@@ -1,6 +1,7 @@
-/* Rodapé claro em cinzento, como no modelo Corporate */
+/* Rodapé claro, no fundo do site, com a faixa da cor da Escola por cima */
 .footer {
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border-top: 3px solid var(--marca);
   color: var(--texto);
   font-size: 13.5px;
 }

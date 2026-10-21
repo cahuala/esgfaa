@@ -2,7 +2,8 @@
 .secao {
   width: 100%;
   padding: 90px 0;
-  background-color: var(--fundo-cinza);
+  background-color: var(--fundo);
+  border-top: 1px solid var(--linha);
   color: var(--texto);
   overflow: hidden;
 }
