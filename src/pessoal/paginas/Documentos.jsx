@@ -12,7 +12,14 @@ import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 // o que cada documento precisa além das fichas (carrega-se só quando se pede)
 const EXTRA = {
   propostos: (o) => api('/propostas/itens', { consulta: o.estado ? { estado: o.estado } : {} }),
-  licencas: () => api('/licencas', { consulta: { estado: 'em_curso' } }),
+  // as licenças do ano do período (e do anterior, que podem entrar por ele dentro); sem período, as em curso
+  licencas: async (o) => {
+    if (!o.mes) return api('/licencas', { consulta: { estado: 'em_curso' } })
+    const ano = Number(o.mes.slice(0, 4))
+    return (await Promise.all([ano - 1, ano].map((a) => api('/licencas', { consulta: { ano: a } })))).flat()
+  },
+  // quem saiu da Escola (transferidos, mortos, condenados)
+  saidas: () => api('/pessoas', { consulta: { ativo: 'nao' } }),
   domiciliares: () => api('/pessoas', { consulta: { vinculo: 'domiciliar' } }),
 }
 
@@ -73,7 +80,8 @@ export default function Documentos() {
     try {
       const ctx = { ...contexto }
       if (d.precisa === 'propostos') ctx.propostos = (await EXTRA.propostos(o)).filter((i) => !ids || pessoas.some((p) => p.id === i.pessoaId))
-      if (d.precisa === 'licencas') ctx.licencas = await EXTRA.licencas()
+      if ([].concat(d.precisa).includes('licencas')) ctx.licencas = await EXTRA.licencas(o)
+      if (d.id === 'ausencias') ctx.saidas = (await EXTRA.saidas()).filter((p) => !ids || ids.has(p.unidadeId))
       if (d.precisa === 'domiciliares') ctx.domiciliares = (await EXTRA.domiciliares()).filter((p) => !ids || ids.has(p.unidadeId) || pessoas.some((x) => x.id === p.militarAlocadoId))
       const doc = d.fazer(ctx, o)
       if (formato === 'pdf') await documentoPdf(doc)

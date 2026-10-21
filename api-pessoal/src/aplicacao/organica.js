@@ -7,6 +7,13 @@ export const COLUNAS_PLANEAMENTO = [...Object.entries(CATEGORIAS).map(([k, v]) =
 const categoriaDe = (p) => (p.tipo === 'civil' ? 'civil' : POSTOS[p.posto]?.categoria ?? null)
 const categoriaDoCargo = (c) => (c.tipo === 'civil' || !c.postoRequerido ? 'civil' : POSTOS[c.postoRequerido].categoria)
 export const TIPOS_UNIDADE = { direccao: 'Direcção', gabinete: 'Gabinete', departamento: 'Departamento', reparticao: 'Repartição', seccao: 'Secção', servico: 'Serviço', companhia: 'Companhia', curso: 'Curso', outro: 'Outro' }
+// os lugares da orgânica como no Mapa de Controlo Estatístico (Mod. 2): oficiais, sargentos, cabos, soldados e civis
+const grausVazio = () => ({ oficiais: 0, sargentos: 0, cabos: 0, soldados: 0, civil: 0 })
+function grauDoCargo(c) {
+  if (c.tipo === 'civil' || !c.postoRequerido) return 'civil'
+  const cat = POSTOS[c.postoRequerido].categoria
+  return cat === 'sargento' ? 'sargentos' : cat === 'praca' ? (c.postoRequerido === 'soldado' ? 'soldados' : 'cabos') : 'oficiais'
+}
 const vazio = () => Object.fromEntries(COLUNAS_PLANEAMENTO.map(([k]) => [k, 0]))
 import { exigir } from './sessao.js'
 import { comparadorHierarquico, posicoesDasUnidades } from '../dominio/pessoal/ordem.js'
@@ -35,7 +42,7 @@ export class ServicoOrganica {
       this.bd.cargo.findMany({ select: { id: true, unidadeId: true, vagas: true, tipo: true, postoRequerido: true } }),
       this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, select: { unidadeId: true, cargoId: true, tipo: true, posto: true, genero: true, vinculo: true } }),
     ])
-    const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: TIPOS_UNIDADE[x.tipo] ?? '', paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
+    const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: TIPOS_UNIDADE[x.tipo] ?? '', paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), previstoGraus: grausVazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
     const somar = (n, campo, cat, q = 1) => { if (n && cat) n[campo][cat] += q }
     for (const c of cargos) {
       const n = no.get(c.unidadeId)
@@ -43,6 +50,7 @@ export class ServicoOrganica {
       n.cargos++
       n.lugares += c.vagas
       somar(n, 'previsto', categoriaDoCargo(c), c.vagas)
+      n.previstoGraus[grauDoCargo(c)] += c.vagas
     }
     const ocupadosPorCargo = new Map()
     for (const p of pessoas) {
@@ -64,14 +72,16 @@ export class ServicoOrganica {
         total(f)
         for (const k of ['lugares', 'ocupados', 'cargos', 'mulheres', 'pessoas', 'estudantes']) n[k] += f[k]
         for (const cat of Object.keys(n.previsto)) { n.previsto[cat] += f.previsto[cat]; n.existente[cat] += f.existente[cat] }
+        for (const g of Object.keys(n.previstoGraus)) n.previstoGraus[g] += f.previstoGraus[g]
       }
       return n
     }
     raizes.forEach(total)
-    const escola = { id: null, nome: 'Escola Superior de Guerra', sigla: 'ESG', filhos: raizes, previsto: vazio(), existente: vazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }
+    const escola = { id: null, nome: 'Escola Superior de Guerra', sigla: 'ESG', filhos: raizes, previsto: vazio(), existente: vazio(), previstoGraus: grausVazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }
     for (const r of raizes) {
       for (const k of ['lugares', 'ocupados', 'cargos', 'mulheres', 'pessoas', 'estudantes']) escola[k] += r[k]
       for (const cat of Object.keys(escola.previsto)) { escola.previsto[cat] += r.previsto[cat]; escola.existente[cat] += r.existente[cat] }
+      for (const g of Object.keys(escola.previstoGraus)) escola.previstoGraus[g] += r.previstoGraus[g]
     }
     // pessoas sem unidade também contam no existente da Escola
     for (const p of pessoas.filter((x) => !no.has(x.unidadeId))) { if (p.vinculo === 'estudante') { escola.estudantes++; continue } escola.pessoas++; escola.existente[categoriaDe(p)] = (escola.existente[categoriaDe(p)] ?? 0) + 1; if (p.genero === 'F') escola.mulheres++ }

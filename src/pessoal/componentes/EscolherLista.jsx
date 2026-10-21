@@ -48,7 +48,7 @@ export default function EscolherLista({ pessoas, descricao, aoFechar }) {
         <button type="button" className="btn btn-theme" disabled={Boolean(a) || !d} onClick={() => fazer('pdf')}><i className={`fa ${a === 'pdf' ? 'fa-spinner fa-spin' : 'fa-print'} me-1`} />Imprimir</button>
       </>}>
       <div className="row">
-        {Object.entries(GRUPOS_DOCUMENTOS).filter(([g]) => g !== 'propostas').map(([g, x]) => (
+        {Object.entries(GRUPOS_DOCUMENTOS).filter(([g]) => g !== 'propostas' && g !== 'mapas').map(([g, x]) => (
           <div key={g} className="col-lg-6 mb-3">
             <h6 className="fw-bold mb-2"><i className={`fa ${x.icone} me-2 pes-ouro`} />{x.titulo}</h6>
             {lista.filter((doc) => doc.grupo === g).map((doc) => (

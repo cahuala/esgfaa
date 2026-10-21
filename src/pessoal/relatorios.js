@@ -1,3 +1,5 @@
+import { MAPAS } from './mapas'
+
 /*
   Documentos da Repartição de Pessoal e Quadros (menu «Documentos»): cada um constrói-se com os dados do
   sistema e sai em PDF (com o brasão e a assinatura do Chefe da Repartição) ou em Excel.
@@ -107,12 +109,21 @@ function mapaEfectividade(ctx) {
   }
 }
 
-function listaEfectividade(ctx, { quem = 'todos' }) {
-  const C = colunas(ctx)
-  const l = ctx.pessoas.filter((p) => quem === 'todos' || p.tipo === quem)
-  const ordem = ctx.arvore.lista.map((u) => u.id)
-  const s = seccoesPor(l, (p) => p.unidadeId ?? 0, [...ordem, 0], [C.n, C.posto, C.nome, C.id, C.ramo, C.cargo, C.situacao, C.estado], { titulo: (k) => (k ? ctx.arvore.caminho(k) : 'Sem unidade atribuída') })
-  return { titulo: 'Lista nominal de efectividade', subtitulo: subtituloBase(ctx, { militar: 'Militares', civil: 'Civis' }[quem]), orientacao: 'landscape', seccoes: s }
+// a Lista de Efectividade da ESG/EMGFAA (modelo da Escola): os militares, do mais graduado ao mais moderno
+function listaEfectividade(ctx) {
+  const l = ctx.pessoas.filter((p) => militar(p) && p.vinculo !== 'estudante').sort(porHierarquia)
+  const M = (v) => String(v ?? '').toLocaleUpperCase('pt')
+  const colunas = [
+    { titulo: 'N.º', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 }, { titulo: 'NIP', valor: (p) => p.nip, largura: 20 },
+    { titulo: 'Posto', valor: (p) => M(p.postoNome), largura: 30 }, { titulo: 'Ramo', valor: (p) => p.ramo, alinhar: 'center', largura: 11 }, { titulo: 'Nome completo', valor: (p) => M(p.nome) },
+    { titulo: 'Cargo', valor: (p) => M(p.cargoNome) }, { titulo: 'ASEC', valor: (p) => [p.quadroEspecial, p.especialidade].filter(Boolean).join(' / '), alinhar: 'center', largura: 18 },
+    { titulo: 'FPS', valor: (p) => p.fps, alinhar: 'center', largura: 10 }, { titulo: 'D/Nasc.', valor: (p) => pt(p.dataNascimento), alinhar: 'center', largura: 18 },
+    { titulo: 'D/Incorp.', valor: (p) => pt(p.dataIngresso), alinhar: 'center', largura: 18 },
+    { titulo: 'Hab. lit. — civil', valor: (p) => M(p.habilitacaoNome), largura: 26 }, { titulo: 'Hab. lit. — militar', valor: (p) => M(p.habilitacaoMilitar), largura: 30 },
+  ]
+  const r = (t) => ({ content: t, rowSpan: 2 })
+  const cabeca = [[...['N.º', 'NIP', 'POSTO', 'RAMO', 'NOME COMPLETO', 'CARGO', 'ASEC', 'FPS', 'D/NASC.', 'D/INCORP.'].map(r), { content: 'HAB.LIT.', colSpan: 2 }], ['CIVIL', 'MILITAR']]
+  return { titulo: 'Lista de efectividade da ESG/EMGFAA', orientacao: 'landscape', referencia: 'Op.1.Cp.3', seccoes: [{ colunas, cabeca, linhas: l, letra: 6.8 }] }
 }
 
 function porSituacao(ctx) {
@@ -236,9 +247,12 @@ const QUEM = { campo: 'quem', rotulo: 'Pessoal', opcoes: [['todos', 'Militares e
   Catálogo: grupo, título, o que tem, as opções (com valores iniciais) e o que precisa de carregar.
 */
 export const DOCUMENTOS = [
+  // ---------- mapas de controlo estatístico (Mod. 2 a 5/DPQ) ----------
+  ...MAPAS,
+
   // ---------- efectividade ----------
   { id: 'mapa-efectividade', grupo: 'efectividade', titulo: 'Mapa de efectividade', icone: 'fa-table', descricao: 'Efectivo por unidade e categoria, por ramo, por situação (em árvore, Lei n.º 13/18), por estado e por género, com totais.', fazer: mapaEfectividade },
-  { id: 'lista-efectividade', grupo: 'efectividade', titulo: 'Lista nominal de efectividade', icone: 'fa-list-ol', descricao: 'Todos, unidade a unidade (pela orgânica), do mais graduado e antigo ao mais moderno, com cargo, situação e estado.', opcoes: [QUEM], fazer: listaEfectividade },
+  { id: 'lista-efectividade', grupo: 'efectividade', titulo: 'Lista de efectividade', icone: 'fa-list-ol', descricao: 'O modelo da Escola: NIP, posto, ramo, nome, cargo, ASEC, FPS, nascimento, incorporação e habilitações (civil e militar), do mais graduado ao mais moderno.', fazer: listaEfectividade },
   { id: 'situacao', grupo: 'efectividade', titulo: 'Militares por situação', icone: 'fa-sitemap', descricao: 'Activo em efectividade (comissão normal, inactividade temporária), fora de efectividade (comissão especial, licenças), reserva e reforma.', fazer: porSituacao },
   { id: 'estado', grupo: 'efectividade', titulo: 'Militares por estado', icone: 'fa-route', descricao: 'Destacados, em missão, em formação, em substituição, a cargo da Direcção, suspensos, aguardando colocação…', opcoes: [{ campo: 'todos', rotulo: 'Incluir', opcoes: [['', 'Só quem tem estado'], ['1', 'Também os que estão ao serviço']] }], fazer: (c, o) => porEstado(c, { todos: Boolean(o.todos) }) },
   { id: 'licencas', grupo: 'efectividade', titulo: 'Licenças em curso', icone: 'fa-plane-departure', descricao: 'Quem está de licença hoje, por tipo de licença.', precisa: 'licencas', fazer: licencas },
@@ -268,7 +282,7 @@ export const DOCUMENTOS = [
   { id: 'lista-civis', grupo: 'listas', titulo: 'Lista geral do pessoal civil', icone: 'fa-id-card-alt', descricao: 'O modelo da Escola: N.º de agente, INSS, nome, categoria, nascimento, admissão e habilitações.', fazer: (ctx) => {
     const l = ctx.pessoas.filter((p) => p.tipo === 'civil' && p.vinculo !== 'domiciliar').sort(porHierarquia)
     const M = (v) => String(v ?? '').toLocaleUpperCase('pt')
-    return { titulo: 'Lista geral do pessoal civil da ESG/EMGFAA', orientacao: 'landscape', seccoes: [{ colunas: [
+    return { titulo: 'Lista geral do pessoal civil da ESG/EMGFAA', orientacao: 'landscape', referencia: 'Op.1.Cp.3', seccoes: [{ colunas: [
       { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 }, { titulo: 'Desp. Nº', valor: () => '', largura: 16 }, { titulo: 'Nº Agente', valor: (p) => p.numeroAgente, largura: 18 }, { titulo: 'Nº INSS', valor: (p) => p.inss, largura: 20 },
       { titulo: 'Nome', valor: (p) => M(p.nome) }, { titulo: 'Nascimento', valor: (p) => p.dataNascimento, data: true }, { titulo: 'Categoria', valor: (p) => M(p.categoriaCivil || p.carreiraNome) },
       { titulo: 'Admissão', valor: (p) => p.dataAdmissao, data: true }, { titulo: 'Habilitações literárias', valor: (p) => M(p.habilitacaoNome), largura: 32 },
@@ -306,6 +320,7 @@ export const DOCUMENTOS = [
 
 export const GRUPOS_DOCUMENTOS = {
   efectividade: { titulo: 'Efectividade', icone: 'fa-table', texto: 'Mapas e listas do efectivo da Escola: por unidade, situação (Lei n.º 13/18) e estado.' },
+  mapas: { titulo: 'Mapas estatísticos', icone: 'fa-chart-bar', texto: 'Os mapas de controlo estatístico da DPQ (Mod. 2, 3, 4 e 5) e as ausências temporárias e definitivas, mês a mês.' },
   propostas: { titulo: 'Propostas', icone: 'fa-file-signature', texto: 'Pessoal proposto para promoção, nomeação, cursos, graduação, exoneração e progressão.' },
   listas: { titulo: 'Listas', icone: 'fa-list', texto: 'Listas por género, posto, ramo, categoria, habilitações, idade, província e outras.' },
 }

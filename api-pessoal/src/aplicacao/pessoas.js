@@ -42,7 +42,7 @@ export const TIPOS_EVENTO = {
 }
 export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
-const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
+const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
@@ -86,7 +86,9 @@ export class ServicoPessoas {
     }
     if (f.reservaAte) lista = lista.filter((p) => p.dataReserva && p.dataReserva <= `${f.reservaAte}-12-31`)
     if (f.semCargo) lista = lista.filter((p) => !p.cargoId)
-    return ordenarPorHierarquia(lista.map(({ cursos, eventos, ...p }) => (void cursos, void eventos, p)), await posicoesUnidades(this.bd))
+    // a habilitação militar (Lista de Efectividade): o último curso concluído
+    const habMilitar = (cursos = []) => cursos.filter((c) => c.fim).sort((x, y) => y.fim - x.fim)[0]?.nome ?? ''
+    return ordenarPorHierarquia(lista.map(({ cursos, eventos, ...p }) => (void eventos, { ...p, habilitacaoMilitar: habMilitar(cursos) })), await posicoesUnidades(this.bd))
   }
 
   async #comSubunidades(id) {

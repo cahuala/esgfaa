@@ -46,20 +46,40 @@ export async function documentoPdf(d) {
   const h = doc.internal.pageSize.getHeight()
   const brasao = await brasaoPng()
   const quem = await api('/definicoes/assinaturas').catch(() => ({}))
-  // cabeçalho do modelo
-  doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text('O COMANDANTE DA ESG', 38, 24, { align: 'center' })
-  emblema(doc, brasao, w / 2, 6, 17)
-  doc.setFont('helvetica', 'normal').setFontSize(8.5).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' })
-  doc.setFont('helvetica', 'italic').text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
-  doc.setFont('helvetica', 'normal').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
-  const sub = (t, y) => { const tw = doc.getTextWidth(t); doc.setLineWidth(0.25).line(w / 2 - tw / 2, y + 0.9, w / 2 + tw / 2, y + 0.9) }
-  sub('ESCOLA SUPERIOR DE GUERRA', 36)
-  doc.setFontSize(9.5)
-  const tit = doc.splitTextToSize(d.titulo.toUpperCase(), w - 60)
-  doc.text(tit, w / 2, 44, { align: 'center' })
-  tit.forEach((l, i) => sub(l, 44 + i * 4.4))
-  let y = 44 + tit.length * 4.4 + 1
-  if (d.subtitulo) { doc.setFontSize(8).setTextColor(70).text(d.subtitulo, w / 2, y + 1.5, { align: 'center' }).setTextColor(0); y += 4 }
+  // os mapas estatísticos (Mod. 2 a 5/DPQ) têm «APROVADO», o número do modelo à direita e letra Times
+  const mod = d.modelo
+  const F = mod ? 'times' : 'helvetica'
+  let y
+  if (mod) {
+    const c = quem.comandante ?? {}
+    doc.setFont('times', 'bold').setFontSize(9).text('APROVADO', 45, 20, { align: 'center' }).text((c.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 45, 24, { align: 'center' })
+    if (c.nome) doc.text(c.nome.toUpperCase(), 45, 31, { align: 'center' })
+    if (c.posto) doc.text(`**${c.posto.toUpperCase()}**`, 45, 35, { align: 'center' })
+    emblema(doc, brasao, w / 2, 6, 17)
+    doc.setFont('times', 'normal').setFontSize(9).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' }).text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
+    doc.setFont('times', 'bold').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
+    const agora = new Date()
+    doc.text(mod.numero, w - 30, 26, { align: 'center' }).setFont('times', 'normal').text(`${agora.getDate()} DE ${MESES[agora.getMonth()].toUpperCase()} DE ${agora.getFullYear()}`, w - 30, 30.5, { align: 'center' })
+    doc.setFont('times', 'bold').setFontSize(10)
+    const linhas = [d.titulo.toUpperCase(), d.subtitulo && d.subtitulo.toUpperCase()].filter(Boolean)
+    linhas.forEach((l, i) => doc.text(l, w / 2, 44 + i * 4.6, { align: 'center' }))
+    y = 44 + linhas.length * 4.6 - 1
+  } else {
+    // cabeçalho do modelo
+    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text('O COMANDANTE DA ESG', 38, 24, { align: 'center' })
+    emblema(doc, brasao, w / 2, 6, 17)
+    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' })
+    doc.setFont('helvetica', 'italic').text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
+    doc.setFont('helvetica', 'normal').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
+    const sub = (t, yy) => { const tw = doc.getTextWidth(t); doc.setLineWidth(0.25).line(w / 2 - tw / 2, yy + 0.9, w / 2 + tw / 2, yy + 0.9) }
+    sub('ESCOLA SUPERIOR DE GUERRA', 36)
+    doc.setFontSize(9.5)
+    const tit = doc.splitTextToSize(d.titulo.toUpperCase(), w - 60)
+    doc.text(tit, w / 2, 44, { align: 'center' })
+    tit.forEach((l, i) => sub(l, 44 + i * 4.4))
+    y = 44 + tit.length * 4.4 + 1
+    if (d.subtitulo) { doc.setFontSize(8).setTextColor(70).text(d.subtitulo, w / 2, y + 1.5, { align: 'center' }).setTextColor(0); y += 4 }
+  }
   y += 3
   const total = d.seccoes.reduce((n, s) => n + (s.contar === false ? 0 : s.linhas.length), 0)
   if (!d.seccoes.some((s) => s.linhas.length)) {
@@ -84,27 +104,47 @@ export async function documentoPdf(d) {
     for (const c of s.colunas) {
       if (c.data) { for (let j = 0; j < 3; j++) estilos[k++] = { halign: 'center', cellWidth: j === 2 ? 10 : 7 } } else estilos[k++] = { halign: c.alinhar ?? 'left', ...(c.largura ? { cellWidth: c.largura } : {}) }
     }
+    // linhas especiais dos mapas: { faixa: 'EXÉRCITO' } (uma célula a toda a largura) e { negrito: true } (subtotais)
+    const corpo = s.linhas.map((l, i) => (l?.faixa ? [{ content: l.faixa, colSpan: k, styles: { fontStyle: 'bold', halign: 'center' } }] : linha(l, i)))
     autoTable(doc, {
       startY: y,
-      head,
-      body: s.linhas.map(linha),
+      head: s.cabeca ?? head,
+      body: corpo,
       foot: s.totais ? [s.totais.flatMap((v, i) => (s.colunas[i]?.data ? [{ content: '', colSpan: 3 }] : [{ content: texto(v), styles: { halign: s.colunas[i]?.alinhar ?? 'left' } }]))] : undefined,
       showFoot: 'lastPage',
       theme: 'grid',
-      styles: { font: 'helvetica', fontSize: 7.4, cellPadding: 1.3, overflow: 'linebreak', lineColor: [60, 60, 60], lineWidth: 0.15, textColor: 0, valign: 'middle' },
-      headStyles: { fillColor: 255, textColor: 0, fontStyle: 'normal', halign: 'center', fontSize: 7 },
+      styles: { font: F, fontSize: s.letra ?? 7.4, cellPadding: s.letra ? 0.6 : 1.3, overflow: 'linebreak', lineColor: [60, 60, 60], lineWidth: 0.15, textColor: 0, valign: 'middle' },
+      headStyles: { fillColor: 255, textColor: 0, fontStyle: mod ? 'bold' : 'normal', halign: 'center', fontSize: s.letra ? s.letra - 0.6 : 7 },
       footStyles: { fillColor: 255, textColor: 0, fontStyle: 'bold' },
       columnStyles: estilos,
       margin: { left: 14, right: 14, top: 14, bottom: 14 },
+      // os títulos ao alto (como nos mapas): { content, vertical: true } escreve-se de baixo para cima
+      didParseCell: (c) => {
+        if (c.section === 'head' && c.cell.raw?.vertical) { if (c.cell.raw.alto) c.cell.styles.minCellHeight = c.cell.raw.alto; c.cell.textoAlto = c.cell.text.join(' '); c.cell.text = [''] }
+        if (c.section === 'body' && s.linhas[c.row.index]?.negrito) c.cell.styles.fontStyle = 'bold'
+      },
+      didDrawCell: (c) => {
+        if (c.section !== 'head' || !c.cell.textoAlto) return
+        const t = c.cell.styles.fontSize
+        doc.setFont(F, 'bold').setFontSize(t).text(c.cell.textoAlto, c.cell.x + c.cell.width / 2 + t * 0.12, c.cell.y + c.cell.height - 1.2, { angle: 90 })
+      },
     })
     y = doc.lastAutoTable.finalY + 6
   }
+  // nos mapas a nota fica à esquerda, ao lado da assinatura
   if (d.nota) {
-    doc.setFontSize(7.5).setTextColor(90).text(doc.splitTextToSize(d.nota, w - 28), 14, y).setTextColor(0)
-    y += 8
+    doc.setFont(F, 'normal').setFontSize(mod ? 6.5 : 7.5).setTextColor(90).text(doc.splitTextToSize(d.nota, mod ? w / 2 - 20 : w - 28), 14, y + (mod ? 3 : 0)).setTextColor(0)
+    if (!mod) y += 8
   }
   // «ESCOLA SUPERIOR DE GUERRA em Luanda, 21 de Abril de 2026» e o Chefe da Repartição
-  if (d.assinatura !== false) {
+  if (mod) {
+    // nos mapas: só o Chefe da Repartição, à direita
+    if (y > h - 20) { doc.addPage(); y = 20 }
+    const c = quem.chefeRpq ?? {}
+    doc.setFont('times', 'bold').setFontSize(9).text((c.cargo || 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS').toUpperCase(), w - 70, y + 4, { align: 'center' })
+    if (c.nome) doc.setFont('times', 'normal').text(c.nome.toUpperCase(), w - 70, y + 14, { align: 'center' })
+    if (c.posto) doc.text(`***${c.posto.toUpperCase()}***`, w - 70, y + 18, { align: 'center' })
+  } else if (d.assinatura !== false) {
     if (y > h - 42) { doc.addPage(); y = 25 }
     const agora = new Date()
     const resto = ` em ${quem.local || 'Luanda'}, ${agora.getDate()} de ${MESES[agora.getMonth()]} de ${agora.getFullYear()}`
@@ -121,6 +161,7 @@ export async function documentoPdf(d) {
   for (let i = 1; i <= n; i++) {
     doc.setPage(i)
     doc.setFont('helvetica', 'normal').setFontSize(6.5).setTextColor(90).text(`Pág. ${i}/${n}`, w - 14, h - 6, { align: 'right' }).setTextColor(0)
+    if (d.referencia) doc.setFontSize(6.5).text(d.referencia, 14, h - 6)
   }
   doc.save(nomeFicheiro(d.titulo, 'pdf'))
   registar(d.titulo, 'pdf', total)

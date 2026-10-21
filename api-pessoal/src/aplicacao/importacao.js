@@ -118,7 +118,7 @@ export class ServicoImportacao {
     if (tem('genero')) d.genero = corresponder(l.genero, [['M', 'M', 'masculino', 'homem'], ['F', 'F', 'feminino', 'mulher']], 'Género')
     if (tem('estadoCivil')) d.estadoCivil = corresponder(l.estadoCivil, [...daLista(ESTADOS_CIVIS), ['solteiro', 'solteira'], ['casado', 'casada'], ['viuvo', 'viuva'], ['divorciado', 'divorciada']], 'Estado civil')
     if (tem('provincia')) d.provincia = corresponder(l.provincia, PROVINCIAS.map((p) => [p, p]), 'Província')
-    if (tem('habilitacao')) d.habilitacao = corresponder(l.habilitacao, [...daLista(HABILITACOES), ['medio', 'ensino medio', 'medio'], ['base', 'ensino de base', 'basico']], 'Habilitação')
+    if (tem('habilitacao')) d.habilitacao = corresponder(l.habilitacao, [...daLista(HABILITACOES), ['medio', 'ensino medio', 'medio'], ['base', 'ensino de base', 'basico'], ['pos_graduacao', 'pos graduacao', 'pos-graduacao'], ['primeiro_ciclo', '1 ciclo', 'i ciclo'], ['segundo_ciclo', '2 ciclo', 'ii ciclo']], 'Habilitação')
     if (tem('vinculo')) d.vinculo = corresponder(l.vinculo, daLista(VINCULOS).filter(([k]) => k !== 'domiciliar'), 'Vínculo')
     const tipo = d.tipo ?? base?.tipo ?? (l.nip ? 'militar' : 'civil')
     if (tipo === 'militar') {

@@ -9,7 +9,7 @@ import { M, dataPt, logoEsg, novaPagina } from './base'
   caixa ou da linha: se não couber, a letra diminui. O resto fica em branco, para preencher à mão.
 */
 const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
-const HAB = { base: 'Ensino de base', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
+const HAB = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 const ec = (p) => ESTADOS_CIVIS[p.estadoCivil] ?? p.estadoCivil ?? ''
 const idade = (iso) => { if (!iso) return ''; const n = new Date(iso); const h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return `${a} anos` }
 const residencia = (p) => [p.provincia, p.municipio, p.bairro, p.rua, p.casa && `Casa n.º ${p.casa}`].filter(Boolean).join(', ') || p.morada || ''
@@ -157,7 +157,7 @@ export function fichaMecanografica(d, p) {
   L('9. Habilitações Literárias', 166.1); caixa(doc, 83.9, 163.6, 90.7, 7.6, habilitacoes(p))
   H(doc, 11).text('Dia', 108.5, 182.6, { align: 'center' }).text('Mês', 127.9, 182.6, { align: 'center' }).text('Ano', 147.3, 182.6, { align: 'center' })
   const curso = (tipos) => (p.cursos ?? []).find((c) => c.tipo === 'academico' && tipos.some((t) => new RegExp(t, 'i').test(c.nome)))
-  const medio = ['medio', 'bacharelato', 'licenciatura', 'mestrado', 'doutoramento'].includes(p.habilitacao)
+  const medio = ['medio', 'bacharelato', 'licenciatura', 'pos_graduacao', 'mestrado', 'doutoramento'].includes(p.habilitacao)
   H(doc, 11).text('a)  Ensino Médio ou PUNIV', 37.3, 191); celulas(doc, 98.8, 185.8, 19.4, 7.2, medio ? partesData(curso(['médio', 'puniv'])?.fim) : ['', '', ''])
   H(doc, 11).text('b)  Ensino Superior', 37.3, 214.8); celulas(doc, 98.8, 209.2, 19.4, 7.2, partesData(curso(['licenc', 'bachar', 'mestr', 'doutor', 'superior'])?.fim))
   H(doc, 11).text('c)  Especialização', 37.3, 238.6); celulas(doc, 98.8, 233, 19.4, 7.2, partesData(curso(['especial', 'pós', 'pos-'])?.fim))
