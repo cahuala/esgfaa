@@ -75,7 +75,10 @@ export const CATALOGO = [
 
 // os da ficha (a proposta de nomeação e o PIP saem na tela da proposta de nomeação ou de promoção)
 export const documentosPara = (p) => CATALOGO.filter((c) => !c.proposta && c.para(p))
-export const documentosDaProposta = (tipo) => CATALOGO.filter((c) => c.proposta === tipo)
+// os modelos da ESG de cada tipo de proposta, por esta ordem, para cada militar: promoção e graduação levam
+// o PIP e a FAI (a avaliação que o PIP resume); a nomeação, a proposta de nomeação e a FAI
+const MODELOS_PROPOSTA = { promocao: ['processo_promocao', 'ficha_avaliacao'], graduacao: ['processo_promocao', 'ficha_avaliacao'], nomeacao: ['proposta_nomeacao', 'ficha_avaliacao'] }
+export const documentosDaProposta = (tipo) => (MODELOS_PROPOSTA[tipo] ?? []).map((t) => CATALOGO.find((c) => c.tipo === t))
 
 // escolhas: [{ tipo, dados }]; emitidos: o que o servidor registou (com o número das declarações)
 export async function gerarDocumentosPessoais(p, escolhas, emitidos, quem) {

@@ -11,6 +11,7 @@ import EscolherPessoa from '../componentes/EscolherPessoa'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
 
+const NOME_CURTO = { processo_promocao: 'PIP', ficha_avaliacao: 'FAI', proposta_nomeacao: 'proposta de nomeação' }
 const FILTRO_TIPO = { promocao: { tipo: 'militar' }, graduacao: { tipo: 'militar' }, progressao: { tipo: 'civil' } }
 
 export default function Proposta() {
@@ -22,6 +23,7 @@ export default function Proposta() {
   const p = alterada?.id === Number(id) ? alterada : carregada
   const [aberto, setAberto] = useState(null)
   const [modal, setModal] = useState(null)
+  const [menu, setMenu] = useState(false)
   const [cargos, setCargos] = useState([])
   const precisaCargos = p?.tipo === 'nomeacao' || p?.tipo === 'exoneracao'
   useEffect(() => { if (precisaCargos) api('/cargos').then(setCargos).catch(() => {}) }, [precisaCargos])
@@ -36,12 +38,12 @@ export default function Proposta() {
     }
   }
 
-  // as fichas do modelo da ESG para cada pessoa da proposta: proposta de nomeação ou PIP
-  async function fichasModelo(doc) {
+  // os documentos do modelo da ESG para cada pessoa da proposta (PIP e FAI; proposta de nomeação e FAI), num só PDF
+  async function imprimirModelos(docs) {
     try {
       const [quem, ...fichas] = await Promise.all([api('/definicoes/assinaturas'), ...p.itens.map((i) => api(`/pessoas/${i.pessoaId}`))])
-      const itens = p.itens.map((i, k) => ({ p: fichas[k], escolha: { tipo: doc.tipo, dados: { cargoProposto: nomeCargo(i.cargoId) || i.cargoPropostoNome || '', unidadeProposta: cargos.find((c) => c.id === i.cargoId)?.unidadeNome || 'Escola Superior de Guerra', fundamento: i.justificacao || p.fundamentacao || '' } } }))
-      await gerarLote(itens, quem, `proposta-${p.id}-${doc.tipo}.pdf`)
+      const itens = p.itens.flatMap((i, k) => docs.map((doc) => ({ p: fichas[k], escolha: { tipo: doc.tipo, dados: { cargoProposto: nomeCargo(i.cargoId) || i.cargoPropostoNome || '', unidadeProposta: cargos.find((c) => c.id === i.cargoId)?.unidadeNome || 'Escola Superior de Guerra', fundamento: i.justificacao || p.fundamentacao || '' } } })))
+      await gerarLote(itens, quem, `proposta-${p.id}-${docs.map((d) => d.tipo).join('-')}.pdf`)
     } catch (e) {
       avisar(e.message, 'erro')
     }
@@ -50,6 +52,7 @@ export default function Proposta() {
   if (erro) return <Erro texto={erro} />
   if (!p) return <Carregando />
   const preparacao = p.estado === 'rascunho'
+  const modelos = documentosDaProposta(p.tipo)
   const nomeCargo = (cid) => cargos.find((c) => c.id === cid)?.nome ?? ''
   const proposto = (i) => (p.tipo === 'curso' ? `${p.curso}${i.inicio ? ` (${dataPt(i.inicio)}${i.fim ? ` a ${dataPt(i.fim)}` : ''})` : ''}` : p.tipo === 'progressao' ? `${i.categoriaAtual} → ${i.categoriaProposta}` : p.tipo === 'nomeacao' || p.tipo === 'exoneracao' ? nomeCargo(i.cargoId) : `${i.postoAtualNome} → ${i.postoPropostoNome}${i.modalidadeNome ? ` (${i.modalidadeNome.toLowerCase()})` : ''}`)
 
@@ -66,9 +69,21 @@ export default function Proposta() {
   return (
     <>
       <Cabecalho titulo={`Proposta n.º ${p.id}`} subtitulo={p.tipoNome} migalhas={[['Propostas', '/propostas'], [`N.º ${p.id}`]]}>
-        <button type="button" className="btn btn-danger" onClick={imprimir} disabled={!p.itens.length}><i className="fa fa-file-pdf me-1" />PDF</button>
-        {documentosDaProposta(p.tipo).map((doc) => <button key={doc.tipo} type="button" className="btn btn-theme" disabled={!p.itens.length || p.itens.some((i) => !i.ramo)} onClick={() => fichasModelo(doc)} title={`O modelo da ESG, um para cada militar da proposta`}><i className="fa fa-file-alt me-1" />{doc.tipo === 'processo_promocao' ? 'Processos de promoção (PIP)' : 'Propostas de nomeação'}</button>)}
-        <button type="button" className="btn btn-danger" onClick={() => fichasDeProposta(p, cargos).catch((e) => avisar(e.message, 'erro'))} title="Para cada militar: a ficha de proposta e a síntese biográfica" disabled={!p.itens.length}><i className="fa fa-print me-1" />Imprimir documentos</button>
+        <button type="button" className="btn btn-white" onClick={imprimir} disabled={!p.itens.length} title="A lista dos militares da proposta"><i className="fa fa-file-pdf me-1" />Lista (PDF)</button>
+        {modelos.length > 0 ? (
+          <div className="btn-group position-relative">
+            <button type="button" className="btn btn-theme" disabled={!p.itens.length} onClick={() => imprimirModelos(modelos)} title="Os modelos da ESG, para cada militar da proposta"><i className="fa fa-print me-1" />Imprimir documentos ({modelos.map((d) => NOME_CURTO[d.tipo]).join(' + ')})</button>
+            <button type="button" className="btn btn-theme border-start" aria-expanded={menu} aria-label="Só um dos documentos" title="Só um dos documentos" disabled={!p.itens.length} onClick={() => setMenu(!menu)}><i className="fa fa-caret-down" /></button>
+            {menu && (
+              <ul className="dropdown-menu dropdown-menu-end show" style={{ position: 'absolute', right: 0, top: '100%' }}>
+                {modelos.map((d) => <li key={d.tipo}><button type="button" className="dropdown-item" onClick={() => { setMenu(false); imprimirModelos([d]) }}>Só {d.nome}</button></li>)}
+              </ul>
+            )}
+          </div>
+        ) : (
+          // sem modelo da ESG para este tipo de proposta (progressão, curso, exoneração): a ficha de proposta do sistema
+          <button type="button" className="btn btn-theme" onClick={() => fichasDeProposta(p, cargos).catch((e) => avisar(e.message, 'erro'))} title="Não há modelo da ESG para este tipo de proposta: a ficha de proposta e a síntese biográfica" disabled={!p.itens.length}><i className="fa fa-print me-1" />Imprimir documentos</button>
+        )}
         {preparacao && pode('propor') && <button type="button" className="btn btn-warning" onClick={() => setModal('enviar')} disabled={!p.itens.length}><i className="fa fa-paper-plane me-1" />Enviar ao escalão superior</button>}
         {p.estado === 'enviada' && pode('editar') && <button type="button" className="btn btn-success" onClick={() => navegar(`/extractos?proposta=${p.id}&tipo=${p.tipo}`)}><i className="fa fa-file-contract me-1" />Registar o extracto</button>}
         {p.estado === 'enviada' && pode('decidir') && <>
