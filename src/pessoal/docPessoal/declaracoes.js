@@ -89,22 +89,26 @@ export function declaracao(d, p, o, quem) {
   dispensa (militar, civil, discente) e apresentação noutra unidade. Num quadro até ao fundo da folha, com
   o emblema das FAA por cima e a marca-d'água da ESG. o = { tipo, dias, inicio, motivo, provincia, destino, referencia }.
 */
-function designacao(p) {
+function designacao(p, variante) {
   const a = p.genero === 'F' ? 'A' : 'O'
   const o = p.genero === 'F' ? 'a' : 'o'
-  if (p.vinculo === 'estudante') return [`${a} Discente`, o, 'à Instituição']
+  if (variante === 'discente' || (!variante && p.vinculo === 'estudante')) return [`${a} Discente`, o, 'à Instituição']
   if (!militar(p)) return [`${a} ${p.genero === 'F' ? 'funcionária' : 'funcionário'}`, o, 'à Unidade']
   if (p.categoria === 'oficial_general') return [`${a} Oficial General`, o, 'à Unidade']
   if (p.categoria === 'oficial_superior') return [`${a} Oficial Superior`, o, 'à Unidade']
   return [`${a} Militar`, o, 'à Unidade']
 }
 
+// «DA Repartição», mas «DO Centro Médico», «DO Gabinete»… (pela primeira palavra da unidade)
+const MASCULINOS = /^(centro|comando|gabinete|departamento|sector|serviço|núcleo|pelotão|batalhão|grupo|estado|posto|curso|corpo|conselho|destacamento|esquadrão|hospital|instituto|arquivo|parque|depósito)(?=\s|$)/i
+const daUnidade = (u) => (MASCULINOS.test(u.trim()) ? 'DO' : 'DA')
+
 // «Sr. – 2º SARGENTO – EXE – QP – INF – 100253568 – NOME – SERRALHEIRO DA SECÇÃO …/ESG/EMGFAA.»
-export function linhaPessoa(p) {
+export function linhaPessoa(p, cursoDiscente) {
   const sr = p.genero === 'F' ? 'Srª.' : 'Sr.'
   // o discente: «DISCENTE DO 31º CURSO SUPERIOR DE COMANDO E DIRECÇÃO» (o curso em curso, ou a unidade do curso)
-  const curso = p.vinculo === 'estudante' ? (p.cursos ?? []).find((c) => !c.fim)?.nome || p.unidadeNome : ''
-  const funcao = curso ? `DISCENTE DO ${curso}` : [p.cargoNome, p.unidadeNome && `DA ${p.unidadeNome}`].filter(Boolean).join(' ')
+  const curso = cursoDiscente || (p.vinculo === 'estudante' ? (p.cursos ?? []).find((c) => !c.fim)?.nome || p.unidadeNome : '')
+  const funcao = curso ? `DISCENTE DO ${curso}` : [p.cargoNome, p.unidadeNome && `${daUnidade(p.unidadeNome)} ${p.unidadeNome}`].filter(Boolean).join(' ')
   // nas guias o posto vai abreviado («1.º SARG.», «TEN.-COR.»)
   if (militar(p)) return [`${sr} – `, { b: [M(p.postoAbreviatura || p.postoNome), p.ramo, p.fps, p.quadroEspecial, p.nip].filter(Boolean).map(M).join(' – ') }, ' – ', { b: M(p.nome) }, ' – ', { b: `${M(funcao || 'EFECTIVO')}/ESG/EMGFAA.` }]
   return [`${sr} – `, { b: 'CIVIL' }, ' – ', { b: M(p.nome) }, ' – ', { b: `${M(funcao || p.categoriaCivil || 'FUNCIONÁRIO')} DA ESCOLA SUPERIOR DE GUERRA/EMGFAA.` }]
@@ -134,12 +138,14 @@ export function guiaMarcha(d, p, o, quem) {
   doc.setFontSize(T)
   let y = topo + alto + 4.5
   const ano = new Date(o.inicio || Date.now()).getFullYear()
-  const discenteOuCivil = !militar(p) || p.vinculo === 'estudante'
+  // a dispensa tem três modelos: militar, civil e discente (por defeito, o de quem é)
+  const variante = o.variante || (p.vinculo === 'estudante' ? 'discente' : militar(p) ? 'militar' : 'civil')
+  const discenteOuCivil = variante !== 'militar'
   const lei = `Ao abrigo do estabelecido no Artigo 32º da Lei 13/018, de 29 de Outubro, Lei das Carreiras dos Militares, e em conformidade com o Plano de Férias para os Efectivos da UEO, em Comissão Normal de Serviço no EMG, superiormente aprovado para o ano de ${ano};`
   const intro = {
     ferias: militar(p) ? [lei] : [`Em conformidade com o Plano de Férias para os Efectivos da Escola Superior de Guerra, superiormente aprovado para o ano de ${ano};`],
     licenca: [lei],
-    dispensa: [discenteOuCivil ? 'Em conformidade com o despacho de Sua Excelência Comandante da ESG;' : 'Em conformidade com o despacho do General Comandante da Escola Superior de Guerra;'],
+    dispensa: [{ militar: 'Em conformidade com o despacho do General Comandante da Escola Superior de Guerra;', civil: 'Em conformidade com o despacho de Sua Excelência Comandante da ESG;', discente: 'Em conformidade com o Despacho de Sua Excelência Comandante da ESG;' }[variante]],
     apresentacao: ['Em conformidade com o ', { b: o.referencia || 'despacho do General Comandante da Escola Superior de Guerra' }, ';'],
   }[o.tipo]
   const fim = {
@@ -167,21 +173,21 @@ export function guiaMarcha(d, p, o, quem) {
   const xf = xi + doc.getTextWidth(ult) + 2
   if (xf < xi + wi - 6) doc.setLineWidth(0.2).line(xf, y - L + 0.8, xi + wi, y - L + 0.8)
   y += 6
-  y = paragrafo(d, linhaPessoa(p), y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
+  y = paragrafo(d, linhaPessoa(p, variante === 'discente' && o.tipo === 'dispensa' ? o.curso : ''), y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
   y += 4.6
   y = paragrafo(d, ['Utilizando as seguintes vias: Todas vias possíveis'], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
   doc.setLineWidth(0.3).line(x0 + 2, y + 2, x0 + w - 2, y + 2)
   y += 12.9
   doc.setFont('times', 'normal').setFontSize(T).text('OUTRAS INDICAÇÕES', xi, y)
   y += 10
-  const [quemE, o2, regresso] = designacao(p)
+  const [quemE, o2, regresso] = designacao(p, o.tipo === 'dispensa' ? variante : undefined)
   const dias = String(o.dias || (o.tipo === 'ferias' ? 30 : o.tipo === 'licenca' ? 15 : 5)).padStart(2, '0')
   const inicio = dataExtenso(o.inicio)
   const estado = {
     ferias: `encontra-se em gozo de férias, por um período de ${dias} dias, a partir do dia ${inicio}, fim dos quais deverá regressar ${regresso}.`,
     licenca: `encontra-se em gozo de licença disciplinar, por um período de ${dias} dias, a partir do dia ${inicio}, fim dos quais deverá regressar ${regresso}.`,
     dispensa: `encontra-se dispensad${o2}, por um período de ${dias} dias, a partir do dia ${inicio}, fim dos quais deverá regressar ${regresso}.`,
-    apresentacao: `segue apresentar-se à ${o.destino || ''}, por um período de ${dias} dias.`,
+    apresentacao: `segue apresentar-se à ${o.sigla || o.destino || ''}, por um período de ${dias} dias.`,
   }[o.tipo]
   y = paragrafo(d, [o.tipo === 'apresentacao' ? `${quemE}, ${estado}` : `${quemE} acima mencionad${o2} ${estado}`], y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
   doc.setLineWidth(0.3).line(x0 + 2, y + 1, x0 + w - 2, y + 1)
