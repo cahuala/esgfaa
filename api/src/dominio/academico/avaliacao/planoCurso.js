@@ -131,6 +131,25 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, agor
   return { final, situacao: aprovado ? 'aprovado' : 'reprovado', mencao: aprovado ? mencao(final) : 'Reprovado', provas }
 }
 
+// tempos escolares da ESG (Agenda do Discente, horário das aulas): 5 tempos de 50 minutos, das 08h30 às 13h30
+export const TEMPOS_ESCOLARES = [['08:30', '09:20'], ['09:30', '10:20'], ['10:30', '11:20'], ['11:40', '12:30'], ['12:40', '13:30']]
+// os intervalos de tempos seguidos (do 1.º ao 1.º, do 1.º ao 2.º, …): [{ de, ate, inicio, fim }]
+export const BLOCOS_DE_TEMPOS = TEMPOS_ESCOLARES.flatMap((_, i) => TEMPOS_ESCOLARES.slice(i).map((__, k) => ({ de: i + 1, ate: i + k + 1, inicio: TEMPOS_ESCOLARES[i][0], fim: TEMPOS_ESCOLARES[i + k][1] })))
+
+// ---------- faltas ----------
+
+/*
+  Faltas no curso (Plano de Curso: «o limite máximo admissível de faltas justificadas é de 10 % do total de
+  tempos escolares previstos»): cada aula registada conta um tempo; o total previsto são as horas de contacto
+  das UC. presencas: [{ estado: presente | falta | justificada }].
+*/
+export function faltasDoCurso(presencas, horasContacto, percentagem = 10) {
+  const justificadas = presencas.filter((p) => p.estado === 'justificada').length
+  const injustificadas = presencas.filter((p) => p.estado === 'falta').length
+  const limite = Math.floor((Number(horasContacto) || 0) * (Number(percentagem) || 0) / 100)
+  return { justificadas, injustificadas, limite, previstos: Number(horasContacto) || 0, excedido: limite > 0 && justificadas > limite }
+}
+
 // ---------- o curso ----------
 
 /*
@@ -138,7 +157,7 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, agor
   com a nota do trabalho); ajuste: o do Comandante (limitado ao ajusteMaximo do plano).
   Devolve { blocos: [{ sigla, nome, coeficiente, nota, aprovado }], media, final, aprovado, concluido, mencao, emFalta }.
 */
-export function resultadoCurso(plano, ucs, { ajuste = 0 } = {}) {
+export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   const peso = (u) => (u.creditos > 0 ? u.creditos : 1)
   const media = (lista) => {
     const comNota = lista.filter((u) => u.final !== null && u.final !== undefined)
@@ -168,9 +187,10 @@ export function resultadoCurso(plano, ucs, { ajuste = 0 } = {}) {
   const final = base === null ? null : centesimas(Math.min(20, Math.max(0, base + a)))
   if (plano.exigirBlocos) for (const b of blocos) if (b.nota !== null && !b.aprovado) emFalta.push(`Bloco ${b.sigla} — ${b.nome} (média ${String(b.nota).replace('.', ',')})`)
   if (final !== null && final < NOTA_MINIMA) emFalta.push('Média final inferior a 10 valores')
+  if (faltas?.excedido) emFalta.push(`Faltas justificadas acima do limite: ${faltas.justificadas} de no máximo ${faltas.limite} tempos (${plano.faltasMaximas ?? 10} %)`)
   const concluido = ucs.length > 0 && !emFalta.length && final !== null
   return {
-    blocos, semBloco: semBloco.map((u) => u.codigo), media: base, ajuste: a, final,
+    blocos, semBloco: semBloco.map((u) => u.codigo), media: base, ajuste: a, final, faltas,
     concluido, aprovado: concluido, mencao: concluido ? mencao(final) : final !== null && final < NOTA_MINIMA ? 'Reprovado' : null, emFalta,
   }
 }
@@ -229,17 +249,49 @@ export const MODELOS_PLANO = {
       nome: '2.º Curso de Estado-Maior Conjunto — Plano de Curso 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'ponderada', ajusteMaximo: 0,
       blocos: [{ sigla: 'ADM', nome: 'Administração', coeficiente: 2.5 }, { sigla: 'OCC', nome: 'Operações Conjuntas e Combinadas', coeficiente: 1 }, { sigla: 'ESTR', nome: 'Estratégia', coeficiente: 2 }, { sigla: 'TII', nome: 'Trabalho de Investigação Individual', coeficiente: 1.5 }],
     },
-    cadeiras: [],
+    // Quadro 4 do plano (os semestres não vêm no plano: a distribuição é uma proposta, ajusta-se no painel)
+    cadeiras: [
+      uc('ADM', 'DC', 'Direito Castrense', 15, 2, 1), uc('ADM', 'JD', 'Justiça e Disciplina', 13, 2, 1), uc('ADM', 'CRPP', 'Comunicação, Relações Públicas e Protocolo', 45, 15, 4),
+      uc('ADM', 'PA', 'Protecção Ambiental', 36, 9, 3), uc('ADM', 'IGO', 'Introdução à Gestão das Organizações', 41, 4, 3), uc('ADM', 'GP', 'Gestão de Pessoas', 39, 6, 3),
+      uc('ADM', 'EID', 'Economia e Indústria de Defesa', 30, 15, 3), uc('ADM', 'ARF', 'Administração de Recursos Financeiros', 36, 9, 3), uc('ADM', 'LC', 'Logística Conjunta', 37, 8, 3),
+      uc('ADM', 'CL', 'Comando e Liderança', 30, 15, 3),
+      uc('OCC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1, '2'), uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4, '2'),
+      uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 27, 7, '2'), uc('OCC', 'PCE', 'Planeamento e Condução de Exercícios', 30, 15, 3, '2'),
+      uc('ESTR', 'GEOP', 'Geopolítica', 47, 13, 4), uc('ESTR', 'EST', 'Estratégia', 49, 11, 4), uc('ESTR', 'HM', 'História Militar', 43, 17, 4, '2'),
+      uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 40, 20, 4, '2'), uc('ESTR', 'POL', 'Polemologia', 64, 26, 6, '2'),
+      uc('TII', 'MIC', 'Metodologia da Investigação Científica', 35, 10, 3), { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 88, 120, 14, 'anual'), tii: true },
+    ],
   },
   'ceao-2026': {
     plano: {
       nome: '18.º Curso de Estratégia e Arte Operativa — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'auditor', formula: 'percentagem', ajusteMaximo: 0,
       blocos: [{ sigla: 'NUC', nome: 'Disciplinas Nucleares', coeficiente: 60 }, { sigla: 'COMP', nome: 'Disciplinas Complementares', coeficiente: 15 }, { sigla: 'TII', nome: 'Trabalho de Investigação Individual', coeficiente: 25 }],
     },
-    cadeiras: [],
+    // o plano dá a carga horária total de cada UC (sem separar contacto e não contacto) e não indica semestres
+    cadeiras: [
+      uc('NUC', 'EM', 'Estratégia Militar', 60, 0, 4, 'anual'), uc('NUC', 'AOT', 'Arte Operativa e Táctica e Jogo de Comando e Estado-Maior', 642, 0, 43, 'anual'),
+      uc('NUC', 'DT', 'Direcção de Tropas', 90, 0, 6, 'anual'), uc('NUC', 'EMF', 'Edificação Militar e das FAA', 72, 0, 5, 'anual'), uc('NUC', 'SN', 'Segurança Nacional', 126, 0, 8, 'anual'),
+      uc('NUC', 'LE', 'Liderança Estratégica', 45, 0, 3, 'anual'), uc('NUC', 'MIC', 'Metodologia de Investigação Científica', 18, 0, 1, 'anual'),
+      uc('COMP', 'AMP', 'Asseguramento Moral e Psicológico', 30, 0, 2, 'anual'), uc('COMP', 'DIP', 'Direito Internacional Público', 34, 0, 2, 'anual'), uc('COMP', 'ET', 'Ética', 30, 0, 2, 'anual'),
+      { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 60, 0, 4, 'anual'), tii: true },
+    ],
   },
   'coamp-2026': {
-    plano: { nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, blocos: [], exigirBlocos: false },
-    cadeiras: [],
+    // média das UC (o plano não pondera blocos); os blocos servem só para agrupar
+    plano: {
+      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false,
+      blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 1 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 1 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 1 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }],
+    },
+    cadeiras: [
+      uc('NUC', 'PM', 'Psicologia Militar', 45, 0, 3, 'anual'), uc('NUC', 'AP', 'Acção Psicológica', 180, 0, 12, 'anual'), uc('NUC', 'TPAMP', 'Teoria e Prática do Asseguramento Moral e Psicológico', 30, 0, 2, 'anual'),
+      uc('NUC', 'OTOAMP', 'Organização Táctico-Operacional do Asseguramento Moral e Psicológico', 116, 0, 7, 'anual'), uc('NUC', 'TPEM', 'Teoria e Prática da Educação dos Militares', 30, 0, 2, 'anual'),
+      uc('NUC', 'OTCL', 'Organização do Trabalho de Cultura e Lazer nas FAA', 30, 0, 2, 'anual'), uc('NUC', 'PCOM', 'Psicologia da Comunicação e Oratória Militar', 30, 0, 2, 'anual'),
+      uc('NUC', 'RPFA', 'Relações Públicas nas Forças Armadas', 45, 0, 3, 'anual'),
+      uc('COMP', 'CP', 'Cerimonial e Protocolo', 30, 0, 2, 'anual'), uc('COMP', 'HMA', 'História Militar de Angola', 32, 0, 2, 'anual'), uc('COMP', 'TFDM', 'Tecnologia do Fortalecimento da Disciplina Militar', 30, 0, 2, 'anual'),
+      uc('COMP', 'PRI', 'Psicologia de Relações Interpessoais', 17, 0, 1, 'anual'), uc('COMP', 'TPTSM', 'Teoria e Prática do Trabalho Social Militar', 30, 0, 2, 'anual'), uc('COMP', 'PMU', 'Psicologia das Multidões', 16, 0, 1, 'anual'),
+      uc('TAC', 'TOP', 'Topografia', 21, 0, 1, 'anual'), uc('TAC', 'DO', 'Doutrina das Operações', 38, 0, 2, 'anual'), uc('TAC', 'TEM', 'Técnica de Estado-Maior', 57, 0, 3, 'anual'), uc('TAC', 'BD', 'Brigada na Defesa', 64, 0, 4, 'anual'),
+      uc('GER', 'DIP', 'Direito Internacional Público', 30, 0, 2, 'anual'), uc('GER', 'GA', 'Geopolítica Aplicada', 30, 0, 2, 'anual'), uc('GER', 'CL', 'Comando e Liderança', 30, 0, 2, 'anual'), uc('GER', 'PE', 'Pensamento Estratégico', 45, 0, 3, 'anual'),
+      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 0, 0, 0, 'anual'), tii: true },
+    ],
   },
 }

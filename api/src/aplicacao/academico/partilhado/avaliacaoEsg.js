@@ -1,7 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
-import { FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, mencao, recuperacaoPossivel, resultadoCurso, resultadoUc } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, faltasDoCurso, mencao, recuperacaoPossivel, resultadoCurso, resultadoUc } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
   Avaliação pelos planos de curso da ESG (turmas cujo curso e ano lectivo têm um plano): as provas
@@ -183,7 +183,10 @@ export class ServicoAvaliacaoEsg {
       const r = await this.doEstudante(estudanteId, c, { todas: !publicadas })
       ucs.push({ id: c.id, codigo: c.codigo, nome: c.nome, bloco: c.bloco, creditos: c.creditos, tii: c.tii, final: r.final, situacao: r.situacao, mencao: r.mencao })
     }
-    return { plano, ucs, ...resultadoCurso(plano, ucs, { ajuste: ajuste ?? minha.ajuste }), distinto: minha.distinto, juizo: minha.juizo, conselho, homologado: false }
+    // faltas justificadas no curso todo, contra o limite do plano (10 % dos tempos previstos)
+    const presencas = await this.academico.presencasDoEstudante(estudanteId, cadeiras.map((c) => c.id))
+    const faltas = faltasDoCurso(presencas, cadeiras.reduce((t, c) => t + (c.horasContacto || 0), 0), plano.faltasMaximas)
+    return { plano, ucs, ...resultadoCurso(plano, ucs, { ajuste: ajuste ?? minha.ajuste, faltas }), distinto: minha.distinto, juizo: minha.juizo, conselho, homologado: false }
   }
 
   async pautaGeral(turma) {

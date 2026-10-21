@@ -4,6 +4,7 @@ import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { PERIODOS } from './comum'
+import { BLOCOS_DE_TEMPOS } from '../../../portal/regraAvaliacao'
 import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
 import PlanoCursoTurma from './PlanoCursoTurma'
@@ -303,6 +304,11 @@ function CadeiraTurma({ c, gerir, carregar, avisar }) {
       {gerir && (
         <form className="d-flex gap-1 flex-wrap" onSubmit={(e) => { e.preventDefault(); api(`/academico/cadeiras/${c.id}/horarios`, { metodo: 'POST', corpo: h }).then(carregar).catch(falhou) }}>
           <select className="form-select form-select-sm w-auto" value={h.diaSemana} onChange={(e) => setH({ ...h, diaSemana: e.target.value })} aria-label={tx('Dia')}>{DIAS.slice(1).map((d, i) => <option key={d} value={i + 1}>{d}</option>)}</select>
+          {/* os tempos escolares da ESG (50 minutos): escolher um ou vários seguidos preenche as horas */}
+          <select className="form-select form-select-sm w-auto" value={BLOCOS_DE_TEMPOS.findIndex((t) => t.inicio === h.inicio && t.fim === h.fim)} onChange={(e) => { const t = BLOCOS_DE_TEMPOS[Number(e.target.value)]; if (t) setH({ ...h, inicio: t.inicio, fim: t.fim }) }} aria-label={tx('Tempos escolares')}>
+            <option value={-1}>{tx('Tempos escolares…')}</option>
+            {BLOCOS_DE_TEMPOS.map((t, i) => <option key={i} value={i}>{t.de === t.ate ? tx('{0}.º tempo', { 0: t.de }) : tx('{0}.º ao {1}.º tempo', { 0: t.de, 1: t.ate })} ({t.inicio}–{t.fim})</option>)}
+          </select>
           <input type="time" className="form-control form-control-sm w-auto" value={h.inicio} onChange={(e) => setH({ ...h, inicio: e.target.value })} aria-label={tx('Início')} />
           <input type="time" className="form-control form-control-sm w-auto" value={h.fim} onChange={(e) => setH({ ...h, fim: e.target.value })} aria-label={tx('Fim')} />
           <input className="form-control form-control-sm w-auto" placeholder={tx('Sala')} value={h.sala} onChange={(e) => setH({ ...h, sala: e.target.value })} aria-label={tx('Sala')} />

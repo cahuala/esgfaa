@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { MODELOS_PLANO, mencao, notaDaProva, prazoRecuperacao, recuperacaoPossivel, resultadoCurso, resultadoUc, validarPlano, verificarCargaHoraria } from '../../src/dominio/academico/avaliacao/planoCurso.js'
+import { MODELOS_PLANO, faltasDoCurso, mencao, notaDaProva, prazoRecuperacao, recuperacaoPossivel, resultadoCurso, resultadoUc, validarPlano, verificarCargaHoraria } from '../../src/dominio/academico/avaliacao/planoCurso.js'
 
 const CSCD = validarPlano({ ...MODELOS_PLANO['cscd-2026'].plano, curso: 'cscd' })
 
@@ -69,5 +69,25 @@ describe('avaliação pelos planos de curso da ESG', () => {
     assert.ok(avisos.some((t) => t.includes('UCréd (máximo 40)')) && avisos.some((t) => t.includes('h (máximo 600)')))
     // o modelo do CSCD respeita a regra dos 15 h por crédito
     assert.deepEqual(verificarCargaHoraria(MODELOS_PLANO['cscd-2026'].cadeiras).filter((t) => t.includes('UCréd para')), [])
+  })
+
+  it('faltas: no máximo 10 % de faltas justificadas sobre os tempos previstos; acima disso não conclui', () => {
+    const f = faltasDoCurso([...Array(89)].map(() => ({ estado: 'justificada' })).concat([{ estado: 'falta' }]), 883)
+    assert.deepEqual([f.justificadas, f.injustificadas, f.limite, f.excedido], [89, 1, 88, true])
+    const ucs = MODELOS_PLANO['cscd-2026'].cadeiras.map((c) => ({ ...c, final: 14, situacao: 'aprovado' }))
+    const r = resultadoCurso(CSCD, ucs, { faltas: f })
+    assert.equal(r.concluido, false)
+    assert.ok(r.emFalta.some((t) => t.startsWith('Faltas justificadas')))
+    assert.equal(resultadoCurso(CSCD, ucs, { faltas: faltasDoCurso([{ estado: 'justificada' }], 883) }).concluido, true)
+  })
+
+  it('os modelos dos quatro cursos têm a carga e os créditos dos planos', () => {
+    const soma = (k) => MODELOS_PLANO[k].cadeiras.reduce((s, c) => [s[0] + c.horasContacto + c.horasNaoContacto, s[1] + c.creditos], [0, 0])
+    assert.deepEqual([soma('cscd-2026'), soma('cemc-2026'), soma('ceao-2026'), soma('coamp-2026')], [[1215, 81], [1215, 81], [1207, 80], [976, 62]])
+    for (const k of Object.keys(MODELOS_PLANO)) {
+      const p = validarPlano({ ...MODELOS_PLANO[k].plano, curso: k })
+      for (const c of MODELOS_PLANO[k].cadeiras) assert.ok(p.blocos.some((b) => b.sigla === c.bloco), `${k}: ${c.codigo} sem bloco`)
+      assert.equal(MODELOS_PLANO[k].cadeiras.filter((c) => c.tii).length, 1, k)
+    }
   })
 })

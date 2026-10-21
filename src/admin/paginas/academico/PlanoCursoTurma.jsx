@@ -160,13 +160,14 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
         <Painel titulo={<><i className="fa fa-table me-2" />{tx('Pauta geral pelo plano de curso')}</>} corpo={false}>
           <div className="table-responsive">
             <table className="table table-sm table-bordered align-middle text-center mb-0">
-              <thead><tr><th className="text-start">{p.termo === 'auditor' ? tx('Auditor') : tx('Discente')}</th>{pauta.plano.blocos.map((b) => <th key={b.sigla} title={b.nome}>{b.sigla}<div className="small fw-normal text-muted">×{String(b.coeficiente).replace('.', ',')}</div></th>)}<th>{tx('Nota final')}</th><th>{tx('Menção')}</th><th className="text-start">{tx('Em falta')}</th></tr></thead>
+              <thead><tr><th className="text-start">{p.termo === 'auditor' ? tx('Auditor') : tx('Discente')}</th>{pauta.plano.blocos.map((b) => <th key={b.sigla} title={b.nome}>{b.sigla}<div className="small fw-normal text-muted">×{String(b.coeficiente).replace('.', ',')}</div></th>)}<th>{tx('Nota final')}</th><th>{tx('Menção')}</th><th title={tx('Faltas justificadas / limite do plano')}>{tx('Faltas just.')}</th><th className="text-start">{tx('Em falta')}</th></tr></thead>
               <tbody>{pauta.linhas.map((l) => (
                 <tr key={l.estudante.id}>
                   <td className="text-start"><b>{l.estudante.nome}</b><div className="small text-muted">{l.estudante.numero}</div></td>
                   {l.blocos.map((b) => <td key={b.sigla} className={b.nota !== null && b.nota < 10 ? 'text-danger fw-bold' : ''}>{nota(b.nota)}</td>)}
                   <td className="fw-bold">{nota(l.final)}</td>
                   <td>{l.mencao ? <span className={`badge ${l.mencao === 'Reprovado' ? 'bg-danger' : 'bg-success'}`}>{l.mencao}</span> : '—'}</td>
+                  <td className={l.faltas?.excedido ? 'text-danger fw-bold' : ''}>{l.faltas ? `${l.faltas.justificadas} / ${l.faltas.limite}` : '—'}</td>
                   <td className="text-start small">{l.concluido ? <span className="text-success"><i className="fa fa-check me-1" />{tx('Concluiu')}</span> : l.emFalta.slice(0, 3).join(' · ')}{!l.concluido && l.emFalta.length > 3 ? ` (+${l.emFalta.length - 3})` : ''}</td>
                 </tr>
               ))}</tbody>
