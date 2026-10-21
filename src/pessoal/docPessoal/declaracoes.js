@@ -4,7 +4,7 @@ import { M, TAM, cabecalho, dataExtenso, kwanzas, kwanzasPorExtenso, marcaDagua,
 /*
   Declarações e guias de marcha, desenhadas como os modelos da ESG (Times 14, dados em maiúsculas).
   Declarações: de efectividade (militar, discente), de salário (militar) e de serviço (civil, empregada(o)
-  domiciliar); numeradas por ano («Nº402/26»), válidas por 90 dias, com a marca-d'água das FAA.
+  domiciliar); numeradas por ano («Nº402/26»), válidas por 90 dias, com a marca-d'água da ESG.
 */
 const militar = (p) => p.tipo === 'militar'
 const ano2 = (ano) => String(ano).slice(-2)
@@ -118,7 +118,7 @@ export function guiaMarcha(d, p, o, quem) {
   const { doc } = d
   novaPagina(d)
   // o emblema e a marca-d'água ao centro do quadro (como no modelo)
-  marcaDagua(d, 110, 150, 150, 0.1)
+  marcaDagua(d, 110, 150, 150, 0.1, true)
   emblema(doc, d.brasao, 111, 9, 16)
   // medidas tiradas do modelo digitalizado (mm): quadro de 19 a 200, cabeçalho de 26 a 56; letra do corpo 15
   const x0 = 19

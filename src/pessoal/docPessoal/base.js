@@ -66,7 +66,7 @@ export function kwanzasPorExtenso(v) {
 }
 
 // ---------- documento ----------
-// emblema da ESG (anexo à ficha) e o das FAA em tons de cinzento (o fundo das declarações e das guias)
+// emblema da ESG (anexo à ficha e fundo das declarações) e o das FAA (fundo das guias)
 let logo = null
 let fundo = null
 function carregarLogo(src = Logo) {
@@ -99,9 +99,10 @@ export async function novoDocumento() {
   return { doc, autoTable, brasao: await brasaoPng(), logo, fundo, paginas: 0 }
 }
 
-// marca-d'água: o emblema das FAA ao centro, muito claro (como nos modelos)
-export function marcaDagua(d, cx, cy, h, opacidade = 0.08) {
-  const { doc, fundo: l } = d
+// marca-d'água ao centro, muito clara (como nos modelos): o emblema da ESG nas declarações, o das FAA nas guias
+export function marcaDagua(d, cx, cy, h, opacidade = 0.08, faa = false) {
+  const { doc } = d
+  const l = faa ? d.fundo : d.logo
   if (!l) return
   doc.saveGraphicsState()
   doc.setGState(new doc.GState({ opacity: opacidade }))
