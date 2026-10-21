@@ -83,6 +83,32 @@ export class ServicoPropostas {
     return { ...base, categoriaProposta: v.categoriaProposta, verificacao: v }
   }
 
+  /*
+    Ordem dos militares na proposta (e nos documentos): o posto mais alto primeiro; no mesmo posto, pela ordem
+    da unidade na orgânica (a Direcção antes dos Serviços Gerais, a unidade antes das suas subunidades); depois
+    a função (comando, direcção/chefia, estado-maior, execução); depois a antiguidade no posto e o nome.
+    Os civis (progressão) pela categoria proposta, depois a unidade e o nome.
+  */
+  async #ordenar(pr) {
+    const unidades = await this.bd.unidade.findMany({ select: { id: true, paiId: true, ordem: true, nome: true } })
+    const filhos = new Map()
+    for (const u of unidades) { const k = u.paiId ?? 0; if (!filhos.has(k)) filhos.set(k, []); filhos.get(k).push(u) }
+    const pos = new Map()
+    const visitar = (k) => { for (const u of (filhos.get(k) ?? []).sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt'))) { if (pos.has(u.id)) continue; pos.set(u.id, pos.size); visitar(u.id) } }
+    visitar(0)
+    const FUNCAO = { comando: 0, direccao_chefia: 1, estado_maior: 2, execucao: 3 }
+    const grau = (posto) => POSTOS[posto]?.grau ?? -1
+    const data = (d) => (d ? new Date(d).getTime() : Infinity)
+    const chave = (i) => [-grau(i.postoAtual || i.pessoa.posto), pos.get(i.pessoa.unidadeId) ?? 9999, FUNCAO[i.pessoa.cargo?.funcao] ?? 4, data(i.pessoa.dataAntiguidadePosto)]
+    pr.itens.sort((a, b) => {
+      const ka = chave(a)
+      const kb = chave(b)
+      for (let k = 0; k < ka.length; k++) if (ka[k] !== kb[k]) return ka[k] - kb[k]
+      return a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt')
+    })
+    return pr
+  }
+
   #apresentar(pr) {
     const itens = pr.itens.map((i) => ({
       id: i.id, pessoaId: i.pessoaId, nome: i.pessoa.nome, fotoId: i.pessoa.fotoId, nip: i.pessoa.nip, numeroAgente: i.pessoa.numeroAgente, ramo: i.pessoa.ramo,
@@ -130,7 +156,7 @@ export class ServicoPropostas {
 
   async obter(u, id) {
     exigir(u, 'ver')
-    return this.#apresentar(await this.#obter(id))
+    return this.#apresentar(await this.#ordenar(await this.#obter(id)))
   }
 
   async criar(u, { tipo, titulo, fundamentacao = '', curso = '', itens = [] }) {

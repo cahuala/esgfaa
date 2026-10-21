@@ -126,6 +126,23 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.ok(l.some((x) => x.pessoaId === p.id))
   })
 
+  it('a proposta lista os militares pelo posto e, no mesmo posto, pela ordem da unidade na orgânica', async () => {
+    const dir = (await adm.post('/api/unidades').send({ nome: 'Comando da Escola', ordem: 0 }).expect(201)).body
+    const sg = (await adm.post('/api/unidades').send({ nome: 'Serviços Gerais', ordem: 5 }).expect(201)).body
+    const gab = (await adm.post('/api/unidades').send({ nome: 'Gabinete do Comandante', paiId: dir.id, ordem: 1 }).expect(201)).body
+    const novo = async (nome, posto, unidadeId, antig = '2019-09-01') => (await adm.post('/api/pessoas').send(militar({ nome, posto, unidadeId, dataAntiguidadePosto: antig })).expect(201)).body
+    // criados de propósito fora de ordem
+    const a = await novo('Tenente-Coronel Serviços', 'tenente_coronel', sg.id)
+    const b = await novo('Capitão Comando', 'capitao', dir.id)
+    const c = await novo('Tenente-Coronel Gabinete', 'tenente_coronel', gab.id)
+    const d = await novo('Tenente-Coronel Comando', 'tenente_coronel', dir.id, '2021-01-01')
+    const pr = (await adm.post('/api/propostas').send({ tipo: 'graduacao', titulo: 'Ordem', itens: [] }).expect(201)).body
+    for (const x of [a, b, c, d]) await adm.post(`/api/propostas/${pr.id}/itens`).send({ pessoaId: x.id, postoProposto: x.posto === 'capitao' ? 'major' : 'coronel', justificacao: 'Teste de ordem' })
+    const l = (await adm.get(`/api/propostas/${pr.id}`).expect(200)).body.itens
+    // o Comando (e o seu Gabinete) antes dos Serviços Gerais; o capitão depois de todos os tenentes-coronéis
+    assert.deepEqual(l.map((i) => i.nome), ['Tenente-Coronel Comando', 'Tenente-Coronel Gabinete', 'Tenente-Coronel Serviços', 'Capitão Comando'])
+  })
+
   it('civil: progressão na carreira por proposta', async () => {
     const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', nome: 'Maria da Conceição Lopes', numeroAgente: 'AG1001', genero: 'F', carreiraCivil: 'tecnico_superior', categoriaCivil: 'Técnico Superior de 2.ª Classe', dataAdmissao: '2018-03-01', dataCategoria: '2022-03-01' }).expect(201)).body
     assert.equal(c.proximaCategoria, 'Técnico Superior de 1.ª Classe')
