@@ -8,7 +8,7 @@ const lista = [
   { id: 3, nome: 'Direcção de Ensino', nivel: 1, paiId: null, previstoGraus: { oficiais: 2, sargentos: 0, cabos: 0, soldados: 0, civil: 0 } },
 ]
 const arvore = { lista, porId: new Map(lista.map((u) => [u.id, u])), descendentes: (id) => new Set(id === 1 ? [1, 2] : [id]) }
-const P = (id, posto, unidadeId, extra = {}) => ({ id, tipo: 'militar', posto, ramo: 'EXE', fps: 'QP', unidadeId, ...extra })
+const P = (id, posto, unidadeId, extra = {}) => ({ id, tipo: 'militar', posto, ramo: 'EXE', fps: 'QP', unidadeId, dataNascimento: '1980-11-15', dataIngresso: '2000-01-10', ...extra })
 const pessoas = [
   P(1, 'coronel', 1), P(2, 'tenente', 2, { fps: 'SMC' }), P(3, 'soldado', 1, { fps: 'SMO', estado: 'em_missao' }),
   P(4, 'major', 3, { habilitacao: 'mestrado', quadroEspecial: 'INF' }), P(5, 'capitao', 3, { estado: 'destacado' }),
@@ -51,5 +51,14 @@ describe('mapas de controlo estatístico', () => {
   it('Ausências: a missão de serviço conta no período', () => {
     const d = mapa('ausencias')
     expect(linha(d, 'TOTAL GERAL').valores[coluna(d, 'M/Serviço — Soldados')]).toBe(1)
+  })
+
+  it('Por idade e tempo de serviço: as faixas contam-se no fim do período; sem data vai para «Não declarados»', () => {
+    const d = MAPAS.find((m) => m.id === 'idade').fazer({ ...ctx, pessoas: [...pessoas, P(8, 'tenente', 1, { dataIngresso: null })] }, { mes: '2026-10' })
+    const [idade, tempo] = d.seccoes
+    // 15/11/1980 → 45 anos a 31/10/2026; ingresso em 2000 → 26 anos de serviço
+    expect(idade.linhas.find((l) => l.rotulo === '45 - 49').valores.at(-1)).toBe(6)
+    expect(tempo.linhas.find((l) => l.rotulo === '24 - 27').valores.at(-1)).toBe(5)
+    expect(tempo.linhas.find((l) => l.rotulo === 'Não declarados').valores.at(-1)).toBe(1)
   })
 })

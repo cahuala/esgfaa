@@ -59,9 +59,11 @@ export async function documentoPdf(d) {
     doc.setFont('times', 'normal').setFontSize(9).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' }).text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
     doc.setFont('times', 'bold').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
     const agora = new Date()
-    doc.text(mod.numero, w - 30, 26, { align: 'center' }).setFont('times', 'normal').text(`${agora.getDate()} DE ${MESES[agora.getMonth()].toUpperCase()} DE ${agora.getFullYear()}`, w - 30, 30.5, { align: 'center' })
+    if (mod.numero) doc.text(mod.numero, w - 30, 26, { align: 'center' })
+    doc.text('', w - 30, 26, { align: 'center' }).setFont('times', 'normal').text(`${agora.getDate()} DE ${MESES[agora.getMonth()].toUpperCase()} DE ${agora.getFullYear()}`, w - 30, 30.5, { align: 'center' })
     doc.setFont('times', 'bold').setFontSize(10)
-    const linhas = [d.titulo.toUpperCase(), d.subtitulo && d.subtitulo.toUpperCase()].filter(Boolean)
+    // (o mapa por idade não tem título geral: cada quadro tem o seu; o período vai por baixo)
+    const linhas = [!mod.semTitulo && d.titulo.toUpperCase(), d.subtitulo && d.subtitulo.toUpperCase()].filter(Boolean)
     linhas.forEach((l, i) => doc.text(l, w / 2, 44 + i * 4.6, { align: 'center' }))
     y = 44 + linhas.length * 4.6 - 1
   } else {
@@ -89,7 +91,11 @@ export async function documentoPdf(d) {
   for (const s of d.seccoes) {
     if (!s.linhas.length && !s.mostrarVazia) continue
     if (y > h - 30) { doc.addPage(); y = 16 }
-    if (s.titulo) {
+    // nos mapas o título de cada quadro vai ao centro («POR IDADE»)
+    if (s.titulo && mod) {
+      doc.setFont('times', 'bold').setFontSize(10).text(s.titulo.toUpperCase(), w / 2, y + 2, { align: 'center' })
+      y += 4
+    } else if (s.titulo) {
       doc.setFont('helvetica', 'bold').setFontSize(8.5).text(`${s.titulo}${s.contar === false ? '' : ` (${s.linhas.length})`}`, 14, y + 1)
       y += 3
     }

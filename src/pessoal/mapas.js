@@ -29,27 +29,29 @@ function periodo(mes) {
 // ---------- colunas em árvore: { t, filhos } ou folha { t, f(p) } / { t, v(linha) } ----------
 const folhas = (nos) => nos.flatMap((n) => (n.filhos ? folhas(n.filhos) : [n]))
 const fundura = (nos) => Math.max(...nos.map((n) => (n.filhos ? 1 + fundura(n.filhos) : 1)))
-function cabeca(nos, { primeira = 'N/O', segunda = 'DESIGNAÇÃO', topo, numerar, alto = 22 }) {
+function cabeca(nos, { primeira = 'N/O', segunda = 'DESIGNAÇÃO', topo, numerar, alto = 22, semN }) {
   const arvore = topo ? [{ t: topo, filhos: nos }] : nos
   const andares = fundura(arvore)
   const linhas = Array.from({ length: andares }, () => [])
-  linhas[0].push({ content: primeira, rowSpan: andares, styles: { cellWidth: 8 } }, { content: segunda, rowSpan: andares })
+  if (!semN) linhas[0].push({ content: primeira, rowSpan: andares, styles: { cellWidth: 8 } })
+  linhas[0].push({ content: segunda, rowSpan: andares })
   const andar = (lista, k) => {
     for (const n of lista) {
       if (n.filhos) { linhas[k].push({ content: n.t, colSpan: folhas(n.filhos).length }); andar(n.filhos, k + 1) } else linhas[k].push({ content: n.t, rowSpan: andares - k, vertical: true, alto: k === andares - 1 ? alto : 0 })
     }
   }
   andar(arvore, 0)
-  if (numerar) linhas.push(['1', '2', ...folhas(nos).map((_, i) => String(i + 3))].map((c) => ({ content: c, styles: { fontStyle: 'normal', fontSize: 5.5 } })))
+  const k0 = semN ? 1 : 2
+  if (numerar) linhas.push([...Array.from({ length: k0 }, (_, i) => String(i + 1)), ...folhas(nos).map((_, i) => String(i + k0 + 1))].map((c) => ({ content: c, styles: { fontStyle: 'normal', fontSize: 5.5 } })))
   return linhas
 }
 // as colunas do corpo (e do Excel, com o caminho no título)
-function colunasDe(nos, rotulo) {
+function colunasDe(nos, rotulo, semN) {
   const caminhos = []
   const andar = (lista, pre) => { for (const n of lista) { if (n.filhos) andar(n.filhos, [...pre, n.t]); else caminhos.push([...pre, n.t].join(' — ')) } }
   andar(nos, [])
   return [
-    { titulo: 'N/O', valor: (l) => l.n ?? '', alinhar: 'center', largura: 8 },
+    ...(semN ? [] : [{ titulo: 'N/O', valor: (l) => l.n ?? '', alinhar: 'center', largura: 8 }]),
     { titulo: rotulo, valor: (l) => l.rotulo },
     ...caminhos.map((titulo, i) => ({ titulo, valor: (l) => l.valores?.[i] ?? '', alinhar: 'center' })),
   ]
@@ -272,10 +274,48 @@ function ausencias(ctx, o) {
   }
 }
 
+// ---------- por idade e por tempo de serviço militar (em anos) ----------
+const anosAte = (iso, fim) => { if (!iso) return null; const n = new Date(String(iso).slice(0, 10)); const f = new Date(fim); let a = f.getFullYear() - n.getFullYear(); if (f.getMonth() < n.getMonth() || (f.getMonth() === n.getMonth() && f.getDate() < n.getDate())) a--; return a }
+function grausIdade(tempo) {
+  return [
+    { t: 'Of. generais', filhos: [...(tempo ? [{ t: 'Gen. Ex.', f: de('general_exercito') }] : []), { t: 'Gen.', f: de(...(tempo ? ['general'] : ['general', 'general_exercito'])) }, { t: 'T.Gen.', f: de('tenente_general') }, { t: 'Brig.', f: de('brigadeiro') }, { t: 'Total', f: de(...OG) }] },
+    { t: 'Of. superiores', filhos: [{ t: 'Cor.', f: de('coronel') }, { t: 'T.Cor.', f: de('tenente_coronel') }, { t: 'Major', f: de('major') }, { t: 'Total', f: de(...OS) }] },
+    { t: 'Capitão', f: de('capitao') },
+    { t: 'Of. subalternos', filhos: [{ t: 'Tenente', f: de('tenente') }, { t: 'Subtte', f: de('subtenente') }, { t: 'Asp.', f: de('aspirante') }, { t: 'Total', f: de(...SUB) }] },
+    { t: 'T.Oficiais', f: oficiais },
+    { t: 'Sargentos', filhos: [{ t: 'Sgt.Maior', f: de('sargento_maior') }, { t: 'Sgt.Chefe', f: de('sargento_chefe') }, { t: 'Sgt.Ajud.', f: de('sargento_ajudante') }, { t: '1.º Sgt', f: de('primeiro_sargento') }, { t: '2.º Sgt', f: de('segundo_sargento') }, { t: 'Sub.Sgt', f: de('subsargento') }, { t: 'Total', f: de(...SARG) }] },
+    { t: 'Praças', filhos: [{ t: '1.º Cabo', f: nada }, { t: '2.º Cabo', f: de('segundo_cabo') }, { t: 'Soldado', f: de('soldado') }, { t: 'Total', f: de(...PRACAS) }] },
+    { t: 'Cadetes', f: nada }, { t: 'Recrutas', f: nada },
+    { t: 'Total geral', f: militar },
+  ]
+}
+// faixas [rótulo, de, até]; quem não tem a data vai para «Não declarados» (no tempo de serviço) ou fica de fora
+const FAIXAS_IDADE = [['Menos de 20', 0, 19], ['20 - 24', 20, 24], ['25 - 29', 25, 29], ['30 - 34', 30, 34], ['35 - 39', 35, 39], ['40 - 44', 40, 44], ['45 - 49', 45, 49], ['50 - 54', 50, 54], ['55 - 59', 55, 59], ['60 - 64', 60, 64], ['65 - e mais', 65, 200]]
+const FAIXAS_TEMPO = [['0 - 3', 0, 3], ['4 - 7', 4, 7], ['8 - 11', 8, 11], ['12 - 15', 12, 15], ['16 - 19', 16, 19], ['20 - 23', 20, 23], ['24 - 27', 24, 27], ['28 - 31', 28, 31], ['32 - 35', 32, 35], ['36 - 39', 36, 39], ['40 e mais', 40, 200]]
+function idadeTempo(ctx, o) {
+  const per = periodo(o.mes)
+  const mil = ctx.pessoas.filter((p) => militar(p) && p.vinculo !== 'estudante')
+  const quadro = (titulo, primeira, faixas, anos, semData) => {
+    const nos = grausIdade(titulo !== 'Por idade')
+    const ls = faixas.map(([rotulo, a, b]) => ({ rotulo, valores: contar(nos, mil.filter((p) => { const x = anos(p); return x !== null && x >= a && x <= b })) }))
+      .filter((l, i) => i > 0 || faixas[0][0] !== 'Menos de 20' || l.valores.at(-1) > 0)
+    if (semData) ls.unshift({ rotulo: semData, valores: contar(nos, mil.filter((p) => anos(p) === null)) })
+    return { titulo, colunas: colunasDe(nos, primeira, true), cabeca: cabeca(nos, { segunda: primeira.toUpperCase(), numerar: titulo === 'Por idade', alto: 11, semN: true }), letra: 5.6, linhas: [...ls, { rotulo: 'TOTAL', valores: somaLinhas(ls), negrito: true }], contar: false }
+  }
+  return {
+    titulo: 'Efectivo militar por idade e por tempo de serviço', subtitulo: per.texto, orientacao: 'landscape', modelo: { numero: '', semTitulo: true },
+    seccoes: [
+      quadro('Por idade', 'Faixas etárias', FAIXAS_IDADE, (p) => anosAte(p.dataNascimento, per.fim)),
+      quadro('Por tempo de serviço militar em anos', 'Tempo de serviço', FAIXAS_TEMPO, (p) => anosAte(p.dataIngresso, per.fim), 'Não declarados'),
+    ],
+  }
+}
+
 export const MAPAS = [
   { id: 'mod2', grupo: 'mapas', titulo: 'Mapa de controlo estatístico (Mod. 2)', icone: 'fa-table', descricao: 'Por unidade e agregados: a orgânica, o efectivo real, o físico e a diferença (oficiais, sargentos, cabos, soldados e civis).', opcoes: [OPCAO_MES], precisa: 'licencas', fazer: mod2 },
   { id: 'ausencias', grupo: 'mapas', titulo: 'Ausências temporárias e definitivas', icone: 'fa-user-clock', descricao: 'Por unidade: faltas, missão de serviço, férias, dispensas, doentes, curso, transferidos, mortos e condenados, por categoria.', opcoes: [OPCAO_MES], precisa: 'licencas', fazer: ausencias },
   { id: 'mod3', grupo: 'mapas', titulo: 'Mapa por graus militares (Mod. 3)', icone: 'fa-star', descricao: 'Por unidade e agregados, posto a posto (QP e SMC, SMC e SMO), com as somas.', opcoes: [OPCAO_MES], fazer: mod3 },
   { id: 'mod4', grupo: 'mapas', titulo: 'Informe por especialidades (Mod. 4)', icone: 'fa-shield-alt', descricao: 'Exército, Força Aérea e Marinha de Guerra: cada especialidade (quadro especial), posto a posto.', opcoes: [OPCAO_MES], fazer: mod4 },
+  { id: 'idade', grupo: 'mapas', titulo: 'Por idade e tempo de serviço', icone: 'fa-hourglass-half', descricao: 'Os militares por faixa etária (20-24 … 65 e mais) e por anos de serviço militar (0-3 … 40 e mais), posto a posto, contados no fim do período (nascimento e incorporação).', opcoes: [OPCAO_MES], fazer: idadeTempo },
   { id: 'mod5', grupo: 'mapas', titulo: 'Mapa por habilitações literárias (Mod. 5)', icone: 'fa-certificate', descricao: 'Dos não declarados ao doutorado, posto a posto.', opcoes: [OPCAO_MES], fazer: mod5 },
 ]
