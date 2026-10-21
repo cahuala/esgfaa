@@ -75,6 +75,7 @@ import { RepositorioPrazosNotas } from './infraestrutura/repositorios/prazosNota
 import { RepositorioPlanosCurso } from './infraestrutura/repositorios/planosCurso.js'
 import { ServicoAvaliacaoEsg } from './aplicacao/academico/partilhado/avaliacaoEsg.js'
 import { ServicoPlanosCurso } from './aplicacao/academico/administracao/planosCurso.js'
+import { ServicoConselhoCurso } from './aplicacao/academico/administracao/conselhoCurso.js'
 import { ServicoTrabalhos } from './aplicacao/academico/ensino/trabalhos.js'
 import { ServicoPresencas } from './aplicacao/academico/ensino/presencas.js'
 import { ServicoForum } from './aplicacao/academico/ensino/forum.js'
@@ -249,6 +250,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       cadeiras: new ServicoCadeiras(d),
       pautas: new ServicoPautasAdministracao(d),
       planosCurso: new ServicoPlanosCurso(d),
+      conselhoCurso: new ServicoConselhoCurso(d),
       calendario: new ServicoCalendarioAcademico(d),
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),

@@ -57,9 +57,16 @@ export class ServicoAvaliacaoEsg {
 
   async criarAvaliacao(ctx, cadeira, dados, utilizador) {
     if (cadeira.tii) throw new ErroValidacao('A UC do TII não tem provas: a nota é a do trabalho.')
+    await this.#aberta(cadeira)
     const a = await this.planos.criarAvaliacao({ cadeiraId: cadeira.id, ...this.#dadosAvaliacao(dados) })
     await this.auditoria.registar(ctx, { acao: 'criar_prova', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
     return this.pauta(cadeira)
+  }
+
+  // depois da proposta ao Conselho de Curso as notas da turma ficam fechadas (até se reabrir)
+  async #aberta(cadeira) {
+    const c = await this.planos.conselho(cadeira.turmaId)
+    if (c.estado !== 'aberto') throw new Conflito(c.estado === 'homologada' ? 'A classificação da turma já foi homologada pelo Comandante: as notas estão fechadas.' : 'A classificação da turma já foi proposta ao Conselho de Curso: reabra-a para mudar notas.')
   }
 
   async #daCadeira(cadeira, avaliacaoId) {
@@ -69,6 +76,7 @@ export class ServicoAvaliacaoEsg {
   }
 
   async editarAvaliacao(ctx, cadeira, avaliacaoId, dados, utilizador) {
+    await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     await this.planos.atualizarAvaliacao(a.id, this.#dadosAvaliacao({ ...a, ...dados }))
     await this.auditoria.registar(ctx, { acao: 'editar_prova', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
@@ -76,6 +84,7 @@ export class ServicoAvaliacaoEsg {
   }
 
   async apagarAvaliacao(ctx, cadeira, avaliacaoId, utilizador) {
+    await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     if (a.publicadaEm) throw new Conflito('A prova já foi publicada: retire a publicação antes de a apagar.')
     await this.planos.apagarAvaliacao(a.id)
@@ -85,6 +94,7 @@ export class ServicoAvaliacaoEsg {
 
   // linhas: [{ estudanteId, nota, recuperacao }]; a recuperação só num TAI com nota negativa
   async gravarNotas(ctx, cadeira, avaliacaoId, linhas, utilizador) {
+    await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     const validos = new Set((await this.academico.estudantesDaPautaDaCadeira(cadeira)).map((e) => e.id))
     const vistos = new Set()
@@ -105,6 +115,7 @@ export class ServicoAvaliacaoEsg {
 
   // publica (ou esconde) as notas de uma prova; a publicação conta para o prazo da recuperação
   async publicar(ctx, cadeira, avaliacaoId, publicar, utilizador) {
+    await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     if (publicar && !a.publicadaEm) {
       await this.planos.atualizarAvaliacao(a.id, { publicadaEm: this.relogio.agora() })
@@ -157,16 +168,22 @@ export class ServicoAvaliacaoEsg {
     Resultado do curso de um estudante numa turma com plano: as UC da turma, os blocos, a nota final e a
     menção. publicadas = só o que o estudante já pode ver.
   */
-  async resultadoDoEstudante(estudanteId, turma, { publicadas = false, ajuste = 0 } = {}) {
+  async resultadoDoEstudante(estudanteId, turma, { publicadas = false, ajuste = null } = {}) {
     const plano = await this.planos.daTurma(turma)
     if (!plano) return null
+    const [conselho, classif] = await Promise.all([this.planos.conselho(turma.id), this.planos.classificacoes(turma.id)])
+    const minha = classif[estudanteId] ?? { juizo: {}, ajuste: 0, distinto: false, fixado: null }
+    // homologada: vale o que o Comandante homologou
+    if (conselho.estado === 'homologada' && minha.fixado) {
+      return { plano, ucs: minha.fixado.ucs ?? [], ...minha.fixado, distinto: minha.distinto, juizo: minha.juizo, conselho, homologado: true }
+    }
     const cadeiras = await this.academico.cadeirasDasTurmas([turma.id])
     const ucs = []
     for (const c of cadeiras) {
       const r = await this.doEstudante(estudanteId, c, { todas: !publicadas })
       ucs.push({ id: c.id, codigo: c.codigo, nome: c.nome, bloco: c.bloco, creditos: c.creditos, tii: c.tii, final: r.final, situacao: r.situacao, mencao: r.mencao })
     }
-    return { plano, ucs, ...resultadoCurso(plano, ucs, { ajuste }) }
+    return { plano, ucs, ...resultadoCurso(plano, ucs, { ajuste: ajuste ?? minha.ajuste }), distinto: minha.distinto, juizo: minha.juizo, conselho, homologado: false }
   }
 
   async pautaGeral(turma) {

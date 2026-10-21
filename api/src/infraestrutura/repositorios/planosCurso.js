@@ -105,4 +105,28 @@ export class RepositorioPlanosCurso {
     return (await this.prisma.notaAvaliacaoUc.findMany({ where: { avaliacaoId, recuperacaoPedidaEm: { not: null } }, select: { estudanteId: true, recuperacaoPedidaEm: true } }))
       .map((x) => ({ estudanteId: x.estudanteId, pedidaEm: iso(x.recuperacaoPedidaEm) }))
   }
+
+  // ---------- Conselho de Curso e classificação final ----------
+
+  async conselho(turmaId) {
+    const c = await this.prisma.conselhoCurso.findUnique({ where: { turmaId } })
+    if (!c) return { turmaId, estado: 'aberto', acta: '', dataConselho: null, propostaPor: '', propostaEm: null, confirmadaPor: '', confirmadaEm: null, homologadaPor: '', homologadaEm: null, observacoes: '' }
+    return { ...c, propostaEm: iso(c.propostaEm), confirmadaEm: iso(c.confirmadaEm), homologadaEm: iso(c.homologadaEm) }
+  }
+
+  async guardarConselho(turmaId, dados) {
+    await this.prisma.conselhoCurso.upsert({ where: { turmaId }, create: { turmaId, ...dados }, update: dados })
+    return this.conselho(turmaId)
+  }
+
+  // { estudanteId: { juizo, ajuste, distinto, fixado } }
+  async classificacoes(turmaId) {
+    const l = await this.prisma.classificacaoCurso.findMany({ where: { turmaId } })
+    return Object.fromEntries(l.map((c) => [c.estudanteId, { juizo: c.juizo ?? {}, ajuste: Number(c.ajuste ?? 0), distinto: c.distinto, fixado: c.fixado ?? null }]))
+  }
+
+  async guardarClassificacao(turmaId, estudanteId, dados) {
+    await this.prisma.classificacaoCurso.upsert({ where: { turmaId_estudanteId: { turmaId, estudanteId } }, create: { turmaId, estudanteId, ...dados }, update: dados })
+  }
 }
+

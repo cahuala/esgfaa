@@ -12,7 +12,8 @@ export const RECURSOS = [
   { id: 'paginas', acoes: ['ver', 'editar'] },
   { id: 'comentarios', acoes: ['ver', 'apagar'] },
   { id: 'contactos', acoes: ['ver', 'gerir'] },
-  { id: 'academico', acoes: ['ver', 'gerir', 'notas'] },
+  // conselho: Director de Ensino (juízo ampliativo, proposta, Conselho de Curso); homologar: Comandante
+  { id: 'academico', acoes: ['ver', 'gerir', 'notas', 'conselho', 'homologar'] },
   { id: 'pessoal', acoes: ['ver', 'registar'] },
   { id: 'biblioteca', acoes: ['ver', 'gerir'] },
   { id: 'integridade', acoes: ['ver', 'gerir'] },
@@ -68,6 +69,20 @@ export const PAPEIS_PADRAO = [
     descricao: 'Turmas, matrículas e inscrições (de quem o Pessoal e Quadros registou), cadeiras, alocação de docentes, programas, pautas, horários, documentos e pedidos.',
     sistema: 0,
     permissoes: ['cursos.ver', 'academico.ver', 'academico.gerir', 'academico.notas', 'integridade.ver', 'integridade.gerir'],
+  },
+  {
+    id: 'director_ensino',
+    nome: 'Director de Ensino',
+    descricao: 'Juízo ampliativo dos auditores, proposta das classificações finais e confirmação em Conselho de Curso.',
+    sistema: 0,
+    permissoes: ['academico.ver', 'academico.conselho'],
+  },
+  {
+    id: 'comandante',
+    nome: 'Comandante da ESG',
+    descricao: 'Homologa as classificações finais dos cursos, atribui o Distinto e o ajuste previsto no plano.',
+    sistema: 0,
+    permissoes: ['academico.ver', 'academico.homologar'],
   },
   {
     id: 'pessoal_quadros',

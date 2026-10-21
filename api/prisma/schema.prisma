@@ -1630,3 +1630,34 @@ model NotaAvaliacaoUc {
   @@index([estudanteId])
   @@map("notas_avaliacao_uc")
 }
+
+// Conselho de Curso de uma turma com plano: proposta (Director de Ensino) → confirmada → homologada (Comandante)
+model ConselhoCurso {
+  turmaId       Int       @id @map("turma_id")
+  estado        String    @default("aberto") // aberto | proposta | confirmada | homologada
+  acta          String    @default("") // n.º da acta do Conselho de Curso
+  dataConselho  String?   @map("data_conselho") // AAAA-MM-DD
+  propostaPor   String    @default("") @map("proposta_por")
+  propostaEm    DateTime? @map("proposta_em") @db.Timestamptz(3)
+  confirmadaPor String    @default("") @map("confirmada_por")
+  confirmadaEm  DateTime? @map("confirmada_em") @db.Timestamptz(3)
+  homologadaPor String    @default("") @map("homologada_por")
+  homologadaEm  DateTime? @map("homologada_em") @db.Timestamptz(3)
+  observacoes   String    @default("")
+
+  @@map("conselhos_curso")
+}
+
+// a classificação final de cada auditor/discente: juízo ampliativo, ajuste, distinto e o resultado fixado
+model ClassificacaoCurso {
+  turmaId      Int      @map("turma_id")
+  estudanteId  Int      @map("estudante_id")
+  juizo        Json     @default("{}") // { factores: { chave: apreciação }, texto }
+  ajuste       Decimal  @default(0) @db.Decimal(4, 2)
+  distinto     Boolean  @default(false)
+  fixado       Json? // o resultado na proposta/homologação: { final, mencao, blocos, concluido, emFalta }
+  atualizadaEm DateTime @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz(3)
+
+  @@id([turmaId, estudanteId])
+  @@map("classificacoes_curso")
+}

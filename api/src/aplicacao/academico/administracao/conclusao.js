@@ -94,9 +94,10 @@ export class ServicoConclusaoCurso {
     const percurso = await this.percursos.de(estudante.id, { publicadas: false, estudante })
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
     if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
+    if (!existente && percurso.planoCurso && !percurso.planoCurso.homologado) throw new Conflito('A classificação final ainda não foi homologada pelo Comandante (Conselho de Curso).')
     const cert = existente || await this.conclusao.emitirCertificado({
       codigo: novoCodigo(), estudanteId: estudante.id, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso),
-      media: percurso.mediaFinal, notaTfc: percurso.tfc.nota, emitidoEm: this.relogio.agora(),
+      media: percurso.mediaFinal, notaTfc: percurso.tfc?.nota ?? percurso.planoCurso?.ucs?.find((u) => u.tii)?.final ?? null, emitidoEm: this.relogio.agora(),
     })
     if (!existente) await this.auditoria.registar(ctx, { acao: 'emitir_certificado_curso', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome}` })
     return { ...cert, estudante, percurso: percurso.paraJSON() }

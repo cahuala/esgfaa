@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
 import { Carregando, Painel } from '../../componentes/Ui'
+import ConselhoCurso from './ConselhoCurso'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
@@ -174,6 +175,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
           <div className="small text-muted p-2">{tx('A nota de cada bloco é a média das UC ponderada pelas unidades de crédito. Menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99.')}</div>
         </Painel>
       )}
+      {p && <ConselhoCurso turma={turma} avisar={avisar} />}
     </>
   )
 }

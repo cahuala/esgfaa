@@ -166,7 +166,8 @@ function PlanoCurso({ pc, conclusao }) {
           <div><div className="text-muted small">{tx('Média')} ({formula})</div><div className="fs-20px fw-bold"><Nota valor={pc.media} /></div></div>
           {pc.ajuste ? <div><div className="text-muted small">{tx('Ajuste do Comandante')}</div><div className="fs-20px fw-bold">{pc.ajuste > 0 ? '+' : ''}{String(pc.ajuste).replace('.', ',')}</div></div> : null}
           <div><div className="text-muted small">{tx('Nota final')}</div><div className="fs-20px fw-bold"><Nota valor={pc.final} forte /></div></div>
-          <div><div className="text-muted small">{tx('Menção')}</div><div className="fs-20px fw-bold">{pc.mencao || '—'}</div></div>
+          <div><div className="text-muted small">{tx('Menção')}</div><div className="fs-20px fw-bold">{pc.mencao || '—'}{pc.distinto && <span className="badge bg-warning text-dark ms-2"><i className="fa fa-medal me-1" />{tx('DISTINTO')}</span>}</div></div>
+          <div className="ms-auto">{pc.homologado ? <span className="badge bg-success"><i className="fa fa-stamp me-1" />{tx('Homologada pelo Comandante')}</span> : <span className="badge bg-secondary">{tx('Classificação provisória (por homologar)')}</span>}</div>
         </div>
         {!conclusao.concluido && conclusao.emFalta?.length > 0 && <div className="small text-muted mt-3"><b>{tx('Para concluir o curso:')}</b> {conclusao.emFalta.join(' · ')}</div>}
       </div>

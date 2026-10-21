@@ -100,7 +100,7 @@ export class PercursoAcademico {
       resumo: this.resumo,
       tfc: this.tfc && { ...this.tfc, aprovado: this.tfc.aprovado, classificacao: this.tfc.classificacao },
       conclusao: { concluido: this.concluido, mediaFinal: this.mediaFinal, classificacaoFinal: this.classificacaoFinal, emFalta: this.emFalta },
-      planoCurso: this.planoCurso && { nome: this.planoCurso.plano.nome, termo: this.planoCurso.plano.termo, formula: this.planoCurso.plano.formula, blocos: this.planoCurso.blocos, media: this.planoCurso.media, ajuste: this.planoCurso.ajuste, final: this.planoCurso.final, mencao: this.planoCurso.mencao },
+      planoCurso: this.planoCurso && { nome: this.planoCurso.plano.nome, termo: this.planoCurso.plano.termo, formula: this.planoCurso.plano.formula, blocos: this.planoCurso.blocos, media: this.planoCurso.media, ajuste: this.planoCurso.ajuste, final: this.planoCurso.final, mencao: this.planoCurso.mencao, homologado: Boolean(this.planoCurso.homologado), distinto: Boolean(this.planoCurso.distinto && this.planoCurso.homologado), homologadaEm: this.planoCurso.conselho?.homologadaEm ?? null, estadoConselho: this.planoCurso.conselho?.estado ?? 'aberto' },
       certificado: this.certificado,
     }
   }
