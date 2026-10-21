@@ -236,7 +236,7 @@
   border: 0;
   border-radius: var(--raio);
   display: block;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
 }
 .mapaCartao {
   position: absolute;

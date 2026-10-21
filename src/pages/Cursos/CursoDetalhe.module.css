@@ -22,8 +22,9 @@
 .destinatarios {
   margin-top: 20px;
   padding: 16px 20px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
+  border: 1px solid var(--linha);
 }
 .destinatarios dt {
   font-size: 12.5px;

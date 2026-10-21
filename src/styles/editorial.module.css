@@ -32,11 +32,12 @@
 }
 .factos > div {
   padding: 18px 20px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column-reverse;
   gap: 2px;
+  border: 1px solid var(--linha);
 }
 .factos dt {
   font-size: 12.5px;
@@ -95,8 +96,9 @@
 .caixaLateral {
   margin-top: 28px;
   padding: 18px 20px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
+  border: 1px solid var(--linha);
 }
 .caixaLateral p {
   margin: 6px 0 14px;
@@ -166,7 +168,7 @@
   border-bottom: 1px solid var(--linha);
 }
 .tabela tbody tr:hover {
-  background: var(--fundo-suave);
+  background: var(--tinte-marca);
 }
 .tabela tbody th,
 .tabela td {
@@ -241,10 +243,11 @@
   height: 30px;
   margin-bottom: 12px;
   border-radius: 50%;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   color: var(--marca);
   font-size: 13px;
   font-weight: 600;
+  border: 1px solid var(--linha);
 }
 .passos h3 {
   font-size: 15.5px;
@@ -305,7 +308,7 @@
   color: var(--texto);
 }
 .botaoContorno:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }
 
 /* Pessoa (coordenação, autoria) */
@@ -319,7 +322,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   color: var(--texto-suave);
   display: flex;
   align-items: center;
@@ -327,6 +330,7 @@
   font-size: 15px;
   font-weight: 600;
   overflow: hidden;
+  border: 1px solid var(--linha);
 }
 .avatar img {
   width: 100%;

@@ -147,7 +147,7 @@
   padding: 4px 10px;
   border: 0;
   border-radius: 4px;
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
   color: var(--texto);
   font-size: 12.5px;
   cursor: pointer;
@@ -166,7 +166,8 @@
   display: block;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .destaqueMoldura {
   width: 100%;
@@ -228,17 +229,18 @@
   cursor: pointer;
 }
 .verMais:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }
 .vazio {
   padding: 48px 24px;
   text-align: center;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  border: 1px solid var(--linha);
 }
 .vazio button {
   border: 0;
@@ -286,7 +288,8 @@
 .miniaturaFoto {
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .miniaturaFoto img {
   width: 100%;

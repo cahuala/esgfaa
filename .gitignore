@@ -43,3 +43,6 @@ copias/
 # segredos da instalação em produção
 deploy/*.env
 dist-pessoal
+
+# planos e agendas dos cursos (documentos internos da ESG): não vão para o repositório público
+docs/PLANOS*

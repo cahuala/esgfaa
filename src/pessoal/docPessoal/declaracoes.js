@@ -218,9 +218,10 @@ export function declaracaoBanco(d, p, o, quem) {
   novaPagina(d)
   marcaDagua(d, 105, 192, 92, 0.06)
   let y = cabecalho(d)
-  // «AO / BANCO DE FOMENTO ANGOLA / LUANDA», à direita
+  // «AO / BANCO DE FOMENTO ANGOLA / LUANDA», à direita, sem passar a margem direita (28 mm)
   doc.setFont('times', 'bold').setFontSize(TAM)
-  doc.text('AO', 128, y + 4).text(b.banco, 128, y + 10.5).text('LUANDA', 128, y + 17)
+  const xb = Math.min(128, 210 - 28 - doc.getTextWidth(b.banco))
+  doc.text('AO', xb, y + 4).text(b.banco, xb, y + 10.5).text('LUANDA', xb, y + 17)
   y += 24
   doc.setFont('times', 'bolditalic').text(`Nº${String(o.numero ?? '').padStart(3, '0')}/${ano2(o.ano ?? new Date().getFullYear())}/RPQ/ESG/EMGFAA`, X, y)
   y += 9
@@ -234,15 +235,30 @@ export function declaracaoBanco(d, p, o, quem) {
     ? [`, é efectivo do ${p.fpsNome || 'Quadro Permanente'} das `, { b: 'FORÇAS ARMADAS ANGOLANAS' }, ', em serviço na Escola Superior de Guerra/EMG/FAA,']
     : [', é efectivo do Quadro das ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ', em serviço na Escola Superior de Guerra/EMG/FAA, com a categoria de ', { b: M(p.categoriaCivil || p.carreiraNome || '') }, ',']
   const bpc = b.sigla === 'BPC'
-  y = paragrafo(d, [`Com finalidade de habilitar-se ${b.finalidade}, declara-se que `, ...quemE, `, nascido(a) aos ${nasc}, filho(a) de `, { b: M(p.pai || '__________') }, ' e de ', { b: M(p.mae || '__________') }, ...efectivo, ' e aufere um salário líquido mensal de ', { b: `${sal} kwanzas` },
-    bpc ? ' sem interrupção, estando elegível para, ao abrigo do protocolo assinado entre o BPC, S.A. e a nossa instituição, aceder ao crédito de vencimentos mediante a vossa análise de risco individual e procedimentos a cumprir de forma obrigatória.' : '.'], y, { x: X, w: W })
-  y += 3
   const iban = { b: M(p.iban || '____________________________') }
-  y = paragrafo(d, bpc
+  const corpo = [[`Com finalidade de habilitar-se ${b.finalidade}, declara-se que `, ...quemE, `, nascido(a) aos ${nasc}, filho(a) de `, { b: M(p.pai || '__________') }, ' e de ', { b: M(p.mae || '__________') }, ...efectivo, ' e aufere um salário líquido mensal de ', { b: `${sal} kwanzas` },
+    bpc ? ' sem interrupção, estando elegível para, ao abrigo do protocolo assinado entre o BPC, S.A. e a nossa instituição, aceder ao crédito de vencimentos mediante a vossa análise de risco individual e procedimentos a cumprir de forma obrigatória.' : '.'],
+  bpc
     ? ['Compromete-se também a nossa instituição a manter o salário domiciliado junto da vossa instituição, depositado na Conta/IBAN ', iban, ' e, na eventualidade de qualquer alteração relevante da relação jurídico-contratual com o funcionário, informar o Banco de modo a mitigar o risco de incumprimento de responsabilidades junto da vossa instituição.']
-    : ['Conforme as instruções irrevogáveis recebidas do interessado, a partir desta data, os seus vencimentos serão mensalmente depositados na conta/IBAN nº ', iban, ' aberta no BFA, enquanto o mesmo se mantiver como membro das FAA. Reconhece-se que, apenas com autorização expressa do BFA, esta instrução poderá ser alterada ou cancelada.'], y, { x: X, w: W })
+    : ['Conforme as instruções irrevogáveis recebidas do interessado, a partir desta data, os seus vencimentos serão mensalmente depositados na conta/IBAN nº ', iban, ' aberta no BFA, enquanto o mesmo se mantiver como membro das FAA. Reconhece-se que, apenas com autorização expressa do BFA, esta instrução poderá ser alterada ou cancelada.'],
+  ['Por ter sido solicitada, mandei passar a presente declaração que vai por mim assinada e autenticada com o carimbo a óleo em uso nesta Instituição.']]
+  // o texto e a assinatura têm de caber na folha: com nomes e IBAN compridos, a letra desce até 12
+  const ALTURA_FIM = 7 + 14 + 12 + 19.5 + 4
+  let tam = TAM
+  let entre = 6.6
+  for (const t of [TAM, 13.5, 13, 12.5, 12]) {
+    tam = t
+    entre = 6.6 * (t / TAM)
+    doc.setFont('times', 'normal').setFontSize(t)
+    const linhas = corpo.reduce((n, partes) => n + doc.splitTextToSize(partes.map((x) => (typeof x === 'string' ? x : x.b)).join(''), W - 12).length, 0)
+    if (y + linhas * entre * 1.04 + 6 + ALTURA_FIM <= 287) break
+  }
+  const op = { x: X, w: W, tam, entre }
+  y = paragrafo(d, corpo[0], y, op)
   y += 3
-  y = paragrafo(d, ['Por ter sido solicitada, mandei passar a presente declaração que vai por mim assinada e autenticada com o carimbo a óleo em uso nesta Instituição.'], y, { x: X, w: W })
+  y = paragrafo(d, corpo[1], y, op)
+  y += 3
+  y = paragrafo(d, corpo[2], y, op)
   y += 7
   const v = 'VÁLIDO POR UM PERÍODO DE 90 DIAS'
   doc.setFont('helvetica', 'bold').setFontSize(11)

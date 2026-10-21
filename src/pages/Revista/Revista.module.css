@@ -37,13 +37,14 @@
   aspect-ratio: 210 / 297;
   border-radius: 3px 8px 8px 3px;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   box-shadow:
     0 30px 50px -28px rgba(0, 0, 0, 0.55),
     0 12px 24px -16px rgba(0, 0, 0, 0.35);
   transform: perspective(1400px) rotateY(-4deg);
   transform-origin: left center;
   transition: transform 0.35s ease, box-shadow 0.35s ease;
+  border: 1px solid var(--linha);
 }
 /* lombada: uma sombra fina à esquerda, como numa revista dobrada */
 .capaGrande::after,
@@ -204,9 +205,10 @@
   aspect-ratio: 210 / 297;
   border-radius: 2px 6px 6px 2px;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   box-shadow: 0 16px 28px -18px rgba(0, 0, 0, 0.55);
   transition: transform 0.25s ease;
+  border: 1px solid var(--linha);
 }
 .numero:hover .capaPequena,
 .numero:focus-visible .capaPequena {
@@ -234,8 +236,9 @@
   flex-wrap: wrap;
   padding: clamp(24px, 4vw, 40px);
   border-radius: var(--raio);
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   margin-bottom: 72px;
+  border: 1px solid var(--linha);
 }
 .autores > div {
   flex: 1 1 420px;

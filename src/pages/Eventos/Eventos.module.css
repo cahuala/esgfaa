@@ -34,7 +34,8 @@
 .destaqueFoto {
   display: block;
   min-height: 300px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .destaqueFoto img {
   width: 100%;
@@ -99,11 +100,12 @@
   min-width: 58px;
   padding: 8px 6px;
   border-radius: 4px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: flex;
   flex-direction: column;
   align-items: center;
   line-height: 1.2;
+  border: 1px solid var(--linha);
 }
 .contagem strong {
   font-size: 18px;
@@ -178,7 +180,7 @@
   cursor: pointer;
 }
 .calendarioTopo button:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }
 .calendarioGrelha {
   display: grid;
@@ -221,7 +223,7 @@
   background: var(--marca);
 }
 .diaComEvento:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }
 .diaHoje {
   box-shadow: inset 0 0 0 1px var(--texto-fraco);
@@ -326,12 +328,13 @@
 .linhaData {
   height: 66px;
   border-radius: 4px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   line-height: 1.15;
+  border: 1px solid var(--linha);
 }
 .linhaData strong {
   font-size: 21px;
@@ -397,7 +400,8 @@
   aspect-ratio: 4 / 3;
   border-radius: 4px;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .linhaFoto img {
   width: 100%;
@@ -409,12 +413,13 @@
 .vazio {
   padding: 40px 24px;
   text-align: center;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  border: 1px solid var(--linha);
 }
 .vazio button {
   border: 0;
@@ -448,7 +453,8 @@
 .miniaturaFoto {
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .miniaturaFoto img {
   width: 100%;
@@ -495,10 +501,11 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: grid;
   place-items: center;
   font-size: 11px;
+  border: 1px solid var(--linha);
 }
 .voltar:hover span {
   background: var(--marca);
@@ -566,11 +573,12 @@
   width: 58px;
   height: 62px;
   border-radius: 4px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: grid;
   place-items: center;
   font-size: 24px;
   font-weight: 600;
+  border: 1px solid var(--linha);
 }
 .bilheteData span {
   display: flex;
@@ -611,7 +619,8 @@
 
 .outros {
   padding: 56px 0 72px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .outrosTitulo {
   margin: 4px 0 20px;

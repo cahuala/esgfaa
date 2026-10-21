@@ -677,9 +677,10 @@ ol.lista li::before {
 }
 
 .textoRico th {
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   color: var(--texto);
   font-weight: 600;
+  border: 1px solid var(--linha);
 }
 
 .textoRico th p,

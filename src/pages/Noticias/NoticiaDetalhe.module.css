@@ -25,11 +25,12 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: grid;
   place-items: center;
   font-size: 11px;
   transition: background 0.2s, color 0.2s;
+  border: 1px solid var(--linha);
 }
 .voltar:hover {
   color: var(--texto);
@@ -79,9 +80,10 @@
 .indice {
   margin-bottom: 28px;
   padding: 16px 20px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   font-size: 14px;
+  border: 1px solid var(--linha);
 }
 .indice ol {
   margin: 8px 0 0 18px;

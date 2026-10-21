@@ -66,7 +66,8 @@
 .destaqueFoto {
   display: block;
   min-height: 280px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .destaqueFoto img {
   width: 100%;
@@ -229,20 +230,22 @@
 .palavra {
   padding: 1px 8px;
   border-radius: 4px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   color: var(--texto-suave);
   font-size: 12px;
+  border: 1px solid var(--linha);
 }
 .vazio {
   margin-top: 24px;
   padding: 40px 24px;
   text-align: center;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  border: 1px solid var(--linha);
 }
 .vazio button {
   border: 0;
@@ -282,7 +285,7 @@
   color: var(--texto);
 }
 .autores button:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }
 .autores strong {
   display: block;
@@ -294,7 +297,7 @@
   color: var(--texto-fraco);
 }
 .autorAtivo {
-  background: var(--fundo-cinza) !important;
+  background: var(--tinte-marca) !important;
 }
 .autorAtivo strong {
   color: var(--marca);
@@ -305,12 +308,13 @@
   height: 38px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   display: grid;
   place-items: center;
   font-size: 12px;
   font-weight: 600;
   color: var(--texto-suave);
+  border: 1px solid var(--linha);
 }
 .autorAvatar img {
   width: 100%;
@@ -320,11 +324,12 @@
 .submeter {
   margin-top: 16px;
   padding: 20px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border: 1px solid var(--linha);
 }
 .submeter h3 {
   font-size: 15px;
@@ -385,8 +390,9 @@
 .resumo {
   margin-bottom: 32px;
   padding: 22px 24px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
+  border: 1px solid var(--linha);
 }
 .resumo h2 {
   font-size: 16px;

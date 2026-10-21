@@ -22,7 +22,8 @@
   position: relative;
   display: block;
   min-height: 300px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .cursoFoto img {
   width: 100%;
@@ -121,12 +122,13 @@
 }
 .ingresso {
   padding: 24px;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   border-radius: var(--raio);
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: flex-start;
+  border: 1px solid var(--linha);
 }
 .ingresso h3 {
   font-size: 17px;

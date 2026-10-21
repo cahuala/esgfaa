@@ -29,10 +29,11 @@ h2 {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   color: var(--marca);
   display: grid;
   place-items: center;
+  border: 1px solid var(--linha);
 }
 .pilares h3 {
   font-size: 15px;

@@ -41,7 +41,8 @@
 .caixaApoio {
   border-style: dashed;
   border-top: 3px dashed var(--dourado);
-  background: var(--fundo-suave);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .comLigacao:hover,
 .comLigacao:focus-visible {
@@ -55,10 +56,11 @@
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
   font-weight: 600;
   color: var(--texto-suave);
   margin-bottom: 6px;
+  border: 1px solid var(--linha);
 }
 .foto img {
   width: 100%;

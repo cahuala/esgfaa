@@ -61,14 +61,16 @@
   display: block;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 /* moldura: a fotografia inteira por cima de uma cópia desfocada que preenche o resto */
 .moldura {
   position: relative;
   display: block;
   overflow: hidden;
-  background: var(--fundo-cinza);
+  background: var(--fundo);
+  border: 1px solid var(--linha);
 }
 .moldura::before {
   content: "";
@@ -227,5 +229,5 @@
   border: 1px solid var(--linha);
 }
 .botaoContorno:hover {
-  background: var(--fundo-cinza);
+  background: var(--tinte-marca);
 }

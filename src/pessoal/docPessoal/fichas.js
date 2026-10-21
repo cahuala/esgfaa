@@ -805,7 +805,7 @@ export function fichaRegistoBiografico(d, p) {
   // 11. agregado familiar
   const c11 = [L(85), L(238), L(690), L(842), L(1002), L(1055), L(1217), L(1530), L(1880)]
   const posA = grelha(doc, c11, 113.6, 8.5, ['11.Agregado\nFamiliar', 'Nome (Excluir o próprio, trabalhador\ne o cônjuge inscrito neste registo)', 'Grau\nParentesco', 'Data de\nNascimento', 'Sexo', 'Estado civil', 'Profissão', 'Local de trabalho'], 17, 4.37, { tam: 9.5 })
-  familia(p).slice(0, 17).forEach((a, i) => [null, a.nome, a.parentesco, dma(a.dataNascimento), a.genero, '', a.profissao, ''].forEach((v, k) => { if (v) valor(doc, v, ...posA(i, k), { tam: 8.5, centrar: k > 1 }) }))
+  familia(p).slice(0, 17).forEach((a, i) => [null, a.nome, a.parentesco, dma(a.dataNascimento), a.genero, { solteiro: 'Solteiro', casado: 'Casado', uniao_facto: 'União de facto', divorciado: 'Divorciado', viuvo: 'Viúvo' }[a.estadoCivil] ?? '', a.profissao, a.localTrabalho].forEach((v, k) => { if (v) valor(doc, v, ...posA(i, k), { tam: 8.5, centrar: k > 1 }) }))
 
   // página 3: averbamentos e observações (assiduidade e outras informações)
   nova(d, 'landscape')
