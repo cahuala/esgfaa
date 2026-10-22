@@ -2,10 +2,11 @@ import Curso1 from '../assets/Curso1.png'
 import Curso2 from '../assets/Curso2.png'
 import Curso3 from '../assets/Curso3.png'
 
+import { MODELOS_PLANO } from '../../api/src/dominio/academico/avaliacao/planoCurso.js'
+
 /*
-  ATENÇÃO: planos curriculares, cargas horárias, vagas, requisitos e datas são
-  provisórios — confirmar com a Direção de Ensino antes de publicar.
-  `coordenador` refere o id em data/pessoas.js.
+  Os cursos vêm dos planos de curso 2026/2027. O calendário de admissão continua a confirmar com a Direcção
+  de Ensino. `coordenador` (opcional) refere o id em data/pessoas.js.
 */
 
 // Processo e calendário de admissão comuns a todos os cursos
@@ -23,151 +24,154 @@ export const calendarioAdmissao = [
   { fase: 'Início das aulas', periodo: '8 de março de 2027' },
 ]
 
+/*
+  Os quatro cursos da ESG em 2026/2027, pelos planos de curso da Direcção de Ensino (docs/PLANOS E AGENDAS
+  DE CURSOS 2026-2027). As unidades curriculares, as horas e os créditos vêm do mesmo modelo que o Portal
+  Académico usa (MODELOS_PLANO), agrupadas por bloco como nos planos (os planos não indicam o semestre).
+*/
+const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI']
+function planoDe(chave) {
+  const m = MODELOS_PLANO[chave]
+  return m.plano.blocos.map((b, i) => ({
+    periodo: `Bloco ${ROMANOS[i]} — ${b.nome}`,
+    unidades: m.cadeiras.filter((c) => c.bloco === b.sigla).map((c) => ({ nome: c.nome, horas: c.horasContacto + c.horasNaoContacto, creditos: c.creditos })),
+  }))
+}
+
 const cursos = [
   {
-    id: 'estado-maior',
-    sigla: 'CEM',
-    nome: 'Curso de Estado-Maior',
-    resumo: 'Prepara oficiais para funções de planeamento, comando e assessoria em estados-maiores das Forças Armadas.',
+    id: 'curso-superior-de-comando-e-direccao',
+    sigla: 'CSCD',
+    nome: 'Curso Superior de Comando e Direcção',
+    resumo: 'Complementa a formação de Oficiais Generais e Coronéis para os altos cargos de Comando, Direcção e Estado-Maior das FAA e da Polícia Nacional.',
     imagem: Curso1,
-    duracao: '2 anos',
-    regime: 'Presencial, tempo integral',
-    vagas: '60',
-    destinatarios: 'Majores e tenentes-coronéis dos três ramos',
-    coordenador: 'teresa-lopes',
+    duracao: '10 meses',
+    regime: 'Presencial',
+    vagas: '35',
+    destinatarios: 'Oficiais Generais e Coronéis ou Capitães-de-Mar-e-Guerra das FAA; Comissários ou Superintendentes-Chefes da PNA; oficiais de países amigos e aliados',
     apresentacao: [
-      'O Curso de Estado-Maior é a formação de referência para os oficiais que vão integrar estados-maiores de comandos, regiões e órgãos centrais das Forças Armadas Angolanas.',
-      'Ao longo de quatro semestres, os alunos estudam estratégia, planeamento operacional, logística, liderança e direito, e aplicam esses conhecimentos em exercícios de planeamento cada vez mais exigentes.',
+      'O CSCD tem por finalidade complementar a formação para o exercício das funções inerentes aos altos cargos de Comando, Direcção e Estado-Maior, com foco particular na investigação científica e no estudo, debate e análise de temas nacionais e internacionais com interesse para as FAA e para a PNA.',
+      'O curso organiza-se em cinco blocos de unidades curriculares — Administração, Táctica, Operações Conjuntas e Combinadas, Estratégia e Trabalho de Investigação Individual — num total de 20 unidades curriculares, 1215 horas de trabalho e 81 unidades de crédito, a que se juntam o ciclo de conferências e as actividades diversas.',
+      'A classificação final é a média ponderada dos cinco blocos: (2 × Administração + 3 × Táctica + 1 × Operações Conjuntas e Combinadas + 2 × Estratégia + 2 × TII) / 10.',
     ],
     objetivos: [
-      'Dominar o processo de planeamento operacional e a elaboração de ordens.',
-      'Assessorar o comandante na tomada de decisão em ambientes complexos.',
-      'Coordenar meios dos três ramos em operações conjuntas.',
-      'Conduzir investigação aplicada em temas de segurança e defesa.',
+      'Promover o conhecimento mútuo e o entendimento comum dos problemas de segurança, em especial os da Defesa Nacional, numa perspectiva político-estratégica.',
+      'Dispor da informação necessária, como complemento da adquirida ao longo da carreira, para gerir cargos de topo, com perspectivas sistémicas, conceptuais e doutrinárias.',
+      'Gerir os recursos afectos à segurança e defesa nacional, num contexto de escassez cíclica ou permanente.',
+      'Planear e conduzir operações terrestres e operações conjuntas e combinadas.',
+      'Apoiar a decisão do planeamento estratégico e político-estratégico nacional.',
     ],
-    plano: [
-      { periodo: '1.º semestre', unidades: [
-        { nome: 'Estratégia e Planeamento Militar', horas: 90 },
-        { nome: 'Liderança e Gestão de Recursos', horas: 60 },
-        { nome: 'Geopolítica e Relações Internacionais', horas: 60 },
-        { nome: 'Metodologia de Investigação', horas: 45 },
-      ] },
-      { periodo: '2.º semestre', unidades: [
-        { nome: 'Processo de Planeamento Operacional', horas: 120 },
-        { nome: 'Logística Militar', horas: 60 },
-        { nome: 'Direito Internacional e Humanitário', horas: 60 },
-      ] },
-      { periodo: '3.º semestre', unidades: [
-        { nome: 'Operações Conjuntas e Combinadas', horas: 120 },
-        { nome: 'Informações e Segurança', horas: 60 },
-        { nome: 'Comunicação e Liderança Estratégica', horas: 45 },
-      ] },
-      { periodo: '4.º semestre', unidades: [
-        { nome: 'Exercício Final de Planeamento', horas: 90 },
-        { nome: 'Estágio prático em unidade operacional', horas: 120 },
-        { nome: 'Trabalho de Investigação Individual', horas: 90 },
-      ] },
-    ],
+    plano: planoDe('cscd-2026'),
     requisitos: [
-      'Posto de Major ou Tenente-Coronel.',
-      'Mínimo de 10 anos de serviço efetivo.',
-      'Licenciatura ou formação militar superior equivalente.',
-      'Parecer favorável do ramo de origem.',
-      'Aptidão física e médica comprovada.',
+      'Oficiais do Quadro Permanente das FAA e da PNA nomeados para o efeito (Circular n.º 003/CDPPQ/EMGFAA/09/2024).',
+      'Oficiais Generais/Almirantes: por decisão do CEMGFAA.',
+      'Coronéis/Capitães-de-Mar-e-Guerra: cargo orgânico compatível com o posto, idade até 55 anos (excepto Saúde Militar), perspectiva de progressão, licenciatura e Avaliação Individual favorável.',
+      'Curso de Comando e Estado-Maior (CCEM) e Curso de Promoção a Oficial Superior (CPOS), ou equivalentes.',
     ],
     saidas: [
-      'Oficial de estado-maior em comandos de ramo e regiões militares.',
-      'Chefe de repartição em órgãos centrais de defesa.',
-      'Assessor em missões internacionais e organizações regionais.',
+      'Gestão de recursos afectos à Segurança e Defesa Nacional.',
+      'Planeamento e condução do emprego de forças em operações terrestres.',
+      'Planeamento e gestão de operações militares de nível conjunto e combinado.',
+      'Apoio à decisão do planeamento estratégico e político-estratégico nacional.',
     ],
   },
   {
-    id: 'oficial-general',
-    sigla: 'CPOG',
-    nome: 'Curso de Promoção a Oficial General',
-    resumo: 'Forma oficiais superiores para o exercício de funções de comando e direção ao mais alto nível.',
+    id: 'curso-de-estado-maior-conjunto',
+    sigla: 'CEMC',
+    nome: 'Curso de Estado-Maior Conjunto',
+    resumo: 'Habilita Oficiais Superiores das FAA e da PNA para funções de nível operacional e estratégico em estados-maiores conjuntos.',
     imagem: Curso2,
-    duracao: '1 ano',
-    regime: 'Presencial, tempo integral',
-    vagas: '25',
-    destinatarios: 'Coronéis e capitães-de-mar-e-guerra',
-    coordenador: 'ana-baptista',
+    duracao: '10 meses',
+    regime: 'Presencial',
+    vagas: '35',
+    destinatarios: 'Oficiais Superiores das FAA e da PNA com elevado potencial; oficiais de países amigos de postos similares',
     apresentacao: [
-      'O Curso de Promoção a Oficial General prepara os coronéis que vão assumir funções de comando e direção ao mais alto nível das Forças Armadas e do Estado.',
-      'O programa privilegia a reflexão estratégica, a gestão de grandes organizações e a relação entre a defesa, a política externa e o desenvolvimento nacional.',
+      'O CEMC é uma formação que habilita os Oficiais Superiores das Forças Armadas Angolanas e da Polícia Nacional de Angola para o desempenho de funções ao nível Operacional e Estratégico, dirigida primariamente a quem demonstra elevado potencial no desempenho de funções ou cargos ao longo da carreira.',
+      'O curso organiza-se em quatro blocos — Administração, Operações Conjuntas e Combinadas, Estratégia e Trabalho de Investigação Individual — num total de 21 unidades curriculares, 1215 horas de trabalho e 81 unidades de crédito.',
+      'A classificação final é a média ponderada dos blocos: (2,5 × Administração + 1 × Operações Conjuntas e Combinadas + 2 × Estratégia + 1,5 × TII) / 7.',
     ],
     objetivos: [
-      'Formular e avaliar estratégias de segurança e defesa nacional.',
-      'Dirigir organizações militares complexas e os seus recursos.',
-      'Representar as Forças Armadas junto de instituições nacionais e internacionais.',
+      'Compreender e analisar o Direito Castrense e a Justiça e Disciplina nas Forças Armadas.',
+      'Compreender e aplicar competências de comunicação, relações públicas e protocolo.',
+      'Compreender os modelos, processos e técnicas de gestão pública, de pessoas e de recursos financeiros.',
+      'Compreender os processos logísticos conjuntos e a economia e indústria de defesa.',
+      'Compreender, aplicar e avaliar as competências de comando e de liderança.',
+      'Aplicar métodos quantitativos de apoio à decisão e planear operações conjuntas e combinadas.',
     ],
-    plano: [
-      { periodo: '1.º semestre', unidades: [
-        { nome: 'Segurança e Defesa Nacional', horas: 90 },
-        { nome: 'Geopolítica e Relações Internacionais', horas: 75 },
-        { nome: 'Direção Estratégica de Organizações', horas: 75 },
-      ] },
-      { periodo: '2.º semestre', unidades: [
-        { nome: 'Gestão Estratégica de Instituições Militares', horas: 75 },
-        { nome: 'Diplomacia de Defesa', horas: 60 },
-        { nome: 'Trabalho Final de Curso', horas: 90 },
-      ] },
-    ],
+    plano: planoDe('cemc-2026'),
     requisitos: [
-      'Posto de Coronel ou Capitão-de-Mar-e-Guerra.',
-      'Conclusão do Curso de Estado-Maior ou equivalente.',
-      'Nomeação pelo Estado-Maior General.',
+      'Oficiais do Quadro Permanente das FAA e da PNA nomeados para o efeito (Circular n.º 003/CDPPQ/EMGFAA/09/2024).',
+      'Cargo orgânico compatível com o posto, idade até 50 anos, perspectiva de progressão na carreira, licenciatura e Avaliação Individual favorável.',
+      'Curso de Comando e Estado-Maior (CCEM) do respectivo Ramo, ou equivalente.',
     ],
     saidas: [
-      'Comando de grandes unidades e regiões militares.',
-      'Direção de órgãos centrais do Ministério da Defesa.',
-      'Funções de adido de defesa e em organizações internacionais.',
+      'Gestão de recursos afectos à Segurança e Defesa Nacional.',
+      'Planeamento, organização e comando de forças em operações terrestres.',
+      'Planeamento de operações militares de nível conjunto e combinado.',
+      'Apoio à decisão do planeamento estratégico nacional.',
     ],
   },
   {
-    id: 'altos-estudos',
-    sigla: 'CAEM',
-    nome: 'Curso de Altos Estudos Militares',
-    resumo: 'Aprofunda a formação doutrinária e científica de quadros destinados a funções de topo institucional.',
+    id: 'curso-de-estrategia-e-arte-operativa',
+    sigla: 'CEAO',
+    nome: 'Curso de Estratégia e Arte Operativa',
+    resumo: 'Enriquece as competências de Oficiais Generais, Almirantes, Comissários e Entidades Públicas para o Comando, Direcção e Estado-Maior ao mais alto nível.',
     imagem: Curso3,
-    duracao: '18 meses',
-    regime: 'Presencial, tempo integral',
+    duracao: '10 meses',
+    regime: 'Presencial',
     vagas: '30',
-    destinatarios: 'Oficiais superiores e quadros civis da defesa',
-    coordenador: 'miguel-santos',
+    destinatarios: 'Oficiais Generais e Almirantes das FAA, Comissários da Polícia Nacional e Entidades Públicas designadas',
     apresentacao: [
-      'O Curso de Altos Estudos Militares é o programa de maior componente científica da Escola, dirigido a oficiais superiores e a quadros civis do setor da defesa.',
-      'Combina seminários avançados com um trabalho de investigação original, orientado por docentes do Departamento de Investigação.',
+      'O CEAO, aprovado pela Directiva n.º 10/22/07/CEMGFAA/2014, enriquece as competências científicas e técnico-profissionais necessárias ao desempenho de funções de Comando, Direcção, Chefia e Estado-Maior ao mais alto nível das respectivas estruturas, através de estudos aprofundados e debates sobre Segurança e Defesa Nacional.',
+      'O curso organiza-se em disciplinas nucleares, disciplinas complementares e o Trabalho de Investigação Individual, incluindo a Arte Operativa e Táctica e o Jogo de Comando e Estado-Maior.',
+      'A média final é (Nucleares × 0,60) + (Complementares × 0,15) + (TII × 0,25).',
     ],
     objetivos: [
-      'Aprofundar o conhecimento doutrinário e científico em estratégia e defesa.',
-      'Produzir investigação original com aplicação institucional.',
-      'Desenvolver capacidade de análise prospetiva e de aconselhamento.',
+      'Promover o entendimento comum dos problemas de segurança e de Defesa Nacional numa perspectiva político-estratégica e operacional.',
+      'Preparar os auditores como gestores de topo, aos níveis sistémico, conceptual e doutrinário.',
+      'Dominar a interacção entre os níveis político, estratégico e operacional.',
+      'Analisar e resolver problemas complexos com visão sistémica.',
     ],
-    plano: [
-      { periodo: '1.º semestre', unidades: [
-        { nome: 'Doutrina Militar Avançada', horas: 90 },
-        { nome: 'Teoria da Estratégia', horas: 60 },
-        { nome: 'Métodos de Investigação Avançados', horas: 60 },
-      ] },
-      { periodo: '2.º semestre', unidades: [
-        { nome: 'Investigação Científica Aplicada', horas: 90 },
-        { nome: 'Cooperação e Diplomacia de Defesa', horas: 60 },
-        { nome: 'Seminário de Estudos Prospetivos', horas: 45 },
-      ] },
-      { periodo: '3.º semestre', unidades: [
-        { nome: 'Dissertação final', horas: 180 },
-      ] },
-    ],
+    plano: planoDe('ceao-2026'),
     requisitos: [
-      'Oficial superior ou quadro civil da defesa com licenciatura.',
-      'Experiência mínima de 5 anos em funções de direção ou assessoria.',
-      'Apresentação de uma proposta de tema de investigação.',
+      'Oficiais Generais das FAA, Comissários da Polícia Nacional com o Curso Superior de Comando e Direcção ou equivalente, e Entidades Públicas designadas.',
+      'De preferência, o grau académico de licenciatura.',
+      'A título excepcional, auditores sem licenciatura e Coronéis com perspectiva de virem a ocupar altos cargos nas FAA.',
     ],
     saidas: [
-      'Assessoria estratégica em órgãos de soberania e defesa.',
-      'Docência e investigação em instituições de ensino superior militar.',
-      'Direção de centros de estudos e análise.',
+      'Funções de Comando, Direcção, Chefia e Estado-Maior ao mais alto nível das FAA, da Polícia Nacional e de entidades públicas ligadas à Defesa Nacional.',
+      'Domínio dos conhecimentos estratégicos e operacionais da segurança e defesa nacional.',
+    ],
+  },
+  {
+    id: 'curso-de-organizacao-do-asseguramento-moral-e-psicologico',
+    sigla: 'COAMP',
+    nome: 'Curso de Organização do Asseguramento Moral e Psicológico',
+    resumo: 'Curso de qualificação para Oficiais Generais e Superiores dos órgãos de Educação Patriótica das FAA nas técnicas do Asseguramento Moral e Psicológico.',
+    imagem: Curso1,
+    duracao: '10 meses',
+    regime: 'Presencial',
+    vagas: '—',
+    destinatarios: 'Oficiais Generais e Superiores (Coronéis/CMG) dos órgãos de Educação Patriótica das FAA',
+    apresentacao: [
+      'O COAMP, institucionalizado por Despacho do CEMGFAA de 25 de Junho de 2016, é um curso de qualificação que habilita os Oficiais Generais e Superiores dos órgãos de Educação Patriótica das Forças Armadas Angolanas.',
+      'Prepara Comandantes Adjuntos para a Educação Patriótica, chefes de repartição e oficiais dos órgãos de direcção, em quatro blocos de matérias — Nucleares, Complementares, de Táctica e Gerais — e no Trabalho de Fim do Curso.',
+      'A aprovação exige média final global igual ou superior a 10 valores; ouvido o Conselho de Curso, o Comandante da ESG pode ajustar a média final até ±0,25.',
+    ],
+    objetivos: [
+      'Conhecer em profundidade o Sistema de Asseguramento Moral e Psicológico nas FAA, aos níveis estratégico, operacional e táctico.',
+      'Aplicar a Psicologia Militar e dirigir a preparação psicológica das tropas para o combate.',
+      'Aplicar a tecnologia do fortalecimento da disciplina militar e da prevenção da criminalidade e do alcoolismo.',
+      'Planear o emprego de forças e meios do Asseguramento Moral e Psicológico no escalão Divisão/Brigada.',
+      'Aplicar o Processo de Decisão Militar e a doutrina das operações.',
+    ],
+    plano: planoDe('coamp-2026'),
+    requisitos: [
+      'Oficiais Generais e Superiores (Coronéis/CMG) dos órgãos de Educação Patriótica das FAA, nomeados para o efeito.',
+    ],
+    saidas: [
+      'Comandante Adjunto para a Educação Patriótica.',
+      'Chefe de repartição e oficial dos órgãos de direcção da Educação Patriótica.',
     ],
   },
 ]

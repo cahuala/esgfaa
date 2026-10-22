@@ -76,7 +76,9 @@ describe('anti-plágio: calibração (o que tem de apanhar e o que não pode acu
     let acusadas = 0
     for (const a of todos) {
       total += a.frases.length
-      acusadas += paraFrases(a.frases, todos.filter((b) => b.id !== a.id && b.texto !== a.texto)).length
+      // os cursos vêm dos mesmos planos-tipo da ESG (frases oficiais repetidas): não se comparam entre si
+      const mesmoModelo = (b) => a.id.startsWith('cursos#') && b.id.startsWith('cursos#')
+      acusadas += paraFrases(a.frases, todos.filter((b) => b.id !== a.id && b.texto !== a.texto && !mesmoModelo(b))).length
     }
     assert.ok(total > 100, String(total))
     assert.ok(acusadas / total < 0.02, `${acusadas} de ${total}`)

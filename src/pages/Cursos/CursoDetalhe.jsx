@@ -104,10 +104,12 @@ function CursoDetalhe() {
             </ol>
           </Seccao>
 
-          <Seccao id="plano" numero={numero('plano')} rotulo={t('Plano curricular')} titulo={t('Unidades curriculares por semestre')}>
+          <Seccao id="plano" numero={numero('plano')} rotulo={t('Plano curricular')} titulo={curso.plano.some((p) => /semestre/i.test(p.periodo)) ? t('Unidades curriculares por semestre') : t('Unidades curriculares, carga horária e créditos')}>
             <div className={detalhe.semestres}>
               {curso.plano.map((p) => {
                 const horas = p.unidades.reduce((s, u) => s + u.horas, 0)
+                const comCreditos = p.unidades.some((u) => u.creditos)
+                const creditos = p.unidades.reduce((s, u) => s + (Number(u.creditos) || 0), 0)
                 return (
                   <table key={p.periodo} className={ed.tabela}>
                     <caption>{p.periodo}</caption>
@@ -115,6 +117,7 @@ function CursoDetalhe() {
                       <tr>
                         <th scope="col">{t('Unidade curricular')}</th>
                         <th scope="col" className={ed.numero}>{t('Horas')}</th>
+                        {comCreditos && <th scope="col" className={ed.numero}>{t('UCréd')}</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -122,11 +125,12 @@ function CursoDetalhe() {
                         <tr key={u.nome}>
                           <th scope="row">{u.nome}</th>
                           <td className={ed.numero}>{u.horas}</td>
+                          {comCreditos && <td className={ed.numero}>{u.creditos ?? ''}</td>}
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr><th scope="row">{t('Total do semestre')}</th><td className={ed.numero}>{horas}</td></tr>
+                      <tr><th scope="row">{/semestre/i.test(p.periodo) ? t('Total do semestre') : t('Total')}</th><td className={ed.numero}>{horas}</td>{comCreditos && <td className={ed.numero}>{creditos}</td>}</tr>
                     </tfoot>
                   </table>
                 )

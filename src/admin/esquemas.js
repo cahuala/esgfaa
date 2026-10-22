@@ -181,10 +181,11 @@ export const COLECOES = {
       { nome: 'apresentacao', rotulo: tx('Apresentação (um parágrafo por linha da lista)'), tipo: 'listaTexto', multilinha: true },
       { nome: 'objetivos', rotulo: tx('Objetivos'), tipo: 'listaTexto' },
       { nome: 'plano', rotulo: tx('Plano curricular'), tipo: 'objetos', rotuloItem: tx('Período'), campos: [
-        { nome: 'periodo', rotulo: tx('Período (ex.: 1.º semestre)'), tipo: 'texto' },
+        { nome: 'periodo', rotulo: tx('Período ou bloco (ex.: 1.º semestre; Bloco I — Administração)'), tipo: 'texto' },
         { nome: 'unidades', rotulo: tx('Unidades curriculares'), tipo: 'objetos', rotuloItem: tx('Unidade'), campos: [
           { nome: 'nome', rotulo: tx('Unidade curricular'), tipo: 'texto', largura: 'doisTercos' },
           { nome: 'horas', rotulo: tx('Horas'), tipo: 'numero', largura: 'terco' },
+          { nome: 'creditos', rotulo: tx('UCréd'), tipo: 'numero', largura: 'terco' },
         ] },
       ] },
       { nome: 'requisitos', rotulo: tx('Requisitos de admissão'), tipo: 'listaTexto' },

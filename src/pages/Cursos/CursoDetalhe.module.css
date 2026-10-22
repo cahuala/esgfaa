@@ -38,6 +38,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
+  /* cada tabela com a sua altura (os blocos têm números de UC diferentes) */
+  align-items: start;
 }
 .total {
   margin-top: 20px;
