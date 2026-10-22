@@ -146,7 +146,7 @@ async function desenharSintese(doc, autoTable, p) {
   assinaturas(doc, y + 6, ['O Chefe da Repartição de Pessoal e Quadros'])
 }
 
-const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', confirmar: 'A confirmar' }
+const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', alerta: 'Alerta', confirmar: 'A confirmar' }
 
 /*
   Ficha de proposta (promoção, nomeação, graduação…) de cada pessoa da proposta, com fotografia, a situação

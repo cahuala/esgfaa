@@ -2,8 +2,9 @@ import { CATEGORIAS, EFECTIVIDADES, POSTOS, POSTOS_POR_GRAU, grupoDoPosto, nomeD
 
 /*
   Regras da carreira militar segundo a Lei n.º 13/18. Cada verificação devolve condições com o artigo da lei:
-  estado "ok" (cumpre), "falta" (não cumpre — impede) ou "confirmar" (depende de algo que o sistema não sabe,
-  ex.: existir vaga no quadro especial). Funções puras: a data de "hoje" entra sempre por parâmetro.
+  estado "ok" (cumpre), "falta" (não cumpre — impede), "alerta" (não cumpre, mas só avisa: quem propõe decide,
+  como no SIGP) ou "confirmar" (depende de algo que o sistema não sabe, ex.: existir vaga no quadro especial).
+  Funções puras: a data de "hoje" entra sempre por parâmetro.
 */
 const ANO = 365.2425 * 86_400_000
 export const anosEntre = (de, ate) => (de ? (new Date(ate) - new Date(de)) / ANO : null)
@@ -74,6 +75,8 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
   // situação (arts. 6.º, 99.º e 103.º)
   if (p.situacao !== 'activo') condicoes.push(c('situacao', 'Está no activo', 'art. 99.º', especial && mod === 'excepcional' ? 'ok' : 'falta', 'Na reserva ou na reforma só há promoção a título excepcional.'))
   else condicoes.push(c('situacao', 'Está no activo', 'art. 7.º', 'ok'))
+  // inactividade temporária: como no SIGP, não pode ser incluído numa proposta de promoção
+  if (p.situacao === 'activo' && p.efectividade === 'inactividade_temporaria' && !especial) condicoes.push(c('inactividade', 'Não está em inactividade temporária', 'art. 13.º', 'falta'))
   if (p.efectividade === 'licenca_ilimitada') condicoes.push(c('licenca', 'Não está em licença ilimitada', 'art. 103.º, n.º 1, c)', 'falta'))
   if (p.processoPendente) condicoes.push(c('processo', 'Não tem processo disciplinar ou criminal em curso', 'arts. 50.º, n.º 1, f) e 103.º, n.º 1, d)', especial ? 'confirmar' : 'falta'))
   else condicoes.push(c('processo', 'Não tem processo disciplinar ou criminal em curso', 'art. 50.º, n.º 1, f)', 'ok'))
@@ -82,22 +85,22 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
   if (despromocao && anosEntre(despromocao, hoje) < 2) condicoes.push(c('despromocao', 'Passaram 2 anos desde a despromoção', 'art. 63.º, n.º 1', 'falta', `Pode voltar a ser promovido a partir de ${dia(somarAnos(despromocao, 2))}.`))
 
   if (!especial) {
-    // condições gerais (art. 50.º)
-    condicoes.push(c('avaliacao', 'Desempenho e qualidades exigidas, com avaliação favorável', 'art. 50.º, n.º 1, a) a c)', p.avaliacaoFavoravel === false ? 'falta' : 'ok'))
-    condicoes.push(c('aptidao', 'Aptidão física e psíquica para o posto imediato', 'art. 50.º, n.º 1, d)', p.aptidaoFisica === false ? 'falta' : 'ok'))
+    // condições gerais (art. 50.º) e especiais (art. 51.º): como no SIGP, avisam mas não impedem a proposta
+    condicoes.push(c('avaliacao', 'Desempenho e qualidades exigidas, com avaliação favorável', 'art. 50.º, n.º 1, a) a c)', p.avaliacaoFavoravel === false ? 'alerta' : 'ok'))
+    condicoes.push(c('aptidao', 'Aptidão física e psíquica para o posto imediato', 'art. 50.º, n.º 1, d)', p.aptidaoFisica === false ? 'alerta' : 'ok'))
     // tempo mínimo no posto (art. 97.º / 121.º / 129.º)
     const minimo = p.fps === 'SMC' ? TEMPO_MINIMO_SMC[p.posto] : p.fps === 'SMO' ? (p.posto === 'aspirante' ? 1 : null) : TEMPO_MINIMO_QP[p.posto]
     if (minimo) {
       const t = tempoNoPosto(p, hoje)
       if (t === null) condicoes.push(c('tempo', `${minimo} ano(s) no posto de ${nomeDoPosto(p.posto, p.ramo)}`, p.fps === 'SMC' ? 'art. 121.º' : 'art. 97.º', 'confirmar', 'Falta a data de antiguidade no posto.'))
-      else condicoes.push(c('tempo', `${minimo} ano(s) no posto de ${nomeDoPosto(p.posto, p.ramo)}`, p.fps === 'SMC' ? 'art. 121.º' : p.fps === 'SMO' ? 'art. 129.º' : 'art. 97.º', t >= minimo ? 'ok' : 'falta',
+      else condicoes.push(c('tempo', `${minimo} ano(s) no posto de ${nomeDoPosto(p.posto, p.ramo)}`, p.fps === 'SMC' ? 'art. 121.º' : p.fps === 'SMO' ? 'art. 129.º' : 'art. 97.º', t >= minimo ? 'ok' : 'alerta',
         t >= minimo ? `Tem ${t.toFixed(1)} anos.` : `Tem ${t.toFixed(1)} anos; cumpre a ${dia(somarAnos(p.dataAntiguidadePosto, minimo))}.`))
     }
-    // curso de promoção (art. 52.º)
+    // curso de promoção (art. 52.º): não é obrigatório no sistema, só avisa (promoção com decisão fundamentada)
     const cursos = CURSO_EXIGIDO[destino]
     if (cursos) {
       const feito = temCurso(p, cursos)
-      condicoes.push(c('curso', cursos.map((k) => CURSOS_PROMOCAO[k]).join(' ou '), destino === 'brigadeiro' ? 'arts. 52.º e 104.º, n.º 4' : 'art. 52.º', feito ? 'ok' : 'falta', feito ? `${CURSOS_PROMOCAO[feito.chave]}, com aproveitamento.` : 'Sem registo do curso com aproveitamento.'))
+      condicoes.push(c('curso', cursos.map((k) => CURSOS_PROMOCAO[k]).join(' ou '), destino === 'brigadeiro' ? 'arts. 52.º e 104.º, n.º 4' : 'art. 52.º', feito ? 'ok' : 'alerta', feito ? `${CURSOS_PROMOCAO[feito.chave]}, com aproveitamento.` : 'Sem registo do curso com aproveitamento: a promoção pode seguir com decisão fundamentada.'))
     }
     // posto limite do quadro especial (arts. 84.º a 95.º)
     const qe = quadroEspecial(p.ramo, p.quadroEspecial)
@@ -112,7 +115,7 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
     condicoes.push(c('modalidade', mod === 'distincao' ? 'Promoção por distinção: dispensa as condições de promoção' : 'Promoção a título excepcional (deficiente das FAA ou reabilitação)', mod === 'distincao' ? 'art. 57.º' : 'art. 58.º', 'confirmar', 'Exige fundamentação e decisão da entidade competente.'))
   }
   const elegivel = condicoes.every((x) => x.estado !== 'falta')
-  return { elegivel, postoProposto: destino, modalidade: mod, modalidadeLegal: legal, condicoes }
+  return { elegivel, postoProposto: destino, modalidade: mod, modalidadeLegal: legal, condicoes, alertas: condicoes.filter((x) => x.estado === 'alerta').map((x) => x.texto) }
 }
 
 // graduação num posto superior (arts. 64.º a 67.º)

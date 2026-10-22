@@ -41,6 +41,7 @@ export default function Elegiveis() {
     { chave: 'tempo', titulo: 'No posto', valor: (l) => l.tempoNoPosto, mostrar: (l) => anos(l.tempoNoPosto), alinhar: 'end' },
     { chave: 'unidade', titulo: 'Unidade', valor: (l) => l.unidadeNome },
     { chave: 'estado', titulo: 'Situação', valor: (l) => (l.elegivel ? (l.emProposta ? 'Já em proposta' : 'Em condições') : `Falta: ${l.faltas.join('; ')}`), mostrar: (l) => (l.elegivel ? (l.emProposta ? <span className="badge bg-info">Já em proposta</span> : <span className="badge bg-success">Em condições</span>) : <span className="small text-danger">{l.faltas.join('; ')}</span>) },
+    { chave: 'alertas', titulo: 'Alertas', valor: (l) => (l.alertas ?? []).join('; '), mostrar: (l) => (l.alertas?.length ? <span className="small text-warning"><i className="fa fa-exclamation-triangle me-1" />{l.alertas.join('; ')}</span> : null) },
     { chave: 'confirmar', titulo: 'A confirmar', valor: (l) => l.confirmar.join('; '), mostrar: (l) => <span className="small text-muted">{l.confirmar.join('; ')}</span> },
   ], [tipo, marcados, pode])
 

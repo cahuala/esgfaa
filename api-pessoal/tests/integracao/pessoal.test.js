@@ -81,9 +81,12 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal(ev.postoAnteriorNome, 'Capitão')
   })
 
-  it('quem não cumpre a lei não segue para o escalão superior', async () => {
-    const p = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0003', dataAntiguidadePosto: '2024-01-01' })).expect(201)).body
-    const pr = (await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Sem tempo', itens: [{ pessoaId: p.id }] }).expect(201)).body
+  it('quem não cumpre a lei não segue para o escalão superior (sem tempo no posto só avisa)', async () => {
+    const aviso = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0903', dataAntiguidadePosto: '2024-01-01' })).expect(201)).body
+    const pa = (await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Sem tempo', itens: [{ pessoaId: aviso.id }] }).expect(201)).body
+    assert.equal(pa.naoCumprem, 0)
+    const p = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0003', processoPendente: true })).expect(201)).body
+    const pr = (await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Processo pendente', itens: [{ pessoaId: p.id }] }).expect(201)).body
     assert.equal(pr.naoCumprem, 1)
     const s = await adm.post(`/api/propostas/${pr.id}/submeter`)
     assert.equal(s.status, 400)

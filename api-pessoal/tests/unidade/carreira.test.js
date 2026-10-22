@@ -34,18 +34,23 @@ describe('Lei n.º 13/18: promoção', () => {
     assert.equal(estado(r, 'vaga'), 'confirmar')
   })
 
-  it('sem o tempo mínimo diz quando cumpre; sem o curso, não é elegível', () => {
+  it('sem o tempo mínimo ou sem o curso só avisa (como no SIGP): continua a poder ser proposto', () => {
     const r = verificarPromocao(militar({ dataAntiguidadePosto: '2021-06-01' }), { hoje: HOJE })
-    assert.equal(r.elegivel, false)
+    assert.equal(r.elegivel, true)
+    assert.equal(estado(r, 'tempo'), 'alerta')
     assert.match(r.condicoes.find((x) => x.id === 'tempo').detalhe, /cumpre a 2027-06/)
-    assert.equal(estado(verificarPromocao(militar({ cursos: [] }), { hoje: HOJE }), 'curso'), 'falta')
+    const semCurso = verificarPromocao(militar({ cursos: [] }), { hoje: HOJE })
+    assert.equal(estado(semCurso, 'curso'), 'alerta')
+    assert.equal(semCurso.elegivel, true)
+    assert.equal(semCurso.alertas.length, 1)
   })
 
-  it('exclusões: processo pendente, licença ilimitada, reserva, avaliação desfavorável, despromoção há menos de 2 anos', () => {
+  it('exclusões: processo pendente, licença ilimitada, reserva, inactividade temporária, despromoção há menos de 2 anos', () => {
     assert.equal(verificarPromocao(militar({ processoPendente: true }), { hoje: HOJE }).elegivel, false) // art. 103.º
     assert.equal(verificarPromocao(militar({ efectividade: 'licenca_ilimitada' }), { hoje: HOJE }).elegivel, false)
     assert.equal(verificarPromocao(militar({ situacao: 'reserva' }), { hoje: HOJE }).elegivel, false) // art. 99.º
-    assert.equal(verificarPromocao(militar({ avaliacaoFavoravel: false }), { hoje: HOJE }).elegivel, false) // art. 50.º
+    assert.equal(estado(verificarPromocao(militar({ avaliacaoFavoravel: false }), { hoje: HOJE }), 'avaliacao'), 'alerta') // art. 50.º: avisa
+    assert.equal(verificarPromocao(militar({ efectividade: 'inactividade_temporaria' }), { hoje: HOJE }).elegivel, false) // como no SIGP
     assert.equal(verificarPromocao(militar({ historico: [{ tipo: 'despromocao', data: '2025-12-01' }] }), { hoje: HOJE }).elegivel, false) // art. 63.º
     // a título excepcional, na reserva, pode
     assert.equal(estado(verificarPromocao(militar({ situacao: 'reserva' }), { hoje: HOJE, modalidade: 'excepcional' }), 'situacao'), 'ok')

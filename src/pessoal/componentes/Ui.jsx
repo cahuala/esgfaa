@@ -101,7 +101,7 @@ export function Aviso({ aviso, aoFechar }) {
   )
 }
 
-const ESTADO_CONDICAO = { ok: ['fa-check-circle', 'text-success', 'Cumpre'], falta: ['fa-times-circle', 'text-danger', 'Não cumpre'], confirmar: ['fa-question-circle', 'text-warning', 'Confirmar'] }
+const ESTADO_CONDICAO = { ok: ['fa-check-circle', 'text-success', 'Cumpre'], falta: ['fa-times-circle', 'text-danger', 'Não cumpre'], alerta: ['fa-exclamation-triangle', 'text-warning', 'Alerta'], confirmar: ['fa-question-circle', 'text-warning', 'Confirmar'] }
 // condições da lei (cada uma com o artigo) — promoção, graduação, nomeação, licença…
 export function Condicoes({ condicoes = [] }) {
   return (

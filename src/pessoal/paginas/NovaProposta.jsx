@@ -25,7 +25,8 @@ export default function NovaProposta() {
   const [curso, setCurso] = useState('')
   const [sel, setSel] = useState([]) // [{ pessoa, cargoId, postoProposto, modalidade, inicio, fim, justificacao }]
   const [activo, setActivo] = useState(null)
-  const [f, setF] = useState({ q: '', ramo: '', unidade: '', so: true, soLivres: false, qCargo: '' })
+  // na nomeação mostram-se, de início, só os cargos vagos (como no SIGP); «Só os vagos» desligado mostra todos
+  const [f, setF] = useState({ q: '', ramo: '', unidade: '', so: true, soLivres: true, qCargo: '' })
   const [aGuardar, setAGuardar] = useState(false)
 
   const promocao = tipo === 'promocao' || tipo === 'progressao'
@@ -260,7 +261,7 @@ export default function NovaProposta() {
                       <strong>{p.nome}</strong>
                       <span className="d-block text-muted">{p.postoNome || p.categoriaCivil || 'Civil'} · {p.nip || p.numeroAgente || '—'}{p.ramo && ` · ${p.ramo}`}</span>
                       <span className="d-block text-muted">{p.unidadeNome}{p.cargoNome && ` · ${p.cargoNome}`}</span>
-                      {promocao && (p.elegivel ? (p.emProposta ? <span className="badge bg-info">já em proposta</span> : <span className="text-success fw-semibold"><i className="fa fa-arrow-right me-1" />{p.proposto}</span>) : <span className="text-danger">Falta: {p.faltas.join('; ')}</span>)}
+                      {promocao && (p.elegivel ? (p.emProposta ? <span className="badge bg-info">já em proposta</span> : <span className="text-success fw-semibold"><i className="fa fa-arrow-right me-1" />{p.proposto}{p.alertas?.length > 0 && <span className="text-warning fw-normal ms-2" title={p.alertas.join('; ')}><i className="fa fa-exclamation-triangle me-1" />{p.alertas.join('; ')}</span>}</span>) : <span className="text-danger">Falta: {p.faltas.join('; ')}</span>)}
                     </span>
                   </label>
                 )
@@ -317,7 +318,7 @@ export default function NovaProposta() {
         {/* DIREITA: cargos (nomeação) */}
         {nomeacao && (
           <div className="col-xl-4">
-            <Painel titulo="Cargos" icone="fa-chair" corpo={false}>
+            <Painel titulo={f.soLivres ? `Cargos vagos (${resumoRamo.get('raiz')?.livres ?? 0} lugar(es))` : 'Cargos'} icone="fa-chair" corpo={false}>
               <div className="p-2 border-bottom">
                 <input type="search" className="form-control form-control-sm mb-2" placeholder="Procurar cargo ou unidade…" value={f.qCargo} onChange={(e) => setF({ ...f, qCargo: e.target.value })} aria-label="Procurar cargo" />
                 <label className="form-check small mb-0"><input type="checkbox" className="form-check-input" checked={f.soLivres} onChange={(e) => setF({ ...f, soLivres: e.target.checked })} /> <span className="form-check-label">Só os vagos</span></label>
