@@ -259,8 +259,8 @@ function ausencias(ctx, o) {
   const condenado = /conden/i
   const COLS = [
     ['Faltas', nada, true], ['Hospital', nada], ['M/Serviço', (p) => p.estado === 'em_missao'], ['Férias', comLicenca(['ferias'])], ['Dispensas', comLicenca(DISPENSAS)],
-    ['Doentes', comLicenca(['doenca'])], ['Aus/S.Just.', nada], ['Detidos', nada], ['Curso', ou((p) => p.estado === 'em_formacao', comLicenca(['estudos']))],
-    ['Transferidos', (p) => saiu(/./)(p) && !morto.test(p.motivoSaida) && !condenado.test(p.motivoSaida)], ['Mortos', saiu(morto)], ['Condenado', saiu(condenado)],
+    ['Doentes', comLicenca(['doenca'])], ['Aus/S.Just.', saiu(/deser/i)], ['Detidos', nada], ['Curso', ou((p) => p.estado === 'em_formacao', comLicenca(['estudos']))],
+    ['Transferidos', saiu(/transfer/i)], ['Mortos', saiu(morto)], ['Condenado', saiu(condenado)],
   ]
   const graus = [['Oficiais', oficiais], ['Sargentos', de(...SARG)], ['Cabos', de('primeiro_cabo', 'segundo_cabo')], ['Soldados', de('soldado')]]
   const nos = COLS.map(([t, f, comTotal]) => ({ t, filhos: [...graus.map(([g, fg]) => ({ t: g, f: (p) => fg(p) && f(p) })), ...(comTotal ? [{ t: 'Total', f: (p) => militar(p) && f(p) }] : [])] }))
@@ -270,7 +270,7 @@ function ausencias(ctx, o) {
   return {
     titulo: 'I — Ausências temporárias e definitivas', subtitulo: per.texto, orientacao: 'landscape', modelo: { numero: 'MOD.2/DPQ' },
     seccoes: [{ colunas: colunasDe(nos, 'Designação'), cabeca: cabeca(nos, { numerar: true, alto: 13 }), letra: 5.6, linhas: numerarLinhas([...ls, { rotulo: 'TOTAL GERAL', valores: somaLinhas(ls), negrito: true }]), contar: false }],
-    nota: 'Do sistema: missão e formação (estado do militar), férias, dispensas (casamento, luto, nascimento, parto, mérito), doença e estudos (licenças no período) e as saídas da Escola no período. Faltas, hospital, ausências sem justificação e detidos ainda não se registam no sistema.',
+    nota: 'Do sistema: missão e formação (estado do militar), férias, dispensas (casamento, luto, nascimento, parto, mérito), doença e estudos (licenças no período) e as saídas da Escola no período (transferência, falecimento, condenação, deserção — pelo motivo da saída). Faltas, hospital e detidos ainda não se registam no sistema.',
   }
 }
 

@@ -5,7 +5,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Erro, Modal } from '../componentes/Ui'
-import { gerarLote, vencimentoDaTabela } from '../docPessoal'
+import { gerarLote, registarEmissao, vencimentoDaTabela } from '../docPessoal'
 import { kwanzas } from '../docPessoal/base'
 import { brasaoPng, emblema } from '../documentos'
 import { documentoPdf, exportarExcel } from '../exportar'
@@ -267,7 +267,7 @@ function NovaDeclaracao({ aoEmitir }) {
         const obs = f.obs({ pais, outra: outra.trim() })
         return { tipo: m.tipo, dados: { ...m.dados, finalidade: obs, ...(obs ? {} : { semObs: true }), ...venc, ...(m.discente && curso ? { curso } : {}) } }
       })
-      const [emitidos, quem] = await Promise.all([api(`/pessoas/${p.id}/documentos-emitidos`, { metodo: 'POST', corpo: { documentos: escolhas } }), api('/definicoes/assinaturas')])
+      const [emitidos, quem] = await Promise.all([registarEmissao(api, p.id, escolhas), api('/definicoes/assinaturas')])
       // como no SIGP: regista-se o pedido; imprime-se logo, ou depois (fica em «Por imprimir»)
       if (imprimirLogo) {
         await gerarLote(escolhas.map((escolha, i) => ({ p, escolha, emitido: emitidos[i] })), quem, `declaracoes-${p.nome.split(' ')[0].toLowerCase()}-${hojeIso()}.pdf`)

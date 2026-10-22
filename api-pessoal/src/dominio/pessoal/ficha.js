@@ -12,6 +12,9 @@ export const HABILITACOES = { sem_instrucao: 'Sem instrução', primaria: 'Prim�
 export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }
 export const CATEGORIAS_DOCENTE = ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático', 'Instrutor', 'Formador']
 export const GENEROS = { M: 'Masculino', F: 'Feminino' }
+// motivos de saída da Escola (o texto é o que fica na ficha; «Outro» escreve-se à mão). Os mapas de ausências
+// contam por eles os transferidos, os mortos e os condenados.
+export const MOTIVOS_SAIDA = ['Transferência', 'Fim do curso', 'Passagem à reserva', 'Passagem à reforma', 'Exoneração', 'Fim do contrato', 'Rescisão por iniciativa do funcionário', 'Falecimento', 'Condenação', 'Deserção']
 export const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
 export const PROVINCIAS = ['Bengo', 'Benguela', 'Bié', 'Cabinda', 'Cuando', 'Cubango', 'Cuanza Norte', 'Cuanza Sul', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte', 'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire']
 

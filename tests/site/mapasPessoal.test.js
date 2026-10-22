@@ -71,4 +71,12 @@ describe('mapas de controlo estatístico', () => {
     const d2 = MAPAS.find((m) => m.id === 'mod2').fazer(c, { mes: '2026-10' })
     expect(linha(d2, 'DIRECÇÃO DE ENSINO').valores[9]).toBe(1)
   })
+
+  it('Ausências: transferidos, mortos e condenados pelo motivo da saída no período', () => {
+    const sai = (id, motivo, data = '2026-10-10') => P(id, 'tenente', 3, { ativo: false, dataSaidaEscola: `${data}T00:00:00.000Z`, motivoSaida: motivo })
+    const saidas = [sai(20, 'Transferência'), sai(21, 'Falecimento'), sai(22, 'Condenação'), sai(23, 'Passagem à reforma'), sai(24, 'Transferência', '2026-09-30')]
+    const d = MAPAS.find((m) => m.id === 'ausencias').fazer({ ...ctx, saidas }, { mes: '2026-10' })
+    const t = linha(d, 'TOTAL GERAL').valores
+    expect([t[coluna(d, 'Transferidos — Oficiais')], t[coluna(d, 'Mortos — Oficiais')], t[coluna(d, 'Condenado — Oficiais')]]).toEqual([1, 1, 1])
+  })
 })

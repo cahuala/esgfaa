@@ -171,4 +171,19 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const bruto = await amb.contentor.base.pessoa.findUnique({ where: { id: c.id }, select: { registo: true } })
     assert.match(bruto.registo, /^c1:/)
   })
+
+  it('como no SIGP: a mesma declaração em 24 h só sai se se confirmar; declarações e guias entram no expediente', async () => {
+    const q = (await adm.post('/api/pessoas').send(militar({ nip: 'DOC024', nome: 'Rui Expediente Saída' })).expect(201)).body
+    const decl = { tipo: 'declaracao_efectividade_vencimento', dados: { finalidade: 'Crédito bancário' } }
+    await adm.post(`/api/pessoas/${q.id}/documentos-emitidos`).send({ documentos: [decl, { tipo: 'guia_licenca', dados: { dias: 15, inicio: '2026-12-01' } }] }).expect(201)
+    const rep = await adm.post(`/api/pessoas/${q.id}/documentos-emitidos`).send({ documentos: [decl] })
+    assert.equal(rep.status, 409)
+    assert.match(rep.body.erro, /menos de 24 h.*\[repetir\]/)
+    // outra finalidade não é repetição; com «repetir» segue
+    await adm.post(`/api/pessoas/${q.id}/documentos-emitidos`).send({ documentos: [{ ...decl, dados: { finalidade: 'Visto' } }] }).expect(201)
+    await adm.post(`/api/pessoas/${q.id}/documentos-emitidos`).send({ documentos: [{ ...decl, dados: { ...decl.dados, repetir: true } }] }).expect(201)
+    const exp = await amb.contentor.base.expediente.findMany({ where: { assunto: { contains: q.nome } }, orderBy: { id: 'asc' } })
+    assert.deepEqual(exp.map((x) => [x.sentido, x.tipo, x.estado]), [['saida', 'declaracao', 'arquivado'], ['saida', 'guia', 'arquivado'], ['saida', 'declaracao', 'arquivado'], ['saida', 'declaracao', 'arquivado']])
+    assert.match(exp[0].protocolo, /^EXP-\d{4}-\d{4}$/)
+  })
 })

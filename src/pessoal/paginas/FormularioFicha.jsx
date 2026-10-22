@@ -321,7 +321,18 @@ export default function FormularioFicha() {
             </div>
             {id && !d.ativo && <>
               <Campo rotulo="Saiu da Escola em" col="col-md-3" ajuda="Vazio = hoje.">{data('dataSaidaEscola')}</Campo>
-              <Campo rotulo="Motivo da saída" col="col-md-5"><input className="form-control form-control-sm" list="motivos-saida" value={d.motivoSaida ?? ''} onChange={set('motivoSaida')} /><datalist id="motivos-saida">{['Transferência', 'Fim do curso', 'Passagem à reserva', 'Passagem à reforma', 'Exoneração', 'Fim do contrato', 'Rescisão por iniciativa do funcionário', 'Falecimento'].map((x) => <option key={x} value={x} />)}</datalist></Campo>
+              <Campo rotulo="Motivo da saída" col="col-md-5" ajuda="Conta nos mapas de ausências (transferidos, mortos, condenados).">
+                {(() => {
+                  const lista = ref.motivosSaida ?? []
+                  const outro = d.motivoSaida && !lista.includes(d.motivoSaida)
+                  return <>
+                    <select className="form-select form-select-sm" value={outro ? '__outro' : d.motivoSaida ?? ''} onChange={(e) => set('motivoSaida')(e.target.value === '__outro' ? ' ' : e.target.value)} aria-label="Motivo da saída">
+                      <option value="">—</option>{lista.map((x) => <option key={x}>{x}</option>)}<option value="__outro">Outro (escrever)</option>
+                    </select>
+                    {outro && <input className="form-control form-control-sm mt-1" placeholder="Qual?" value={d.motivoSaida.trimStart()} onChange={(e) => set('motivoSaida')(e.target.value || ' ')} />}
+                  </>
+                })()}
+              </Campo>
               <Campo rotulo="Destino" col="col-md-4" ajuda="Para onde foi (unidade, órgão…).">{txt('destinoSaida')}</Campo>
             </>}
             <Campo rotulo="Observações" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={d.observacoes} onChange={set('observacoes')} /></Campo>

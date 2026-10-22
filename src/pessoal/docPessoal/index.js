@@ -91,6 +91,21 @@ export const documentosPara = (p) => CATALOGO.filter((c) => !c.proposta && c.par
 const MODELOS_PROPOSTA = { promocao: ['processo_promocao', 'ficha_avaliacao'], graduacao: ['processo_promocao', 'ficha_avaliacao'], nomeacao: ['proposta_nomeacao', 'ficha_avaliacao'] }
 export const documentosDaProposta = (tipo) => (MODELOS_PROPOSTA[tipo] ?? []).map((t) => CATALOGO.find((c) => c.tipo === t))
 
+/*
+  Regista no servidor os documentos a emitir. Se uma declaração igual (mesma finalidade) já saiu há menos de
+  24 h, o servidor recusa; pergunta-se se é para emitir outra vez (como no SIGP) e, se sim, repete com «repetir».
+*/
+export async function registarEmissao(api, pessoaId, escolhas) {
+  const enviar = (docs) => api(`/pessoas/${pessoaId}/documentos-emitidos`, { metodo: 'POST', corpo: { documentos: docs } })
+  try {
+    return await enviar(escolhas)
+  } catch (e) {
+    if (!/\[repetir\]/.test(e.message)) throw e
+    if (!window.confirm(`${e.message.replace(' [repetir]', '')}\n\nEmitir outra vez?`)) throw new Error('Emissão cancelada.', { cause: e })
+    return enviar(escolhas.map((x) => ({ ...x, dados: { ...x.dados, repetir: true } })))
+  }
+}
+
 // escolhas: [{ tipo, dados }]; emitidos: o que o servidor registou (com o número das declarações)
 export async function gerarDocumentosPessoais(p, escolhas, emitidos, quem) {
   const nome = `${M(p.nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase()}-documentos-${new Date().toISOString().slice(0, 10)}.pdf`

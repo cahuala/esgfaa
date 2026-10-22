@@ -2,7 +2,7 @@ import { invalido, naoEncontrado, semPermissao } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { exigir, pode } from './sessao.js'
 
-export const TIPOS_EXPEDIENTE = { oficio: 'Ofício', nota: 'Nota', informacao: 'Informação', requerimento: 'Requerimento', relatorio: 'Relatório', ordem: 'Ordem de serviço', convocatoria: 'Convocatória', circular: 'Circular', parecer: 'Parecer', proposta: 'Proposta', extracto: 'Extracto', outro: 'Outro' }
+export const TIPOS_EXPEDIENTE = { oficio: 'Ofício', nota: 'Nota', informacao: 'Informação', requerimento: 'Requerimento', relatorio: 'Relatório', ordem: 'Ordem de serviço', convocatoria: 'Convocatória', circular: 'Circular', parecer: 'Parecer', proposta: 'Proposta', extracto: 'Extracto', declaracao: 'Declaração', guia: 'Guia de marcha', outro: 'Outro' }
 export const CLASSIFICACOES = { normal: 'Normal', urgente: 'Urgente', confidencial: 'Confidencial' }
 export const SENTIDOS = { interno: 'Interno', entrada: 'Entrada (de fora da Escola)', saida: 'Saída (para fora da Escola)' }
 const FISICO = { nao_aplica: 'Sem original físico', a_enviar: 'Original por entregar', entregue: 'Original entregue (a confirmar)', recebido: 'Original recebido' }

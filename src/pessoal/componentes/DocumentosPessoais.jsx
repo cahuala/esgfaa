@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api'
 import { sinteseBiografica } from '../documentos'
-import { CATALOGO, GRUPOS_DOC, documentosPara, gerarDocumentosPessoais } from '../docPessoal'
+import { CATALOGO, GRUPOS_DOC, documentosPara, gerarDocumentosPessoais, registarEmissao } from '../docPessoal'
 import { Modal } from './Ui'
 
 /*
@@ -62,7 +62,7 @@ export default function DocumentosPessoais({ p, aoFechar, aoEmitir }) {
         return { tipo: c.tipo, dados: Object.fromEntries(Object.entries(sel[c.tipo]).filter(([k]) => !['aviso', 'calculado'].includes(tipoDe(k))).map(([k, v]) => [k, tipoDe(k) === 'numero' && v !== '' ? Number(v) : v])) }
       })
       if (escolhas.length) {
-        const [emitidos, quem] = await Promise.all([api(`/pessoas/${p.id}/documentos-emitidos`, { metodo: 'POST', corpo: { documentos: escolhas } }), api('/definicoes/assinaturas')])
+        const [emitidos, quem] = await Promise.all([registarEmissao(api, p.id, escolhas), api('/definicoes/assinaturas')])
         await gerarDocumentosPessoais(p, escolhas, emitidos, quem)
       }
       if (comSintese) await sinteseBiografica(p)
