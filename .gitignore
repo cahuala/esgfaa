@@ -46,3 +46,5 @@ dist-pessoal
 
 # planos e agendas dos cursos (documentos internos da ESG): não vão para o repositório público
 docs/PLANOS*
+# quadro orgânico real da ESG (documento interno: não vai para o repositório público)
+docs/QUADRO ORGANICO*
