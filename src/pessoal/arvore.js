@@ -28,4 +28,4 @@ export function useArvore() {
   }, [dados])
 }
 
-export const ICONE_UNIDADE = { direccao: 'fa-landmark', gabinete: 'fa-user-tie', departamento: 'fa-building', reparticao: 'fa-briefcase', seccao: 'fa-folder', servico: 'fa-concierge-bell', companhia: 'fa-shield-alt', curso: 'fa-user-graduate', outro: 'fa-building' }
+export const ICONE_UNIDADE = { comando: 'fa-star', direccao: 'fa-landmark', gabinete: 'fa-user-tie', departamento: 'fa-building', reparticao: 'fa-briefcase', seccao: 'fa-folder', servico: 'fa-concierge-bell', batalhao: 'fa-flag', companhia: 'fa-shield-alt', pelotao: 'fa-users', curso: 'fa-user-graduate', outro: 'fa-building' }

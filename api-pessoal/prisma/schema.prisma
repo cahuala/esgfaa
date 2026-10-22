@@ -56,7 +56,7 @@ model Unidade {
   id           Int          @id @default(autoincrement())
   nome         String
   sigla        String       @default("")
-  // como no SIGP (U/E/O): direccao | gabinete | departamento | reparticao | seccao | servico | companhia | curso | outro
+  // como no SIGP (U/E/O): comando | direccao | gabinete | departamento | reparticao | seccao | servico | batalhao | companhia | pelotao | curso | outro
   tipo         String       @default("outro")
   paiId        Int?         @map("pai_id")
   ordem        Int          @default(0)

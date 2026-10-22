@@ -10,7 +10,7 @@ import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../c
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0)
 const corPct = (p) => (p >= 80 ? '#2e7d32' : p >= 50 ? '#e65100' : '#c62828')
-const COR_TIPO = { direccao: ['#ede7f6', '#5e35b1'], gabinete: ['#e8eaf6', '#3949ab'], departamento: ['#e3f2fd', '#1565c0'], reparticao: ['#e0f2f1', '#00796b'], seccao: ['#f1f8e9', '#558b2f'], servico: ['#fff3e0', '#e65100'], companhia: ['#fbe9e7', '#bf360c'], curso: ['#fce4ec', '#ad1457'], outro: ['#eceff1', '#546e7a'] }
+const COR_TIPO = { comando: ['#fff8e1', '#ff8f00'], batalhao: ['#efebe9', '#5d4037'], pelotao: ['#f3e5f5', '#8e24aa'], direccao: ['#ede7f6', '#5e35b1'], gabinete: ['#e8eaf6', '#3949ab'], departamento: ['#e3f2fd', '#1565c0'], reparticao: ['#e0f2f1', '#00796b'], seccao: ['#f1f8e9', '#558b2f'], servico: ['#fff3e0', '#e65100'], companhia: ['#fbe9e7', '#bf360c'], curso: ['#fce4ec', '#ad1457'], outro: ['#eceff1', '#546e7a'] }
 const procurar = (n, id) => (n.id === id ? n : n.filhos.reduce((r, f) => r ?? procurar(f, id), null))
 const caminhoAte = (n, id, c = []) => (n.id === id ? [...c, n] : n.filhos.reduce((r, f) => r ?? caminhoAte(f, id, [...c, n]), null))
 const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -159,34 +159,24 @@ export default function Organica() {
             </div>
           </Painel>
         )}
-        <Painel titulo={`Cargos${d ? ` (${d.grupos.reduce((n, g) => n + g.cargos.length, 0)})` : ''}`} icone="fa-chair" corpo={false}>
+        <Painel titulo={`Cargos${d ? ` (${d.cargos.length})` : ''}`} icone="fa-chair" corpo={false}>
           {!d ? <div className="panel-body"><Carregando /></div> : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
                 <thead><tr><th>Cargo</th><th>Posto / categoria</th><th className="text-center">Efectivo</th><th className="text-center">Ocupado</th><th>Quem ocupa</th>{gerir && <th />}</tr></thead>
-                {d.grupos.map((g) => (
-                  <tbody key={g.id}>
-                    {(g.id !== atualId || d.grupos.length > 1) && (
-                      <tr className="pes-org-grupo"><td colSpan={gerir ? 6 : 5} style={{ paddingLeft: 12 + g.nivel * 18 }}>
-                        <i className={`fa ${ICONE_UNIDADE[g.tipo] ?? 'fa-building'} me-2 text-muted`} />
-                        {g.id === atualId ? <strong>{g.nome}</strong> : <Link to={`/organica/${g.id}`}><strong>{g.nome}</strong></Link>}
-                        {g.sigla && <span className="pes-org-sigla ms-2">{g.sigla}</span>}
-                        <span className="small text-muted ms-2">{g.cargos.reduce((n, c) => n + c.ocupados, 0)}/{g.cargos.reduce((n, c) => n + c.vagas, 0)} ocupados</span>
-                      </td></tr>
-                    )}
-                    {g.cargos.map((c) => (
-                      <tr key={c.id}>
-                        <td style={{ paddingLeft: 12 + g.nivel * 18 }}><strong>{c.nome}</strong><div className="small text-muted">{c.funcaoNome}</div></td>
-                        <td className="small">{c.postoRequeridoNome}</td>
-                        <td className="text-center">{c.vagas}</td>
-                        <td className="text-center"><span className={`badge ${c.ocupados >= c.vagas ? 'bg-success' : c.ocupados ? 'bg-warning text-dark' : 'bg-danger'}`}>{c.ocupados ? c.ocupados : 'VAGO'}</span>{c.excesso > 0 && <div className="small text-danger">+{c.excesso}</div>}</td>
-                        <td>{c.ocupantes.map((o) => <Link key={o.id} to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>)}{!c.ocupantes.length && <span className="text-muted small">—</span>}</td>
-                        {gerir && <td className="text-end"><button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setModal({ cargo: c })} title="Editar cargo"><i className="fa fa-pencil-alt" /></button></td>}
-                      </tr>
-                    ))}
-                  </tbody>
-                ))}
-                {!d.grupos.length && <tbody><tr><td colSpan={6} className="text-center text-muted py-4">Sem cargos nesta unidade.{gerir && ' Use «+ Cargo».'}</td></tr></tbody>}
+                <tbody>
+                  {d.cargos.map((c) => (
+                    <tr key={c.id}>
+                      <td><strong>{c.nome}</strong><div className="small text-muted">{c.funcaoNome}</div></td>
+                      <td className="small">{c.postoRequeridoNome}</td>
+                      <td className="text-center">{c.vagas}</td>
+                      <td className="text-center"><span className={`badge ${c.ocupados >= c.vagas ? 'bg-success' : c.ocupados ? 'bg-warning text-dark' : 'bg-danger'}`}>{c.ocupados ? c.ocupados : 'VAGO'}</span>{c.excesso > 0 && <div className="small text-danger">+{c.excesso}</div>}</td>
+                      <td>{c.ocupantes.map((o) => <Link key={o.id} to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>)}{!c.ocupantes.length && <span className="text-muted small">—</span>}</td>
+                      {gerir && <td className="text-end"><button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setModal({ cargo: c })} title="Editar cargo"><i className="fa fa-pencil-alt" /></button></td>}
+                    </tr>
+                  ))}
+                </tbody>
+                {!d.cargos.length && <tbody><tr><td colSpan={6} className="text-center text-muted py-4">{no.filhos.length ? 'Os cargos estão nas subunidades: abra-as acima.' : 'Sem cargos nesta unidade.'}{gerir && !no.filhos.length && ' Use «+ Cargo».'}</td></tr></tbody>}
               </table>
             </div>
           )}

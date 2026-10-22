@@ -7,7 +7,7 @@ const CURTOS = { oficial_general: 'Of. Gen.', oficial_superior: 'Of. Sup.', ofic
 export const COLUNAS_PLANEAMENTO = [...Object.entries(CATEGORIAS).map(([k, v]) => [k, CURTOS[k], v.nome]), ['civil', 'Civis', 'Pessoal civil']]
 const categoriaDe = (p) => (p.tipo === 'civil' ? 'civil' : POSTOS[p.posto]?.categoria ?? null)
 const categoriaDoCargo = (c) => (c.tipo === 'civil' || !c.postoRequerido ? 'civil' : POSTOS[c.postoRequerido].categoria)
-export const TIPOS_UNIDADE = { direccao: 'Direcção', gabinete: 'Gabinete', departamento: 'Departamento', reparticao: 'Repartição', seccao: 'Secção', servico: 'Serviço', companhia: 'Companhia', curso: 'Curso', outro: 'Outro' }
+export const TIPOS_UNIDADE = { comando: 'Comando', direccao: 'Direcção', gabinete: 'Gabinete', departamento: 'Departamento', reparticao: 'Repartição', seccao: 'Secção', servico: 'Serviço', batalhao: 'Batalhão', companhia: 'Companhia', pelotao: 'Pelotão', curso: 'Curso', outro: 'Outro' }
 // os lugares da orgânica como no Mapa de Controlo Estatístico (Mod. 2): oficiais, sargentos, cabos, soldados e civis
 const grausVazio = () => ({ oficiais: 0, sargentos: 0, cabos: 0, soldados: 0, civil: 0 })
 function grauDoCargo(c) {
