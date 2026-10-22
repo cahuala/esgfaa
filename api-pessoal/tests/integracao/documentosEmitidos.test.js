@@ -52,7 +52,7 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     assert.equal(cor.caixaSS, 16260.26)
     assert.equal(qp.linhas.find((l) => l.posto === 'brigadeiro').comandoChefia, 0)
     const smo = t.grupos.find((g) => g.fps === 'SMO')
-    assert.deepEqual(smo.linhas.map((l) => l.posto), ['aspirante', 'subsargento', 'segundo_cabo', 'soldado'])
+    assert.deepEqual(smo.linhas.map((l) => l.posto), ['aspirante', 'subsargento', 'primeiro_cabo', 'segundo_cabo', 'soldado'])
     assert.equal(smo.linhas[0].comandoChefia, 0)
     const novo = (await adm.put('/api/tabela-salarial/coronel').send({ base: 400000 }).expect(200)).body
     assert.equal(novo.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'coronel').condicaoMilitar, 120000)

@@ -113,7 +113,7 @@ const OG = ['general', 'general_exercito', 'tenente_general', 'brigadeiro']
 const OS = ['coronel', 'tenente_coronel', 'major']
 const SUB = ['tenente', 'subtenente', 'aspirante']
 const SARG = ['sargento_maior', 'sargento_chefe', 'sargento_ajudante', 'primeiro_sargento', 'segundo_sargento', 'subsargento']
-const PRACAS = ['segundo_cabo', 'soldado']
+const PRACAS = ['primeiro_cabo', 'segundo_cabo', 'soldado']
 const oficiais = de(...OG, ...OS, 'capitao', ...SUB)
 // o General (e o General de Exército) só aparece quando há algum: os Mod. 3 e 5 não têm a coluna
 const generais = (ctx) => ctx.pessoas.some(de('general', 'general_exercito'))
@@ -125,7 +125,7 @@ function grausSimples(comGeneral) {
     { t: 'Of. subalternos', filhos: [{ t: 'Tenente', f: de('tenente') }, { t: 'Sub-Tenente', f: de('subtenente') }, { t: 'Aspirante', f: de('aspirante') }, { t: 'Soma', f: de(...SUB) }] },
     { t: 'Total oficiais', f: oficiais },
     { t: 'Sargentos', filhos: [{ t: 'Sgt. Maior', f: de('sargento_maior') }, { t: 'Sgt. Chefe', f: de('sargento_chefe') }, { t: 'Sgt. Ajudante', f: de('sargento_ajudante') }, { t: '1.º Sargento', f: de('primeiro_sargento') }, { t: '2.º Sargento', f: de('segundo_sargento') }, { t: 'Sub-Sargento', f: de('subsargento') }, { t: 'T. Sargentos', f: de(...SARG) }] },
-    { t: 'Praças', filhos: [{ t: '1.º Cabo', f: nada }, { t: '2.º Cabo', f: de('segundo_cabo') }, { t: 'Soldado', f: de('soldado') }, { t: 'Total praças', f: de(...PRACAS) }] },
+    { t: 'Praças', filhos: [{ t: '1.º Cabo', f: de('primeiro_cabo') }, { t: '2.º Cabo', f: de('segundo_cabo') }, { t: 'Soldado', f: de('soldado') }, { t: 'Total praças', f: de(...PRACAS) }] },
     { t: 'Total geral', f: militar },
   ]
 }
@@ -147,7 +147,7 @@ function grausMod3(comGeneral) {
       { t: 'Sub-Sargento', f: de('subsargento') }, { t: 'T. Sargentos', f: de(...SARG) },
     ] },
     { t: 'Praças', filhos: [
-      { t: '1.º Cabo', f: nada },
+      { t: '1.º Cabo', f: de('primeiro_cabo') },
       { t: '2.º Cabo', filhos: [{ t: 'SMC', f: (p) => de('segundo_cabo')(p) && !smo(p) }, { t: 'SMO', f: (p) => de('segundo_cabo')(p) && smo(p) }] },
       { t: 'Soldados', filhos: [{ t: 'SMC', f: (p) => de('soldado')(p) && !smo(p) }, { t: 'SMO', f: (p) => de('soldado')(p) && smo(p) }] },
       { t: 'T. Praças', f: de(...PRACAS) },
@@ -165,7 +165,7 @@ function mod2(ctx, o) {
   const per = periodo(o.mes)
   const deLicenca = new Set((ctx.licencas ?? []).filter((x) => x.inicio <= per.fim && x.fim >= per.fim).map((x) => x.pessoaId))
   const presente = (p) => !deLicenca.has(p.id) && !AUSENTES.includes(p.estado)
-  const g = (l) => { const m = l.filter(militar); return [m.filter(oficiais).length, m.filter(de(...SARG)).length, m.filter(de('segundo_cabo')).length, m.filter(de('soldado')).length, m.length, l.length - m.length] }
+  const g = (l) => { const m = l.filter(militar); return [m.filter(oficiais).length, m.filter(de(...SARG)).length, m.filter(de('primeiro_cabo', 'segundo_cabo')).length, m.filter(de('soldado')).length, m.length, l.length - m.length] }
   const valores = (org, real, fis) => {
     const [o1, o2, o3, o4, ot, oc] = org
     const [r1, r2, r3, r4, rt, rc] = g(real)
@@ -262,7 +262,7 @@ function ausencias(ctx, o) {
     ['Doentes', comLicenca(['doenca'])], ['Aus/S.Just.', nada], ['Detidos', nada], ['Curso', ou((p) => p.estado === 'em_formacao', comLicenca(['estudos']))],
     ['Transferidos', (p) => saiu(/./)(p) && !morto.test(p.motivoSaida) && !condenado.test(p.motivoSaida)], ['Mortos', saiu(morto)], ['Condenado', saiu(condenado)],
   ]
-  const graus = [['Oficiais', oficiais], ['Sargentos', de(...SARG)], ['Cabos', de('segundo_cabo')], ['Soldados', de('soldado')]]
+  const graus = [['Oficiais', oficiais], ['Sargentos', de(...SARG)], ['Cabos', de('primeiro_cabo', 'segundo_cabo')], ['Soldados', de('soldado')]]
   const nos = COLS.map(([t, f, comTotal]) => ({ t, filhos: [...graus.map(([g, fg]) => ({ t: g, f: (p) => fg(p) && f(p) })), ...(comTotal ? [{ t: 'Total', f: (p) => militar(p) && f(p) }] : [])] }))
   const todos = [...ctx.pessoas, ...(ctx.saidas ?? [])]
   const { linhas } = repartir({ ...ctx, pessoas: todos.filter(militar) })
@@ -284,7 +284,7 @@ function grausIdade(tempo) {
     { t: 'Of. subalternos', filhos: [{ t: 'Tenente', f: de('tenente') }, { t: 'Subtte', f: de('subtenente') }, { t: 'Asp.', f: de('aspirante') }, { t: 'Total', f: de(...SUB) }] },
     { t: 'T.Oficiais', f: oficiais },
     { t: 'Sargentos', filhos: [{ t: 'Sgt.Maior', f: de('sargento_maior') }, { t: 'Sgt.Chefe', f: de('sargento_chefe') }, { t: 'Sgt.Ajud.', f: de('sargento_ajudante') }, { t: '1.º Sgt', f: de('primeiro_sargento') }, { t: '2.º Sgt', f: de('segundo_sargento') }, { t: 'Sub.Sgt', f: de('subsargento') }, { t: 'Total', f: de(...SARG) }] },
-    { t: 'Praças', filhos: [{ t: '1.º Cabo', f: nada }, { t: '2.º Cabo', f: de('segundo_cabo') }, { t: 'Soldado', f: de('soldado') }, { t: 'Total', f: de(...PRACAS) }] },
+    { t: 'Praças', filhos: [{ t: '1.º Cabo', f: de('primeiro_cabo') }, { t: '2.º Cabo', f: de('segundo_cabo') }, { t: 'Soldado', f: de('soldado') }, { t: 'Total', f: de(...PRACAS) }] },
     { t: 'Cadetes', f: nada }, { t: 'Recrutas', f: nada },
     { t: 'Total geral', f: militar },
   ]

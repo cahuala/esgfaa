@@ -11,7 +11,7 @@ import { FORMAS_SERVICO, POSTOS } from './hierarquia.js'
   O vencimento real de cada militar (folha de vencimentos) escreve-se na ficha; a tabela serve de referência.
 */
 export const VENCIMENTO_BASE = {
-  soldado: 120000, segundo_cabo: 126000, subsargento: 144000, segundo_sargento: 162000, primeiro_sargento: 180000,
+  soldado: 120000, segundo_cabo: 126000, primeiro_cabo: 135000, subsargento: 144000, segundo_sargento: 162000, primeiro_sargento: 180000,
   sargento_ajudante: 198000, sargento_chefe: 216000, sargento_maior: 234000, aspirante: 234000, subtenente: 270000,
   tenente: 288000, capitao: 306000, major: 324000, tenente_coronel: 342000, coronel: 360000, brigadeiro: 378000,
   tenente_general: 396000, general: 414000, general_exercito: 432000,
@@ -22,11 +22,12 @@ export const PERC_CAIXA_SS = PERCENTAGENS.caixaSS
 
 // postos de cada forma de prestação de serviço (Lei n.º 13/18): o SMO só tem praças, subsargento e aspirante
 // (art. 127.º); o SMC chega a 1.º Sargento e a Tenente (art. 120.º); praças e subsargento só no SMO
-const GRAUS_FPS = {
-  QP: [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-  SMC: [4, 5, 10, 11],
-  SMO: [1, 2, 3, 9],
-  SMR: [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+const QP_POSTOS = ['segundo_sargento', 'primeiro_sargento', 'sargento_ajudante', 'sargento_chefe', 'sargento_maior', 'subtenente', 'tenente', 'capitao', 'major', 'tenente_coronel', 'coronel', 'brigadeiro', 'tenente_general', 'general', 'general_exercito']
+const POSTOS_FPS = {
+  QP: QP_POSTOS,
+  SMC: ['segundo_sargento', 'primeiro_sargento', 'subtenente', 'tenente'],
+  SMO: ['soldado', 'segundo_cabo', 'primeiro_cabo', 'subsargento', 'aspirante'],
+  SMR: QP_POSTOS,
 }
 
 const arred = (v) => Math.round(v * 100) / 100
@@ -47,8 +48,8 @@ export function vencimentoDoPosto(posto, fps = 'QP', bases = {}) {
 
 // a tabela inteira, agrupada por forma de prestação de serviço, do posto mais alto ao mais baixo
 export function tabelaSalarial(bases = {}) {
-  return Object.entries(GRAUS_FPS).map(([fps, graus]) => ({
+  return Object.entries(POSTOS_FPS).map(([fps, postos]) => ({
     fps, nome: FORMAS_SERVICO[fps].nome,
-    linhas: Object.values(POSTOS).filter((p) => graus.includes(p.grau)).sort((a, b) => b.grau - a.grau).map((p) => ({ posto: p.id, ...vencimentoDoPosto(p.id, fps, bases) })),
+    linhas: Object.values(POSTOS).filter((p) => postos.includes(p.id)).sort((a, b) => b.grau - a.grau).map((p) => ({ posto: p.id, ...vencimentoDoPosto(p.id, fps, bases) })),
   }))
 }

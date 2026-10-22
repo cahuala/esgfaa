@@ -61,4 +61,14 @@ describe('mapas de controlo estatístico', () => {
     expect(tempo.linhas.find((l) => l.rotulo === '24 - 27').valores.at(-1)).toBe(5)
     expect(tempo.linhas.find((l) => l.rotulo === 'Não declarados').valores.at(-1)).toBe(1)
   })
+
+  it('o 1.º Cabo tem a sua coluna e conta nas praças e nos cabos do Mod. 2', () => {
+    const c = { ...ctx, pessoas: [P(9, 'primeiro_cabo', 3, { fps: 'SMO' })] }
+    const d3 = MAPAS.find((m) => m.id === 'mod3').fazer(c, { mes: '2026-10' })
+    const t = linha(d3, 'TOTAL GERAL').valores
+    expect(t[coluna(d3, 'Praças — 1.º Cabo')]).toBe(1)
+    expect(t[coluna(d3, 'Praças — T. Praças')]).toBe(1)
+    const d2 = MAPAS.find((m) => m.id === 'mod2').fazer(c, { mes: '2026-10' })
+    expect(linha(d2, 'DIRECÇÃO DE ENSINO').valores[9]).toBe(1)
+  })
 })

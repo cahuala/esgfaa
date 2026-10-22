@@ -124,7 +124,7 @@ export function problemaNaFicha(p) {
     if (p.situacao === 'activo' && p.efectividade && !EFECTIVIDADES[p.efectividade]) return ['efectividade', 'Efectividade desconhecida.']
     if (p.estado && !ESTADOS[p.estado]) return ['estado', 'Estado desconhecido.']
     if (p.quadroEspecial && !quadroEspecial(p.ramo, p.quadroEspecial)) return ['quadroEspecial', 'Esse quadro especial não existe no ramo.']
-    if (['aspirante', 'subsargento', 'soldado', 'segundo_cabo'].includes(p.posto) && p.fps === 'QP') return ['posto', 'Esse posto é do Serviço Militar Obrigatório (art. 127.º).']
+    if (['aspirante', 'subsargento', 'soldado', 'segundo_cabo', 'primeiro_cabo'].includes(p.posto) && p.fps === 'QP') return ['posto', 'Esse posto é do Serviço Militar Obrigatório (art. 127.º).']
   } else {
     if (p.vinculo === 'domiciliar' && !p.militarAlocadoId) return ['militarAlocadoId', 'Indique o oficial a quem a empregada(o) domiciliar está afecta(o).']
     if (p.carreiraCivil && !CARREIRAS_CIVIS[p.carreiraCivil]) return ['carreiraCivil', 'Carreira desconhecida.']

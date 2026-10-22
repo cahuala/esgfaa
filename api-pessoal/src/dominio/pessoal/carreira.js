@@ -15,12 +15,13 @@ export const idade = (p, hoje) => (p.dataNascimento ? Math.floor(anosEntre(p.dat
 export const tempoServico = (p, hoje) => anosEntre(p.dataIngresso, hoje)
 export const tempoNoPosto = (p, hoje) => anosEntre(p.dataAntiguidadePosto, hoje)
 
-// tempo mínimo no posto para acesso ao imediato, no Quadro Permanente (art. 97.º) — pelo grau do posto atual
-const TEMPO_MINIMO_QP = { 10: 1, 11: 4, 12: 6, 13: 6, 14: 5, 15: 3, 4: 5, 5: 8, 6: 7, 7: 5 }
+// (as tabelas da lei vão pelo posto, não pelo número do grau: assim um posto novo não as desloca)
+// tempo mínimo no posto para acesso ao imediato, no Quadro Permanente (art. 97.º) — pelo posto atual
+const TEMPO_MINIMO_QP = { subtenente: 1, tenente: 4, capitao: 6, major: 6, tenente_coronel: 5, coronel: 3, segundo_sargento: 5, primeiro_sargento: 8, sargento_ajudante: 7, sargento_chefe: 5 }
 // no Serviço Militar por Contrato (art. 121.º)
-const TEMPO_MINIMO_SMC = { 10: 4, 4: 4 }
+const TEMPO_MINIMO_SMC = { subtenente: 4, segundo_sargento: 4 }
 // modalidade de promoção ao posto de destino, no QP (art. 98.º)
-const MODALIDADE_QP = { 10: 'diuturnidade', 11: 'diuturnidade', 12: 'antiguidade', 13: 'escolha', 14: 'antiguidade', 15: 'escolha', 16: 'escolha', 17: 'escolha', 18: 'escolha', 19: 'escolha', 4: 'diuturnidade', 5: 'diuturnidade', 6: 'escolha', 7: 'antiguidade', 8: 'escolha' }
+const MODALIDADE_QP = { subtenente: 'diuturnidade', tenente: 'diuturnidade', capitao: 'antiguidade', major: 'escolha', tenente_coronel: 'antiguidade', coronel: 'escolha', brigadeiro: 'escolha', tenente_general: 'escolha', general: 'escolha', general_exercito: 'escolha', segundo_sargento: 'diuturnidade', primeiro_sargento: 'diuturnidade', sargento_ajudante: 'escolha', sargento_chefe: 'antiguidade', sargento_maior: 'escolha' }
 export const MODALIDADES = { diuturnidade: 'Diuturnidade', antiguidade: 'Antiguidade', escolha: 'Escolha', distincao: 'Distinção', excepcional: 'Título excepcional' }
 // cursos que são condição especial de promoção ao posto de destino (arts. 52.º, 104.º a 109.º)
 export const CURSOS_PROMOCAO = {
@@ -33,22 +34,22 @@ export const CURSOS_PROMOCAO = {
   comando_direccao: 'Curso de Comando e Direcção (ou equivalente)',
   superior_guerra: 'Curso Superior de Guerra',
 }
-const CURSO_EXIGIDO = { 2: ['promocao_cabo'], 4: ['formacao_sargentos'], 6: ['promocao_sargento_ajudante'], 7: ['promocao_sargento_chefe'], 12: ['promocao_capitao'], 13: ['promocao_oficial_superior'], 16: ['comando_direccao', 'superior_guerra'] }
+const CURSO_EXIGIDO = { segundo_cabo: ['promocao_cabo'], segundo_sargento: ['formacao_sargentos'], sargento_ajudante: ['promocao_sargento_ajudante'], sargento_chefe: ['promocao_sargento_chefe'], capitao: ['promocao_capitao'], major: ['promocao_oficial_superior'], brigadeiro: ['comando_direccao', 'superior_guerra'] }
 // postos a que pode chegar o Serviço Militar por Contrato (art. 120.º)
-const SMC_ATE = { oficiais: 11, sargentos: 5 }
+const SMC_ATE = { oficiais: 'tenente', sargentos: 'primeiro_sargento' }
 // limites de idade de passagem à reserva no QP (art. 111.º), pelo grau
-const IDADE_RESERVA = { 15: 59, 14: 55, 13: 50, 8: 59, 7: 55 }
+const IDADE_RESERVA = { coronel: 59, tenente_coronel: 55, major: 50, sargento_maior: 59, sargento_chefe: 55 }
 
 // posto a que o militar pode ser promovido, pela forma de prestação de serviço (null = não há)
 export function proximoPosto(p) {
   const atual = POSTOS[p.posto]
   if (!atual) return null
-  const g = atual.grau
-  if (p.fps === 'SMO') return g === 9 ? 'subtenente' : g === 1 ? 'segundo_cabo' : null // art. 127.º e 129.º
-  if (g === 8 || g === 19 || g === 2 || g === 3 || g === 1) return null // topo da carreira de sargentos/oficiais; praças e subsargento só no SMO
-  if (g === 9) return 'subtenente'
-  const destino = POSTOS_POR_GRAU[g + 1]
-  if (p.fps === 'SMC' && destino.grau > SMC_ATE[grupoDoPosto(p.posto)]) return null
+  if (p.fps === 'SMO') return { aspirante: 'subtenente', soldado: 'segundo_cabo' }[p.posto] ?? null // art. 127.º e 129.º
+  // topo da carreira de sargentos/oficiais; praças e subsargento só no SMO
+  if (['sargento_maior', 'general_exercito', 'primeiro_cabo', 'segundo_cabo', 'subsargento', 'soldado'].includes(p.posto)) return null
+  if (p.posto === 'aspirante') return 'subtenente'
+  const destino = POSTOS_POR_GRAU[atual.grau + 1]
+  if (p.fps === 'SMC' && destino.grau > POSTOS[SMC_ATE[grupoDoPosto(p.posto)]].grau) return null
   return destino.id
 }
 
@@ -66,8 +67,7 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
     return { elegivel: false, postoProposto: null, condicoes: [c('topo', 'Há posto acima na sua carreira e forma de prestação de serviço', p.fps === 'SMC' ? 'art. 120.º' : 'arts. 71.º e 73.º', 'falta', 'Está no posto mais alto da sua carreira.')] }
   }
   const gDestino = POSTOS[destino].grau
-  const gAtual = POSTOS[p.posto].grau
-  const legal = p.fps === 'SMC' ? 'diuturnidade' : p.fps === 'SMO' ? 'diuturnidade' : MODALIDADE_QP[gDestino]
+  const legal = p.fps === 'SMC' ? 'diuturnidade' : p.fps === 'SMO' ? 'diuturnidade' : MODALIDADE_QP[destino]
   const mod = modalidade || legal
   const especial = mod === 'distincao' || mod === 'excepcional'
 
@@ -86,7 +86,7 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
     condicoes.push(c('avaliacao', 'Desempenho e qualidades exigidas, com avaliação favorável', 'art. 50.º, n.º 1, a) a c)', p.avaliacaoFavoravel === false ? 'falta' : 'ok'))
     condicoes.push(c('aptidao', 'Aptidão física e psíquica para o posto imediato', 'art. 50.º, n.º 1, d)', p.aptidaoFisica === false ? 'falta' : 'ok'))
     // tempo mínimo no posto (art. 97.º / 121.º / 129.º)
-    const minimo = p.fps === 'SMC' ? TEMPO_MINIMO_SMC[gAtual] : p.fps === 'SMO' ? (gAtual === 9 ? 1 : null) : TEMPO_MINIMO_QP[gAtual]
+    const minimo = p.fps === 'SMC' ? TEMPO_MINIMO_SMC[p.posto] : p.fps === 'SMO' ? (p.posto === 'aspirante' ? 1 : null) : TEMPO_MINIMO_QP[p.posto]
     if (minimo) {
       const t = tempoNoPosto(p, hoje)
       if (t === null) condicoes.push(c('tempo', `${minimo} ano(s) no posto de ${nomeDoPosto(p.posto, p.ramo)}`, p.fps === 'SMC' ? 'art. 121.º' : 'art. 97.º', 'confirmar', 'Falta a data de antiguidade no posto.'))
@@ -94,10 +94,10 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
         t >= minimo ? `Tem ${t.toFixed(1)} anos.` : `Tem ${t.toFixed(1)} anos; cumpre a ${dia(somarAnos(p.dataAntiguidadePosto, minimo))}.`))
     }
     // curso de promoção (art. 52.º)
-    const cursos = CURSO_EXIGIDO[gDestino]
+    const cursos = CURSO_EXIGIDO[destino]
     if (cursos) {
       const feito = temCurso(p, cursos)
-      condicoes.push(c('curso', cursos.map((k) => CURSOS_PROMOCAO[k]).join(' ou '), gDestino === 16 ? 'arts. 52.º e 104.º, n.º 4' : 'art. 52.º', feito ? 'ok' : 'falta', feito ? `${CURSOS_PROMOCAO[feito.chave]}, com aproveitamento.` : 'Sem registo do curso com aproveitamento.'))
+      condicoes.push(c('curso', cursos.map((k) => CURSOS_PROMOCAO[k]).join(' ou '), destino === 'brigadeiro' ? 'arts. 52.º e 104.º, n.º 4' : 'art. 52.º', feito ? 'ok' : 'falta', feito ? `${CURSOS_PROMOCAO[feito.chave]}, com aproveitamento.` : 'Sem registo do curso com aproveitamento.'))
     }
     // posto limite do quadro especial (arts. 84.º a 95.º)
     const qe = quadroEspecial(p.ramo, p.quadroEspecial)
@@ -161,10 +161,9 @@ export function verificarNomeacao(p, cargo, { hoje = new Date(), fim } = {}) {
 // reserva e reforma (arts. 110.º, 111.º e 114.º): datas-limite e o que pode requerer
 export function reservaEReforma(p, hoje = new Date()) {
   if (p.tipo !== 'militar' || !POSTOS[p.posto]) return null
-  const g = POSTOS[p.posto].grau
   const anos = idade(p, hoje)
   const servico = tempoServico(p, hoje)
-  const limiteReserva = p.fps === 'QP' ? IDADE_RESERVA[g] : undefined
+  const limiteReserva = p.fps === 'QP' ? IDADE_RESERVA[p.posto] : undefined
   const general = POSTOS[p.posto].categoria === 'oficial_general'
   const idadeReforma = general ? 65 : 60
   return {
