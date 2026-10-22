@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   testes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
@@ -68,10 +68,12 @@ jobs:
       - name: Site e painel (Vitest)
         run: npm run test:cobertura
 
+      # num passo à parte, para se ver quanto demora (as dependências do sistema vêm do apt)
+      - name: Navegador do Playwright
+        run: npx playwright install --with-deps chromium
+
       - name: Ponta-a-ponta (Playwright)
-        run: |
-          npx playwright install --with-deps chromium
-          npx playwright test
+        run: npx playwright test
         env:
           CI: true
 
