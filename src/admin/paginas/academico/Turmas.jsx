@@ -88,7 +88,7 @@ function Turmas() {
                   {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}
                 </select>
                 <label className="form-label fw-bold" htmlFor="t-nome">{tx('Nome da turma')}</label>
-                <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('CEM 2026/2027')} required />
+                <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('Ex.: 32.º Curso Superior de Comando e Direcção')} required />
                 <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> {tx('Criar turma')}</button>
               </form>
             </Painel>

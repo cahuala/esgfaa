@@ -42,7 +42,7 @@ function CursoDetalhe() {
   return (
     <main className={ed.pagina}>
       <CabecalhoEditorial
-        migalhas={[{ label: t('Cursos'), to: '/Cursos' }, { label: curso.sigla }]}
+        migalhas={[{ label: t('Cursos'), to: '/Cursos' }, { label: curso.nome }]}
         sobretitulo={`${curso.sigla} · ${curso.duracao}`}
         titulo={curso.nome}
         entrada={curso.resumo}
@@ -186,7 +186,7 @@ function CursoDetalhe() {
                   </span>
                   <div>
                     <strong>{coordenador.nome}</strong>
-                    <span>{t('Coordenação do {sigla}', { sigla: curso.sigla })}</span>
+                    <span>{t('Coordenação do {sigla}', { sigla: curso.nome })}</span>
                   </div>
                 </div>
                 <p>{coordenador.destaque}.</p>
