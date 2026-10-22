@@ -121,3 +121,15 @@ describe('Pessoal civil: progressão na carreira', () => {
     assert.equal(verificarProgressaoCivil({ ...p, dataCategoria: '2025-01-01' }, { hoje: HOJE }).elegivel, false)
   })
 })
+
+describe('1.º Cabo', () => {
+  it('existe no Exército e na Força Aérea, não na Marinha', async () => {
+    const { postosDoRamo, existeNoRamo } = await import('../../src/dominio/pessoal/hierarquia.js')
+    const { problemaNaFicha } = await import('../../src/dominio/pessoal/ficha.js')
+    assert.ok(postosDoRamo('EXE').some((p) => p.id === 'primeiro_cabo'))
+    assert.ok(postosDoRamo('FAN').some((p) => p.id === 'primeiro_cabo'))
+    assert.ok(!postosDoRamo('MGA').some((p) => p.id === 'primeiro_cabo'))
+    assert.equal(existeNoRamo('primeiro_cabo', 'MGA'), false)
+    assert.equal(problemaNaFicha({ tipo: 'militar', ramo: 'MGA', posto: 'primeiro_cabo', fps: 'SMO', nip: '1' })?.[0], 'posto')
+  })
+})

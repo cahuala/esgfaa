@@ -78,7 +78,8 @@ const P = (id, grau, categoria, nomes) => ({ id, grau, categoria, nomes })
 const GRAUS = [
   P('soldado', 1, 'praca', { EXE: 'Soldado', FAN: 'Soldado', MGA: 'Grumete' }),
   P('segundo_cabo', 2, 'praca', { EXE: '2.º Cabo', FAN: '2.º Cabo', MGA: 'Marinheiro' }),
-  P('primeiro_cabo', 3, 'praca', { EXE: '1.º Cabo', FAN: '1.º Cabo', MGA: '1.º Marinheiro' }),
+  // o 1.º Cabo só existe no Exército e na Força Aérea (a Marinha não tem nome para ele: não o tem)
+  P('primeiro_cabo', 3, 'praca', { EXE: '1.º Cabo', FAN: '1.º Cabo' }),
   P('subsargento', 4, 'sargento', { EXE: 'Subsargento', FAN: 'Subsargento', MGA: 'Subsargento' }),
   P('segundo_sargento', 5, 'sargento', { EXE: '2.º Sargento', FAN: '2.º Sargento', MGA: '2.º Sargento' }),
   P('primeiro_sargento', 6, 'sargento', { EXE: '1.º Sargento', FAN: '1.º Sargento', MGA: '1.º Sargento' }),
@@ -101,7 +102,7 @@ export const POSTOS = Object.fromEntries(GRAUS.map((p) => [p.id, p]))
 export const POSTOS_POR_GRAU = Object.fromEntries(GRAUS.map((p) => [p.grau, p]))
 
 export const ABREVIATURAS = {
-  Soldado: 'Sold.', Grumete: 'Grum.', '2.º Cabo': '2.º Cabo', Marinheiro: 'Mar.', '1.º Cabo': '1.º Cabo', '1.º Marinheiro': '1.º Mar.', Subsargento: 'Subsarg.', '2.º Sargento': '2.º Sarg.', '1.º Sargento': '1.º Sarg.',
+  Soldado: 'Sold.', Grumete: 'Grum.', '2.º Cabo': '2.º Cabo', Marinheiro: 'Mar.', '1.º Cabo': '1.º Cabo', Subsargento: 'Subsarg.', '2.º Sargento': '2.º Sarg.', '1.º Sargento': '1.º Sarg.',
   'Sargento-Ajudante': 'Sarg.-Aj.', 'Sargento-Chefe': 'Sarg.-Ch.', 'Sargento-Maior': 'Sarg.-Mor', Aspirante: 'Asp.', Subtenente: 'Subten.', 'Tenente-de-Corveta': 'Ten.-Cv.',
   Tenente: 'Ten.', 'Tenente-de-Fragata': 'Ten.-Fr.', Capitão: 'Cap.', 'Tenente-de-Navio': 'Ten.-Nav.', Major: 'Maj.', 'Capitão-de-Corveta': 'Cap.-Cv.',
   'Tenente-Coronel': 'Ten.-Cor.', 'Capitão-de-Fragata': 'Cap.-Fr.', Coronel: 'Cor.', 'Capitão-de-Mar-e-Guerra': 'CMG', Brigadeiro: 'Brig.', 'Contra-Almirante': 'C.-Alm.',
@@ -114,7 +115,9 @@ export const abreviaturaDoPosto = (postoId, ramo = 'EXE') => ABREVIATURAS[nomeDo
 export const postoAcima = (postoId, graus = 1) => POSTOS_POR_GRAU[(POSTOS[postoId]?.grau || 0) + graus]?.id || null
 
 // lista para os formulários: [{ id, grau, nome, categoria }] para um ramo, do mais alto ao mais baixo
-export const postosDoRamo = (ramo) => [...GRAUS].reverse().map((p) => ({ id: p.id, grau: p.grau, nome: p.nomes[ramo] || p.nomes.EXE, abreviatura: abreviaturaDoPosto(p.id, ramo), categoria: p.categoria, grupo: CATEGORIAS[p.categoria].grupo }))
+// o posto existe no ramo quando tem nome nele (o 1.º Cabo não existe na Marinha)
+export const existeNoRamo = (postoId, ramo) => Boolean(POSTOS[postoId]?.nomes[ramo])
+export const postosDoRamo = (ramo) => [...GRAUS].reverse().filter((p) => p.nomes[ramo]).map((p) => ({ id: p.id, grau: p.grau, nome: p.nomes[ramo] || p.nomes.EXE, abreviatura: abreviaturaDoPosto(p.id, ramo), categoria: p.categoria, grupo: CATEGORIAS[p.categoria].grupo }))
 
 /*
   Quadros especiais (armas, serviços e classes) e o posto limite de cada um (arts. 84.º a 95.º).

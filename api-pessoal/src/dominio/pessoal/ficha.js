@@ -1,4 +1,4 @@
-import { CATEGORIAS, ESTADOS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, caminhoDaSituacao, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
+import { CATEGORIAS, ESTADOS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVIDADES, abreviaturaDoPosto, caminhoDaSituacao, existeNoRamo, grupoDoPosto, nomeDoPosto, quadroEspecial } from './hierarquia.js'
 import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verificarPromocao } from './carreira.js'
 import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgressaoCivil } from './civis.js'
 import { vencimentoDoPosto } from './tabelaSalarial.js'
@@ -118,6 +118,7 @@ export function problemaNaFicha(p) {
     if (p.vinculo === 'domiciliar') return ['vinculo', 'Empregados domiciliares são pessoal civil.']
     if (!RAMOS[p.ramo]) return ['ramo', 'Indique o ramo (Exército, Força Aérea ou Marinha).']
     if (!POSTOS[p.posto]) return ['posto', 'Indique o posto.']
+    if (!existeNoRamo(p.posto, p.ramo)) return ['posto', `O posto ${nomeDoPosto(p.posto)} não existe na ${RAMOS[p.ramo].nome}.`]
     if (!FORMAS_SERVICO[p.fps]) return ['fps', 'Indique a forma de prestação de serviço.']
     if (!p.nip) return ['nip', 'O militar tem de ter NIP.']
     if (p.situacao && !SITUACOES[p.situacao]) return ['situacao', 'Situação desconhecida.']
