@@ -107,8 +107,9 @@ export class ServicoOrganica {
     andar(id, 0)
     const ids = ramo.map((x) => x.id)
     const SELECT = { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } }
+    // os cargos pela ordem do quadro orgânico (a ordem em que foram carregados)
     const [cargos, pessoas] = await Promise.all([
-      this.bd.cargo.findMany({ where: { unidadeId: { in: ids } }, include: { pessoas: { where: { ativo: true }, select: SELECT } }, orderBy: [{ funcao: 'asc' }, { nome: 'asc' }] }),
+      this.bd.cargo.findMany({ where: { unidadeId: { in: ids } }, include: { pessoas: { where: { ativo: true }, select: SELECT } }, orderBy: { id: 'asc' } }),
       this.bd.pessoa.findMany({ where: { unidadeId: { in: ids }, ativo: true, vinculo: { not: 'domiciliar' } }, select: SELECT, orderBy: { nome: 'asc' } }),
     ])
     const nomeCargo = new Map(cargos.map((c) => [c.id, c.nome]))
@@ -159,7 +160,7 @@ export class ServicoOrganica {
     const l = await this.bd.cargo.findMany({
       where: unidadeId ? { unidadeId: Number(unidadeId) } : {},
       include: { unidade: { select: { nome: true, sigla: true } }, pessoas: { where: { ativo: true }, select: { id: true, nome: true, posto: true, ramo: true, categoriaCivil: true, fotoId: true, nip: true } } },
-      orderBy: [{ unidadeId: 'asc' }, { nome: 'asc' }],
+      orderBy: [{ unidadeId: 'asc' }, { id: 'asc' }],
     })
     const unidades = await this.bd.unidade.findMany({ select: { id: true, nome: true, sigla: true, paiId: true } })
     const caminho = (id) => { const r = []; for (let x = unidades.find((y) => y.id === id); x; x = unidades.find((y) => y.id === x.paiId)) r.unshift(x.sigla || x.nome); return r.join(' › ') }
