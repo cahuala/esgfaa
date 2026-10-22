@@ -16,6 +16,8 @@ import PesquisaGeral from '../componentes/PesquisaGeral'
 import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
+import Anexo from '../componentes/Anexo'
+import { juntarAoProcesso } from '../anexos'
 import Carregar from '../componentes/Carregar'
 import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, NaoEncontrado } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
@@ -517,9 +519,21 @@ function OndeEsta({ p }) {
 
 function NovoEvento({ p, aoFechar, aoGuardar }) {
   const { ref } = useSessao()
+  const { avisar } = useSessao()
   const [d, setD] = useState({ tipo: 'louvor', data: new Date().toISOString().slice(0, 10), descricao: '', documento: '', entidade: '' })
   const [erro, setErro] = useState('')
-  const guardar = () => api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d }).then(aoGuardar).catch((e) => setErro(e.message))
+  const [ficheiro, setFicheiro] = useState(null)
+  async function guardar() {
+    try {
+      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d })
+    } catch (e) {
+      setErro(e.message)
+      return
+    }
+    const tipo = { louvor: 'louvor', condecoracao: 'louvor', punicao: 'punicao' }[d.tipo] ?? 'outro'
+    await juntarAoProcesso(p.id, ficheiro, { tipo, titulo: `${ref.tiposEvento[d.tipo] ?? 'Documento'}${d.documento ? ` — ${d.documento}` : ''}`, data: d.data }).catch((e) => avisar(`Lançado, mas o documento não foi enviado: ${e.message}`, 'erro'))
+    aoGuardar()
+  }
   return (
     <Modal titulo="Lançar no histórico" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
@@ -530,6 +544,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
         <Campo rotulo="Descrição" col="col-12"><textarea className="form-control form-control-sm" rows={2} value={d.descricao} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho…)"><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
         <Campo rotulo="Entidade"><input className="form-control form-control-sm" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
+        <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>
       </div>
     </Modal>
   )

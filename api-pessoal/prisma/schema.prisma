@@ -317,26 +317,44 @@ model PlanoFerias {
 
 // propostas de promoção, nomeação, graduação e exoneração (militares) e de progressão e nomeação (civis)
 model Proposta {
-  id            Int            @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   tipo          String
-  estado        String         @default("rascunho") // rascunho | submetida | aprovada | rejeitada | cancelada
+  estado        String          @default("rascunho") // rascunho | submetida | aprovada | rejeitada | cancelada
   titulo        String
-  fundamentacao String         @default("")
-  curso         String         @default("") // nas propostas para curso: o curso ou acção de formação
-  criadoPor     String         @map("criado_por")
-  submetidaEm   DateTime?      @map("submetida_em") @db.Timestamptz(3)
-  decididoPor   String         @default("") @map("decidido_por")
-  decididaEm    DateTime?      @map("decidida_em") @db.Timestamptz(3)
-  documento     String         @default("")
-  dataDocumento DateTime?      @map("data_documento") @db.Date
-  entidade      String         @default("")
-  motivo        String         @default("") // do indeferimento ou do cancelamento
-  extractoId    Int?           @map("extracto_id")
-  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  fundamentacao String          @default("")
+  curso         String          @default("") // nas propostas para curso: o curso ou acção de formação
+  criadoPor     String          @map("criado_por")
+  submetidaEm   DateTime?       @map("submetida_em") @db.Timestamptz(3)
+  decididoPor   String          @default("") @map("decidido_por")
+  decididaEm    DateTime?       @map("decidida_em") @db.Timestamptz(3)
+  documento     String          @default("")
+  dataDocumento DateTime?       @map("data_documento") @db.Date
+  entidade      String          @default("")
+  motivo        String          @default("") // do indeferimento ou do cancelamento
+  extractoId    Int?            @map("extracto_id")
+  criadoEm      DateTime        @default(now()) @map("criado_em") @db.Timestamptz(3)
   itens         ItemProposta[]
+  anexos        AnexoProposta[]
 
   @@index([estado])
   @@map("propostas")
+}
+
+// documentos digitalizados da proposta: ofício de envio, resposta do escalão superior, despachos…
+model AnexoProposta {
+  id           Int      @id @default(autoincrement())
+  propostaId   Int      @map("proposta_id")
+  titulo       String
+  ficheiro     String
+  nomeOriginal String   @map("nome_original")
+  mime         String
+  tamanho      Int
+  criadoPor    String   @map("criado_por")
+  criadoEm     DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  proposta     Proposta @relation(fields: [propostaId], references: [id], onDelete: Cascade)
+
+  @@index([propostaId])
+  @@map("anexos_proposta")
 }
 
 model ItemProposta {

@@ -8,6 +8,8 @@ import Foto from '../componentes/Foto'
 import EscolherPessoa from '../componentes/EscolherPessoa'
 import { Cabecalho, Campo, Carregando, Escolha, Modal, Painel } from '../componentes/Ui'
 import { dataPt } from '../formatar'
+import Anexo from '../componentes/Anexo'
+import { juntarAoProcesso } from '../anexos'
 
 /*
   Faltas e ausências que não são licenças: falta, ausência sem justificação, baixa hospitalar e detenção.
@@ -17,8 +19,9 @@ import { dataPt } from '../formatar'
 const SEM_FIM = ['hospital', 'detido']
 
 function NovaAusencia({ aoFechar, aoGuardar }) {
-  const { ref } = useSessao()
+  const { ref, avisar } = useSessao()
   const [pessoa, setPessoa] = useState(null)
+  const [ficheiro, setFicheiro] = useState(null)
   const [d, setD] = useState({ tipo: 'falta', inicio: '', fim: '', motivo: '', documento: '' })
   const [erro, setErro] = useState('')
   const semFim = SEM_FIM.includes(d.tipo)
@@ -27,10 +30,12 @@ function NovaAusencia({ aoFechar, aoGuardar }) {
     setErro('')
     try {
       await api('/ausencias', { metodo: 'POST', corpo: { pessoaId: pessoa.id, ...d, fim: d.fim || null } })
-      aoGuardar()
     } catch (e) {
       setErro(e.message)
+      return
     }
+    await juntarAoProcesso(pessoa.id, ficheiro, { tipo: d.tipo === 'hospital' ? 'saude' : d.tipo === 'detido' ? 'punicao' : 'outro', titulo: `${ref.tiposAusencia[d.tipo]}${d.documento ? ` — ${d.documento}` : ''}`, data: d.inicio }).catch((e) => avisar(`Registado, mas o documento não foi enviado: ${e.message}`, 'erro'))
+    aoGuardar()
   }
   return (
     <Modal titulo="Registar falta ou ausência" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!pronto} onClick={guardar}><i className="fa fa-check me-1" />Registar</button></>}>
@@ -44,6 +49,7 @@ function NovaAusencia({ aoFechar, aoGuardar }) {
         <Campo rotulo={semFim ? 'Fim (vazio enquanto durar)' : 'Último dia'} obrigatorio={!semFim} col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.fim} min={d.inicio} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
         <Campo rotulo="Motivo" col="col-md-7"><input className="form-control form-control-sm" maxLength={300} value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} placeholder={d.tipo === 'hospital' ? 'Ex.: internamento no Hospital Militar Principal' : d.tipo === 'detido' ? 'Ex.: detenção disciplinar' : ''} /></Campo>
         <Campo rotulo="Documento" col="col-md-5"><input className="form-control form-control-sm" maxLength={150} value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} placeholder="Participação, guia de baixa, auto…" /></Campo>
+        <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>
       </div>
     </Modal>
   )

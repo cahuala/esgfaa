@@ -43,7 +43,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     pessoas,
     tabelaSalarial,
     planoFerias: new ServicoPlanoFerias({ bd, auditoria, pessoas, ...relogio }),
-    propostas: new ServicoPropostas({ bd, auditoria, ...relogio }),
+    propostas: new ServicoPropostas({ bd, auditoria, ficheiros, ...relogio }),
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),
     ausencias: new ServicoAusencias({ bd, auditoria, ...relogio }),
     organica: new ServicoOrganica({ bd, auditoria }),

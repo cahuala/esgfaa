@@ -3,6 +3,8 @@ import { api } from '../api'
 import { useSessao } from '../sessao'
 import { dataPt } from '../formatar'
 import { Campo, Modal } from './Ui'
+import Anexo from './Anexo'
+import { juntarAoProcesso } from '../anexos'
 
 const TIPOS = {
   punicao: { nome: 'Punição disciplinar', icone: 'fa-gavel', cor: 'danger', infr: 'Infracção cometida', autoridade: 'Autoridade que aplicou' },
@@ -120,12 +122,28 @@ function TabelaAnos({ titulo, icone, linhas, colunas, editar, aGravar, aoGravar 
 }
 
 function NovoRegisto({ p, d, setD, aoFechar, aoGuardar }) {
+  const { avisar } = useSessao()
   const [erro, setErro] = useState('')
+  const [ficheiro, setFicheiro] = useState(null)
+  const [aGravar, setAGravar] = useState(false)
   const t = TIPOS[d.tipo]
-  const guardar = () => api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d }).then(aoGuardar).catch((e) => setErro(e.message))
+  async function guardar() {
+    setErro('')
+    setAGravar(true)
+    try {
+      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d })
+    } catch (e) {
+      setErro(e.message)
+      setAGravar(false)
+      return
+    }
+    // o registo já ficou: se o ficheiro falhar, avisa (junta-se depois no processo individual)
+    await juntarAoProcesso(p.id, ficheiro, { tipo: d.tipo === 'punicao' || d.tipo === 'condenacao' ? 'punicao' : 'louvor', titulo: `${t.nome}${d.documento ? ` — ${d.documento}` : ''}`, data: d.data }).catch((e) => avisar(`Registado, mas o documento não foi enviado: ${e.message}`, 'erro'))
+    aoGuardar()
+  }
   const comPena = d.tipo === 'punicao' || d.tipo === 'condenacao'
   return (
-    <Modal titulo={`${t.nome} — ${p.nome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}><i className="fa fa-save me-1" />Registar</button></>}>
+    <Modal titulo={`${t.nome} — ${p.nome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={aGravar} onClick={guardar}><i className="fa fa-save me-1" />Registar</button></>}>
       {erro && <div className="alert alert-danger py-2">{erro}</div>}
       <div className="row">
         <Campo rotulo="Data" col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
@@ -133,6 +151,7 @@ function NovoRegisto({ p, d, setD, aoFechar, aoGuardar }) {
         {comPena && <Campo rotulo={d.tipo === 'condenacao' ? 'Pena imposta' : 'Pena aplicada'} col="col-md-6"><input className="form-control form-control-sm" list="penas" value={d.pena} maxLength={300} onChange={(e) => setD({ ...d, pena: e.target.value })} /><datalist id="penas">{(d.tipo === 'punicao' ? ['Repreensão', 'Repreensão registada', 'Multa', 'Suspensão', 'Despromoção', 'Demissão'] : ['Pena de prisão', 'Pena suspensa', 'Multa']).map((x) => <option key={x} value={x} />)}</datalist></Campo>}
         <Campo rotulo={t.autoridade} col={comPena ? 'col-md-6' : 'col-md-6'}><input className="form-control form-control-sm" value={d.entidade} maxLength={150} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho, sentença…)" col="col-md-6"><input className="form-control form-control-sm" value={d.documento} maxLength={150} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
+        <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>
       </div>
     </Modal>
   )

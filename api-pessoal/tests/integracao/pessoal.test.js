@@ -71,6 +71,14 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Outra', itens: [{ pessoaId: p.id }] })).status, 400)
     await adm.post(`/api/propostas/${pr.id}/submeter`).expect(200)
     assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.estado, 'enviada')
+    // o ofício de envio digitalizado fica nos documentos da proposta (abre-se e retira-se)
+    const oficio = (await adm.post(`/api/propostas/${pr.id}/anexos`).field('titulo', 'Ofício de envio n.º 12/RPQ/2026').attach('ficheiro', Buffer.from('%PDF-1.4 ofício'), 'oficio.pdf').expect(201)).body
+    const anexos = (await adm.get(`/api/propostas/${pr.id}`)).body.anexos
+    assert.deepEqual(anexos.map((a) => [a.titulo, a.mime, 'ficheiro' in a]), [['Ofício de envio n.º 12/RPQ/2026', 'application/pdf', false]])
+    assert.match((await adm.get(`/api/propostas/anexos/${oficio.id}/ficheiro`).expect(200)).headers['content-type'], /pdf/)
+    assert.equal((await adm.post(`/api/propostas/${pr.id}/anexos`).attach('ficheiro', Buffer.from('texto'), 'x.txt')).status, 400)
+    await adm.delete(`/api/propostas/anexos/${oficio.id}`).expect(204)
+    assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.anexos.length, 0)
     await porExtracto(adm, pr.id, 'promocao', '45/CEMG/2026', '2026-10-15')
     assert.equal((await adm.get(`/api/propostas/${pr.id}`)).body.estado, 'concluida')
     const f = (await adm.get(`/api/pessoas/${p.id}`).expect(200)).body

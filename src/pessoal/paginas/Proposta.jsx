@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { api } from '../api'
+import { abrirFicheiro, api } from '../api'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import { exportarPdf } from '../exportar'
@@ -10,6 +10,8 @@ import Foto from '../componentes/Foto'
 import EscolherPessoa from '../componentes/EscolherPessoa'
 import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
+import Anexo from '../componentes/Anexo'
+import { juntarAProposta } from '../anexos'
 
 const NOME_CURTO = { processo_promocao: 'PIP', ficha_avaliacao: 'FAI', proposta_nomeacao: 'proposta de nomeação' }
 const FILTRO_TIPO = { promocao: { tipo: 'militar' }, graduacao: { tipo: 'militar' }, progressao: { tipo: 'civil' } }
@@ -28,13 +30,23 @@ export default function Proposta() {
   const precisaCargos = p?.tipo === 'nomeacao' || p?.tipo === 'exoneracao'
   useEffect(() => { if (precisaCargos) api('/cargos').then(setCargos).catch(() => {}) }, [precisaCargos])
 
-  const acao = async (caminho, corpo, mensagem) => {
+  // anexo = { ficheiro, titulo }: o documento digitalizado que acompanha a decisão (ofício, resposta…)
+  const acao = async (caminho, corpo, mensagem, anexo) => {
     try {
       setP(await api(`/propostas/${id}${caminho}`, { metodo: caminho.startsWith('/itens/') ? 'DELETE' : 'POST', corpo }))
       setModal(null)
       avisar(mensagem)
     } catch (e) {
       avisar(e.message, 'erro')
+      return
+    }
+    if (anexo?.ficheiro) {
+      try {
+        await juntarAProposta(id, anexo.ficheiro, anexo.titulo)
+        setP(await api(`/propostas/${id}`))
+      } catch (e) {
+        avisar(`Registado, mas o documento não foi enviado: ${e.message}`, 'erro')
+      }
     }
   }
 
@@ -108,6 +120,7 @@ export default function Proposta() {
               {p.motivo && <><dt>Motivo</dt><dd>{p.motivo}</dd></>}
             </dl>
           </Painel>
+          <DocumentosDaProposta p={p} aoMudar={async () => setP(await api(`/propostas/${id}`))} />
         </div>
         <div className="col-xl-8">
           <Painel titulo="Pessoas na proposta" icone="fa-users" acoes={preparacao && pode('propor') && <button type="button" className="btn btn-xs btn-theme" onClick={() => setModal('adicionar')}><i className="fa fa-user-plus me-1" />Adicionar</button>} corpo={false}>
@@ -138,8 +151,8 @@ export default function Proposta() {
       </div>
 
       {modal === 'adicionar' && <Adicionar p={p} cargos={cargos} aoFechar={() => setModal(null)} aoAdicionar={(item) => acao('/itens', item, 'Adicionado à proposta.')} />}
-      {modal === 'enviar' && <Decidir titulo="Enviar ao escalão superior" botao="Enviar" cor="warning" campos={['documento']} rotuloDocumento="N.º do ofício de envio (opcional)" aviso="Imprima os documentos (para cada militar: a ficha de proposta e a síntese biográfica), assine e envie. Quando chegar a resposta, registe o extracto: é ele que actualiza as fichas." aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/submeter', d, 'Proposta enviada ao escalão superior.')} />}
-      {modal === 'indeferir' && <Decidir titulo="Proposta indeferida pelo escalão superior" botao="Registar indeferimento" cor="danger" campos={['motivo', 'documento', 'dataDocumento']} rotuloDocumento="N.º do documento de resposta" aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/indeferir', d, 'Indeferimento registado.')} />}
+      {modal === 'enviar' && <Decidir titulo="Enviar ao escalão superior" botao="Enviar" cor="warning" campos={['documento']} rotuloDocumento="N.º do ofício de envio (opcional)" aviso="Imprima os documentos (para cada militar: a ficha de proposta e a síntese biográfica), assine e envie. Quando chegar a resposta, registe o extracto: é ele que actualiza as fichas." aoFechar={() => setModal(null)} comFicheiro aoConfirmar={(d, ficheiro) => acao('/submeter', d, 'Proposta enviada ao escalão superior.', { ficheiro, titulo: `Ofício de envio${d.documento ? ` n.º ${d.documento}` : ''}` })} />}
+      {modal === 'indeferir' && <Decidir titulo="Proposta indeferida pelo escalão superior" botao="Registar indeferimento" cor="danger" campos={['motivo', 'documento', 'dataDocumento']} rotuloDocumento="N.º do documento de resposta" aoFechar={() => setModal(null)} comFicheiro aoConfirmar={(d, ficheiro) => acao('/indeferir', d, 'Indeferimento registado.', { ficheiro, titulo: `Resposta do escalão superior (indeferimento)${d.documento ? ` — ${d.documento}` : ''}` })} />}
       {modal === 'devolver' && <Decidir titulo="Proposta devolvida para correção" botao="Voltar à preparação" cor="secondary" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/devolver', d, 'A proposta voltou à preparação.')} />}
       {modal === 'cancelar' && <Decidir titulo="Cancelar a proposta" botao="Cancelar proposta" cor="danger" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/cancelar', d, 'Proposta cancelada.').then(() => navegar('/propostas'))} />}
     </>
@@ -171,16 +184,59 @@ function Adicionar({ p, cargos, aoFechar, aoAdicionar }) {
   )
 }
 
-function Decidir({ titulo, botao, cor, campos, aviso, aoFechar, aoConfirmar, rotuloDocumento = 'N.º do documento' }) {
+// os documentos digitalizados da proposta (ofício de envio, resposta, despachos…): abrir, juntar e retirar
+function DocumentosDaProposta({ p, aoMudar }) {
+  const { pode, avisar } = useSessao()
+  const [ficheiro, setFicheiro] = useState(null)
+  const [titulo, setTitulo] = useState('')
+  const [aEnviar, setAEnviar] = useState(false)
+  const juntar = async () => {
+    setAEnviar(true)
+    try {
+      await juntarAProposta(p.id, ficheiro, titulo)
+      setFicheiro(null)
+      setTitulo('')
+      avisar('Documento junto à proposta.')
+      await aoMudar()
+    } catch (e) {
+      avisar(e.message, 'erro')
+    }
+    setAEnviar(false)
+  }
+  const retirar = (a) => window.confirm(`Retirar «${a.titulo}»?`) && api(`/propostas/anexos/${a.id}`, { metodo: 'DELETE' }).then(aoMudar).catch((e) => avisar(e.message, 'erro'))
+  return (
+    <Painel titulo={`Documentos (${p.anexos.length})`} icone="fa-paperclip">
+      {p.anexos.map((a) => (
+        <div key={a.id} className="d-flex align-items-center gap-2 mb-2">
+          <i className={`fa ${a.mime === 'application/pdf' ? 'fa-file-pdf text-danger' : a.mime.startsWith('image/') ? 'fa-file-image text-info' : 'fa-file text-muted'}`} />
+          <button type="button" className="btn btn-link p-0 text-start me-auto" onClick={() => abrirFicheiro(`/propostas/anexos/${a.id}/ficheiro`, a.nomeOriginal).catch((e) => avisar(e.message, 'erro'))}>{a.titulo}<div className="small text-muted">{a.nomeOriginal} · {dataHoraPt(a.criadoEm)}</div></button>
+          {pode('propor') && <button type="button" className="btn btn-xs btn-outline-danger" title="Retirar" onClick={() => retirar(a)}><i className="fa fa-times" /></button>}
+        </div>
+      ))}
+      {!p.anexos.length && <p className="small text-muted">Nenhum documento digitalizado.</p>}
+      {pode('propor') && (
+        <>
+          <input className="form-control form-control-sm mb-2" placeholder="Título (ex.: Ofício n.º 12/RPQ/2026, Despacho do Comandante)" maxLength={200} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          <Anexo ficheiro={ficheiro} aoMudar={setFicheiro} ajuda="PDF ou imagem (também Word) · até 25 MB" />
+          <button type="button" className="btn btn-sm btn-theme mt-2" disabled={!ficheiro || aEnviar} onClick={juntar}><i className="fa fa-upload me-1" />Juntar à proposta</button>
+        </>
+      )}
+    </Painel>
+  )
+}
+
+function Decidir({ titulo, botao, cor, campos, aviso, aoFechar, aoConfirmar, rotuloDocumento = 'N.º do documento', comFicheiro = false }) {
   const [d, setD] = useState({ documento: '', dataDocumento: new Date().toISOString().slice(0, 10), entidade: '', motivo: '' })
+  const [ficheiro, setFicheiro] = useState(null)
   const corpo = Object.fromEntries(campos.map((k) => [k, d[k]]))
   return (
-    <Modal titulo={titulo} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Voltar</button><button type="button" className={`btn btn-${cor}`} onClick={() => aoConfirmar(corpo)}>{botao}</button></>}>
+    <Modal titulo={titulo} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Voltar</button><button type="button" className={`btn btn-${cor}`} onClick={() => aoConfirmar(corpo, ficheiro)}>{botao}</button></>}>
       {aviso && <div className="alert alert-info">{aviso}</div>}
       <div className="row">
         {campos.includes('documento') && <Campo rotulo={rotuloDocumento}><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>}
         {campos.includes('dataDocumento') && <Campo rotulo="Data do documento"><input type="date" className="form-control form-control-sm" value={d.dataDocumento} onChange={(e) => setD({ ...d, dataDocumento: e.target.value })} /></Campo>}
         {campos.includes('motivo') && <Campo rotulo="Motivo" col="col-12"><textarea rows={3} className="form-control form-control-sm" value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} /></Campo>}
+        {comFicheiro && <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} ajuda="PDF ou imagem (também Word) · até 25 MB · fica nos documentos da proposta" /></Campo>}
       </div>
     </Modal>
   )

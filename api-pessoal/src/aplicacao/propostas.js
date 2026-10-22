@@ -20,13 +20,13 @@ export const TIPOS_PROPOSTA = {
 */
 export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', enviada: 'Enviada ao escalão superior', concluida: 'Concluída (extracto recebido)', indeferida: 'Indeferida', cancelada: 'Cancelada' }
 export const ABERTAS = ['rascunho', 'enviada']
-const INCLUIR = { itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
+const INCLUIR = { anexos: { orderBy: { id: 'asc' } }, itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 export class ServicoPropostas {
-  constructor({ bd, auditoria, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, agora })
+  constructor({ bd, auditoria, ficheiros, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, ficheiros, agora })
   }
 
   // aplica as regras da lei a uma pessoa da proposta; devolve o item já preenchido
@@ -103,7 +103,33 @@ export class ServicoPropostas {
     }))
     const { itens: _, ...resto } = pr
     void _
-    return { ...resto, dataDocumento: dia(pr.dataDocumento), tipoNome: TIPOS_PROPOSTA[pr.tipo]?.nome, estadoNome: ESTADOS_PROPOSTA[pr.estado], total: itens.length, naoCumprem: itens.filter((i) => !i.cumpre).length, itens }
+    return { ...resto, anexos: (pr.anexos ?? []).map((a) => ({ id: a.id, titulo: a.titulo, nomeOriginal: a.nomeOriginal, mime: a.mime, tamanho: a.tamanho, criadoPor: a.criadoPor, criadoEm: a.criadoEm })), dataDocumento: dia(pr.dataDocumento), tipoNome: TIPOS_PROPOSTA[pr.tipo]?.nome, estadoNome: ESTADOS_PROPOSTA[pr.estado], total: itens.length, naoCumprem: itens.filter((i) => !i.cumpre).length, itens }
+  }
+
+  // documentos digitalizados da proposta (ofício de envio, resposta, despachos): em qualquer estado
+  async juntarAnexo(u, id, { titulo = '' }, ficheiro) {
+    exigir(u, 'propor')
+    await this.#obter(id)
+    const f = await this.ficheiros.guardar(ficheiro)
+    const a = await this.bd.anexoProposta.create({ data: { propostaId: id, titulo: String(titulo).trim().slice(0, 200) || f.nomeOriginal, ...f, criadoPor: u.email } })
+    await this.auditoria.registar(u, 'anexar_proposta', `${a.titulo} (proposta #${id})`)
+    return a
+  }
+
+  async anexo(u, anexoId) {
+    exigir(u, 'ver')
+    const a = await this.bd.anexoProposta.findUnique({ where: { id: anexoId } })
+    if (!a) throw naoEncontrado('Documento não encontrado.')
+    return { caminho: this.ficheiros.caminho(a.ficheiro), nome: a.nomeOriginal, mime: a.mime }
+  }
+
+  async removerAnexo(u, anexoId) {
+    exigir(u, 'propor')
+    const a = await this.bd.anexoProposta.findUnique({ where: { id: anexoId } })
+    if (!a) throw naoEncontrado('Documento não encontrado.')
+    await this.bd.anexoProposta.delete({ where: { id: anexoId } })
+    this.ficheiros.apagar(a.ficheiro)
+    await this.auditoria.registar(u, 'remover_anexo_proposta', `${a.titulo} (proposta #${a.propostaId})`)
   }
 
   async #obter(id) {
