@@ -62,7 +62,16 @@ export default function Pessoas() {
     { chave: 'tempoPosto', titulo: 'No posto', valor: (p) => p.tempoNoPosto ?? p.tempoNaCategoria, mostrar: (p) => anos(p.tempoNoPosto ?? p.tempoNaCategoria), alinhar: 'end' },
     { chave: 'reserva', titulo: 'Reserva', valor: (p) => p.dataReserva || '', mostrar: (p) => (p.dataReserva ? dataPt(p.dataReserva) : '—') },
     { chave: 'elegivel', titulo: 'Promoção', valor: (p) => (p.elegivelPromocao ? 'Em condições' : ''), mostrar: (p) => (p.elegivelPromocao ? <span className="badge bg-success"><i className="fa fa-medal me-1" />{p.proximoPostoNome || p.proximaCategoria}</span> : '') },
-  ], [])
+    // colunas para relatórios à medida (escondidas; ligam-se no botão «Colunas»)
+    ...[
+      ['nomeGuerra', 'Nome de guerra'], ['bi', 'BI'], ['genero', 'Género', (p) => ref.generos[p.genero] ?? ''], ['dataNascimento', 'Nascimento', (p) => dataPt(p.dataNascimento)],
+      ['naturalidade', 'Naturalidade'], ['provincia', 'Província'], ['estadoCivil', 'Estado civil', (p) => ref.estadosCivis[p.estadoCivil] ?? ''], ['telefone', 'Telefone'], ['email', 'E-mail'],
+      ['habilitacao', 'Habilitação literária', (p) => ref.habilitacoes[p.habilitacao] ?? p.habilitacao ?? ''], ['habilitacaoMilitar', 'Último curso militar'], ['especialidade', 'Especialidade'],
+      ['categoriaNome', 'Escalão'], ['quadroNome', 'Quadro especial'], ['situacaoNome', 'Situação'], ['efectividadeNome', 'Efectividade'], ['estadoNome', 'Estado'],
+      ['dataIngresso', 'Ingresso', (p) => dataPt(p.dataIngresso || p.dataAdmissao)], ['dataAntiguidadePosto', 'Antiguidade no posto', (p) => dataPt(p.dataAntiguidadePosto || p.dataCategoria)],
+      ['tempoServico', 'Tempo de serviço', (p) => anos(p.tempoServico)], ['dataEntradaEscola', 'Entrada na Escola', (p) => dataPt(p.dataEntradaEscola)], ['dataReforma', 'Reforma', (p) => dataPt(p.dataReforma)],
+    ].map(([chave, titulo, valor]) => ({ chave, titulo, valor: valor ? (p) => valor(p) || '' : (p) => p[chave] ?? '', ordenarPor: (p) => p[chave] ?? '', oculta: true })),
+  ], [ref])
 
   const f = (k, opcoes, vazio = 'Todos') => (
     <div className="col-6 col-md-3 col-xl-2 mb-2">

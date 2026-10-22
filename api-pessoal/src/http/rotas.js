@@ -152,7 +152,7 @@ export function rotas({ servicos: s, config }) {
 
   // expediente entre as áreas
   const anexos = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxDocumento, files: 20 } })
-  r.get('/expediente', validar({ query: z.object({ caixa: z.enum(['por_receber', 'na_unidade', 'enviados', 'arquivo', 'todos']).default('por_receber') }) }), async (req, res) => res.json(await s.expediente.listar(u(req), req.dados.query)))
+  r.get('/expediente', validar({ query: z.object({ caixa: z.enum(['por_receber', 'na_unidade', 'enviados', 'arquivo', 'todos']).default('por_receber'), de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), sentido: z.enum(['interno', 'entrada', 'saida']).optional(), armario: z.string().max(60).optional() }) }), async (req, res) => res.json(await s.expediente.listar(u(req), req.dados.query)))
   r.get('/expediente/unidades', async (req, res) => res.json(await s.expediente.unidadesDestino(u(req))))
   r.post('/expediente', anexos.array('anexos', 20), async (req, res) => {
     let dados
@@ -163,7 +163,7 @@ export function rotas({ servicos: s, config }) {
   r.post('/expediente/:id/receber', validar({ params: E.pId, body: z.object({ fisico: z.boolean().default(false) }) }), async (req, res) => res.json(await s.expediente.receber(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/encaminhar', validar({ params: E.pId, body: E.encaminhar }), async (req, res) => res.json(await s.expediente.encaminhar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/movimentos/:sub/entregue', validar({ params: E.pIdSub, body: E.entregue }), async (req, res) => res.json(await s.expediente.entregarFisico(u(req), req.dados.params.id, req.dados.params.sub, req.dados.body)))
-  r.post('/expediente/:id/arquivar', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, true)))
+  r.post('/expediente/:id/arquivar', validar({ params: E.pId, body: z.object({ armario: z.string().max(60).default(''), prateleira: z.string().max(60).default(''), pasta: z.string().max(100).default('') }).default({}) }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, true, req.dados.body)))
   r.post('/expediente/:id/reabrir', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, false)))
   r.post('/expediente/:id/anexos', validar({ params: E.pId }), anexos.array('anexos', 20), async (req, res) => res.json(await s.expediente.anexar(u(req), req.dados.params.id, req.files ?? [])))
   r.get('/anexos/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.expediente.anexo(u(req), req.dados.params.id)))

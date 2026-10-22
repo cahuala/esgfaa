@@ -294,8 +294,14 @@ describe('Expediente, mensagens e contas de utente', () => {
     assert.equal((await rui.get(`/api/anexos/${recebido.anexos[0].id}`)).status, 200)
     await rui.post(`/api/expediente/${d.id}/encaminhar`).send({ destinos: [ensino.id], nota: 'Para confirmar as quantidades' }).expect(200)
     await ana.post(`/api/expediente/${d.id}/receber`).send({}).expect(200)
-    await ana.post(`/api/expediente/${d.id}/arquivar`).expect(200)
+    // arquivar diz onde fica o original em papel; o arquivo e o livro procuram por armário, período e sentido
+    const arq = (await ana.post(`/api/expediente/${d.id}/arquivar`).send({ armario: 'A1', prateleira: '3', pasta: 'Requisições 2026' }).expect(200)).body
+    assert.deepEqual([arq.estado, arq.armario, arq.prateleira, arq.pasta, Boolean(arq.arquivadoEm)], ['arquivado', 'A1', '3', 'Requisições 2026', true])
     assert.equal((await ana.get('/api/expediente?caixa=arquivo')).body.length, 1)
+    assert.equal((await ana.get('/api/expediente?caixa=arquivo&armario=A1')).body.length, 1)
+    assert.equal((await ana.get('/api/expediente?caixa=arquivo&armario=B2')).body.length, 0)
+    assert.equal((await adm.get('/api/expediente?caixa=todos&de=2000-01-01&ate=2000-12-31')).body.length, 0)
+    assert.ok((await adm.get(`/api/expediente?caixa=todos&sentido=${arq.sentido}`)).body.some((x) => x.id === d.id))
   })
 
   it('protecção de dados: aviso, a própria ficha para descarregar e pedidos respondidos pela RPQ', async () => {

@@ -24,7 +24,11 @@ function Caixas() {
   const [params, setParams] = useSearchParams()
   // o administrador sem unidade abre o livro de expediente (todas as áreas)
   const caixa = params.get('caixa') ?? (utilizador.unidadeId ? 'por_receber' : 'todos')
-  const consulta = useMemo(() => ({ caixa }), [caixa])
+  // no livro e no arquivo: o período, o sentido (entrada, saída, interno) e o armário
+  const comFiltros = caixa === 'todos' || caixa === 'arquivo'
+  const filtros = useMemo(() => (comFiltros ? Object.fromEntries(['de', 'ate', 'sentido', 'armario'].map((k) => [k, params.get(k) ?? '']).filter(([, v]) => v)) : {}), [params, comFiltros])
+  const consulta = useMemo(() => ({ caixa, ...filtros }), [caixa, filtros])
+  const mudar = (k, v) => { const n = new URLSearchParams(params); n.set('caixa', caixa); if (v) n.set(k, v); else n.delete(k); setParams(n) }
   const { dados, erro, recarregar } = useDados('/expediente', consulta)
   const [novo, setNovo] = useState(false)
   const colunas = useMemo(() => [
@@ -35,8 +39,10 @@ function Caixas() {
     { chave: 'origem', titulo: 'Origem', valor: (x) => x.origem },
     { chave: 'local', titulo: 'Onde está', valor: (x) => x.localAtual },
     { chave: 'fisico', titulo: 'Original', valor: (x) => (x.temFisico ? (x.fisicoPendente ? 'Por chegar' : 'Sim') : ''), mostrar: (x) => (x.temFisico ? <span className={`badge ${x.fisicoPendente ? 'bg-warning text-dark' : 'bg-success'}`}><i className="fa fa-file-alt me-1" />{x.fisicoPendente ? 'por chegar' : 'papel'}</span> : '') },
+    { chave: 'sentido', titulo: 'Sentido', valor: (x) => ({ interno: 'Interno', entrada: 'Entrada', saida: 'Saída' }[x.sentido] ?? x.sentido), oculta: caixa !== 'todos' },
+    { chave: 'arquivo', titulo: 'Armário / prateleira / pasta', valor: (x) => [x.armario && `Armário ${x.armario}`, x.prateleira && `prat. ${x.prateleira}`, x.pasta && `pasta ${x.pasta}`].filter(Boolean).join(' · '), oculta: caixa !== 'arquivo' },
     { chave: 'prazo', titulo: 'Prazo', valor: (x) => x.prazo ?? '', mostrar: (x) => (x.prazo ? <span className={x.prazo < new Date().toISOString().slice(0, 10) && x.estado === 'em_curso' ? 'text-danger fw-bold' : ''}>{dataPt(x.prazo)}</span> : '') },
-  ], [])
+  ], [caixa])
   if (!utilizador.unidadeId && !pode('administrar')) return <div className="alert alert-warning">A sua conta não está ligada a nenhuma unidade. Peça ao administrador para a indicar.</div>
   const caixas = pode('administrar') ? [...CAIXAS, ['todos', 'Livro de expediente', 'fa-book']] : CAIXAS
   return (
@@ -45,8 +51,16 @@ function Caixas() {
         {utilizador.unidadeId && <button type="button" className="btn btn-theme" onClick={() => setNovo(true)}><i className="fa fa-plus me-1" />Novo documento</button>}
       </Cabecalho>
       <ul className="nav nav-tabs mb-3">{caixas.map(([k, t, ic]) => <li key={k} className="nav-item"><button type="button" className={`nav-link ${caixa === k ? 'active' : ''}`} onClick={() => setParams({ caixa: k })}><i className={`fa ${ic} me-1`} />{t}</button></li>)}</ul>
+      {comFiltros && (
+        <div className="row g-2 mb-2 align-items-end">
+          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">Registado de</label><input type="date" className="form-control form-control-sm" value={filtros.de ?? ''} onChange={(e) => mudar('de', e.target.value)} /></div>
+          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">até</label><input type="date" className="form-control form-control-sm" value={filtros.ate ?? ''} min={filtros.de} onChange={(e) => mudar('ate', e.target.value)} /></div>
+          <div className="col-6 col-md-3"><label className="form-label small mb-0 text-muted">Sentido</label><Escolha valor={filtros.sentido} aoMudar={(v) => mudar('sentido', v)} opcoes={{ entrada: 'Entrada (de fora da Escola)', saida: 'Saída (para fora da Escola)', interno: 'Interno' }} vazio="Todos" /></div>
+          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">Armário</label><input className="form-control form-control-sm" defaultValue={filtros.armario ?? ''} key={filtros.armario ?? ''} onBlur={(e) => mudar('armario', e.target.value.trim())} onKeyDown={(e) => e.key === 'Enter' && mudar('armario', e.target.value.trim())} placeholder="Ex.: A1" /></div>
+        </div>
+      )}
       <Painel>
-        {erro ? <Erro texto={erro} /> : !dados ? <Carregando /> : <Tabela titulo={`Expediente — ${caixas.find((c) => c[0] === caixa)[1]}`} subtitulo={utilizador.unidadeNome} colunas={colunas} linhas={dados} aoClicar={(x) => navegar(`/expediente/${x.id}`)} vazio="Nada nesta caixa." />}
+        {erro ? <Erro texto={erro} /> : !dados ? <Carregando /> : <Tabela titulo={`Expediente — ${caixas.find((c) => c[0] === caixa)[1]}`} subtitulo={[utilizador.unidadeNome, filtros.de && `de ${dataPt(filtros.de)}`, filtros.ate && `até ${dataPt(filtros.ate)}`, filtros.sentido && { entrada: 'entradas', saida: 'saídas', interno: 'internos' }[filtros.sentido], filtros.armario && `armário ${filtros.armario}`].filter(Boolean).join(' · ')} colunas={colunas} linhas={dados} aoClicar={(x) => navegar(`/expediente/${x.id}`)} vazio="Nada nesta caixa." />}
       </Painel>
       {novo && <NovoDocumento aoFechar={() => setNovo(false)} aoCriar={(x) => { setNovo(false); recarregar(); navegar(`/expediente/${x.id}`) }} />}
     </>
@@ -144,7 +158,7 @@ function Documento({ id }) {
         {x.porReceber && <button type="button" className="btn btn-success" onClick={() => acao('/receber', {}, 'Recepção confirmada.')}><i className="fa fa-check me-1" />Confirmar recepção</button>}
         {fisicoPorConfirmar && <button type="button" className="btn btn-outline-success" onClick={() => acao('/receber', { fisico: true }, 'Original em papel recebido.')}><i className="fa fa-file-alt me-1" />Recebi o original</button>}
         {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-theme" onClick={() => setModal('encaminhar')}><i className="fa fa-share me-1" />Encaminhar</button>}
-        {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-outline-secondary" onClick={() => acao('/arquivar', undefined, 'Arquivado.')}><i className="fa fa-archive me-1" />Arquivar</button>}
+        {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-outline-secondary" onClick={() => setModal('arquivar')}><i className="fa fa-archive me-1" />Arquivar</button>}
         {x.estado === 'arquivado' && <button type="button" className="btn btn-outline-secondary" onClick={() => acao('/reabrir', undefined, 'Reaberto.')}>Reabrir</button>}
       </Cabecalho>
       <div className="row">
@@ -156,6 +170,7 @@ function Documento({ id }) {
               <dt>Origem</dt><dd>{x.origem} · registado por {x.criadoPor} em {dataHoraPt(x.criadoEm)}</dd>
               <dt>Onde está</dt><dd>{x.localAtual}</dd>
               {x.prazo && <><dt>Prazo</dt><dd>{dataPt(x.prazo)}</dd></>}
+              {x.estado === 'arquivado' && <><dt>Arquivado</dt><dd>{[x.armario && `Armário ${x.armario}`, x.prateleira && `prateleira ${x.prateleira}`, x.pasta && `pasta ${x.pasta}`].filter(Boolean).join(' · ') || 'sem sítio indicado'}{x.arquivadoEm && ` · ${dataHoraPt(x.arquivadoEm)}`}</dd></>}
               {x.resumo && <><dt>Resumo</dt><dd style={{ whiteSpace: 'pre-wrap' }}>{x.resumo}</dd></>}
             </dl>
           </Painel>
@@ -187,6 +202,7 @@ function Documento({ id }) {
           </Painel>
         </div>
       </div>
+      {modal === 'arquivar' && <Arquivar x={x} aoFechar={() => setModal(null)} aoArquivar={(sitio) => acao('/arquivar', sitio, 'Arquivado.')} />}
       {modal === 'encaminhar' && <Encaminhar x={x} unidades={unidades ?? []} minha={utilizador.unidadeId} aoFechar={() => setModal(null)} aoEnviar={(c) => acao('/encaminhar', c, 'Encaminhado.')} />}
       {modal?.entregue && <Entrega aoFechar={() => setModal(null)} aoConfirmar={(portador) => api(`/expediente/${id}/movimentos/${modal.entregue.id}/entregue`, { metodo: 'POST', corpo: { portador } }).then((r) => { setX(r); setModal(null); avisar('Entrega do original registada.') }).catch((e) => avisar(e.message, 'erro'))} portador={modal.entregue.fisicoPortador} />}
     </>
@@ -213,6 +229,22 @@ function Entrega({ portador: inicial = '', aoFechar, aoConfirmar }) {
     <Modal titulo="Entrega do original em papel" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={() => aoConfirmar(portador)}>Registar</button></>}>
       <Campo rotulo="Entregue por (portador)" col="col-12"><input className="form-control form-control-sm" value={portador} onChange={(e) => setPortador(e.target.value)} /></Campo>
       <p className="small text-muted mb-0">A unidade que recebe confirma depois «Recebi o original».</p>
+    </Modal>
+  )
+}
+
+// arquivar: onde fica o original em papel (armário, prateleira, pasta), para o encontrar depois
+function Arquivar({ x, aoFechar, aoArquivar }) {
+  const [d, setD] = useState({ armario: x.armario ?? '', prateleira: x.prateleira ?? '', pasta: x.pasta ?? '' })
+  const campo = (k, rotulo, exemplo, col) => <Campo rotulo={rotulo} col={col}><input className="form-control form-control-sm" maxLength={k === 'pasta' ? 100 : 60} value={d[k]} placeholder={exemplo} onChange={(e) => setD({ ...d, [k]: e.target.value })} /></Campo>
+  return (
+    <Modal titulo={`Arquivar ${x.protocolo}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={() => aoArquivar(d)}><i className="fa fa-archive me-1" />Arquivar</button></>}>
+      <p className="small text-muted">{x.temFisico ? 'Onde fica guardado o original em papel.' : 'Sem original em papel: o sítio é opcional (por exemplo, a pasta onde fica uma cópia impressa).'}</p>
+      <div className="row">
+        {campo('armario', 'Armário', 'Ex.: A1', 'col-md-4')}
+        {campo('prateleira', 'Prateleira', 'Ex.: 3', 'col-md-4')}
+        {campo('pasta', 'Pasta / dossier', 'Ex.: Ofícios recebidos 2026', 'col-md-4')}
+      </div>
     </Modal>
   )
 }

@@ -494,6 +494,11 @@ model Expediente {
   temFisico       Boolean           @default(false) @map("tem_fisico")
   prazo           DateTime?         @db.Date
   estado          String            @default("em_curso") // em_curso | arquivado
+  // onde fica o original em papel depois de arquivado: armário, prateleira e pasta (dossier)
+  armario         String            @default("")
+  prateleira      String            @default("")
+  pasta           String            @default("")
+  arquivadoEm     DateTime?         @map("arquivado_em") @db.Timestamptz(3)
   criadoPorId     Int               @map("criado_por_id")
   criadoEm        DateTime          @default(now()) @map("criado_em") @db.Timestamptz(3)
   anexos          AnexoExpediente[]

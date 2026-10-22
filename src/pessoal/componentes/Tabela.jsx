@@ -8,16 +8,26 @@ const TAMANHOS = [10, 25, 50, 100]
   Tabela de todas as listas: pesquisa em todas as colunas, ordenação ao clicar no título, paginação,
   exportação para Excel e PDF (do que está filtrado, todas as páginas) e linhas clicáveis.
   colunas: [{ chave, titulo, valor?(linha) (texto/número para ordenar, pesquisar e exportar), mostrar?(linha) (o que se vê),
-  ordenarPor?(linha) (outra chave para ordenar, ex.: o grau do posto), alinhar?: 'end' | 'center', exportar?: false }]
+  ordenarPor?(linha) (outra chave para ordenar, ex.: o grau do posto), alinhar?: 'end' | 'center', exportar?: false, oculta?: true }]
   Sem ordem escolhida, as linhas ficam pela ordem em que vêm (as listas de pessoal vêm pela ordem hierárquica).
+  Relatório à medida: no botão «Colunas» escolhem-se as colunas que se vêem e que saem no Excel e no PDF
+  (as «oculta» começam escondidas); a escolha fica guardada neste computador, para cada lista.
 */
-export default function Tabela({ titulo, subtitulo, colunas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial }) {
+const lerEscolha = (k) => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } }
+const guardarEscolha = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* sem armazenamento: fica só nesta visita */ } }
+export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial }) {
   const [pesquisa, setPesquisa] = useState('')
   const [ordem, setOrdem] = useState(ordemInicial ?? null) // { chave, dir: 1 | -1 }
   const [pagina, setPagina] = useState(1)
   const [tamanho, setTamanho] = useState(porPagina)
   const [aExportar, setAExportar] = useState('')
+  const chaveEscolha = `pes-colunas:${titulo}`
+  const [escolha, setEscolha] = useState(() => lerEscolha(chaveEscolha)) // { chave: true (vê-se) | false (escondida) }
+  const [verColunas, setVerColunas] = useState(false)
   const valor = (c, l) => (c.valor ? c.valor(l) : l[c.chave])
+  const colunas = useMemo(() => todas.filter((c) => escolha?.[c.chave] ?? !c.oculta), [todas, escolha])
+  const mudarColuna = (c, ver) => { const n = { ...escolha, [c.chave]: ver }; setEscolha(n); guardarEscolha(chaveEscolha, n) }
+  const reporColunas = () => { setEscolha(null); try { localStorage.removeItem(chaveEscolha) } catch { /* nada */ } }
 
   const filtradas = useMemo(() => {
     const termos = normalizar(pesquisa).split(/\s+/).filter(Boolean)
@@ -69,6 +79,24 @@ export default function Tabela({ titulo, subtitulo, colunas, linhas, aoClicar, c
         <span className="pes-tabela-conta">{filtradas.length === linhas.length ? `${linhas.length} registo(s)` : `${filtradas.length} de ${linhas.length}`}</span>
         <div className="ms-auto d-flex gap-1 flex-wrap">
           {acoes}
+          <div className="position-relative">
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setVerColunas(!verColunas)} aria-expanded={verColunas} title="Escolher as colunas (também as do Excel e do PDF)"><i className="fa fa-columns me-1" />Colunas{colunas.length < todas.length && ` (${colunas.length}/${todas.length})`}</button>
+            {verColunas && (
+              <div className="pes-colunas card shadow-sm p-2" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, minWidth: 240, maxHeight: 360, overflowY: 'auto' }}>
+                {todas.filter((c) => c.titulo).map((c) => (
+                  <label key={c.chave} className="form-check small mb-1">
+                    <input type="checkbox" className="form-check-input" checked={colunas.includes(c)} disabled={colunas.length === 1 && colunas.includes(c)} onChange={(e) => mudarColuna(c, e.target.checked)} />
+                    <span className="form-check-label">{c.titulo}</span>
+                  </label>
+                ))}
+                <div className="d-flex gap-1 mt-1 border-top pt-2">
+                  <button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => { const n = Object.fromEntries(todas.map((c) => [c.chave, true])); setEscolha(n); guardarEscolha(chaveEscolha, n) }}>Todas</button>
+                  <button type="button" className="btn btn-xs btn-outline-secondary" onClick={reporColunas}>Repor</button>
+                  <button type="button" className="btn btn-xs btn-theme ms-auto" onClick={() => setVerColunas(false)}>Fechar</button>
+                </div>
+              </div>
+            )}
+          </div>
           {!semExportar && (
             <>
               <button type="button" className="btn btn-sm btn-success" disabled={!filtradas.length || aExportar} onClick={() => exportar('excel')} title="Exportar para Excel">

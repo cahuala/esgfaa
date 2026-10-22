@@ -36,7 +36,7 @@ export class ServicoExpediente {
     const nome = (id) => unidades.get(id) ?? (id ? `#${id}` : '')
     return {
       id: x.id, protocolo: x.protocolo, sentido: x.sentido, tipo: x.tipo, tipoNome: TIPOS_EXPEDIENTE[x.tipo] ?? x.tipo, numero: x.numero, assunto: x.assunto, classificacao: x.classificacao,
-      estado: x.estado, criadoEm: x.criadoEm, prazo: x.prazo?.toISOString().slice(0, 10) ?? null, temFisico: x.temFisico, anexos: x.anexos?.length ?? x._count?.anexos ?? 0,
+      estado: x.estado, armario: x.armario, prateleira: x.prateleira, pasta: x.pasta, arquivadoEm: x.arquivadoEm, criadoEm: x.criadoEm, prazo: x.prazo?.toISOString().slice(0, 10) ?? null, temFisico: x.temFisico, anexos: x.anexos?.length ?? x._count?.anexos ?? 0,
       origem: x.entidadeExterna || nome(x.origemUnidadeId), localAtual: ultimo ? nome(ultimo.paraUnidadeId) : nome(x.origemUnidadeId),
       porReceber, fisicoPendente: x.movimentos.some((m) => m.paraUnidadeId === u.unidadeId && ['a_enviar', 'entregue'].includes(m.fisico)),
       naMinhaUnidade: (ultimo?.paraUnidadeId ?? x.origemUnidadeId) === u.unidadeId, enviadoPorMim: x.origemUnidadeId === u.unidadeId || x.movimentos.some((m) => m.deUnidadeId === u.unidadeId),
@@ -48,12 +48,16 @@ export class ServicoExpediente {
   }
 
   // caixas: por_receber | na_unidade | enviados | arquivo | todos (livro, só administrador)
-  async listar(u, { caixa = 'por_receber' } = {}) {
+  // livro e arquivo: também por período (de/até, pela data de registo), sentido e armário
+  async listar(u, { caixa = 'por_receber', de, ate, sentido, armario } = {}) {
     exigir(u, 'expediente')
     const livro = caixa === 'todos'
     if (livro) exigir(u, 'administrar')
     else this.#unidade(u)
     const where = livro ? {} : { OR: [{ origemUnidadeId: u.unidadeId }, { movimentos: { some: { OR: [{ paraUnidadeId: u.unidadeId }, { deUnidadeId: u.unidadeId }] } } }] }
+    if (de || ate) where.criadoEm = { ...(de ? { gte: new Date(`${de}T00:00:00`) } : {}), ...(ate ? { lte: new Date(`${ate}T23:59:59.999`) } : {}) }
+    if (sentido) where.sentido = sentido
+    if (armario) where.armario = armario
     const l = await this.bd.expediente.findMany({ where, include: { movimentos: { orderBy: { id: 'asc' } }, _count: { select: { anexos: true } } }, orderBy: { criadoEm: 'desc' }, take: 3000 })
     const unidades = await this.#unidades()
     const r = l.map((x) => this.#resumo(x, u, unidades))
@@ -153,12 +157,14 @@ export class ServicoExpediente {
     return this.obter(u, id)
   }
 
-  async arquivar(u, id, arquivar = true) {
+  // arquivar diz onde fica o original em papel (armário, prateleira, pasta); reabrir mantém o sítio
+  async arquivar(u, id, arquivar = true, { armario = '', prateleira = '', pasta = '' } = {}) {
     exigir(u, 'expediente')
     const x = await this.obter(u, id)
     if (!x.naMinhaUnidade && !pode(u, 'administrar')) throw semPermissao('Só a unidade onde o documento está o arquiva.')
-    await this.bd.expediente.update({ where: { id }, data: { estado: arquivar ? 'arquivado' : 'em_curso' } })
-    await this.auditoria.registar(u, arquivar ? 'arquivar_expediente' : 'reabrir_expediente', x.protocolo)
+    const sitio = arquivar ? { armario: armario.trim(), prateleira: prateleira.trim(), pasta: pasta.trim(), arquivadoEm: this.agora() } : {}
+    await this.bd.expediente.update({ where: { id }, data: { estado: arquivar ? 'arquivado' : 'em_curso', ...sitio } })
+    await this.auditoria.registar(u, arquivar ? 'arquivar_expediente' : 'reabrir_expediente', [x.protocolo, sitio.armario && `armário ${sitio.armario}`, sitio.prateleira && `prateleira ${sitio.prateleira}`, sitio.pasta && `pasta ${sitio.pasta}`].filter(Boolean).join(' · '))
     return this.obter(u, id)
   }
 
