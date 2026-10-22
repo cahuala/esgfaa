@@ -215,6 +215,7 @@ export default function Organica() {
   return (
     <>
       <Cabecalho titulo="Orgânica" subtitulo="Escola Superior de Guerra" migalhas={[['Orgânica']]}>
+        {gerir && <button type="button" className="btn btn-outline-theme" onClick={() => navegar('/organica/importar')}><i className="fa fa-file-excel me-1" />Carregar o quadro orgânico</button>}
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setModal({ unidade: { paiId: null } })}><i className="fa fa-plus me-1" />Nova unidade</button>}
       </Cabecalho>
       <div className="pes-org-kpis mb-3">

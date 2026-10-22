@@ -1,5 +1,6 @@
 import { conflito, invalido, naoEncontrado } from '../erros.js'
-import { CATEGORIAS, FUNCOES, POSTOS, abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { ABREVIATURAS, CATEGORIAS, FUNCOES, POSTOS, abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
 
 // colunas do planeamento: escalões dos oficiais, sargentos, praças e civis
 const CURTOS = { oficial_general: 'Of. Gen.', oficial_superior: 'Of. Sup.', oficial_capitao: 'Of. Cap.', oficial_subalterno: 'Of. Sub.', sargento: 'Sarg.', praca: 'Praças' }
@@ -186,5 +187,123 @@ export class ServicoOrganica {
     const r = await this.bd.cargo.deleteMany({ where: { id } })
     if (!r.count) throw naoEncontrado('Cargo não encontrado.')
     await this.auditoria.registar(u, 'remover_cargo', `#${id}`)
+  }
+
+  /*
+    Carregar o quadro orgânico de uma folha de Excel (como no SIGP): cada linha é uma unidade e, se tiver
+    cargo, um cargo dessa unidade. As unidades encontram-se pelo nome ou pela sigla; as que não existem
+    criam-se dentro da «unidade superior» (que tem de vir antes na folha, ou já existir). Os cargos
+    encontram-se pelo nome dentro da unidade: os novos criam-se, os que existem ficam com os lugares, o posto
+    e a função da folha. Nada se apaga. Com simular, só diz o que faria.
+    linha = { unidade, sigla, tipo, superior, cargo, funcao, posto, categoriaCivil, lugares }
+  */
+  async importarQuadro(u, { linhas, simular = true }) {
+    exigir(u, 'administrar')
+    if (!Array.isArray(linhas) || !linhas.length) throw invalido('A folha não tem linhas.')
+    if (linhas.length > 3000) throw invalido('No máximo 3000 linhas de cada vez.')
+    const sem = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.\s]+/g, ' ').trim()
+    const unidades = (await this.bd.unidade.findMany()).map((x) => ({ ...x }))
+    const cargos = (await this.bd.cargo.findMany()).map((x) => ({ ...x }))
+    let novoId = -1
+    const acoes = [] // [{ tipo: 'unidade'|'cargo', criar, dados, id }]
+    const acharUnidade = (t) => unidades.filter((x) => sem(x.nome) === sem(t) || (x.sigla && sem(x.sigla) === sem(t)))
+    const escolher = (v, opcoes, campo) => {
+      const k = opcoes.find(([, ...nomes]) => nomes.some((n) => sem(n) === sem(v)))
+      if (!k) throw invalido(`${campo} «${v}» não corresponde a nenhum da lista.`)
+      return k[0]
+    }
+    const TIPOS = Object.entries(TIPOS_UNIDADE).map(([k, v]) => [k, k, v])
+    const POSTOS_OP = Object.values(POSTOS).map((p) => [p.id, ...new Set([...Object.values(p.nomes), ...Object.values(p.nomes).map((n) => ABREVIATURAS[n]).filter(Boolean)])])
+    const FUNCOES_OP = Object.entries(FUNCOES).map(([k, v]) => [k, k, v, v.split(' ')[0]])
+    const CIVIS_OP = Object.values(CARREIRAS_CIVIS).map((c) => [c.nome, c.nome])
+    const resultado = []
+    const ordemSeguinte = (paiId) => Math.max(-1, ...unidades.filter((x) => x.paiId === paiId).map((x) => x.ordem ?? 0)) + 1
+    for (const [i, l] of linhas.entries()) {
+      const r = { linha: i + 2, unidade: String(l.unidade ?? '').trim(), cargo: String(l.cargo ?? '').trim(), acoes: [] }
+      try {
+        if (!r.unidade) throw invalido('Falta o nome da unidade.')
+        const v = (k) => String(l[k] ?? '').trim()
+        // a unidade superior
+        let paiId
+        if (v('superior')) {
+          const p = acharUnidade(v('superior'))
+          if (!p.length) throw invalido(`A unidade superior «${v('superior')}» não existe (tem de vir numa linha antes desta).`)
+          if (p.length > 1) throw invalido(`Há várias unidades «${v('superior')}»: use a sigla.`)
+          paiId = p[0].id
+        }
+        const tipo = v('tipo') ? escolher(v('tipo'), TIPOS, 'Tipo de unidade') : undefined
+        const achadas = acharUnidade(r.unidade).filter((x) => paiId === undefined || x.paiId === paiId)
+        if (achadas.length > 1) throw invalido(`Há várias unidades «${r.unidade}»: indique a unidade superior ou a sigla.`)
+        let un = achadas[0]
+        if (!un) {
+          un = { id: novoId--, nome: r.unidade, sigla: v('sigla'), tipo: tipo ?? 'outro', paiId: paiId ?? null, ordem: ordemSeguinte(paiId ?? null) }
+          unidades.push(un)
+          acoes.push({ tipo: 'unidade', criar: true, ref: un })
+          r.acoes.push('unidade nova')
+        } else {
+          const muda = {}
+          if (v('sigla') && v('sigla') !== un.sigla) muda.sigla = v('sigla')
+          if (tipo && tipo !== un.tipo) muda.tipo = tipo
+          if (paiId !== undefined && paiId !== un.paiId) {
+            for (let x = paiId; x; x = unidades.find((y) => y.id === x)?.paiId) if (x === un.id) throw invalido('A unidade não pode ficar dentro de si própria nem de uma subunidade sua.')
+            muda.paiId = paiId
+          }
+          if (Object.keys(muda).length) { Object.assign(un, muda); acoes.push({ tipo: 'unidade', criar: false, ref: un, muda }); r.acoes.push(`unidade actualizada (${Object.keys(muda).join(', ')})`) }
+        }
+        // o cargo
+        if (r.cargo) {
+          const posto = v('posto') ? escolher(v('posto'), POSTOS_OP, 'Posto') : null
+          const categoriaCivil = v('categoriaCivil') ? escolher(v('categoriaCivil'), CIVIS_OP, 'Categoria civil') : null
+          const funcao = v('funcao') ? escolher(v('funcao'), FUNCOES_OP, 'Função') : undefined
+          const lugares = v('lugares') ? Number(v('lugares')) : undefined
+          if (lugares !== undefined && (!Number.isInteger(lugares) || lugares < 1 || lugares > 500)) throw invalido('Os lugares têm de ser um número inteiro de 1 a 500.')
+          const tipoCargo = posto && categoriaCivil ? 'ambos' : categoriaCivil ? 'civil' : 'militar'
+          const c = cargos.find((x) => x.unidadeId === un.id && sem(x.nome) === sem(r.cargo))
+          if (!c) {
+            const novo = { id: novoId--, nome: r.cargo, unidadeId: un.id, funcao: funcao ?? 'execucao', tipo: tipoCargo, postoRequerido: posto, categoriaCivil, vagas: lugares ?? 1 }
+            cargos.push(novo)
+            acoes.push({ tipo: 'cargo', criar: true, ref: novo })
+            r.acoes.push(`cargo novo (${novo.vagas} lugar(es))`)
+          } else {
+            const muda = {}
+            if (lugares !== undefined && lugares !== c.vagas) muda.vagas = lugares
+            if (posto && posto !== c.postoRequerido) muda.postoRequerido = posto
+            if (categoriaCivil && categoriaCivil !== c.categoriaCivil) muda.categoriaCivil = categoriaCivil
+            if ((posto || categoriaCivil) && tipoCargo !== c.tipo) muda.tipo = tipoCargo
+            if (funcao && funcao !== c.funcao) muda.funcao = funcao
+            if (Object.keys(muda).length) { Object.assign(c, muda); acoes.push({ tipo: 'cargo', criar: false, ref: c, muda }); r.acoes.push(`cargo actualizado (${Object.keys(muda).join(', ')})`) }
+          }
+        }
+        r.acao = r.acoes.length ? 'alterar' : 'igual'
+      } catch (e) {
+        if (e.codigo !== 'validacao') throw e
+        r.acao = 'erro'
+        r.erro = e.message
+      }
+      resultado.push(r)
+    }
+    const resumo = {
+      unidades: acoes.filter((a) => a.tipo === 'unidade' && a.criar).length, cargos: acoes.filter((a) => a.tipo === 'cargo' && a.criar).length,
+      actualizados: acoes.filter((a) => !a.criar).length, lugares: acoes.filter((a) => a.tipo === 'cargo' && a.criar).reduce((n, a) => n + a.ref.vagas, 0), erros: resultado.filter((x) => x.acao === 'erro').length,
+    }
+    if (!simular) {
+      if (resumo.erros) throw invalido(`Corrija primeiro as ${resumo.erros} linha(s) com erro: nada foi gravado.`)
+      // aplica por ordem, trocando os números provisórios (negativos) pelos verdadeiros
+      await this.bd.$transaction(async (tx) => {
+        const real = new Map()
+        const id = (x) => (x !== null && x < 0 ? real.get(x) : x)
+        for (const a of acoes) {
+          const x = a.ref
+          if (a.tipo === 'unidade') {
+            if (a.criar) real.set(x.id, (await tx.unidade.create({ data: { nome: x.nome, sigla: x.sigla, tipo: x.tipo, paiId: id(x.paiId), ordem: x.ordem } })).id)
+            else await tx.unidade.update({ where: { id: x.id }, data: { ...a.muda, ...('paiId' in a.muda ? { paiId: id(a.muda.paiId) } : {}) } })
+          } else if (a.criar) {
+            await tx.cargo.create({ data: { nome: x.nome, unidadeId: id(x.unidadeId), funcao: x.funcao, tipo: x.tipo, postoRequerido: x.postoRequerido, categoriaCivil: x.categoriaCivil, vagas: x.vagas } })
+          } else await tx.cargo.update({ where: { id: x.id }, data: a.muda })
+        }
+      }, { timeout: 60_000 })
+      await this.auditoria.registar(u, 'importar_quadro_organico', `${resumo.unidades} unidade(s), ${resumo.cargos} cargo(s), ${resumo.actualizados} actualização(ões)`, resumo)
+    }
+    return { simulacao: simular, resumo, linhas: resultado }
   }
 }

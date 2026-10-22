@@ -42,6 +42,8 @@ export default function Importar() {
   const navegar = useNavigate()
   const [aba, setAba] = useState('excel')
   const [modo, setModo] = useState('novos')
+  // como no SIGP: cada BI da folha verifica-se na base de dados do Estado (preenche o que falta e avisa das diferenças)
+  const [verificarBi, setVerificarBi] = useState(true)
   const [folha, setFolha] = useState(null)
   const [resultado, setResultado] = useState(null)
   const [aTrabalhar, setATrabalhar] = useState(false)
@@ -62,10 +64,10 @@ export default function Importar() {
     }
   }
 
-  async function simular(f = folha, m = modo, gravar = false) {
+  async function simular(f = folha, m = modo, gravar = false, vb = verificarBi) {
     setATrabalhar(true)
     try {
-      const r = await api('/pessoas/importar', { metodo: 'POST', corpo: { modo: m, simular: !gravar, linhas: f.linhas } })
+      const r = await api('/pessoas/importar', { metodo: 'POST', corpo: { modo: m, simular: !gravar, verificarBi: vb, linhas: f.linhas } })
       setResultado(r)
       if (gravar) avisar(`${r.resumo.validas} ficha(s) ${m === 'novos' ? 'criadas' : 'actualizadas'}; ${r.resumo.erros} linha(s) com erro.`)
     } catch (e) {
@@ -107,6 +109,7 @@ export default function Importar() {
     { chave: 'linha', titulo: 'Linha', valor: (l) => l.linha, alinhar: 'end' },
     { chave: 'ident', titulo: 'NIP / N.º', valor: (l) => l.identificacao },
     { chave: 'nome', titulo: 'Nome', valor: (l) => l.nome },
+    { chave: 'bi', titulo: 'BI (Estado)', valor: (l) => (l.avisos ?? []).join('; '), mostrar: (l) => (l.avisos?.length ? <span className="small text-warning"><i className="fa fa-exclamation-triangle me-1" />{l.avisos.join('; ')}</span> : l.biConfere ? <span className="small text-success"><i className="fa fa-id-card me-1" />Confere{l.doBi?.length ? ` · do BI: ${l.doBi.length} campo(s)` : ''}</span> : null) },
     { chave: 'acao', titulo: 'Resultado', valor: (l) => l.acao, mostrar: (l) => (l.acao === 'erro' ? <span className="text-danger"><i className="fa fa-times-circle me-1" />{l.erro}</span> : <span className="text-success"><i className="fa fa-check-circle me-1" />{{ criar: 'Vai ser criado', actualizar: 'Vai ser actualizado', criado: 'Criado', actualizado: 'Actualizado' }[l.acao]}{l.campos?.length ? <span className="text-muted small"> ({l.campos.length} campo(s))</span> : ''}</span>) },
   ], [])
 
@@ -129,6 +132,7 @@ export default function Importar() {
                 <label className="form-label small fw-semibold">Folha Excel</label>
                 <Carregar aceitar=".xlsx,.csv,.txt" maxMb={20} compacto icone="fa-file-excel" titulo={folha ? `Outra folha (actual: ${folha.nome})` : 'Arraste a folha para aqui'} ajuda="Excel (.xlsx) ou CSV · até 20 MB" aoEscolher={escolher} desativado={aTrabalhar} />
               </div>
+              <div className="col-12 mb-2"><label className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={verificarBi} onChange={(e) => { setVerificarBi(e.target.checked); if (folha) simular(folha, modo, false, e.target.checked) }} /> <span className="form-check-label">Verificar cada BI na base de dados do Estado <span className="text-muted small">(preenche o nome, a filiação e o nascimento que faltarem e avisa do que não bater certo)</span></span></label></div>
               <div className="col-md-3 mb-2"><button type="button" className="btn btn-sm btn-outline-success w-100" onClick={modelo}><i className="fa fa-download me-1" />Descarregar o modelo</button></div>
             </div>
             <p className="small text-muted mb-0">A primeira linha tem os títulos das colunas (como no modelo). As correspondências são <strong>exactas</strong>: posto, ramo, forma de serviço, quadro especial, unidade (nome ou sigla) e cargo têm de existir; o que não corresponder fica a vermelho e não é gravado. Os nomes ficam em «Primeira Letra Maiúscula». Datas em dd/mm/aaaa. Primeiro o sistema simula; só grava quando confirmar.</p>
@@ -136,7 +140,7 @@ export default function Importar() {
           </Painel>
           {resultado && (
             <Painel titulo={resultado.simulacao ? '2. Verificação (nada foi gravado ainda)' : 'Resultado'} icone="fa-clipboard-check" acoes={resultado.simulacao && resultado.resumo.validas > 0 && <button type="button" className="btn btn-xs btn-theme" disabled={aTrabalhar} onClick={() => simular(folha, modo, true)}><i className="fa fa-check me-1" />{modo === 'novos' ? 'Criar' : 'Actualizar'} {resultado.resumo.validas} ficha(s)</button>}>
-              <div className="d-flex gap-2 mb-2"><span className="badge bg-success fs-6">{resultado.resumo.validas} válida(s)</span><span className="badge bg-danger fs-6">{resultado.resumo.erros} com erro</span>{!resultado.simulacao && <button type="button" className="btn btn-sm btn-link" onClick={() => navegar('/pessoas')}>Ver o pessoal</button>}</div>
+              <div className="d-flex gap-2 mb-2"><span className="badge bg-success fs-6">{resultado.resumo.validas} válida(s)</span><span className="badge bg-danger fs-6">{resultado.resumo.erros} com erro</span>{resultado.resumo.avisos > 0 && <span className="badge bg-warning text-dark fs-6">{resultado.resumo.avisos} com aviso do BI</span>}{resultado.resumo.biConferidos > 0 && <span className="badge bg-light text-dark border fs-6">{resultado.resumo.biConferidos} BI conferido(s)</span>}{resultado.resumo.biIndisponivel && <span className="small text-danger align-self-center">O serviço do BI não respondeu: as restantes linhas não foram verificadas.</span>}{!resultado.simulacao && <button type="button" className="btn btn-sm btn-link" onClick={() => navegar('/pessoas')}>Ver o pessoal</button>}</div>
               <Tabela titulo="Importação de pessoal" colunas={colunasResultado} linhas={resultado.linhas} chave={(l) => l.linha} porPagina={50} aoClicar={(l) => l.id && navegar(`/pessoas/${l.id}`)} />
             </Painel>
           )}

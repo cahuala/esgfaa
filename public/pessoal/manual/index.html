@@ -196,7 +196,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
         <h3>Fichas de militares e civis</h3>
         <ol class="passos">
           <li>Em <b>Pessoal</b>, filtre por ramo, posto, unidade (com as subunidades), situação, estado, género… e abra uma ficha.</li>
-          <li><span class="botao">Nova ficha</span> ou <span class="botao">Editar ficha</span>: com o número do BI, a lupa <b>consulta a base de dados do Estado</b> e preenche nome, filiação, nascimento e morada. Pode juntar a fotografia.</li>
+          <li><span class="botao">Nova ficha</span> ou <span class="botao">Editar ficha</span>: ao escrever o número do BI e sair do campo, o sistema <b>verifica logo o BI na base de dados do Estado</b>. O que está vazio preenche-se (nome, filiação, nascimento, género, naturalidade, morada); o que já está escrito e não bate certo aparece num quadro amarelo, com o valor da ficha e o do BI, para escolher <i>usar o do BI</i>. Pode juntar a fotografia.</li>
           <li><b>Situação (Lei n.º 13/18)</b>, numa lista em árvore: Activo (art. 7.º) → <i>em efectividade</i> (comissão normal, art. 12.º; inactividade temporária, art. 13.º) ou <i>fora de efectividade</i> (comissão especial, art. 14.º; licença registada, art. 40.º; licença ilimitada, art. 41.º); Reserva (art. 8.º); Reforma (art. 9.º).</li>
           <li><b>Estado</b> (muda a qualquer momento): destacado, em missão, em formação, em substituição, a cargo da Direcção, suspensão de funções, aguardando colocação, desaparecido em serviço — ou «ao serviço».</li>
           <li>Cada mudança de situação e de estado fica no <b>histórico</b> da ficha. A ficha mostra também a carreira: tempo no posto, próximo posto, se está em condições de ser promovido e quando passa à reserva.</li>
@@ -209,7 +209,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-perfil.jpg" alt="Perfil de um militar"></button><figcaption>O perfil: situação, estado (aqui «Destacado»), cargo e as acções.</figcaption></figure>
         </div>
         <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-ficha-situacao.jpg" alt="Situação em árvore e estado na ficha"></button><figcaption>Na ficha: a situação escolhe-se na árvore da lei, e o estado ao lado.</figcaption></figure>
-        <p><b>Importar:</b> em <b>Importar Excel e fotos</b> carrega-se uma folha com muitas fichas (primeiro simula, mostra o que não corresponde e só depois grava) e as fotografias pelo NIP.</p>
+        <p><b>Importar:</b> em <b>Importar Excel e fotos</b> carrega-se uma folha com muitas fichas (primeiro simula, mostra o que não corresponde e só depois grava) e as fotografias pelo NIP. Com <i>Verificar cada BI na base de dados do Estado</i> ligado, cada BI da folha é conferido: o que faltar vem do BI e as diferenças aparecem na coluna <b>BI (Estado)</b>, sem impedir a importação.</p>
       </section>
 
       <section class="tema" id="pes-propostas">
@@ -230,7 +230,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
 
       <section class="tema" id="pes-organica">
         <h3>Orgânica e processos individuais</h3>
-        <p><b>Orgânica e planeamento:</b> a árvore das unidades da Escola com os cargos de cada uma (previsto e ocupado). Clicar numa unidade mostra os cargos e quem os ocupa. <b>Processos individuais:</b> a estante do arquivo, com cada pasta no seu lugar (estante, prateleira, posição) e o que falta em cada processo.</p>
+        <p><b>Orgânica e planeamento:</b> a árvore das unidades da Escola com os cargos de cada uma (previsto e ocupado). Clicar numa unidade mostra os cargos e quem os ocupa. <b>Carregar o quadro orgânico:</b> descarregue o modelo, preencha uma linha por cargo (unidade, sigla, tipo, unidade superior, cargo, função, posto ou categoria civil, lugares) e carregue a folha; o sistema mostra o que vai criar ou actualizar e só grava quando confirmar, se nenhuma linha tiver erro. Nada se apaga. <b>Processos individuais:</b> a estante do arquivo, com cada pasta no seu lugar (estante, prateleira, posição) e o que falta em cada processo.</p>
         <div class="par">
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-organica.jpg" alt="Orgânica da Escola"></button><figcaption>A orgânica.</figcaption></figure>
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-processos.jpg" alt="Estante dos processos individuais"></button><figcaption>A estante dos processos: preto = com processo, tracejado = livre.</figcaption></figure>

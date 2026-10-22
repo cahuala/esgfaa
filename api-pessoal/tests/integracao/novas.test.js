@@ -53,6 +53,60 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.equal((await adm.get('/api/bi/abc')).status, 400)
   })
 
+  it('importação com verificação do BI: preenche o que falta e avisa do que não bate certo', async () => {
+    const linhas = [
+      { nip: 'BIV001', bi: '001234567LA041', ramo: 'EXE', posto: 'Major', fps: 'QP' },
+      { nip: 'BIV002', bi: '001234568LA041', nome: 'Joao Manuel dos Santos Kiala', pai: 'Paulo Kiala', ramo: 'EXE', posto: 'Major', fps: 'QP' },
+      { nip: 'BIV003', bi: '000000000LA000', nome: 'Sem Registo no Estado', ramo: 'EXE', posto: 'Major', fps: 'QP' },
+    ]
+    const antes = pedidosBi.length
+    const sim = (await adm.post('/api/pessoas/importar').send({ modo: 'novos', simular: true, verificarBi: true, linhas }).expect(200)).body
+    const [a, b, c] = sim.linhas
+    assert.equal(a.acao, 'criar') // sem nome na folha: vem do BI
+    assert.equal(a.nome, 'João Manuel dos Santos Kiala')
+    assert.ok(a.doBi.includes('dataNascimento') && a.biConfere)
+    assert.equal(b.acao, 'criar') // o nome sem acento confere; o pai não
+    assert.deepEqual(b.avisos, ['Pai diferente do BI: «Paulo Kiala» na folha, «Pedro Kiala» no BI'])
+    assert.match(c.avisos[0], /^BI: BI não encontrado/)
+    assert.equal(sim.resumo.avisos, 2)
+    // gravar não volta a consultar (os BI ficam em memória)
+    const n = pedidosBi.length
+    await adm.post('/api/pessoas/importar').send({ modo: 'novos', simular: false, verificarBi: true, linhas }).expect(200)
+    assert.equal(pedidosBi.length, n)
+    assert.equal(n - antes, 3)
+    const f = (await adm.get('/api/pessoas').query({ q: 'BIV001' })).body.find((x) => x.nip === 'BIV001')
+    assert.equal(f.nome, 'João Manuel dos Santos Kiala')
+  })
+
+  it('quadro orgânico por Excel: unidades dentro da superior, cargos com os lugares; simula, depois grava; nada se apaga', async () => {
+    const linhas = [
+      { unidade: 'Direcção de Logística', sigla: 'DL', tipo: 'Direcção' },
+      { unidade: 'Secção de Transportes', sigla: 'ST', tipo: 'seccao', superior: 'DL', cargo: 'Chefe da Secção de Transportes', funcao: 'Direcção e Chefia', posto: 'Major', lugares: '1' },
+      { unidade: 'ST', superior: 'DL', cargo: 'Motorista', posto: '2.º Sargento', lugares: 3 },
+      { unidade: 'Secção de Transportes', superior: 'DL', cargo: 'Auxiliar Administrativo', categoriaCivil: 'Administrativo', lugares: '2' },
+      { unidade: 'Departamento de Ensino', cargo: 'Professor de Estratégia', lugares: '4' },
+      { unidade: 'Fora', superior: 'Não Existe' },
+      { unidade: 'DE', cargo: 'Qualquer', posto: 'Capitão-Mor' },
+    ]
+    const sim = (await adm.post('/api/organica/importar').send({ simular: true, linhas }).expect(200)).body
+    assert.deepEqual(sim.linhas.map((l) => l.acao), ['alterar', 'alterar', 'alterar', 'alterar', 'alterar', 'erro', 'erro'])
+    assert.deepEqual([sim.resumo.unidades, sim.resumo.cargos, sim.resumo.actualizados, sim.resumo.lugares], [2, 3, 1, 6])
+    assert.equal((await adm.get('/api/unidades')).body.some((x) => x.nome === 'Direcção de Logística'), false) // simular não grava
+    assert.equal((await adm.post('/api/organica/importar').send({ simular: false, linhas })).status, 400) // com erros não grava nada
+    const r = (await adm.post('/api/organica/importar').send({ simular: false, linhas: linhas.slice(0, 5) }).expect(200)).body
+    assert.equal(r.resumo.erros, 0)
+    const un = (await adm.get('/api/unidades')).body
+    const dl = un.find((x) => x.sigla === 'DL')
+    const st = un.find((x) => x.sigla === 'ST')
+    assert.equal(st.paiId, dl.id)
+    assert.equal(st.tipo, 'seccao')
+    const cs = (await adm.get('/api/cargos').query({ unidadeId: String(st.id) })).body
+    assert.deepEqual(cs.map((c) => [c.nome, c.vagas, c.postoRequerido ?? c.categoriaCivil]).sort(), [['Auxiliar Administrativo', 2, 'Administrativo'], ['Chefe da Secção de Transportes', 1, 'major'], ['Motorista', 3, 'segundo_sargento']])
+    // a segunda vez não muda nada
+    const outra = (await adm.post('/api/organica/importar').send({ simular: true, linhas: linhas.slice(0, 5) }).expect(200)).body
+    assert.ok(outra.linhas.every((l) => l.acao === 'igual'))
+  })
+
   it('domiciliares: só para oficiais superiores e generais, dentro do limite do posto, e não contam como civis', async () => {
     const major = (await adm.post('/api/pessoas').send(militar({ nip: 'DOM001', posto: 'major' })).expect(201)).body
     const cap = (await adm.post('/api/pessoas').send(militar({ nip: 'DOM002' })).expect(201)).body

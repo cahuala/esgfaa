@@ -139,3 +139,14 @@ export function problemaNaFicha(p) {
   if (d('dataNascimento') && d('dataNascimento') > new Date()) return ['dataNascimento', 'A data de nascimento está no futuro.']
   return null
 }
+
+/*
+  Verificação do BI (como no SIGP): compara a ficha com os dados da base de dados do Estado, sem ligar a
+  acentos, maiúsculas nem espaços. Devolve as diferenças: [{ campo, rotulo, ficha, bi }].
+*/
+const CAMPOS_BI = [['nome', 'Nome'], ['pai', 'Pai'], ['mae', 'Mãe'], ['dataNascimento', 'Data de nascimento'], ['genero', 'Género']]
+const simples = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+export function diferencasDoBi(ficha, bi) {
+  return CAMPOS_BI.filter(([k]) => bi[k] && ficha[k] && simples(String(ficha[k]).slice(0, k === 'dataNascimento' ? 10 : undefined)) !== simples(bi[k]))
+    .map(([campo, rotulo]) => ({ campo, rotulo, ficha: String(ficha[campo]).slice(0, campo === 'dataNascimento' ? 10 : undefined), bi: bi[campo] }))
+}

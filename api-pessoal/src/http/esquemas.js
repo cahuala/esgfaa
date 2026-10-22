@@ -78,7 +78,8 @@ export const licenca = z.object({ pessoaId: id, tipo: txt(30), inicio: data, fim
 export const unidade = z.object({ nome: txt(150, 2), sigla: txt(20).default(''), tipo: txt(20).default('outro'), paiId: idOpc, ordem: z.coerce.number().int().min(0).max(999).default(0) }).strict()
 export const cargo = z.object({ nome: txt(150, 2), unidadeId: idOpc, funcao: txt(20).default('execucao'), tipo: z.enum(['militar', 'civil', 'ambos']).default('militar'), postoRequerido: z.union([txt(30), z.null()]).optional(), categoriaCivil: z.union([txt(80), z.null()]).optional(), vagas: z.coerce.number().int().min(1).max(500).default(1) }).strict()
 
-export const importar = z.object({ modo: z.enum(['novos', 'actualizar']), simular: z.boolean().default(true), linhas: z.array(z.record(z.string(), z.union([z.string().max(500), z.number(), z.null()]))).min(1).max(3000) })
+export const importarQuadro = z.object({ simular: z.boolean().default(true), linhas: z.array(z.record(z.string(), z.union([z.string().max(300), z.number(), z.null()]))).min(1).max(3000) }).strict()
+export const importar = z.object({ modo: z.enum(['novos', 'actualizar']), simular: z.boolean().default(true), verificarBi: z.boolean().default(false), linhas: z.array(z.record(z.string(), z.union([z.string().max(500), z.number(), z.null()]))).min(1).max(3000) })
 export const processo = z.object({ estante: txt(30).default(''), prateleira: txt(30).default(''), posicao: txt(30).default(''), estado: txt(20).default('activo'), observacoes: txt(1000).default('') }).strict()
 export const documentoPessoal = z.object({ tipo: txt(30), titulo: txt(200).default(''), data: dataOpc })
 export const extracto = z.object({ tipo: txt(20), numero: txt(80, 1), data, entidade: txt(150).default(''), propostaId: z.union([z.coerce.number().int().positive(), z.literal(''), z.null()]).optional().transform((v) => (v === '' ? null : v ?? null)), texto: z.string().max(500_000).default('') })

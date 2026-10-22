@@ -146,6 +146,7 @@ export function rotas({ servicos: s, config }) {
 
   // orgânica (árvore com o planeamento)
   r.get('/organica', async (req, res) => res.json(await s.organica.arvore(u(req))))
+  r.post('/organica/importar', validar({ body: E.importarQuadro }), async (req, res) => res.json(await s.organica.importarQuadro(u(req), req.dados.body)))
   r.get('/organica/:id', validar({ params: E.pId }), async (req, res) => res.json(await s.organica.detalhe(u(req), req.dados.params.id)))
 
   // expediente entre as áreas

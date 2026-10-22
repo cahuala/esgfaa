@@ -1,7 +1,7 @@
 import { invalido } from '../erros.js'
 import { ABREVIATURAS, EFECTIVIDADES, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, quadrosDoRamo } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS, CATEGORIA_ANTIGA, VINCULOS_CIVIS } from '../dominio/pessoal/civis.js'
-import { ESTADOS_CIVIS, HABILITACOES, PROVINCIAS, VINCULOS, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { ESTADOS_CIVIS, HABILITACOES, PROVINCIAS, VINCULOS, diferencasDoBi, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { exigir } from './sessao.js'
 
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.\s]+/g, ' ').trim()
@@ -45,7 +45,18 @@ export class ServicoImportacao {
     Object.assign(this, { bd, pessoas, auditoria })
   }
 
-  async importar(u, { modo = 'novos', linhas, simular = true }) {
+  // os BI consultados ficam 15 minutos em memória (a simulação e a gravação não consultam duas vezes)
+  #bis = new Map()
+  async #bi(numero) {
+    const k = String(numero).toUpperCase()
+    const x = this.#bis.get(k)
+    if (x && Date.now() - x.em < 15 * 60_000) return x.r
+    const r = await this.pessoas.dadosDoBi(numero).then((d) => ({ d }), (e) => ({ erro: e }))
+    if (r.erro?.codigo !== 'indisponivel') this.#bis.set(k, { r, em: Date.now() })
+    return r
+  }
+
+  async importar(u, { modo = 'novos', linhas, simular = true, verificarBi = false }) {
     exigir(u, 'editar')
     if (!Array.isArray(linhas) || !linhas.length) throw invalido('A folha não tem linhas.')
     if (linhas.length > 3000) throw invalido('No máximo 3000 linhas de cada vez.')
@@ -54,6 +65,8 @@ export class ServicoImportacao {
     const ocupacao = new Map(cargos.map((c) => [c.id, c._count.pessoas]))
     const vistos = new Set()
     const resultado = []
+    let biIndisponivel = false
+    let consultados = 0
     for (const [i, l] of linhas.entries()) {
       const r = { linha: i + 2, nome: String(l.nome ?? '').trim(), identificacao: String(l.nip || l.numeroAgente || '').trim() }
       try {
@@ -65,6 +78,20 @@ export class ServicoImportacao {
         if (modo === 'novos' && existente) throw invalido(`Já existe: ${existente.nome}.`)
         if (modo === 'actualizar' && !existente) throw invalido('Não existe nenhuma ficha com esse NIP/n.º de agente.')
         const d = this.#converter(l, { unidades, cargos, base: existente })
+        // verificar o BI na base de dados do Estado: preenche o que falta e avisa do que não bate certo
+        if (verificarBi && d.bi && !biIndisponivel) {
+          const { d: b, erro } = await this.#bi(d.bi)
+          if (erro?.codigo === 'indisponivel') { biIndisponivel = true; r.avisos = [erro.message] }
+          else if (erro) r.avisos = [`BI: ${erro.message}`]
+          else {
+            consultados++
+            for (const k of ['nome', 'pai', 'mae', 'dataNascimento', 'genero', 'estadoCivil', 'naturalidade', 'provincia']) if (b[k] && !d[k] && !existente?.[k]) { d[k] = k === 'dataNascimento' ? data(b[k]) : b[k]; (r.doBi ??= []).push(k) }
+            const dif = diferencasDoBi({ ...(existente ?? {}), ...d, dataNascimento: (d.dataNascimento ?? existente?.dataNascimento)?.toISOString?.().slice(0, 10) ?? d.dataNascimento }, b)
+            if (dif.length) r.avisos = dif.map((x) => `${x.rotulo} diferente do BI: «${x.ficha}» na folha, «${x.bi}» no BI`)
+            else r.biConfere = true
+            if (!r.nome && d.nome) r.nome = d.nome
+          }
+        }
         if (modo === 'novos') {
           if (!d.nome || d.nome.length < 5) throw invalido('Falta o nome completo.')
           d.tipo ??= l.nip ? 'militar' : 'civil'
@@ -94,7 +121,8 @@ export class ServicoImportacao {
       resultado.push(r)
     }
     const conta = (...k) => resultado.filter((x) => k.includes(x.acao)).length
-    const resumo = { validas: conta('criar', 'actualizar', 'criado', 'actualizado'), erros: conta('erro') }
+    const resumo = { validas: conta('criar', 'actualizar', 'criado', 'actualizado'), erros: conta('erro'), avisos: resultado.filter((x) => x.avisos?.length).length, biConferidos: resultado.filter((x) => x.biConfere).length, biIndisponivel }
+    if (consultados) await this.auditoria.registar(u, 'consultar_bi', `${consultados} BI na importação`)
     if (!simular) await this.auditoria.registar(u, 'importar_excel', `${resumo.validas} ficha(s) (${modo})`, resumo)
     return { simulacao: simular, modo, resumo, linhas: resultado }
   }

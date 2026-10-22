@@ -44,6 +44,8 @@ export default function FormularioFicha() {
   const [d, setD] = useState(id ? null : params.get('domiciliar') ? { ...VAZIA, tipo: 'civil', vinculo: 'domiciliar', militarAlocadoId: params.get('domiciliar') } : VAZIA)
   const [oficiais, setOficiais] = useState([])
   const [aConsultar, setAConsultar] = useState(false)
+  const [difBi, setDifBi] = useState(null) // { bi, dados, diferencas: [{ campo, rotulo, ficha, bi }] }
+  const [biVisto, setBiVisto] = useState('')
   // fotografia: escolhida aqui e enviada ao guardar (na ficha nova, depois de criada)
   const [foto, setFoto] = useState(null)
   const [fotoAtual, setFotoAtual] = useState(null)
@@ -78,20 +80,35 @@ export default function FormularioFicha() {
   const quadros = ref.quadros[d.ramo] ?? []
   const categoriasCivis = ref.carreirasCivis[d.carreiraCivil]?.categorias ?? []
 
-  async function consultarBi() {
+  /*
+    Verificação do BI (como no SIGP): ao escrever o BI, consulta logo a base de dados do Estado. O que está
+    vazio na ficha preenche-se; o que já está escrito e não bate certo (nome, pai, mãe, nascimento, género)
+    mostra-se ao lado, para escolher. Compara sem acentos nem maiúsculas.
+  */
+  const simples = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  const CAMPOS_BI = [['nome', 'Nome'], ['pai', 'Pai'], ['mae', 'Mãe'], ['dataNascimento', 'Data de nascimento'], ['genero', 'Género']]
+  async function consultarBi(automatico = false) {
+    const numero = String(d.bi ?? '').trim().toUpperCase().replace(/\s/g, '')
+    if (automatico && (!/^[0-9]{9}[A-Z]{2}[0-9]{3}$/.test(numero) || numero === biVisto)) return
+    setBiVisto(numero)
     setAConsultar(true)
     setErro(null)
     try {
-      const b = await api(`/bi/${encodeURIComponent(d.bi.trim())}`)
-      // só preenche o que veio; o que já está escrito à mão fica se o BI não o trouxer
-      setD((x) => ({ ...x, ...Object.fromEntries(Object.entries(b).filter(([, v]) => v)) }))
-      avisar('Dados do BI preenchidos. Confira antes de guardar.')
+      const b = await api(`/bi/${encodeURIComponent(numero)}`)
+      const naFicha = (k) => (k === 'dataNascimento' ? String(d[k] ?? '').slice(0, 10) : d[k])
+      const diferencas = CAMPOS_BI.filter(([k]) => b[k] && naFicha(k) && simples(naFicha(k)) !== simples(b[k])).map(([campo, rotulo]) => ({ campo, rotulo, ficha: naFicha(campo), bi: b[campo] }))
+      // só preenche o que está vazio; o que já está escrito fica, e as diferenças mostram-se
+      setD((x) => ({ ...x, bi: numero, ...Object.fromEntries(Object.entries(b).filter(([k, v]) => v && !x[k])) }))
+      setDifBi(diferencas.length ? { bi: numero, dados: b, diferencas } : null)
+      avisar(diferencas.length ? `O BI tem ${diferencas.length} dado(s) diferente(s) da ficha: veja ao lado do BI.` : 'BI verificado na base de dados do Estado: os dados conferem.')
     } catch (x) {
+      setDifBi(null)
       setErro({ texto: x.message, campo: 'bi' })
     } finally {
       setAConsultar(false)
     }
   }
+  const usarDoBi = (campos) => { setD((x) => ({ ...x, ...Object.fromEntries(campos.map((k) => [k, difBi.dados[k]])) })); setDifBi((v) => { const r = v.diferencas.filter((z) => !campos.includes(z.campo)); return r.length ? { ...v, diferencas: r } : null }) }
 
   // o que falta em cada passo (o navegador não valida os passos escondidos)
   function emFalta(i) {
@@ -193,12 +210,26 @@ export default function FormularioFicha() {
                 <Campo rotulo="Nome completo" obrigatorio col="col-md-6">{txt('nome', { required: true, minLength: 5 })}</Campo>
                 {militar && <Campo rotulo="NIP" obrigatorio col="col-md-3">{txt('nip', { required: true })}</Campo>}
                 {!militar && <Campo rotulo="N.º de agente" col="col-md-3">{txt('numeroAgente')}</Campo>}
-                <Campo rotulo="Bilhete de identidade" col="col-md-3" ajuda="«Consultar» preenche os dados a partir da base de dados do Estado.">
+                <Campo rotulo="Bilhete de identidade" col="col-md-3" ajuda="Ao sair do campo, o BI verifica-se na base de dados do Estado.">
                   <div className="input-group input-group-sm">
-                    {txt('bi', { placeholder: '001234567LA041' })}
-                    <button type="button" className="btn btn-outline-theme" disabled={aConsultar || !d.bi} onClick={consultarBi} title="Consultar o BI"><i className={`fa ${aConsultar ? 'fa-spinner fa-spin' : 'fa-search'}`} /></button>
+                    {txt('bi', { placeholder: '001234567LA041', onBlur: () => consultarBi(true) })}
+                    <button type="button" className="btn btn-outline-theme" disabled={aConsultar || !d.bi} onClick={() => consultarBi()} title="Verificar o BI"><i className={`fa ${aConsultar ? 'fa-spinner fa-spin' : 'fa-search'}`} /></button>
                   </div>
                 </Campo>
+                {difBi && (
+                  <div className="col-12">
+                    <div className="alert alert-warning py-2 small mb-2">
+                      <div className="d-flex align-items-center mb-1"><strong className="me-auto"><i className="fa fa-id-card me-1" />O BI {difBi.bi} não bate certo com a ficha</strong><button type="button" className="btn btn-xs btn-warning" onClick={() => usarDoBi(difBi.diferencas.map((x) => x.campo))}>Usar tudo do BI</button></div>
+                      {difBi.diferencas.map((x) => (
+                        <div key={x.campo} className="d-flex flex-wrap align-items-center gap-2">
+                          <span className="fw-semibold" style={{ minWidth: 130 }}>{x.rotulo}</span>
+                          <span>ficha: «{x.ficha}»</span><span className="text-muted">·</span><span>BI: «{x.bi}»</span>
+                          <button type="button" className="btn btn-link btn-sm p-0" onClick={() => usarDoBi([x.campo])}>usar o do BI</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {militar && <Campo rotulo="Nome de guerra" col="col-md-3">{txt('nomeGuerra')}</Campo>}
                 <Campo rotulo="E-mail institucional" col="col-md-3">{txt('email', { type: 'email', placeholder: 'nome@esgfaa.gov.ao' })}</Campo>
               </div>

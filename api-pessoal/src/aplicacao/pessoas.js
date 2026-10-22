@@ -258,6 +258,13 @@ export class ServicoPessoas {
   */
   async consultarBi(u, numero) {
     exigir(u, 'editar')
+    const r = await this.dadosDoBi(numero)
+    await this.auditoria.registar(u, 'consultar_bi', r.bi)
+    return r
+  }
+
+  // os dados de um BI na base de dados do Estado (sem auditoria: quem chama regista)
+  async dadosDoBi(numero) {
     const bi = String(numero ?? '').trim().toUpperCase().replace(/\s/g, '')
     if (!/^[0-9]{9}[A-Z]{2}[0-9]{3}$/.test(bi)) throw invalido('Número de BI inválido (ex.: 001234567LA041).', 'bi')
     const { url, chave } = this.config.bi
@@ -276,7 +283,6 @@ export class ServicoPessoas {
     const genero = /^f/i.test(x.gender_name ?? '') ? 'F' : /^m/i.test(x.gender_name ?? '') ? 'M' : null
     const estado = { solteiro: 'solteiro', solteira: 'solteiro', casado: 'casado', casada: 'casado', divorciado: 'divorciado', divorciada: 'divorciado', viuvo: 'viuvo', viuva: 'viuvo' }[String(x.marital_status_name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()] ?? null
     const provincia = PROVINCIAS.find((p) => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === String(x.birth_province_name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()) ?? ''
-    await this.auditoria.registar(u, 'consultar_bi', bi)
     return {
       bi, nome: nomeProprio(junta(x.first_name, x.last_name)), dataNascimento: x.birth_date ? String(x.birth_date).slice(0, 10) : null, genero, estadoCivil: estado,
       pai: nomeProprio(junta(x.father_first_name, x.father_last_name)), mae: nomeProprio(junta(x.mother_first_name, x.mother_last_name)),
