@@ -89,6 +89,29 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal(ev.postoAnteriorNome, 'Capitão')
   })
 
+  it('pesquisa avançada: texto, cursos, tempo no posto, ingresso, aniversários, cargo acima do posto e quem está hoje de licença', async () => {
+    const a = (await adm.post('/api/pessoas').send(militar({ nome: 'Zacarias Pesquisa Lunda', nip: 'NIPPESQ1', dataNascimento: '1980-03-05', dataIngresso: '2001-01-10' })).expect(201)).body
+    const b = (await adm.post('/api/pessoas').send(militar({ nome: 'Yolanda Pesquisa Bié', nip: 'NIPPESQ2', posto: 'tenente', dataIngresso: '2015-06-01', dataAntiguidadePosto: '2024-01-01' })).expect(201)).body
+    await adm.post(`/api/pessoas/${a.id}/cursos`).send({ nome: 'Curso de Estado-Maior Conjunto', aproveitamento: true, fim: '2020-07-01' }).expect(201)
+    const ids = async (q) => (await adm.get('/api/pessoas').query(q).expect(200)).body.map((p) => p.id).filter((id) => [a.id, b.id].includes(id))
+    assert.deepEqual(await ids({ q: 'pesquisa lunda' }), [a.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', curso: 'estado-maior' }), [a.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', semCurso: 'estado-maior' }), [b.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', ingressoDe: '2010' }), [b.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', tempoMin: '5' }), [a.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', mesNascimento: '3' }), [a.id])
+    // a tenente num cargo de Major
+    const u = (await adm.post('/api/unidades').send({ nome: 'Unidade da pesquisa' }).expect(201)).body
+    const c = (await adm.post('/api/cargos').send({ nome: 'Chefe da Unidade da pesquisa', unidadeId: u.id, funcao: 'direccao_chefia', tipo: 'militar', postoRequerido: 'major', vagas: 1 }).expect(201)).body
+    await amb.contentor.base.pessoa.update({ where: { id: b.id }, data: { unidadeId: u.id, cargoId: c.id } })
+    assert.deepEqual(await ids({ q: 'pesquisa', cargoAcima: '1' }), [b.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', funcaoCargo: 'direccao_chefia' }), [b.id])
+    // hoje: ausente (falta em curso) e presente
+    await adm.post('/api/ausencias').send({ pessoaId: a.id, tipo: 'hospital', inicio: '2026-10-16', fim: null }).expect(201)
+    assert.deepEqual(await ids({ q: 'pesquisa', hoje: 'ausente' }), [a.id])
+    assert.deepEqual(await ids({ q: 'pesquisa', hoje: 'presente' }), [b.id])
+  })
+
   it('quem não cumpre a lei não segue para o escalão superior (sem tempo no posto só avisa)', async () => {
     const aviso = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0903', dataAntiguidadePosto: '2024-01-01' })).expect(201)).body
     const pa = (await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'Sem tempo', itens: [{ pessoaId: aviso.id }] }).expect(201)).body

@@ -2,7 +2,7 @@ import { ErroDominio, conflito, invalido, naoEncontrado } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
-import { EFECTIVIDADES, ESTADOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { EFECTIVIDADES, ESTADOS, POSTOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { PROVINCIAS, comDerivados, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
@@ -42,7 +42,7 @@ export const TIPOS_EVENTO = {
 }
 export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
-const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
+const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true, postoRequerido: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
@@ -86,9 +86,49 @@ export class ServicoPessoas {
     }
     if (f.reservaAte) lista = lista.filter((p) => p.dataReserva && p.dataReserva <= `${f.reservaAte}-12-31`)
     if (f.semCargo) lista = lista.filter((p) => !p.cargoId)
+    lista = await this.#pesquisaAvancada(lista, f, hoje)
     // a habilitação militar (Lista de Efectividade): o último curso concluído
     const habMilitar = (cursos = []) => cursos.filter((c) => c.fim).sort((x, y) => y.fim - x.fim)[0]?.nome ?? ''
     return ordenarPorHierarquia(lista.map(({ cursos, eventos, ...p }) => (void eventos, { ...p, habilitacaoMilitar: habMilitar(cursos) })), await posicoesUnidades(this.bd))
+  }
+
+  /*
+    Pesquisa avançada (cruzamento dos dados): texto em qualquer campo, tempo no posto e de serviço, ano de
+    ingresso, cursos que tem ou não tem, função do cargo, cargo de posto acima do seu, ficha incompleta,
+    aniversários do mês e quem está hoje de licença, ausente (falta, hospital, detido) ou presente.
+  */
+  async #pesquisaAvancada(lista, f, hoje) {
+    const sem = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    const num = (v) => (v === undefined || v === '' ? null : Number(v))
+    if (f.q) {
+      const palavras = sem(f.q).split(/\s+/).filter(Boolean)
+      const campos = ['nome', 'nomeGuerra', 'nip', 'numeroAgente', 'bi', 'postoNome', 'cargoNome', 'unidadeNome', 'especialidade', 'naturalidade', 'provincia', 'email', 'telefone', 'categoriaCivil', 'quadroNome']
+      lista = lista.filter((p) => { const t = sem(campos.map((k) => p[k]).join(' ')); return palavras.every((w) => t.includes(w)) })
+    }
+    const entre = (v, a, b) => v !== null && v !== undefined && (a === null || v >= a) && (b === null || v <= b)
+    const [tMin, tMax, sMin, sMax] = [num(f.tempoMin), num(f.tempoMax), num(f.servicoMin), num(f.servicoMax)]
+    if (tMin !== null || tMax !== null) lista = lista.filter((p) => entre(p.tempoNoPosto ?? p.tempoNaCategoria, tMin, tMax))
+    if (sMin !== null || sMax !== null) lista = lista.filter((p) => entre(p.tempoServico, sMin, sMax))
+    const [iDe, iAte] = [num(f.ingressoDe), num(f.ingressoAte)]
+    if (iDe !== null || iAte !== null) lista = lista.filter((p) => entre((p.dataIngresso || p.dataAdmissao) ? Number(String(p.dataIngresso || p.dataAdmissao).slice(0, 4)) : null, iDe, iAte))
+    const temCurso = (p, t) => (p.cursos ?? []).some((c) => sem(`${c.nome} ${c.chave ?? ''}`).includes(sem(t)))
+    if (f.curso) lista = lista.filter((p) => temCurso(p, f.curso))
+    if (f.semCurso) lista = lista.filter((p) => !temCurso(p, f.semCurso))
+    if (f.funcaoCargo) lista = lista.filter((p) => p.funcao === f.funcaoCargo)
+    if (f.cargoAcima) lista = lista.filter((p) => p.tipo === 'militar' && p.cargoPostoRequerido && (POSTOS[p.cargoPostoRequerido]?.grau ?? 0) > (p.grau ?? 0))
+    if (f.incompleta) lista = lista.filter((p) => !p.fotoId || !p.bi || !p.dataNascimento || !p.telefone || !p.unidadeId)
+    if (f.mesNascimento) lista = lista.filter((p) => p.dataNascimento && Number(String(p.dataNascimento).slice(5, 7)) === Number(f.mesNascimento))
+    if (f.hoje) {
+      const d = new Date(hoje.toISOString().slice(0, 10))
+      const [lic, aus] = await Promise.all([
+        this.bd.licenca.findMany({ where: { inicio: { lte: d }, fim: { gte: d } }, select: { pessoaId: true } }),
+        this.bd.ausencia.findMany({ where: { inicio: { lte: d }, OR: [{ fim: null }, { fim: { gte: d } }] }, select: { pessoaId: true } }),
+      ])
+      const deLicenca = new Set(lic.map((x) => x.pessoaId))
+      const ausentes = new Set(aus.map((x) => x.pessoaId))
+      lista = lista.filter((p) => (f.hoje === 'licenca' ? deLicenca.has(p.id) : f.hoje === 'ausente' ? ausentes.has(p.id) : !deLicenca.has(p.id) && !ausentes.has(p.id)))
+    }
+    return lista
   }
 
   async #comSubunidades(id) {

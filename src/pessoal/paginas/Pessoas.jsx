@@ -10,7 +10,18 @@ import { Cabecalho, Carregando, Erro, Escolha, Painel } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 
 // nomes dos filtros (para os mostrar e para o título do PDF)
-const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', estado: 'Estado', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Categoria (civis)', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil' }
+const NOMES_FILTRO = { tipo: 'Tipo', vinculo: 'Vínculo', ramo: 'Ramo', grupo: 'Categoria', categoria: 'Escalão', posto: 'Posto', fps: 'Forma de serviço', situacao: 'Situação', efectividade: 'Efectividade', estado: 'Estado', genero: 'Género', provincia: 'Província', habilitacao: 'Habilitação', unidadeId: 'Unidade', cargoId: 'Cargo', carreiraCivil: 'Categoria (civis)', quadroEspecial: 'Quadro especial', idade: 'Idade', elegivel: 'Em condições de promoção', graduado: 'Graduados', reservaAte: 'Reserva até', semCargo: 'Sem cargo', ativo: 'Na Escola', estadoCivil: 'Estado civil',
+  q: 'Texto', tempoMin: 'No posto (anos) desde', tempoMax: 'No posto (anos) até', servicoMin: 'Serviço (anos) desde', servicoMax: 'Serviço (anos) até', ingressoDe: 'Ingresso desde', ingressoAte: 'Ingresso até', curso: 'Tem o curso', semCurso: 'Não tem o curso', funcaoCargo: 'Função do cargo', cargoAcima: 'Cargo de posto acima do seu', incompleta: 'Ficha incompleta', mesNascimento: 'Faz anos em', hoje: 'Hoje', vinculoCivil: 'Vínculo (civis)' }
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const HOJE = { licenca: 'De licença', ausente: 'Ausente (falta, hospital, detido)', presente: 'Presente (sem licença nem ausência)' }
+const IDADES = { '18-29': '18 a 29', '30-39': '30 a 39', '40-49': '40 a 49', '50-59': '50 a 59', '60-200': '60 ou mais' }
+
+// campo de texto ou número dos filtros: aplica-se ao sair do campo ou com Enter (não a cada tecla)
+function Texto({ valor, aoMudar, ...resto }) {
+  const aplicar = (e) => { const v = e.target.value.trim(); if (v !== (valor ?? '')) aoMudar(v) }
+  // key: quando o filtro muda por fora (Limpar filtros, retirar), o campo volta a mostrar o valor
+  return <input key={valor ?? ''} className="form-control form-control-sm" defaultValue={valor ?? ''} onBlur={aplicar} onKeyDown={(e) => e.key === 'Enter' && aplicar(e)} {...resto} />
+}
 
 export default function Pessoas() {
   const { ref, pode } = useSessao()
@@ -18,6 +29,7 @@ export default function Pessoas() {
   const [params, setParams] = useSearchParams()
   const filtros = useMemo(() => Object.fromEntries(params), [params])
   const [listas, setListas] = useState(false)
+  const [avancada, setAvancada] = useState(false)
   const { dados: linhas, erro } = useDados('/pessoas', filtros)
   const arvore = useArvore()
 
@@ -33,6 +45,7 @@ export default function Pessoas() {
     posto: ref.postos[ramo].find((p) => p.id === v)?.nome, fps: ref.formasServico[v]?.nome, situacao: ref.situacoes[v], efectividade: ref.efectividades[v]?.nome, estado: ref.estados[v],
     genero: ref.generos[v], habilitacao: ref.habilitacoes[v], unidadeId: v === 'nenhum' ? 'Sem unidade' : `${arvore.caminho(Number(v))} (com as subunidades)`, carreiraCivil: ref.carreirasCivis[v]?.nome,
     quadroEspecial: ref.quadros[ramo].find((q) => q.sigla === v)?.nome, idade: v.replace('-200', ' ou mais').replace('-', ' a '), elegivel: 'sim', graduado: 'sim', semCargo: 'sim', ativo: v === 'nao' ? 'Já saíram' : 'Todos',
+    funcaoCargo: ref.funcoes[v], cargoAcima: 'sim', incompleta: 'sim', mesNascimento: MESES[Number(v) - 1], hoje: HOJE[v], estadoCivil: ref.estadosCivis[v], vinculoCivil: ref.vinculosCivis[v],
   }[k] ?? v)
   const descricao = Object.entries(filtros).map(([k, v]) => `${NOMES_FILTRO[k] ?? k}: ${valorFiltro(k, v)}`).join(' · ')
 
@@ -80,7 +93,40 @@ export default function Pessoas() {
           {f('habilitacao', ref.habilitacoes, 'Todas')}
           {f('carreiraCivil', Object.entries(ref.carreirasCivis).filter(([, v]) => !v.domiciliar).sort(([, a], [, b]) => a.nivel - b.nivel).map(([k, v]) => [k, v.nome]), 'Todas')}
           {f('ativo', [['', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']], null)}
+          <div className="col-12 col-md-6 col-xl-4 mb-2">
+            <label className="form-label small mb-0 text-muted">Texto (em qualquer campo)</label>
+            <Texto valor={filtros.q} aoMudar={(v) => mudar('q', v)} placeholder="Ex.: kiala luanda, engenharia, 9º curso…" aria-label="Texto" />
+          </div>
         </div>
+        <button type="button" className="btn btn-xs btn-outline-secondary mb-2" onClick={() => setAvancada(!avancada)} aria-expanded={avancada}><i className={`fa fa-chevron-${avancada ? 'up' : 'down'} me-1`} />Pesquisa avançada (cruzar dados)</button>
+        {avancada && (
+          <div className="row border-top pt-2">
+            {f('categoria', ref.categorias)}
+            {f('efectividade', ref.efectividades)}
+            {f('quadroEspecial', ref.quadros[ramo].map((q) => [q.sigla, q.nome]))}
+            {f('provincia', ref.provincias, 'Todas')}
+            {f('estadoCivil', ref.estadosCivis)}
+            {f('vinculoCivil', ref.vinculosCivis)}
+            {f('idade', IDADES, 'Todas')}
+            {f('mesNascimento', MESES.map((m, i) => [String(i + 1), m]), 'Qualquer mês')}
+            {f('hoje', HOJE, 'Todos')}
+            {f('funcaoCargo', ref.funcoes, 'Todas')}
+            {[['tempoMin', 'tempoMax', 'No posto / categoria (anos)'], ['servicoMin', 'servicoMax', 'Tempo de serviço (anos)'], ['ingressoDe', 'ingressoAte', 'Ano de ingresso / admissão']].map(([a, b, t]) => (
+              <div key={a} className="col-12 col-md-6 col-xl-4 mb-2">
+                <label className="form-label small mb-0 text-muted">{t}</label>
+                <div className="d-flex gap-1 align-items-center"><Texto valor={filtros[a]} aoMudar={(v) => mudar(a, v)} type="number" min="0" placeholder="de" aria-label={NOMES_FILTRO[a]} /><span className="text-muted">a</span><Texto valor={filtros[b]} aoMudar={(v) => mudar(b, v)} type="number" min="0" placeholder="até" aria-label={NOMES_FILTRO[b]} /></div>
+              </div>
+            ))}
+            <div className="col-6 col-md-3 col-xl-2 mb-2"><label className="form-label small mb-0 text-muted">Reserva até (ano)</label><Texto valor={filtros.reservaAte} aoMudar={(v) => mudar('reservaAte', v)} type="number" placeholder="Ex.: 2028" aria-label="Reserva até" /></div>
+            <div className="col-12 col-md-6 col-xl-4 mb-2"><label className="form-label small mb-0 text-muted">Tem o curso</label><Texto valor={filtros.curso} aoMudar={(v) => mudar('curso', v)} placeholder="Ex.: Estado-Maior, CPOS…" aria-label="Tem o curso" /></div>
+            <div className="col-12 col-md-6 col-xl-4 mb-2"><label className="form-label small mb-0 text-muted">Não tem o curso</label><Texto valor={filtros.semCurso} aoMudar={(v) => mudar('semCurso', v)} placeholder="Ex.: Estado-Maior" aria-label="Não tem o curso" /></div>
+            <div className="col-12 mb-1 d-flex flex-wrap gap-3">
+              {[['elegivel', 'Em condições de promoção'], ['graduado', 'Graduados'], ['semCargo', 'Sem cargo'], ['cargoAcima', 'Num cargo de posto acima do seu'], ['incompleta', 'Ficha incompleta (sem foto, BI, nascimento, telefone ou unidade)']].map(([k, t]) => (
+                <div key={k} className="form-check"><input className="form-check-input" type="checkbox" id={`f-${k}`} checked={Boolean(filtros[k])} onChange={(e) => mudar(k, e.target.checked ? '1' : '')} /><label className="form-check-label small" htmlFor={`f-${k}`}>{t}</label></div>
+              ))}
+            </div>
+          </div>
+        )}
         {descricao && <div className="small mt-1"><i className="fa fa-filter text-muted me-1" />{Object.entries(filtros).map(([k, v]) => (
           <span key={k} className="badge bg-light text-dark border me-1 mb-1">{NOMES_FILTRO[k] ?? k}: {valorFiltro(k, v)} <button type="button" className="btn-close btn-close-sm ms-1" style={{ fontSize: 8 }} onClick={() => mudar(k, '')} aria-label={`Retirar ${NOMES_FILTRO[k]}`} /></span>
         ))}</div>}
