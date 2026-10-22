@@ -1,0 +1,9 @@
+/* quadro das regras de avaliação do plano de curso (portal e painel); cores do tema de cada aplicação */
+.p-regras-plano { border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 6px; margin: 12px 0; }
+.p-regras-cabeca { display: flex; align-items: center; width: 100%; padding: 10px 14px; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.p-regras-cabeca:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.p-regras-lista { padding: 4px 14px 12px; display: grid; gap: 8px; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+.p-regras-lista > div { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 12px; padding-top: 8px; }
+.p-regras-lista dt { font-weight: 600; font-size: 13px; }
+.p-regras-lista dd { margin: 0; font-size: 13px; line-height: 1.55; max-width: 72ch; }
+@media (max-width: 600px) { .p-regras-lista > div { grid-template-columns: 1fr; gap: 2px; } }

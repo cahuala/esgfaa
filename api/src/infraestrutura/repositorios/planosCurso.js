@@ -3,7 +3,7 @@ const num = (v) => (v === null || v === undefined ? null : Number(v))
 
 const paraPlano = (p) => p && {
   id: p.id, curso: p.curso, anoLetivo: p.anoLetivo, nome: p.nome, termo: p.termo, formula: p.formula, blocos: p.blocos ?? [],
-  ajusteMaximo: Number(p.ajusteMaximo ?? 0), exigirBlocos: p.exigirBlocos, exigirTesteEscrito: p.exigirTesteEscrito, faltasMaximas: p.faltasMaximas, exigirUcs: p.exigirUcs, exigirTii: p.exigirTii, duracaoMeses: p.duracaoMeses, factoresJuizo: p.factoresJuizo ?? [],
+  ajusteMaximo: Number(p.ajusteMaximo ?? 0), exigirBlocos: p.exigirBlocos, exigirTesteEscrito: p.exigirTesteEscrito, faltasMaximas: p.faltasMaximas, exigirUcs: p.exigirUcs, exigirTii: p.exigirTii, recuperacaoAutomatica: p.recuperacaoAutomatica, duracaoMeses: p.duracaoMeses, factoresJuizo: p.factoresJuizo ?? [],
   criadoEm: iso(p.criadoEm), atualizadoEm: iso(p.atualizadoEm),
 }
 const paraNota = (n) => ({

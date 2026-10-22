@@ -6,6 +6,7 @@ import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA, REGRA_ESG } from '../regraAvaliacao'
+import RegrasPlano from '../RegrasPlano'
 import { t as tx } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
@@ -128,7 +129,8 @@ function BoletimEsg({ lista, semestres }) {
           </table>
         </div>
       </Cartao>
-      <p className="p-legenda">{REGRA_ESG} {tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
+      <p className="p-legenda">{tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
+      {lista.find((l) => l.plano)?.plano ? <RegrasPlano plano={lista.find((l) => l.plano).plano} aberto /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </>
   )
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
 import { Carregando, Painel } from '../../componentes/Ui'
 import ConselhoCurso from './ConselhoCurso'
+import RegrasPlano from '../../../portal/RegrasPlano'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
@@ -82,7 +83,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
             <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
               <div>
                 <div className="fw-bold">{p.nome}</div>
-                <div className="small text-muted">{tx(FORMULAS[p.formula])}{p.ajusteMaximo ? ` · ${tx('ajuste do Comandante até ±{0}', { 0: String(p.ajusteMaximo).replace('.', ',') })}` : ''} · {p.termo === 'auditor' ? tx('auditores') : tx('discentes')} · {tx('faltas justificadas até {0} %', { 0: p.faltasMaximas })} · {tx('duração normal: {0} meses', { 0: p.duracaoMeses ?? 10 })}{p.exigirUcs === false ? ` · ${tx('sem mínimo de 10 por UC')}` : ''}</div>
+                <div className="small text-muted">{tx(FORMULAS[p.formula])}{p.ajusteMaximo ? ` · ${tx('ajuste do Comandante até ±{0}', { 0: String(p.ajusteMaximo).replace('.', ',') })}` : ''} · {p.termo === 'auditor' ? tx('auditores') : tx('discentes')} · {Number(p.faltasMaximas) > 0 ? tx('faltas justificadas até {0} %', { 0: p.faltasMaximas }) : tx('sem limite de faltas')} · {tx('duração normal: {0} meses', { 0: p.duracaoMeses ?? 10 })}{p.exigirUcs === false ? ` · ${tx('sem mínimo de 10 por UC')}` : ''}</div>
               </div>
               {gerir && <div className="d-flex gap-2">
                 <button type="button" className="btn btn-sm btn-white" onClick={() => setPlano({ ...p })}><i className="fa fa-pen me-1" />{tx('Editar o plano')}</button>
@@ -96,6 +97,8 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
                 <tbody>{p.blocos.map((b) => <tr key={b.sigla}><td><b>{b.sigla}</b></td><td>{b.nome}</td><td className="text-center">{String(b.coeficiente).replace('.', ',')}</td></tr>)}</tbody>
               </table>
             )}
+            {/* o que os auditores/discentes e os docentes vêem (as mesmas regras que o sistema aplica) */}
+            <RegrasPlano plano={{ ...p, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho: d.ucs.find((u) => u.tii)?.codigo ?? null }} />
           </>
         )}
 
@@ -106,11 +109,12 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
               <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-formula">{tx('Nota final')}</label><select id="pl-formula" className="form-select form-select-sm" value={plano.formula} onChange={(e) => setPlano({ ...plano, formula: e.target.value })}>{Object.entries(FORMULAS).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
               <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-termo">{tx('Quem frequenta')}</label><select id="pl-termo" className="form-select form-select-sm" value={plano.termo} onChange={(e) => setPlano({ ...plano, termo: e.target.value })}><option value="auditor">{tx('Auditores')}</option><option value="discente">{tx('Discentes')}</option></select></div>
               <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-aj">{tx('Ajuste do Comandante (±)')}</label><input id="pl-aj" className="form-control form-control-sm" inputMode="decimal" value={plano.ajusteMaximo} onChange={(e) => setPlano({ ...plano, ajusteMaximo: e.target.value })} /></div>
-              <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-fal">{tx('Faltas justificadas (máx. %)')}</label><input id="pl-fal" className="form-control form-control-sm" inputMode="numeric" value={plano.faltasMaximas ?? 10} onChange={(e) => setPlano({ ...plano, faltasMaximas: e.target.value })} /></div>
+              <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-fal" title={tx('0 = o plano não fixa limite')}>{tx('Faltas justificadas (máx. %)')}</label><input id="pl-fal" className="form-control form-control-sm" inputMode="numeric" value={plano.faltasMaximas ?? 10} onChange={(e) => setPlano({ ...plano, faltasMaximas: e.target.value })} /></div>
               <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-dur">{tx('Duração normal (meses)')}</label><input id="pl-dur" className="form-control form-control-sm" inputMode="numeric" value={plano.duracaoMeses ?? 10} onChange={(e) => setPlano({ ...plano, duracaoMeses: e.target.value })} /></div>
               <div className="col-12 d-flex flex-wrap gap-3 align-items-end">
                 <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={plano.exigirUcs !== false} onChange={(e) => setPlano({ ...plano, exigirUcs: e.target.checked })} /> <span className="form-check-label small">{tx('Exigir 10 em cada UC')}</span></label>
                 <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={plano.exigirTii !== false} onChange={(e) => setPlano({ ...plano, exigirTii: e.target.checked })} /> <span className="form-check-label small">{tx('Exigir 10 no TII/TFC')}</span></label>
+                <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={plano.recuperacaoAutomatica === true} onChange={(e) => setPlano({ ...plano, recuperacaoAutomatica: e.target.checked })} /> <span className="form-check-label small">{tx('TAI negativo vai sempre a recurso (sem pedido)')}</span></label>
                 <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={plano.exigirBlocos !== false} onChange={(e) => setPlano({ ...plano, exigirBlocos: e.target.checked })} /> <span className="form-check-label small">{tx('Exigir 10 em cada bloco')}</span></label>
                 <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={plano.exigirTesteEscrito !== false} onChange={(e) => setPlano({ ...plano, exigirTesteEscrito: e.target.checked })} /> <span className="form-check-label small">{tx('Exigir 10 em cada TAI de teste escrito')}</span></label>
               </div>

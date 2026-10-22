@@ -8,6 +8,7 @@ import { Nota, Situacao } from '../avaliacao'
 import { PERIODOS, REGRA } from '../regraAvaliacao'
 import { t as tx, localAtual } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
+import RegrasPlano from '../RegrasPlano'
 
 const ESTADOS = { ativa: ['bg-primary', tx('Em curso')], concluida: ['bg-success', tx('Concluído')], suspensa: ['bg-warning text-dark', tx('Suspenso')] }
 
@@ -170,6 +171,7 @@ function PlanoCurso({ pc, conclusao }) {
           <div className="ms-auto">{pc.homologado ? <span className="badge bg-success"><i className="fa fa-stamp me-1" />{tx('Homologada pelo Comandante')}</span> : <span className="badge bg-secondary">{tx('Classificação provisória (por homologar)')}</span>}</div>
         </div>
         {!conclusao.concluido && conclusao.emFalta?.length > 0 && <div className="small text-muted mt-3"><b>{tx('Para concluir o curso:')}</b> {conclusao.emFalta.join(' · ')}</div>}
+        {pc.regras && <RegrasPlano plano={pc.regras} />}
       </div>
     </div>
   )

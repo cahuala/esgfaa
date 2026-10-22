@@ -66,10 +66,22 @@ export function validarPlano(d) {
     // o CEAO e o COAMP não exigem 10 em cada UC (só nos blocos, no TII e na média); o COAMP nem no TFC
     exigirUcs: d.exigirUcs !== false,
     exigirTii: d.exigirTii !== false,
+    // o COAMP: «caso obtenha menos de 10 no TAI, deverá ser submetido a um recurso» (sem pedido nem prazo)
+    recuperacaoAutomatica: d.recuperacaoAutomatica === true,
     faltasMaximas: Math.min(100, Math.max(0, Number(d.faltasMaximas ?? 10) || 0)),
     duracaoMeses: Math.min(48, Math.max(1, Math.round(Number(d.duracaoMeses ?? 10)) || 10)),
     // os factores do juízo ampliativo (vazio = os 11 do plano-tipo; o COAMP não tem «Cultura científica e académica»)
     factoresJuizo: Array.isArray(d.factoresJuizo) ? d.factoresJuizo.map(String).slice(0, 20) : [],
+  }
+}
+
+// o que do plano se mostra a quem é avaliado (as regras), sem dados internos
+export function regrasPublicas(p, trabalho = null) {
+  if (!p) return null
+  return {
+    nome: p.nome, termo: p.termo, formula: p.formula, blocos: p.blocos ?? [], ajusteMaximo: Number(p.ajusteMaximo) || 0,
+    exigirBlocos: p.exigirBlocos !== false && p.formula !== 'media', exigirTesteEscrito: p.exigirTesteEscrito !== false, exigirUcs: p.exigirUcs !== false, exigirTii: p.exigirTii !== false,
+    recuperacaoAutomatica: p.recuperacaoAutomatica === true, faltasMaximas: p.faltasMaximas ?? 10, duracaoMeses: p.duracaoMeses ?? 10, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho,
   }
 }
 
@@ -100,7 +112,8 @@ export function prazoRecuperacao(publicadaEm) {
   Pode pedir a recuperação deste TAI? Só num TAI publicado, com nota negativa, ainda sem pedido e dentro
   do prazo. Devolve { pode, motivo, prazo }.
 */
-export function recuperacaoPossivel(avaliacao, nota, agora = new Date()) {
+export function recuperacaoPossivel(avaliacao, nota, agora = new Date(), { automatica = false } = {}) {
+  if (automatica) return { pode: false, motivo: 'Neste curso o TAI negativo vai sempre a recurso: não é preciso pedir.', prazo: null, automatica: true }
   const prazo = prazoRecuperacao(avaliacao.publicadaEm)
   if (avaliacao.tipo !== 'TAI') return { pode: false, motivo: 'A recuperação só existe nos TAI.', prazo }
   if (!avaliacao.publicadaEm) return { pode: false, motivo: 'A nota ainda não foi publicada.', prazo }
@@ -131,7 +144,7 @@ export const decisaoRevisao = (antes, depois) => (depois > antes ? 'subiu' : dep
   situacao: sem_provas | em_curso (faltam notas) | recuperacao (TAI de teste negativo com recuperação pedida
   ou ainda possível) | aprovado | reprovado.
 */
-export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, agora = new Date() } = {}) {
+export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recuperacaoAutomatica = false, agora = new Date() } = {}) {
   if (!avaliacoes.length) return { final: null, situacao: 'sem_provas', mencao: null, provas: [] }
   const provas = avaliacoes.map((a) => {
     const n = notas[a.id] ?? {}
@@ -148,7 +161,7 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, agor
   const testesNegativos = exigirTesteEscrito ? provas.filter((p) => p.tipo === 'TAI' && p.forma === 'teste' && p.conta < NOTA_MINIMA) : []
   const emRecuperacao = provas.some((p) => {
     if (p.tipo !== 'TAI' || p.conta >= NOTA_MINIMA || p.recuperacao !== null) return false
-    if (p.pedida) return true
+    if (p.pedida || recuperacaoAutomatica) return true
     const a = avaliacoes.find((x) => x.id === p.id)
     return recuperacaoPossivel(a, { nota: p.nota }, agora).pode
   })
@@ -324,7 +337,7 @@ export const MODELOS_PLANO = {
   'coamp-2026': {
     // média das UC (o plano não pondera blocos); os blocos servem só para agrupar
     plano: {
-      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false, exigirUcs: false, exigirTii: false, exigirTesteEscrito: false,
+      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false, exigirUcs: false, exigirTii: false, exigirTesteEscrito: false, recuperacaoAutomatica: true, faltasMaximas: 0,
       factoresJuizo: ['culturaMilitar', 'autoconfianca', 'adaptabilidade', 'iniciativa', 'comunicacao', 'senso', 'decisao', 'planeamento', 'analise', 'trabalhoGrupo'],
       blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 1 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 1 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 1 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }],
     },

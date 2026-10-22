@@ -4,6 +4,7 @@ import { Cartao, Vazio } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import { dataHora } from '../formatar'
 import { FORMAS_AVALIACAO, NOTA_MAXIMA_RECUPERACAO, REGRA_ESG, SITUACOES, TIPOS_AVALIACAO, resultadoUc } from '../regraAvaliacao'
+import RegrasPlano from '../RegrasPlano'
 import { t as tx } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 
@@ -199,7 +200,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
           </div>
         </div>
       )}
-      <p className="p-legenda">{REGRA_ESG}</p>
+      {p.plano ? <RegrasPlano plano={{ ...p.plano, factoresJuizo: (p.plano.factoresJuizo ?? []).length || 11 }} className="p-sem-impressao" /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </div>
   )
 }
@@ -246,7 +247,7 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
                 <td><span className={`badge ${pr.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{pr.tipo}</span>{pr.titulo}</td>
                 <td className="small">{tx(FORMAS_AVALIACAO[pr.forma])}</td>
                 <td className="text-center"><Nota valor={pr.nota} /></td>
-                <td className="text-center">{pr.recuperacao !== null ? <><Nota valor={pr.recuperacao} />{pr.recuperacao > NOTA_MAXIMA_RECUPERACAO && <small className="d-block text-muted">{tx('conta {0}', { 0: NOTA_MAXIMA_RECUPERACAO })}</small>}</> : pr.recuperacaoPedidaEm ? <span className="badge bg-warning text-dark">{tx('Pedida')}</span> : '—'}</td>
+                <td className="text-center">{pr.recuperacao !== null ? <><Nota valor={pr.recuperacao} />{pr.recuperacao > NOTA_MAXIMA_RECUPERACAO && <small className="d-block text-muted">{tx('conta {0}', { 0: NOTA_MAXIMA_RECUPERACAO })}</small>}</> : pr.recuperacaoPedidaEm ? <span className="badge bg-warning text-dark">{tx('Pedida')}</span> : pr.recursoObrigatorio ? <span className="badge bg-warning text-dark" title={tx('Neste curso o TAI negativo vai sempre a recurso: não é preciso pedir.')}>{tx('Vai a recurso')}</span> : '—'}</td>
                 <td className="text-end">
                   {pr.podePedirRecuperacao && <button type="button" className="btn btn-xs btn-warning" disabled={aPedir === pr.id} onClick={() => recuperacao(pr)} title={tx('Até {0}', { 0: dataHora(pr.prazoRecuperacao) })}><i className="fa fa-redo me-1" />{tx('Pedir recuperação')}</button>}
                   {pr.podePedirRecuperacao && <small className="d-block text-muted">{tx('até {0}', { 0: dataHora(pr.prazoRecuperacao) })}</small>}
@@ -268,7 +269,8 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
       <div className="p-notas-linha">
         <div className="p-notas-final"><span>{tx('Nota da UC')}</span><Nota valor={n.final} forte />{n.mencao && n.situacao === 'aprovado' && <small>{n.mencao}</small>}</div>
       </div>
-      <p className="p-legenda">{REGRA_ESG} {tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
+      <p className="p-legenda">{tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
+      {n.plano ? <RegrasPlano plano={n.plano} /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </Cartao>
   )
 }

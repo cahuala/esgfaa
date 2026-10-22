@@ -1578,23 +1578,24 @@ model PedidoDados {
 
 // o plano de um curso num ano lectivo: as turmas desse curso e ano seguem estas regras
 model PlanoCurso {
-  id                 Int      @id @default(autoincrement())
-  curso              String // identificador do curso (coleção "cursos"), como na turma
-  anoLetivo          String   @map("ano_letivo")
-  nome               String
-  termo              String   @default("discente") // auditor | discente
-  formula            String   @default("ponderada") // ponderada | percentagem | media
-  blocos             Json     @default("[]") // [{ sigla, nome, coeficiente }]
-  ajusteMaximo       Decimal  @default(0) @map("ajuste_maximo") @db.Decimal(4, 2)
-  exigirBlocos       Boolean  @default(true) @map("exigir_blocos")
-  exigirTesteEscrito Boolean  @default(true) @map("exigir_teste_escrito")
-  faltasMaximas      Int      @default(10) @map("faltas_maximas") // % de faltas justificadas admitidas
-  exigirUcs          Boolean  @default(true) @map("exigir_ucs") // 10 em cada UC (o CEAO e o COAMP não exigem)
-  exigirTii          Boolean  @default(true) @map("exigir_tii") // 10 no TII/TFC (o COAMP não exige)
-  duracaoMeses       Int      @default(10) @map("duracao_meses") // duração normal do curso
-  factoresJuizo      String[] @default([]) @map("factores_juizo") // factores do juízo ampliativo (vazio = os 11)
-  criadoEm           DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
-  atualizadoEm       DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  id                    Int      @id @default(autoincrement())
+  curso                 String // identificador do curso (coleção "cursos"), como na turma
+  anoLetivo             String   @map("ano_letivo")
+  nome                  String
+  termo                 String   @default("discente") // auditor | discente
+  formula               String   @default("ponderada") // ponderada | percentagem | media
+  blocos                Json     @default("[]") // [{ sigla, nome, coeficiente }]
+  ajusteMaximo          Decimal  @default(0) @map("ajuste_maximo") @db.Decimal(4, 2)
+  exigirBlocos          Boolean  @default(true) @map("exigir_blocos")
+  exigirTesteEscrito    Boolean  @default(true) @map("exigir_teste_escrito")
+  faltasMaximas         Int      @default(10) @map("faltas_maximas") // % de faltas justificadas admitidas
+  exigirUcs             Boolean  @default(true) @map("exigir_ucs") // 10 em cada UC (o CEAO e o COAMP não exigem)
+  exigirTii             Boolean  @default(true) @map("exigir_tii") // 10 no TII/TFC (o COAMP não exige)
+  recuperacaoAutomatica Boolean  @default(false) @map("recuperacao_automatica") // TAI negativo vai sempre a recurso (COAMP), sem pedido nem prazo
+  duracaoMeses          Int      @default(10) @map("duracao_meses") // duração normal do curso
+  factoresJuizo         String[] @default([]) @map("factores_juizo") // factores do juízo ampliativo (vazio = os 11)
+  criadoEm              DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm          DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
   @@unique([curso, anoLetivo])
   @@map("planos_curso")

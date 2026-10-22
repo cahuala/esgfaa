@@ -300,7 +300,7 @@ export const planoCurso = z.object({
   curso: texto(120), anoLetivo: texto(20), nome: texto(200), termo: texto(20).optional(), formula: texto(20),
   blocos: z.array(z.object({ sigla: texto(12), nome: texto(120), coeficiente: z.union([z.number(), texto(10)]) })).max(20).optional(),
   ajusteMaximo: z.union([z.number(), texto(6)]).optional(), exigirBlocos: z.boolean().optional(), exigirTesteEscrito: z.boolean().optional(), faltasMaximas: z.union([z.number(), texto(4)]).optional(),
-  exigirUcs: z.boolean().optional(), exigirTii: z.boolean().optional(), duracaoMeses: z.union([z.number(), texto(3)]).optional(), factoresJuizo: z.array(texto(40)).max(20).optional(),
+  exigirUcs: z.boolean().optional(), exigirTii: z.boolean().optional(), recuperacaoAutomatica: z.boolean().optional(), duracaoMeses: z.union([z.number(), texto(3)]).optional(), factoresJuizo: z.array(texto(40)).max(20).optional(),
 })
 export const modeloPlano = z.object({ modelo: texto(40) })
 export const provaUc = z.object({ tipo: texto(4).optional(), forma: texto(20).optional(), titulo: texto(150).optional(), peso: z.union([z.number(), texto(6), z.literal(''), z.null()]).optional(), data: z.union([texto(10), z.literal(''), z.null()]).optional() })

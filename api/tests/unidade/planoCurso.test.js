@@ -97,6 +97,20 @@ describe('avaliação pelos planos de curso da ESG', () => {
     assert.equal(coamp.duracaoMeses, 10)
   })
 
+  it('COAMP: o TAI negativo vai sempre a recurso (sem pedido nem prazo) e o plano não fixa limite de faltas', () => {
+    const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
+    assert.equal(coamp.recuperacaoAutomatica, true)
+    assert.equal(coamp.faltasMaximas, 0)
+    const provas = [{ id: 1, tipo: 'TAI', forma: 'teste', publicadaEm: '2026-01-05T10:00:00Z' }]
+    const depoisDoPrazo = new Date('2026-03-01T10:00:00Z')
+    // muito depois do prazo e sem pedido: continua em recuperação (não reprova)
+    assert.equal(resultadoUc(provas, { 1: { nota: 7 } }, { recuperacaoAutomatica: true, exigirTesteEscrito: false, agora: depoisDoPrazo }).situacao, 'recuperacao')
+    assert.equal(resultadoUc(provas, { 1: { nota: 7 } }, { agora: depoisDoPrazo }).situacao, 'reprovado')
+    assert.equal(recuperacaoPossivel(provas[0], { nota: 7 }, depoisDoPrazo, { automatica: true }).pode, false) // não se pede
+    assert.equal(resultadoUc(provas, { 1: { nota: 7, recuperacao: 13 } }, { recuperacaoAutomatica: true, exigirTesteEscrito: false }).final, 10)
+    assert.equal(faltasDoCurso(Array.from({ length: 500 }, () => ({ estado: 'justificada' })), 1132, 0).excedido, false)
+  })
+
   it('carga horária: 1 UCréd = 15 h; avisos de UC curta e de semestres acima do máximo', () => {
     const avisos = verificarCargaHoraria([{ codigo: 'X', nome: 'X', periodo: '1', horasContacto: 8, horasNaoContacto: 2, creditos: 1 }, { codigo: 'Y', nome: 'Y', periodo: '1', horasContacto: 600, horasNaoContacto: 30, creditos: 42 }])
     assert.ok(avisos.some((t) => t.includes('pelo menos 15 h')))

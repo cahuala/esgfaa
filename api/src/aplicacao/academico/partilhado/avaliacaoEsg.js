@@ -1,7 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
-import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, recuperacaoPossivel, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, recuperacaoPossivel, regrasPublicas, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
   Avaliação pelos planos de curso da ESG (turmas cujo curso e ano lectivo têm um plano): as provas
@@ -28,7 +28,7 @@ export class ServicoAvaliacaoEsg {
       const n = tii ?? null
       return { final: n, situacao: n === null ? 'em_curso' : n >= NOTA_MINIMA ? 'aprovado' : 'reprovado', mencao: n === null ? null : mencao(n), provas: [] }
     }
-    return resultadoUc(avaliacoes, notas, { exigirTesteEscrito: plano?.exigirTesteEscrito !== false, agora: this.relogio.agora() })
+    return resultadoUc(avaliacoes, notas, { exigirTesteEscrito: plano?.exigirTesteEscrito !== false, recuperacaoAutomatica: plano?.recuperacaoAutomatica === true, agora: this.relogio.agora() })
   }
 
   // ---------- pauta da UC (docente e Administração Escolar) ----------
@@ -144,19 +144,20 @@ export class ServicoAvaliacaoEsg {
     const agora = this.relogio.agora()
     const provas = avaliacoes.map((a) => {
       const n = notas[a.id] ?? {}
-      const rec = recuperacaoPossivel(a, n, agora)
-      return { id: a.id, tipo: a.tipo, forma: a.forma, titulo: a.titulo, data: a.data, publicadaEm: a.publicadaEm, nota: n.nota ?? null, recuperacao: n.recuperacao ?? null, recuperacaoPedidaEm: n.recuperacaoPedidaEm ?? null, podePedirRecuperacao: rec.pode, prazoRecuperacao: a.tipo === 'TAI' ? rec.prazo : null, revisao: n.revisao ?? null, podePedirRevisao: revisaoPossivel(a, n).pode }
+      const rec = recuperacaoPossivel(a, n, agora, { automatica: plano?.recuperacaoAutomatica === true })
+      return { id: a.id, tipo: a.tipo, forma: a.forma, titulo: a.titulo, data: a.data, publicadaEm: a.publicadaEm, nota: n.nota ?? null, recuperacao: n.recuperacao ?? null, recuperacaoPedidaEm: n.recuperacaoPedidaEm ?? null, podePedirRecuperacao: rec.pode, prazoRecuperacao: a.tipo === 'TAI' ? rec.prazo : null, recursoObrigatorio: Boolean(rec.automatica && a.tipo === 'TAI' && n.nota !== null && n.nota !== undefined && n.nota < NOTA_MINIMA && n.recuperacao == null), revisao: n.revisao ?? null, podePedirRevisao: revisaoPossivel(a, n).pode }
     })
     // ainda há provas por publicar: a nota da UC não é a final
     const completo = cadeira.tii || (avaliacoes.length > 0 && avaliacoes.length === total)
-    return { modo: 'esg', termo: plano?.termo ?? 'discente', provas, final: completo ? r.final : null, situacao: completo ? r.situacao : avaliacoes.length ? 'em_curso' : 'sem_provas', mencao: completo ? r.mencao : null, classificacao: completo ? r.mencao : null, tii: cadeira.tii }
+    return { modo: 'esg', termo: plano?.termo ?? 'discente', plano: regrasPublicas(plano), provas, final: completo ? r.final : null, situacao: completo ? r.situacao : avaliacoes.length ? 'em_curso' : 'sem_provas', mencao: completo ? r.mencao : null, classificacao: completo ? r.mencao : null, tii: cadeira.tii }
   }
 
   async pedirRecuperacao(ctx, cadeira, avaliacaoId) {
     if (ctx.conta?.tipo !== 'estudante') throw new SemPermissao('Só o estudante pede o teste de recuperação.')
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     const n = (await this.planos.notasDoEstudante(ctx.conta.id, [a.id]))[a.id]
-    const r = recuperacaoPossivel(a, n, this.relogio.agora())
+    const plano = await this.planoDaCadeira(cadeira)
+    const r = recuperacaoPossivel(a, n, this.relogio.agora(), { automatica: plano?.recuperacaoAutomatica === true })
     if (!r.pode) throw new Conflito(r.motivo)
     await this.planos.pedirRecuperacao(a.id, ctx.conta.id, this.relogio.agora())
     await this.auditoria.registar(ctx, { acao: 'pedir_recuperacao', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador: { id: ctx.conta.id, nome: ctx.conta.nome, email: ctx.conta.email } })
