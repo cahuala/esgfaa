@@ -118,7 +118,7 @@ export default function Organica() {
   const formularios = (
     <>
       {modal?.unidade && <FormUnidade u={modal.unidade} unidades={unidades} aoFechar={() => setModal(null)} aoGuardar={depois} />}
-      {modal?.imprimir && <ImprimirCargos no={modal.imprimir} aoFechar={() => setModal(null)} />}
+      {modal?.imprimir && <ImprimirCargos escola={escola} inicial={modal.imprimir.id} aoFechar={() => setModal(null)} />}
       {modal?.cargo && <FormCargo c={modal.cargo} unidades={unidades} refs={ref} aoFechar={() => setModal(null)} aoGuardar={depois} />}
     </>
   )
@@ -262,35 +262,56 @@ function MapaEfectivos({ escola, colunas, navegar }) {
 }
 
 /*
-  Lista dos cargos para imprimir (PDF) ou exportar (Excel), da Escola ou de uma unidade com as subunidades:
-  os vagos, os ocupados com quem os ocupa, ou todos (um lugar por linha: quem o ocupa ou «VAGO»).
-  Uma secção por unidade, pela ordem do quadro orgânico.
+  Lista dos cargos para imprimir (PDF) ou exportar (Excel), à medida: a unidade (com ou sem as subunidades),
+  os vagos, os ocupados (com quem os ocupa) ou todos, e só as categorias, funções, posto exigido ou texto que
+  se quiser. Agrupada por unidade (uma secção cada, pela ordem do quadro orgânico) ou numa lista só.
 */
-const ESCOLHAS = { todos: 'Todos os cargos (ocupados e vagos)', vagos: 'Só os cargos vagos', ocupados: 'Só os cargos ocupados, com quem os ocupa' }
-function ImprimirCargos({ no, aoFechar }) {
-  const { avisar } = useSessao()
-  const [qual, setQual] = useState('todos')
+const ESTADOS = { todos: 'Todos (um lugar por linha)', vagos: 'Só os vagos', ocupados: 'Só os ocupados (com quem ocupa)' }
+const CATEGORIAS_CARGO = { oficial_general: 'Oficiais Generais', oficial_superior: 'Oficiais Superiores', oficial_capitao: 'Oficiais Capitães', oficial_subalterno: 'Oficiais Subalternos', sargento: 'Sargentos', praca: 'Praças', civil: 'Civis' }
+// o nome do cargo sem a unidade e as unidades superiores («Chefe da Secção X da Direcção Y…» → «Chefe»)
+const nomeCurto = (c, u) => {
+  const i = u ? c.nome.indexOf(` ${u.nome}`) : -1
+  return (i > 0 ? c.nome.slice(0, i).replace(/ (da|do|das|dos)$/, '') : c.nome.replace(/ da Escola Superior de Guerra$/, '')) || c.nome
+}
+function ImprimirCargos({ escola, inicial, aoFechar }) {
+  const { ref, avisar } = useSessao()
+  const { dados: cargos, erro } = useDados('/cargos')
+  const [f, setF] = useState({ unidadeId: inicial ?? '', sub: true, estado: 'todos', categorias: [], funcoes: [], posto: '', texto: '', agrupar: true, curto: false })
   const [aGerar, setAGerar] = useState(false)
+  const mudar = (k, v) => setF((x) => ({ ...x, [k]: v }))
+  const alternar = (k, v) => setF((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
+  const todas = useMemo(() => { const l = []; const andar = (n, nivel) => { if (n.id) l.push({ ...n, nivel }); n.filhos.forEach((x) => andar(x, nivel + 1)) }; andar(escola, 0); return l }, [escola])
+  const raiz = f.unidadeId ? procurar(escola, Number(f.unidadeId)) : escola
+  const unidades = useMemo(() => { if (raiz.id && !f.sub) return [raiz]; const l = []; const andar = (n) => { if (n.id) l.push(n); n.filhos.forEach(andar) }; andar(raiz); return l }, [raiz, f.sub])
+  const porId = useMemo(() => new Map(todas.map((u) => [u.id, u])), [todas])
+  const linhas = useMemo(() => {
+    if (!cargos) return []
+    const ids = new Set(unidades.map((u) => u.id))
+    const t = norm(f.texto).trim()
+    const ordem = new Map(todas.map((u, i) => [u.id, i]))
+    return cargos
+      .filter((c) => ids.has(c.unidadeId) && (!f.categorias.length || f.categorias.includes(c.categoria)) && (!f.funcoes.length || f.funcoes.includes(c.funcao)) && (!f.posto || c.postoRequerido === f.posto) && (!t || norm(c.nome).includes(t)))
+      .sort((a, b) => ordem.get(a.unidadeId) - ordem.get(b.unidadeId))
+      .flatMap((c) => (f.estado === 'vagos' ? (c.livres ? [{ c, o: null }] : []) : f.estado === 'ocupados' ? c.ocupantes.map((o) => ({ c, o })) : [...c.ocupantes.map((o) => ({ c, o })), ...Array.from({ length: c.livres }, () => ({ c, o: null }))]))
+  }, [cargos, unidades, todas, f])
   async function gerar(formato) {
     setAGerar(true)
     try {
-      const cargos = await api('/cargos')
-      const unidades = []
-      const andar = (n) => { if (n.id) unidades.push(n); n.filhos.forEach(andar) }
-      andar(no)
-      const lugares = (c) => [...c.ocupantes.map((o) => ({ c, o })), ...Array.from({ length: c.livres }, () => ({ c, o: null }))]
-      const linhasDe = (lc) => (qual === 'vagos' ? lc.filter((c) => c.livres).map((c) => ({ c, o: null })) : qual === 'ocupados' ? lc.flatMap((c) => c.ocupantes.map((o) => ({ c, o }))) : lc.flatMap(lugares))
+      const nome = (l) => (f.curto ? nomeCurto(l.c, porId.get(l.c.unidadeId)) : l.c.nome)
       const colunas = [
         { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 },
-        { titulo: 'Cargo', valor: (l) => l.c.nome },
+        ...(f.agrupar ? [] : [{ titulo: 'Unidade', valor: (l) => porId.get(l.c.unidadeId)?.nome ?? '', largura: 55 }]),
+        { titulo: 'Cargo', valor: nome },
         { titulo: 'Posto exigido', valor: (l) => l.c.postoRequeridoNome || 'Civil', largura: 28 },
-        ...(qual === 'vagos'
+        ...(f.estado === 'vagos'
           ? [{ titulo: 'Lugares vagos', valor: (l) => l.c.livres, alinhar: 'center', largura: 18 }]
           : [{ titulo: 'Posto / categoria', valor: (l) => l.o?.descricao ?? '', largura: 30 }, { titulo: 'Nome', valor: (l) => l.o?.nome ?? 'VAGO', largura: 55 }, { titulo: 'NIP / N.º agente', valor: (l) => l.o?.ident ?? '', largura: 26 }]),
       ]
-      const seccoes = unidades.map((u) => ({ titulo: u.nome, colunas, linhas: linhasDe(cargos.filter((c) => c.unidadeId === u.id)) })).filter((x) => x.linhas.length)
-      if (!seccoes.length) { avisar('Não há cargos para essa lista.', 'erro'); return }
-      const d = { titulo: `${qual === 'vagos' ? 'CARGOS VAGOS' : qual === 'ocupados' ? 'CARGOS OCUPADOS' : 'CARGOS DO QUADRO ORGÂNICO'} — ${no.nome.toLocaleUpperCase('pt')}`, subtitulo: ESCOLHAS[qual], orientacao: 'landscape', seccoes }
+      const seccoes = f.agrupar
+        ? unidades.map((u) => ({ titulo: u.nome, colunas, linhas: linhas.filter((l) => l.c.unidadeId === u.id) })).filter((x) => x.linhas.length)
+        : [{ colunas, linhas }]
+      const filtros = [f.categorias.map((k) => CATEGORIAS_CARGO[k]).join(', '), f.funcoes.map((k) => ref.funcoes[k]).join(', '), f.posto && `posto exigido ${ref.postos.EXE.find((p) => p.id === f.posto)?.nome}`, f.texto && `«${f.texto}»`].filter(Boolean)
+      const d = { titulo: `${f.estado === 'vagos' ? 'CARGOS VAGOS' : f.estado === 'ocupados' ? 'CARGOS OCUPADOS' : 'CARGOS DO QUADRO ORGÂNICO'} — ${raiz.nome.toLocaleUpperCase('pt')}`, subtitulo: [raiz.id && (f.sub ? 'com as subunidades' : 'só a unidade, sem as subunidades'), ...filtros].filter(Boolean).join(' · '), orientacao: 'landscape', seccoes }
       await (formato === 'excel' ? documentoExcel(d) : documentoPdf(d))
       aoFechar()
     } catch (e) {
@@ -299,15 +320,31 @@ function ImprimirCargos({ no, aoFechar }) {
       setAGerar(false)
     }
   }
+  const lugares = new Set(linhas.map((l) => l.c.id)).size
   return (
-    <Modal titulo={`Imprimir cargos — ${no.nome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-outline-theme" disabled={aGerar} onClick={() => gerar('excel')}><i className="fa fa-file-excel me-1" />Excel</button><button type="button" className="btn btn-theme" disabled={aGerar} onClick={() => gerar('pdf')}><i className="fa fa-print me-1" />Imprimir (PDF)</button></>}>
-      {Object.entries(ESCOLHAS).map(([k, t]) => (
-        <div key={k} className="form-check mb-2">
-          <input className="form-check-input" type="radio" id={`imp-${k}`} checked={qual === k} onChange={() => setQual(k)} />
-          <label className="form-check-label" htmlFor={`imp-${k}`}>{t}</label>
-        </div>
-      ))}
-      <p className="small text-muted mb-0">{no.id ? 'Desta unidade e das subunidades' : 'De toda a Escola'}, uma secção por unidade, pela ordem do quadro orgânico ({no.lugares} lugares: {no.ocupados} ocupados, {Math.max(0, no.lugares - no.ocupados)} vagos).</p>
+    <Modal largo titulo="Imprimir cargos" aoFechar={aoFechar} rodape={<><span className="me-auto small text-muted">{cargos ? `${linhas.length} linha(s) · ${lugares} cargo(s)` : 'A carregar…'}</span><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-outline-theme" disabled={aGerar || !linhas.length} onClick={() => gerar('excel')}><i className="fa fa-file-excel me-1" />Excel</button><button type="button" className="btn btn-theme" disabled={aGerar || !linhas.length} onClick={() => gerar('pdf')}><i className="fa fa-print me-1" />Imprimir (PDF)</button></>}>
+      {erro && <div className="alert alert-danger">{erro}</div>}
+      <div className="row">
+        <Campo rotulo="Unidade" col="col-md-8"><Escolha valor={f.unidadeId} aoMudar={(v) => mudar('unidadeId', v)} opcoes={todas.map((u) => [u.id, `${'\u00a0'.repeat((u.nivel - 1) * 4)}${u.nome}`])} vazio="Toda a Escola" /></Campo>
+        <Campo rotulo="Subunidades" col="col-md-4"><div className="form-check mt-1"><input className="form-check-input" type="checkbox" id="imp-sub" checked={f.sub} disabled={!f.unidadeId} onChange={(e) => mudar('sub', e.target.checked)} /><label className="form-check-label" htmlFor="imp-sub">Incluir as subunidades</label></div></Campo>
+        <Campo rotulo="Cargos" col="col-12">
+          <div className="d-flex flex-wrap gap-3">{Object.entries(ESTADOS).map(([k, t]) => <div key={k} className="form-check"><input className="form-check-input" type="radio" id={`imp-${k}`} checked={f.estado === k} onChange={() => mudar('estado', k)} /><label className="form-check-label" htmlFor={`imp-${k}`}>{t}</label></div>)}</div>
+        </Campo>
+        <Campo rotulo="Categoria (nenhuma marcada = todas)" col="col-12">
+          <div className="d-flex flex-wrap gap-3">{Object.entries(CATEGORIAS_CARGO).map(([k, t]) => <div key={k} className="form-check"><input className="form-check-input" type="checkbox" id={`imp-c-${k}`} checked={f.categorias.includes(k)} onChange={() => alternar('categorias', k)} /><label className="form-check-label" htmlFor={`imp-c-${k}`}>{t}</label></div>)}</div>
+        </Campo>
+        <Campo rotulo="Função (nenhuma marcada = todas)" col="col-12">
+          <div className="d-flex flex-wrap gap-3">{Object.entries(ref.funcoes).map(([k, t]) => <div key={k} className="form-check"><input className="form-check-input" type="checkbox" id={`imp-f-${k}`} checked={f.funcoes.includes(k)} onChange={() => alternar('funcoes', k)} /><label className="form-check-label" htmlFor={`imp-f-${k}`}>{t}</label></div>)}</div>
+        </Campo>
+        <Campo rotulo="Posto exigido" col="col-md-4"><Escolha valor={f.posto} aoMudar={(v) => mudar('posto', v)} opcoes={ref.postos.EXE.map((p) => [p.id, p.nome])} vazio="Qualquer" /></Campo>
+        <Campo rotulo="O nome do cargo tem" col="col-md-8"><input className="form-control form-control-sm" value={f.texto} onChange={(e) => mudar('texto', e.target.value)} placeholder="Ex.: Professor, Chefe, Condutor, Amanuense…" /></Campo>
+        <Campo rotulo="Apresentação" col="col-12">
+          <div className="d-flex flex-wrap gap-3">
+            <div className="form-check"><input className="form-check-input" type="checkbox" id="imp-agrupar" checked={f.agrupar} onChange={(e) => mudar('agrupar', e.target.checked)} /><label className="form-check-label" htmlFor="imp-agrupar">Uma secção por unidade (senão, uma lista só com a coluna Unidade)</label></div>
+            <div className="form-check"><input className="form-check-input" type="checkbox" id="imp-curto" checked={f.curto} onChange={(e) => mudar('curto', e.target.checked)} /><label className="form-check-label" htmlFor="imp-curto">Nome curto do cargo (sem a unidade: «Chefe», «Professor de Estratégia»…)</label></div>
+          </div>
+        </Campo>
+      </div>
     </Modal>
   )
 }

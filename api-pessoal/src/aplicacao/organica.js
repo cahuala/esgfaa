@@ -166,7 +166,7 @@ export class ServicoOrganica {
     const caminho = (id) => { const r = []; for (let x = unidades.find((y) => y.id === id); x; x = unidades.find((y) => y.id === x.paiId)) r.unshift(x.sigla || x.nome); return r.join(' › ') }
     return l.map((c) => ({
       ...c, unidadeNome: c.unidade?.nome ?? '', unidadeCaminho: c.unidadeId ? caminho(c.unidadeId) : '', funcaoNome: FUNCOES[c.funcao] ?? '', postoRequeridoNome: c.postoRequerido ? nomeDoPosto(c.postoRequerido) : '',
-      ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length),
+      categoria: categoriaDoCargo(c), ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length),
       ocupantes: c.pessoas.map((p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ident: p.nip || p.numeroAgente || '', descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil ?? 'Civil' })),
       unidade: undefined, pessoas: undefined,
     }))
