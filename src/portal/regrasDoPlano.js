@@ -5,25 +5,26 @@ const num = (v) => String(v).replace('.', ',')
 
 export function regrasDoPlano(p) {
   if (!p) return []
-  const tii = p.trabalho || tx('TII/TFC')
+  // por extenso (o nome do trabalho final do curso, e o dos blocos), sem siglas
+  const tii = p.trabalho || tx('Trabalho de Investigação Individual')
   const blocos = p.blocos ?? []
   const total = blocos.reduce((s, b) => s + Number(b.coeficiente), 0)
   const formula = p.formula === 'media'
-    ? tx('Média das unidades curriculares, ponderada pelas unidades de crédito (UCréd).')
+    ? tx('Média aritmética simples das notas finais das unidades curriculares (sem ponderação).')
     : p.formula === 'percentagem'
-      ? blocos.map((b) => `${num(b.coeficiente)} % × ${b.sigla}`).join(' + ')
-      : `(${blocos.map((b) => `${num(b.coeficiente)} × ${b.sigla}`).join(' + ')}) / ${num(total)}`
-  const aprovarUc = [p.exigirUcs && tx('10 valores na nota final da UC'), p.exigirTesteEscrito && tx('10 valores em cada TAI de teste escrito')].filter(Boolean)
+      ? blocos.map((b) => `${num(b.coeficiente)} % × ${b.nome}`).join(' + ')
+      : `(${blocos.map((b) => `${num(b.coeficiente)} × ${b.nome}`).join(' + ')}) / ${num(total)}`
+  const aprovarUc = [p.exigirUcs && tx('10 valores na nota final da unidade curricular'), p.exigirTesteEscrito && tx('10 valores em cada Trabalho de Aplicação Individual com a natureza de teste escrito')].filter(Boolean)
   const aprovarCurso = [p.exigirBlocos && tx('10 valores em cada bloco'), p.exigirTii && tx('10 valores no {0}', { 0: tii }), tx('média final de 10 valores')].filter(Boolean)
   return [
-    [tx('Nota de cada UC'), tx('Média das provas (TAI e TAG), de 0 a 20 valores, às centésimas. Quando o plano da UC fixa o peso de cada prova (por exemplo, trabalho de grupo 50 % e defesa individual 50 %), a média é ponderada por esses pesos.')],
-    aprovarUc.length > 0 && [tx('Aprovação na UC'), `${tx('Exige')} ${aprovarUc.join(` ${tx('e')} `)}.`],
-    !p.exigirUcs && [tx('Aprovação na UC'), p.exigirBlocos ? tx('O plano não exige 10 em cada UC: conta a média dos blocos e a média final.') : tx('O plano não exige 10 em cada UC: conta a média final.')],
+    [tx('Nota de cada unidade curricular'), tx('Média das provas — Trabalhos de Aplicação Individual (TAI) e Trabalhos de Aplicação de Grupo (TAG) — de 0 a 20 valores, às centésimas. Quando o plano da unidade curricular fixa o peso de cada prova (por exemplo, trabalho de grupo 50 % e defesa individual 50 %), a média é ponderada por esses pesos.')],
+    aprovarUc.length > 0 && [tx('Aprovação na unidade curricular'), `${tx('Exige')} ${aprovarUc.join(` ${tx('e')} `)}.`],
+    !p.exigirUcs && [tx('Aprovação na unidade curricular'), p.exigirBlocos ? tx('O plano não exige 10 em cada unidade curricular: conta a média dos blocos e a média final.') : tx('O plano não exige 10 em cada unidade curricular: conta a média final.')],
     p.recuperacaoAutomatica
-      ? [tx('Recurso'), tx('Com nota negativa num TAI, o recurso é obrigatório: não é preciso pedir nem há prazo. Seja qual for a nota do recurso, esse TAI conta no máximo 10 valores.')]
-      : [tx('Teste de recuperação'), tx('Com nota negativa num TAI, pede-se um teste de recuperação até às 17h do dia útil seguinte à publicação da nota, uma só vez por TAI. Seja qual for a nota, esse TAI conta no máximo 10 valores.')],
+      ? [tx('Recurso'), tx('Com nota negativa num Trabalho de Aplicação Individual, o recurso é obrigatório: não é preciso pedir nem há prazo. Seja qual for a nota do recurso, esse trabalho conta no máximo 10 valores.')]
+      : [tx('Teste de recuperação'), tx('Com nota negativa num Trabalho de Aplicação Individual, pede-se um teste de recuperação até às 17h do dia útil seguinte à publicação da nota, uma só vez por trabalho. Seja qual for a nota, esse trabalho conta no máximo 10 valores.')],
     [tx('Revisão da prova'), tx('Quem não concordar com a classificação de uma prova pode reclamar por escrito ao Director do Curso, uma vez por prova. O Director de Ensino delibera e a nota pode subir, manter-se ou baixar.')],
-    p.formula !== 'media' && blocos.length > 0 && [tx('Nota de cada bloco'), `${tx('Média das UC do bloco, ponderada pelas unidades de crédito')}: ${blocos.map((b) => `${b.sigla} — ${b.nome}`).join('; ')}.`],
+    p.formula !== 'media' && blocos.length > 0 && [tx('Nota de cada bloco'), `${tx('Média das unidades curriculares do bloco, ponderada pelas unidades de crédito')}: ${blocos.map((b) => b.nome).join('; ')}.`],
     [tx('Nota final do curso'), formula],
     [tx('Aprovação no curso'), `${tx('Exige')} ${aprovarCurso.join(', ')}.`],
     p.ajusteMaximo > 0 && [tx('Ajuste do Comandante'), tx('Ouvido o Conselho de Curso, o Comandante da ESG pode ajustar a média final até ±{0} valores.', { 0: num(p.ajusteMaximo) })],

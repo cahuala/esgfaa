@@ -61,6 +61,9 @@ describe('avaliação pelos planos de curso da ESG', () => {
     const ucs = [{ codigo: 'A', nome: 'A', creditos: 2, final: 12, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', creditos: 2, final: 13, situacao: 'aprovado' }]
     assert.equal(resultadoCurso(coamp, ucs).final, 12.5)
     assert.equal(resultadoCurso(coamp, ucs, { ajuste: 1 }).final, 12.75)
+    // a média global não é ponderada: uma UC de 12 UCréd pesa o mesmo que uma de 1
+    const desiguais = [{ codigo: 'A', nome: 'A', creditos: 12, final: 16, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', creditos: 1, final: 10, situacao: 'aprovado' }]
+    assert.equal(resultadoCurso(coamp, desiguais).final, 13)
   })
 
   it('peso das provas: com o peso de cada prova (TAG 50 % + defesa 50 %, ou 25/25/50) a média é ponderada', () => {
@@ -88,7 +91,7 @@ describe('avaliação pelos planos de curso da ESG', () => {
     const { factoresDoPlano, juizoCompleto } = await import('../../src/dominio/academico/avaliacao/conselho.js')
     const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
     const ucs = [{ codigo: 'A', nome: 'A', creditos: 2, final: 8, situacao: 'reprovado' }, { codigo: 'TFC', nome: 'TFC', creditos: 2, final: 14, situacao: 'aprovado', tii: true }]
-    assert.equal(resultadoCurso(coamp, ucs).concluido, true) // média 11
+    assert.equal(resultadoCurso(coamp, ucs).concluido, true) // média simples (8 + 14) / 2 = 11
     const f = factoresDoPlano(coamp)
     assert.equal(Object.keys(f).length, 10)
     assert.equal(f.culturaCientifica, undefined)

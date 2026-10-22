@@ -6,7 +6,7 @@ import RegrasPlano from '../../../portal/RegrasPlano'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
-const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média das unidades curriculares (ponderada pelos créditos)' }
+const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
 
 /*
   Plano de curso da ESG de uma turma (Administração Escolar): carregar o modelo do plano 2026/2027 (cria o
@@ -98,7 +98,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
               </table>
             )}
             {/* o que os auditores/discentes e os docentes vêem (as mesmas regras que o sistema aplica) */}
-            <RegrasPlano plano={{ ...p, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho: d.ucs.find((u) => u.tii)?.codigo ?? null }} />
+            <RegrasPlano plano={{ ...p, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho: d.ucs.find((u) => u.tii)?.nome ?? null }} />
           </>
         )}
 
@@ -180,7 +180,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
               ))}</tbody>
             </table>
           </div>
-          <div className="small text-muted p-2">{tx('A nota de cada bloco é a média das UC ponderada pelas unidades de crédito. Menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99.')}</div>
+          <div className="small text-muted p-2">{pauta.plano.blocos.map((b) => `${b.sigla} — ${b.nome}`).join(' · ')}. {tx('A nota de cada bloco é a média das UC ponderada pelas unidades de crédito. Menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99.')}</div>
         </Painel>
       )}
       {p && <ConselhoCurso turma={turma} avisar={avisar} />}

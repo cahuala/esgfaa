@@ -7,8 +7,8 @@ import { erro } from '../comum/validacao.js'
   - um TAI negativo dá direito a um teste de recuperação, pedido até às 17h do dia útil seguinte à
     publicação da nota, uma só vez por TAI; a nota desse instrumento nunca passa de 10;
   - as UC agrupam-se em blocos; a nota do bloco é a média das UC ponderada pelas unidades de crédito;
-  - a nota final é a média dos blocos ponderada pelos coeficientes do plano (ou, nos planos sem blocos
-    obrigatórios, a média ponderada das UC), com o ajuste do Comandante quando o plano o prevê (±0,25);
+  - a nota final é a média dos blocos ponderada pelos coeficientes do plano (ou, no plano de média global,
+    a média aritmética simples das UC, sem ponderar), com o ajuste do Comandante quando o plano o prevê (±0,25);
   - a nota da UC é a média das provas (ponderada pelo peso de cada prova, quando o plano da UC o fixa)
   - aprovação: ≥ 10 em cada UC, em cada TAI de teste escrito, em cada bloco, no TII (cada uma se o plano o exigir)
     e na média final;
@@ -20,7 +20,7 @@ export const NOTA_MAXIMA_RECUPERACAO = 10
 export const TIPOS_AVALIACAO = { TAI: 'Trabalho de Aplicação Individual', TAG: 'Trabalho de Aplicação de Grupo' }
 export const FORMAS_AVALIACAO = { teste: 'Teste escrito', relatorio: 'Relatório individual', oral: 'Teste oral', trabalho: 'Trabalho' }
 export const TERMOS = { auditor: 'Auditor', discente: 'Discente' }
-export const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média das unidades curriculares (ponderada pelos créditos)' }
+export const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
 // horas e créditos (Decreto Presidencial n.º 193/18): 1 UCréd = 15 horas; limites por semestre e por ano
 export const CREDITO_HORAS = 15
 export const LIMITES = { creditosSemestre: 40, horasSemestre: 600, creditosAno: 80, horasAno: 1200, horasMinimasUc: 15 }
@@ -235,7 +235,11 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   })
   const semBloco = ucs.filter((u) => !plano.blocos.some((b) => b.sigla === u.bloco))
   let base = null
-  if (plano.formula === 'media' || !plano.blocos.length) base = media(ucs)
+  // média global (COAMP: «média final global»): a média aritmética simples das UC, sem ponderar pelos créditos
+  if (plano.formula === 'media' || !plano.blocos.length) {
+    const comNota = ucs.filter((u) => u.final !== null && u.final !== undefined)
+    base = comNota.length && comNota.length === ucs.length ? centesimas(comNota.reduce((s, u) => s + Number(u.final), 0) / comNota.length) : null
+  }
   else if (blocos.every((b) => b.nota !== null) && blocos.some((b) => b.ucs)) {
     const usados = blocos.filter((b) => b.ucs)
     base = centesimas(usados.reduce((s, b) => s + b.coeficiente * b.nota, 0) / usados.reduce((s, b) => s + b.coeficiente, 0))

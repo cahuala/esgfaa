@@ -148,7 +148,7 @@ function Percurso() {
 
 // a classificação pelo plano de curso da ESG: os blocos, a média ponderada, a nota final e a menção
 function PlanoCurso({ pc, conclusao }) {
-  const formula = { ponderada: tx('média dos blocos ponderada pelos coeficientes'), percentagem: tx('média dos blocos com pesos em percentagem'), media: tx('média das unidades curriculares') }[pc.formula]
+  const formula = { ponderada: tx('média dos blocos ponderada pelos coeficientes'), percentagem: tx('média dos blocos com pesos em percentagem'), media: tx('média aritmética simples das unidades curriculares') }[pc.formula]
   return (
     <div className="card mb-3">
       <div className="card-header fw-bold"><i className="fa fa-clipboard-list me-2" />{pc.nome}</div>
