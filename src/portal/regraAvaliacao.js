@@ -25,6 +25,6 @@ export const REGRA = tx('MAC = média da 1.ª e 2.ª prova. MAC ≥ {0} sem prov
 
 // planos de curso da ESG (a mesma regra da API)
 export { BLOCOS_DE_TEMPOS, FORMAS_AVALIACAO, NOTA_MAXIMA_RECUPERACAO, TEMPOS_ESCOLARES, TIPOS_AVALIACAO, mencao, resultadoUc } from '../../api/src/dominio/academico/avaliacao/planoCurso.js'
-export const REGRA_ESG = tx('Nota da UC = média dos TAI e TAG (0 a 20, às centésimas). Aprovação com 10 na UC e em cada TAI de teste escrito. Um TAI negativo dá direito a um teste de recuperação, pedido até às 17h do dia útil seguinte à publicação, uma só vez; esse TAI conta no máximo 10. Menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99.')
+export const REGRA_ESG = tx('Nota da UC = média dos TAI e TAG (0 a 20, às centésimas), ponderada pelo peso de cada prova quando o plano da UC o fixa. Aprovação com 10 na UC e em cada TAI de teste escrito (conforme o plano do curso). Um TAI negativo dá direito a um teste de recuperação, pedido até às 17h do dia útil seguinte à publicação, uma só vez; esse TAI conta no máximo 10. Menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99.')
 
 export const PERIODOS = { 1: tx('1.º semestre'), 2: tx('2.º semestre'), anual: tx('Anual') }

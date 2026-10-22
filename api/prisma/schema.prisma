@@ -1589,6 +1589,10 @@ model PlanoCurso {
   exigirBlocos       Boolean  @default(true) @map("exigir_blocos")
   exigirTesteEscrito Boolean  @default(true) @map("exigir_teste_escrito")
   faltasMaximas      Int      @default(10) @map("faltas_maximas") // % de faltas justificadas admitidas
+  exigirUcs          Boolean  @default(true) @map("exigir_ucs") // 10 em cada UC (o CEAO e o COAMP não exigem)
+  exigirTii          Boolean  @default(true) @map("exigir_tii") // 10 no TII/TFC (o COAMP não exige)
+  duracaoMeses       Int      @default(10) @map("duracao_meses") // duração normal do curso
+  factoresJuizo      String[] @default([]) @map("factores_juizo") // factores do juízo ampliativo (vazio = os 11)
   criadoEm           DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm       DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
@@ -1602,6 +1606,7 @@ model AvaliacaoUc {
   cadeiraId   Int       @map("cadeira_id")
   tipo        String // TAI | TAG
   forma       String    @default("teste") // teste | relatorio | oral | trabalho
+  peso        Decimal?  @db.Decimal(5, 2) // % na nota da UC (ex.: TAG 50 + defesa 50); sem peso = média simples
   titulo      String
   data        String? // AAAA-MM-DD
   ordem       Int       @default(0)

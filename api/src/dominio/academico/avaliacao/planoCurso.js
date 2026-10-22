@@ -9,7 +9,8 @@ import { erro } from '../comum/validacao.js'
   - as UC agrupam-se em blocos; a nota do bloco é a média das UC ponderada pelas unidades de crédito;
   - a nota final é a média dos blocos ponderada pelos coeficientes do plano (ou, nos planos sem blocos
     obrigatórios, a média ponderada das UC), com o ajuste do Comandante quando o plano o prevê (±0,25);
-  - aprovação: ≥ 10 em cada UC, em cada TAI de teste escrito, em cada bloco (se o plano o exigir), no TII
+  - a nota da UC é a média das provas (ponderada pelo peso de cada prova, quando o plano da UC o fixa)
+  - aprovação: ≥ 10 em cada UC, em cada TAI de teste escrito, em cada bloco, no TII (cada uma se o plano o exigir)
     e na média final;
   - menção: Muito Bom 18–20, Bom 14–17,99, Regular 10–13,99, Reprovado < 10; Distinto pelo Comandante.
   O plano de cada curso (blocos, coeficientes, regras) fica na base de dados e edita-se no painel.
@@ -62,7 +63,13 @@ export function validarPlano(d) {
     formula, blocos, ajusteMaximo: ajuste,
     exigirBlocos: d.exigirBlocos !== false && formula !== 'media',
     exigirTesteEscrito: d.exigirTesteEscrito !== false,
+    // o CEAO e o COAMP não exigem 10 em cada UC (só nos blocos, no TII e na média); o COAMP nem no TFC
+    exigirUcs: d.exigirUcs !== false,
+    exigirTii: d.exigirTii !== false,
     faltasMaximas: Math.min(100, Math.max(0, Number(d.faltasMaximas ?? 10) || 0)),
+    duracaoMeses: Math.min(48, Math.max(1, Math.round(Number(d.duracaoMeses ?? 10)) || 10)),
+    // os factores do juízo ampliativo (vazio = os 11 do plano-tipo; o COAMP não tem «Cultura científica e académica»)
+    factoresJuizo: Array.isArray(d.factoresJuizo) ? d.factoresJuizo.map(String).slice(0, 20) : [],
   }
 }
 
@@ -114,10 +121,15 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, agor
   if (!avaliacoes.length) return { final: null, situacao: 'sem_provas', mencao: null, provas: [] }
   const provas = avaliacoes.map((a) => {
     const n = notas[a.id] ?? {}
-    return { id: a.id, tipo: a.tipo, forma: a.forma, nota: num(n.nota), recuperacao: num(n.recuperacao), conta: notaDaProva(n.nota, n.recuperacao), pedida: Boolean(n.recuperacaoPedidaEm) }
+    return { id: a.id, tipo: a.tipo, forma: a.forma, peso: num(a.peso), nota: num(n.nota), recuperacao: num(n.recuperacao), conta: notaDaProva(n.nota, n.recuperacao), pedida: Boolean(n.recuperacaoPedidaEm) }
   })
   if (provas.some((p) => p.conta === null)) return { final: null, situacao: 'em_curso', mencao: null, provas }
-  const final = centesimas(provas.reduce((s, p) => s + p.conta, 0) / provas.length)
+  // a média das provas; com o peso de cada prova (ex.: TAG 50 % + defesa individual 50 %), quando todas o têm
+  const pesos = avaliacoes.map((a) => Number(a.peso) || 0)
+  const comPesos = pesos.every((p) => p > 0)
+  const final = comPesos
+    ? centesimas(provas.reduce((s, p, i) => s + p.conta * pesos[i], 0) / pesos.reduce((s, p) => s + p, 0))
+    : centesimas(provas.reduce((s, p) => s + p.conta, 0) / provas.length)
   // os TAI de teste escrito também têm de ter 10 (cada um)
   const testesNegativos = exigirTesteEscrito ? provas.filter((p) => p.tipo === 'TAI' && p.forma === 'teste' && p.conta < NOTA_MINIMA) : []
   const emRecuperacao = provas.some((p) => {
@@ -181,8 +193,12 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
     return centesimas(soma / comNota.reduce((s, u) => s + peso(u), 0))
   }
   const emFalta = []
+  const exigeUcs = plano.exigirUcs !== false
+  const exigeTii = plano.exigirTii !== false
   for (const u of ucs) {
     if (u.situacao === 'aprovado') continue
+    // sem nota ou em recuperação conta sempre; reprovada só conta se o plano exigir 10 na UC (ou no TII)
+    if (u.situacao === 'reprovado' && u.final !== null && u.final !== undefined && !(u.tii ? exigeTii : exigeUcs)) continue
     emFalta.push(`${u.codigo} ${u.nome}${u.situacao === 'reprovado' ? ' (reprovada)' : u.situacao === 'recuperacao' ? ' (em recuperação)' : ''}`)
   }
   const blocos = plano.blocos.map((b) => {
@@ -279,7 +295,7 @@ export const MODELOS_PLANO = {
   },
   'ceao-2026': {
     plano: {
-      nome: '18.º Curso de Estratégia e Arte Operativa — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'auditor', formula: 'percentagem', ajusteMaximo: 0,
+      nome: '18.º Curso de Estratégia e Arte Operativa — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'auditor', formula: 'percentagem', ajusteMaximo: 0, exigirUcs: false, exigirTesteEscrito: false,
       blocos: [{ sigla: 'NUC', nome: 'Disciplinas Nucleares', coeficiente: 60 }, { sigla: 'COMP', nome: 'Disciplinas Complementares', coeficiente: 15 }, { sigla: 'TII', nome: 'Trabalho de Investigação Individual', coeficiente: 25 }],
     },
     // o plano dá a carga horária total de cada UC (sem separar contacto e não contacto) e não indica semestres
@@ -294,7 +310,8 @@ export const MODELOS_PLANO = {
   'coamp-2026': {
     // média das UC (o plano não pondera blocos); os blocos servem só para agrupar
     plano: {
-      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false,
+      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false, exigirUcs: false, exigirTii: false, exigirTesteEscrito: false,
+      factoresJuizo: ['culturaMilitar', 'autoconfianca', 'adaptabilidade', 'iniciativa', 'comunicacao', 'senso', 'decisao', 'planeamento', 'analise', 'trabalhoGrupo'],
       blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 1 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 1 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 1 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }],
     },
     cadeiras: [

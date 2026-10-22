@@ -52,7 +52,10 @@ export class ServicoAvaliacaoEsg {
     const forma = FORMAS_AVALIACAO[d.forma] ? d.forma : d.tipo === 'TAG' ? 'trabalho' : 'teste'
     const data = d.data ? String(d.data).slice(0, 10) : null
     if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw new ErroValidacao('Data inválida.', { campo: 'data' })
-    return { tipo: d.tipo, forma, titulo: texto(d.titulo, 'titulo', 'Título', { min: 2, max: 150 }), data }
+    // peso da prova na nota da UC (%), como o plano da UC fixa (ex.: TAG 50 % e defesa individual 50 %)
+    const p = d.peso === undefined || d.peso === null || d.peso === '' ? null : Number(String(d.peso).replace(',', '.'))
+    if (p !== null && (!Number.isFinite(p) || p <= 0 || p > 100)) throw new ErroValidacao('Peso da prova: de 1 a 100 %.', { campo: 'peso' })
+    return { tipo: d.tipo, forma, titulo: texto(d.titulo, 'titulo', 'Título', { min: 2, max: 150 }), data, peso: p }
   }
 
   async criarAvaliacao(ctx, cadeira, dados, utilizador) {

@@ -14,7 +14,7 @@ const paraNumero = (v) => {
   const n = Number(t)
   return Number.isFinite(n) && n >= 0 && n <= 20 ? n : undefined
 }
-const VAZIA = { tipo: 'TAI', forma: 'teste', titulo: '', data: '' }
+const VAZIA = { tipo: 'TAI', forma: 'teste', titulo: '', data: '', peso: '' }
 
 /*
   Pauta pelo plano de curso da ESG (docente no portal e Administração Escolar no painel): as provas da UC
@@ -83,10 +83,21 @@ export function PautaEsg({ c, avisar, pedir, base }) {
   const publicar = (a) => pedir(`${base}/provas/${a.id}/publicacao`, { metodo: 'PUT', corpo: { publicar: !a.publicadaEm } })
     .then((r) => { aplicar(r); avisar({ texto: a.publicadaEm ? tx('{0}: escondida.', { 0: a.titulo }) : tx('{0}: publicada. Abriu o prazo de pedido de recuperação.', { 0: a.titulo }) }) }).catch(falhou)
   const apagar = (a) => pedir(`${base}/provas/${a.id}`, { metodo: 'DELETE' }).then(aplicar).catch(falhou)
+  // o peso de cada prova na nota da UC (%), como o plano da UC fixa; sem peso em todas = média simples
+  const mudarPeso = (a) => {
+    const v = window.prompt(tx('Peso de «{0}» na nota da UC (%). Vazio = sem peso.', { 0: a.titulo }), a.peso ?? '')
+    if (v === null) return
+    pedir(`${base}/provas/${a.id}`, { metodo: 'PUT', corpo: { peso: v.trim() || null } }).then(aplicar).catch(falhou)
+  }
+  const pesos = p.avaliacoes.map((a) => Number(a.peso) || 0)
+  const somaPesos = pesos.reduce((s, x) => s + x, 0)
+  const avisoPesos = pesos.some((x) => x > 0) && (pesos.some((x) => !x)
+    ? tx('Algumas provas têm peso e outras não: a nota da UC usa a média simples até todas terem peso.')
+    : Math.abs(somaPesos - 100) > 0.01 ? tx('Os pesos das provas somam {0} % (deviam somar 100 %).', { 0: String(somaPesos).replace('.', ',') }) : '')
   async function criar(e) {
     e.preventDefault()
     try {
-      aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { ...nova, data: nova.data || null } }))
+      aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { ...nova, data: nova.data || null, peso: nova.peso || null } }))
       setNova(null)
     } catch (x) {
       falhou(x)
@@ -113,7 +124,8 @@ export function PautaEsg({ c, avisar, pedir, base }) {
           <div className="row g-2 align-items-end">
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-tipo">{tx('Tipo')}</label><select id="pr-tipo" className="form-select form-select-sm" value={nova.tipo} onChange={(e) => setNova({ ...nova, tipo: e.target.value, forma: e.target.value === 'TAG' ? 'trabalho' : 'teste' })}>{Object.entries(TIPOS_AVALIACAO).map(([k, t]) => <option key={k} value={k} title={t}>{k} — {tx(t)}</option>)}</select></div>
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-forma">{tx('Forma')}</label><select id="pr-forma" className="form-select form-select-sm" value={nova.forma} onChange={(e) => setNova({ ...nova, forma: e.target.value })}>{Object.entries(FORMAS_AVALIACAO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
-            <div className="col-md-4"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
+            <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
+            <div className="col-md-1"><label className="form-label small fw-bold" htmlFor="pr-peso" title={tx('Peso na nota da UC, como no plano da UC (ex.: 50). Vazio = média simples.')}>{tx('Peso %')}</label><input id="pr-peso" className="form-control form-control-sm" inputMode="decimal" value={nova.peso} onChange={(e) => setNova({ ...nova, peso: e.target.value })} placeholder="—" /></div>
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-data">{tx('Data')}</label><input id="pr-data" type="date" className="form-control form-control-sm" value={nova.data} onChange={(e) => setNova({ ...nova, data: e.target.value })} /></div>
             <div className="col-md-2"><button type="submit" className="btn btn-sm btn-theme w-100"><i className="fa fa-plus me-1" />{tx('Criar')}</button></div>
           </div>
@@ -122,6 +134,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
       )}
 
       {c.tii && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-1" />{tx('A nota desta UC é a do Trabalho de Investigação Individual, lançada pela Administração Escolar (turma → TFC/TII).')}</div>}
+      {!c.tii && avisoPesos && <div className="alert alert-warning py-2 p-sem-impressao"><i className="fa fa-balance-scale me-1" />{avisoPesos}</div>}
       {!c.tii && p.avaliacoes.length === 0 && <Vazio>{tx('Ainda não há provas. Crie os TAI e os TAG da UC em «Nova prova».')}</Vazio>}
 
       {(c.tii || p.avaliacoes.length > 0) && (
@@ -136,12 +149,13 @@ export function PautaEsg({ c, avisar, pedir, base }) {
                   {p.avaliacoes.map((a) => (
                     <th scope="col" key={a.id}>
                       <span className={`badge ${a.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{a.tipo}</span>{a.titulo}
-                      <div className="small fw-normal text-muted">{tx(FORMAS_AVALIACAO[a.forma])}{a.data ? ` · ${a.data.split('-').reverse().join('/')}` : ''}</div>
+                      <div className="small fw-normal text-muted">{tx(FORMAS_AVALIACAO[a.forma])}{a.data ? ` · ${a.data.split('-').reverse().join('/')}` : ''}{a.peso ? ` · ${String(a.peso).replace('.', ',')} %` : ''}</div>
                       {a.pedidos > 0 && <div className="small text-warning fw-normal"><i className="fa fa-redo me-1" />{tx('{0} pedido(s) de recuperação', { 0: a.pedidos })}</div>}
                       <div className="p-sem-impressao mt-1">
                         <button type="button" className={`p-publicar ${a.publicadaEm ? 'p-publicada' : ''}`} onClick={() => publicar(a)} aria-pressed={Boolean(a.publicadaEm)} title={a.publicadaEm ? tx('Publicada em {0}. Clique para esconder.', { 0: dataHora(a.publicadaEm) }) : tx('Ainda escondida. Clique para publicar.')}>
                           {a.publicadaEm ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {a.publicadaEm ? tx('Publicada') : tx('Por publicar')}
                         </button>
+                        <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => mudarPeso(a)} title={tx('Peso na nota da UC')} aria-label={tx('Peso na nota da UC')}><i className="fa fa-balance-scale" /></button>
                         {!a.publicadaEm && <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => apagar(a)} title={tx('Apagar a prova')} aria-label={tx('Apagar a prova')}><i className="fa fa-trash" /></button>}
                       </div>
                     </th>

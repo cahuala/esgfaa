@@ -300,9 +300,10 @@ export const planoCurso = z.object({
   curso: texto(120), anoLetivo: texto(20), nome: texto(200), termo: texto(20).optional(), formula: texto(20),
   blocos: z.array(z.object({ sigla: texto(12), nome: texto(120), coeficiente: z.union([z.number(), texto(10)]) })).max(20).optional(),
   ajusteMaximo: z.union([z.number(), texto(6)]).optional(), exigirBlocos: z.boolean().optional(), exigirTesteEscrito: z.boolean().optional(), faltasMaximas: z.union([z.number(), texto(4)]).optional(),
+  exigirUcs: z.boolean().optional(), exigirTii: z.boolean().optional(), duracaoMeses: z.union([z.number(), texto(3)]).optional(), factoresJuizo: z.array(texto(40)).max(20).optional(),
 })
 export const modeloPlano = z.object({ modelo: texto(40) })
-export const provaUc = z.object({ tipo: texto(4).optional(), forma: texto(20).optional(), titulo: texto(150).optional(), data: z.union([texto(10), z.literal(''), z.null()]).optional() })
+export const provaUc = z.object({ tipo: texto(4).optional(), forma: texto(20).optional(), titulo: texto(150).optional(), peso: z.union([z.number(), texto(6), z.literal(''), z.null()]).optional(), data: z.union([texto(10), z.literal(''), z.null()]).optional() })
 export const notasProva = z.object({ linhas: z.array(z.object({ estudanteId: idNumerico, nota: z.union([z.number(), texto(6), z.null()]).optional(), recuperacao: z.union([z.number(), texto(6), z.null()]).optional() })).max(500) })
 export const publicarProva = z.object({ publicar: z.boolean() })
 export const juizo = z.object({ factores: z.record(z.string().max(40), z.string().max(20)).optional(), texto: z.string().max(4000).optional() })

@@ -63,6 +63,40 @@ describe('avaliação pelos planos de curso da ESG', () => {
     assert.equal(resultadoCurso(coamp, ucs, { ajuste: 1 }).final, 12.75)
   })
 
+  it('peso das provas: com o peso de cada prova (TAG 50 % + defesa 50 %, ou 25/25/50) a média é ponderada', () => {
+    const provas = [{ id: 1, tipo: 'TAG', forma: 'trabalho', peso: 25 }, { id: 2, tipo: 'TAI', forma: 'oral', peso: 25 }, { id: 3, tipo: 'TAI', forma: 'relatorio', peso: 50 }]
+    const notas = { 1: { nota: 12 }, 2: { nota: 16 }, 3: { nota: 10 } }
+    assert.equal(resultadoUc(provas, notas).final, 12) // 0,25·12 + 0,25·16 + 0,5·10
+    // sem peso em alguma prova: média simples (como na regra geral do plano)
+    assert.equal(resultadoUc(provas.map((p, i) => (i ? p : { ...p, peso: null })), notas).final, 12.67)
+  })
+
+  it('CEAO: não exige 10 em cada UC nem em cada teste escrito, mas exige 10 nos blocos e no TII', () => {
+    const ceao = validarPlano({ ...MODELOS_PLANO['ceao-2026'].plano, curso: 'ceao' })
+    const ucs = MODELOS_PLANO['ceao-2026'].cadeiras.map((c) => ({ ...c, final: 13, situacao: 'aprovado' }))
+    const et = ucs.find((u) => u.codigo === 'ET')
+    Object.assign(et, { final: 8, situacao: 'reprovado' }) // Ética negativa, mas o bloco Complementar fica ≥ 10
+    const r = resultadoCurso(ceao, ucs)
+    assert.equal(r.concluido, true)
+    assert.equal(r.final, 12.75) // 0,60·13 + 0,15·(2·13 + 2·13 + 2·8)/6 + 0,25·13 = 7,80 + 1,70 + 3,25
+    const semTii = ucs.map((u) => (u.tii ? { ...u, final: 9, situacao: 'reprovado' } : u))
+    assert.equal(resultadoCurso(ceao, semTii).concluido, false)
+    assert.ok(resultadoCurso(ceao, semTii).emFalta.some((t) => t.startsWith('TII')))
+  })
+
+  it('COAMP: só a média global (≥ 10) aprova; o juízo tem 10 factores (sem a cultura científica)', async () => {
+    const { factoresDoPlano, juizoCompleto } = await import('../../src/dominio/academico/avaliacao/conselho.js')
+    const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
+    const ucs = [{ codigo: 'A', nome: 'A', creditos: 2, final: 8, situacao: 'reprovado' }, { codigo: 'TFC', nome: 'TFC', creditos: 2, final: 14, situacao: 'aprovado', tii: true }]
+    assert.equal(resultadoCurso(coamp, ucs).concluido, true) // média 11
+    const f = factoresDoPlano(coamp)
+    assert.equal(Object.keys(f).length, 10)
+    assert.equal(f.culturaCientifica, undefined)
+    assert.equal(juizoCompleto({ factores: Object.fromEntries(Object.keys(f).map((k) => [k, 'Bom'])) }, f), true)
+    assert.equal(Object.keys(factoresDoPlano(CSCD)).length, 11)
+    assert.equal(coamp.duracaoMeses, 10)
+  })
+
   it('carga horária: 1 UCréd = 15 h; avisos de UC curta e de semestres acima do máximo', () => {
     const avisos = verificarCargaHoraria([{ codigo: 'X', nome: 'X', periodo: '1', horasContacto: 8, horasNaoContacto: 2, creditos: 1 }, { codigo: 'Y', nome: 'Y', periodo: '1', horasContacto: 600, horasNaoContacto: 30, creditos: 42 }])
     assert.ok(avisos.some((t) => t.includes('pelo menos 15 h')))

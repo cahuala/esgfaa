@@ -1,5 +1,5 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
-import { ESCALA_JUIZO, ESTADOS_CONSELHO, FACTORES_JUIZO, juizoCompleto, podeTerDistinto, validarJuizo } from '../../../dominio/academico/avaliacao/conselho.js'
+import { ESCALA_JUIZO, ESTADOS_CONSELHO, factoresDoPlano, juizoCompleto, podeTerDistinto, validarJuizo } from '../../../dominio/academico/avaliacao/conselho.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 
 /*
@@ -29,7 +29,7 @@ export class ServicoConselhoCurso {
     const linhas = []
     for (const e of estudantes) {
       const r = await this.esg.resultadoDoEstudante(e.id, t)
-      linhas.push({ estudante: e, estudanteId: e.id, final: r.final, media: r.media, mencao: r.mencao, concluido: r.concluido, emFalta: r.emFalta, blocos: r.blocos, ajuste: r.ajuste ?? 0, distinto: r.distinto, juizo: r.juizo, juizoCompleto: juizoCompleto(r.juizo), homologado: r.homologado, ucs: r.ucs })
+      linhas.push({ estudante: e, estudanteId: e.id, final: r.final, media: r.media, mencao: r.mencao, concluido: r.concluido, emFalta: r.emFalta, blocos: r.blocos, ajuste: r.ajuste ?? 0, distinto: r.distinto, juizo: r.juizo, juizoCompleto: juizoCompleto(r.juizo, factoresDoPlano(r.plano)), homologado: r.homologado, ucs: r.ucs })
     }
     return linhas
   }
@@ -39,7 +39,7 @@ export class ServicoConselhoCurso {
     const { t, plano } = await this.#turmaComPlano(turmaId)
     const [conselho, linhas] = await Promise.all([this.planosCurso.conselho(t.id), this.#linhas(t)])
     return {
-      turma: t, plano, conselho: { ...conselho, estadoNome: ESTADOS_CONSELHO[conselho.estado] }, factores: FACTORES_JUIZO, escala: ESCALA_JUIZO,
+      turma: t, plano, conselho: { ...conselho, estadoNome: ESTADOS_CONSELHO[conselho.estado] }, factores: factoresDoPlano(plano), escala: ESCALA_JUIZO,
       linhas: linhas.map((l) => ({ ...l, podeDistinto: podeTerDistinto(linhas, l.estudanteId), ucs: undefined })),
     }
   }
@@ -59,10 +59,10 @@ export class ServicoConselhoCurso {
   // juízo ampliativo (Director de Ensino): antes da homologação
   async guardarJuizo(ctx, turmaId, estudanteId, dados) {
     ctx.actor.exigir('academico.conselho')
-    const { t } = await this.#turmaComPlano(turmaId)
+    const { t, plano } = await this.#turmaComPlano(turmaId)
     await this.#exigirEstado(t, 'aberto', 'proposta')
     const e = await this.#estudante(t, estudanteId)
-    await this.planosCurso.guardarClassificacao(t.id, e.id, { juizo: validarJuizo(dados) })
+    await this.planosCurso.guardarClassificacao(t.id, e.id, { juizo: validarJuizo(dados, factoresDoPlano(plano)) })
     await this.auditoria.registar(ctx, { acao: 'juizo_ampliativo', colecao: 'conselho_curso', alvoId: t.id, alvoTitulo: `${e.nome} — ${t.nome}` })
     return this.estado(ctx, t.id)
   }

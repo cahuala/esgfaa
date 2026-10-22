@@ -3,10 +3,10 @@ const num = (v) => (v === null || v === undefined ? null : Number(v))
 
 const paraPlano = (p) => p && {
   id: p.id, curso: p.curso, anoLetivo: p.anoLetivo, nome: p.nome, termo: p.termo, formula: p.formula, blocos: p.blocos ?? [],
-  ajusteMaximo: Number(p.ajusteMaximo ?? 0), exigirBlocos: p.exigirBlocos, exigirTesteEscrito: p.exigirTesteEscrito, faltasMaximas: p.faltasMaximas,
+  ajusteMaximo: Number(p.ajusteMaximo ?? 0), exigirBlocos: p.exigirBlocos, exigirTesteEscrito: p.exigirTesteEscrito, faltasMaximas: p.faltasMaximas, exigirUcs: p.exigirUcs, exigirTii: p.exigirTii, duracaoMeses: p.duracaoMeses, factoresJuizo: p.factoresJuizo ?? [],
   criadoEm: iso(p.criadoEm), atualizadoEm: iso(p.atualizadoEm),
 }
-const paraAvaliacao = (a) => a && { id: a.id, cadeiraId: a.cadeiraId, tipo: a.tipo, forma: a.forma, titulo: a.titulo, data: a.data, ordem: a.ordem, publicadaEm: iso(a.publicadaEm) }
+const paraAvaliacao = (a) => a && { id: a.id, cadeiraId: a.cadeiraId, tipo: a.tipo, forma: a.forma, peso: num(a.peso), titulo: a.titulo, data: a.data, ordem: a.ordem, publicadaEm: iso(a.publicadaEm) }
 
 // planos de curso da ESG, provas (TAI/TAG) das UC e as notas de cada estudante
 export class RepositorioPlanosCurso {
