@@ -159,7 +159,7 @@ export class ServicoOrganica {
     exigir(u, 'ver')
     const l = await this.bd.cargo.findMany({
       where: unidadeId ? { unidadeId: Number(unidadeId) } : {},
-      include: { unidade: { select: { nome: true, sigla: true } }, pessoas: { where: { ativo: true }, select: { id: true, nome: true, posto: true, ramo: true, categoriaCivil: true, fotoId: true, nip: true } } },
+      include: { unidade: { select: { nome: true, sigla: true } }, pessoas: { where: { ativo: true }, select: { id: true, nome: true, posto: true, ramo: true, categoriaCivil: true, fotoId: true, nip: true, numeroAgente: true } } },
       orderBy: [{ unidadeId: 'asc' }, { id: 'asc' }],
     })
     const unidades = await this.bd.unidade.findMany({ select: { id: true, nome: true, sigla: true, paiId: true } })
@@ -167,7 +167,7 @@ export class ServicoOrganica {
     return l.map((c) => ({
       ...c, unidadeNome: c.unidade?.nome ?? '', unidadeCaminho: c.unidadeId ? caminho(c.unidadeId) : '', funcaoNome: FUNCOES[c.funcao] ?? '', postoRequeridoNome: c.postoRequerido ? nomeDoPosto(c.postoRequerido) : '',
       ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length),
-      ocupantes: c.pessoas.map((p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil ?? 'Civil' })),
+      ocupantes: c.pessoas.map((p) => ({ id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ident: p.nip || p.numeroAgente || '', descricao: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil ?? 'Civil' })),
       unidade: undefined, pessoas: undefined,
     }))
   }

@@ -4,6 +4,7 @@ import { api } from '../api'
 import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
 import { ICONE_UNIDADE } from '../arvore'
+import { documentoExcel, documentoPdf } from '../exportar'
 import Foto from '../componentes/Foto'
 import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
@@ -117,6 +118,7 @@ export default function Organica() {
   const formularios = (
     <>
       {modal?.unidade && <FormUnidade u={modal.unidade} unidades={unidades} aoFechar={() => setModal(null)} aoGuardar={depois} />}
+      {modal?.imprimir && <ImprimirCargos no={modal.imprimir} aoFechar={() => setModal(null)} />}
       {modal?.cargo && <FormCargo c={modal.cargo} unidades={unidades} refs={ref} aoFechar={() => setModal(null)} aoGuardar={depois} />}
     </>
   )
@@ -133,6 +135,7 @@ export default function Organica() {
         <Cabecalho titulo={no.nome} subtitulo={no.sigla} migalhas={[['Orgânica', '/organica'], ...caminho.slice(0, -1).map((c) => [c.sigla || c.nome, `/organica/${c.id}`]), [no.sigla || no.nome]]}>
           <button type="button" className="btn btn-outline-secondary" onClick={() => navegar(no.paiId ? `/organica/${no.paiId}` : '/organica')}><i className="fa fa-arrow-left me-1" />Voltar</button>
           <button type="button" className="btn btn-outline-secondary" onClick={() => navegar(`/pessoas?unidadeId=${atualId}`)}><i className="fa fa-users me-1" />Ver o pessoal</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={() => setModal({ imprimir: no })}><i className="fa fa-print me-1" />Imprimir cargos</button>
           {gerir && <button type="button" className="btn btn-outline-theme" onClick={() => setModal({ unidade: { paiId: atualId } })}><i className="fa fa-plus me-1" />Subunidade</button>}
           {gerir && <button type="button" className="btn btn-theme" onClick={() => setModal({ cargo: { unidadeId: atualId } })}><i className="fa fa-plus me-1" />Cargo</button>}
         </Cabecalho>
@@ -205,6 +208,7 @@ export default function Organica() {
   return (
     <>
       <Cabecalho titulo="Orgânica" subtitulo="Escola Superior de Guerra" migalhas={[['Orgânica']]}>
+        <button type="button" className="btn btn-outline-secondary" onClick={() => setModal({ imprimir: escola })}><i className="fa fa-print me-1" />Imprimir cargos</button>
         {gerir && <button type="button" className="btn btn-outline-theme" onClick={() => navegar('/organica/importar')}><i className="fa fa-file-excel me-1" />Carregar o quadro orgânico</button>}
         {gerir && <button type="button" className="btn btn-theme" onClick={() => setModal({ unidade: { paiId: null } })}><i className="fa fa-plus me-1" />Nova unidade</button>}
       </Cabecalho>
@@ -254,6 +258,57 @@ function MapaEfectivos({ escola, colunas, navegar }) {
       </div>
       <div className="small text-muted p-2">P: lugares dos cargos (pelo posto de cada cargo). E: pessoas colocadas (sem estudantes nem empregados domiciliares). A vermelho, mais do que o previsto.</div>
     </Painel>
+  )
+}
+
+/*
+  Lista dos cargos para imprimir (PDF) ou exportar (Excel), da Escola ou de uma unidade com as subunidades:
+  os vagos, os ocupados com quem os ocupa, ou todos (um lugar por linha: quem o ocupa ou «VAGO»).
+  Uma secção por unidade, pela ordem do quadro orgânico.
+*/
+const ESCOLHAS = { todos: 'Todos os cargos (ocupados e vagos)', vagos: 'Só os cargos vagos', ocupados: 'Só os cargos ocupados, com quem os ocupa' }
+function ImprimirCargos({ no, aoFechar }) {
+  const { avisar } = useSessao()
+  const [qual, setQual] = useState('todos')
+  const [aGerar, setAGerar] = useState(false)
+  async function gerar(formato) {
+    setAGerar(true)
+    try {
+      const cargos = await api('/cargos')
+      const unidades = []
+      const andar = (n) => { if (n.id) unidades.push(n); n.filhos.forEach(andar) }
+      andar(no)
+      const lugares = (c) => [...c.ocupantes.map((o) => ({ c, o })), ...Array.from({ length: c.livres }, () => ({ c, o: null }))]
+      const linhasDe = (lc) => (qual === 'vagos' ? lc.filter((c) => c.livres).map((c) => ({ c, o: null })) : qual === 'ocupados' ? lc.flatMap((c) => c.ocupantes.map((o) => ({ c, o }))) : lc.flatMap(lugares))
+      const colunas = [
+        { titulo: 'N/O', valor: (_, i) => String(i + 1).padStart(2, '0'), alinhar: 'center', largura: 10 },
+        { titulo: 'Cargo', valor: (l) => l.c.nome },
+        { titulo: 'Posto exigido', valor: (l) => l.c.postoRequeridoNome || 'Civil', largura: 28 },
+        ...(qual === 'vagos'
+          ? [{ titulo: 'Lugares vagos', valor: (l) => l.c.livres, alinhar: 'center', largura: 18 }]
+          : [{ titulo: 'Posto / categoria', valor: (l) => l.o?.descricao ?? '', largura: 30 }, { titulo: 'Nome', valor: (l) => l.o?.nome ?? 'VAGO', largura: 55 }, { titulo: 'NIP / N.º agente', valor: (l) => l.o?.ident ?? '', largura: 26 }]),
+      ]
+      const seccoes = unidades.map((u) => ({ titulo: u.nome, colunas, linhas: linhasDe(cargos.filter((c) => c.unidadeId === u.id)) })).filter((x) => x.linhas.length)
+      if (!seccoes.length) { avisar('Não há cargos para essa lista.', 'erro'); return }
+      const d = { titulo: `${qual === 'vagos' ? 'CARGOS VAGOS' : qual === 'ocupados' ? 'CARGOS OCUPADOS' : 'CARGOS DO QUADRO ORGÂNICO'} — ${no.nome.toLocaleUpperCase('pt')}`, subtitulo: ESCOLHAS[qual], orientacao: 'landscape', seccoes }
+      await (formato === 'excel' ? documentoExcel(d) : documentoPdf(d))
+      aoFechar()
+    } catch (e) {
+      avisar(e.message, 'erro')
+    } finally {
+      setAGerar(false)
+    }
+  }
+  return (
+    <Modal titulo={`Imprimir cargos — ${no.nome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-outline-theme" disabled={aGerar} onClick={() => gerar('excel')}><i className="fa fa-file-excel me-1" />Excel</button><button type="button" className="btn btn-theme" disabled={aGerar} onClick={() => gerar('pdf')}><i className="fa fa-print me-1" />Imprimir (PDF)</button></>}>
+      {Object.entries(ESCOLHAS).map(([k, t]) => (
+        <div key={k} className="form-check mb-2">
+          <input className="form-check-input" type="radio" id={`imp-${k}`} checked={qual === k} onChange={() => setQual(k)} />
+          <label className="form-check-label" htmlFor={`imp-${k}`}>{t}</label>
+        </div>
+      ))}
+      <p className="small text-muted mb-0">{no.id ? 'Desta unidade e das subunidades' : 'De toda a Escola'}, uma secção por unidade, pela ordem do quadro orgânico ({no.lugares} lugares: {no.ocupados} ocupados, {Math.max(0, no.lugares - no.ocupados)} vagos).</p>
+    </Modal>
   )
 }
 
