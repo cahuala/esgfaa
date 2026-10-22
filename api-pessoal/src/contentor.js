@@ -11,6 +11,7 @@ import { ServicoSessao } from './aplicacao/sessao.js'
 import { ServicoPessoas } from './aplicacao/pessoas.js'
 import { ServicoPropostas } from './aplicacao/propostas.js'
 import { ServicoLicencas } from './aplicacao/licencas.js'
+import { ServicoAusencias } from './aplicacao/ausencias.js'
 import { ServicoOrganica } from './aplicacao/organica.js'
 import { ServicoPainel } from './aplicacao/painel.js'
 import { ServicoSincronizacao } from './aplicacao/sincronizacao.js'
@@ -44,6 +45,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     planoFerias: new ServicoPlanoFerias({ bd, auditoria, pessoas, ...relogio }),
     propostas: new ServicoPropostas({ bd, auditoria, ...relogio }),
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),
+    ausencias: new ServicoAusencias({ bd, auditoria, ...relogio }),
     organica: new ServicoOrganica({ bd, auditoria }),
     painel: new ServicoPainel({ bd, pessoas, ...relogio }),
     importacao: new ServicoImportacao({ bd, pessoas, auditoria }),

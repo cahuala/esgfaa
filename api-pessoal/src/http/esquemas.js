@@ -74,6 +74,8 @@ export const despacho = z.object({ documento: txt(150, 2), dataDocumento: data, 
 export const motivo = z.object({ motivo: txt(1000).default('') })
 export const motivoObrigatorio = z.object({ motivo: txt(1000, 3) })
 
+export const ausencia = z.object({ pessoaId: id, tipo: txt(30), inicio: data, fim: z.union([data, z.literal(''), z.null()]).optional().transform((v) => v || null), motivo: txt(300).default(''), documento: txt(150).default('') }).strict()
+export const editarAusencia = z.object({ fim: z.union([data, z.literal(''), z.null()]).optional().transform((v) => (v === undefined ? undefined : v || null)), motivo: txt(300).optional(), documento: txt(150).optional() }).strict()
 export const licenca = z.object({ pessoaId: id, tipo: txt(30), inicio: data, fim: data, despacho: txt(150).default(''), observacoes: txt(1000).default('') }).strict()
 export const unidade = z.object({ nome: txt(150, 2), sigla: txt(20).default(''), tipo: txt(20).default('outro'), paiId: idOpc, ordem: z.coerce.number().int().min(0).max(999).default(0) }).strict()
 export const cargo = z.object({ nome: txt(150, 2), unidadeId: idOpc, funcao: txt(20).default('execucao'), tipo: z.enum(['militar', 'civil', 'ambos']).default('militar'), postoRequerido: z.union([txt(30), z.null()]).optional(), categoriaCivil: z.union([txt(80), z.null()]).optional(), vagas: z.coerce.number().int().min(1).max(500).default(1) }).strict()

@@ -79,4 +79,19 @@ describe('mapas de controlo estatístico', () => {
     const t = linha(d, 'TOTAL GERAL').valores
     expect([t[coluna(d, 'Transferidos — Oficiais')], t[coluna(d, 'Mortos — Oficiais')], t[coluna(d, 'Condenado — Oficiais')]]).toEqual([1, 1, 1])
   })
+
+  it('Ausências: faltas, sem justificação, hospital e detidos registados contam no mês; o Mod. 2 tira-os do físico', () => {
+    const ausencias = [
+      { pessoaId: 1, tipo: 'falta', inicio: '2026-10-05', fim: '2026-10-06' },
+      { pessoaId: 2, tipo: 'hospital', inicio: '2026-09-20', fim: null }, // ainda internado
+      { pessoaId: 4, tipo: 'detido', inicio: '2026-09-28', fim: '2026-10-03' }, // começou no mês anterior
+      { pessoaId: 5, tipo: 'sem_justificacao', inicio: '2026-09-01', fim: '2026-09-02' }, // fora do mês
+    ]
+    const d = MAPAS.find((m) => m.id === 'ausencias').fazer({ ...ctx, ausencias }, { mes: '2026-10' })
+    const t = linha(d, 'TOTAL GERAL').valores
+    expect([t[coluna(d, 'Faltas — Total')], t[coluna(d, 'Hospital — Oficiais')], t[coluna(d, 'Detidos — Oficiais')], t[coluna(d, 'Aus/S.Just. — Oficiais')]]).toEqual([1, 1, 1, 0])
+    const d2 = MAPAS.find((m) => m.id === 'mod2').fazer({ ...ctx, ausencias }, { mes: '2026-10' })
+    // Comando: real 3 militares (coronel, tenente, soldado); físico: sem o tenente (ainda no hospital no fim do mês) e sem o soldado (missão)
+    expect(linha(d2, 'COMANDO').valores[18]).toBe(1)
+  })
 })

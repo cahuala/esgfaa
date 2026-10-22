@@ -194,6 +194,7 @@ model Pessoa {
   eventos            Evento[]
   graduacoes         Graduacao[]
   licencas           Licenca[]
+  ausencias          Ausencia[]
   planoFerias        PlanoFerias[]
   documentosEmitidos DocumentoEmitido[]
   itens              ItemProposta[]
@@ -265,6 +266,24 @@ model Graduacao {
 }
 
 // licenças (arts. 31.º a 41.º)
+// faltas e ausências que não são licenças (Mapa de ausências temporárias): falta justificada, ausência sem
+// justificação, baixa hospitalar e detenção; com o fim em aberto enquanto durar (hospital, detido)
+model Ausencia {
+  id        Int       @id @default(autoincrement())
+  pessoaId  Int       @map("pessoa_id")
+  tipo      String // falta | sem_justificacao | hospital | detido
+  inicio    DateTime  @db.Date
+  fim       DateTime? @db.Date
+  motivo    String    @default("")
+  documento String    @default("") // participação, guia de baixa, auto…
+  criadoPor String    @default("") @map("criado_por")
+  criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa    Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, inicio])
+  @@map("ausencias")
+}
+
 model Licenca {
   id          Int      @id @default(autoincrement())
   pessoaId    Int      @map("pessoa_id")

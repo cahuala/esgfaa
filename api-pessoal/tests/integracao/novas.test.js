@@ -107,6 +107,22 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.ok(outra.linhas.every((l) => l.acao === 'igual'))
   })
 
+  it('faltas e ausências: registar, listar pelo período, fechar a baixa hospitalar e apagar', async () => {
+    const p = (await adm.post('/api/pessoas').send(militar({ nip: 'AUS001', nome: 'Rui Ausente Teste' })).expect(201)).body
+    assert.equal((await adm.post('/api/ausencias').send({ pessoaId: p.id, tipo: 'falta', inicio: '2026-10-05' })).status, 400) // a falta precisa do último dia
+    assert.equal((await adm.post('/api/ausencias').send({ pessoaId: p.id, tipo: 'inventado', inicio: '2026-10-05', fim: '2026-10-05' })).status, 400)
+    await adm.post('/api/ausencias').send({ pessoaId: p.id, tipo: 'falta', inicio: '2026-10-05', fim: '2026-10-06', motivo: 'Doença de familiar' }).expect(201)
+    const h = (await adm.post('/api/ausencias').send({ pessoaId: p.id, tipo: 'hospital', inicio: '2026-10-10' }).expect(201)).body
+    assert.equal(h.fim, null)
+    const out = (await adm.get('/api/ausencias').query({ de: '2026-10-01', ate: '2026-10-31' }).expect(200)).body.filter((x) => x.pessoaId === p.id)
+    assert.deepEqual(out.map((x) => [x.tipo, x.fim]).sort(), [['falta', '2026-10-06'], ['hospital', null]])
+    assert.equal((await adm.get('/api/ausencias').query({ de: '2026-11-01', ate: '2026-11-30' })).body.filter((x) => x.pessoaId === p.id).length, 1) // o internamento continua
+    await adm.put(`/api/ausencias/${h.id}`).send({ fim: '2026-10-20' }).expect(200)
+    assert.equal((await adm.get('/api/ausencias').query({ de: '2026-11-01', ate: '2026-11-30' })).body.filter((x) => x.pessoaId === p.id).length, 0)
+    await adm.delete(`/api/ausencias/${h.id}`).expect(204)
+    assert.equal((await adm.get('/api/referencias')).body.tiposAusencia.detido, 'Detido')
+  })
+
   it('domiciliares: só para oficiais superiores e generais, dentro do limite do posto, e não contam como civis', async () => {
     const major = (await adm.post('/api/pessoas').send(militar({ nip: 'DOM001', posto: 'major' })).expect(201)).body
     const cap = (await adm.post('/api/pessoas').send(militar({ nip: 'DOM002' })).expect(201)).body

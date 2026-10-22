@@ -17,6 +17,7 @@ import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expedie
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
+import { TIPOS_AUSENCIA } from '../aplicacao/ausencias.js'
 import { sessaoEmCookie } from './sessaoCookie.js'
 import { COOKIE_PESSOAL } from './middlewares.js'
 
@@ -52,7 +53,7 @@ export function rotas({ servicos: s, config }) {
   r.post('/eu/pedidos-dados', validar({ body: z.object({ tipo: z.string().max(20), texto: z.string().max(3000) }) }), async (req, res) => res.status(201).json(await s.privacidade.pedir(u(req), req.dados.body)))
   r.get('/privacidade/pedidos', async (req, res) => res.json(await s.privacidade.listar(u(req))))
   r.put('/privacidade/pedidos/:id', validar({ params: E.pId, body: z.object({ estado: z.string().max(20), resposta: z.string().max(3000) }) }), async (req, res) => res.json(await s.privacidade.responder(u(req), req.dados.params.id, req.dados.body)))
-  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
+  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
 
   r.get('/painel', async (req, res) => res.json(await s.painel.resumo(u(req))))
 
@@ -199,6 +200,10 @@ export function rotas({ servicos: s, config }) {
   r.post('/propostas/:id/cancelar', validar({ params: E.pId, body: E.motivo }), async (req, res) => res.json(await s.propostas.cancelar(u(req), req.dados.params.id, req.dados.body)))
 
   // licenças
+  r.get('/ausencias', validar({ query: z.object({ pessoaId: z.string().max(10).optional(), tipo: z.string().max(30).optional(), de: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), ate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), emCurso: z.string().max(1).optional() }) }), async (req, res) => res.json(await s.ausencias.listar(u(req), req.dados.query)))
+  r.post('/ausencias', validar({ body: E.ausencia }), async (req, res) => res.status(201).json(await s.ausencias.criar(u(req), req.dados.body)))
+  r.put('/ausencias/:id', validar({ params: E.pId, body: E.editarAusencia }), async (req, res) => res.json(await s.ausencias.editar(u(req), req.dados.params.id, req.dados.body)))
+  r.delete('/ausencias/:id', validar({ params: E.pId }), async (req, res) => { await s.ausencias.remover(u(req), req.dados.params.id); res.status(204).end() })
   r.get('/licencas', validar({ query: z.object({ pessoaId: z.string().max(10).optional(), tipo: z.string().max(30).optional(), estado: z.string().max(20).optional(), ano: z.string().regex(/^\d{4}$/).optional() }) }), async (req, res) => res.json(await s.licencas.listar(u(req), req.dados.query)))
   r.post('/licencas/verificar', validar({ body: E.licenca }), async (req, res) => res.json(await s.licencas.verificar(u(req), req.dados.body)))
   r.post('/licencas', validar({ body: E.licenca }), async (req, res) => res.status(201).json(await s.licencas.criar(u(req), req.dados.body)))

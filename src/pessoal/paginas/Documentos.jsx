@@ -18,6 +18,8 @@ const EXTRA = {
     const ano = Number(o.mes.slice(0, 4))
     return (await Promise.all([ano - 1, ano].map((a) => api('/licencas', { consulta: { ano: a } })))).flat()
   },
+  // faltas, ausências sem justificação, hospital e detidos do período
+  ausencias: (o) => { const [a, m] = (o.mes ?? '').split('-').map(Number); if (!a) return api('/ausencias', { consulta: { emCurso: '1' } }); const fim = new Date(a, m, 0).getDate(); return api('/ausencias', { consulta: { de: `${o.mes}-01`, ate: `${o.mes}-${String(fim).padStart(2, '0')}` } }) },
   // quem saiu da Escola (transferidos, mortos, condenados)
   saidas: () => api('/pessoas', { consulta: { ativo: 'nao' } }),
   domiciliares: () => api('/pessoas', { consulta: { vinculo: 'domiciliar' } }),
@@ -81,6 +83,7 @@ export default function Documentos() {
       const ctx = { ...contexto }
       if (d.precisa === 'propostos') ctx.propostos = (await EXTRA.propostos(o)).filter((i) => !ids || pessoas.some((p) => p.id === i.pessoaId))
       if ([].concat(d.precisa).includes('licencas')) ctx.licencas = await EXTRA.licencas(o)
+      if ([].concat(d.precisa).includes('ausencias')) ctx.ausencias = await EXTRA.ausencias(o)
       if (d.id === 'ausencias') ctx.saidas = (await EXTRA.saidas()).filter((p) => !ids || ids.has(p.unidadeId))
       if (d.precisa === 'domiciliares') ctx.domiciliares = (await EXTRA.domiciliares()).filter((p) => !ids || ids.has(p.unidadeId) || pessoas.some((x) => x.id === p.militarAlocadoId))
       const doc = d.fazer(ctx, o)

@@ -164,7 +164,9 @@ const AUSENTES = ['em_missao', 'em_formacao', 'suspensao_funcoes', 'desaparecido
 function mod2(ctx, o) {
   const per = periodo(o.mes)
   const deLicenca = new Set((ctx.licencas ?? []).filter((x) => x.inicio <= per.fim && x.fim >= per.fim).map((x) => x.pessoaId))
-  const presente = (p) => !deLicenca.has(p.id) && !AUSENTES.includes(p.estado)
+  // ausentes no último dia do período: faltas, sem justificação, hospital, detidos (o fim vazio ainda dura)
+  const ausentes = new Set((ctx.ausencias ?? []).filter((x) => x.inicio <= per.fim && (!x.fim || x.fim >= per.fim)).map((x) => x.pessoaId))
+  const presente = (p) => !deLicenca.has(p.id) && !ausentes.has(p.id) && !AUSENTES.includes(p.estado)
   const g = (l) => { const m = l.filter(militar); return [m.filter(oficiais).length, m.filter(de(...SARG)).length, m.filter(de('primeiro_cabo', 'segundo_cabo')).length, m.filter(de('soldado')).length, m.length, l.length - m.length] }
   const valores = (org, real, fis) => {
     const [o1, o2, o3, o4, ot, oc] = org
@@ -185,7 +187,7 @@ function mod2(ctx, o) {
   return {
     titulo: 'Mapa de controlo estatístico por graus militares do(a) ESG/EMG', subtitulo: per.texto, orientacao: 'landscape', modelo: { numero: 'MOD.2/DPQ' },
     seccoes: [{ colunas: colunasDe(nos, 'Designação'), cabeca: cabeca(nos, { alto: 15 }), letra: 6.2, linhas: numerarLinhas([...un, sub, { rotulo: 'AGREGADOS', valores: [], negrito: true }, ...ag, geral]), contar: false }],
-    nota: 'Orgânica: os lugares dos cargos da orgânica. Real: o efectivo colocado. Físico: o real menos quem está de licença ou em missão, formação, suspenso ou desaparecido no fim do período. Diferença: orgânica menos real.',
+    nota: 'Orgânica: os lugares dos cargos da orgânica. Real: o efectivo colocado. Físico: o real menos quem, no fim do período, está de licença, com falta, no hospital, detido, ou em missão, formação, suspenso ou desaparecido. Diferença: orgânica menos real.',
   }
 }
 
@@ -255,11 +257,14 @@ function ausencias(ctx, o) {
   const lic = (ctx.licencas ?? []).filter((x) => x.inicio <= per.fim && x.fim >= per.inicio)
   const comLicenca = (tipos) => { const s = new Set(lic.filter((x) => tipos.includes(x.tipo)).map((x) => x.pessoaId)); return (p) => s.has(p.id) }
   const saiu = (re) => (p) => { const d = String(p.dataSaidaEscola ?? '').slice(0, 10); return !p.ativo && d >= per.inicio && d <= per.fim && re.test(p.motivoSaida || '') }
+  // faltas, ausências sem justificação, baixas hospitalares e detenções registadas (fim vazio = ainda dura)
+  const aus = (ctx.ausencias ?? []).filter((x) => x.inicio <= per.fim && (!x.fim || x.fim >= per.inicio))
+  const comAusencia = (tipo) => { const s = new Set(aus.filter((x) => x.tipo === tipo).map((x) => x.pessoaId)); return (p) => s.has(p.id) }
   const morto = /falec|óbito|obito|morte|morreu/i
   const condenado = /conden/i
   const COLS = [
-    ['Faltas', nada, true], ['Hospital', nada], ['M/Serviço', (p) => p.estado === 'em_missao'], ['Férias', comLicenca(['ferias'])], ['Dispensas', comLicenca(DISPENSAS)],
-    ['Doentes', comLicenca(['doenca'])], ['Aus/S.Just.', saiu(/deser/i)], ['Detidos', nada], ['Curso', ou((p) => p.estado === 'em_formacao', comLicenca(['estudos']))],
+    ['Faltas', comAusencia('falta'), true], ['Hospital', comAusencia('hospital')], ['M/Serviço', (p) => p.estado === 'em_missao'], ['Férias', comLicenca(['ferias'])], ['Dispensas', comLicenca(DISPENSAS)],
+    ['Doentes', comLicenca(['doenca'])], ['Aus/S.Just.', ou(comAusencia('sem_justificacao'), saiu(/deser/i))], ['Detidos', comAusencia('detido')], ['Curso', ou((p) => p.estado === 'em_formacao', comLicenca(['estudos']))],
     ['Transferidos', saiu(/transfer/i)], ['Mortos', saiu(morto)], ['Condenado', saiu(condenado)],
   ]
   const graus = [['Oficiais', oficiais], ['Sargentos', de(...SARG)], ['Cabos', de('primeiro_cabo', 'segundo_cabo')], ['Soldados', de('soldado')]]
@@ -270,7 +275,7 @@ function ausencias(ctx, o) {
   return {
     titulo: 'I — Ausências temporárias e definitivas', subtitulo: per.texto, orientacao: 'landscape', modelo: { numero: 'MOD.2/DPQ' },
     seccoes: [{ colunas: colunasDe(nos, 'Designação'), cabeca: cabeca(nos, { numerar: true, alto: 13 }), letra: 5.6, linhas: numerarLinhas([...ls, { rotulo: 'TOTAL GERAL', valores: somaLinhas(ls), negrito: true }]), contar: false }],
-    nota: 'Do sistema: missão e formação (estado do militar), férias, dispensas (casamento, luto, nascimento, parto, mérito), doença e estudos (licenças no período) e as saídas da Escola no período (transferência, falecimento, condenação, deserção — pelo motivo da saída). Faltas, hospital e detidos ainda não se registam no sistema.',
+    nota: 'Do sistema: faltas, ausências sem justificação, hospital e detidos (Faltas e ausências), missão e formação (estado do militar), férias, dispensas (casamento, luto, nascimento, parto, mérito), doença e estudos (Licenças) e as saídas da Escola no período (transferência, falecimento, condenação, deserção — pelo motivo da saída). Conta quem esteve nessa situação em algum dia do período.',
   }
 }
 
@@ -312,8 +317,8 @@ function idadeTempo(ctx, o) {
 }
 
 export const MAPAS = [
-  { id: 'mod2', grupo: 'mapas', titulo: 'Mapa de controlo estatístico (Mod. 2)', icone: 'fa-table', descricao: 'Por unidade e agregados: a orgânica, o efectivo real, o físico e a diferença (oficiais, sargentos, cabos, soldados e civis).', opcoes: [OPCAO_MES], precisa: 'licencas', fazer: mod2 },
-  { id: 'ausencias', grupo: 'mapas', titulo: 'Ausências temporárias e definitivas', icone: 'fa-user-clock', descricao: 'Por unidade: faltas, missão de serviço, férias, dispensas, doentes, curso, transferidos, mortos e condenados, por categoria.', opcoes: [OPCAO_MES], precisa: 'licencas', fazer: ausencias },
+  { id: 'mod2', grupo: 'mapas', titulo: 'Mapa de controlo estatístico (Mod. 2)', icone: 'fa-table', descricao: 'Por unidade e agregados: a orgânica, o efectivo real, o físico e a diferença (oficiais, sargentos, cabos, soldados e civis).', opcoes: [OPCAO_MES], precisa: ['licencas', 'ausencias'], fazer: mod2 },
+  { id: 'ausencias', grupo: 'mapas', titulo: 'Ausências temporárias e definitivas', icone: 'fa-user-clock', descricao: 'Por unidade: faltas, missão de serviço, férias, dispensas, doentes, curso, transferidos, mortos e condenados, por categoria.', opcoes: [OPCAO_MES], precisa: ['licencas', 'ausencias'], fazer: ausencias },
   { id: 'mod3', grupo: 'mapas', titulo: 'Mapa por graus militares (Mod. 3)', icone: 'fa-star', descricao: 'Por unidade e agregados, posto a posto (QP e SMC, SMC e SMO), com as somas.', opcoes: [OPCAO_MES], fazer: mod3 },
   { id: 'mod4', grupo: 'mapas', titulo: 'Informe por especialidades (Mod. 4)', icone: 'fa-shield-alt', descricao: 'Exército, Força Aérea e Marinha de Guerra: cada especialidade (quadro especial), posto a posto.', opcoes: [OPCAO_MES], fazer: mod4 },
   { id: 'idade', grupo: 'mapas', titulo: 'Por idade e tempo de serviço', icone: 'fa-hourglass-half', descricao: 'Os militares por faixa etária (20-24 … 65 e mais) e por anos de serviço militar (0-3 … 40 e mais), posto a posto, contados no fim do período (nascimento e incorporação).', opcoes: [OPCAO_MES], fazer: idadeTempo },
