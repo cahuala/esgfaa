@@ -151,6 +151,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
                       <span className={`badge ${a.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{a.tipo}</span>{a.titulo}
                       <div className="small fw-normal text-muted">{tx(FORMAS_AVALIACAO[a.forma])}{a.data ? ` · ${a.data.split('-').reverse().join('/')}` : ''}{a.peso ? ` · ${String(a.peso).replace('.', ',')} %` : ''}</div>
                       {a.pedidos > 0 && <div className="small text-warning fw-normal"><i className="fa fa-redo me-1" />{tx('{0} pedido(s) de recuperação', { 0: a.pedidos })}</div>}
+                      {a.revisoes > 0 && <div className="small text-info fw-normal"><i className="fa fa-gavel me-1" />{tx('{0} pedido(s) de revisão', { 0: a.revisoes })}</div>}
                       <div className="p-sem-impressao mt-1">
                         <button type="button" className={`p-publicar ${a.publicadaEm ? 'p-publicada' : ''}`} onClick={() => publicar(a)} aria-pressed={Boolean(a.publicadaEm)} title={a.publicadaEm ? tx('Publicada em {0}. Clique para esconder.', { 0: dataHora(a.publicadaEm) }) : tx('Ainda escondida. Clique para publicar.')}>
                           {a.publicadaEm ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {a.publicadaEm ? tx('Publicada') : tx('Por publicar')}
@@ -203,9 +204,26 @@ export function PautaEsg({ c, avisar, pedir, base }) {
   )
 }
 
-// o auditor/discente: as suas provas publicadas, a nota da UC e o pedido de teste de recuperação
+// o auditor/discente: as suas provas publicadas, a nota da UC, o pedido de teste de recuperação e o de revisão
 export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
   const [aPedir, setAPedir] = useState(null)
+  const [revisao, setRevisao] = useState(null) // { prova, motivo }
+  async function pedirRevisao(e) {
+    e.preventDefault()
+    setAPedir(revisao.prova.id)
+    try {
+      aoMudar(await pedir(`/cadeiras/${c.id}/provas/${revisao.prova.id}/revisao`, { metodo: 'POST', corpo: { motivo: revisao.motivo } }))
+      avisar({ texto: tx('Pedido de revisão enviado ao Director do Curso. O Director de Ensino decide; a nota pode subir, manter-se ou baixar.') })
+      setRevisao(null)
+    } catch (x) {
+      avisar({ tipo: 'erro', texto: x.message })
+    } finally {
+      setAPedir(null)
+    }
+  }
+  const estadoRevisao = (r) => (r.decididaEm
+    ? <span className={`badge ${{ subiu: 'bg-success', manteve: 'bg-secondary', baixou: 'bg-danger' }[r.decisao]}`} title={r.fundamento}>{tx('Revisão')}: {tx({ subiu: 'subiu', manteve: 'manteve-se', baixou: 'baixou' }[r.decisao])} ({String(r.notaAnterior).replace('.', ',')})</span>
+    : <span className="badge bg-info text-dark" title={r.motivo}>{tx('Revisão pedida')}</span>)
   async function recuperacao(prova) {
     setAPedir(prova.id)
     try {
@@ -232,11 +250,20 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
                 <td className="text-end">
                   {pr.podePedirRecuperacao && <button type="button" className="btn btn-xs btn-warning" disabled={aPedir === pr.id} onClick={() => recuperacao(pr)} title={tx('Até {0}', { 0: dataHora(pr.prazoRecuperacao) })}><i className="fa fa-redo me-1" />{tx('Pedir recuperação')}</button>}
                   {pr.podePedirRecuperacao && <small className="d-block text-muted">{tx('até {0}', { 0: dataHora(pr.prazoRecuperacao) })}</small>}
+                  {pr.revisao ? <div className="mt-1">{estadoRevisao(pr.revisao)}</div> : pr.podePedirRevisao && <button type="button" className="btn btn-xs btn-white mt-1" onClick={() => setRevisao({ prova: pr, motivo: '' })} title={tx('Se não concorda com a classificação: reclamação escrita ao Director do Curso')}><i className="fa fa-gavel me-1" />{tx('Pedir revisão')}</button>}
                 </td>
               </tr>
             ))}</tbody>
           </table>
         </div>
+      )}
+      {revisao && (
+        <form className="panel p-3 mb-2" onSubmit={pedirRevisao}>
+          <label className="form-label small fw-bold" htmlFor="rev-motivo">{tx('Revisão de «{0}»: porque não concorda com a classificação?', { 0: revisao.prova.titulo })}</label>
+          <textarea id="rev-motivo" className="form-control form-control-sm" rows={4} required minLength={10} maxLength={3000} value={revisao.motivo} onChange={(e) => setRevisao({ ...revisao, motivo: e.target.value })} />
+          <div className="small text-muted mt-1">{tx('A reclamação vai ao Director do Curso e o Director de Ensino delibera. A classificação pode subir, manter-se ou baixar. Só se pede uma vez por prova.')}</div>
+          <div className="d-flex gap-2 mt-2"><button type="submit" className="btn btn-sm btn-theme" disabled={aPedir === revisao.prova.id}>{tx('Enviar o pedido de revisão')}</button><button type="button" className="btn btn-sm btn-white" onClick={() => setRevisao(null)}>{tx('Cancelar')}</button></div>
+        </form>
       )}
       <div className="p-notas-linha">
         <div className="p-notas-final"><span>{tx('Nota da UC')}</span><Nota valor={n.final} forte />{n.mencao && n.situacao === 'aprovado' && <small>{n.mencao}</small>}</div>

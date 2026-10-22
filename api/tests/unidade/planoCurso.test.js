@@ -117,7 +117,7 @@ describe('avaliação pelos planos de curso da ESG', () => {
 
   it('os modelos dos quatro cursos têm a carga e os créditos dos planos', () => {
     const soma = (k) => MODELOS_PLANO[k].cadeiras.reduce((s, c) => [s[0] + c.horasContacto + c.horasNaoContacto, s[1] + c.creditos], [0, 0])
-    assert.deepEqual([soma('cscd-2026'), soma('cemc-2026'), soma('ceao-2026'), soma('coamp-2026')], [[1215, 81], [1215, 81], [1207, 80], [976, 62]])
+    assert.deepEqual([soma('cscd-2026'), soma('cemc-2026'), soma('ceao-2026'), soma('coamp-2026')], [[1215, 81], [1215, 81], [1207, 80], [1132, 72]]) // COAMP: Quadro Resumo 1200 TE e 74 UCréd, menos os Diversos (68 TE, 4 UCréd)
     for (const k of Object.keys(MODELOS_PLANO)) {
       const p = validarPlano({ ...MODELOS_PLANO[k].plano, curso: k })
       for (const c of MODELOS_PLANO[k].cadeiras) assert.ok(p.blocos.some((b) => b.sigla === c.bloco), `${k}: ${c.codigo} sem bloco`)

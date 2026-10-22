@@ -1,7 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
-import { FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, faltasDoCurso, mencao, recuperacaoPossivel, resultadoCurso, resultadoUc } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, recuperacaoPossivel, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
   Avaliação pelos planos de curso da ESG (turmas cujo curso e ano lectivo têm um plano): as provas
@@ -39,7 +39,7 @@ export class ServicoAvaliacaoEsg {
     const notas = await this.planos.notas(avaliacoes.map((a) => a.id))
     return {
       modo: 'esg', cadeira, plano, tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO,
-      avaliacoes: avaliacoes.map((a) => ({ ...a, pedidos: Object.values(notas[a.id] ?? {}).filter((n) => n.recuperacaoPedidaEm).length })),
+      avaliacoes: avaliacoes.map((a) => ({ ...a, pedidos: Object.values(notas[a.id] ?? {}).filter((n) => n.recuperacaoPedidaEm).length, revisoes: Object.values(notas[a.id] ?? {}).filter((n) => n.revisao && !n.revisao.decididaEm).length })),
       linhas: estudantes.map((e) => {
         const minhas = Object.fromEntries(avaliacoes.map((a) => [a.id, notas[a.id]?.[e.id] ?? {}]))
         return { estudante: e, notas: minhas, ...this.#resultado(cadeira, plano, avaliacoes, minhas, tiis[e.id]) }
@@ -145,7 +145,7 @@ export class ServicoAvaliacaoEsg {
     const provas = avaliacoes.map((a) => {
       const n = notas[a.id] ?? {}
       const rec = recuperacaoPossivel(a, n, agora)
-      return { id: a.id, tipo: a.tipo, forma: a.forma, titulo: a.titulo, data: a.data, publicadaEm: a.publicadaEm, nota: n.nota ?? null, recuperacao: n.recuperacao ?? null, recuperacaoPedidaEm: n.recuperacaoPedidaEm ?? null, podePedirRecuperacao: rec.pode, prazoRecuperacao: a.tipo === 'TAI' ? rec.prazo : null }
+      return { id: a.id, tipo: a.tipo, forma: a.forma, titulo: a.titulo, data: a.data, publicadaEm: a.publicadaEm, nota: n.nota ?? null, recuperacao: n.recuperacao ?? null, recuperacaoPedidaEm: n.recuperacaoPedidaEm ?? null, podePedirRecuperacao: rec.pode, prazoRecuperacao: a.tipo === 'TAI' ? rec.prazo : null, revisao: n.revisao ?? null, podePedirRevisao: revisaoPossivel(a, n).pode }
     })
     // ainda há provas por publicar: a nota da UC não é a final
     const completo = cadeira.tii || (avaliacoes.length > 0 && avaliacoes.length === total)
@@ -163,6 +163,52 @@ export class ServicoAvaliacaoEsg {
     const docentes = (cadeira.docentes ?? []).map((d) => d.id)
     if (docentes.length) await this.notificacoes?.notificar(docentes, { tipo: 'notas', titulo: `Pedido de teste de recuperação: ${a.tipo} ${a.titulo}`, texto: `${ctx.conta.nome} — ${cadeira.nome}`, ligacao: `/cadeiras/${cadeira.id}?separador=avaliacoes` })
     return this.doEstudante(ctx.conta.id, cadeira)
+  }
+
+  // revisão da prova: o estudante reclama por escrito; vai ao Director de Ensino (e o docente fica a saber)
+  async pedirRevisao(ctx, cadeira, avaliacaoId, motivo) {
+    if (ctx.conta?.tipo !== 'estudante') throw new SemPermissao('Só o estudante pede a revisão da prova.')
+    await this.#aberta(cadeira)
+    const a = await this.#daCadeira(cadeira, avaliacaoId)
+    const n = (await this.planos.notasDoEstudante(ctx.conta.id, [a.id]))[a.id]
+    const r = revisaoPossivel(a, n)
+    if (!r.pode) throw new Conflito(r.motivo)
+    const m = texto(motivo, 'motivo', 'Fundamentação do pedido', { min: 10, max: 3000 })
+    await this.planos.pedirRevisao(a.id, ctx.conta.id, m, this.relogio.agora())
+    await this.auditoria.registar(ctx, { acao: 'pedir_revisao_prova', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador: { id: ctx.conta.id, nome: ctx.conta.nome, email: ctx.conta.email } })
+    const docentes = (cadeira.docentes ?? []).map((d) => d.id)
+    if (docentes.length) await this.notificacoes?.notificar(docentes, { tipo: 'notas', titulo: `Pedido de revisão: ${a.tipo} ${a.titulo}`, texto: `${ctx.conta.nome} — ${cadeira.nome}. Decide o Director de Ensino.`, ligacao: `/cadeiras/${cadeira.id}?separador=avaliacoes` })
+    return this.doEstudante(ctx.conta.id, cadeira)
+  }
+
+  // os pedidos de revisão das UC de uma turma (pendentes primeiro)
+  async revisoesDaTurma(turma) {
+    const cadeiras = await this.academico.cadeirasDasTurmas([turma.id])
+    const porId = new Map(cadeiras.map((c) => [c.id, c]))
+    const l = await this.planos.revisoes(cadeiras.map((c) => c.id))
+    return l.map((x) => ({ ...x, cadeira: { id: x.avaliacao.cadeiraId, codigo: porId.get(x.avaliacao.cadeiraId)?.codigo ?? '', nome: porId.get(x.avaliacao.cadeiraId)?.nome ?? '' }, decisaoNome: x.revisao.decisao ? DECISOES_REVISAO[x.revisao.decisao] : null }))
+      .sort((a, b) => Boolean(a.revisao.decididaEm) - Boolean(b.revisao.decididaEm) || String(a.revisao.pedidaEm).localeCompare(String(b.revisao.pedidaEm)))
+  }
+
+  // o Director de Ensino delibera: a nova nota (pode subir, manter ou baixar) e a fundamentação
+  async decidirRevisao(ctx, turma, { avaliacaoId, estudanteId, nota, fundamento }) {
+    const cadeiras = await this.academico.cadeirasDasTurmas([turma.id])
+    const a = await this.planos.avaliacao(avaliacaoId)
+    const cadeira = cadeiras.find((c) => c.id === a?.cadeiraId)
+    if (!cadeira) throw new NaoEncontrado('Prova não encontrada nesta turma.')
+    await this.#aberta(cadeira)
+    const n = (await this.planos.notasDoEstudante(estudanteId, [a.id]))[a.id]
+    if (!n?.revisao) throw new NaoEncontrado('Não há pedido de revisão desta prova.')
+    if (n.revisao.decididaEm) throw new Conflito('Este pedido de revisão já foi decidido.')
+    const nova = Number(String(nota ?? '').replace(',', '.'))
+    if (!Number.isFinite(nova) || nova < 0 || nova > 20) throw new ErroValidacao('A nota vai de 0 a 20.', { campo: 'nota' })
+    const notaFinal = Math.round(nova * 100) / 100
+    const decisao = decisaoRevisao(n.nota, notaFinal)
+    const f = texto(fundamento, 'fundamento', 'Fundamentação da decisão', { min: 3, max: 3000 })
+    await this.planos.decidirRevisao(a.id, estudanteId, { nota: notaFinal, notaAnterior: n.nota, decisao, decisor: ctx.actor?.nome ?? ctx.utilizador?.nome ?? '', fundamento: f, quando: this.relogio.agora() })
+    await this.auditoria.registar(ctx, { acao: 'decidir_revisao_prova', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, detalhes: { estudanteId, antes: n.nota, depois: notaFinal, decisao } })
+    await this.notificacoes?.notificar([estudanteId], { tipo: 'notas', titulo: `Revisão da prova ${a.tipo} ${a.titulo}: ${DECISOES_REVISAO[decisao].toLowerCase()}`, texto: `${cadeira.nome}: ${String(n.nota).replace('.', ',')} → ${String(notaFinal).replace('.', ',')}`, ligacao: `/cadeiras/${cadeira.id}?separador=avaliacoes` })
+    return this.revisoesDaTurma(turma)
   }
 
   // ---------- curso (pauta geral, conclusão) ----------

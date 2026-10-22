@@ -121,6 +121,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.delete('/cadeiras/:id/provas/:prova', validar({ params: pProva }), async (req, res) => res.json(await e.pautaDocente.apagarProva(ctx(req), req.dados.params.id, req.dados.params.prova)))
   r.put('/cadeiras/:id/provas/:prova/notas', validar({ params: pProva, body: E.notasProva }), async (req, res) => res.json(await e.pautaDocente.notasProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.linhas)))
   r.put('/cadeiras/:id/provas/:prova/publicacao', validar({ params: pProva, body: E.publicarProva }), async (req, res) => res.json(await e.pautaDocente.publicarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.publicar)))
+  r.post('/cadeiras/:id/provas/:prova/revisao', validar({ params: pProva, body: E.pedirRevisao }), async (req, res) => res.json(await e.pautaDocente.pedirRevisao(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.motivo)))
   r.post('/cadeiras/:id/provas/:prova/recuperacao', validar({ params: pProva }), async (req, res) => res.json(await e.pautaDocente.pedirRecuperacao(ctx(req), req.dados.params.id, req.dados.params.prova)))
 
   r.post('/cadeiras/:id/trabalhos', ficheiro, validar({ params: pId, body: E.trabalho }), async (req, res) => {

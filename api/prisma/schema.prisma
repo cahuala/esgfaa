@@ -1626,6 +1626,14 @@ model NotaAvaliacaoUc {
   nota                Decimal?  @db.Decimal(4, 2)
   recuperacao         Decimal?  @db.Decimal(4, 2) // teste de recuperação (conta no máximo 10)
   recuperacaoPedidaEm DateTime? @map("recuperacao_pedida_em") @db.Timestamptz(3)
+  // revisão da prova (regulamento da ESG): reclamação escrita, deliberada pelo Director de Ensino; a nota sobe, mantém ou baixa
+  revisaoPedidaEm     DateTime? @map("revisao_pedida_em") @db.Timestamptz(3)
+  revisaoMotivo       String?   @map("revisao_motivo")
+  revisaoDecididaEm   DateTime? @map("revisao_decidida_em") @db.Timestamptz(3)
+  revisaoDecisao      String?   @map("revisao_decisao") // subiu | manteve | baixou
+  revisaoNotaAnterior Decimal?  @map("revisao_nota_anterior") @db.Decimal(4, 2)
+  revisaoDecisor      String?   @map("revisao_decisor")
+  revisaoFundamento   String?   @map("revisao_fundamento")
   atualizadaEm        DateTime  @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz(3)
 
   avaliacao AvaliacaoUc @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)

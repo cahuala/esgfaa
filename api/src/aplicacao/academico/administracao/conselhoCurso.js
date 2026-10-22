@@ -56,6 +56,19 @@ export class ServicoConselhoCurso {
     return e
   }
 
+  // pedidos de revisão das provas da turma (o Director de Ensino delibera)
+  async revisoes(ctx, turmaId) {
+    ctx.actor.exigir('academico.ver')
+    const { t } = await this.#turmaComPlano(turmaId)
+    return this.esg.revisoesDaTurma(t)
+  }
+
+  async decidirRevisao(ctx, turmaId, dados) {
+    ctx.actor.exigir('academico.conselho')
+    const { t } = await this.#turmaComPlano(turmaId)
+    return this.esg.decidirRevisao(ctx, t, dados)
+  }
+
   // juízo ampliativo (Director de Ensino): antes da homologação
   async guardarJuizo(ctx, turmaId, estudanteId, dados) {
     ctx.actor.exigir('academico.conselho')

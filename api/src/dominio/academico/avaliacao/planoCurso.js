@@ -112,6 +112,20 @@ export function recuperacaoPossivel(avaliacao, nota, agora = new Date()) {
 }
 
 /*
+  Revisão da prova (regulamento da ESG): quem não concordar com a classificação de uma prova publicada pode
+  reclamar por escrito, ao Director do Curso, uma só vez por prova; o Director de Ensino delibera e a nota pode
+  subir, manter-se ou baixar. Enquanto a classificação da turma não for proposta ao Conselho de Curso.
+*/
+export function revisaoPossivel(avaliacao, nota) {
+  if (!avaliacao?.publicadaEm) return { pode: false, motivo: 'A prova ainda não foi publicada.' }
+  if (num(nota?.nota) === null) return { pode: false, motivo: 'Não há nota nesta prova.' }
+  if (nota?.revisao) return { pode: false, motivo: 'A revisão desta prova já foi pedida (uma só vez por prova).' }
+  return { pode: true, motivo: '' }
+}
+export const DECISOES_REVISAO = { subiu: 'A nota subiu', manteve: 'A nota manteve-se', baixou: 'A nota baixou' }
+export const decisaoRevisao = (antes, depois) => (depois > antes ? 'subiu' : depois < antes ? 'baixou' : 'manteve')
+
+/*
   Resultado de uma UC a partir das provas e das notas de um estudante.
   avaliacoes: [{ id, tipo, forma, publicadaEm }]; notas: { avaliacaoId: { nota, recuperacao, recuperacaoPedidaEm } }.
   situacao: sem_provas | em_curso (faltam notas) | recuperacao (TAI de teste negativo com recuperação pedida
@@ -323,7 +337,8 @@ export const MODELOS_PLANO = {
       uc('COMP', 'PRI', 'Psicologia de Relações Interpessoais', 17, 0, 1, 'anual'), uc('COMP', 'TPTSM', 'Teoria e Prática do Trabalho Social Militar', 30, 0, 2, 'anual'), uc('COMP', 'PMU', 'Psicologia das Multidões', 16, 0, 1, 'anual'),
       uc('TAC', 'TOP', 'Topografia', 21, 0, 1, 'anual'), uc('TAC', 'DO', 'Doutrina das Operações', 38, 0, 2, 'anual'), uc('TAC', 'TEM', 'Técnica de Estado-Maior', 57, 0, 3, 'anual'), uc('TAC', 'BD', 'Brigada na Defesa', 64, 0, 4, 'anual'),
       uc('GER', 'DIP', 'Direito Internacional Público', 30, 0, 2, 'anual'), uc('GER', 'GA', 'Geopolítica Aplicada', 30, 0, 2, 'anual'), uc('GER', 'CL', 'Comando e Liderança', 30, 0, 2, 'anual'), uc('GER', 'PE', 'Pensamento Estratégico', 45, 0, 3, 'anual'),
-      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 0, 0, 0, 'anual'), tii: true },
+      // Quadro Resumo do plano: o TII/TFC tem 156 tempos escolares e 10 UCréd
+      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10, 'anual'), tii: true },
     ],
   },
 }

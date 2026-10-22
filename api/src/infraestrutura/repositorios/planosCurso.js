@@ -6,6 +6,10 @@ const paraPlano = (p) => p && {
   ajusteMaximo: Number(p.ajusteMaximo ?? 0), exigirBlocos: p.exigirBlocos, exigirTesteEscrito: p.exigirTesteEscrito, faltasMaximas: p.faltasMaximas, exigirUcs: p.exigirUcs, exigirTii: p.exigirTii, duracaoMeses: p.duracaoMeses, factoresJuizo: p.factoresJuizo ?? [],
   criadoEm: iso(p.criadoEm), atualizadoEm: iso(p.atualizadoEm),
 }
+const paraNota = (n) => ({
+  nota: num(n.nota), recuperacao: num(n.recuperacao), recuperacaoPedidaEm: iso(n.recuperacaoPedidaEm),
+  revisao: n.revisaoPedidaEm ? { pedidaEm: iso(n.revisaoPedidaEm), motivo: n.revisaoMotivo ?? '', decididaEm: iso(n.revisaoDecididaEm), decisao: n.revisaoDecisao ?? null, notaAnterior: num(n.revisaoNotaAnterior), decisor: n.revisaoDecisor ?? '', fundamento: n.revisaoFundamento ?? '' } : null,
+})
 const paraAvaliacao = (a) => a && { id: a.id, cadeiraId: a.cadeiraId, tipo: a.tipo, forma: a.forma, peso: num(a.peso), titulo: a.titulo, data: a.data, ordem: a.ordem, publicadaEm: iso(a.publicadaEm) }
 
 // planos de curso da ESG, provas (TAI/TAG) das UC e as notas de cada estudante
@@ -76,7 +80,7 @@ export class RepositorioPlanosCurso {
     if (!avaliacaoIds.length) return {}
     const l = await this.prisma.notaAvaliacaoUc.findMany({ where: { avaliacaoId: { in: avaliacaoIds } } })
     const r = {}
-    for (const n of l) (r[n.avaliacaoId] ??= {})[n.estudanteId] = { nota: num(n.nota), recuperacao: num(n.recuperacao), recuperacaoPedidaEm: iso(n.recuperacaoPedidaEm) }
+    for (const n of l) (r[n.avaliacaoId] ??= {})[n.estudanteId] = paraNota(n)
     return r
   }
 
@@ -84,7 +88,7 @@ export class RepositorioPlanosCurso {
   async notasDoEstudante(estudanteId, avaliacaoIds) {
     if (!avaliacaoIds.length) return {}
     const l = await this.prisma.notaAvaliacaoUc.findMany({ where: { estudanteId, avaliacaoId: { in: avaliacaoIds } } })
-    return Object.fromEntries(l.map((n) => [n.avaliacaoId, { nota: num(n.nota), recuperacao: num(n.recuperacao), recuperacaoPedidaEm: iso(n.recuperacaoPedidaEm) }]))
+    return Object.fromEntries(l.map((n) => [n.avaliacaoId, paraNota(n)]))
   }
 
   // linhas: [{ estudanteId, nota, recuperacao }] (null apaga)
@@ -98,6 +102,21 @@ export class RepositorioPlanosCurso {
 
   async pedirRecuperacao(avaliacaoId, estudanteId, quando) {
     await this.prisma.notaAvaliacaoUc.update({ where: { avaliacaoId_estudanteId: { avaliacaoId, estudanteId } }, data: { recuperacaoPedidaEm: quando } })
+  }
+
+  async pedirRevisao(avaliacaoId, estudanteId, motivo, quando) {
+    await this.prisma.notaAvaliacaoUc.update({ where: { avaliacaoId_estudanteId: { avaliacaoId, estudanteId } }, data: { revisaoPedidaEm: quando, revisaoMotivo: motivo } })
+  }
+
+  async decidirRevisao(avaliacaoId, estudanteId, { nota, notaAnterior, decisao, decisor, fundamento, quando }) {
+    await this.prisma.notaAvaliacaoUc.update({ where: { avaliacaoId_estudanteId: { avaliacaoId, estudanteId } }, data: { nota, revisaoNotaAnterior: notaAnterior, revisaoDecisao: decisao, revisaoDecisor: decisor, revisaoFundamento: fundamento, revisaoDecididaEm: quando } })
+  }
+
+  // os pedidos de revisão das provas de umas UC (para o Director de Ensino)
+  async revisoes(cadeiraIds) {
+    if (!cadeiraIds.length) return []
+    const l = await this.prisma.notaAvaliacaoUc.findMany({ where: { revisaoPedidaEm: { not: null }, avaliacao: { cadeiraId: { in: cadeiraIds } } }, include: { avaliacao: true, estudante: { select: { id: true, nome: true, numero: true } } }, orderBy: { revisaoPedidaEm: 'asc' } })
+    return l.map((n) => ({ avaliacao: paraAvaliacao(n.avaliacao), estudante: n.estudante, ...paraNota(n) }))
   }
 
   // quem pediu recuperação nesta prova (para o docente)

@@ -9,6 +9,59 @@ const PASSOS = [['aberto', 'Em avaliação'], ['proposta', 'Proposta do Director
 const dia = (v) => (v ? new Date(v).toLocaleDateString(localAtual()) : '')
 
 /*
+  Pedidos de revisão das provas (regulamento da ESG): o auditor/discente reclama por escrito ao Director do
+  Curso; o Director de Ensino delibera e escreve a nota da revisão, que pode subir, manter-se ou baixar.
+  Decide-se antes da proposta ao Conselho de Curso. Só aparece quando há pedidos.
+*/
+function RevisoesProvas({ turma, decidir, termo, avisar }) {
+  const [lista, setLista] = useState(null)
+  const [edicao, setEdicao] = useState({}) // chave → { nota, fundamento }
+  const base = `/academico/turmas/${turma.id}/revisoes`
+  useEffect(() => { api(base).then(setLista).catch(() => setLista([])) }, [base])
+  if (!lista?.length) return null
+  const chave = (x) => `${x.avaliacao.id}-${x.estudante.id}`
+  const pendentes = lista.filter((x) => !x.revisao.decididaEm).length
+  async function decidirUm(x) {
+    const e = edicao[chave(x)] ?? {}
+    try {
+      setLista(await api(base, { metodo: 'PUT', corpo: { avaliacaoId: x.avaliacao.id, estudanteId: x.estudante.id, nota: e.nota ?? String(x.nota), fundamento: e.fundamento ?? '' } }))
+      avisar({ texto: tx('Revisão decidida. O {0} foi notificado.', { 0: termo.toLowerCase() }) })
+    } catch (err) {
+      avisar({ tipo: 'erro', texto: err.message })
+    }
+  }
+  const mudar = (x, campo, v) => setEdicao({ ...edicao, [chave(x)]: { ...edicao[chave(x)], [campo]: v } })
+  return (
+    <div className="mb-3">
+      <h6 className="fw-bold"><i className="fa fa-balance-scale me-1" />{tx('Pedidos de revisão das provas')} {pendentes > 0 && <span className="badge bg-warning text-dark">{tx('{0} por decidir', { 0: pendentes })}</span>}</h6>
+      <div className="table-responsive">
+        <table className="table table-sm align-middle mb-0">
+          <thead><tr><th>{termo}</th><th>{tx('Prova')}</th><th>{tx('Fundamentação do pedido')}</th><th className="text-center">{tx('Nota')}</th><th>{tx('Decisão')}</th></tr></thead>
+          <tbody>{lista.map((x) => (
+            <tr key={chave(x)}>
+              <td><b>{x.estudante.nome}</b><div className="small text-muted">{dia(x.revisao.pedidaEm)}</div></td>
+              <td><span className="badge bg-dark me-1">{x.cadeira.codigo}</span>{x.avaliacao.tipo} {x.avaliacao.titulo}</td>
+              <td className="small" style={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{x.revisao.motivo}</td>
+              <td className="text-center">{x.revisao.decididaEm ? <>{nota(x.revisao.notaAnterior)} → <b>{nota(x.nota)}</b></> : nota(x.nota)}</td>
+              <td>{x.revisao.decididaEm
+                ? <><span className={`badge ${{ subiu: 'bg-success', manteve: 'bg-secondary', baixou: 'bg-danger' }[x.revisao.decisao]}`}>{tx(x.decisaoNome)}</span><div className="small text-muted">{x.revisao.decisor} · {dia(x.revisao.decididaEm)}{x.revisao.fundamento ? ` · ${x.revisao.fundamento}` : ''}</div></>
+                : decidir
+                  ? <div className="d-flex flex-wrap gap-1 align-items-center">
+                      <input className="form-control form-control-sm text-center" style={{ width: 70 }} inputMode="decimal" value={edicao[chave(x)]?.nota ?? String(x.nota).replace('.', ',')} onChange={(e) => mudar(x, 'nota', e.target.value)} aria-label={tx('Nota da revisão')} />
+                      <input className="form-control form-control-sm" style={{ minWidth: 180, flex: 1 }} placeholder={tx('Fundamentação da decisão')} value={edicao[chave(x)]?.fundamento ?? ''} onChange={(e) => mudar(x, 'fundamento', e.target.value)} aria-label={tx('Fundamentação da decisão')} />
+                      <button type="button" className="btn btn-xs btn-theme" onClick={() => decidirUm(x)}>{tx('Decidir')}</button>
+                    </div>
+                  : <span className="badge bg-info text-dark">{tx('Aguarda o Director de Ensino')}</span>}
+              </td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+/*
   Conselho de Curso de uma turma com plano: o juízo ampliativo de cada auditor/discente (Director de Ensino),
   a proposta das classificações, a confirmação em Conselho de Curso (acta e data), o ajuste e o DISTINTO e a
   homologação (Comandante). Mostra em que passo está e só deixa fazer o passo seguinte a quem pode.
@@ -46,6 +99,8 @@ export default function ConselhoCurso({ turma, avisar }) {
         {d.conselho.homologadaEm && <div>{tx('Homologada por {0} em {1}.', { 0: d.conselho.homologadaPor, 1: dia(d.conselho.homologadaEm) })}</div>}
         {d.conselho.estado === 'aberto' && d.conselho.observacoes && <div>{tx('Reaberta: {0}', { 0: d.conselho.observacoes })}</div>}
       </div>
+
+      <RevisoesProvas turma={turma} decidir={conselho && d.conselho.estado === 'aberto'} termo={termo} avisar={avisar} />
 
       <div className="table-responsive">
         <table className="table table-sm align-middle mb-3">

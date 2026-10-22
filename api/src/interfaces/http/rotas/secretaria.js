@@ -91,6 +91,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/turmas/:id/conselho', validar({ params: pId }), async (req, res) => res.json(await cc.estado(ctx(req), req.dados.params.id)))
   r.put('/turmas/:id/conselho/juizo/:estudanteId', validar({ params: pEst, body: E.juizo }), async (req, res) => res.json(await cc.guardarJuizo(ctx(req), req.dados.params.id, req.dados.params.estudanteId, req.dados.body)))
   r.put('/turmas/:id/conselho/ajuste/:estudanteId', validar({ params: pEst, body: E.ajusteCurso }), async (req, res) => res.json(await cc.guardarAjuste(ctx(req), req.dados.params.id, req.dados.params.estudanteId, req.dados.body.ajuste)))
+  r.get('/turmas/:id/revisoes', validar({ params: pId }), async (req, res) => res.json(await cc.revisoes(ctx(req), req.dados.params.id)))
+  r.put('/turmas/:id/revisoes', validar({ params: pId, body: E.decidirRevisao }), async (req, res) => res.json(await cc.decidirRevisao(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/conselho/propor', validar({ params: pId }), async (req, res) => res.json(await cc.propor(ctx(req), req.dados.params.id)))
   r.post('/turmas/:id/conselho/confirmar', validar({ params: pId, body: E.confirmarConselho }), async (req, res) => res.json(await cc.confirmar(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/conselho/homologar', validar({ params: pId, body: E.homologarCurso }), async (req, res) => res.json(await cc.homologar(ctx(req), req.dados.params.id, req.dados.body)))

@@ -46,6 +46,10 @@ export class ServicoPautaDocente {
   }
 
   // o estudante pede o teste de recuperação de um TAI negativo
+  async pedirRevisao(ctx, cadeiraId, provaId, motivo) {
+    return this.esg.pedirRevisao(ctx, await this.apoio.cadeiraAcessivel(ctx.conta, cadeiraId), provaId, motivo)
+  }
+
   async pedirRecuperacao(ctx, cadeiraId, provaId) {
     return this.esg.pedirRecuperacao(ctx, await this.apoio.cadeiraAcessivel(ctx.conta, cadeiraId), provaId)
   }

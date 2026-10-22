@@ -72,6 +72,28 @@ describe('plano de curso da ESG: TAI/TAG, recuperação, blocos e nota final (32
     assert.deepEqual([ana.final, ana.mencao], [14.75, 'Bom'])
   })
 
+  it('revisão da prova: o auditor reclama uma vez; o Director de Ensino decide e a nota pode baixar', async () => {
+    const director = amb.com((await amb.criarUtilizador('director_ensino')).token)
+    const p = (await portal('prof').get(`/api/portal/cadeiras/${ucs.CEO.id}/pauta`)).body
+    const tag = p.avaliacoes.find((a) => a.tipo === 'TAG')
+    const pedir = (quem, motivo) => portal(quem).post(`/api/portal/cadeiras/${ucs.CEO.id}/provas/${tag.id}/revisao`).send({ motivo })
+    assert.equal((await pedir('ana', 'curto')).status, 400) // a fundamentação tem de ter pelo menos 10 letras
+    const v = (await pedir('ana', 'Discordo da classificação da apresentação oral do grupo.').expect(200)).body
+    assert.ok(v.provas.find((x) => x.id === tag.id).revisao.pedidaEm)
+    assert.equal((await pedir('ana', 'Outra vez o mesmo pedido de revisão.')).status, 409) // uma só vez por prova
+    // a secretaria vê; só o Director de Ensino decide
+    const lista = (await escola.get(`/api/admin/academico/turmas/${turma.id}/revisoes`).expect(200)).body
+    assert.deepEqual(lista.map((x) => [x.estudante.id, x.cadeira.codigo, x.nota, x.revisao.motivo.slice(0, 8)]), [[contas.ana.id, 'CEO', 14, 'Discordo']])
+    const decidir = (quem, nota) => quem.put(`/api/admin/academico/turmas/${turma.id}/revisoes`).send({ avaliacaoId: tag.id, estudanteId: contas.ana.id, nota, fundamento: 'Reapreciada a prova.' })
+    assert.equal((await decidir(escola, 13)).status, 403)
+    assert.equal((await decidir(director, 21)).status, 400)
+    const d = (await decidir(director, 13).expect(200)).body
+    assert.deepEqual([d[0].nota, d[0].revisao.notaAnterior, d[0].revisao.decisao, d[0].decisaoNome], [13, 14, 'baixou', 'A nota baixou'])
+    assert.equal((await decidir(director, 15)).status, 409) // já decidido
+    const ana = (await portal('ana').get('/api/portal/notas')).body.find((x) => x.cadeira.codigo === 'CEO')
+    assert.equal(ana.final, 14.25) // (15,5 + 13) / 2
+  })
+
   it('fora do prazo (depois das 17h do dia útil seguinte) já não se pede a recuperação', async () => {
     const p = (await escola.post(`/api/admin/academico/cadeiras/${ucs.GP.id}/provas`).send({ tipo: 'TAI', forma: 'teste', titulo: 'Teste GP' })).body
     const tai = p.avaliacoes[0]
