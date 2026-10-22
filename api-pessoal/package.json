@@ -10,6 +10,7 @@
     "test": "node --test --test-concurrency=1 \"tests/**/*.test.js\"",
     "migrar": "prisma migrate deploy",
     "semear": "node --env-file-if-exists=.env scripts/semear.js",
+    "preencher": "node --env-file-if-exists=.env scripts/preencher.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

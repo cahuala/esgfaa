@@ -118,7 +118,7 @@ const artigos = [
     autor: 'teresa-lopes',
     data: '2026-05-22',
     conteudo: [
-      { tipo: 'paragrafo', texto: 'Ao longo de vários anos a coordenar o Curso de Estado-Maior, tenho visto chegar oficiais cada vez mais bem preparados tecnicamente, mas que precisam de mais oportunidades para praticar a decisão em equipa.' },
+      { tipo: 'paragrafo', texto: 'Ao longo de vários anos a coordenar o Curso de Estado-Maior Conjunto, tenho visto chegar oficiais cada vez mais bem preparados tecnicamente, mas que precisam de mais oportunidades para praticar a decisão em equipa.' },
       { tipo: 'citacao', texto: 'Um bom oficial de Estado-Maior não é o que sabe todas as respostas, mas o que sabe fazer as perguntas certas ao comandante.' },
       { tipo: 'paragrafo', texto: 'Proponho por isso mais tempo dedicado a exercícios, mais avaliação entre pares e uma ligação mais próxima às unidades operacionais.' },
     ],

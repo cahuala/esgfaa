@@ -141,6 +141,9 @@
 }
 .texto p {
   margin: 0 0 1.1em;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 /* Tabela simples */

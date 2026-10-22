@@ -49,6 +49,9 @@
   margin-top: 12px;
   font-size: 17px;
   color: var(--texto-suave);
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 .meta {
   display: flex;

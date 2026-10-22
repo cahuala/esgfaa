@@ -36,9 +36,9 @@ const eventos = [
     horaInicio: '10:30',
     horaFim: '12:30',
     categoria: 'Cerimónia',
-    titulo: 'Cerimónia de entrega de diplomas do Curso de Estado-Maior',
+    titulo: 'Cerimónia de entrega de diplomas do Curso de Estado-Maior Conjunto',
     local: 'Praça de armas da Escola',
-    resumo: 'Entrega solene dos diplomas aos oficiais que concluíram o Curso de Estado-Maior.',
+    resumo: 'Entrega solene dos diplomas aos oficiais que concluíram o Curso de Estado-Maior Conjunto.',
     capa: Curso2,
     programa: [
       { hora: '10:30', atividade: 'Chegada das entidades convidadas' },
@@ -46,7 +46,7 @@ const eventos = [
       { hora: '12:00', atividade: 'Mensagem do Comandante da Escola' },
     ],
     conteudo: [
-      { tipo: 'paragrafo', texto: 'A cerimónia assinala a conclusão do Curso de Estado-Maior e inclui a entrega de diplomas e a distinção dos melhores alunos.' },
+      { tipo: 'paragrafo', texto: 'A cerimónia assinala a conclusão do Curso de Estado-Maior Conjunto e inclui a entrega de diplomas e a distinção dos melhores alunos.' },
       { tipo: 'destaque', texto: 'Os familiares dos formandos devem apresentar-se na entrada principal até às 10:15.' },
     ],
   },

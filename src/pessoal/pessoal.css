@@ -1,6 +1,9 @@
 /* Sistema de Gestão de Pessoal: complementos ao Color Admin e à identidade do painel */
 .pes-cartao { display: block; text-decoration: none; transition: transform .15s ease, box-shadow .15s ease; }
 .pes-cartao:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0, 0, 0, .15); color: #fff; }
+/* o cartão escuro (Cargos ocupados): o tema pinta o texto da mesma cor do fundo */
+.pes-cartao.bg-dark, .pes-cartao.bg-dark p, .pes-cartao.bg-dark .stats-link, .pes-cartao.bg-dark .stats-link span { color: #fff; }
+.pes-cartao.bg-dark h4 { color: rgba(255, 255, 255, .7); }
 .pes-tabela-barra { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .75rem; }
 .pes-pesquisa { position: relative; min-width: 220px; flex: 0 1 320px; }
 .pes-pesquisa i { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); color: #999; font-size: .8rem; }

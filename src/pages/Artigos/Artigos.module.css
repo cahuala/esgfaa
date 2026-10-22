@@ -400,6 +400,9 @@
 }
 .resumo p {
   font-size: 15px;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
   color: var(--texto);
   line-height: 1.7;
 }

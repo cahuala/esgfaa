@@ -36,7 +36,7 @@ const pessoas = [
   {
     id: 'teresa-lopes',
     nome: 'Maj. Teresa Lopes',
-    cargo: 'Coordenadora do Curso de Estado-Maior',
+    cargo: 'Coordenadora do Curso de Estado-Maior Conjunto',
     destaque: 'Formou mais de 300 oficiais ao longo da carreira docente',
   },
 ]

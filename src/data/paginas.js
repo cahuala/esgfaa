@@ -17,8 +17,8 @@ const home = {
     texto: 'Conheça os cursos e programas da Escola Superior de Guerra e as publicações do seu corpo docente.',
     imagem: Auditorio,
     metricas: [
-      { valor: '+10 anos', legenda: 'De existência' },
-      { valor: '+500', legenda: 'Oficiais formados' },
+      { valor: '32.º', legenda: 'Curso Superior de Comando e Direcção' },
+      { valor: '04', legenda: 'Cursos de formação superior' },
     ],
   },
   formacao: {
@@ -69,13 +69,14 @@ const institucional = {
   imagemSede: EscolaDeGuerra,
   legendaSede: 'Escola Superior de Guerra das Forças Armadas Angolanas, Luanda.',
   numeros: [
-    { valor: '+10', legenda: 'Anos de existência' },
-    { valor: '+500', legenda: 'Oficiais formados' },
-    { valor: '03', legenda: 'Cursos de formação superior' },
-    { valor: '+20', legenda: 'Acordos de cooperação' },
+    // tirados dos planos de curso de 2026/2027 (a edição em curso de cada curso)
+    { valor: '+30', legenda: 'Edições do Curso Superior de Comando e Direcção' },
+    { valor: '+60', legenda: 'Edições de cursos concluídas' },
+    { valor: '04', legenda: 'Cursos de formação superior' },
+    { valor: '03', legenda: 'Ramos das FAA, com a Polícia Nacional' },
   ],
   historia: {
-    titulo: 'Mais de uma década a formar quem comanda.',
+    titulo: 'Gerações de oficiais formados para comandar.',
     imagem: Escola2,
     legenda: 'Sessão solene no auditório principal.',
     paragrafos: [
@@ -84,11 +85,11 @@ const institucional = {
       'Ao longo dos anos, os cursos foram sendo revistos para acompanhar a evolução das ameaças, da tecnologia e das missões das Forças Armadas, mantendo como referência os valores que definem a condição militar.',
     ],
     marcos: [
-      { ano: '2014', titulo: 'Criação da Escola', texto: 'Instituída como estabelecimento de ensino superior militar das Forças Armadas Angolanas.' },
-      { ano: '2015', titulo: 'Primeiro Curso de Estado-Maior', texto: 'Arranque da formação de oficiais para funções de estado-maior.' },
-      { ano: '2018', titulo: 'Abertura internacional', texto: 'Assinatura dos primeiros protocolos de cooperação com escolas militares parceiras.' },
-      { ano: '2021', titulo: 'Novo ciclo de comando', texto: 'Início de um programa de modernização curricular e pedagógica.' },
-      { ano: '2026', titulo: 'Reforço da investigação', texto: 'Seminários de investigação obrigatórios em todos os cursos e nova revista científica.' },
+      // só o que vem dos planos de curso (directivas e edições); as datas de criação confirma-as a Escola
+      { ano: '2014', titulo: 'Curso de Estratégia e Arte Operativa', texto: 'Aprovado pela Directiva n.º 10/22/07/CEMGFAA/2014, para a formação de oficiais generais e superiores em estratégia e arte operativa.' },
+      { ano: '2025', titulo: 'Curso de Estado-Maior Conjunto', texto: 'Primeira edição do curso que habilita os oficiais superiores das FAA e da Polícia Nacional para funções de estado-maior ao nível operacional.' },
+      { ano: '2026', titulo: '32.º Curso Superior de Comando e Direcção', texto: 'O curso mais antigo da Escola chega à 32.ª edição, a par do 18.º Curso de Estratégia e Arte Operativa.' },
+      { ano: '2026', titulo: '12.º Curso de Organização do Asseguramento Moral e Psicológico', texto: 'Formação dos oficiais para a educação patriótica e o asseguramento moral e psicológico das tropas.' },
     ],
   },
   missao: 'Formar oficiais com competência técnica, ética e capacidade de comando ao serviço da defesa de Angola.',
@@ -137,7 +138,7 @@ const institucional = {
 }
 
 const cursos = {
-  entrada: 'Três programas de formação superior para cada etapa da carreira de oficial — do estado-maior ao comando ao mais alto nível.',
+  entrada: 'Quatro cursos de formação superior para cada etapa da carreira de oficial — do estado-maior conjunto à estratégia, ao comando e direcção e ao asseguramento moral e psicológico.',
   anoAcademico: '2027',
   processo: processoAdmissao,
   calendario: calendarioAdmissao,

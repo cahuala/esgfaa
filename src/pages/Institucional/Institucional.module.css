@@ -142,6 +142,13 @@
   display: block;
   clear: both;
 }
+.textoColunas p,
+.introducao,
+.mensagemTexto {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
 .textoColunas p + p {
   margin-top: 1em;
 }

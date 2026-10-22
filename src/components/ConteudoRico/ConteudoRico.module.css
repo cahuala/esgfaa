@@ -10,6 +10,14 @@
   margin-top: 1.4em;
 }
 
+/* texto justificado (com hifenização, para não abrir buracos entre as palavras); o alinhamento escolhido no editor continua a valer */
+.corpo p,
+.corpo li {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
 .corpo > p:first-child {
   font-size: 17px;
   color: var(--texto);

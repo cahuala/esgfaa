@@ -520,6 +520,9 @@
   margin-top: 12px;
   font-size: 17px;
   color: var(--texto-suave);
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 .imagem {
   margin: 24px 0 28px;

@@ -36,7 +36,7 @@ const noticias = [
     conteudo: [
       { tipo: 'paragrafo', texto: 'A Escola Superior de Guerra das Forças Armadas Angolanas deu início ao ano académico 2026 numa cerimónia que reuniu, no auditório principal, mais de 200 novos alunos, o corpo docente, entidades convidadas e representantes de escolas militares parceiras.' },
       { tipo: 'imagem', src: Curso2, legenda: 'Oficiais alunos na primeira sessão do ano académico.', posicao: 'direita' },
-      { tipo: 'paragrafo', texto: 'A sessão foi presidida pelo Comandante da Escola, que deu as boas-vindas aos oficiais que agora iniciam os cursos de Estado-Maior, de Promoção a Oficial General e de Altos Estudos Militares. Na plateia estiveram também os oficiais que concluíram a formação no ano anterior e que foram convidados a partilhar a sua experiência com os novos alunos.' },
+      { tipo: 'paragrafo', texto: 'A sessão foi presidida pelo Comandante da Escola, que deu as boas-vindas aos oficiais que agora iniciam o Curso Superior de Comando e Direcção, o Curso de Estado-Maior Conjunto, o Curso de Estratégia e Arte Operativa e o Curso de Organização do Asseguramento Moral e Psicológico. Na plateia estiveram também os oficiais que concluíram a formação no ano anterior e que foram convidados a partilhar a sua experiência com os novos alunos.' },
       { tipo: 'paragrafo', texto: 'O programa da cerimónia incluiu a apresentação do corpo docente, a leitura do regulamento académico e a assinatura simbólica do compromisso de honra pelos representantes de cada curso. No final, os alunos foram recebidos pelos coordenadores dos respetivos cursos para uma primeira reunião de enquadramento.' },
       { tipo: 'subtitulo', texto: 'Um ano centrado na liderança e na investigação' },
       { tipo: 'imagem', src: Auditorio, legenda: 'O auditório principal recebeu alunos, docentes e convidados.', posicao: 'esquerda' },
@@ -55,7 +55,7 @@ const noticias = [
         { src: Curso2, legenda: 'Entidades convidadas na primeira fila.' },
         { src: Curso3, legenda: 'Momento protocolar da cerimónia.' },
       ] },
-      { tipo: 'paragrafo', texto: 'As aulas dos três cursos começam na semana seguinte à cerimónia. O calendário académico completo está disponível na Secretaria Académica.' },
+      { tipo: 'paragrafo', texto: 'As aulas dos quatro cursos começam na semana seguinte à cerimónia. O calendário académico completo está disponível na Secretaria Académica.' },
     ],
   },
   {
@@ -85,13 +85,13 @@ const noticias = [
   {
     slug: 'formatura-estado-maior-2026',
     categoria: 'Cerimónias',
-    titulo: 'Formatura da turma de Estado-Maior 2026',
+    titulo: 'Formatura do Curso de Estado-Maior Conjunto 2026',
     resumo: 'Mais de 60 oficiais concluíram o curso numa cerimónia presidida pelo Comandante.',
     data: '2026-08-15',
     autor: 'Gabinete de Comunicação',
     capa: Foto5,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'Mais de 60 oficiais concluíram o Curso de Estado-Maior numa cerimónia que marcou o fim de dois anos de formação em planeamento, comando e assessoria.' },
+      { tipo: 'paragrafo', texto: 'Mais de 60 oficiais concluíram o Curso de Estado-Maior Conjunto numa cerimónia que marcou o fim de dez meses de formação em planeamento, comando e assessoria.' },
       { tipo: 'imagem', src: Curso2, legenda: 'Formandos durante a cerimónia de encerramento do curso.', posicao: 'direita' },
       { tipo: 'paragrafo', texto: 'Durante a cerimónia foram distinguidos os oficiais com melhor classificação final e os autores dos trabalhos de investigação de maior mérito. Os trabalhos premiados serão publicados ao longo do próximo semestre na secção de Artigos.' },
       { tipo: 'paragrafo', texto: 'O Comandante felicitou os formandos e as suas famílias, lembrando que o diploma agora entregue é o reconhecimento de um percurso exigente, feito de estudo, exercícios e avaliação permanente.' },
@@ -100,7 +100,7 @@ const noticias = [
         { src: Curso2, legenda: 'Formandos durante a cerimónia.' },
         { src: Auditorio, legenda: 'O auditório completo para a formatura.' },
       ] },
-      { tipo: 'paragrafo', texto: 'Os novos oficiais de Estado-Maior vão agora assumir funções em comandos e estados-maiores das Forças Armadas Angolanas.' },
+      { tipo: 'paragrafo', texto: 'Os oficiais que concluíram o Curso de Estado-Maior Conjunto vão agora assumir funções em comandos e estados-maiores das Forças Armadas Angolanas.' },
     ],
   },
   {
@@ -148,7 +148,7 @@ const noticias = [
     autor: 'Departamento de Investigação',
     capa: Curso3,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'O seminário anual de investigação reuniu os oficiais alunos dos três cursos para a apresentação pública dos trabalhos finais.' },
+      { tipo: 'paragrafo', texto: 'O seminário anual de investigação reuniu os oficiais alunos dos quatro cursos para a apresentação pública dos trabalhos finais.' },
       { tipo: 'imagem', src: Curso1, legenda: 'Apresentação de um trabalho final perante o júri.', posicao: 'esquerda' },
       { tipo: 'paragrafo', texto: 'Os temas abrangeram estratégia militar, logística, direito internacional humanitário e cooperação regional. Cada apresentação foi seguida de um período de perguntas do júri e da plateia, num formato próximo das provas académicas universitárias.' },
       { tipo: 'destaque', texto: 'Os melhores trabalhos serão publicados na secção de Artigos ao longo do próximo semestre.' },
@@ -180,7 +180,7 @@ const noticias = [
     autor: 'Gabinete de Comunicação',
     capa: Curso1,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'O exercício de planeamento estratégico, que encerra o semestre do Curso de Estado-Maior, colocou os alunos perante um cenário de crise regional simulada.' },
+      { tipo: 'paragrafo', texto: 'O exercício de planeamento estratégico, que encerra o semestre do Curso de Estado-Maior Conjunto, colocou os alunos perante um cenário de crise regional simulada.' },
       { tipo: 'imagem', src: Curso1, legenda: 'Oficiais alunos durante a fase de planeamento.', posicao: 'direita' },
       { tipo: 'paragrafo', texto: 'Organizados em estados-maiores, os alunos elaboraram planos de resposta que foram depois avaliados por um painel de oficiais generais. O exercício decorreu ao longo de uma semana, com informações novas a chegar a cada dia para obrigar as equipas a rever as suas decisões.' },
     ],
