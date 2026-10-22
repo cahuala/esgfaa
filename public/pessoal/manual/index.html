@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual do Sistema de Pessoal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Manual de utilização: índice fixo à esquerda por perfil, texto ao centro, capturas que ampliam ao clicar */
+:root {
+  --fundo: #f3f4f2;
+  --papel: #ffffff;
+  --tinta: #1d2125;
+  --suave: #5b646d;
+  --linha: #d9ddde;
+  --vermelho: #c0301b;
+  --ouro: #b8890f;
+  --verde: #2f7a4f;
+  --realce: #fbeee9;
+  --titulo: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --texto: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --fundo: #111417; --papel: #181c20; --tinta: #e6e9eb; --suave: #9aa4ad; --linha: #2b3238; --vermelho: #ef6a52; --ouro: #e0b54a; --verde: #63c08a; --realce: #2a1d1a; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --fundo: #111417; --papel: #181c20; --tinta: #e6e9eb; --suave: #9aa4ad; --linha: #2b3238; --vermelho: #ef6a52; --ouro: #e0b54a; --verde: #63c08a; --realce: #2a1d1a; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--fundo); color: var(--tinta); font: 17px/1.6 var(--texto); margin: 0; }
+a { color: var(--vermelho); }
+:focus-visible { outline: 3px solid var(--ouro); outline-offset: 2px; }
+
+.faixa { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 6px; }
+.faixa i:nth-child(1) { background: #cc092f; } .faixa i:nth-child(2) { background: #111; } .faixa i:nth-child(3) { background: #ffcb00; }
+
+.capa { padding-block: 44px 34px; padding-inline: 16px; border-bottom: 1px solid var(--linha); background: var(--papel); }
+.capa-interior { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.capa small { font: 600 13px var(--texto); letter-spacing: .14em; text-transform: uppercase; color: var(--vermelho); }
+.capa h1 { margin: 0; font: 700 clamp(36px, 6vw, 60px)/1 var(--titulo); text-wrap: balance; }
+.capa p { margin: 0; max-width: 62ch; color: var(--suave); }
+.perfis { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.perfis a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--linha); border-radius: 999px; color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 15px; background: var(--fundo); }
+.perfis a:hover { border-color: var(--vermelho); color: var(--vermelho); }
+
+.corpo { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 80px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 960px) { .corpo { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+
+.indice { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow: auto; font-size: 14.5px; }
+@media (max-width: 960px) { .indice { position: static; max-height: none; background: var(--papel); border: 1px solid var(--linha); border-radius: 8px; padding: 6px 14px; } }
+.indice details { border-bottom: 1px solid var(--linha); }
+.indice summary { cursor: pointer; padding: 9px 0; font: 700 17px var(--titulo); letter-spacing: .02em; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; }
+.indice summary::after { content: "+"; color: var(--suave); }
+.indice details[open] summary::after { content: "–"; }
+.indice ol { margin: 0 0 10px; padding-left: 18px; }
+.indice li { margin: 2px 0; }
+.indice li a { color: var(--suave); text-decoration: none; }
+.indice li a:hover { color: var(--vermelho); }
+
+main { min-width: 0; }
+.parte { margin-bottom: 56px; }
+.parte > header { display: flex; align-items: baseline; gap: 14px; border-bottom: 3px solid var(--tinta); margin-bottom: 18px; padding-bottom: 6px; }
+.parte > header span { font: 700 15px var(--titulo); color: var(--vermelho); letter-spacing: .1em; text-transform: uppercase; }
+.parte > header h2 { margin: 0; font: 700 clamp(28px, 4vw, 38px)/1.1 var(--titulo); }
+.parte > p.entrada { max-width: 68ch; color: var(--suave); margin-top: 0; }
+section.tema { margin: 34px 0; scroll-margin-top: 16px; }
+section.tema h3 { margin: 0 0 8px; font: 700 25px/1.2 var(--titulo); text-wrap: balance; }
+section.tema h4 { margin: 18px 0 6px; font-size: 17px; }
+section.tema p, section.tema li { max-width: 70ch; }
+.passos { counter-reset: passo; list-style: none; padding: 0; display: grid; gap: 10px; }
+.passos li { counter-increment: passo; position: relative; padding-left: 44px; }
+.passos li::before { content: counter(passo); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--tinta); color: var(--papel); display: grid; place-items: center; font: 700 15px var(--titulo); }
+.botao { display: inline-block; padding: 0 7px; border: 1px solid var(--linha); border-radius: 5px; background: var(--papel); font-size: .92em; font-weight: 600; white-space: nowrap; }
+code, .end { font: 500 .88em var(--mono); background: var(--papel); border: 1px solid var(--linha); border-radius: 4px; padding: 1px 5px; word-break: break-all; }
+.nota { display: flex; gap: 12px; margin: 16px 0; padding: 12px 16px; border-left: 4px solid var(--ouro); background: var(--papel); border-radius: 0 6px 6px 0; max-width: 72ch; }
+.nota.importante { border-color: var(--vermelho); background: var(--realce); }
+.nota b { white-space: nowrap; }
+
+figure { margin: 16px 0 22px; }
+figure .foto { display: block; width: 100%; padding: 0; border: 1px solid var(--linha); border-radius: 8px; overflow: hidden; background: var(--papel); cursor: zoom-in; box-shadow: 0 6px 22px rgba(20, 24, 28, .07); }
+figure img { display: block; width: 100%; height: auto; }
+figure.telemovel { max-width: 300px; }
+.par { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.par figure { margin: 0; }
+figcaption { margin-top: 7px; font-size: 14px; color: var(--suave); }
+
+.tabela { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; background: var(--papel); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); }
+
+dialog { border: 0; padding: 0; max-width: min(96vw, 1500px); background: transparent; }
+dialog::backdrop { background: rgba(8, 10, 12, .82); }
+dialog img { display: block; max-width: 100%; max-height: 90vh; border-radius: 6px; }
+dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radius: 50%; width: 38px; height: 38px; font-size: 22px; background: #fff; color: #111; cursor: pointer; }
+
+.rodape { border-top: 1px solid var(--linha); padding-block: 18px 30px; padding-inline: 16px; text-align: center; color: var(--suave); font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+.credito { margin: 6px 0 0; font-size: 15px; color: var(--suave); }
+.indice-impresso { display: none; }
+@page { size: A4; margin: 16mm 14mm 18mm; }
+@media print {
+  :root { --fundo: #fff; --papel: #fff; color-scheme: light; }
+  body { font-size: 10.5pt; line-height: 1.45; background: #fff; }
+  .indice, .perfis, dialog, .so-ecra { display: none !important; }
+  .corpo { display: block; padding: 0; max-width: none; }
+  .capa { min-height: 250mm; display: flex; align-items: center; border: 0; padding: 0 6mm; break-after: page; }
+  .capa h1 { font-size: 42pt; }
+  .capa p { font-size: 12pt; }
+  .credito { margin-top: 40mm !important; font-size: 12pt !important; color: var(--tinta) !important; }
+  .indice-impresso { display: block; break-after: page; padding: 0 2mm; }
+  .indice-impresso h2 { font: 700 26pt var(--titulo); margin: 0 0 6mm; }
+  .indice-impresso > ol { list-style: none; padding: 0; columns: 2; column-gap: 10mm; }
+  .indice-impresso > ol > li { break-inside: avoid; margin-bottom: 4mm; }
+  .indice-impresso ol ol { padding-left: 5mm; margin: 1mm 0 0; font-size: 9.5pt; }
+  .indice-impresso a { color: var(--tinta); text-decoration: none; }
+  .parte { break-before: page; margin-bottom: 0; }
+  .parte > header h2 { font-size: 26pt; }
+  section.tema { margin: 7mm 0; }
+  section.tema h3 { font-size: 16pt; break-after: avoid; }
+  figure, .nota, tr, .passos li { break-inside: avoid; }
+  figure .foto { box-shadow: none; }
+  figure img { max-height: 120mm; width: auto; max-width: 100%; margin: 0 auto; }
+  .par { grid-template-columns: 1fr 1fr; }
+  .par figure img { max-height: 85mm; }
+  figure.telemovel { max-width: 62mm; }
+  a { color: inherit; text-decoration: none; }
+  .rodape { break-before: avoid; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="faixa" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="capa">
+  <div class="capa-interior">
+    <small>Escola Superior de Guerra · Forças Armadas Angolanas</small>
+    <h1>Manual do Sistema de Pessoal</h1>
+    <p>Como usar o sistema de gestão de pessoal da Repartição de Pessoal e Quadros: fichas, carreiras, propostas, orgânica, documentos e expediente. Funciona só na rede interna da Escola. As imagens são do sistema com dados de demonstração<span class="so-ecra">; clique numa imagem para a ver maior</span>.</p>
+    <p class="credito">Sistema desenvolvido por <b>Império Noove Comércio e Serviços, (SU) Lda</b> · NIF 5002164787 · Versão de 22 de outubro de 2026 · <a href="manual.pdf">Descarregar em PDF</a></p>
+    <nav class="perfis" aria-label="Ir para o meu perfil">
+      <a href="#inicio">Entrar</a>
+      <a href="#pes-fichas">Fichas</a>
+      <a href="#pes-propostas">Propostas</a>
+      <a href="#pes-doc-ficha">Declarações e guias</a>
+      <a href="#pes-documentos">Mapas e listas</a>
+      <a href="#problemas">Problemas</a>
+    </nav>
+  </div>
+</header>
+
+<section class="indice-impresso" aria-label="Índice"><h2>Índice</h2><ol><li><a href="#inicio"><b>Parte 1 · Entrar no sistema</b></a><ol><li><a href="#pes-entrar">Entrar e o painel</a></li><li><a href="#dois-passos">Verificação em dois passos</a></li></ol></li><li><a href="#pessoal"><b>Parte 2 · O trabalho da Repartição</b></a><ol><li><a href="#pes-fichas">Fichas de militares e civis</a></li><li><a href="#pes-propostas">Propostas: promoção, nomeação, curso…</a></li><li><a href="#pes-organica">Orgânica e processos individuais</a></li><li><a href="#pes-doc-ficha">Declarações, guias e fichas de uma pessoa</a></li><li><a href="#pes-documentos">Documentos colectivos e mapas estatísticos</a></li><li><a href="#pes-expediente">Expediente e mensagens</a></li></ol></li><li><a href="#problemas"><b>Parte 3 · Problemas frequentes</b></a></li></ol></section>
+
+<div class="corpo">
+  <aside class="indice" aria-label="Índice">
+    <details open><summary>Entrar no sistema</summary><ol><li><a href="#pes-entrar">Entrar e o painel</a></li><li><a href="#dois-passos">Verificação em dois passos</a></li></ol></details>
+    <details><summary>O trabalho da Repartição</summary><ol><li><a href="#pes-fichas">Fichas de militares e civis</a></li><li><a href="#pes-propostas">Propostas: promoção, nomeação, curso…</a></li><li><a href="#pes-organica">Orgânica e processos individuais</a></li><li><a href="#pes-doc-ficha">Declarações, guias e fichas de uma pessoa</a></li><li><a href="#pes-documentos">Documentos colectivos e mapas estatísticos</a></li><li><a href="#pes-expediente">Expediente e mensagens</a></li></ol></details>
+    <details><summary>Problemas frequentes</summary><ol><li><a href="#problemas">Problemas frequentes</a></li></ol></details>
+  </aside>
+
+  <main>
+    <article class="parte" id="inicio">
+      <header><span>Parte 1</span><h2>Entrar no sistema</h2></header>
+      <p class="entrada">O <b>sistema de Pessoal</b> é a ferramenta da Repartição de Pessoal e Quadros: as fichas de todos os militares e civis da Escola, as carreiras segundo a Lei n.º 13/18, a orgânica, os processos individuais, as propostas, os extractos e os documentos. Funciona <b>só dentro da rede da Escola</b>. Os dados mais sensíveis (BI, filiação, telefone, morada) ficam cifrados na base de dados.</p>
+      <section class="tema" id="pes-entrar">
+        <h3>Entrar e o painel</h3>
+        <p>Entra-se com o <b>NIP</b>, o <b>n.º de agente</b> ou o e-mail. Quem vê fichas tem de ligar a <a href="#dois-passos">verificação em dois passos</a>. Os militares e civis que não são da Repartição (utentes) só vêem o expediente, as mensagens e a sua própria ficha.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-entrar.jpg" alt="Entrada do sistema de Pessoal"></button><figcaption>A entrada (só na rede interna).</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-painel.jpg" alt="Painel do sistema de Pessoal"></button><figcaption>O painel: efectivo, em condições de promoção, licenças, reserva, cargos ocupados e os gráficos (clique num para ver a lista).</figcaption></figure>
+        </div>
+      </section>
+      <section class="tema" id="dois-passos">
+        <h3>Verificação em dois passos</h3>
+        <p>Além da palavra-passe, a entrada pede um <b>código de 6 algarismos</b> que muda de 30 em 30 segundos numa aplicação do telemóvel (Google Authenticator, Microsoft Authenticator, FreeOTP…). Mesmo que alguém descubra a palavra-passe, sem o seu telemóvel não entra. É <b>obrigatória</b> para o administrador do painel e para quem vê fichas no sistema de Pessoal; para os outros é opcional (recomendada).</p>
+        <ol class="passos">
+          <li>No menu, abra <b>Segurança da conta</b>. Carregue em <span class="botao">Ligar a verificação em dois passos</span>.</li>
+          <li>Na aplicação do telemóvel, adicione uma conta e <b>leia o código QR</b> (ou escreva a chave que aparece ao lado).</li>
+          <li>Escreva o código de 6 algarismos que a aplicação mostra e carregue em <span class="botao">Confirmar e ligar</span>.</li>
+          <li>Aparecem <b>8 códigos de recuperação</b>: guarde-os num sítio seguro (papel num envelope, cofre). Cada um serve <b>uma vez</b>, se perder o telemóvel. Não voltam a ser mostrados.</li>
+          <li>Daí em diante, ao entrar: e-mail, palavra-passe e o código do momento.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/seg-dois-passos.jpg" alt="Ligar a verificação em dois passos com o código QR"></button><figcaption>Ligar a verificação: o código QR para a aplicação do telemóvel e a chave para escrever à mão.</figcaption></figure>
+        <div class="nota importante"><b>Perdeu o telemóvel?</b><span>Entre com um código de recuperação (no lugar do código de 6 algarismos). Se também os perdeu, peça a um administrador que <b>reponha</b> a verificação (em <b>Utilizadores</b>); depois volta a ligá-la com o telemóvel novo.</span></div>
+      </section>
+    </article>
+    <!-- ====================== PESSOAL E QUADROS ====================== -->
+    <article class="parte" id="pessoal">
+      <header><span>Parte 2</span><h2>O trabalho da Repartição</h2></header>
+
+
+      <section class="tema" id="pes-fichas">
+        <h3>Fichas de militares e civis</h3>
+        <ol class="passos">
+          <li>Em <b>Pessoal</b>, filtre por ramo, posto, unidade (com as subunidades), situação, estado, género… e abra uma ficha.</li>
+          <li><span class="botao">Nova ficha</span> ou <span class="botao">Editar ficha</span>: com o número do BI, a lupa <b>consulta a base de dados do Estado</b> e preenche nome, filiação, nascimento e morada. Pode juntar a fotografia.</li>
+          <li><b>Situação (Lei n.º 13/18)</b>, numa lista em árvore: Activo (art. 7.º) → <i>em efectividade</i> (comissão normal, art. 12.º; inactividade temporária, art. 13.º) ou <i>fora de efectividade</i> (comissão especial, art. 14.º; licença registada, art. 40.º; licença ilimitada, art. 41.º); Reserva (art. 8.º); Reforma (art. 9.º).</li>
+          <li><b>Estado</b> (muda a qualquer momento): destacado, em missão, em formação, em substituição, a cargo da Direcção, suspensão de funções, aguardando colocação, desaparecido em serviço — ou «ao serviço».</li>
+          <li>Cada mudança de situação e de estado fica no <b>histórico</b> da ficha. A ficha mostra também a carreira: tempo no posto, próximo posto, se está em condições de ser promovido e quando passa à reserva.</li>
+          <li><b>Familiares:</b> escreva o BI e carregue em <span class="botao">Consultar</span> — vem da ficha, se a pessoa já estiver no sistema, ou da base de dados do Estado.</li>
+          <li><b>Saída da Escola:</b> marque <i>Já não serve na Escola</i>, a data e o <b>motivo</b> da lista (transferência, fim do curso, reserva, reforma, falecimento, condenação, deserção… ou «Outro»). O motivo conta nos mapas de ausências.</li>
+        </ol>
+        <div class="nota"><b>Postos e ordem</b><span>O <b>1.º Cabo</b> existe no Exército e na Força Aérea (não na Marinha). As tabelas seguem sempre a ordem hierárquica: primeiro o posto, depois a ordem da unidade na orgânica.</span></div>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-pessoas.jpg" alt="Lista do pessoal com filtros"></button><figcaption>A lista com os filtros.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-perfil.jpg" alt="Perfil de um militar"></button><figcaption>O perfil: situação, estado (aqui «Destacado»), cargo e as acções.</figcaption></figure>
+        </div>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-ficha-situacao.jpg" alt="Situação em árvore e estado na ficha"></button><figcaption>Na ficha: a situação escolhe-se na árvore da lei, e o estado ao lado.</figcaption></figure>
+        <p><b>Importar:</b> em <b>Importar Excel e fotos</b> carrega-se uma folha com muitas fichas (primeiro simula, mostra o que não corresponde e só depois grava) e as fotografias pelo NIP.</p>
+      </section>
+
+      <section class="tema" id="pes-propostas">
+        <h3>Propostas: promoção, nomeação, curso…</h3>
+        <ol class="passos">
+          <li>Em <b>Propostas</b>, <span class="botao">Nova proposta</span> e escolha o tipo: <b>promoção</b>, <b>nomeação</b>, <b>graduação</b>, <b>exoneração</b>, <b>progressão</b> (civis) ou <b>curso</b>.</li>
+          <li>À esquerda, o efectivo: seleccione as pessoas (na promoção o posto seguinte já vem definido). Como no SIGP, o <b>curso de promoção, o tempo mínimo no posto, a avaliação e a aptidão</b> não impedem a proposta: aparecem como <b>alerta</b> (a amarelo) e quem propõe decide, com fundamentação. Impedem: reserva ou reforma, inactividade temporária, licença ilimitada, processo pendente, despromoção há menos de 2 anos e o posto limite do quadro especial.</li>
+          <li>Na <b>nomeação</b>, à direita aparecem os <b>cargos vagos</b> da orgânica (desmarque <i>Só os vagos</i> para ver todos); um cargo ocupado só se escolhe se quem lá está também entrar na proposta, para outro cargo. No <b>curso</b>, escreva o curso em cima e as datas em cada pessoa.</li>
+          <li><span class="botao">Criar proposta</span>: o sistema confere as condições da lei para cada um. Imprima a <b>ficha de proposta</b> e a <b>síntese biográfica</b> de cada pessoa e envie a proposta.</li>
+          <li>Quando chega o <b>extracto</b> (decisão), registe-o em <b>Extractos</b>: o sistema encontra as pessoas pelo NIP ou pelo nome, muda as fichas (posto, cargo, curso) e anexa o extracto ao processo individual.</li>
+        </ol>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-proposta-nova.jpg" alt="Nova proposta para curso"></button><figcaption>Proposta para curso: à esquerda o efectivo, à direita os seleccionados com as datas.</figcaption></figure>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-nomeacao.jpg" alt="Nova proposta de nomeação com os cargos vagos"></button><figcaption>Nomeação: à direita só os cargos vagos, pela orgânica.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-elegiveis.jpg" alt="Militares em condições de promoção com alertas"></button><figcaption>Em condições de promoção: os alertas (ex.: curso em falta) não impedem a proposta.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="pes-organica">
+        <h3>Orgânica e processos individuais</h3>
+        <p><b>Orgânica e planeamento:</b> a árvore das unidades da Escola com os cargos de cada uma (previsto e ocupado). Clicar numa unidade mostra os cargos e quem os ocupa. <b>Processos individuais:</b> a estante do arquivo, com cada pasta no seu lugar (estante, prateleira, posição) e o que falta em cada processo.</p>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-organica.jpg" alt="Orgânica da Escola"></button><figcaption>A orgânica.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-processos.jpg" alt="Estante dos processos individuais"></button><figcaption>A estante dos processos: preto = com processo, tracejado = livre.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="pes-doc-ficha">
+        <h3>Declarações, guias e fichas de uma pessoa</h3>
+        <p>Na ficha, <span class="botao">Documentos</span> abre os modelos da Escola que servem a essa pessoa. Marque os que quer, preencha as opções de cada um e carregue em <span class="botao">Gerar documento(s)</span>: saem todos num PDF (Times 14, dados em maiúsculas).</p>
+        <ul>
+          <li><b>Declarações (7 modelos):</b> efectividade — para efectivo militar; efectividade com o vencimento; efectividade — para discentes; salário; serviço — para civil; serviço — para civil, para confirmar a efectividade; serviço — para empregada(o) domiciliar. Mais as dos bancos (BFA e BPC). São <b>numeradas por ano</b> (Nº402/26), válidas por 90 dias, com a data que escolher e o emblema da ESG ao fundo.</li>
+          <li><b>Guias de marcha (6 modelos):</b> férias (30 dias); férias adicionais — licença disciplinar (15 dias); dispensa militar; dispensa civil; dispensa do discente; apresentação. Escreve-se o início e os dias — o fim conta-se sozinho — e a <b>data da guia</b>. O emblema das FAA vai ao fundo.</li>
+          <li><b>Fichas:</b> individual, mecanográfica, de registo biográfico (civis), disciplinar, FAI, para cadastramento dos docentes; e a síntese biográfica.</li>
+        </ul>
+        <p>Cada declaração e cada guia fica registada no <b>histórico de documentos emitidos</b> da ficha e entra no <b>livro do expediente</b> como saída (com protocolo EXP-AAAA-NNNN). Se a mesma declaração, com a mesma finalidade, já saiu há menos de 24 horas, o sistema pergunta se é para emitir outra vez. Em <b>Declarações</b> (menu) faz-se o mesmo a partir de uma lista, com o comprovativo para quem levanta assinar.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-docficha.jpg" alt="Documentos de uma pessoa: declarações, guias e fichas"></button><figcaption>Os documentos de uma pessoa: cada um com as suas opções e a data.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="pes-documentos">
+        <h3>Documentos colectivos e mapas estatísticos</h3>
+        <p>No menu <b>Documentos</b> há quatro grupos. Cada documento tira-se para <b>toda a Escola ou uma unidade</b> (com as subunidades), em <span class="botao">Imprimir (PDF)</span> — com o brasão, a data e a assinatura do Chefe da Repartição — ou em <span class="botao">Excel</span>. Cada impressão fica registada na auditoria.</p>
+        <ul>
+          <li><b>Efectividade:</b> a <b>Lista de efectividade da ESG/EMGFAA</b> (o modelo da Escola: NIP, posto, ramo, nome, cargo, ASEC, FPS, nascimento, incorporação e habilitações civil e militar), mapa de efectividade, militares por situação e por estado, licenças em curso.</li>
+          <li><b>Mapas estatísticos</b> (os modelos da DPQ, mês a mês, com «APROVADO — O Comandante da ESG» e o n.º do modelo): <b>Mod. 2</b> — orgânica, real, físico e diferença por unidade e agregados; <b>Ausências temporárias e definitivas</b>; <b>Mod. 3</b> — por graus militares; <b>Mod. 4</b> — por especialidades, ramo a ramo; <b>Mod. 5</b> — por habilitações literárias; <b>por idade e tempo de serviço</b>. As colunas que o sistema ainda não regista (faltas, hospital, detidos) saem a zero.</li>
+          <li><b>Pessoal proposto:</b> para promoção, nomeação, cursos, graduação, exoneração e progressão; militares em condições de promoção.</li>
+          <li><b>Listas:</b> a <b>Lista geral do pessoal civil</b> (modelo da Escola), por género, posto, ramo, categoria, forma de serviço, categoria civil, habilitações, província, faixa etária; corpo docente, estudantes, aniversariantes do mês, passagem à reserva e reforma, graduados, sem cargo, empregados domiciliares e contactos.</li>
+        </ul>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-mapas.jpg" alt="Mapas estatísticos"></button><figcaption>Os mapas estatísticos: escolhe-se o mês e sai em PDF ou Excel.</figcaption></figure>
+        <div class="par">
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-documentos.jpg" alt="Documentos: efectividade"></button><figcaption>Efectividade: a situação em árvore com as contagens e os documentos.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-documentos-listas.jpg" alt="Documentos: listas"></button><figcaption>As listas.</figcaption></figure>
+        </div>
+      </section>
+
+      <section class="tema" id="pes-expediente">
+        <h3>Expediente e mensagens</h3>
+        <p>Para todos os militares e civis da Escola: o <b>expediente</b> (documentos que entram e saem, com o percurso e a confirmação do original em papel) e as <b>mensagens</b> (conversas directas e da unidade). As declarações e as guias emitidas entram sozinhas no expediente, como saídas já arquivadas.</p>
+        <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-expediente.jpg" alt="Expediente"></button><figcaption>O expediente.</figcaption></figure>
+      </section>
+
+    </article>
+    <article class="parte" id="problemas">
+      <header><span>Parte 3</span><h2>Problemas frequentes</h2></header>
+      <div class="tabela"><table>
+        <thead><tr><th>Problema</th><th>O que fazer</th></tr></thead>
+        <tbody>
+          <tr><td>Esqueci-me da palavra-passe</td><td>Peça ao administrador do sistema de Pessoal que a reponha (em Utilizadores).</td></tr>
+          <tr><td>“Conta bloqueada por excesso de tentativas”</td><td>Espere 15 minutos e tente de novo, com calma. Se continuar, peça que a reponham.</td></tr>
+          <tr><td>“Código errado” ao entrar</td><td>Use o código que aparece <b>agora</b> na aplicação (muda de 30 em 30 segundos) e confira se a hora do telemóvel está certa (automática).</td></tr>
+          <tr><td>Perdi o telemóvel da verificação em dois passos</td><td>Entre com um dos códigos de recuperação. Se também os perdeu, peça a um administrador que reponha a verificação.</td></tr>
+          <tr><td>“Ligue a verificação em dois passos antes de continuar”</td><td>O seu papel exige-a: siga os passos de <a href="#dois-passos">Verificação em dois passos</a>.</td></tr>
+          <tr><td>Não consigo abrir o sistema de Pessoal</td><td>Só funciona dentro da rede da Escola: use um computador ligado à rede interna.</td></tr>
+        </tbody>
+      </table></div>
+    </article>
+  </main>
+</div>
+
+<footer class="rodape">Manual do Sistema de Pessoal · Escola Superior de Guerra · outubro de 2026 · imagens com dados de demonstração<br><b>Sistema desenvolvido por Império Noove Comércio e Serviços, (SU) Lda</b> · NIF 5002164787</footer>
+
+<dialog id="ampliar" aria-label="Imagem ampliada"><button type="button" aria-label="Fechar">×</button><img alt=""></dialog>
+<script src="manual.js"></script>
+</body>
+</html>

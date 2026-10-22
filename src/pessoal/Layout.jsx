@@ -125,6 +125,7 @@ export default function Layout({ children }) {
             {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
             <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
             <Item para="/senha" icone="fa-key" texto="Segurança da conta" />
+            <div className="menu-item"><a href="manual/index.html" target="_blank" rel="noreferrer" className="menu-link"><div className="menu-icon"><i className="fa fa-book" /></div><div className="menu-text">Manual</div></a></div>
 
             <div className="menu-divider" />
             <div className="menu-item d-flex">

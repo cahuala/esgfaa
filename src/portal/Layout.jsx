@@ -133,6 +133,7 @@ function Layout({ children }) {
                 <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />{tx('O meu perfil')}</Link>
                 {!eDocente && <Link to="/percurso" className="dropdown-item"><i className="fa fa-route fa-fw me-2" />{tx('Percurso académico')}</Link>}
                 <a href={SITE} className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />{tx('Site da Escola')}</a>
+                <a href={`${SITE}portal/manual/index.html`} target="_blank" rel="noreferrer" className="dropdown-item"><i className="fa fa-book fa-fw me-2" />{tx('Manual de utilização')}</a>
                 <div className="dropdown-divider" />
                 <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />{tx('Sair')}</button>
               </div>

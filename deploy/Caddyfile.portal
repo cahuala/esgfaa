@@ -23,7 +23,7 @@
 	# portal e painel: aplicações de uma página (as rotas do navegador caem no index.html de cada uma)
 	handle /portal/* {
 		root * /srv
-		try_files {path} /portal/index.html
+		try_files {path} {path}index.html /portal/index.html
 		file_server
 	}
 	handle /{$ADMIN_PATH}/* {

@@ -12,7 +12,7 @@ Três partes no mesmo repositório:
 O site funciona sem a API: usa os conteúdos de `src/data/`. Com a API ligada, passa a mostrar o que se edita no painel, e ativa gostos, comentários e contagem de visualizações.
 
 
-**Instalação em produção:** veja [docs/INSTALACAO.md](docs/INSTALACAO.md) (servidor público e servidor interno com Docker, HTTPS automático, chaves, cópias de segurança e lista de verificação). **Manual de utilização:** [docs/manual](docs/manual/index.html) (também em PDF).
+**Instalação em produção:** veja [docs/INSTALACAO.md](docs/INSTALACAO.md) (servidor público e servidor interno com Docker, HTTPS automático, chaves, cópias de segurança e lista de verificação). **Manuais de utilização:** o do Portal Académico em `/portal/manual/` ([public/portal/manual](public/portal/manual/index.html)) e o do sistema de Pessoal dentro dele, em `/manual/` ([public/pessoal/manual](public/pessoal/manual/index.html)); cada um tem o seu PDF.
 
 ## Correr no computador
 

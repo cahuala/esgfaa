@@ -118,6 +118,8 @@ function Layout({ children }) {
                 <Link to="/perfil" className="dropdown-item"><i className="fa fa-user-circle fa-fw me-2" />{tx('O meu perfil')}</Link>
                 <Link to="/perfil" className="dropdown-item"><i className="fa fa-key fa-fw me-2" />{tx('Alterar palavra-passe')}</Link>
                 <a href={SITE} target="_blank" rel="noreferrer" className="dropdown-item"><i className="fa fa-globe fa-fw me-2" />{tx('Ver o site')}</a>
+                {/* o painel usa o manual do Portal Académico (tem as partes da administração, da redação e da biblioteca) */}
+                <a href={`${SITE}portal/manual/index.html`} target="_blank" rel="noreferrer" className="dropdown-item"><i className="fa fa-book fa-fw me-2" />{tx('Manual de utilização')}</a>
                 <div className="dropdown-divider" />
                 <button type="button" className="dropdown-item text-danger" onClick={sair}><i className="fa fa-sign-out-alt fa-fw me-2" />{tx('Sair')}</button>
               </div>
