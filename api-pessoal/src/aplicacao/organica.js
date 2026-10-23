@@ -218,6 +218,7 @@ export class ServicoOrganica {
     const FUNCOES_OP = Object.entries(FUNCOES).map(([k, v]) => [k, k, v, v.split(' ')[0]])
     const CIVIS_OP = Object.values(CARREIRAS_CIVIS).map((c) => [c.nome, c.nome])
     const resultado = []
+    const usados = new Set() // cargos que esta folha já criou ou encontrou
     const ordemSeguinte = (paiId) => Math.max(-1, ...unidades.filter((x) => x.paiId === paiId).map((x) => x.ordem ?? 0)) + 1
     for (const [i, l] of linhas.entries()) {
       const r = { linha: i + 2, unidade: String(l.unidade ?? '').trim(), cargo: String(l.cargo ?? '').trim(), acoes: [] }
@@ -249,7 +250,7 @@ export class ServicoOrganica {
             for (let x = paiId; x; x = unidades.find((y) => y.id === x)?.paiId) if (x === un.id) throw invalido('A unidade não pode ficar dentro de si própria nem de uma subunidade sua.')
             muda.paiId = paiId
           }
-          if (Object.keys(muda).length) { Object.assign(un, muda); acoes.push({ tipo: 'unidade', criar: false, ref: un, muda }); r.acoes.push(`unidade actualizada (${Object.keys(muda).join(', ')})`) }
+          if (Object.keys(muda).length) { Object.assign(un, muda); if (un.id > 0) acoes.push({ tipo: 'unidade', criar: false, ref: un, muda }); r.acoes.push(`unidade actualizada (${Object.keys(muda).join(', ')})`) }
         }
         // o cargo
         if (r.cargo) {
@@ -259,10 +260,15 @@ export class ServicoOrganica {
           const lugares = v('lugares') ? Number(v('lugares')) : undefined
           if (lugares !== undefined && (!Number.isInteger(lugares) || lugares < 1 || lugares > 500)) throw invalido('Os lugares têm de ser um número inteiro de 1 a 500.')
           const tipoCargo = posto && categoriaCivil ? 'ambos' : categoriaCivil ? 'civil' : 'militar'
-          const c = cargos.find((x) => x.unidadeId === un.id && sem(x.nome) === sem(r.cargo))
+          // pelo nome e pelo posto (o quadro tem cargos com o mesmo nome e postos diferentes); só com o nome,
+          // se houver um só desse nome que esta folha ainda não usou (p. ex. a folha muda-lhe o posto)
+          const mesmoNome = cargos.filter((x) => x.unidadeId === un.id && sem(x.nome) === sem(r.cargo))
+          const livres = mesmoNome.filter((x) => !usados.has(x.id))
+          const c = (posto || categoriaCivil ? mesmoNome.find((x) => !usados.has(x.id) && x.postoRequerido === posto && (x.categoriaCivil ?? null) === categoriaCivil) : null) ?? (livres.length === 1 ? livres[0] : !posto && !categoriaCivil && mesmoNome.length === 1 ? mesmoNome[0] : null)
           if (!c) {
             const novo = { id: novoId--, nome: r.cargo, unidadeId: un.id, funcao: funcao ?? 'execucao', tipo: tipoCargo, postoRequerido: posto, categoriaCivil, vagas: lugares ?? 1 }
             cargos.push(novo)
+            usados.add(novo.id)
             acoes.push({ tipo: 'cargo', criar: true, ref: novo })
             r.acoes.push(`cargo novo (${novo.vagas} lugar(es))`)
           } else {
@@ -272,7 +278,9 @@ export class ServicoOrganica {
             if (categoriaCivil && categoriaCivil !== c.categoriaCivil) muda.categoriaCivil = categoriaCivil
             if ((posto || categoriaCivil) && tipoCargo !== c.tipo) muda.tipo = tipoCargo
             if (funcao && funcao !== c.funcao) muda.funcao = funcao
-            if (Object.keys(muda).length) { Object.assign(c, muda); acoes.push({ tipo: 'cargo', criar: false, ref: c, muda }); r.acoes.push(`cargo actualizado (${Object.keys(muda).join(', ')})`) }
+            usados.add(c.id)
+            // um cargo criado antes nesta folha muda só aqui (cria-se já com os valores finais)
+            if (Object.keys(muda).length) { Object.assign(c, muda); if (c.id > 0) acoes.push({ tipo: 'cargo', criar: false, ref: c, muda }); r.acoes.push(`cargo actualizado (${Object.keys(muda).join(', ')})`) }
           }
         }
         r.acao = r.acoes.length ? 'alterar' : 'igual'

@@ -48,7 +48,29 @@ services:
       - ./Caddyfile.pessoal:/etc/caddy/Caddyfile:ro
       - caddy-dados:/data
 
+  # cópia de segurança cifrada todos os dias às 2h (base de dados + ficheiros), no volume «copias»;
+  # COPIAS_EXTRA: monte outro disco/servidor em /copias-extra para a cópia ficar também fora deste disco
+  copias:
+    build:
+      context: ..
+      dockerfile: deploy/copias.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      bd:
+        condition: service_healthy
+    command: ["node", "scripts/copias.mjs", "agendar", "--sistema", "pessoal"]
+    environment:
+      COPIAS_CHAVE: ${COPIAS_CHAVE:?defina COPIAS_CHAVE}
+      COPIAS_EXTRA: ${COPIAS_EXTRA:-}
+      PESSOAL_DATABASE_URL: postgresql://pessoal:${BD_SENHA}@bd:5432/esgfaa_pessoal
+      PESSOAL_DADOS: /dados
+    volumes:
+      - dados:/dados:ro
+      - copias:/copias
+      # - /mnt/disco-externo:/copias-extra   (e COPIAS_EXTRA=/copias-extra no .env)
+
 volumes:
+  copias:
   bd:
   dados:
   caddy-dados:

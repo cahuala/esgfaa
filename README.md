@@ -194,11 +194,8 @@ As contas novas no portal entram com o e-mail como palavra-passe inicial (o port
 - **Sem `pg_dump` no servidor:** `PG_DOCKER=<contentor do PostgreSQL>` usa o do Docker.
 - **Testar a reposição** (faça-o pelo menos uma vez por mês): `npm run copias -- testar copias/esg-tudo-….esgc` decifra, confere o resumo e repõe cada base numa base temporária, que depois apaga.
 - **Repor:** `npm run copias -- repor <ficheiro> --para /tmp/repor` e depois `pg_restore --clean --if-exists --no-owner -d <base> /tmp/repor/<sistema>/base.dump`; os ficheiros ficam em `/tmp/repor/<sistema>/dados`.
-- **Todos os dias às 2h** (cron do servidor; o sistema de pessoal, no seu servidor interno, com `--sistema pessoal`):
-  ```
-  0 2 * * * cd /srv/esgfaa && COPIAS_CHAVE=… COPIAS_DIR=/srv/copias node scripts/copias.mjs copiar >> /var/log/esg-copias.log 2>&1
-  ```
-- Copie também a pasta `COPIAS_DIR` para outro lugar (outro servidor ou disco externo): uma cópia no mesmo disco não protege contra a avaria do disco.
+- **Automáticas nos servidores:** o serviço `copias` dos docker-compose (`deploy/`) corre `node scripts/copias.mjs agendar`: uma cópia por dia às `COPIAS_HORA` (2h), o teste de reposição no dia 1 de cada mês e o resultado em `COPIAS_DIR/estado.json` (ver [docs/INSTALACAO.md](docs/INSTALACAO.md), secção 6).
+- **`COPIAS_EXTRA`:** outra pasta (disco externo, partilha de outro servidor) onde fica também cada cópia: uma cópia no mesmo disco não protege contra a avaria do disco.
 
 ## Segurança e acessos simultâneos
 

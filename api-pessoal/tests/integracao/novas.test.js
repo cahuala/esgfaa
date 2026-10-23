@@ -107,6 +107,25 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.ok(outra.linhas.every((l) => l.acao === 'igual'))
   })
 
+  it('quadro orgânico por Excel: o mesmo cargo com postos diferentes são cargos diferentes; mudar o posto de um só', async () => {
+    const linhas = [
+      { unidade: 'Secção de Viaturas', sigla: 'SV', tipo: 'Secção', cargo: 'Condutor', posto: '2.º Sargento', lugares: '1' },
+      { unidade: 'SV', cargo: 'Condutor', posto: 'Soldado', lugares: '2' },
+      { unidade: 'SV', cargo: 'Condutor', posto: 'Soldado', lugares: '3' }, // cada linha é um cargo, mesmo repetida
+      { unidade: 'SV', cargo: 'Mecânico', posto: 'Soldado' },
+    ]
+    const r = (await adm.post('/api/organica/importar').send({ simular: false, linhas }).expect(200)).body
+    assert.deepEqual([r.resumo.cargos, r.resumo.actualizados, r.resumo.erros], [4, 0, 0])
+    const sv = (await adm.get('/api/unidades')).body.find((x) => x.sigla === 'SV')
+    const cs = async () => (await adm.get('/api/cargos').query({ unidadeId: String(sv.id) })).body.map((c) => [c.nome, c.postoRequerido, c.vagas]).sort()
+    assert.deepEqual(await cs(), [['Condutor', 'segundo_sargento', 1], ['Condutor', 'soldado', 2], ['Condutor', 'soldado', 3], ['Mecânico', 'soldado', 1]])
+    // a mesma folha outra vez não muda nada
+    assert.ok((await adm.post('/api/organica/importar').send({ simular: true, linhas }).expect(200)).body.linhas.every((l) => l.acao === 'igual'))
+    // um só cargo com esse nome: a folha muda-lhe o posto
+    await adm.post('/api/organica/importar').send({ simular: false, linhas: [{ unidade: 'SV', cargo: 'Mecânico', posto: '2.º Cabo' }] }).expect(200)
+    assert.deepEqual(await cs(), [['Condutor', 'segundo_sargento', 1], ['Condutor', 'soldado', 2], ['Condutor', 'soldado', 3], ['Mecânico', 'segundo_cabo', 1]])
+  })
+
   it('faltas e ausências: registar, listar pelo período, fechar a baixa hospitalar e apagar', async () => {
     const p = (await adm.post('/api/pessoas').send(militar({ nip: 'AUS001', nome: 'Rui Ausente Teste' })).expect(201)).body
     assert.equal((await adm.post('/api/ausencias').send({ pessoaId: p.id, tipo: 'falta', inicio: '2026-10-05' })).status, 400) // a falta precisa do último dia

@@ -66,23 +66,18 @@ docker compose -f deploy/docker-compose.pessoal.yml --env-file deploy/pessoal.en
 - `REDES_INTERNAS`: as redes da Escola; pedidos de fora são recusados pela própria API.
 - **Firewall:** entrada 443 só da rede interna; saídas só para o servidor público (`PORTAL_API_URL`) e para `api.gov.ao` (BI).
 - Primeira entrada: muda a palavra-passe inicial e liga a verificação em dois passos (obrigatória para quem vê fichas).
+- **Quadro orgânico:** em *Orgânica → Carregar o quadro orgânico*, escolha o Excel do quadro no formato do modelo (o ficheiro «QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx», entregue à parte: é interno e não está no repositório). O sistema simula primeiro e só grava se nenhuma linha tiver erro. Depois, as fichas do pessoal entram por *Importar* (Excel).
 
 ## 6. Cópias de segurança
 
-Em cada servidor, todos os dias às 2h (ex.: `crontab -e` do utilizador que gere o Docker):
+São **automáticas**: cada docker-compose tem o serviço `copias`, que arranca com o resto e faz todos os dias às 2h (hora de Luanda) uma cópia **cifrada** da base de dados e dos ficheiros carregados desse servidor. Basta pôr a `COPIAS_CHAVE` no `deploy/*.env` (sem ela o sistema não arranca).
 
-```
-# servidor público
-0 2 * * * cd /srv/esgfaa && COPIAS_CHAVE=… COPIAS_DIR=/srv/copias PG_DOCKER=esgfaa-bd-1 PORTAL_DATABASE_URL=postgresql://esgfaa:BD_SENHA@localhost/esgfaa PORTAL_DADOS=/var/lib/docker/volumes/esgfaa_dados/_data node scripts/copias.mjs copiar --sistema portal >> /var/log/esg-copias.log 2>&1
-# servidor interno
-0 2 * * * cd /srv/esgfaa && COPIAS_CHAVE=… COPIAS_DIR=/srv/copias PG_DOCKER=esgfaa-pessoal-bd-1 PESSOAL_DATABASE_URL=postgresql://pessoal:BD_SENHA@localhost/esgfaa_pessoal PESSOAL_DADOS=/var/lib/docker/volumes/esgfaa-pessoal_dados/_data node scripts/copias.mjs copiar --sistema pessoal >> /var/log/esg-copias.log 2>&1
-```
-
-(O Node.js é preciso no servidor para o script; o `pg_dump` corre dentro do contentor da base de dados.)
-
-- Copie `/srv/copias` para **outro local** (outro servidor, disco externo), por exemplo com `rsync` a seguir à cópia.
-- **Uma vez por mês, teste a reposição:** `COPIAS_CHAVE=… PG_DOCKER=… node scripts/copias.mjs testar /srv/copias/<ficheiro>.esgc`.
-- Repor depois de uma avaria: `node scripts/copias.mjs repor <ficheiro> --para /tmp/repor` e `pg_restore --clean --if-exists --no-owner -d <base> /tmp/repor/<sistema>/base.dump` (dentro do contentor da base de dados); os ficheiros voltam para o volume `dados`.
+- Ficam as últimas 30, no volume `copias`. No dia 1 de cada mês, a cópia é também **reposta numa base temporária** para provar que serve.
+- **Fora deste disco:** monte outro disco ou uma partilha de outro servidor no serviço `copias` (a linha `/mnt/disco-externo:/copias-extra` comentada no docker-compose) e ponha `COPIAS_EXTRA=/copias-extra` no `.env`. Cada cópia vai também para lá. Uma cópia só no mesmo disco não protege contra a avaria do disco.
+- **Ver se estão a correr:** `docker compose -f deploy/docker-compose.<portal|pessoal>.yml --env-file deploy/<portal|pessoal>.env logs copias`. O resultado da última fica em `estado.json` (`exec copias cat /copias/estado.json`).
+- **Listar e testar à mão:** `… exec copias node scripts/copias.mjs listar` e `… exec copias node scripts/copias.mjs testar /copias/<ficheiro>.esgc`.
+- **Repor depois de uma avaria:** `… exec copias node scripts/copias.mjs repor /copias/<ficheiro>.esgc --para /tmp/repor`, depois `pg_restore --clean --if-exists --no-owner -d <base> /tmp/repor/<sistema>/base.dump` (o `pg_restore` também está no contentor `copias`, com `-h bd -U <utilizador>`). Os ficheiros voltam para o volume `dados`.
+- **Guarde a `COPIAS_CHAVE` no cofre**, fora do servidor: sem ela as cópias não abrem.
 
 ## 7. Actualizar
 
@@ -99,7 +94,7 @@ As migrações da base de dados aplicam-se sozinhas no arranque. Faça uma cópi
 - [ ] Todas as chaves geradas e guardadas no cofre; `deploy/*.env` com permissões `600`.
 - [ ] Administrador entrou, mudou a palavra-passe e ligou a verificação em dois passos.
 - [ ] Dados de demonstração **não** carregados (não corra `npm run semear` em produção).
-- [ ] Cópia de segurança diária a correr, copiada para outro local, e um teste de reposição feito.
+- [ ] Serviço `copias` a correr nos dois servidores (`logs copias`), com `COPIAS_EXTRA` noutro disco, e um teste de reposição feito.
 - [ ] E-mail (SMTP) configurado e testado (notificações, alertas de segurança).
 - [ ] Servidor interno inacessível de fora da rede da Escola (confirmar a partir de uma rede externa).
 - [ ] Registo ou autorização na Agência de Protecção de Dados (APD) e política de privacidade aprovada pelo jurista.

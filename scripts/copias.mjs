@@ -6,6 +6,7 @@
     node scripts/copias.mjs listar                                    mostra as cópias guardadas
     node scripts/copias.mjs testar <ficheiro.esgc>                    decifra e repõe numa base temporária (prova que serve)
     node scripts/copias.mjs repor <ficheiro.esgc> --para <pasta>      decifra e extrai (dumps + ficheiros) para repor
+    node scripts/copias.mjs agendar [--sistema tudo|portal|pessoal]   fica a correr: uma cópia por dia (serviço «copias» do Docker)
 
   Cada cópia: dump do PostgreSQL (formato custom) de cada sistema e as pastas de dados (uploads, privado,
   fotos, ficheiros), num .tar.gz cifrado com AES-256-GCM (COPIAS_CHAVE, diferente da DADOS_CHAVE).
@@ -15,6 +16,9 @@
   PORTAL_DATABASE_URL e PESSOAL_DATABASE_URL (por omissão, as dos .env de api/ e api-pessoal/),
   PG_DOCKER (nome do contentor do PostgreSQL, se o pg_dump não estiver instalado no servidor),
   PORTAL_DADOS (api/dados) e PESSOAL_DADOS (api-pessoal/dados).
+  Com «agendar»: COPIAS_HORA (2: às 2h, na hora de TZ), COPIAS_EXTRA (outra pasta, p. ex. um disco externo ou
+  uma partilha de outro servidor montada no contentor, onde fica também cada cópia) e o teste de reposição
+  automático no dia 1 de cada mês. O resultado de cada cópia fica em COPIAS_DIR/estado.json.
 */
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -168,9 +172,9 @@ async function abrir(cfg, ficheiro, pasta) {
 // repõe cada base numa base temporária, conta tabelas e linhas, e apaga-a: prova que a cópia serve
 async function testar(cfg, ficheiro) {
   const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'esg-teste-'))
-  const admin = process.env.PG_ADMIN_URL || cfg.sistemas.portal.url
   try {
     const sistemas = await abrir(cfg, ficheiro, pasta)
+    const admin = process.env.PG_ADMIN_URL || cfg.sistemas[sistemas[0]].url
     console.log(`Decifrada e verificada: ${sistemas.join(', ')}`)
     for (const s of sistemas) {
       const temp = `esg_teste_reposicao_${s}_${Date.now()}`
@@ -196,11 +200,43 @@ async function testar(cfg, ficheiro) {
   }
 }
 
+// a cópia de cada dia, para sempre: copia, leva para COPIAS_EXTRA, testa a reposição no dia 1 e regista o estado
+async function agendar(cfg, sistema) {
+  chaveDe(cfg.chave)
+  const hora = Number(process.env.COPIAS_HORA ?? 2)
+  const extra = process.env.COPIAS_EXTRA ? path.resolve(process.env.COPIAS_EXTRA) : ''
+  const estado = (x) => fs.writeFileSync(path.join(cfg.pasta, 'estado.json'), JSON.stringify({ ...x, sistema, quando: new Date().toISOString() }, null, 2), { mode: 0o600 })
+  fs.mkdirSync(cfg.pasta, { recursive: true, mode: 0o700 })
+  console.log(`Cópias agendadas: ${sistema}, todos os dias às ${hora}h${extra ? `, também em ${extra}` : ''}.`)
+  for (;;) {
+    const proxima = new Date()
+    proxima.setHours(hora, 0, 0, 0)
+    if (proxima <= new Date()) proxima.setDate(proxima.getDate() + 1)
+    await new Promise((ok) => setTimeout(ok, proxima - new Date()))
+    try {
+      const f = await copiar(cfg, sistema)
+      if (extra) {
+        fs.mkdirSync(extra, { recursive: true })
+        for (const x of [f, `${f}.json`]) fs.copyFileSync(x, path.join(extra, path.basename(x)))
+        const la = fs.readdirSync(extra).filter((x) => x.endsWith('.esgc')).sort()
+        for (const x of la.slice(0, Math.max(0, la.length - cfg.manter))) for (const y of [x, `${x}.json`]) fs.rmSync(path.join(extra, y), { force: true })
+        console.log(`  levada também para ${extra}`)
+      }
+      if (new Date().getDate() === 1) await testar(cfg, f)
+      estado({ ok: true, ficheiro: path.basename(f), extra: Boolean(extra) })
+    } catch (e) {
+      console.error(`Erro na cópia de ${new Date().toISOString()}: ${e.message}`)
+      estado({ ok: false, erro: e.message })
+    }
+  }
+}
+
 const [comando, ...resto] = process.argv.slice(2)
 const opcao = (n) => { const i = resto.indexOf(`--${n}`); return i >= 0 ? resto[i + 1] : undefined }
 const cfg = configuracao()
 try {
   if (comando === 'copiar') await copiar(cfg, opcao('sistema') || 'tudo')
+  else if (comando === 'agendar') await agendar(cfg, opcao('sistema') || 'tudo')
   else if (comando === 'listar') {
     if (!fs.existsSync(cfg.pasta)) console.log('Ainda não há cópias.')
     else for (const f of fs.readdirSync(cfg.pasta).filter((x) => x.endsWith('.esgc')).sort()) console.log(`${f}  ${(fs.statSync(path.join(cfg.pasta, f)).size / 1048576).toFixed(1)} MB`)
