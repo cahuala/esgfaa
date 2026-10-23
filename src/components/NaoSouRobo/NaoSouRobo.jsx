@@ -14,6 +14,18 @@ export default function NaoSouRobo({ api, aoMudar, renovar = 0 }) {
   const [progresso, setProgresso] = useState(0)
   const [erro, setErro] = useState('')
   const marcado = useRef(false)
+  const pedido = useRef(null)
+
+  // ao abrir a página: o servidor pede a verificação? (se não, a caixa não aparece e o botão fica livre)
+  useEffect(() => {
+    let ativo = true
+    api('/desafio').then((d) => {
+      if (!ativo) return
+      if (!d?.ativo) { setEstado('desligado'); aoMudar(undefined) } else pedido.current = d
+    }).catch(() => {})
+    return () => { ativo = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function verificar() {
     marcado.current = true
@@ -22,7 +34,8 @@ export default function NaoSouRobo({ api, aoMudar, renovar = 0 }) {
     setProgresso(0)
     aoMudar(null)
     try {
-      const p = await obterProva(api, setProgresso)
+      const p = await obterProva(api, setProgresso, pedido.current)
+      pedido.current = null
       if (!p) { setEstado('desligado'); aoMudar(undefined); return }
       setEstado('feito')
       aoMudar(p)

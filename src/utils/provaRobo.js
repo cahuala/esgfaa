@@ -49,9 +49,10 @@ export async function resolverDesafio(d, aoProgresso) {
   return null
 }
 
-// pede o desafio à API desta aplicação e resolve-o; null = o servidor não pede a verificação
-export async function obterProva(api, aoProgresso) {
-  const d = await api('/desafio')
+// pede o desafio à API desta aplicação (ou usa um já pedido, se ainda tiver tempo) e resolve-o;
+// null = o servidor não pede a verificação
+export async function obterProva(api, aoProgresso, pedido = null) {
+  const d = pedido && Number(String(pedido.sal).split('.')[0]) - Date.now() > 60_000 ? pedido : await api('/desafio')
   if (!d?.ativo) return null
   const p = await resolverDesafio(d, aoProgresso)
   if (!p) throw new Error('Não foi possível confirmar que não é um robô. Tente outra vez.')
