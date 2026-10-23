@@ -99,6 +99,13 @@ export const PAPEIS_PADRAO = [
     permissoes: ['biblioteca.ver', 'biblioteca.gerir'],
   },
   {
+    id: 'ciberseguranca',
+    nome: 'Responsável de Cibersegurança',
+    descricao: 'Centro de segurança: tentativas de entrada, ataques e IP suspeitos, bloquear e desbloquear endereços; consulta o registo de atividades. Não edita conteúdos nem utilizadores.',
+    sistema: 0,
+    permissoes: ['seguranca.ver', 'seguranca.gerir', 'atividades.ver'],
+  },
+  {
     id: 'analista',
     nome: 'Analista',
     descricao: 'Consulta estatísticas de visitas e de publicidade, sem editar.',

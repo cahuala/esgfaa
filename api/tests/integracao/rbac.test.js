@@ -37,6 +37,15 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal(log.linhas[0].alvo_id, rasc.body.slug)
   })
 
+  it('responsável de cibersegurança vê o centro de segurança e o registo de atividades, e nada mais', async () => {
+    const ciber = amb.com((await amb.criarUtilizador('ciberseguranca')).token)
+    assert.equal((await ciber.get('/api/admin/seguranca')).status, 200)
+    assert.equal((await ciber.get('/api/admin/atividades')).status, 200)
+    assert.equal((await ciber.get('/api/admin/utilizadores')).status, 403)
+    assert.equal((await ciber.post('/api/admin/colecoes/noticias').send(noticia())).status, 403)
+    assert.equal((await ciber.get('/api/admin/estatisticas')).status, 403)
+  })
+
   it('moderador não cria conteúdos; analista só vê estatísticas', async () => {
     assert.equal((await amb.com(moderador.token).post('/api/admin/colecoes/noticias').send(noticia())).status, 403)
     assert.equal((await amb.com(analista.token).get('/api/admin/estatisticas')).status, 200)
