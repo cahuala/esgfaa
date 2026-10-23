@@ -303,3 +303,10 @@
   color: #b71c1c;
   font-size: 14px;
 }
+
+/* a frase do consentimento: justificada como o resto do texto */
+.consentimento {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}

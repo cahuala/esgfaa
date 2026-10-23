@@ -192,6 +192,11 @@
   text-align: left;
   vertical-align: top;
 }
+.cronologia td {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
 .cronologia th {
   width: 70px;
   color: var(--marca);

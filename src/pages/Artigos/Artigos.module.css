@@ -551,3 +551,10 @@
   line-clamp: 3;
   overflow: hidden;
 }
+
+/* resumos da lista de artigos: justificados como o resto do texto */
+.entradaResumo {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}

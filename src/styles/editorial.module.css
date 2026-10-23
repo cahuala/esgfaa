@@ -186,6 +186,10 @@
 }
 .tabela td {
   color: var(--texto-suave);
+  /* o texto das células também justificado (os números e as datas, curtos, ficam iguais) */
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 .tabela tfoot td,
 .tabela tfoot th {

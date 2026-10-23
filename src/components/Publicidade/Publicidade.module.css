@@ -111,3 +111,10 @@
   line-clamp: 3;
   overflow: hidden;
 }
+
+/* a descrição do anúncio: justificada como o resto do texto */
+.descricao {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}

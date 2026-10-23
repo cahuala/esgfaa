@@ -33,8 +33,12 @@
   margin-inline: auto;
   margin-bottom: 40px;
 }
+/* o texto por baixo de um título centrado: justificado, com a última linha ao centro (acompanha o título) */
 .seccaoCabeca.centrada p {
-  text-align: center;
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  text-align-last: center;
 }
 .rotulo {
   display: block;
