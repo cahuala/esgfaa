@@ -7,6 +7,8 @@ import { COLECOES_TRADUZIVEIS, ESTADOS_TRADUCAO, LINGUAS, desatualizados, extrai
   O site mostra a tradução publicada; o que não estiver traduzido aparece em português.
 */
 // os originais guardados só dos textos que a tradução ainda tem
+// o tradutor automático às vezes deixa espaços à volta do apóstrofo («L ' École», «d ' officiers»)
+const arrumar = (textos) => Object.fromEntries(Object.entries(textos || {}).map(([c, t]) => [c, typeof t === 'string' ? t.replace(/(\p{L}) ' (\p{L})/gu, "$1'$2") : t]))
 const limparOriginais = (originais, textos) => Object.fromEntries(Object.entries(originais || {}).filter(([c]) => c in textos))
 
 export class ServicoTraducoes {
@@ -51,7 +53,7 @@ export class ServicoTraducoes {
         }
         continue
       }
-      const novos = await this.tradutor.traduzirMapa(pedir, lingua)
+      const novos = arrumar(await this.tradutor.traduzirMapa(pedir, lingua))
       await this.traducoes.guardar({
         colecao, alvoId: id, lingua,
         textos: limparTextos({ ...(atual?.textos || {}), ...novos }, originais),
@@ -115,7 +117,7 @@ export class ServicoTraducoes {
     const atual = await this.traducoes.ler(colecao, id, lingua)
     const mudados = atual ? new Set(desatualizados(atual.originais, originais)) : null
     const pedir = Object.fromEntries(Object.entries(originais).filter(([c]) => !atual || !atual.textos[c] || mudados.has(c)))
-    const novos = Object.keys(pedir).length ? await this.tradutor.traduzirMapa(pedir, lingua) : {}
+    const novos = Object.keys(pedir).length ? arrumar(await this.tradutor.traduzirMapa(pedir, lingua)) : {}
     const textos = limparTextos({ ...(atual?.textos || {}), ...novos }, originais)
     const t = await this.traducoes.guardar({
       colecao, alvoId: id, lingua, textos, originais: { ...(atual?.originais || {}), ...Object.fromEntries(Object.keys(novos).map((c) => [c, originais[c]])) },

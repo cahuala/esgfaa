@@ -890,7 +890,7 @@
     "estrutura.orgaos.5.nome": "Secrétariat académique",
     "estrutura.orgaos.6.nome": "Département de recherche",
     "estrutura.orgaos.7.nome": "Coopération internationale",
-    "estrutura.orgaos.8.nome": "Services d ' appui",
+    "estrutura.orgaos.8.nome": "Services d'appui",
     "historia.marcos.0.texto": "Approuvé par la directive no 10/22/07/CEMGFAA/2014 pour la formation des officiers généraux et supérieurs à la stratégie et à l'art opérationnel.",
     "historia.marcos.1.texto": "Première édition du cours qui permet aux officiers supérieurs de la FAA et de la Police nationale d'agir comme officiers supérieurs au niveau opérationnel.",
     "historia.marcos.2.texto": "Le cours le plus ancien de l'École atteint la 32ème édition, ainsi que le 18ème Cours de Stratégie et d'Art Operatif.",
@@ -2192,27 +2192,6 @@
     "seccoes.6.titulo": "Your rights",
     "seccoes.7.titulo": "Security"
    },
-   "fr": {
-    "titulo": "Politique de confidentialité",
-    "entrada": "L ' Escola Superior de Guerra traite des données personnelles de ceux qui visitent le site, les étudiants, les enseignants, les militaires et les employés conformément à la loi no 22/11 du 17 juin (loi sur la protection des données personnelles). Cette page explique quelles données nous traitons pendant combien de temps et comment vous pouvez exercer vos droits.",
-    "responsavel": "École secondaire de guerre des forces armées angolaises (direction scolaire)",
-    "seccoes.0.texto": "Sur le site : ce que vous écrivez sur le formulaire de contact (nom, courriel, téléphone et message) et le nom que vous indiquez dans les commentaires. Les statistiques de visites n'utilisent pas les cookies ni ne stockent votre adresse IP.\nDans le portail académique: données de votre compte (nom, e-mail institutionnel, numéro, poste, succursale, NIP, téléphone), inscriptions, inscriptions, notes, travaux et tests livrés, présences, messages, demandes de documents, prêts de bibliothèque et dossiers d'accès aux chaises.\nDans le système interne d'état-major (seulement dans le réseau scolaire): le dossier militaire et civil individuel (identification, affiliation, données militaires ou professionnelles, carrière, cours, licences et processus individuel).",
-    "seccoes.1.texto": "Gestion académique (inscriptions, évaluation, certificats), personnel et gestion de carrière (loi n° 13/18), communication avec les étudiants et les enseignants, vérification de l'intégrité académique du travail, réponse aux demandes envoyées par le site Web et sécurité des systèmes.",
-    "seccoes.2.texto": "Respect des obligations légales et des fonctions d'intérêt public de l'École; pour ce qui n'est pas obligatoire (p. ex. commentaires sur le site Web), votre consentement, qui peut se retirer à tout moment.",
-    "seccoes.3.texto": "Seuls les gens de l'École qui en ont besoin pour leurs fonctions, chacun à ce qu'il leur appartient (les enseignants à leurs classes, les élèves à leurs propres données, la distribution du personnel et des conseils aux formulaires). Tous les accès et modifications sont enregistrés. Nous ne vendons ni ne donnons de données à des tiers. Entre le système interne du personnel et le portail académique, seules les données nécessaires au compte (nom, courriel, poste, succursale, NIP, téléphone et unité) seront transmises.",
-    "seccoes.4.texto": "Les données sont sur les serveurs de l'école. Les services extérieurs qui enverraient des données en provenance de l'Angola (par exemple l'analyse de l'intelligence artificielle) sont désactivés, sauf autorisation expresse de l'École, en vertu de la loi.",
-    "seccoes.5.texto": "Les dossiers scolaires (notes, certificats, parcours) et les processus individuels font partie des archives de l'École et sont conservés. Les messages du formulaire de contact sont supprimés après 24 mois; le dossier d'activité du panel après 5 ans; les dossiers de sécurité après 12 mois; les dossiers d'accès au siège après 24 mois; l'adresse IP des commentaires après 1 mois.",
-    "seccoes.6.texto": "Vous avez le droit d'être informé, d'accéder à vos données, de demander sa rectification, de s'opposer au traitement et, si la loi le permet, de demander son élimination. Sur le portail académique, dans le profil → Mes données, vous pouvez télécharger vos données et faire des demandes. Vous pouvez également écrire au contact spécifié sur cette page. Si vous estimez que vos droits n'ont pas été respectés, vous pouvez déposer une plainte auprès de l'Agence de protection des données (APD).",
-    "seccoes.7.texto": "Accès personnel aux mots de passe et permissions de fonction, mots de passe chiffrés, blocage après des tentatives ratées, connexions chiffrées, enregistrement de toutes les requêtes et modifications, sauvegardes et un système de personnel qui ne fonctionne que dans le réseau interne de l'École.",
-    "seccoes.0.titulo": "Quelles données traitons-nous",
-    "seccoes.1.titulo": "Pourquoi on les traite",
-    "seccoes.2.titulo": "Motifs",
-    "seccoes.3.titulo": "Qui a accès",
-    "seccoes.4.titulo": "Transfert hors d'Angola",
-    "seccoes.5.titulo": "Pour combien de temps",
-    "seccoes.6.titulo": "Vos droits",
-    "seccoes.7.titulo": "Sécurité"
-   },
    "es": {
     "titulo": "Política de privacidad",
     "entrada": "La Escuela Superior de Guerra trata los datos personales de los que visita el sitio, estudiantes, profesores, militares y funcionarios de acuerdo con la Ley no 22/11, del 17 de junio (Ley de Protección de Datos Personales). Esta página explica que los datos tratamos, para qué, durante cuánto tiempo y cómo puede ejercer sus derechos.",
@@ -2233,6 +2212,27 @@
     "seccoes.5.titulo": "Durante cuánto tiempo",
     "seccoes.6.titulo": "Sus derechos",
     "seccoes.7.titulo": "Seguridad"
+   },
+   "fr": {
+    "titulo": "Politique de confidentialité",
+    "entrada": "L'Escola Superior de Guerra traite des données personnelles de ceux qui visitent le site, les étudiants, les enseignants, les militaires et les employés conformément à la loi no 22/11 du 17 juin (loi sur la protection des données personnelles). Cette page explique quelles données nous traitons pendant combien de temps et comment vous pouvez exercer vos droits.",
+    "responsavel": "École secondaire de guerre des forces armées angolaises (direction scolaire)",
+    "seccoes.0.texto": "Sur le site : ce que vous écrivez sur le formulaire de contact (nom, courriel, téléphone et message) et le nom que vous indiquez dans les commentaires. Les statistiques de visites n'utilisent pas les cookies ni ne stockent votre adresse IP.\nDans le portail académique: données de votre compte (nom, e-mail institutionnel, numéro, poste, succursale, NIP, téléphone), inscriptions, inscriptions, notes, travaux et tests livrés, présences, messages, demandes de documents, prêts de bibliothèque et dossiers d'accès aux chaises.\nDans le système interne d'état-major (seulement dans le réseau scolaire): le dossier militaire et civil individuel (identification, affiliation, données militaires ou professionnelles, carrière, cours, licences et processus individuel).",
+    "seccoes.1.texto": "Gestion académique (inscriptions, évaluation, certificats), personnel et gestion de carrière (loi n° 13/18), communication avec les étudiants et les enseignants, vérification de l'intégrité académique du travail, réponse aux demandes envoyées par le site Web et sécurité des systèmes.",
+    "seccoes.2.texto": "Respect des obligations légales et des fonctions d'intérêt public de l'École; pour ce qui n'est pas obligatoire (p. ex. commentaires sur le site Web), votre consentement, qui peut se retirer à tout moment.",
+    "seccoes.3.texto": "Seuls les gens de l'École qui en ont besoin pour leurs fonctions, chacun à ce qu'il leur appartient (les enseignants à leurs classes, les élèves à leurs propres données, la distribution du personnel et des conseils aux formulaires). Tous les accès et modifications sont enregistrés. Nous ne vendons ni ne donnons de données à des tiers. Entre le système interne du personnel et le portail académique, seules les données nécessaires au compte (nom, courriel, poste, succursale, NIP, téléphone et unité) seront transmises.",
+    "seccoes.4.texto": "Les données sont sur les serveurs de l'école. Les services extérieurs qui enverraient des données en provenance de l'Angola (par exemple l'analyse de l'intelligence artificielle) sont désactivés, sauf autorisation expresse de l'École, en vertu de la loi.",
+    "seccoes.5.texto": "Les dossiers scolaires (notes, certificats, parcours) et les processus individuels font partie des archives de l'École et sont conservés. Les messages du formulaire de contact sont supprimés après 24 mois; le dossier d'activité du panel après 5 ans; les dossiers de sécurité après 12 mois; les dossiers d'accès au siège après 24 mois; l'adresse IP des commentaires après 1 mois.",
+    "seccoes.6.texto": "Vous avez le droit d'être informé, d'accéder à vos données, de demander sa rectification, de s'opposer au traitement et, si la loi le permet, de demander son élimination. Sur le portail académique, dans le profil → Mes données, vous pouvez télécharger vos données et faire des demandes. Vous pouvez également écrire au contact spécifié sur cette page. Si vous estimez que vos droits n'ont pas été respectés, vous pouvez déposer une plainte auprès de l'Agence de protection des données (APD).",
+    "seccoes.7.texto": "Accès personnel aux mots de passe et permissions de fonction, mots de passe chiffrés, blocage après des tentatives ratées, connexions chiffrées, enregistrement de toutes les requêtes et modifications, sauvegardes et un système de personnel qui ne fonctionne que dans le réseau interne de l'École.",
+    "seccoes.0.titulo": "Quelles données traitons-nous",
+    "seccoes.1.titulo": "Pourquoi on les traite",
+    "seccoes.2.titulo": "Motifs",
+    "seccoes.3.titulo": "Qui a accès",
+    "seccoes.4.titulo": "Transfert hors d'Angola",
+    "seccoes.5.titulo": "Pour combien de temps",
+    "seccoes.6.titulo": "Vos droits",
+    "seccoes.7.titulo": "Sécurité"
    }
   }
  },
@@ -2429,8 +2429,8 @@
   ],
   "paginas/privacidade": [
    "en",
-   "fr",
-   "es"
+   "es",
+   "fr"
   ]
  }
 }

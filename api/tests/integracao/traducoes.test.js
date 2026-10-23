@@ -91,6 +91,13 @@ describe('traduções do site: IA, revisão e publicação', () => {
     assert.equal((await admin.get('/api/admin/traducoes/noticias')).body[id].en, 'publicada')
   })
 
+  it("a tradução automática não deixa espaços à volta do apóstrofo («d ' officiers» → «d'officiers»)", async () => {
+    const n = (await admin.post('/api/admin/colecoes/noticias').send({ titulo: "Formação d ' oficiais", resumo: 'Resumo.', data: '2026-09-12', conteudo: [], _estado: 'publicado' })).body
+    await amb.contentor.servicos.traducoes.esvaziar()
+    const e = (await admin.get(`/api/admin/traducoes/noticias/${n.slug}`)).body
+    assert.equal(e.traducoes.fr.textos.titulo, "[FR] Formação d'oficiais")
+  })
+
   it('a revista: um número com PDF chega ao site, traduz-se sem tocar nos nomes e só a gere quem tem permissão', async () => {
     const esperar = () => amb.contentor.servicos.traducoes.esvaziar()
     const numero = {
