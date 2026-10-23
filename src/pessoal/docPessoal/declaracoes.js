@@ -1,5 +1,5 @@
 import { emblema } from '../documentos'
-import { M, TAM, cabecalho, dataExtenso, kwanzas, kwanzasPorExtenso, marcaDagua, novaPagina, paragrafo, referencia } from './base'
+import { M, TAM, cabecalho, caberNaFolha, dataExtenso, kwanzas, kwanzasPorExtenso, marcaDagua, novaPagina, paragrafo, referencia } from './base'
 
 /*
   Declarações e guias de marcha, desenhadas como os modelos da ESG (Times 14, dados em maiúsculas).
@@ -31,14 +31,23 @@ function tituloDeclaracao(doc, nome, numero, y) {
   doc.setFont('times', 'normal')
 }
 
+// numa só folha: se os textos forem compridos, aperta a letra e os espaços (caberNaFolha)
 export function declaracao(d, p, o, quem) {
+  return caberNaFolha(d, (k) => desenharDeclaracao(d, p, o, quem, k))
+}
+
+function desenharDeclaracao(d, p, o, quem, k) {
   const { doc } = d
+  // k: 1 = medidas do modelo; menos de 1 = mais apertado (letra, entrelinha e espaços)
+  const g = (n) => n * k
+  const T = TAM * k
+  const op = { x: X, w: W, recuo: RECUO, tam: T, entre: 6.6 * k }
   novaPagina(d)
   marcaDagua(d, 105, 192, 92, 0.06)
   let y = cabecalho(d)
   const nomes = { efectividade: 'EFECTIVIDADE', salario: 'SALÁRIO', servico: 'SERVIÇO' }
   tituloDeclaracao(doc, nomes[o.tipo], `Nº${String(o.numero ?? '').padStart(3, '0')}/${ano2(o.ano ?? new Date().getFullYear())}`, y + 9)
-  y += 24
+  y += g(24)
   const domiciliar = p.vinculo === 'domiciliar'
   let corpo
   if (domiciliar) {
@@ -48,40 +57,40 @@ export function declaracao(d, p, o, quem) {
     const discente = (p.discente || p.vinculo === 'estudante') && o.curso ? [', Como Discente do ', o.curso, ' na Escola Superior de Guerra/EMG/FAA'] : [', na Escola Superior de Guerra/EMG/FAA']
     corpo = ['Para os devidos efeitos e fins achados convenientes, declara-se que ', ...identificacao(p), ' encontra-se em efectivo serviço nas ', { b: 'FORÇAS ARMADAS ANGOLANAS' }, ...discente, ...vencimento(o), '.']
   }
-  y = paragrafo(d, corpo, y, { x: X, w: W, recuo: RECUO })
-  y += 7
+  y = paragrafo(d, corpo, y, op)
+  y += g(7)
   const local = militar(p) && !domiciliar ? 'nesta Unidade Militar' : 'neste Estabelecimento de Ensino Militar'
-  y = paragrafo(d, [`Por ser verdade e me ter sido solicitado, mandei passar a presente declaração que por mim vai assinada e autenticada, com o carimbo a óleo em uso ${local}.`], y, { x: X, w: W, recuo: RECUO })
+  y = paragrafo(d, [`Por ser verdade e me ter sido solicitado, mandei passar a presente declaração que por mim vai assinada e autenticada, com o carimbo a óleo em uso ${local}.`], y, op)
   // a finalidade vai na OBS (a efectividade e o rendimento simples não a têm)
   // (os espaços daqui para baixo são os do modelo)
   const obs = o.finalidade && !o.semObs
   if (obs) {
-    y += 11
-    doc.setFont('times', 'bold').setFontSize(TAM).text('OBS:', X + RECUO, y)
+    y += g(11)
+    doc.setFont('times', 'bold').setFontSize(T).text('OBS:', X + RECUO, y)
     const w = doc.getTextWidth('OBS: ')
-    y = paragrafo(d, [`A presente destina-se para ${o.finalidade.replace(/\.$/, '')}.`], y, { x: X + RECUO + w, w: W - RECUO - w, recuo: 0 })
+    y = paragrafo(d, [`A presente destina-se para ${o.finalidade.replace(/\.$/, '')}.`], y, { ...op, x: X + RECUO + w, w: W - RECUO - w, recuo: 0 })
   }
   // validade (o modelo usa letra sem serifa nesta caixa)
-  y += obs ? 18 : 24
+  y += g(obs ? 18 : 24)
   const v = 'Válida por um período de (90) Noventa Dias'
-  doc.setFont('helvetica', 'bold').setFontSize(11)
-  const vw = doc.getTextWidth(v) + 8
-  doc.setLineWidth(0.4).rect(105 - vw / 2, y - 5.2, vw, 7.8).text(v, 105, y, { align: 'center' })
-  y += 21
+  doc.setFont('helvetica', 'bold').setFontSize(11 * k)
+  const vw = doc.getTextWidth(v) + g(8)
+  doc.setLineWidth(0.4).rect(105 - vw / 2, y - g(5.2), vw, g(7.8)).text(v, 105, y, { align: 'center' })
+  y += g(21)
   // «ESG em Luanda, 24 de Junho de 2026.» (civis: «Escola Superior de Guerra em Luanda, …»)
   const quemEmite = militar(p) && !domiciliar ? 'ESG' : 'Escola Superior de Guerra'
   const resto = ` em ${quem.local || 'Luanda'}, ${dataExtenso(o.data)}.`
-  doc.setFont('times', 'bold').setFontSize(TAM)
+  doc.setFont('times', 'bold').setFontSize(T)
   const w1 = doc.getTextWidth(quemEmite)
   const w2 = doc.setFont('times', 'normal').getTextWidth(resto)
   doc.setFont('times', 'bold').text(quemEmite, 105 - (w1 + w2) / 2, y)
   doc.setFont('times', 'normal').text(resto, 105 - (w1 + w2) / 2 + w1, y)
-  y += 17
+  y += g(17)
   const c = quem.comandante ?? {}
   doc.setFont('times', 'bold').text(M(c.cargo || 'O COMANDANTE DA ESG'), 105, y, { align: 'center' })
-  if (c.nome) doc.text(M(c.nome), 105, y + 13, { align: 'center' })
-  if (c.posto) doc.text(`**${M(c.posto)}**`, 105, y + 19.5, { align: 'center' })
-  doc.setFont('times', 'normal')
+  if (c.nome) doc.text(M(c.nome), 105, y + g(13), { align: 'center' })
+  if (c.posto) doc.text(`**${M(c.posto)}**`, 105, y + g(19.5), { align: 'center' })
+  doc.setFont('times', 'normal').setFontSize(TAM)
 }
 
 /*

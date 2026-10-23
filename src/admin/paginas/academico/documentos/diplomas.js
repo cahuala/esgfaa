@@ -227,7 +227,7 @@ function diplomaOutorga(d, c, o) {
   doc.setFontSize(12.5).text(`COM A CLASSIFICAÇÃO DE ${classif}, QUE DECORREU DE`, cx, 186.1, { align: 'center' }).text(`${M(dataLonga(o.inicio))} À ${M(dataLonga(o.fim))}.`, cx, 191.8, { align: 'center' })
   doc.setFontSize(13).text(`LUANDA, ${M(dataLonga(o.fim))}`, cx, 203.7, { align: 'center' })
   // o rótulo e a linha do Director (o rótulo e a linha do Comandante já estão no fundo)
-  doc.setFontSize(10.6).text('O DIRECTOR DOS A. ACADÉMICOS', 70, 227.5, { align: 'center' })
+  doc.setFontSize(10.6).text(M(o.directorEnsino?.cargo || 'O DIRECTOR DE ENSINO'), 70, 227.5, { align: 'center' })
   doc.setDrawColor(70).setLineWidth(0.3).line(40.8, 242.8, 97.5, 242.8).setDrawColor(0)
   // quem assina (quem ocupa hoje o cargo, do Sistema de Pessoal): por baixo do rótulo, antes do espaço da
   // assinatura — por baixo da linha já é a fita dourada

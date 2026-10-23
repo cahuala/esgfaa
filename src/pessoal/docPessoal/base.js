@@ -123,6 +123,35 @@ export function novaPagina(d) {
   return 18
 }
 
+/*
+  Um documento que tem de caber numa só folha (as declarações): desenha-se à medida normal (k = 1); se
+  passar a margem de baixo ou para outra folha, apaga-se e volta a desenhar-se um pouco mais apertado
+  (letra e espaços), até caber. desenhar(k) desenha o documento todo, a começar com novaPagina(d).
+*/
+export function caberNaFolha(d, desenhar, { limite = 287, escalas = [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74] } = {}) {
+  const { doc } = d
+  const paginasAntes = doc.getNumberOfPages()
+  const contadorAntes = d.paginas
+  // a primeira página do PDF já existe (a primeira folha não acrescenta nenhuma)
+  const esperadas = paginasAntes + (contadorAntes > 0 ? 1 : 0)
+  for (const [i, k] of escalas.entries()) {
+    let fundo = 0
+    const texto = doc.text
+    doc.text = function (t, x, y, ...r) {
+      if (typeof y === 'number' && doc.getNumberOfPages() === esperadas) fundo = Math.max(fundo, y)
+      return texto.call(this, t, x, y, ...r)
+    }
+    try { desenhar(k) } finally { doc.text = texto }
+    const coube = doc.getNumberOfPages() === esperadas && fundo <= limite
+    if (coube || i === escalas.length - 1) return k
+    // não coube: apaga o que desenhou (a primeira folha limpa-se trocando-a por uma nova) e tenta mais apertado
+    while (doc.getNumberOfPages() > paginasAntes) doc.deletePage(doc.getNumberOfPages())
+    if (contadorAntes === 0) { doc.addPage('a4', 'portrait'); doc.deletePage(1) }
+    d.paginas = contadorAntes
+  }
+  return 1
+}
+
 export function garantir(d, y, altura) {
   if (y + altura <= FUNDO) return y
   d.doc.addPage('a4', 'portrait')
