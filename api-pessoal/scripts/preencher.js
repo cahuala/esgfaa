@@ -22,7 +22,8 @@ let semente = 20261023
 const aleatorio = () => ((semente = (semente * 1103515245 + 12345) % 2147483648) / 2147483648)
 const um = (l) => l[Math.floor(aleatorio() * l.length)]
 const entre = (a, b) => a + Math.floor(aleatorio() * (b - a + 1))
-const data = (ano, mes = entre(1, 12), dia = entre(1, 28)) => new Date(Date.UTC(ano, mes - 1, dia))
+// nunca depois de hoje: uma data do ano corrente que ainda não chegou passa para o ano anterior
+const data = (ano, mes = entre(1, 12), dia = entre(1, 28)) => { const d = Date.UTC(ano, mes - 1, dia); return new Date(d > Date.now() ? Date.UTC(ano - 1, mes - 1, dia) : d) }
 const POR = 'preencher'
 
 const NOMES_M = ['António', 'Manuel', 'João', 'José', 'Pedro', 'Francisco', 'Domingos', 'Afonso', 'Bernardo', 'Carlos', 'Mateus', 'Paulo', 'Miguel', 'Alberto', 'Joaquim', 'Adriano', 'Agostinho', 'Simão', 'Eduardo', 'Fernando', 'Lucas', 'Gaspar', 'Isaías', 'Valentim', 'Narciso', 'Hélder', 'Osvaldo', 'Celestino', 'Abel', 'Daniel', 'Tomás', 'Rui', 'Jacinto', 'Florindo', 'Hermenegildo', 'Inácio', 'Leonel', 'Moisés', 'Nelson', 'Quintino']
@@ -106,7 +107,7 @@ async function main() {
     const oficial = POSTOS[posto].categoria.startsWith('oficial')
     const quadros = quadrosDoRamo(ramo).filter((q) => (oficial ? q.limiteOficiais : q.limiteSargentos))
     // chega à Escola depois de entrar nas FAA
-    const entrada = new Date(Math.max((entradaEscola ?? data(anoRef - entre(0, 8))).getTime(), ingresso.getTime() + 365 * 86_400_000))
+    const entrada = new Date(Math.min(Math.max((entradaEscola ?? data(anoRef - entre(0, 8))).getTime(), ingresso.getTime() + 365 * 86_400_000), Date.now()))
     const p = await bd.pessoa.create({ data: {
       tipo: 'militar', vinculo, nome: nome(genero), nomeGuerra: aleatorio() < 0.3 ? um(APELIDOS) : '', nip: String(nip++), dataNascimento: nasc, ...ficha('militar', genero, posto, nasc.getUTCFullYear()),
       email: aleatorio() < 0.6 ? `m${nip}@esgfaa.gov.ao` : null, habilitacao: oficial ? um(['licenciatura', 'licenciatura', 'mestrado', 'mestrado', 'doutoramento']) : um(['medio', 'medio', 'bacharelato', 'licenciatura', 'base']),
