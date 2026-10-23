@@ -23,3 +23,9 @@
   gap: 10px;
   margin-top: 28px;
 }
+
+/* o texto do site é justificado: esta página é centrada */
+.pagina p,
+.pagina li {
+  text-align: center;
+}

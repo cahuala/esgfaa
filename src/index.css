@@ -154,3 +154,15 @@ button, input, select, textarea {
 .centro {
   text-align: center;
 }
+
+/*
+  Texto do site justificado, com hifenização (o idioma vem do <html lang>, para partir bem as palavras).
+  :where() não dá prioridade nenhuma: um bloco que diga «centrado» (ou à direita) continua como está.
+  Fica de fora: o cabeçalho, o menu e o rodapé (palavras curtas, não se partem) e as fichas de dados
+  (duração, vagas, destinatários: colunas estreitas, onde o justificado abre buracos).
+*/
+:where(#root) :where(p, li, blockquote, figcaption):not(:where(header, nav, footer, dl) *) {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}

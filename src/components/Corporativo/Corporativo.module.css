@@ -33,6 +33,9 @@
   margin-inline: auto;
   margin-bottom: 40px;
 }
+.seccaoCabeca.centrada p {
+  text-align: center;
+}
 .rotulo {
   display: block;
   font-size: 14px;
