@@ -172,6 +172,9 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.post('/seguranca/bloqueios', validar({ body: z.object({ ip: z.string().max(45), horas: z.number().optional(), motivo: z.string().max(300).optional() }) }), async (req, res) => {
     res.status(201).json(await servicos.seguranca.bloquear(ctx(req), req.dados.body, req.ip))
   })
+  r.put('/seguranca/protecao', validar({ body: z.object({ nivel: z.string().max(20).optional(), desligados: z.array(z.string().max(30)).max(20).optional(), automatico: z.boolean().optional(), confianca: z.array(z.string().max(50)).max(50).optional(), motivo: z.string().max(300).optional() }) }), async (req, res) => {
+    res.json(await servicos.seguranca.mudarProtecao(ctx(req), req.dados.body))
+  })
   r.delete('/seguranca/bloqueios/:ip', validar({ params: z.object({ ip: z.string().max(45) }) }), async (req, res) => {
     await servicos.seguranca.desbloquear(ctx(req), req.dados.params.ip)
     res.status(204).end()

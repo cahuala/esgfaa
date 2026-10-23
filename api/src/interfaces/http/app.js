@@ -52,6 +52,13 @@ export function criarApp(contentor, { registarErro } = {}) {
     maxAge: 600,
   }))
   // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
+  // defesa activa: os serviços desligados (pelo nível de protecção ou à mão) respondem 503 — depois do CORS,
+  // para o navegador mostrar a mensagem (e a verificação OPTIONS do navegador passa sempre)
+  app.use((req, res, next) => {
+    const fechado = req.method === 'OPTIONS' ? null : seguranca.decidir({ metodo: req.method, caminho: req.path, ip: req.ip })
+    if (!fechado) return next()
+    res.status(fechado.estado).set('Retry-After', '600').json({ erro: fechado.erro, codigo: fechado.codigo, servico: fechado.servico })
+  })
   app.use('/api/integracao', semCache, rotasIntegracao({ servicos, config }))
   app.use(express.json({ limit: '2mb', strict: true }))
 

@@ -54,4 +54,45 @@ describe('Centro de segurança: estado do servidor, ataques ao vivo e bloqueios'
     const proprio = await amb.http().post('/api/admin/seguranca/bloqueios').set('Authorization', `Bearer ${admin}`).set('X-Forwarded-For', '192.0.2.88').send({ ip: '192.0.2.88' })
     assert.equal(proprio.status, 400)
   })
+
+  it('defesa activa: no reforçado, palavras-passe erradas seguidas bloqueiam o endereço', async () => {
+    assert.equal((await amb.com(admin).put('/api/admin/seguranca/protecao').send({ nivel: 'reforcado', motivo: 'Teste' })).status, 200)
+    const atacante = de('198.51.100.66')
+    for (let i = 0; i < 16; i++) await atacante.post('/api/admin/entrar').send({ email: 'ninguem@teste.ao', senha: 'errada123456' })
+    assert.equal((await atacante.get('/api/publico/conteudo')).body.codigo, 'bloqueado')
+    await amb.com(admin).delete('/api/admin/seguranca/bloqueios/198.51.100.66').expect(204)
+  })
+
+  it('defesa activa: emergência fecha o portal e os formulários; isolamento fecha tudo menos o Centro de segurança', async () => {
+    const visitante = de('198.51.100.70')
+    let r = await amb.com(admin).put('/api/admin/seguranca/protecao').send({ nivel: 'emergencia', motivo: 'Ataque em curso (teste)' })
+    assert.equal(r.status, 200, r.body.erro)
+    assert.ok(r.body.fechados.includes('portal') && !r.body.fechados.includes('sitePublico'))
+    const portal = await visitante.post('/api/portal/entrar').send({ email: 'x@y.ao', senha: 'qualquer123' })
+    assert.equal(portal.status, 503)
+    assert.equal(portal.body.codigo, 'servico_fechado')
+    assert.equal((await visitante.post('/api/publico/contactos').send({})).status, 503)
+    assert.equal((await visitante.get('/api/publico/conteudo')).status, 200) // o site continua a ler
+    assert.equal((await amb.com(admin).get('/api/admin/utilizadores')).status, 503) // o painel fica só para a segurança
+    assert.equal((await amb.com(admin).get('/api/admin/seguranca')).status, 200)
+
+    await amb.com(admin).put('/api/admin/seguranca/protecao').send({ nivel: 'isolamento' }).expect(200)
+    assert.equal((await visitante.get('/api/publico/conteudo')).status, 503)
+    assert.equal((await de('198.51.100.70').get('/api/saude')).status, 200)
+    // os endereços de confiança passam (ex.: a rede da Escola)
+    await amb.com(admin).put('/api/admin/seguranca/protecao').send({ confianca: ['198.51.100.0/24'] }).expect(200)
+    assert.equal((await visitante.get('/api/publico/conteudo')).status, 200)
+    assert.equal((await amb.com(admin).put('/api/admin/seguranca/protecao').send({ confianca: ['rede-errada'] })).status, 400)
+
+    // um serviço desligado à mão, no nível normal
+    r = (await amb.com(admin).put('/api/admin/seguranca/protecao').send({ nivel: 'normal', confianca: [], desligados: ['ficheiros'] }).expect(200)).body
+    assert.deepEqual(r.fechados, ['ficheiros'])
+    assert.equal((await visitante.get('/uploads/qualquer.png')).status, 503)
+    assert.equal((await visitante.post('/api/portal/entrar').send({ email: 'x@y.ao', senha: 'qualquer123' })).status !== 503, true)
+    await amb.com(admin).put('/api/admin/seguranca/protecao').send({ desligados: [] }).expect(200)
+    // fica registado e só quem gere a segurança muda o nível
+    const red = await amb.criarUtilizador('redator')
+    assert.equal((await amb.com(red.token).put('/api/admin/seguranca/protecao').send({ nivel: 'isolamento' })).status, 403)
+    assert.equal((await amb.com(admin).get('/api/admin/seguranca')).body.protecao.nivel, 'normal')
+  })
 })

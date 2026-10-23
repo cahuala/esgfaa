@@ -64,3 +64,7 @@
 .cs-t-injecao { background: #78281f; fill: #78281f; }
 .cs-t-erro_interno { background: #34495e; fill: #34495e; }
 .cs-t-ip_bloqueado { background: #000; fill: #000; }
+
+/* defesa activa */
+.cs-defesa { margin-bottom: 16px; border-left: 4px solid; }
+.cs-niveis { display: flex; flex-wrap: wrap; gap: 6px; }

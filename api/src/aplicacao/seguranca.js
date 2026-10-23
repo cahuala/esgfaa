@@ -2,17 +2,24 @@ import fs from 'node:fs'
 import os from 'node:os'
 import v8 from 'node:v8'
 import { ErroValidacao } from '../dominio/comum/erros.js'
-import { BLOQUEIO_AUTOMATICO, TIPOS_EVENTO, classificarPedido, deveBloquear, ipLocal, ipValido, nivelDeAlerta } from '../dominio/seguranca/eventos.js'
+import { TIPOS_EVENTO, classificarPedido, ipLocal, ipValido, nivelDeAlerta } from '../dominio/seguranca/eventos.js'
+import { NIVEIS, PROTECAO_INICIAL, REGRAS_BLOQUEIO, SERVICOS, confiavel, decidirPedido, desligadosDe } from '../dominio/seguranca/protecao.js'
 
 const DIA = 86_400_000
 const GUARDAR_DIAS = 90
 const INTERVALO_ALERTA = 30 * 60_000
+// defesa automática: sobe ao «reforçado» no ataque, à «emergência» se o ataque continuar; volta ao normal após calma
+const ESCALAR_EMERGENCIA_MS = 10 * 60_000
+const CALMA_PARA_VOLTAR_MS = 30 * 60_000
 
 /*
   Centro de segurança: estado do servidor (está ligado, memória, processador, disco, base de dados),
   tráfego e eventos de segurança ao vivo, endereços suspeitos e bloqueios. Cada pedido é classificado
   à saída; os robôs que procuram falhas ficam bloqueados 24 horas, sozinhos; quando o nível chega a
   "ataque", quem está de serviço recebe um e-mail (SEGURANCA_EMAIL).
+  Defesa activa: um nível de protecção (normal, reforçado, emergência, isolamento) e serviços que se
+  desligam um a um; com a defesa automática ligada, o próprio sistema sobe de nível durante um ataque e
+  volta ao normal quando ele pára. Os endereços de confiança nunca são bloqueados nem fechados.
 */
 export class ServicoSeguranca {
   constructor({ monitor, seguranca, correio, emailAlerta = '', auditoria, pastaDados, registar, versao = '' }) {
@@ -21,6 +28,8 @@ export class ServicoSeguranca {
     this.aBloquear = new Set()
     this.ultimoAlerta = 0
     this.temporizadores = []
+    this.protecao = { ...PROTECAO_INICIAL }
+    this.ultimoAtaque = 0
   }
 
   iniciar() {
@@ -40,6 +49,43 @@ export class ServicoSeguranca {
 
   async #carregarBloqueios() {
     this.bloqueados = new Map((await this.seguranca.bloqueios()).map((b) => [b.ip, new Date(b.ate).getTime()]))
+    // com vários servidores, todos seguem o nível guardado
+    const p = await this.seguranca.protecao?.()
+    if (p) this.protecao = { ...PROTECAO_INICIAL, ...p }
+  }
+
+  // antes das rotas: null = passa; senão { estado, erro, codigo } (serviço fechado)
+  decidir({ metodo, caminho, ip }) {
+    return decidirPedido(this.protecao, { metodo, caminho, ip })
+  }
+
+  async #mudarNivel(dados, quem) {
+    this.protecao = { ...this.protecao, ...dados, alteradoPor: quem, alteradoEm: new Date().toISOString() }
+    await this.seguranca.guardarProtecao?.(this.protecao)
+  }
+
+  // defesa automática: chamada a cada 10 s com o nível de alerta dos últimos 5 minutos
+  async #defender(alerta) {
+    const agora = Date.now()
+    if (alerta.nivel === 'ataque') this.ultimoAtaque = agora
+    if (!this.protecao.automatico) return
+    const atual = this.protecao.nivel
+    const motivo = alerta.motivos.map((m) => `${TIPOS_EVENTO[m.tipo].nome}: ${m.n}`).join('; ')
+    if (alerta.nivel === 'ataque' && atual === 'normal') {
+      await this.#mudarNivel({ nivel: 'reforcado', automaticoDesde: new Date(agora).toISOString(), motivo: `Automático (ataque): ${motivo}` }, 'Defesa automática')
+      await this.#avisar('O nível de protecção subiu para REFORÇADO', motivo)
+    } else if (alerta.nivel === 'ataque' && atual === 'reforcado' && this.protecao.automaticoDesde && agora - new Date(this.protecao.automaticoDesde).getTime() > ESCALAR_EMERGENCIA_MS) {
+      await this.#mudarNivel({ nivel: 'emergencia', motivo: `Automático (o ataque continua há mais de 10 minutos): ${motivo}` }, 'Defesa automática')
+      await this.#avisar('O nível de protecção subiu para EMERGÊNCIA (portal, formulários e ficheiros fechados)', motivo)
+    } else if (this.protecao.automaticoDesde && atual !== 'normal' && agora - this.ultimoAtaque > CALMA_PARA_VOLTAR_MS) {
+      await this.#mudarNivel({ nivel: 'normal', automaticoDesde: null, motivo: 'Automático: 30 minutos sem ataque' }, 'Defesa automática')
+      await this.#avisar('O ataque parou: o nível de protecção voltou ao NORMAL', 'Sem sinais de ataque há 30 minutos.')
+    }
+  }
+
+  async #avisar(assunto, texto) {
+    await this.auditoria?.registar?.({ actor: { id: null, nome: 'Defesa automática' } }, { acao: 'protecao_automatica', colecao: 'seguranca', alvoId: this.protecao.nivel, alvoTitulo: assunto, detalhes: { texto } }).catch(() => {})
+    if (this.emailAlerta && this.correio?.real) await this.correio.enviar({ para: this.emailAlerta, assunto: `[ESGFAA] ${assunto}`, texto: `${texto}\n\nVeja o Centro de segurança no painel de gestão.` }).catch(() => {})
   }
 
   estaBloqueado(ip) {
@@ -49,7 +95,9 @@ export class ServicoSeguranca {
 
   async #gravar() {
     await this.seguranca.gravarEventos(this.monitor.retirarPendentes())
-    const { nivel, motivos } = nivelDeAlerta(this.monitor.contagens(5))
+    const alerta = nivelDeAlerta(this.monitor.contagens(5))
+    await this.#defender(alerta)
+    const { nivel, motivos } = alerta
     if (nivel === 'ataque' && Date.now() - this.ultimoAlerta > INTERVALO_ALERTA) {
       this.ultimoAlerta = Date.now()
       if (this.emailAlerta && this.correio?.real) {
@@ -67,11 +115,16 @@ export class ServicoSeguranca {
     const tipo = classificarPedido({ metodo, url, estado })
     if (!tipo) return
     this.monitor.evento({ tipo, ip, exemplo: `${metodo} ${String(url).split('?')[0]}` })
-    if ((tipo === 'sondagem' || tipo === 'injecao') && !ipLocal(ip) && !this.estaBloqueado(ip) && !this.aBloquear.has(ip) && deveBloquear(this.monitor.contagens(5, ip))) {
+    // bloqueio automático pelas regras do nível (no reforçado, também por palavras-passe erradas seguidas)
+    const regra = REGRAS_BLOQUEIO[this.protecao.nivel] ?? REGRAS_BLOQUEIO.normal
+    if (!['sondagem', 'injecao', 'login_falhado'].includes(tipo) || ipLocal(ip) || confiavel(ip, this.protecao.confianca) || this.estaBloqueado(ip) || this.aBloquear.has(ip)) return
+    const c = this.monitor.contagens(5, ip)
+    const porque = (c.injecao || 0) >= regra.injecao ? 'tentativas de injeção' : (c.sondagem || 0) >= regra.sondagem ? 'procura de falhas' : regra.login_falhado && (c.login_falhado || 0) >= regra.login_falhado ? 'palavras-passe erradas seguidas' : null
+    if (porque) {
       this.aBloquear.add(ip)
-      const ate = new Date(Date.now() + BLOQUEIO_AUTOMATICO.horas * 3_600_000)
+      const ate = new Date(Date.now() + regra.horas * 3_600_000)
       this.bloqueados.set(ip, ate.getTime())
-      this.seguranca.bloquear({ ip, ate, motivo: 'Automático: procura de falhas ou tentativas de injeção', automatico: true, criadoPor: 'Centro de segurança' })
+      this.seguranca.bloquear({ ip, ate, motivo: `Automático (nível ${NIVEIS[this.protecao.nivel].nome}): ${porque}`, automatico: true, criadoPor: 'Centro de segurança' })
         .catch(() => {}).finally(() => this.aBloquear.delete(ip))
     }
   }
@@ -121,8 +174,36 @@ export class ServicoSeguranca {
       trafego: this.monitor.trafego(5), serie: this.monitor.serie(60), ultimos5, dia, semana, porHora,
       recentes: this.monitor.recentes.slice(0, 50), ipsAtivos: this.monitor.ipsAtivos(15), suspeitos,
       bloqueios: bloqueios.map((b) => ({ ...b, ate: b.ate.toISOString(), criadoEm: b.criadoEm.toISOString() })),
-      regras: { bloqueioAutomatico: BLOQUEIO_AUTOMATICO },
+      regras: { bloqueioAutomatico: REGRAS_BLOQUEIO[this.protecao.nivel] ?? REGRAS_BLOQUEIO.normal, porNivel: REGRAS_BLOQUEIO },
+      protecao: { ...this.protecao, fechados: desligadosDe(this.protecao), niveis: NIVEIS, servicos: SERVICOS },
     }
+  }
+
+  // muda o nível, os serviços desligados, a defesa automática ou a lista de confiança
+  async mudarProtecao(ctx, { nivel, desligados, automatico, confianca, motivo = '' }) {
+    ctx.actor.exigir('seguranca.gerir')
+    const novo = {}
+    if (nivel !== undefined) {
+      if (!NIVEIS[nivel]) throw new ErroValidacao('Nível de protecção desconhecido.', { campo: 'nivel' })
+      Object.assign(novo, { nivel, automaticoDesde: null })
+    }
+    if (desligados !== undefined) {
+      if (!Array.isArray(desligados) || desligados.some((x) => !SERVICOS[x])) throw new ErroValidacao('Serviço desconhecido.', { campo: 'desligados' })
+      novo.desligados = [...new Set(desligados)]
+    }
+    if (automatico !== undefined) novo.automatico = Boolean(automatico)
+    if (confianca !== undefined) {
+      const l = (Array.isArray(confianca) ? confianca : []).map((x) => String(x).trim()).filter(Boolean)
+      const ruim = l.find((x) => { const [b, n] = x.split('/'); return !ipValido(b) || (n !== undefined && !['8', '16', '24'].includes(n)) })
+      if (ruim) throw new ErroValidacao(`Endereço inválido na lista de confiança: ${ruim} (use um IP ou uma rede /8, /16 ou /24).`, { campo: 'confianca' })
+      if (l.length > 50) throw new ErroValidacao('No máximo 50 endereços de confiança.', { campo: 'confianca' })
+      novo.confianca = l
+    }
+    novo.motivo = String(motivo).slice(0, 300)
+    const antes = this.protecao.nivel
+    await this.#mudarNivel(novo, ctx.actor.nome || '')
+    await this.auditoria.registar(ctx, { acao: 'mudar_protecao', colecao: 'seguranca', alvoId: this.protecao.nivel, alvoTitulo: `Protecção: ${NIVEIS[this.protecao.nivel].nome}${antes !== this.protecao.nivel ? ` (antes ${NIVEIS[antes].nome})` : ''}`, detalhes: { ...novo } })
+    return { ...this.protecao, fechados: desligadosDe(this.protecao) }
   }
 
   async bloquear(ctx, { ip, horas = 24, motivo = '' }, ipDoPedido) {

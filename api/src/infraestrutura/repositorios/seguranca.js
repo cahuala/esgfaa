@@ -41,6 +41,14 @@ export class RepositorioSeguranca {
     await this.prisma.bloqueioIp.deleteMany({ where: { ip } })
   }
 
+  async protecao() {
+    return (await this.prisma.protecaoSistema.findUnique({ where: { id: 1 } }))?.dados ?? null
+  }
+
+  async guardarProtecao(dados) {
+    await this.prisma.protecaoSistema.upsert({ where: { id: 1 }, create: { id: 1, dados }, update: { dados } })
+  }
+
   async pingMs() {
     const t = process.hrtime.bigint()
     await this.prisma.$queryRaw`SELECT 1`

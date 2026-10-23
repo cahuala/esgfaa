@@ -1401,6 +1401,15 @@ model BloqueioIp {
   @@map("bloqueios_ip")
 }
 
+// defesa activa: o nível de protecção e os serviços desligados (uma só linha, id = 1)
+model ProtecaoSistema {
+  id           Int      @id @default(1)
+  dados        Json
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@map("protecao_sistema")
+}
+
 // ferramenta externa ligada por LTI 1.3 (o portal é a plataforma; a Administração Escolar regista a ferramenta)
 model FerramentaLti {
   id                Int      @id @default(autoincrement())

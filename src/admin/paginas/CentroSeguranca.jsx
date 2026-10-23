@@ -107,6 +107,85 @@ function Grafico24h({ porHora, tipos }) {
   )
 }
 
+const COR_NIVEL = { normal: 'success', reforcado: 'warning', emergencia: 'danger', isolamento: 'dark' }
+const ICONE_NIVEL = { normal: 'fa-shield-alt', reforcado: 'fa-user-shield', emergencia: 'fa-exclamation-triangle', isolamento: 'fa-power-off' }
+
+/*
+  Defesa activa: o nível de protecção (normal, reforçado, emergência, isolamento), os serviços que se
+  desligam um a um, a defesa automática (sobe de nível sozinha durante um ataque e volta ao normal) e a
+  lista de endereços de confiança (a rede da Escola: nunca bloqueada nem fechada).
+*/
+function DefesaActiva({ p, regras, gerir, aoMudar, pedirConfirmacao }) {
+  const [confianca, setConfianca] = useState(p.confianca.join('\n'))
+  const [motivo, setMotivo] = useState('')
+  const mudar = (corpo, ok) => aoMudar({ ...corpo, motivo }, ok)
+  const escolherNivel = (k) => {
+    if (k === p.nivel) return
+    const grave = k === 'emergencia' || k === 'isolamento'
+    const fazer = () => mudar({ nivel: k }, tx('Nível de protecção: {0}.', { 0: p.niveis[k].nome }))
+    if (!grave) return fazer()
+    pedirConfirmacao({ titulo: tx('Mudar para {0}', { 0: p.niveis[k].nome }), texto: `${p.niveis[k].descricao} ${tx('Pode voltar ao normal aqui mesmo, a qualquer momento.')}`, botao: tx('Mudar agora'), perigo: true, confirmar: fazer })
+  }
+  const r = regras.porNivel[p.nivel]
+  return (
+    <div className={`cs-cartao cs-defesa border-${COR_NIVEL[p.nivel]}`}>
+      <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span className="cs-rotulo mb-0"><i className="fa fa-shield-virus me-1" />{tx('Defesa activa')}</span>
+        <span className={`badge bg-${COR_NIVEL[p.nivel]} fs-6`}><i className={`fa ${ICONE_NIVEL[p.nivel]} me-1`} />{p.niveis[p.nivel].nome}</span>
+        {p.automaticoDesde && <span className="badge bg-light text-dark border">{tx('subido pela defesa automática')}</span>}
+        {gerir && p.nivel !== 'isolamento' && <button type="button" className="btn btn-sm btn-danger ms-auto" onClick={() => escolherNivel('isolamento')}><i className="fa fa-power-off me-1" />{tx('Desligar tudo agora')}</button>}
+        {gerir && p.nivel !== 'normal' && <button type="button" className={`btn btn-sm btn-success ${p.nivel === 'isolamento' ? 'ms-auto' : ''}`} onClick={() => escolherNivel('normal')}><i className="fa fa-undo me-1" />{tx('Voltar ao normal')}</button>}
+      </div>
+      <p className="small mb-2">{p.niveis[p.nivel].descricao}{p.alteradoEm && <span className="cs-nota"> · {tx('mudado por {0} às {1}', { 0: p.alteradoPor || '—', 1: new Date(p.alteradoEm).toLocaleString(localAtual(), { dateStyle: 'short', timeStyle: 'short' }) })}{p.motivo && ` · ${p.motivo}`}</span>}</p>
+      <div className="cs-niveis">
+        {Object.entries(p.niveis).map(([k, v]) => (
+          <button key={k} type="button" disabled={!gerir} className={`btn btn-sm ${k === p.nivel ? `btn-${COR_NIVEL[k]}` : `btn-outline-${COR_NIVEL[k]}`}`} onClick={() => escolherNivel(k)} title={v.descricao} aria-pressed={k === p.nivel}>
+            <i className={`fa ${ICONE_NIVEL[k]} me-1`} />{v.nome}
+          </button>
+        ))}
+      </div>
+      <p className="small cs-nota mt-2 mb-2">{tx('Bloqueio automático neste nível, por endereço em 5 minutos: {0} procuras de falhas, {1} injeção(ões){2}; bloqueado {3} horas.', { 0: r.sondagem, 1: r.injecao, 2: r.login_falhado ? tx(' ou {0} palavras-passe erradas', { 0: r.login_falhado }) : '', 3: r.horas })}</p>
+      <div className="form-check form-switch mb-2">
+        <input className="form-check-input" type="checkbox" id="cs-auto" checked={p.automatico} disabled={!gerir} onChange={(e) => mudar({ automatico: e.target.checked }, e.target.checked ? tx('Defesa automática ligada.') : tx('Defesa automática desligada.'))} />
+        <label className="form-check-label small" htmlFor="cs-auto"><b>{tx('Defesa automática')}</b> — {tx('num ataque sobe para «Reforçado»; se continuar mais de 10 minutos, para «Emergência»; volta ao normal após 30 minutos sem ataque (com aviso por e-mail).')}</label>
+      </div>
+      <span className="cs-rotulo">{tx('Serviços')}</span>
+      <table className="cs-tabela mb-2">
+        <tbody>
+          {Object.entries(p.servicos).map(([k, v]) => {
+            const peloNivel = p.niveis[p.nivel].desliga.includes(k)
+            const fechado = p.fechados.includes(k)
+            return (
+              <tr key={k}>
+                <td><b>{v.nome}</b><div className="cs-nota">{v.descricao}</div></td>
+                <td className="text-nowrap text-end">
+                  <span className={`badge ${fechado ? 'bg-danger' : 'bg-success'} me-2`}>{fechado ? (peloNivel ? tx('fechado pelo nível') : tx('desligado')) : tx('ligado')}</span>
+                  {gerir && !peloNivel && <button type="button" className={`btn btn-xs ${fechado ? 'btn-success' : 'btn-outline-danger'}`} onClick={() => mudar({ desligados: fechado ? p.desligados.filter((x) => x !== k) : [...p.desligados, k] }, fechado ? tx('{0} ligado.', { 0: v.nome }) : tx('{0} desligado.', { 0: v.nome }))}>{fechado ? tx('Ligar') : tx('Desligar')}</button>}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <p className="small cs-nota">{tx('Ficam sempre abertos: a entrada no painel e este Centro de segurança (para poder voltar a ligar tudo). Com os conteúdos fechados, o site mostra os que traz consigo.')}</p>
+      {gerir && (
+        <div className="row g-2">
+          <div className="col-md-7">
+            <label className="cs-rotulo" htmlFor="cs-confianca">{tx('Endereços de confiança (um por linha)')}</label>
+            <textarea id="cs-confianca" className="form-control form-control-sm font-monospace" rows={3} value={confianca} onChange={(e) => setConfianca(e.target.value)} placeholder={'10.0.0.0/8\n192.168.1.0/24'} />
+            <div className="cs-nota small">{tx('A rede da Escola (IP ou rede /8, /16, /24): nunca é bloqueada nem fechada, mesmo no isolamento.')}</div>
+            <button type="button" className="btn btn-sm btn-white mt-1" onClick={() => mudar({ confianca: confianca.split(/\s+/).filter(Boolean) }, tx('Lista de confiança guardada.'))}><i className="fa fa-save me-1" />{tx('Guardar lista')}</button>
+          </div>
+          <div className="col-md-5">
+            <label className="cs-rotulo" htmlFor="cs-motivo">{tx('Motivo da mudança (fica no registo)')}</label>
+            <input id="cs-motivo" className="form-control form-control-sm" maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={tx('Ex.: ataque ao portal a partir de vários endereços')} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /*
   Centro de segurança: a saúde do servidor, o tráfego, os ataques ao vivo e os bloqueios, atualizado de
   10 em 10 segundos. O "modo vigilância" ocupa o ecrã inteiro (para um ecrã de parede) e pode apitar
@@ -163,6 +242,16 @@ function CentroSeguranca() {
     titulo: tx('Bloquear endereço'), texto: tx('Bloquear {0} durante 24 horas? Deixa de conseguir usar o site, o portal e o painel. (Atenção: numa rede partilhada, como a da Escola, bloqueia todos os que a usam.)', { 0: ip }),
     botao: tx('Bloquear'), perigo: true, confirmar: () => { setConfirmar(null); bloquear(ip) },
   })
+  async function mudarProtecao(corpo, ok) {
+    try {
+      await api('/seguranca/protecao', { metodo: 'PUT', corpo })
+      setAviso({ texto: ok })
+      carregar()
+    } catch (e) {
+      setAviso({ tipo: 'erro', texto: e.message })
+    }
+  }
+  const pedirConfirmacao = ({ confirmar: fazer, ...resto }) => setConfirmar({ ...resto, confirmar: () => { setConfirmar(null); fazer() } })
   async function desbloquear(ip) {
     try { await api(`/seguranca/bloqueios/${encodeURIComponent(ip)}`, { metodo: 'DELETE' }); carregar() } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
   }
@@ -200,6 +289,9 @@ function CentroSeguranca() {
           {d.alerta.ultimoAlerta && <div>{tx('Último alerta: {0}', { 0: hora(d.alerta.ultimoAlerta) })}</div>}
         </div>
       </div>
+
+      {d.protecao && !vigilancia && <DefesaActiva key={d.protecao.confianca.join(',')} p={d.protecao} regras={d.regras} gerir={gerir} aoMudar={mudarProtecao} pedirConfirmacao={pedirConfirmacao} />}
+      {d.protecao && vigilancia && d.protecao.nivel !== 'normal' && <div className={`alert alert-${COR_NIVEL[d.protecao.nivel]} mb-3`}><i className={`fa ${ICONE_NIVEL[d.protecao.nivel]} me-2`} /><b>{d.protecao.niveis[d.protecao.nivel].nome}</b> — {d.protecao.niveis[d.protecao.nivel].descricao}</div>}
 
       <div className="cs-grelha cs-4">
         <div className="cs-cartao">
@@ -292,7 +384,7 @@ function CentroSeguranca() {
         </div>
         <div className="cs-cartao">
           <span className="cs-rotulo"><i className="fa fa-ban me-1" />{tx('Endereços bloqueados ({0})', { 0: d.bloqueios.length })}</span>
-          <p className="small cs-nota">{tx('Os robôs que procuram falhas ({0} procuras em 5 min) ou tentam injeções ({1}) ficam bloqueados {2} horas, sozinhos.', { 0: d.regras.bloqueioAutomatico.sondagem, 1: d.regras.bloqueioAutomatico.injecao, 2: d.regras.bloqueioAutomatico.horas })}</p>
+          <p className="small cs-nota">{tx('Os robôs que procuram falhas ({0} procuras em 5 min) ou tentam injeções ({1}) ficam bloqueados {2} horas, sozinhos.', { 0: d.regras.bloqueioAutomatico.sondagem, 1: d.regras.bloqueioAutomatico.injecao, 2: d.regras.bloqueioAutomatico.horas })}{d.regras.bloqueioAutomatico.login_falhado ? ` ${tx('Também quem erra a palavra-passe {0} vezes.', { 0: d.regras.bloqueioAutomatico.login_falhado })}` : ''}</p>
           {d.bloqueios.length === 0 ? <div className="cs-vazio">{tx('Nenhum endereço bloqueado.')}</div> : (
             <table className="cs-tabela">
               <tbody>
