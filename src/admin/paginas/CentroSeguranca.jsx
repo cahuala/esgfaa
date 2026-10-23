@@ -136,7 +136,7 @@ function DefesaActiva({ p, regras, gerir, aoMudar, pedirConfirmacao }) {
         {gerir && p.nivel !== 'isolamento' && <button type="button" className="btn btn-sm btn-danger ms-auto" onClick={() => escolherNivel('isolamento')}><i className="fa fa-power-off me-1" />{tx('Desligar tudo agora')}</button>}
         {gerir && p.nivel !== 'normal' && <button type="button" className={`btn btn-sm btn-success ${p.nivel === 'isolamento' ? 'ms-auto' : ''}`} onClick={() => escolherNivel('normal')}><i className="fa fa-undo me-1" />{tx('Voltar ao normal')}</button>}
       </div>
-      <p className="small mb-2">{p.niveis[p.nivel].descricao}{p.alteradoEm && <span className="cs-nota"> · {tx('mudado por {0} às {1}', { 0: p.alteradoPor || '—', 1: new Date(p.alteradoEm).toLocaleString(localAtual(), { dateStyle: 'short', timeStyle: 'short' }) })}{p.motivo && ` · ${p.motivo}`}</span>}</p>
+      <p className="small mb-2">{p.niveis[p.nivel].descricao}{p.alteradoEm && <span className="cs-nota" translate="no"> · {tx('mudado por {0} às {1}', { 0: p.alteradoPor || '—', 1: new Date(p.alteradoEm).toLocaleString(localAtual(), { dateStyle: 'short', timeStyle: 'short' }) })}{p.motivo && ` · ${p.motivo}`}</span>}</p>
       <div className="cs-niveis">
         {Object.entries(p.niveis).map(([k, v]) => (
           <button key={k} type="button" disabled={!gerir} className={`btn btn-sm ${k === p.nivel ? `btn-${COR_NIVEL[k]}` : `btn-outline-${COR_NIVEL[k]}`}`} onClick={() => escolherNivel(k)} title={v.descricao} aria-pressed={k === p.nivel}>
@@ -144,7 +144,8 @@ function DefesaActiva({ p, regras, gerir, aoMudar, pedirConfirmacao }) {
           </button>
         ))}
       </div>
-      <p className="small cs-nota mt-2 mb-2">{tx('Bloqueio automático neste nível, por endereço em 5 minutos: {0} procuras de falhas, {1} injeção(ões){2}; bloqueado {3} horas.', { 0: r.sondagem, 1: r.injecao, 2: r.login_falhado ? tx(' ou {0} palavras-passe erradas', { 0: r.login_falhado }) : '', 3: r.horas })}</p>
+      {/* já traduzido aqui (com os números): a tradução automática dos dados não lhe toca */}
+      <p className="small cs-nota mt-2 mb-2" translate="no">{tx('Bloqueio automático neste nível, por endereço em 5 minutos: {0} procuras de falhas, {1} injeção(ões){2}; bloqueado {3} horas.', { 0: r.sondagem, 1: r.injecao, 2: r.login_falhado ? tx(' ou {0} palavras-passe erradas', { 0: r.login_falhado }) : '', 3: r.horas })}</p>
       <div className="form-check form-switch mb-1">
         <input className="form-check-input" type="checkbox" id="cs-robos" checked={Boolean(p.bloquearRobosIA)} disabled={!gerir} onChange={(e) => mudar({ bloquearRobosIA: e.target.checked }, e.target.checked ? tx('Robôs de IA bloqueados no site.') : tx('Robôs de IA deixados ler o site.'))} />
         <label className="form-check-label small" htmlFor="cs-robos"><b>{tx('Bloquear robôs de IA no site')}</b> — {tx('GPTBot, ClaudeBot, PerplexityBot, Bytespider… (no painel e no portal já estão sempre bloqueados).')}</label>
@@ -263,6 +264,9 @@ function CentroSeguranca() {
   if (erro && !d) return <Erro texto={erro} onRepetir={carregar} />
   if (!d) return <div className="p-4 text-muted">{tx('A ligar ao servidor…')}</div>
   const n = NIVEIS[d.alerta.nivel]
+  // os nomes e as descrições dos níveis e dos serviços vêm do servidor, em português: traduzem-se aqui
+  const traduzir = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { ...v, nome: tx(v.nome), descricao: tx(v.descricao) }]))
+  const protecao = d.protecao && { ...d.protecao, niveis: traduzir(d.protecao.niveis), servicos: traduzir(d.protecao.servicos) }
   const s = d.saude
   // as sessões expiradas são normais: contam no resumo, mas não enchem o fluxo ao vivo
   const recentes = d.recentes.filter((e) => e.tipo !== 'sessao_invalida')
@@ -295,8 +299,8 @@ function CentroSeguranca() {
         </div>
       </div>
 
-      {d.protecao && !vigilancia && <DefesaActiva key={d.protecao.confianca.join(',')} p={d.protecao} regras={d.regras} gerir={gerir} aoMudar={mudarProtecao} pedirConfirmacao={pedirConfirmacao} />}
-      {d.protecao && vigilancia && d.protecao.nivel !== 'normal' && <div className={`alert alert-${COR_NIVEL[d.protecao.nivel]} mb-3`}><i className={`fa ${ICONE_NIVEL[d.protecao.nivel]} me-2`} /><b>{d.protecao.niveis[d.protecao.nivel].nome}</b> — {d.protecao.niveis[d.protecao.nivel].descricao}</div>}
+      {protecao && !vigilancia && <DefesaActiva key={protecao.confianca.join(',')} p={protecao} regras={d.regras} gerir={gerir} aoMudar={mudarProtecao} pedirConfirmacao={pedirConfirmacao} />}
+      {protecao && vigilancia && protecao.nivel !== 'normal' && <div className={`alert alert-${COR_NIVEL[protecao.nivel]} mb-3`}><i className={`fa ${ICONE_NIVEL[protecao.nivel]} me-2`} /><b>{protecao.niveis[protecao.nivel].nome}</b> — {protecao.niveis[protecao.nivel].descricao}</div>}
 
       <div className="cs-grelha cs-4">
         <div className="cs-cartao">
@@ -389,7 +393,7 @@ function CentroSeguranca() {
         </div>
         <div className="cs-cartao">
           <span className="cs-rotulo"><i className="fa fa-ban me-1" />{tx('Endereços bloqueados ({0})', { 0: d.bloqueios.length })}</span>
-          <p className="small cs-nota">{tx('Os robôs que procuram falhas ({0} procuras em 5 min) ou tentam injeções ({1}) ficam bloqueados {2} horas, sozinhos.', { 0: d.regras.bloqueioAutomatico.sondagem, 1: d.regras.bloqueioAutomatico.injecao, 2: d.regras.bloqueioAutomatico.horas })}{d.regras.bloqueioAutomatico.login_falhado ? ` ${tx('Também quem erra a palavra-passe {0} vezes.', { 0: d.regras.bloqueioAutomatico.login_falhado })}` : ''}</p>
+          <p className="small cs-nota" translate="no">{tx('Os robôs que procuram falhas ({0} procuras em 5 min) ou tentam injeções ({1}) ficam bloqueados {2} horas, sozinhos.', { 0: d.regras.bloqueioAutomatico.sondagem, 1: d.regras.bloqueioAutomatico.injecao, 2: d.regras.bloqueioAutomatico.horas })}{d.regras.bloqueioAutomatico.login_falhado ? ` ${tx('Também quem erra a palavra-passe {0} vezes.', { 0: d.regras.bloqueioAutomatico.login_falhado })}` : ''}</p>
           {d.bloqueios.length === 0 ? <div className="cs-vazio">{tx('Nenhum endereço bloqueado.')}</div> : (
             <table className="cs-tabela">
               <tbody>

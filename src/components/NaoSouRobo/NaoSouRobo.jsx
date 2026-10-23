@@ -41,7 +41,7 @@ export default function NaoSouRobo({ api, aoMudar, renovar = 0 }) {
       aoMudar(p)
     } catch (e) {
       setEstado('erro')
-      setErro(e.message)
+      setErro(tx(e.message))
     }
   }
 
