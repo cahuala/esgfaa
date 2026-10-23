@@ -51,7 +51,6 @@ export function criarApp(contentor, { registarErro } = {}) {
     exposedHeaders: ['X-Request-Id', 'Retry-After'],
     maxAge: 600,
   }))
-  // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
   // defesa activa: os serviços desligados (pelo nível de protecção ou à mão) respondem 503 — depois do CORS,
   // para o navegador mostrar a mensagem (e a verificação OPTIONS do navegador passa sempre)
   app.use((req, res, next) => {
@@ -59,8 +58,15 @@ export function criarApp(contentor, { registarErro } = {}) {
     if (!fechado) return next()
     res.status(fechado.estado).set('Retry-After', '600').json({ erro: fechado.erro, codigo: fechado.codigo, servico: fechado.servico })
   })
+  // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
   app.use('/api/integracao', semCache, rotasIntegracao({ servicos, config }))
   app.use(express.json({ limit: '2mb', strict: true }))
+  // ataques no conteúdo dos pedidos: ferramentas de ataque, robôs de IA, injecções no corpo, phishing
+  app.use((req, res, next) => {
+    const recusa = seguranca.inspecionar({ metodo: req.method, caminho: req.path, ip: req.ip, agente: req.get('user-agent'), corpo: req.body, consulta: req.query })
+    if (!recusa) return next()
+    res.status(recusa.estado).json({ erro: recusa.erro, codigo: recusa.codigo })
+  })
 
   // ficheiros carregados (imagens, vídeos, PDF)
   if (config.pastaUploads) {

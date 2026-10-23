@@ -13,6 +13,11 @@ export const TIPOS_EVENTO = {
   injecao: { nome: 'Tentativa de injeção (SQL, script, caminhos)', gravidade: 3 },
   erro_interno: { nome: 'Erro do servidor', gravidade: 1 },
   ip_bloqueado: { nome: 'Pedido de um endereço bloqueado', gravidade: 1 },
+  injecao_corpo: { nome: 'Injeção nos dados enviados (SQL, XSS, NoSQL, comandos)', gravidade: 3 },
+  phishing: { nome: 'Phishing (ligação para enganar)', gravidade: 2 },
+  ferramenta_ataque: { nome: 'Ferramenta de ataque (sqlmap, nikto…)', gravidade: 3 },
+  robo_ia: { nome: 'Robô de IA a recolher o site', gravidade: 0 },
+  injecao_ia: { nome: 'Texto a dar ordens à IA', gravidade: 2 },
 }
 
 // endereços que só um programa de ataque pede (WordPress, painéis de bases de dados, ficheiros de configuração…)
@@ -49,6 +54,7 @@ export function classificarPedido({ metodo, url, estado }) {
 export const LIMITES_ALERTA = {
   login_falhado: [15, 50], conta_bloqueada: [2, 6], limite: [100, 600], acesso_negado: [30, 150],
   sondagem: [10, 60], injecao: [1, 10], erro_interno: [10, 50],
+  injecao_corpo: [1, 5], phishing: [2, 10], ferramenta_ataque: [1, 1], injecao_ia: [1, 5], robo_ia: [300, 3000],
 }
 
 export function nivelDeAlerta(contagens) {

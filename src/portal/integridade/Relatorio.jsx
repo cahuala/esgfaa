@@ -305,6 +305,7 @@ function CartaoIA({ ia, pontuacao, verNoTexto }) {
         <div className="flex-grow-1" style={{ minWidth: 260 }}>
           <div className="fw-bold" style={{ color: cor }}><i className="fa fa-robot me-2" />{tx('Utilização de IA:')} {rotulo}</div>
           {ia.claude?.avaliacao && <p className="mb-1 mt-1">{ia.claude.avaliacao}</p>}
+          {ia.manipulacao && <div className="alert alert-danger py-2 my-2 small"><i className="fa fa-user-secret me-1" /><b>{tx('O texto tenta dar ordens à IA que o avalia')}</b> («{ia.manipulacao}»). {tx('A análise não as segue; o caso ficou registado no Centro de segurança.')}</div>}
           <div className="small text-muted">
             {ia.claude ? <>{tx('Avaliação do Claude (Anthropic)')}{ia.claude.parcial ? tx(' sobre o início do texto') : ''}. </> : ia.servico ? <>{tx('A avaliação do Claude falhou')}{ia.erro ? ` (${ia.erro})` : ''}{tx('; mostram-se os indicadores locais.')} </> : <>{tx('Indicadores locais (sem serviço externo).')} </>}
             {ia.local?.pontuacao !== null && ia.local?.pontuacao !== undefined && ia.claude && <>{tx('Indicadores locais:')} {ia.local.pontuacao}%. </>}

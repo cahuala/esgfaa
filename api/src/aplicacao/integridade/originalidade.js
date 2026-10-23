@@ -6,6 +6,7 @@ import { frasesParaPesquisa, indicadoresIA } from '../../dominio/integridade/ia.
 import { MIN_RAIZES, frase, frases, impressoesAproximadas, linguaDe, paraFrases } from '../../dominio/integridade/parafrase.js'
 import { pareceDigitalizacao } from '../../infraestrutura/texto/ocr.js'
 import { avaliarComClaude } from './avaliacaoIA.js'
+import { instrucoesParaIA } from '../../dominio/seguranca/ataques.js'
 
 export const ORIGENS = { entrega: 'Trabalho entregue', biblioteca: 'Biblioteca digital', repositorio: 'Repositório de referência', verificacao: 'Verificação avulsa', internet: 'Internet' }
 const PADRAO = { excluirCitacoes: true, excluirReferencias: true, internet: true, ia: true, parafrase: true, traducao: true }
@@ -215,6 +216,9 @@ export class ServicoOriginalidade {
   // utilização de IA: indicadores locais sempre; avaliação do Claude se houver chave
   async #ia(texto) {
     const local = indicadoresIA(texto)
+    // o trabalho a tentar mandar no avaliador («ignora as instruções…»): fica no relatório e no Centro de segurança
+    const manipulacao = instrucoesParaIA(texto)
+    if (manipulacao) this.aoInstrucoesIA?.(manipulacao)
     let claude = null
     let erro = ''
     if (this.claude) {
@@ -224,7 +228,7 @@ export class ServicoOriginalidade {
         erro = e.message
       }
     }
-    return { local, claude, erro, servico: Boolean(this.claude) }
+    return { local, claude, erro, servico: Boolean(this.claude), manipulacao }
   }
 
   // ---------- ligações a outros contextos ----------

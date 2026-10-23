@@ -33,7 +33,7 @@ export const REGRAS_BLOQUEIO = {
   isolamento: { sondagem: 3, injecao: 1, login_falhado: 8, horas: 168 },
 }
 
-export const PROTECAO_INICIAL = { nivel: 'normal', desligados: [], automatico: true, confianca: [], motivo: '', alteradoPor: '', alteradoEm: null, automaticoDesde: null }
+export const PROTECAO_INICIAL = { nivel: 'normal', desligados: [], automatico: true, bloquearRobosIA: false, confianca: [], motivo: '', alteradoPor: '', alteradoEm: null, automaticoDesde: null }
 
 // o que fica sempre aberto: estado do servidor, entrada e sessão no painel, Centro de segurança
 const SEMPRE = /^\/api\/(saude|admin\/(entrar|sair|eu(\/|$)|seguranca(\/|$)))/

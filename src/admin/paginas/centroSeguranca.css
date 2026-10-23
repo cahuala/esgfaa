@@ -64,6 +64,11 @@
 .cs-t-injecao { background: #78281f; fill: #78281f; }
 .cs-t-erro_interno { background: #34495e; fill: #34495e; }
 .cs-t-ip_bloqueado { background: #000; fill: #000; }
+.cs-t-injecao_corpo { background: #a93226; fill: #a93226; }
+.cs-t-phishing { background: #e67e22; fill: #e67e22; }
+.cs-t-ferramenta_ataque { background: #4a235a; fill: #4a235a; }
+.cs-t-robo_ia { background: #17a589; fill: #17a589; }
+.cs-t-injecao_ia { background: #1f618d; fill: #1f618d; }
 
 /* defesa activa */
 .cs-defesa { margin-bottom: 16px; border-left: 4px solid; }

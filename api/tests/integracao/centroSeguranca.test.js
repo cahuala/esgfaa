@@ -95,4 +95,37 @@ describe('Centro de segurança: estado do servidor, ataques ao vivo e bloqueios'
     assert.equal((await amb.com(red.token).put('/api/admin/seguranca/protecao').send({ nivel: 'isolamento' })).status, 403)
     assert.equal((await amb.com(admin).get('/api/admin/seguranca')).body.protecao.nivel, 'normal')
   })
+
+  it('ataques no conteúdo: SQL na entrada é recusado, sqlmap fica bloqueado, phishing não entra, robôs de IA fora do portal', async () => {
+    const atacante = (ip) => ({ post: (u) => amb.http().post(u).set('X-Forwarded-For', ip), get: (u, ua) => amb.http().get(u).set('X-Forwarded-For', ip).set('User-Agent', ua || 'Mozilla/5.0') })
+    const sql = await atacante('203.0.113.120').post('/api/portal/entrar').send({ email: "admin' OR '1'='1", senha: 'x' })
+    assert.equal(sql.status, 400)
+    assert.equal(sql.body.codigo, 'conteudo_recusado')
+    const ferramenta = await atacante('203.0.113.121').get('/api/publico/conteudo', 'sqlmap/1.7.2#stable (https://sqlmap.org)')
+    assert.equal(ferramenta.status, 403)
+    assert.equal((await atacante('203.0.113.121').get('/api/saude')).body.codigo, 'bloqueado') // fica logo bloqueado
+    const ph = await atacante('203.0.113.122').post('/api/publico/contactos').send({ nome: 'X', email: 'x@y.ao', assunto: 'Outro assunto', mensagem: 'A sua conta será bloqueada, confirme os seus dados em http://esgfaa-gov-ao.login.com' })
+    assert.equal(ph.status, 400)
+    assert.equal(ph.body.codigo, 'phishing')
+    assert.equal((await atacante('192.0.2.140').get('/api/portal/eu', 'Mozilla/5.0 (compatible; GPTBot/1.1)')).status, 403)
+    assert.equal((await atacante('192.0.2.140').get('/api/publico/conteudo', 'Mozilla/5.0 (compatible; GPTBot/1.1)')).status, 200) // no site, só se a Escola quiser
+    await amb.com(admin).put('/api/admin/seguranca/protecao').send({ bloquearRobosIA: true }).expect(200)
+    assert.equal((await atacante('192.0.2.140').get('/api/publico/conteudo', 'Mozilla/5.0 (compatible; GPTBot/1.1)')).status, 403)
+    await amb.com(admin).put('/api/admin/seguranca/protecao').send({ bloquearRobosIA: false }).expect(200)
+    // quem já entrou pode escrever texto que cite código (fica só registado)
+    assert.notEqual((await amb.com(admin).post('/api/admin/colecoes/noticias').send({ titulo: 'Guia: o que é um ataque <script>', resumo: "O ataque ' OR '1'='1 explicado", data: '2026-10-01', categoria: 'Institucional', conteudo: [] })).status, 400)
+    const r = (await amb.com(admin).get('/api/admin/seguranca')).body
+    for (const t of ['injecao_corpo', 'ferramenta_ataque', 'phishing', 'robo_ia']) assert.ok(r.ultimos5[t] >= 1, t)
+    await amb.com(admin).delete('/api/admin/seguranca/bloqueios/203.0.113.121').expect(204)
+  })
+
+  it('simular um ataque enche o painel e bloqueia os endereços de documentação, sem mudar o nível', async () => {
+    assert.equal((await amb.com((await amb.criarUtilizador('redator')).token).post('/api/admin/seguranca/simular')).status, 403)
+    await amb.com(admin).post('/api/admin/seguranca/simular').expect(200)
+    const r = (await amb.com(admin).get('/api/admin/seguranca')).body
+    for (const t of ['login_falhado', 'sondagem', 'injecao', 'injecao_corpo', 'phishing', 'ferramenta_ataque', 'robo_ia', 'injecao_ia']) assert.ok(r.ultimos5[t] >= 1, t)
+    assert.ok(r.bloqueios.some((b) => b.ip === '203.0.113.10' && /Simulação/.test(b.motivo)))
+    assert.equal(r.protecao.nivel, 'normal')
+    for (const b of r.bloqueios) await amb.com(admin).delete(`/api/admin/seguranca/bloqueios/${b.ip}`)
+  })
 })

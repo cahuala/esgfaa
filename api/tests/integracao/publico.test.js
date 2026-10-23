@@ -59,11 +59,14 @@ describe('site público', () => {
     assert.equal(resumo.body.comentarios.length, 1)
   })
 
-  it('comentário com HTML é guardado como texto (o site escapa ao mostrar)', async () => {
+  it('comentário com um ataque XSS é recusado; HTML inofensivo fica guardado como texto (o site escapa ao mostrar)', async () => {
     const url = `/api/publico/interacoes/noticias/${publicada}/comentarios`
     const r = await amb.http().post(url).send({ nome: 'Teste', texto: '<img src=x onerror=alert(1)>' })
-    assert.equal(r.status, 201)
-    assert.equal(r.body.comentarios[0].texto, '<img src=x onerror=alert(1)>')
+    assert.equal(r.status, 400)
+    assert.equal(r.body.codigo, 'conteudo_recusado')
+    const ok = await amb.http().post(url).send({ nome: 'Teste', texto: 'Gostei <b>muito</b>' })
+    assert.equal(ok.status, 201)
+    assert.equal(ok.body.comentarios[0].texto, 'Gostei <b>muito</b>')
   })
 
   it('limita comentários seguidos (429)', async () => {

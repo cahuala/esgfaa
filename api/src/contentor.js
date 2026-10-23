@@ -305,6 +305,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     },
   }
 
+  // um trabalho que tenta dar ordens à IA do antiplágio aparece no Centro de segurança
+  originalidade.aoInstrucoesIA = (x) => servicos.seguranca.registarInstrucoesIA(x)
   const fechar = async () => { await servicos.seguranca.parar(); await prismaBase.$disconnect() }
   return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
 }
