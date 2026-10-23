@@ -41,7 +41,25 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const vazio = (await adm.get('/api/definicoes/assinaturas').expect(200)).body
     assert.equal(vazio.comandante.cargo, 'O COMANDANTE DA ESG')
     const novo = { comandante: { cargo: 'O COMANDANTE DA ESG', nome: 'Nome Fictício do Comandante', posto: 'Tenente General' }, chefeRpq: { cargo: 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS', nome: 'Nome do Chefe', posto: 'Coronel' }, local: 'Luanda' }
-    assert.deepEqual((await adm.put('/api/definicoes/assinaturas').send(novo).expect(200)).body.comandante, novo.comandante)
+    // sem cargo ocupado, assina o nome escrito à mão
+    const r = (await adm.put('/api/definicoes/assinaturas').send(novo).expect(200)).body.comandante
+    assert.deepEqual([r.cargo, r.nome, r.posto, r.origem], [novo.comandante.cargo, novo.comandante.nome, novo.comandante.posto, 'manual'])
+  })
+
+  it('assina quem ocupa o cargo; com o titular de licença, o substituto (em exercício)', async () => {
+    const u = (await adm.post('/api/unidades').send({ nome: 'Comando' }).expect(201)).body
+    const cmd = (await adm.post('/api/cargos').send({ nome: 'Comandante da Escola Superior de Guerra', unidadeId: u.id, funcao: 'comando', tipo: 'militar', postoRequerido: 'general', vagas: 1 }).expect(201)).body
+    const seg = (await adm.post('/api/cargos').send({ nome: '2.º Comandante da Escola Superior de Guerra', unidadeId: u.id, funcao: 'comando', tipo: 'militar', postoRequerido: 'tenente_general', vagas: 1 }).expect(201)).body
+    const a = (await adm.post('/api/pessoas').send(militar({ nome: 'Titular Comandante Teste', nip: 'NIPASS1', posto: 'general' })).expect(201)).body
+    const b = (await adm.post('/api/pessoas').send(militar({ nome: 'Segundo Comandante Teste', nip: 'NIPASS2', posto: 'tenente_general' })).expect(201)).body
+    await amb.contentor.base.pessoa.update({ where: { id: a.id }, data: { cargoId: cmd.id, unidadeId: u.id } })
+    await amb.contentor.base.pessoa.update({ where: { id: b.id }, data: { cargoId: seg.id, unidadeId: u.id } })
+    let c = (await adm.get('/api/definicoes/assinaturas').expect(200)).body.comandante
+    assert.deepEqual([c.nome, c.posto, c.origem], ['Titular Comandante Teste', 'General', 'titular'])
+    // de licença hoje: assina o 2.º Comandante, em exercício
+    await amb.contentor.base.licenca.create({ data: { pessoaId: a.id, tipo: 'ferias', inicio: new Date('2026-10-10'), fim: new Date('2026-10-30'), dias: 21 } })
+    c = (await adm.get('/api/definicoes/assinaturas').expect(200)).body.comandante
+    assert.deepEqual([c.nome, c.origem, c.cargo], ['Segundo Comandante Teste', 'substituto', 'O 2.º COMANDANTE DA ESG (EM EXERCÍCIO)'])
   })
 
   it('tabela salarial como a do SIGP: componentes calculadas, só o vencimento base se altera', async () => {

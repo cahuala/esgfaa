@@ -6,10 +6,11 @@ import { paragrafo } from '../../../../utils/pdfParagrafo'
   - «tabela»: Curso de Estratégia e Arte Operativa — disciplinas, tipo de avaliação, notas e classificação;
   - «lista»: Curso Superior de Comando e Direcção, CoaMP, Estado-Maior Conjunto — disciplinas e valores em
     duas colunas.
-  Diplomas:
-  - «atesta» (para todos os cursos): A4 deitado, «Atesta-se que o Senhor … frequentou …»;
-  - «outorga» (cursos dos oficiais generais): A4 ao alto, decorado — «A Escola Superior de Guerra outorga o
-    presente diploma ao …».
+  Diplomas (pela categoria de quem o recebe):
+  - «atesta» (oficiais generais): A4 deitado, «Atesta-se que o Senhor … frequentou …»;
+  - «outorga» (os outros militares): A4 ao alto, decorado — «A Escola Superior de Guerra outorga o presente
+    diploma ao …» (o fundo é a digitalização desse diploma da Escola: o ficheiro chama-se diploma-generais.jpg
+    por razões históricas).
   c = resposta da emissão do certificado (estudante, curso, média, percurso, código);
   o = { edicao, inicio, fim, anoLetivo, directorEnsino, comandante, modeloCertificado, modeloDiploma }.
 */
@@ -182,7 +183,7 @@ function diplomaAtesta(d, c, o) {
   codigo(doc, c, W, 202)
 }
 
-// ---------- diploma «A ESG outorga o presente diploma…» (cursos dos oficiais generais) ----------
+// ---------- diploma «A ESG outorga o presente diploma…» (militares que não são oficiais generais) ----------
 /*
   O fundo é o próprio diploma da Escola digitalizado (fitas, selo, arabescos, emblema, «DIPLOMA» e os textos
   fixos), sem o que muda de pessoa para pessoa; por cima escreve-se o nome (em letra manuscrita, como no
@@ -225,9 +226,15 @@ function diplomaOutorga(d, c, o) {
   // como no original: a classificação numa linha e as datas na seguinte
   doc.setFontSize(12.5).text(`COM A CLASSIFICAÇÃO DE ${classif}, QUE DECORREU DE`, cx, 186.1, { align: 'center' }).text(`${M(dataLonga(o.inicio))} À ${M(dataLonga(o.fim))}.`, cx, 191.8, { align: 'center' })
   doc.setFontSize(13).text(`LUANDA, ${M(dataLonga(o.fim))}`, cx, 203.7, { align: 'center' })
-  // o rótulo e a linha do Director (o Comandante já está no fundo)
+  // o rótulo e a linha do Director (o rótulo e a linha do Comandante já estão no fundo)
   doc.setFontSize(10.6).text('O DIRECTOR DOS A. ACADÉMICOS', 70, 227.5, { align: 'center' })
   doc.setDrawColor(70).setLineWidth(0.3).line(40.8, 242.8, 97.5, 242.8).setDrawColor(0)
+  // quem assina (quem ocupa hoje o cargo, do Sistema de Pessoal): por baixo do rótulo, antes do espaço da
+  // assinatura — por baixo da linha já é a fita dourada
+  ;[[o.directorEnsino, 69.2], [o.comandante, 171.5]].forEach(([q, x]) => {
+    if (q?.nome) doc.setFont('times', 'normal').setFontSize(9.8).text(M(q.nome), x, 232.3, { align: 'center' })
+    if (q?.posto) doc.setFont('times', 'bold').setFontSize(9.3).text(M(q.posto), x, 236.4, { align: 'center' })
+  })
   doc.setTextColor(0)
   doc.setFont('helvetica', 'normal').setFontSize(5.5).setTextColor(120).text(`Código de verificação: ${c.codigo}`, cx, 293, { align: 'center' }).setTextColor(0)
 }

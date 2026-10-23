@@ -1,3 +1,4 @@
+import { ASSINANTES, calcularAssinantes } from './assinantes.js'
 import { conflito, invalido, naoEncontrado } from '../erros.js'
 import { exigir } from './sessao.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
@@ -36,25 +37,25 @@ export const TIPOS_DOCUMENTO_PESSOAL = {
   ficha_docente: { nome: 'Ficha para cadastramento dos docentes' },
 }
 
-const ASSINATURAS = {
-  comandante: { cargo: 'O COMANDANTE DA ESG', nome: '', posto: '' },
-  chefeRpq: { cargo: 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS', nome: '', posto: '' },
-  local: 'Luanda',
-}
 
 export class ServicoDocumentosEmitidos {
   constructor({ bd, auditoria, agora = () => new Date() }) {
     Object.assign(this, { bd, auditoria, agora })
   }
 
+  // quem assina hoje: quem ocupa cada cargo (ou o substituto, ou o nome escrito à mão se o cargo estiver vago)
   async assinaturas(u) {
     exigir(u, 'ver')
     const d = await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } })
-    return { ...ASSINATURAS, ...(d?.valor ?? {}) }
+    return { ...(await calcularAssinantes(this.bd, d?.valor ?? {}, this.agora())), catalogo: Object.fromEntries(Object.entries(ASSINANTES).map(([k, a]) => [k, { titulo: a.titulo, usos: a.usos }])) }
   }
 
+  // guarda o cargo (e o substituto) de cada assinatura, e o nome à mão para quando o cargo estiver vago
   async guardarAssinaturas(u, valor) {
     exigir(u, 'administrar')
+    for (const k of Object.keys(ASSINANTES)) for (const c of ['cargoId', 'substitutoId']) {
+      if (valor[k]?.[c] && !(await this.bd.cargo.count({ where: { id: valor[k][c] } }))) throw invalido('Cargo desconhecido.', c)
+    }
     await this.bd.definicao.upsert({ where: { chave: 'assinaturas' }, create: { chave: 'assinaturas', valor }, update: { valor } })
     await this.auditoria.registar(u, 'definir_assinaturas', 'Assinaturas dos documentos')
     return this.assinaturas(u)

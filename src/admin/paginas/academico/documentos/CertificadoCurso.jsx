@@ -62,10 +62,23 @@ function CertificadoCurso() {
   const nome = e.dados?.posto ? e.nome.replace(/^(\S+\.\s+)+/, '') : e.nome
   const general = oficialGeneral(e.dados?.posto)
   const campo = (id, rotulo, el) => <div className="mb-2"><label className="form-label small fw-bold mb-1" htmlFor={id}>{rotulo}</label>{el}</div>
+  // quem ocupa o cargo vem do Sistema de Pessoal (não se escreve); só sem isso se escreve à mão
   const assinante = (quem, rotulo) => (
     <div className="col-6">
       <div className="small fw-bold text-muted mb-1">{rotulo}</div>
-      {[['cargo', tx('Cargo')], ['nome', tx('Nome')], ['posto', tx('Posto')]].map(([k, r]) => <input key={k} className="form-control form-control-sm mb-1" value={cfg[quem]?.[k] ?? ''} placeholder={r} aria-label={`${rotulo}: ${r}`} maxLength={120} onChange={(ev) => mudarQuem(quem, k, ev.target.value)} />)}
+      {cfg[quem]?.origem === 'pessoal' ? (
+        <div className="border rounded p-2 small bg-light">
+          <div className="text-muted">{cfg[quem].cargo}</div>
+          <b>{cfg[quem].nome}</b>
+          <div>{cfg[quem].posto}</div>
+          <div className="text-success mt-1"><i className="fa fa-check-circle me-1" />{cfg[quem].substituto ? tx('Em exercício (o titular está ausente) — do Sistema de Pessoal') : tx('Quem ocupa o cargo — do Sistema de Pessoal')}</div>
+        </div>
+      ) : (
+        <>
+          {[['cargo', tx('Cargo')], ['nome', tx('Nome')], ['posto', tx('Posto')]].map(([k, r]) => <input key={k} className="form-control form-control-sm mb-1" value={cfg[quem]?.[k] ?? ''} placeholder={r} aria-label={`${rotulo}: ${r}`} maxLength={120} onChange={(ev) => mudarQuem(quem, k, ev.target.value)} />)}
+          <div className="small text-warning"><i className="fa fa-exclamation-triangle me-1" />{tx('O Sistema de Pessoal ainda não indicou quem ocupa este cargo: escreva à mão.')}</div>
+        </>
+      )}
     </div>
   )
 
@@ -109,7 +122,7 @@ function CertificadoCurso() {
               {assinante('directorEnsino', tx('À esquerda'))}
               {assinante('comandante', tx('À direita'))}
             </div>
-            <div className="small text-muted mt-1">{tx('Fica guardado para os outros estudantes ao imprimir ou descarregar.')}</div>
+            <div className="small text-muted mt-1">{tx('Assina quem ocupa hoje o cargo, no Sistema de Pessoal: muda sozinho com as nomeações, as exonerações e as licenças.')}</div>
           </Painel>
         </div>
         <div className="col-xl-8">

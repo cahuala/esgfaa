@@ -215,9 +215,12 @@ describe('Sistema de Gestão de Pessoal', () => {
 describe('Envio para o Portal Académico', () => {
   it('só docentes e estudantes, com assinatura; quem sai vai como inativo', async () => {
     const pedidos = []
+    const assinaturas = []
     const enviar = async (url, op) => {
-      pedidos.push({ url, op })
       const corpo = JSON.parse(op.body)
+      // quem assina os diplomas vai à parte (só quando muda)
+      if (url.endsWith('/assinaturas')) { assinaturas.push(corpo.assinaturas); return { ok: true, status: 200, json: async () => ({ ok: true }) } }
+      pedidos.push({ url, op })
       return { ok: true, status: 200, json: async () => ({ resultados: corpo.pessoas.map((p, i) => ({ ref: p.ref, ok: true, contaId: 100 + i })) }) }
     }
     const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
@@ -247,6 +250,9 @@ describe('Envio para o Portal Académico', () => {
       await adm.put(`/api/pessoas/${d.id}`).send({ ativo: false }).expect(200)
       await amb.contentor.servicos.sincronizacao.enviarPendentes()
       assert.equal(JSON.parse(pedidos.at(-1).op.body).pessoas[0].ativo, false)
+      // as assinaturas foram uma só vez (não mudaram) e com o cargo do Comandante
+      assert.equal(assinaturas.length, 1)
+      assert.equal(assinaturas[0].comandante.cargo, 'O COMANDANTE DA ESG')
     } finally { await amb.fechar() }
   })
 })

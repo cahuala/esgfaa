@@ -58,8 +58,8 @@ export const pessoa = z.object({
 }).strict()
 export const editarPessoa = pessoa.partial().strict()
 
-const pessoaAssina = z.object({ cargo: txt(120), nome: txt(150), posto: txt(60) }).strict()
-export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoaAssina, local: txt(60, 2) }).strict()
+const pessoaAssina = z.object({ cargoId: idOpc, substitutoId: idOpc, cargo: txt(120).default(''), nome: txt(150).default(''), posto: txt(60).default('') }).strict()
+export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoaAssina, directorEnsino: pessoaAssina.default({}), local: txt(60, 2) }).strict()
 export const emitirDocumentos = z.object({ documentos: z.array(z.object({ tipo: txt(40, 1), dados: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])).optional() }).strict()).min(1).max(20) }).strict()
 export const filtrosPessoas = z.record(z.string(), z.string().max(60)).optional().default({})
 export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: z.enum(['formacao', 'promocao', 'qualificacao', 'actualizacao', 'academico']).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()

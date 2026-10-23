@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
+import { calcularAssinantes } from './assinantes.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
 const LOTE = 25
@@ -76,8 +77,30 @@ export class ServicoSincronizacao {
   }
 
   // envia o que está pendente (corre de minuto a minuto e também a pedido)
+  /*
+    Quem assina os diplomas e certificados no portal: quem ocupa hoje os cargos (Comandante, Director de
+    Ensino, Chefe da RPQ). Vai com cada envio, só quando muda (uma pessoa nomeada, exonerada ou de licença).
+  */
+  async enviarAssinaturas() {
+    if (!this.ativa) return { enviado: false, inativa: true }
+    const d = await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } })
+    const a = await calcularAssinantes(this.bd, d?.valor ?? {}, this.agora())
+    const so = ({ cargo, nome, posto, origem }) => ({ cargo, nome, posto, origem })
+    const corpo = JSON.stringify({ assinaturas: { comandante: so(a.comandante), directorEnsino: so(a.directorEnsino), chefeRpq: so(a.chefeRpq) } })
+    if (corpo === this.ultimasAssinaturas) return { enviado: false, igual: true }
+    const data = String(Math.floor(this.agora().getTime() / 1000))
+    const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/assinaturas`, {
+      method: 'POST', body: corpo, signal: AbortSignal.timeout(20_000),
+      headers: { 'Content-Type': 'application/json', 'X-Pessoal-Data': data, 'X-Pessoal-Assinatura': assinar(this.config.portal.chave, data, corpo) },
+    })
+    if (!r.ok) throw new Error(`O portal respondeu ${r.status} às assinaturas.`)
+    this.ultimasAssinaturas = corpo
+    return { enviado: true }
+  }
+
   async enviarPendentes() {
     if (!this.ativa) return { enviados: 0, erros: 0, inativa: true }
+    await this.enviarAssinaturas().catch(() => {})
     const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
     const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada)) })

@@ -7,6 +7,7 @@ import { novoCodigo } from '../../../dominio/academico/conclusao/codigo.js'
   histórico académico de cada estudante e certificado de conclusão do curso.
 */
 const CHAVE_DOCUMENTOS = 'documentos-academicos'
+const CHAVE_ASSINATURAS_PESSOAL = 'assinaturas-do-pessoal'
 const PADRAO_DOCUMENTOS = {
   directorEnsino: { cargo: 'O DIRECTOR DE ENSINO', nome: '', posto: '' },
   comandante: { cargo: 'O COMANDANTE DA ESG', nome: '', posto: '' },
@@ -74,17 +75,37 @@ export class ServicoConclusaoCurso {
     Diplomas e certificados: quem assina (Director de Ensino e Comandante) e, por turma, a edição do curso e
     as datas em que decorreu. Só a Administração Escolar os define e imprime.
   */
+  /*
+    Quem assina os diplomas e certificados: quem ocupa hoje o cargo (vem do Sistema de Pessoal, pelo
+    quadro orgânico); só se o Pessoal não o souber (cargo vago, ligação ainda não feita) se usa o nome
+    escrito aqui. Cada assinante vem com a origem: «pessoal» (titular ou substituto) ou «manual».
+  */
   async documentosAcademicos(ctx) {
-    ctx.actor.exigir('academico.gerir')
-    return { ...PADRAO_DOCUMENTOS, ...((await this.paginas.ler(CHAVE_DOCUMENTOS)) ?? {}) }
+    ctx.actor.exigir('academico.ver')
+    const guardado = { ...PADRAO_DOCUMENTOS, ...((await this.paginas.ler(CHAVE_DOCUMENTOS)) ?? {}) }
+    const doPessoal = (await this.paginas.ler(CHAVE_ASSINATURAS_PESSOAL)) ?? null
+    const efectivo = (k) => {
+      const p = doPessoal?.assinaturas?.[k]
+      return p?.nome && p.origem !== 'manual' ? { cargo: p.cargo, nome: p.nome, posto: p.posto, origem: 'pessoal', substituto: p.origem === 'substituto' } : { ...guardado[k], origem: 'manual' }
+    }
+    return { ...guardado, directorEnsino: efectivo('directorEnsino'), comandante: efectivo('comandante'), manual: { directorEnsino: guardado.directorEnsino, comandante: guardado.comandante }, doPessoalEm: doPessoal?.recebidoEm ?? null }
   }
 
   async guardarDocumentosAcademicos(ctx, dados) {
     ctx.actor.exigir('academico.gerir')
-    const atual = await this.documentosAcademicos(ctx)
-    const novo = { ...atual, ...dados, turmas: { ...atual.turmas, ...(dados.turmas ?? {}) } }
+    const atual = { ...PADRAO_DOCUMENTOS, ...((await this.paginas.ler(CHAVE_DOCUMENTOS)) ?? {}) }
+    // só se guardam os nomes escritos à mão (os do Pessoal não se sobrepõem)
+    const limpo = (x) => (x ? { cargo: x.cargo ?? '', nome: x.nome ?? '', posto: x.posto ?? '' } : undefined)
+    const novo = { ...atual, ...(dados.directorEnsino && dados.directorEnsino.origem !== 'pessoal' ? { directorEnsino: limpo(dados.directorEnsino) } : {}), ...(dados.comandante && dados.comandante.origem !== 'pessoal' ? { comandante: limpo(dados.comandante) } : {}), turmas: { ...atual.turmas, ...(dados.turmas ?? {}) } }
     await this.paginas.guardar(CHAVE_DOCUMENTOS, novo, ctx.actor.id)
-    return novo
+    return this.documentosAcademicos(ctx)
+  }
+
+  // do Sistema de Pessoal (pedido assinado): quem ocupa hoje os cargos que assinam
+  async receberAssinaturasDoPessoal(ctx, assinaturas) {
+    await this.paginas.guardar(CHAVE_ASSINATURAS_PESSOAL, { assinaturas, recebidoEm: this.relogio.agora().toISOString() }, null)
+    await this.auditoria.registar(ctx, { acao: 'assinaturas_do_pessoal', colecao: 'documentos', alvoTitulo: `Assinaturas: ${assinaturas.comandante?.nome || '—'} (Comandante), ${assinaturas.directorEnsino?.nome || '—'} (Director de Ensino)`, utilizador: null })
+    return { ok: true }
   }
 
   async emitirCertificado(ctx, turmaId, estudanteId) {

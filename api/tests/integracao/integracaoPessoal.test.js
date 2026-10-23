@@ -85,4 +85,24 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
       assert.equal((await outro.http().post('/api/integracao/pessoal/contas').send({})).status, 404)
     } finally { await outro.fechar() }
   })
+
+  it('quem assina os diplomas vem do Pessoal (quem ocupa o cargo); sem isso, o nome escrito no painel', async () => {
+    const admin = amb.com(await amb.entrar())
+    let d = (await admin.get('/api/admin/academico/documentos-academicos').expect(200)).body
+    assert.equal(d.comandante.origem, 'manual')
+    const corpo = JSON.stringify({ assinaturas: {
+      comandante: { cargo: 'O COMANDANTE DA ESG', nome: 'Nome Fictício do Comandante', posto: 'General', origem: 'titular' },
+      directorEnsino: { cargo: 'O DIRECTOR DE ENSINO', nome: '', posto: '', origem: 'manual' },
+    } })
+    const data = agora()
+    // sem a assinatura do pedido, não entra
+    assert.equal((await amb.http().post('/api/integracao/pessoal/assinaturas').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', '0'.repeat(64)).send(corpo)).status, 401)
+    await amb.http().post('/api/integracao/pessoal/assinaturas').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinar(data, corpo)).send(corpo).expect(200)
+    d = (await admin.get('/api/admin/academico/documentos-academicos').expect(200)).body
+    assert.deepEqual([d.comandante.nome, d.comandante.origem], ['Nome Fictício do Comandante', 'pessoal'])
+    assert.equal(d.directorEnsino.origem, 'manual') // vago no Pessoal: escreve-se no painel
+    // o nome do Pessoal não se sobrepõe pelo painel
+    await admin.put('/api/admin/academico/documentos-academicos').send({ comandante: { cargo: 'X', nome: 'Outro', posto: 'Y', origem: 'pessoal' } }).expect(200)
+    assert.equal((await admin.get('/api/admin/academico/documentos-academicos')).body.comandante.nome, 'Nome Fictício do Comandante')
+  })
 })

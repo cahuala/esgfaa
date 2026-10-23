@@ -10,7 +10,7 @@ const dataIso = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 // textos dos painéis para o tradutor automático
 export const traduzirTextos = z.object({ lingua: z.enum(['en', 'fr', 'es']), textos: z.array(z.string().max(2000)).max(300) })
 
-const assinante = z.object({ cargo: texto(120), nome: texto(150), posto: texto(60) })
+const assinante = z.object({ cargo: texto(120), nome: texto(150), posto: texto(60), origem: z.string().max(20).optional() })
 export const documentosAcademicos = z.object({
   directorEnsino: assinante.optional(), comandante: assinante.optional(),
   turmas: z.record(z.string().regex(/^\d+$/), z.object({ edicao: texto(20), inicio: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]), fim: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]), modeloCertificado: z.enum(['tabela', 'lista', '']).optional(), modeloDiploma: z.enum(['atesta', 'outorga', '']).optional() })).optional(),
