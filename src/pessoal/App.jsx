@@ -73,8 +73,8 @@ export default function App() {
     pode: (p) => Boolean(utilizador?.permissoes.includes(p)),
     avisar: (texto, tipo = 'ok') => setAviso({ texto, tipo, id: Date.now() }),
     recarregar: carregar,
-    async entrar(email, senha, codigo) {
-      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha, ...(codigo ? { codigo } : {}) } })
+    async entrar(email, senha, codigo, prova) {
+      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha, ...(codigo ? { codigo } : {}), ...(prova ? { prova } : {}) } })
       marcarSessao(Boolean(r.sessao || r.token))
       await carregar()
     },

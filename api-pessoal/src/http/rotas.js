@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { DIFICULDADE, ProvasUsadas, criarDesafio, verificarProva } from '../dominio/seguranca/robo.js'
 import crypto from 'node:crypto'
 import express from 'express'
 import multer from 'multer'
@@ -33,7 +34,20 @@ export function rotas({ servicos: s, config }) {
 
   // entrar: no máximo 10 tentativas por minuto por endereço (além do bloqueio da conta)
   const limiteEntrar = rateLimit({ windowMs: 60_000, limit: config.teste ? 1000 : 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { erro: 'Demasiadas tentativas. Aguarde um minuto.', codigo: 'demasiados_pedidos' } })
-  r.post('/entrar', limiteEntrar, validar({ body: E.entrar }), async (req, res) => res.json(await s.sessao.entrar(req.dados.body, ip(req))))
+  // «Não sou um robô»: o navegador resolve um desafio antes de entrar (mais difícil para quem já errou)
+  const provasUsadas = new ProvasUsadas()
+  const falhas = new Map() // ip -> [instantes das palavras-passe erradas]
+  const suspeito = (x) => (falhas.get(x) || []).filter((t) => t > Date.now() - 5 * 60_000).length >= 3
+  r.get('/desafio', limiteEntrar, (req, res) => res.set('Cache-Control', 'no-store').json({ ativo: config.verificarRobo, ...(config.verificarRobo ? criarDesafio(config.segredoJwt, { maximo: suspeito(ip(req)) ? DIFICULDADE.suspeito : DIFICULDADE.normal }) : {}) }))
+  const exigirProva = (req, res, next) => (!config.verificarRobo || verificarProva(config.segredoJwt, req.body?.prova, provasUsadas) ? next() : res.status(400).json({ erro: 'Confirme que não é um robô e tente outra vez.', codigo: 'prova_robo' }))
+  r.post('/entrar', limiteEntrar, exigirProva, validar({ body: E.entrar }), async (req, res) => {
+    try {
+      res.json(await s.sessao.entrar(req.dados.body, ip(req)))
+    } catch (e) {
+      if (e.codigo !== 'codigo_2fa') falhas.set(ip(req), [...(falhas.get(ip(req)) || []).slice(-20), Date.now()])
+      throw e
+    }
+  })
 
   r.use(autenticar(s.sessao))
   r.get('/eu', async (req, res) => res.json(await s.sessao.eu(u(req))))

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useSessao } from '../sessaoContexto'
 import MolduraEntrada from './MolduraEntrada'
 import { t as tx } from '../../i18n/linguas'
+import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
+import { api } from '../api'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -12,14 +14,18 @@ function Entrar() {
   const [ver, setVer] = useState(false)
   const [erro, setErro] = useState('')
   const [aEntrar, setAEntrar] = useState(false)
+  // «Não sou um robô»: null = por verificar; undefined = o servidor não pede; objecto = a prova
+  const [prova, setProva] = useState(null)
+  const [tentativas, setTentativas] = useState(0)
 
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     setAEntrar(true)
     try {
-      await entrar(email.trim(), senha)
+      await entrar(email.trim(), senha, prova)
     } catch (falha) {
+      setTentativas((n) => n + 1)
       setErro(falha.message)
       setAEntrar(false)
     }
@@ -45,7 +51,9 @@ function Entrar() {
           </button>
         </div>
 
-        <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar || !email || !senha}>
+        <NaoSouRobo api={api} aoMudar={setProva} renovar={tentativas} />
+
+        <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar || !email || !senha || prova === null}>
           {aEntrar ? <><span className="spinner-border spinner-border-sm me-2" />{tx('A entrar…')}</> : <>{tx('Entrar')} <i className="fa fa-arrow-right ms-2" /></>}
         </button>
 

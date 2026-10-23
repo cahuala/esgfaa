@@ -13,6 +13,8 @@ const inteiro = (padrao, min, max) => z.coerce.number().int().min(min).max(max).
 
 const ESQUEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // «Não sou um robô» na entrada (vazio = ligado, menos nos testes automáticos; 0 = desligado)
+  VERIFICAR_ROBO: z.enum(['', '0', '1']).default(''),
   PORT: inteiro(3001, 1, 65535),
   DATA_DIR: z.string().default('dados'),
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
@@ -101,6 +103,7 @@ export function criarConfig(env = process.env, extras = {}) {
   return {
     ambiente: e.NODE_ENV,
     producao,
+    verificarRobo: e.VERIFICAR_ROBO === '' ? e.NODE_ENV !== 'test' : e.VERIFICAR_ROBO === '1',
     porta: e.PORT,
     pastaDados,
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,

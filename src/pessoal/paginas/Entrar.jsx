@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useSessao } from '../sessao'
 import Brasao from '../../assets/Logo.png'
 import Sede from '../../assets/Escola De Guerra.png'
+import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
+import { api } from '../api'
 
 export default function Entrar() {
   const { entrar } = useSessao()
@@ -12,14 +14,18 @@ export default function Entrar() {
   // verificação em dois passos: a palavra-passe está certa, falta o código do telemóvel
   const [pedeCodigo, setPedeCodigo] = useState(false)
   const [codigo, setCodigo] = useState('')
+  // «Não sou um robô»: null = por verificar; undefined = o servidor não pede; objecto = a prova
+  const [prova, setProva] = useState(null)
+  const [tentativas, setTentativas] = useState(0)
 
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     setAEntrar(true)
     try {
-      await entrar(email, senha, pedeCodigo ? codigo : undefined)
+      await entrar(email, senha, pedeCodigo ? codigo : undefined, prova)
     } catch (f) {
+      setTentativas((n) => n + 1)
       if (f.codigo === 'codigo_2fa') {
         if (pedeCodigo) setErro(f.message)
         setPedeCodigo(true)
@@ -73,7 +79,9 @@ export default function Entrar() {
                   <p className="small text-muted mb-20px">Os 6 algarismos que a aplicação mostra agora. Perdeu o telemóvel? Use um código de recuperação.</p>
                 </>
               )}
-              <button type="submit" className="btn btn-theme d-block w-100 h-45px btn-lg entrada-botao" disabled={aEntrar}>
+              <NaoSouRobo api={api} aoMudar={setProva} renovar={tentativas} />
+
+              <button type="submit" className="btn btn-theme d-block w-100 h-45px btn-lg entrada-botao" disabled={aEntrar || prova === null}>
                 {aEntrar ? <><i className="fa fa-spinner fa-spin me-2" />A entrar…</> : <><i className="fa fa-sign-in-alt me-2" />Entrar</>}
               </button>
               <p className="text-muted small mt-3 mb-0"><i className="fa fa-shield-alt me-1" />Este sistema só funciona dentro da rede da Escola. Todas as consultas e alterações ficam registadas.</p>

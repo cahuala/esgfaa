@@ -4,6 +4,7 @@ import { SenhaPorMudar } from '../../../dominio/comum/erros.js'
 import { limitar } from '../middlewares/limites.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
 import { sessaoEmCookie, tokenDoPedido } from '../middlewares/sessaoCookie.js'
+import { provaRobo } from '../middlewares/provaRobo.js'
 
 const COOKIE_PORTAL = 'esg_portal'
 import { validar } from '../middlewares/validar.js'
@@ -25,9 +26,13 @@ export function rotasPortal({ servicos, config, privados }) {
   const ficheiros = privados ? receberFicheiro({ privados, config, maximo: 10 }) : (req, res, next) => next()
   const pasta = privados ? receberFicheiro({ privados, config, maximo: 20 }) : (req, res, next) => next()
 
+  // «Não sou um robô»: o desafio que o navegador resolve antes de entrar
+  const robo = provaRobo({ config, servicos })
+  r.get('/desafio', limitar(config.limites.entrarIp), robo.desafio)
   r.post(
     '/entrar',
     limitar(L.entrarPortalIp, { mensagem: 'Demasiadas tentativas a partir deste endereço. Aguarde 15 minutos.' }),
+    robo.exigir,
     limitar(L.entrarPortal, { mensagem: 'Demasiadas tentativas. Aguarde 15 minutos.', chave: (req) => String(req.body?.email || '').trim().toLowerCase().slice(0, 254) }),
     validar({ body: E.entrar }),
     async (req, res) => res.json(await servicos.sessaoPortal.entrar(contextoAnonimo(req), req.dados.body)),

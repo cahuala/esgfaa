@@ -12,6 +12,8 @@ const inteiro = (padrao, min, max) => z.coerce.number().int().min(min).max(max).
 
 const ESQUEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // «Não sou um robô» na entrada (vazio = ligado, menos nos testes automáticos; 0 = desligado)
+  VERIFICAR_ROBO: z.enum(['', '0', '1']).default(''),
   PORT: inteiro(3002, 1, 65535),
   // por omissão só aceita ligações da própria máquina; no servidor da Escola use o IP da rede interna
   HOST: z.string().default('127.0.0.1'),
@@ -65,6 +67,7 @@ export function criarConfig(env = process.env) {
   return {
     producao,
     teste: e.NODE_ENV === 'test',
+    verificarRobo: e.VERIFICAR_ROBO === '' ? e.NODE_ENV !== 'test' : e.VERIFICAR_ROBO === '1',
     porta: e.PORT,
     host: e.HOST,
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,

@@ -24,8 +24,8 @@ export function SessaoPortal({ children }) {
     conta,
     aVerificar,
     eDocente: conta?.tipo === 'docente',
-    async entrar(email, senha) {
-      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha } })
+    async entrar(email, senha, prova) {
+      const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha, ...(prova ? { prova } : {}) } })
       await confirmarSessao(r)
       setConta(await api('/eu'))
     },

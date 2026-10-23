@@ -14,6 +14,7 @@ import { rotasBiblioteca } from './biblioteca.js'
 import { rotasIntegridade } from './integridade.js'
 import { rotasTraducoes } from './traducoes.js'
 import { sessaoEmCookie } from '../middlewares/sessaoCookie.js'
+import { provaRobo } from '../middlewares/provaRobo.js'
 import { DoisFatoresPorAtivar } from '../../../dominio/comum/erros.js'
 
 const pColecao = z.object({ colecao: E.colecao })
@@ -34,9 +35,13 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
 
   // ---------- sessão ----------
 
+  // «Não sou um robô»: o desafio que o navegador resolve antes de entrar
+  const robo = provaRobo({ config, servicos })
+  r.get('/desafio', limitar(config.limites.entrarIp), robo.desafio)
   r.post(
     '/entrar',
     limitar(config.limites.entrarIp, { mensagem: 'Demasiadas tentativas a partir deste endereço. Aguarde 15 minutos.' }),
+    robo.exigir,
     limitar(config.limites.entrar, {
       mensagem: 'Demasiadas tentativas. Aguarde 15 minutos.',
       chave: (req) => String(req.body?.email || '').trim().toLowerCase().slice(0, 254),

@@ -5,6 +5,8 @@ import Sede from '../../assets/Escola De Guerra.png'
 import { API_URL } from '../../conteudo/api'
 import { t as tx } from '../../i18n/linguas'
 import LinguasEntrada from '../../i18n/LinguasEntrada'
+import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
+import { api } from '../api'
 
 // Página de entrada: base "login with news feed" do Color Admin, com a identidade da Escola
 function Entrar() {
@@ -17,14 +19,19 @@ function Entrar() {
   // verificação em dois passos: a palavra-passe está certa, falta o código do telemóvel
   const [pedeCodigo, setPedeCodigo] = useState(false)
   const [codigo, setCodigo] = useState('')
+  // «Não sou um robô»: null = por verificar; undefined = o servidor não pede; objecto = a prova
+  const [prova, setProva] = useState(null)
+  const [tentativas, setTentativas] = useState(0)
 
   async function submeter(e) {
     e.preventDefault()
     setErro('')
     setAEntrar(true)
     try {
-      await entrar(email, senha, pedeCodigo ? codigo : undefined)
+      await entrar(email, senha, pedeCodigo ? codigo : undefined, prova)
     } catch (falha) {
+      // a prova só serve uma vez: a caixa resolve outra sozinha
+      setTentativas((n) => n + 1)
       if (falha.codigo === 'codigo_2fa') {
         if (pedeCodigo) setErro(falha.message)
         setPedeCodigo(true)
@@ -116,7 +123,9 @@ function Entrar() {
                 </>
               )}
 
-              <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar}>
+              <NaoSouRobo api={api} aoMudar={setProva} renovar={tentativas} />
+
+              <button type="submit" className="btn btn-theme d-block h-45px w-100 btn-lg fs-14px" disabled={aEntrar || prova === null}>
                 {aEntrar ? <><span className="spinner-border spinner-border-sm me-2" />{tx('A verificar…')}</> : <>{tx('Entrar')} <i className="fa fa-arrow-right ms-2" /></>}
               </button>
 
