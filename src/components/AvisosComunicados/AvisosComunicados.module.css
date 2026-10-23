@@ -43,3 +43,19 @@
     text-align: left;
   }
 }
+
+/* texto comprido nos cartões: corta-se com «…» para os cartões ficarem do mesmo tamanho (o texto todo está na página) */
+.texto h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.texto p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}

@@ -37,12 +37,15 @@ export function Foto({ src, alt = '', className = '', carregar = 'lazy' }) {
 const dataLegivel = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? formatarDataLonga(d) : d)
 
 // imagem em cima, etiqueta, título e data
+// o texto todo ao passar o rato, quando o cartão o corta com «…»
+const dica = (t) => (typeof t === 'string' && t.length > 60 ? t : undefined)
+
 export function Cartao({ para, imagem, etiqueta, titulo, resumo, data, elevado = false, className = '' }) {
   const texto = (
     <>
       {etiqueta && <div><Etiqueta>{etiqueta}</Etiqueta></div>}
-      <h3 className={s.cartaoTitulo}>{titulo}</h3>
-      {resumo && <p className={s.cartaoResumo}>{resumo}</p>}
+      <h3 className={s.cartaoTitulo} title={dica(titulo)}>{titulo}</h3>
+      {resumo && <p className={s.cartaoResumo} title={dica(resumo)}>{resumo}</p>}
       {data && <span className={s.cartaoData}>{dataLegivel(data)}</span>}
     </>
   )
@@ -61,8 +64,8 @@ export function CartaoLista({ para, imagem, etiqueta, titulo, resumo, data, extr
       <Foto src={imagem} className={s.cartaoImagem} />
       <div className={s.texto}>
         {etiqueta && <div><Etiqueta>{etiqueta}</Etiqueta></div>}
-        <h3 className={s.cartaoTitulo}>{titulo}</h3>
-        {resumo && <p className={s.cartaoResumo}>{resumo}</p>}
+        <h3 className={s.cartaoTitulo} title={dica(titulo)}>{titulo}</h3>
+        {resumo && <p className={s.cartaoResumo} title={dica(resumo)}>{resumo}</p>}
         {extra}
         {data && <span className={s.cartaoData}>{dataLegivel(data)}</span>}
       </div>

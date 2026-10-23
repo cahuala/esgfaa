@@ -175,3 +175,19 @@
     min-height: 200px;
   }
 }
+
+/* texto comprido nos cartões: corta-se com «…» para os cartões ficarem do mesmo tamanho (o texto todo está na página) */
+.texto h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.texto p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+}

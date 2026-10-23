@@ -150,3 +150,12 @@
     min-height: 220px;
   }
 }
+
+/* texto comprido nos cartões: corta-se com «…» para os cartões ficarem do mesmo tamanho (o texto todo está na página) */
+.cursoResumo {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
