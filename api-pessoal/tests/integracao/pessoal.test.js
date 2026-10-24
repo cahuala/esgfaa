@@ -192,6 +192,14 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await adm.post('/api/propostas').send({ tipo: 'promocao', titulo: 'X', itens: [{ pessoaId: c.id }] })).status, 400)
   })
 
+  it('o painel guarda os números uns segundos, mas actualiza-se logo depois de uma gravação', async () => {
+    const antes = (await adm.get('/api/painel').expect(200)).body.totais
+    assert.deepEqual((await adm.get('/api/painel').expect(200)).body.totais, antes) // o mesmo cálculo
+    await adm.post('/api/pessoas').send(militar({ nip: 'PAINEL01', nome: 'Militar do Painel' })).expect(201)
+    const depois = (await adm.get('/api/painel').expect(200)).body.totais
+    assert.equal(depois.militares, antes.militares + 1)
+  })
+
   it('painel com os gráficos (cada um com o filtro da lista) e filtros da lista', async () => {
     const r = (await adm.get('/api/painel').expect(200)).body
     assert.ok(r.totais.militares >= 5)

@@ -50,6 +50,11 @@ export function rotas({ servicos: s, config }) {
   })
 
   r.use(autenticar(s.sessao))
+  // depois de uma gravação bem-sucedida, o painel volta a calcular os números
+  r.use((req, res, next) => {
+    if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) s.painel.esquecer() })
+    next()
+  })
   r.get('/eu', async (req, res) => res.json(await s.sessao.eu(u(req))))
   // verificação em dois passos (aplicação de autenticação)
   r.get('/eu/2fa', async (req, res) => res.json(await s.doisFatores.estado(u(req))))

@@ -5,6 +5,10 @@ import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from './propostas.js'
 import { NOMES_LICENCA } from './licencas.js'
 import { exigir } from './sessao.js'
 
+// o painel é o mesmo para todos os que o vêem: calcula-se no máximo uma vez a cada 30 segundos (são as
+// ~700 fichas com as carreiras, ~1,5 s no servidor), e outra vez logo depois de qualquer gravação
+const VALIDADE_MS = 30_000
+
 const FAIXAS = [['18-29', 'Menos de 30'], ['30-39', '30 a 39'], ['40-49', '40 a 49'], ['50-59', '50 a 59'], ['60-200', '60 ou mais']]
 
 /*
@@ -12,12 +16,33 @@ const FAIXAS = [['18-29', 'Menos de 30'], ['30-39', '30 a 39'], ['40-49', '40 a 
   (o navegador só tem de passar o filtro à página das pessoas).
 */
 export class ServicoPainel {
+  #memoria = null // { ate, promessa }
+
   constructor({ pessoas, bd, agora = () => new Date() }) {
     Object.assign(this, { pessoas, bd, agora })
   }
 
-  async resumo(u) {
+  // uma gravação (ficha, proposta, licença…) torna os números antigos: o próximo painel volta a calcular
+  esquecer() {
+    this.#memoria = null
+  }
+
+  resumo(u) {
     exigir(u, 'ver')
+    const agora = Date.now()
+    if (!this.#memoria || this.#memoria.ate < agora) {
+      const promessa = this.#calcular(u)
+      this.#memoria = { ate: agora + VALIDADE_MS, promessa }
+      // um erro não fica guardado: o pedido seguinte volta a tentar
+      promessa.catch(() => { if (this.#memoria?.promessa === promessa) this.#memoria = null })
+    }
+    return this.#memoria.promessa
+  }
+
+  async #calcular(u) {
+    // a projecção da reserva corre ao mesmo tempo que a lista (eram uma depois da outra)
+    const projecaoPedida = this.pessoas.projecaoReserva(u, { anos: 5 })
+    projecaoPedida.catch(() => {})
     const todos = await this.pessoas.listar(u, {})
     const mil = todos.filter((p) => p.tipo === 'militar')
     const mulheres = todos.filter((p) => p.genero === 'F')
@@ -59,7 +84,7 @@ export class ServicoPainel {
     const movimentos = ['promocao', 'graduacao', 'nomeacao', 'progressao'].map((t) => ({ tipo: t, rotulo: { promocao: 'Promoções', graduacao: 'Graduações', nomeacao: 'Nomeações', progressao: 'Progressões (civis)' }[t], valores: meses.map((m) => eventos.filter((e) => e.tipo === t && e.data.toISOString().startsWith(m)).length) }))
 
     const reservaAnos = Array.from({ length: 6 }, (_, i) => anoAtual + i)
-    const projecao = await this.pessoas.projecaoReserva(u, { anos: 5 })
+    const projecao = await projecaoPedida
 
     return {
       totais: {
