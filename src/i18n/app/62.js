@@ -81,4 +81,5 @@ export default [
   ['A capa tem de ser uma imagem.', 'The cover must be an image.', 'La couverture doit être une image.', 'La portada debe ser una imagen.'],
   ['Vídeo não encontrado.', 'Video not found.', 'Vidéo introuvable.', 'Vídeo no encontrado.'],
   ['Publicou um vídeo curto numa cadeira', 'Published a short video in a course', 'A publié une vidéo courte dans un cours', 'Publicó un vídeo corto en una asignatura'],
+  ['Actividades realizadas', 'Past activities', 'Activités réalisées', 'Actividades realizadas'],
 ]

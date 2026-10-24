@@ -14,7 +14,7 @@ function ActividadesEmVideo() {
   if (!grupos.length) return null
   return (
     <div className={`contentor ${css.bloco}`}>
-      <Historias grupos={grupos} titulo={t('Actividades realizadas em vídeo')} verMais={(g) => navegar(g.ligacao)} />
+      <Historias grupos={grupos} titulo={t('Actividades realizadas')} verMais={(g) => navegar(g.ligacao)} />
     </div>
   )
 }

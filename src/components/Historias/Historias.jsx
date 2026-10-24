@@ -7,12 +7,15 @@ import css from './Historias.module.css'
   actividade ou por cadeira — e, ao tocar, o leitor em ecrã inteiro: vertical, começa sozinho, uma barra
   por vídeo no topo, toque à direita passa ao seguinte e à esquerda volta, carregar sem largar pausa.
   No fim de um grupo segue para o seguinte. Os círculos já vistos ficam cinzentos (só neste navegador).
-  grupos: [{ id, titulo, subtitulo?, capa?, itens: [{ id, src | obter(), poster?, legenda?, data? }] }] — obter() dá o
+  grupos: [{ id, titulo, subtitulo?, capa?, itens: [{ id, src | obter(), imagem?, poster?, legenda?, data? }] }] — imagem: é uma
+  fotografia (fica alguns segundos); obter() dá o
   endereço só quando o vídeo se vai ver (no Portal os ficheiros pedem-se com a sessão); o seguinte prepara-se já.
   adicionar: { texto, aoClicar } — o círculo «+» de quem publica; apagar(item): o caixote no leitor;
   verMais(grupo): o botão «Ver a actividade» (abre o evento ou a notícia).
 */
 const CHAVE_VISTOS = 'esg-videos-vistos'
+// uma fotografia fica no ecrã estes milissegundos (como no WhatsApp)
+const TEMPO_FOTO = 5000
 const lerVistos = () => { try { return new Set(JSON.parse(localStorage.getItem(CHAVE_VISTOS) || '[]')) } catch { return new Set() } }
 const guardarVistos = (s) => { try { localStorage.setItem(CHAVE_VISTOS, JSON.stringify([...s].slice(-500))) } catch { /* sem armazenamento: fica só nesta visita */ } }
 const quando = (d) => {
@@ -128,6 +131,20 @@ function Leitor({ grupos, inicio, aoVer, fechar, apagar, verMais }) {
     if (pausa) v.pause()
     else v.play().catch(() => { v.muted = true; setSom(false); v.play().catch(() => {}) }) // sem som, se o navegador não deixar
   }, [pausa, item, src])
+  // fotografia: a barra avança com o tempo (retoma onde ficou depois de uma pausa) e, no fim, passa à seguinte
+  const feito = useRef(0)
+  useEffect(() => { feito.current = progresso }, [progresso])
+  useEffect(() => {
+    if (!item.imagem || pausa) return undefined
+    const passo = 100
+    let p = feito.current
+    const t = setInterval(() => {
+      p = Math.min(100, p + (passo / TEMPO_FOTO) * 100)
+      setEstado((e) => ({ ...(e.id === item.id ? e : { id: item.id, pausa: false, segurar: false }), progresso: p }))
+      if (p >= 100) { clearInterval(t); seguinte() }
+    }, passo)
+    return () => clearInterval(t)
+  }, [item, pausa, seguinte])
   useEffect(() => {
     const tecla = (e) => {
       if (e.key === 'Escape') fechar()
@@ -167,11 +184,12 @@ function Leitor({ grupos, inicio, aoVer, fechar, apagar, verMais }) {
             <b>{g.titulo}</b>
             <span>{[g.subtitulo, quando(item.data)].filter(Boolean).join(' · ')}</span>
           </div>
-          <button type="button" className={css.botao} onClick={() => setSom((s) => !s)} aria-label={som ? tx('Sem som') : tx('Com som')}>{som ? '🔊' : '🔇'}</button>
+          {!item.imagem && <button type="button" className={css.botao} onClick={() => setSom((s) => !s)} aria-label={som ? tx('Sem som') : tx('Com som')}>{som ? '🔊' : '🔇'}</button>}
           {apagar && <button type="button" className={css.botao} onClick={() => { mudar({ pausa: true }); apagar(item) }} aria-label={tx('Apagar')}>🗑</button>}
           <button type="button" className={css.botao} onClick={fechar} aria-label={tx('Fechar')}>✕</button>
         </div>
-        {!src && <span className={css.pausa} aria-hidden="true"><span className={css.aCarregar} /></span>}
+        {!src && !item.imagem && <span className={css.pausa} aria-hidden="true"><span className={css.aCarregar} /></span>}
+        {item.imagem ? <img key={item.id} className={css.video} src={src} alt={item.legenda || g.titulo} /> : (
         <video
           key={item.id}
           ref={video}
@@ -186,6 +204,7 @@ function Leitor({ grupos, inicio, aoVer, fechar, apagar, verMais }) {
           onEnded={seguinte}
           onError={() => setTimeout(seguinte, 1500)}
         />
+        )}
         <div className={css.toque} onPointerDown={baixo} onPointerUp={cima} onPointerLeave={() => { if (premido.current) { premido.current = null; mudar({ pausa: false, segurar: false }) } }} aria-hidden="true" />
         {pausa && !atual.segurar && <span className={css.pausa} aria-hidden="true">❚❚</span>}
         {(item.legenda || verMais) && (
