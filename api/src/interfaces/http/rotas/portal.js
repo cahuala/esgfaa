@@ -212,6 +212,8 @@ export function rotasPortal({ servicos, config, privados }) {
   const q = servicos.inqueritos
   r.post('/cadeiras/:id/sondagens', validar({ params: pId, body: E.sondagem }), async (req, res) => res.status(201).json(await q.criarSondagem(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/inqueritos/:id', validar({ params: pId, body: E.sondagem }), async (req, res) => res.json(await q.atualizarSondagem(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/cadeiras/:id/inqueritos', validar({ params: pId, body: E.inqueritoCadeira }), async (req, res) => res.status(201).json(await q.criarInquerito(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/inqueritos/:id/formulario', validar({ params: pId, body: E.inqueritoCadeira.partial() }), async (req, res) => res.json(await q.atualizarInquerito(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.ver(ctx(req), req.dados.params.id)))
   r.post('/inqueritos/:id/respostas', validar({ params: pId, body: E.respostasInquerito }), async (req, res) => res.json(await q.responder(ctx(req), req.dados.params.id, req.dados.body.respostas)))

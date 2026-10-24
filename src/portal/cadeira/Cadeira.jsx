@@ -157,21 +157,39 @@ function Cadeira() {
 function MenuMais({ itens, atual, escolher }) {
   const [aberto, setAberto] = useState(null) // posição do menu (fixa: o cabeçalho corta o que transborda)
   const ref = useRef(null)
+  const botao = useRef(null)
+  const posicao = () => {
+    const r = botao.current.getBoundingClientRect()
+    return { top: r.bottom, right: Math.max(8, window.innerWidth - r.right) }
+  }
+  const estaAberto = Boolean(aberto)
   useEffect(() => {
-    if (!aberto) return undefined
+    if (!estaAberto) return undefined
     const fora = (e) => { if (!ref.current?.contains(e.target)) setAberto(null) }
-    const fechar = () => setAberto(null)
+    // a página desloca-se (um toque no trackpad chega): o menu acompanha o botão, e só fecha se ele sair do ecrã
+    const seguir = () => {
+      const r = botao.current?.getBoundingClientRect()
+      if (!r || r.bottom < 0 || r.top > window.innerHeight) setAberto(null)
+      else setAberto(posicao())
+    }
+    const tecla = (e) => { if (e.key === 'Escape') setAberto(null) }
     document.addEventListener('mousedown', fora)
-    window.addEventListener('scroll', fechar)
-    return () => { document.removeEventListener('mousedown', fora); window.removeEventListener('scroll', fechar) }
-  }, [aberto])
+    document.addEventListener('touchstart', fora, { passive: true })
+    document.addEventListener('keydown', tecla)
+    window.addEventListener('scroll', seguir, { passive: true })
+    window.addEventListener('resize', seguir)
+    return () => {
+      document.removeEventListener('mousedown', fora)
+      document.removeEventListener('touchstart', fora)
+      document.removeEventListener('keydown', tecla)
+      window.removeEventListener('scroll', seguir)
+      window.removeEventListener('resize', seguir)
+    }
+  }, [estaAberto])
   const escolhido = itens.find((s) => s.id === atual)
   return (
     <li className="nav-item position-relative" ref={ref}>
-      <button type="button" className={`nav-link border-0 bg-transparent ${escolhido ? 'active' : ''}`} aria-haspopup="menu" aria-expanded={Boolean(aberto)} onClick={(e) => {
-        const r = e.currentTarget.getBoundingClientRect()
-        setAberto(aberto ? null : { top: r.bottom, right: Math.max(8, window.innerWidth - r.right) })
-      }}>
+      <button ref={botao} type="button" className={`nav-link border-0 bg-transparent ${escolhido ? 'active' : ''}`} aria-haspopup="menu" aria-expanded={estaAberto} onClick={() => setAberto(aberto ? null : posicao())}>
         {escolhido ? <><i className={`fa ${escolhido.icone} me-1 d-none d-md-inline`} />{escolhido.texto}</> : tx('Mais')} <i className="fa fa-caret-down ms-1" />
       </button>
       {aberto && (

@@ -127,6 +127,37 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     assert.deepEqual(linhas.map((l) => l.estudanteId), [null])
   })
 
+  it('inquérito de opinião do docente (como o Google Forms): anónimo, editável até haver respostas', async () => {
+    const perguntas = [
+      { tipo: 'escala', texto: 'As aulas ajudaram a perceber a matéria.' },
+      { tipo: 'escolha', texto: 'Que formato prefere?', opcoes: ['Presencial', 'À distância'] },
+      { tipo: 'aberta', texto: 'O que mudaria?', obrigatoria: false },
+    ]
+    const url = `/api/portal/cadeiras/${cadeira.id}/inqueritos`
+    assert.equal((await portal('ana').post(url).send({ titulo: 'Opinião', perguntas })).status, 403)
+    assert.equal((await portal('prof').post(url).send({ titulo: 'Opinião', perguntas: [] })).status, 400)
+    const i = await portal('prof').post(url).send({ titulo: 'Opinião sobre a cadeira', perguntas })
+    assert.equal(i.status, 201, i.body.erro)
+    assert.deepEqual([i.body.tipo, i.body.anonimo, i.body.mostrarResultados], ['inquerito', true, 'nunca'])
+    assert.ok((await vista('ana')).inqueritos.some((x) => x.id === i.body.id))
+
+    const editar = (corpo) => portal('prof').put(`/api/portal/inqueritos/${i.body.id}/formulario`).send(corpo)
+    assert.equal((await editar({ perguntas: [...perguntas, { tipo: 'curta', texto: 'Turma?' }] })).status, 200)
+    const v = (await portal('ana').post(`/api/portal/inqueritos/${i.body.id}/respostas`).send({ respostas: { 0: 4, 1: [0] } })).body
+    assert.deepEqual([v.respondido, v.resultados], [true, null])
+    // com respostas: o título e o fecho mudam; as perguntas e o anonimato não
+    assert.equal((await editar({ titulo: 'Opinião (1.º semestre)', perguntas: [...perguntas, { tipo: 'curta', texto: 'Turma?' }], anonimo: true })).status, 200)
+    assert.equal((await editar({ perguntas })).status, 409)
+    assert.equal((await editar({ anonimo: false })).status, 409)
+    const doc = (await portal('prof').get(`/api/portal/inqueritos/${i.body.id}`)).body
+    assert.deepEqual([doc.titulo, doc.resultados.total, doc.porEstudante], ['Opinião (1.º semestre)', 1, undefined])
+    // as sondagens não se editam por aqui
+    const s = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/sondagens`).send({ titulo: 'Dia', pergunta: 'Que dia?', opcoes: ['a', 'b'] })).body
+    assert.equal((await portal('prof').put(`/api/portal/inqueritos/${s.id}/formulario`).send({ titulo: 'Outro' })).status, 403)
+    await portal('prof').delete(`/api/portal/inqueritos/${s.id}`)
+    assert.equal((await portal('prof').delete(`/api/portal/inqueritos/${i.body.id}`)).status, 204)
+  })
+
   it('avaliação dos docentes: lançada pela Administração Escolar, anónima, resultados com mínimo de respostas', async () => {
     assert.equal((await sec().post(`/api/admin/academico/turmas/${turma.id}/avaliacao`).send({ fecha: '2020-01-01T00:00:00Z' })).status, 400)
     const l = await sec().post(`/api/admin/academico/turmas/${turma.id}/avaliacao`).send({ fecha: '2026-12-15T23:59:00Z' })

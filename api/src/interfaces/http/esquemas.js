@@ -224,6 +224,11 @@ export const sondagem = z.object({
   pergunta: texto(600).optional(), opcoes: z.array(texto(300)).max(12).optional(), multipla: z.boolean().optional(), anonimo: z.boolean().optional(),
   mostrarResultados: texto(20).optional(), fecha: z.union([texto(40), z.null()]).optional(),
 })
+// inquérito do docente (as perguntas validam-se no domínio: dominio/comum/opiniao.js)
+export const inqueritoCadeira = z.object({
+  titulo: texto(300), descricao: texto(3000).optional(), secaoId: z.union([z.string().max(12), z.number(), z.null()]).optional(),
+  perguntas: z.array(z.record(z.string().max(40), z.unknown())).max(60), anonimo: z.boolean().optional(), fecha: z.union([texto(40), z.null()]).optional(),
+})
 export const respostasInquerito = z.object({ respostas: z.record(z.string().max(3), z.union([z.array(z.number()).max(12), z.number(), z.string().max(2000)])) })
 export const lancarAvaliacao = z.object({ fecha: texto(40), titulo: texto(120).optional() })
 

@@ -1,18 +1,19 @@
 import { useState } from 'react'
-import { api } from '../../api'
-import FormularioInquerito from '../../../portal/inquerito/FormularioInquerito'
-import { TIPOS_EDITOR, eObrigatoria, escalaDe, mudarTipo, tipoEditor } from '../../../portal/inquerito/tipos'
-import { t as tx } from '../../../i18n/linguas'
-import '../../../portal/inquerito/formulario.css'
+import FormularioInquerito from './FormularioInquerito'
+import { TIPOS_EDITOR, eObrigatoria, escalaDe, mudarTipo, tipoEditor } from './tipos'
+import { t as tx } from '../../i18n/linguas'
+import './formulario.css'
 
 const MAX_ITENS = 60
 
 /*
-  Editor de um inquérito institucional com o aspeto do Google Forms: o cabeçalho com o título e a
-  apresentação, um cartão por pergunta (texto, descrição, tipo, opções, "Obrigatória"), as secções (cada
-  uma é uma página para quem responde) e "Pré-visualizar" mostra o inquérito como o vai ver quem responde.
+  Editor de um inquérito com o aspeto do Google Forms: o cabeçalho com o título e a apresentação, um cartão
+  por pergunta (texto, descrição, tipo, opções, "Obrigatória"), as secções (cada uma é uma página para quem
+  responde) e "Pré-visualizar" mostra o inquérito como o vai ver quem responde.
+  Serve a Administração Escolar (inquéritos institucionais: publicos e turmas dizem para quem é) e o docente
+  (inquérito da cadeira, para os seus estudantes: anonimoEditavel). guardar(corpo, id) grava; feito() fecha.
 */
-function EditorInquerito({ f, setF, publicos, turmas, feito, falhou }) {
+function EditorInquerito({ f, setF, publicos = null, turmas = [], guardar: gravar, feito, falhou, anonimoEditavel = false, cancelar = null, textoGuardar = null }) {
   const [aGuardar, setAGuardar] = useState(false)
   const [ver, setVer] = useState(false)
   const [ativa, setAtiva] = useState(0)
@@ -35,9 +36,12 @@ function EditorInquerito({ f, setF, publicos, turmas, feito, falhou }) {
     e.preventDefault()
     setAGuardar(true)
     try {
-      const corpo = { titulo: f.titulo, descricao: f.descricao, publico: f.publico, turmaIds: f.publico === 'docentes' ? [] : f.turmaIds, fecha: f.fecha ? new Date(f.fecha).toISOString() : '', perguntas }
-      if (f.id) await api(`/academico/satisfacao/${f.id}`, { metodo: 'PUT', corpo })
-      else await api('/academico/satisfacao', { metodo: 'POST', corpo })
+      const corpo = {
+        titulo: f.titulo, descricao: f.descricao, fecha: f.fecha ? new Date(f.fecha).toISOString() : (publicos ? '' : null), perguntas,
+        ...(publicos ? { publico: f.publico, turmaIds: f.publico === 'docentes' ? [] : f.turmaIds } : {}),
+        ...(anonimoEditavel ? { anonimo: f.anonimo !== false } : {}),
+      }
+      await gravar(corpo, f.id)
       feito()
     } catch (falha) {
       falhou(falha)
@@ -72,16 +76,26 @@ function EditorInquerito({ f, setF, publicos, turmas, feito, falhou }) {
             <input className="gf-campo gf-campo-titulo" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder={tx('Título do inquérito')} aria-label={tx('Título')} required maxLength={200} />
             <textarea className="gf-campo" rows={2} value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} placeholder={tx('Texto de apresentação')} aria-label={tx('Texto de apresentação')} maxLength={2000} />
             <div className="gf-definicoes">
+              {publicos && (
               <label>
                 <span>{tx('Para')}</span>
                 <select className="form-select form-select-sm" value={f.publico} onChange={(e) => setF({ ...f, publico: e.target.value })}>{Object.entries(publicos).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}</select>
               </label>
+              )}
               <label>
                 <span>{tx('Responder até')}</span>
-                <input type="datetime-local" className="form-control form-control-sm" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} required />
+                <input type="datetime-local" className="form-control form-control-sm" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} required={Boolean(publicos)} />
               </label>
             </div>
-            {f.publico !== 'docentes' && turmas.length > 0 && (
+            {anonimoEditavel && (
+              <div className="gf-definicoes">
+                <label className="form-check form-switch mb-0">
+                  <input className="form-check-input" type="checkbox" checked={f.anonimo !== false} onChange={(e) => setF({ ...f, anonimo: e.target.checked })} />
+                  <span className="form-check-label">{tx('Respostas anónimas (não fica registado quem respondeu o quê)')}</span>
+                </label>
+              </div>
+            )}
+            {publicos && f.publico !== 'docentes' && turmas.length > 0 && (
               <div className="gf-definicoes d-block">
                 <span className="d-block mb-1">{tx('Turmas (nenhuma marcada = todos os estudantes)')}</span>
                 <div className="d-flex flex-wrap gap-2">
@@ -143,8 +157,8 @@ function EditorInquerito({ f, setF, publicos, turmas, feito, falhou }) {
             </div>
           )}
           <div className="gf-acoes">
-            <button type="submit" className="btn btn-theme gf-enviar" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar rascunho')}</button>
-            <button type="button" className="gf-limpar" onClick={() => setF(null)}>{tx('Cancelar')}</button>
+            <button type="submit" className="btn btn-theme gf-enviar" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : textoGuardar ?? tx('Guardar rascunho')}</button>
+            <button type="button" className="gf-limpar" onClick={() => (cancelar ? cancelar() : setF(null))}>{tx('Cancelar')}</button>
           </div>
         </form>
       )}

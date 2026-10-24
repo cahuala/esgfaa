@@ -1,7 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { MINIMO_RESPOSTAS_AVALIACAO, PERGUNTAS_AVALIACAO, RESULTADOS, validarSondagem } from '../../../dominio/academico/atividades/inqueritos.js'
-import { limparRespostasInquerito, mediaGlobal, resultadosInquerito } from '../../../dominio/comum/opiniao.js'
+import { limparRespostasInquerito, mediaGlobal, resultadosInquerito, validarPerguntasOpiniao } from '../../../dominio/comum/opiniao.js'
 import { eDuplicado } from '../../../infraestrutura/bd/prisma.js'
 
 const data = (v, campo = 'fecha') => {
@@ -12,7 +12,9 @@ const data = (v, campo = 'fecha') => {
 }
 
 /*
-  Sondagens (do docente) e inquéritos de avaliação do docente (da Administração Escolar).
+  Sondagens e inquéritos (do docente, para os estudantes da cadeira) e inquéritos de avaliação do docente
+  (da Administração Escolar). O inquérito do docente tem as perguntas do Google Forms (escolha, escala,
+  grelha, texto, data, secções) e é anónimo por omissão; os estudantes não vêem os resultados.
   Nas respostas anónimas a base de dados não guarda quem respondeu o quê.
 */
 export class ServicoInqueritos {
@@ -61,6 +63,36 @@ export class ServicoInqueritos {
     return i
   }
 
+  // ---------- docente: inquéritos (como o Google Forms) ----------
+
+  #dadosFormulario(d, atual = null) {
+    const r = {}
+    if (d.titulo !== undefined || !atual) r.titulo = texto(d.titulo, 'titulo', 'Título', { min: 3, max: 200 })
+    if (d.descricao !== undefined) r.descricao = texto(d.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false })
+    if (d.perguntas !== undefined || !atual) r.perguntas = validarPerguntasOpiniao(d.perguntas)
+    if (d.anonimo !== undefined || !atual) r.anonimo = d.anonimo !== false
+    if (d.fecha !== undefined) r.fecha = data(d.fecha)
+    return r
+  }
+
+  async criarInquerito(ctx, cadeiraId, dados) {
+    const c = await this.acesso.doDocente(ctx.conta, cadeiraId)
+    const i = await this.inqueritos.criar({ cadeiraId: c.id, tipo: 'inquerito', resultados: 'nunca', secaoId: await this.#secaoDe(c.id, dados.secaoId), ...this.#dadosFormulario(dados) })
+    await this.#avisar(ctx, c, i, `Inquérito em ${c.nome}: ${i.titulo}`)
+    return i
+  }
+
+  async atualizarInquerito(ctx, id, dados) {
+    const { i } = await this.#doDocente(ctx, id)
+    if (i.tipo !== 'inquerito') throw new SemPermissao('Este inquérito não se edita aqui.')
+    const mudanca = this.#dadosFormulario(dados, i)
+    // com respostas, o editor volta a mandar as mesmas perguntas: só recusa se mudarem
+    const perguntasMudam = mudanca.perguntas && JSON.stringify(mudanca.perguntas) !== JSON.stringify(i.perguntas)
+    if (i.respostas > 0 && (perguntasMudam || (mudanca.anonimo !== undefined && mudanca.anonimo !== i.anonimo))) throw new Conflito('Já há respostas: as perguntas e o anonimato já não mudam.')
+    if (!perguntasMudam) delete mudanca.perguntas
+    return this.inqueritos.atualizar(i.id, mudanca)
+  }
+
   async atualizarSondagem(ctx, id, dados) {
     const { i } = await this.#doDocente(ctx, id)
     if (i.tipo !== 'sondagem') throw new SemPermissao('A avaliação do docente é gerida pela Administração Escolar.')
@@ -71,7 +103,7 @@ export class ServicoInqueritos {
 
   async apagar(ctx, id) {
     const { i } = await this.#doDocente(ctx, id)
-    if (i.tipo !== 'sondagem') throw new SemPermissao('A avaliação do docente é gerida pela Administração Escolar.')
+    if (i.tipo === 'avaliacao') throw new SemPermissao('A avaliação do docente é gerida pela Administração Escolar.')
     await this.inqueritos.apagar(i.id)
   }
 

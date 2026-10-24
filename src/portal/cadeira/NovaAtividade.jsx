@@ -15,7 +15,8 @@ const OPCOES = [
   { id: 'ligacao', icone: 'fa-link', cor: 'bg-info', nome: 'Ligação', texto: tx('Endereço de outro site') },
   { id: 'video', icone: 'fa-play', cor: 'bg-danger', nome: 'Vídeo', texto: tx('YouTube ou outro endereço') },
   { id: 'trabalho', icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho', texto: tx('Entrega de ficheiros com prazo e correção') },
-  { id: 'questionario', icone: 'fa-question', cor: 'bg-purple', nome: 'Questionário', texto: tx('Teste com correção automática') },
+  { id: 'questionario', icone: 'fa-question', cor: 'bg-purple', nome: 'Prova online (questionário)', texto: tx('Prova online: escolha única, múltipla, verdadeiro ou falso… com correção automática') },
+  { id: 'inquerito', icone: 'fa-clipboard-list', cor: 'bg-indigo', nome: 'Inquérito', texto: tx('Perguntas de opinião como no Google Forms (escolha, escala, grelha, texto), anónimo') },
   { id: 'pagina', icone: 'fa-align-left', cor: 'bg-teal', nome: 'Página', texto: tx('Texto escrito no portal, com títulos, tabelas e vídeos') },
   { id: 'pasta', icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta', texto: tx('Vários ficheiros juntos num só recurso') },
   { id: 'livro', icone: 'fa-book', cor: 'bg-indigo', nome: 'Livro', texto: tx('Vários capítulos com índice, para ler e imprimir') },
@@ -30,8 +31,8 @@ const OPCOES = [
 const RESULTADOS = { apos_responder: tx('Depois de responderem'), apos_fecho: tx('Só depois do fecho'), nunca: tx('Nunca (só o docente)') }
 
 // janela "Adicionar atividade ou recurso" (como no Moodle), no modal do tema
-function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
-  const [tipo, setTipo] = useState(null)
+function NovaAtividade({ c, secaoId, fechar, avisar, criada, abrirInquerito = null, tipoInicial = null }) {
+  const [tipo, setTipo] = useState(tipoInicial)
   const [f, setF] = useState({
     titulo: '', descricao: '', url: '', enunciado: '', prazo: '', aceitaAtraso: false, duracao: 20, tentativas: 1, tipoEntrega: 'ficheiro', maxFicheiros: 1,
     emGrupo: false, fimSubmissao: '', fimAvaliacao: '', avaliacoesPorPar: 3, anonimoPares: true, conteudo: '', inicio: '', duracaoSessao: 90, salaPortal: true, pergunta: '', opcoes: ['', ''], multipla: false, anonimo: false, mostrarResultados: 'apos_responder', fecha: '',
@@ -175,7 +176,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada }) {
                 <div className="row g-3">
                   {OPCOES.map((o) => (
                     <div key={o.id} className="col-sm-6 col-lg-4">
-                      <button type="button" className="p-escolha w-100" onClick={() => setTipo(o.id)}>
+                      <button type="button" className="p-escolha w-100" onClick={() => (o.id === 'inquerito' && abrirInquerito ? abrirInquerito(secaoId) : setTipo(o.id))}>
                         <span className={`p-atividade-icone p-atividade-icone-grande ${o.cor}`}><i className={`fa ${o.icone}`} /></span>
                         <b className="d-block mt-2">{o.nome}</b>
                         <span className="small text-muted">{o.texto}</span>

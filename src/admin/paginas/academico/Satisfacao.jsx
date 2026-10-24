@@ -4,7 +4,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import ResultadosInquerito from '../../../portal/cadeira/ResultadosInquerito'
 import { confirmar } from '../../../portal/dialogos'
 import { descarregarCsv } from './documentos/csv'
-import EditorInquerito from './EditorInquerito'
+import EditorInquerito from '../../../portal/inquerito/EditorInquerito'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const ESTADOS = { rascunho: ['bg-gray-500', tx('Rascunho')], aberto: ['bg-success', tx('Aberto')], fechado: ['bg-dark', tx('Fechado')] }
@@ -60,7 +60,8 @@ function Satisfacao() {
           {Object.entries(d.modelos).map(([k, m]) => <button key={k} type="button" className="btn btn-white" onClick={() => novo(k)}>{m.titulo}</button>)}
         </div>
       </CabecalhoPagina>
-      {editar && <EditorInquerito f={editar} setF={setEditar} publicos={d.publicos} turmas={turmas} feito={() => { setEditar(null); carregar(); setAviso({ texto: tx('Inquérito guardado como rascunho.') }) }} falhou={falhou} />}
+      {editar && <EditorInquerito f={editar} setF={setEditar} publicos={d.publicos} turmas={turmas}
+        guardar={(corpo, id) => (id ? api(`/academico/satisfacao/${id}`, { metodo: 'PUT', corpo }) : api('/academico/satisfacao', { metodo: 'POST', corpo }))} feito={() => { setEditar(null); carregar(); setAviso({ texto: tx('Inquérito guardado como rascunho.') }) }} falhou={falhou} />}
       <Painel titulo={tx('Inquéritos ({0})', { 0: d.inqueritos.length })} corpo={false}>
         <div className="table-responsive">
           <table className="table table-striped align-middle mb-0">

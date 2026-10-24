@@ -14,6 +14,7 @@ export const TIPOS = {
   licao: { icone: 'fa-route', cor: 'bg-pink', nome: tx('Lição') },
   sondagem: { icone: 'fa-poll', cor: 'bg-cyan', nome: tx('Sondagem') },
   avaliacao: { icone: 'fa-user-check', cor: 'bg-indigo', nome: tx('Avaliação do docente') },
+  inquerito: { icone: 'fa-clipboard-list', cor: 'bg-indigo', nome: tx('Inquérito') },
   workshop: { icone: 'fa-people-arrows', cor: 'bg-green', nome: tx('Avaliação por pares') },
   scorm: { icone: 'fa-cube', cor: 'bg-blue', nome: tx('Pacote SCORM') },
   h5p: { icone: 'fa-puzzle-piece', cor: 'bg-lime', nome: tx('Conteúdo H5P') },

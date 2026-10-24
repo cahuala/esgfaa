@@ -4,6 +4,7 @@ import { api } from '../api'
 import { Bloqueio, Vazio } from '../componentes'
 import { dataHora, estadoSessao, faltam, nota } from '../formatar'
 import NovaAtividade from './NovaAtividade'
+import EditorInquerito from '../inquerito/EditorInquerito'
 import Importar from './Importar'
 import Restricoes from './Restricoes'
 import Conclusao from './Conclusao'
@@ -13,6 +14,15 @@ import { t as tx, localAtual } from '../../i18n/linguas'
 
 // tipos de dados do arrasto (atividade para outro capítulo, capítulo para outra posição)
 const MIME = { atividade: 'application/x-esg-atividade', capitulo: 'application/x-esg-capitulo' }
+// atalhos visíveis para o docente (o resto está em "Outros")
+const ATALHOS = [
+  ['ficheiro', 'fa-file-upload', tx('Material (ficheiro)')],
+  ['video', 'fa-play', tx('Vídeo')],
+  ['questionario', 'fa-question', tx('Prova online')],
+  ['inquerito', 'fa-clipboard-list', tx('Inquérito de opinião')],
+  ['trabalho', 'fa-file-signature', tx('Trabalho')],
+  ['videoconferencia', 'fa-video', tx('Videoconferência')],
+]
 const SESSAO = { em_breve: ['bg-light text-dark border', tx('Em breve')], abre: ['bg-success', tx('Abre já')], a_decorrer: ['bg-danger', tx('A decorrer')], terminou: ['bg-gray-500', tx('Terminou')] }
 
 /*
@@ -28,6 +38,18 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   const [fechados, setFechados] = useState(() => new Set())
   // arrastar e largar no modo de edição: { tipo: 'atividade', chave } ou { tipo: 'capitulo', id }; alvo = onde se vai largar
   const [arrasto, setArrasto] = useState(null)
+  // inquérito de opinião da cadeira em edição: { secaoId, f }
+  const [inquerito, setInquerito] = useState(null)
+  const abrirInquerito = (secaoId) => {
+    setNova(null)
+    setInquerito({ secaoId, f: { titulo: '', descricao: '', fecha: '', anonimo: true, perguntas: [{ tipo: 'escolha', texto: '', opcoes: [''], obrigatoria: true }] } })
+  }
+  // atalhos do docente: abre já o formulário do tipo escolhido (fica no capítulo Geral; arrasta-se depois)
+  const criar = (tipo) => {
+    setEdicao(true)
+    if (tipo === 'inquerito') abrirInquerito(null)
+    else setNova({ secaoId: null, tipo })
+  }
   const [alvo, setAlvo] = useState(null)
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
 
@@ -137,7 +159,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       if (eDocente) estado = a.publicado ? <span className="badge bg-success">{tx('Publicado')}</span> : <span className="badge bg-gray-500">{tx('Rascunho')}</span>
       else estado = feita(a) ? <span className="badge bg-success"><i className="fa fa-check me-1" />{tx('Feito')}</span> : <span className="badge bg-light text-dark border">{a.estado === 'fechado' ? tx('Fechado') : tx('Por fazer')}</span>
     } else if (a.especie === 'inquerito') {
-      meta = a.tipo === 'avaliacao' ? tx('Inquérito anónimo · {0} perguntas', { 0: a.numeroPerguntas }) : `Sondagem${a.anonimo ? tx(' anónima') : ''}`
+      if (a.tipo === 'sondagem') meta = `Sondagem${a.anonimo ? tx(' anónima') : ''}`
+      else meta = a.anonimo ? tx('Inquérito anónimo · {0} perguntas', { 0: a.numeroPerguntas }) : tx('Inquérito · {0} perguntas', { 0: a.numeroPerguntas })
       if (a.fecha) meta += ` · ${a.fechado ? tx('fechou') : tx('fecha')} ${dataHora(a.fecha)}`
       if (eDocente) estado = <span className="badge bg-gray-500">{a.respostas} {tx('resposta(s)')}</span>
       else estado = a.respondido ? <span className="badge bg-success"><i className="fa fa-check me-1" />{tx('Respondido')}</span> : <span className="badge bg-light text-dark border">{a.fechado ? tx('Fechado') : tx('Por responder')}</span>
@@ -227,6 +250,34 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({ ver: 'estudante' })}><i className="fa fa-user-graduate me-1" />{tx('Ver como estudante')}</button>
             </div>
           </div>
+        )}
+
+        {eDocente && !inquerito && (
+          <div className="panel panel-inverse mb-3">
+            <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-plus-circle me-2" />{tx('Criar na cadeira')}</h2></div>
+            <div className="panel-body">
+              <div className="d-flex flex-wrap gap-2">
+                {ATALHOS.map(([tipo, icone, nome]) => (
+                  <button key={tipo} type="button" className="btn btn-white" onClick={() => criar(tipo)}><i className={`fa ${icone} me-1 text-theme`} />{nome}</button>
+                ))}
+                <button type="button" className="btn btn-white" onClick={() => { setEdicao(true); setNova({ secaoId: null }) }}><i className="fa fa-ellipsis-h me-1" />{tx('Outros (página, pasta, livro, sondagem…)')}</button>
+              </div>
+              <div className="small text-muted mt-2">{tx('O que criar aqui fica no capítulo «Geral». Para o pôr num capítulo, use «Adicionar atividade ou recurso» no fim desse capítulo, ou arraste-o no modo de edição.')}</div>
+            </div>
+          </div>
+        )}
+
+        {inquerito && (
+          <EditorInquerito
+            f={inquerito.f}
+            setF={(f) => setInquerito((x) => ({ ...x, f }))}
+            anonimoEditavel
+            textoGuardar={inquerito.f.id ? null : tx('Publicar o inquérito')}
+            guardar={(corpo, id) => (id ? api(`/inqueritos/${id}/formulario`, { metodo: 'PUT', corpo }) : api(`/cadeiras/${c.id}/inqueritos`, { metodo: 'POST', corpo: { ...corpo, secaoId: inquerito.secaoId } }))}
+            feito={() => { setInquerito(null); avisar({ texto: tx('Inquérito publicado. Os estudantes foram avisados.') }); recarregar() }}
+            falhou={(e) => avisar({ tipo: 'erro', texto: e.message })}
+            cancelar={() => setInquerito(null)}
+          />
         )}
 
         {/* secção geral */}
@@ -376,7 +427,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
 
       {restringir && <Restricoes {...restringir} atividades={atividades} fechar={() => setRestringir(null)} avisar={avisar} guardado={() => { setRestringir(null); recarregar() }} />}
       {importar && <Importar c={c} fechar={() => setImportar(false)} avisar={avisar} concluido={recarregar} />}
-      {nova && <NovaAtividade c={c} secaoId={nova.secaoId} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
+      {nova && <NovaAtividade c={c} secaoId={nova.secaoId} tipoInicial={nova.tipo ?? null} abrirInquerito={abrirInquerito} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
     </div>
   )
 }
