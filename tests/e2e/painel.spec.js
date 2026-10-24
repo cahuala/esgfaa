@@ -42,7 +42,8 @@ test.describe('painel de administração', () => {
     const envio = page.waitForResponse((r) => r.url().endsWith('/api/admin/ficheiros') && r.status() === 201)
     await page.locator('.doc-capa-vazia input[type=file]').setInputFiles(FOTO)
     await envio
-    await expect(page.locator('.doc-capa img')).toHaveAttribute('src', /\/uploads\/\d{4}-\d{2}\/[0-9a-f-]+\.png$/)
+    // o brasão (PNG de 1,2 MB) fica leve ao carregar: WebP
+    await expect(page.locator('.doc-capa img')).toHaveAttribute('src', /\/uploads\/\d{4}-\d{2}\/[0-9a-f-]+\.webp$/)
     await page.getByRole('button', { name: 'Publicar' }).click()
     await expect(page.getByText('Publicado — já está visível no site.')).toBeVisible()
     await expect(page).toHaveURL(/#\/colecao\/noticias\/noticia-de-teste-\d+$/)
