@@ -140,7 +140,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('tab', { name: /Cadeira/ }).click()
   await page.getByLabel('Modo de edição').check()
   await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
-  await page.getByRole('button', { name: /Questionário/ }).click()
+  await page.getByRole('button', { name: /^Prova online \(questionário\)/ }).click()
   await page.getByLabel('Título').fill('Teste rápido')
   await page.getByRole('button', { name: 'Criar e juntar perguntas' }).click()
   await page.getByLabel('Tipo', { exact: true }).selectOption('vf')
