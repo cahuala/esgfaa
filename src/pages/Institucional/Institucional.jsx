@@ -90,7 +90,7 @@ function Institucional() {
             <div className={styles.textoColunas}>
               {pagina.historia.imagem && (
                 <figure className={styles.figuraTexto}>
-                  <img src={pagina.historia.imagem} alt={pagina.historia.legenda || ''} />
+                  <img loading="lazy" decoding="async" src={pagina.historia.imagem} alt={pagina.historia.legenda || ''} />
                   {pagina.historia.legenda && <figcaption><span>{t('Figura {n}', { n: 1 })}</span> {pagina.historia.legenda}</figcaption>}
                 </figure>
               )}
@@ -169,7 +169,7 @@ function Institucional() {
 
             <div className={styles.mensagem}>
               <figure className={styles.retrato}>
-                {comandante.foto ? <img src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
+                {comandante.foto ? <img loading="lazy" decoding="async" src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
               </figure>
               <div>
                 <blockquote className={styles.citacao}>{pagina.mensagem.citacao}</blockquote>
@@ -191,7 +191,7 @@ function Institucional() {
               <ul>
                 {direcao.map((p) => (
                   <li key={p.id}>
-                    <span className={styles.avatar}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>
+                    <span className={styles.avatar}>{p.foto ? <img loading="lazy" decoding="async" src={p.foto} alt="" /> : iniciais(p.nome)}</span>
                     <strong>{p.nome}</strong>
                     <span className={styles.cargo}>{p.cargo}</span>
                     <span className={styles.descricao}>{p.destaque}</span>

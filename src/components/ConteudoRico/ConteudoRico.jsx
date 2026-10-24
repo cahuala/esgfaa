@@ -253,7 +253,7 @@ function Visualizador({ imagens, indice, onMudar, onFechar }) {
       )}
 
       <figure className={styles.visualizadorFigura} onClick={(e) => e.stopPropagation()}>
-        <img src={img.src} alt={img.legenda || ''} />
+        <img loading="lazy" decoding="async" src={img.src} alt={img.legenda || ''} />
         <figcaption>
           {img.legenda}
           {total > 1 && <span>{indice + 1} / {total}</span>}

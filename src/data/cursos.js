@@ -1,6 +1,6 @@
-import Curso1 from '../assets/Curso1.png'
-import Curso2 from '../assets/Curso2.png'
-import Curso3 from '../assets/Curso3.png'
+import Curso1 from '../assets/Curso1.webp'
+import Curso2 from '../assets/Curso2.webp'
+import Curso3 from '../assets/Curso3.webp'
 
 import { MODELOS_PLANO } from '../../api/src/dominio/academico/avaliacao/planoCurso.js'
 

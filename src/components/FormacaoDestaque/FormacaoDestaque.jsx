@@ -73,7 +73,7 @@ function FormacaoDestaque() {
           </div>
 
           <article id="painel-curso" role="tabpanel" aria-labelledby={`aba-${curso.id}`} className={styles.painel} key={curso.id}>
-            <div className={styles.imagem}>{curso.imagem && <img src={curso.imagem} alt="" />}</div>
+            <div className={styles.imagem}>{curso.imagem && <img loading="lazy" decoding="async" src={curso.imagem} alt="" />}</div>
             <div className={styles.texto}>
               <div className={styles.etiquetas}>
                 {curso.sigla && <Etiqueta cor="vermelho">{curso.sigla}</Etiqueta>}

@@ -42,7 +42,7 @@ export default function Organograma({ orgaos, pessoas = [] }) {
 function Caixa({ o, p, topo }) {
   const conteudo = (
     <>
-      {topo && p && <span className={styles.foto}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>}
+      {topo && p && <span className={styles.foto}>{p.foto ? <img loading="lazy" decoding="async" src={p.foto} alt="" /> : iniciais(p.nome)}</span>}
       <span className={styles.nome}>{o.sigla ? <><abbr title={o.nome}>{o.sigla}</abbr> · </> : null}{o.nome}</span>
       {p && <span className={styles.responsavel}>{p.nome}{p.cargo ? ` · ${p.cargo}` : ''}</span>}
       {o.texto && <span className={styles.texto}>{o.texto}</span>}

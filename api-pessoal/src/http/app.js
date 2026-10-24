@@ -38,8 +38,10 @@ export function criarApp(contentor, { registarErro } = {}) {
 
   // a aplicação (dist/pessoal) servida no mesmo endereço; as rotas do navegador (#/...) caem no index.html
   if (config.pastaApp && fs.existsSync(path.join(config.pastaApp, 'index.html'))) {
-    app.use(express.static(config.pastaApp, { index: 'index.html', dotfiles: 'deny', maxAge: '1h' }))
-    app.get(/.*/, (req, res) => res.sendFile(path.join(config.pastaApp, 'index.html')))
+    // os ficheiros do build (assets/, com o resumo no nome) não mudam: um ano; a página volta sempre a ser pedida
+    const cache = (res, f) => res.setHeader('Cache-Control', f.includes(`${path.sep}assets${path.sep}`) ? 'public, max-age=31536000, immutable' : 'no-cache')
+    app.use(express.static(config.pastaApp, { index: 'index.html', dotfiles: 'deny', setHeaders: cache }))
+    app.get(/.*/, (req, res) => { res.setHeader('Cache-Control', 'no-cache'); res.sendFile(path.join(config.pastaApp, 'index.html')) })
   }
   app.use(tratarErros(registarErro ?? ((e) => console.error(JSON.stringify({ t: new Date().toISOString(), id: e.id, erro: e.erro?.stack || String(e.erro) })))))
   return app

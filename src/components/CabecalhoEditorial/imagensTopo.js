@@ -1,9 +1,9 @@
-import EscolaDeGuerra from '../../assets/topo/escola-de-guerra.jpg'
-import Escola2 from '../../assets/topo/escola2.jpg'
-import Auditorio from '../../assets/topo/auditorio.jpg'
-import Curso1 from '../../assets/topo/curso1.jpg'
-import Curso2 from '../../assets/topo/curso2.jpg'
-import Curso3 from '../../assets/topo/curso3.jpg'
+import EscolaDeGuerra from '../../assets/topo/escola-de-guerra.webp'
+import Escola2 from '../../assets/topo/escola2.webp'
+import Auditorio from '../../assets/topo/auditorio.webp'
+import Curso1 from '../../assets/topo/curso1.webp'
+import Curso2 from '../../assets/topo/curso2.webp'
+import Curso3 from '../../assets/topo/curso3.webp'
 
 // fotografia do topo de cada secção do site (a primeira parte do endereço); muda-se no painel, em «Imagens do topo»
 export const SECCOES_TOPO = ['institucional', 'cursos', 'noticias', 'artigos', 'eventos', 'revista', 'contactos', 'privacidade']

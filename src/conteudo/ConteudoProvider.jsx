@@ -15,6 +15,26 @@ import publicidade from '../data/publicidade'
 // conteúdos que vêm com o site: usados até a API responder, ou se ela estiver indisponível
 const LOCAL = { noticias, artigos, eventos, cursos, pessoas, revistas, paginas, publicidade, estatisticas: {} }
 
+/*
+  As imagens do carregamento inicial existem duas vezes: no site (/assets/Curso1-hash.webp) e na API
+  (/uploads/seed/curso1.webp, a cópia feita por api/scripts/semear.js). Quando a API responde, os conteúdos
+  passam a usar as do site, que o navegador já descarregou — cada fotografia descarrega-se uma só vez.
+  As imagens carregadas no painel não estão no site e vêm da API como sempre.
+*/
+// o mesmo nome que dá o carregamento inicial (api/scripts/nomes.js): "Escola De Guerra.webp" -> "escola-de-guerra.webp"
+const nomeSemente = (f) => f.slice(0, f.lastIndexOf('.')).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + f.slice(f.lastIndexOf('.')).toLowerCase()
+const DO_SITE = Object.fromEntries(Object.entries(import.meta.glob('../assets/*.{webp,jpg,jpeg,png}', { eager: true, query: '?url', import: 'default' }))
+  .map(([caminho, url]) => [nomeSemente(caminho.split('/').pop()), url]))
+function comImagensDoSite(x) {
+  if (typeof x === 'string') {
+    const m = /\/uploads\/seed\/([^/?#]+)$/.exec(x)
+    return m && DO_SITE[m[1]] ? DO_SITE[m[1]] : x
+  }
+  if (Array.isArray(x)) return x.map(comImagensDoSite)
+  if (x && typeof x === 'object') return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, comImagensDoSite(v)]))
+  return x
+}
+
 function ConteudoProvider({ children }) {
   const [dados, setDados] = useState(LOCAL)
   const [online, setOnline] = useState(false)
@@ -32,8 +52,9 @@ function ConteudoProvider({ children }) {
   useEffect(() => {
     let ativo = true
     pedido('/api/publico/conteudo')
-      .then((remoto) => {
+      .then((resposta) => {
         if (!ativo) return
+        const remoto = comImagensDoSite(resposta)
         // uma página ainda não guardada na API mantém os valores locais
         const paginasJuntas = Object.fromEntries(
           Object.entries(LOCAL.paginas).map(([k, v]) => [k, remoto.paginas?.[k] || v]),

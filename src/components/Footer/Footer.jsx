@@ -53,7 +53,7 @@ function Footer() {
       <div className={styles.topo}>
         <div className={styles.bloco}>
           <div className={styles.marca}>
-            <img src={Logo} alt="" className={styles.logo} />
+            <img loading="lazy" decoding="async" src={Logo} alt="" className={styles.logo} />
             <strong>{t('Escola Superior de Guerra')}</strong>
           </div>
           <p className={styles.descricao}>

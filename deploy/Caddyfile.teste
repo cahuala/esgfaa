@@ -25,6 +25,13 @@
 Disallow: /
 "
 	}
+	# os ficheiros do build têm o resumo do conteúdo no nome: não mudam, o navegador guarda-os um ano;
+	# as páginas (index.html) voltam sempre a ser pedidas, para as actualizações chegarem logo
+	@construidos path /assets/*
+	header @construidos Cache-Control "public, max-age=31536000, immutable"
+	@paginas path / /index.html /portal/ /portal/index.html
+	header @paginas Cache-Control "no-cache"
+
 	handle /api/* {
 		reverse_proxy api:3001
 	}

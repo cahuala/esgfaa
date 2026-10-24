@@ -182,7 +182,7 @@ function CursoDetalhe() {
               <div className={detalhe.coordenacao}>
                 <div className={ed.pessoa}>
                   <span className={ed.avatar}>
-                    {coordenador.foto ? <img src={coordenador.foto} alt="" /> : iniciais(coordenador.nome)}
+                    {coordenador.foto ? <img loading="lazy" decoding="async" src={coordenador.foto} alt="" /> : iniciais(coordenador.nome)}
                   </span>
                   <div>
                     <strong>{coordenador.nome}</strong>

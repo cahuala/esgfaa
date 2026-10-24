@@ -1,4 +1,4 @@
-import FotoCarlosVieira from '../assets/Comandante3.png'
+import FotoCarlosVieira from '../assets/Comandante3.webp'
 
 // Sem `foto`, os componentes mostram as iniciais num círculo.
 const pessoas = [

@@ -1,6 +1,6 @@
-import Auditorio from '../assets/Auditorio.png'
+import Auditorio from '../assets/Auditorio.webp'
 import Escola2 from '../assets/Escola2.jpeg'
-import EscolaDeGuerra from '../assets/Escola De Guerra.png'
+import EscolaDeGuerra from '../assets/Escola De Guerra.webp'
 import contactos from './contactos'
 import privacidade from './privacidade'
 import { calendarioAdmissao, processoAdmissao } from './cursos'

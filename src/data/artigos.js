@@ -1,7 +1,7 @@
-import Auditorio from '../assets/Auditorio.png'
-import Curso1 from '../assets/Curso1.png'
-import Curso3 from '../assets/Curso3.png'
-import EscolaDeGuerra from '../assets/Escola De Guerra.png'
+import Auditorio from '../assets/Auditorio.webp'
+import Curso1 from '../assets/Curso1.webp'
+import Curso3 from '../assets/Curso3.webp'
+import EscolaDeGuerra from '../assets/Escola De Guerra.webp'
 
 /*
   `autor` refere o id em data/pessoas.js.

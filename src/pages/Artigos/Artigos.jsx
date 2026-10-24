@@ -103,7 +103,7 @@ function Artigos() {
               <h2><Link to={`/Artigos/${destaque.slug}`}>{destaque.titulo}</Link></h2>
               {autorDestaque && (
                 <div className={ed.pessoa}>
-                  <span className={ed.avatar}>{autorDestaque.foto ? <img src={autorDestaque.foto} alt="" /> : iniciais(autorDestaque.nome)}</span>
+                  <span className={ed.avatar}>{autorDestaque.foto ? <img loading="lazy" decoding="async" src={autorDestaque.foto} alt="" /> : iniciais(autorDestaque.nome)}</span>
                   <div>
                     <strong>{autorDestaque.nome}</strong>
                     <span>{formatarDataLonga(destaque.data)}</span>
@@ -170,7 +170,7 @@ function Artigos() {
                   onClick={() => setAutor(autor === p.id ? null : p.id)}
                   aria-pressed={autor === p.id}
                 >
-                  <span className={styles.autorAvatar}>{p.foto ? <img src={p.foto} alt="" /> : iniciais(p.nome)}</span>
+                  <span className={styles.autorAvatar}>{p.foto ? <img loading="lazy" decoding="async" src={p.foto} alt="" /> : iniciais(p.nome)}</span>
                   <span>
                     <strong>{p.nome}</strong>
                     <small>{p.total === 1 ? t('1 publicação') : t('{n} publicações', { n: p.total })}</small>

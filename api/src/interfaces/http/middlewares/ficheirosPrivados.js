@@ -2,13 +2,16 @@ import multer from 'multer'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { ErroValidacao } from '../../../dominio/comum/erros.js'
 import { TIPOS_PRIVADOS } from '../../../infraestrutura/ficheiros/privados.js'
+import { otimizarImagem } from '../../../infraestrutura/ficheiros/imagens.js'
 
 // nomes enviados pelo navegador chegam em latin1 (multer); repõe-se o UTF-8
 const nomeOriginal = (n) => limparTexto(Buffer.from(n, 'latin1').toString('utf8')).slice(0, 200)
 
 /*
   Recebe ficheiros para a pasta privada: o campo "ficheiro" (um) e, se maximo > 1, o campo "ficheiros" (vários).
-  Tipos fora da lista são recusados; o tipo real é confirmado depois, no caso de uso.
+  Tipos fora da lista são recusados; o tipo real é confirmado depois, no caso de uso. As fotografias pesadas
+  (capas, imagens nos materiais) ficam em WebP com 2000 px no máximo; um ficheiro que não seja mesmo uma
+  imagem fica como chegou, e a confirmação do tipo recusa-o.
   Põe em req.ficheiros [{ caminho, nome, tipo, tamanho }] e em req.ficheiro o primeiro (ou null).
 */
 export function receberFicheiro({ privados, config, maximo = 1 }) {
@@ -34,9 +37,14 @@ export function receberFicheiro({ privados, config, maximo = 1 }) {
         if (erro.code === 'LIMIT_FILE_COUNT' || erro.code === 'LIMIT_UNEXPECTED_FILE') return next(new ErroValidacao(`No máximo ${maximo} ficheiro(s).`, { campo: 'ficheiros' }))
         return next(erro)
       }
-      req.ficheiros = recebidos.map((f) => ({ caminho: f.path, nome: nomeOriginal(f.originalname), tipo: f.mimetype, tamanho: f.size }))
-      req.ficheiro = req.ficheiros[0] || null
-      next()
+      Promise.all(recebidos.map((f) => {
+        const r = { caminho: f.path, nome: nomeOriginal(f.originalname), tipo: f.mimetype, tamanho: f.size }
+        return otimizarImagem(r).catch(() => r)
+      })).then((l) => {
+        req.ficheiros = l
+        req.ficheiro = l[0] || null
+        next()
+      }, next)
     })
   }
 }

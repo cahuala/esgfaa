@@ -112,6 +112,7 @@ import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js
 import { ServicoTraducoes } from './aplicacao/traducoes/traducoes.js'
 import { ServicoTraducaoDados } from './aplicacao/traducoes/traducaoDados.js'
 import { traduzirComClaude } from './aplicacao/traducoes/traducaoIA.js'
+import { otimizarImagem } from './infraestrutura/ficheiros/imagens.js'
 import { comGlossario } from './dominio/traducoes/glossario.js'
 import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
 
@@ -279,7 +280,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     estatisticas: new ServicoEstatisticas({
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,
     }),
-    ficheiros: new ServicoFicheiros({ armazenamento, auditoria }),
+    ficheiros: new ServicoFicheiros({ armazenamento, auditoria, otimizar: otimizarImagem }),
     sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico, esg }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),

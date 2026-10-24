@@ -2,8 +2,9 @@ import { ErroValidacao, SemPermissao } from '../dominio/comum/erros.js'
 
 // Envio de imagens, vídeos e PDF para usar nos conteúdos
 export class ServicoFicheiros {
-  constructor({ armazenamento, auditoria }) {
-    Object.assign(this, { armazenamento, auditoria })
+  // otimizar: reduz as imagens grandes (infraestrutura/ficheiros/imagens.js)
+  constructor({ armazenamento, auditoria, otimizar = null }) {
+    Object.assign(this, { armazenamento, auditoria, otimizar })
   }
 
   // só quem pode criar ou editar algum conteúdo (ou páginas) envia ficheiros
@@ -21,7 +22,9 @@ export class ServicoFicheiros {
       throw new ErroValidacao(`O ficheiro "${falso.nome}" não corresponde ao tipo indicado.`)
     }
     const resultado = []
-    for (const f of ficheiros) {
+    for (const recebido of ficheiros) {
+      // uma fotografia de vários MB fica leve (o site abre depressa); se não der, fica a original
+      const f = this.otimizar ? await this.otimizar(recebido).catch(() => recebido) : recebido
       const url = this.armazenamento.urlRelativa(f.caminho)
       await this.auditoria.registar(ctx, { acao: 'carregar_ficheiro', alvoTitulo: f.nome, detalhes: { url, tamanho: f.tamanho } })
       resultado.push({ url, nome: f.nome, tipo: f.tipo, tamanho: f.tamanho })

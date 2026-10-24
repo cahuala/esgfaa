@@ -61,7 +61,7 @@ function ArtigoDetalhe() {
       >
         {autor && (
           <div className={`${ed.pessoa} ${styles.autorCabecalho}`}>
-            <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
+            <span className={ed.avatar}>{autor.foto ? <img loading="lazy" decoding="async" src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
             <div>
               <strong>{autor.nome}</strong>
               <span>{autor.cargo}</span>
@@ -108,7 +108,7 @@ function ArtigoDetalhe() {
 
           {autor && (
             <div className={styles.sobreAutor}>
-              <span className={ed.avatar}>{autor.foto ? <img src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
+              <span className={ed.avatar}>{autor.foto ? <img loading="lazy" decoding="async" src={autor.foto} alt="" /> : iniciais(autor.nome)}</span>
               <div>
                 <span className={styles.sobreRotulo}>{t('Sobre o autor')}</span>
                 <h3>{autor.nome}</h3>

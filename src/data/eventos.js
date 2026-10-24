@@ -1,9 +1,9 @@
-import Auditorio from '../assets/Auditorio.png'
-import Curso1 from '../assets/Curso1.png'
-import Curso2 from '../assets/Curso2.png'
-import Curso3 from '../assets/Curso3.png'
+import Auditorio from '../assets/Auditorio.webp'
+import Curso1 from '../assets/Curso1.webp'
+import Curso2 from '../assets/Curso2.webp'
+import Curso3 from '../assets/Curso3.webp'
 import Escola2 from '../assets/Escola2.jpeg'
-import EscolaDeGuerra from '../assets/Escola De Guerra.png'
+import EscolaDeGuerra from '../assets/Escola De Guerra.webp'
 
 // `conteudo` usa os mesmos blocos das notícias (ver data/noticias.js)
 const eventos = [

@@ -23,7 +23,7 @@ function CorpoDestaque() {
           {duplicadas.map((p, i) => (
             <div className={styles.cartao} key={`${p.id}-${i}`} aria-hidden={i >= pessoas.length || undefined}>
               <div className={styles.fotoWrapper}>
-                {p.foto ? <img src={p.foto} alt={i < pessoas.length ? p.nome : ''} className={styles.foto} /> : <span className={styles.iniciais} aria-hidden="true">{iniciais(p.nome)}</span>}
+                {p.foto ? <img loading="lazy" decoding="async" src={p.foto} alt={i < pessoas.length ? p.nome : ''} className={styles.foto} /> : <span className={styles.iniciais} aria-hidden="true">{iniciais(p.nome)}</span>}
               </div>
               <h3>{p.nome}</h3>
               <span className={styles.cargo}>{p.cargo}</span>

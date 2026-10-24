@@ -27,7 +27,7 @@ function Cursos() {
         {cursos.map((c, i) => (
           <article key={c.id} className={`${styles.curso} ${i % 2 ? styles.cursoInvertido : ''}`}>
             <Link to={`/Cursos/${c.id}`} className={styles.cursoFoto} tabIndex={-1} aria-hidden="true">
-              <img src={c.imagem} alt="" />
+              <img loading="lazy" decoding="async" src={c.imagem} alt="" />
               <span className={styles.cursoSigla}>{c.sigla}</span>
             </Link>
 

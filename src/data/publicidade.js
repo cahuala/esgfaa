@@ -1,5 +1,5 @@
-import Curso2 from '../assets/Curso2.png'
-import Auditorio from '../assets/Auditorio.png'
+import Curso2 from '../assets/Curso2.webp'
+import Auditorio from '../assets/Auditorio.webp'
 
 /*
   Banners de publicidade. Editam-se no painel (Publicidade).

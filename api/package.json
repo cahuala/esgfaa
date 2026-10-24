@@ -17,7 +17,8 @@
     "importar-sqlite": "node --env-file-if-exists=.env scripts/importar-sqlite.js",
     "postinstall": "prisma generate",
     "semear-portal": "node --env-file-if-exists=.env scripts/semear-portal.js",
-    "carga": "node --env-file-if-exists=.env scripts/carga.mjs"
+    "carga": "node --env-file-if-exists=.env scripts/carga.mjs",
+    "otimizar-imagens": "node --env-file-if-exists=.env scripts/otimizar-imagens.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
@@ -36,6 +37,7 @@
     "pg": "8.23.1",
     "prisma": "7.10.0",
     "sanitize-html": "^2.18.0",
+    "sharp": "^0.35.5",
     "web-push": "3.6.7",
     "zod": "^4.6.5"
   },
