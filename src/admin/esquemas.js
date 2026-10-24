@@ -101,6 +101,11 @@ export const COLECOES = {
       { nome: 'resumo', rotulo: tx('Resumo'), tipo: 'textarea', linhas: 2, obrigatorio: true, ajuda: tx('Aparece nas listagens e no topo da notícia.') },
       { nome: 'capa', rotulo: tx('Imagem de capa'), tipo: 'imagem', obrigatorio: true, recomendado: TAMANHOS.capa },
       { nome: 'destaque', rotulo: tx('Manchete (aparece em grande no topo do boletim)'), tipo: 'booleano' },
+      { nome: 'nosDestaques', rotulo: tx('Nos Destaques do site'), tipo: 'selecao', opcoes: [
+        { valor: '', rotulo: tx('Automático (eventos realizados e notícias recentes ou em manchete)') },
+        { valor: 'sempre', rotulo: tx('Sempre — mostrar nos Destaques') },
+        { valor: 'nunca', rotulo: tx('Nunca — não mostrar nos Destaques') },
+      ], ajuda: tx('Os Destaques são os cartões verticais (como os estados do WhatsApp) na página inicial, em Notícias e em Eventos.') },
       { nome: 'videosCurtos', rotulo: tx('Vídeos curtos (actividades realizadas)'), tipo: 'objetos', rotuloItem: tx('Vídeo'), ajuda: tx('Vídeos gravados no telemóvel (MP4, de preferência na vertical e até 1 minuto). No site aparecem como os estados do WhatsApp: um círculo por actividade, em ecrã inteiro, um a seguir ao outro.'), campos: [
         { nome: 'src', rotulo: tx('Vídeo (MP4)'), tipo: 'video', largura: 'metade' },
         { nome: 'poster', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem capa, usa-se a imagem principal.') },
@@ -159,6 +164,11 @@ export const COLECOES = {
         { nome: 'hora', rotulo: tx('Hora'), tipo: 'hora', largura: 'terco' },
         { nome: 'atividade', rotulo: tx('Atividade'), tipo: 'texto', largura: 'doisTercos' },
       ] },
+      { nome: 'nosDestaques', rotulo: tx('Nos Destaques do site'), tipo: 'selecao', opcoes: [
+        { valor: '', rotulo: tx('Automático (eventos realizados e notícias recentes ou em manchete)') },
+        { valor: 'sempre', rotulo: tx('Sempre — mostrar nos Destaques') },
+        { valor: 'nunca', rotulo: tx('Nunca — não mostrar nos Destaques') },
+      ], ajuda: tx('Os Destaques são os cartões verticais (como os estados do WhatsApp) na página inicial, em Notícias e em Eventos.') },
       { nome: 'videosCurtos', rotulo: tx('Vídeos curtos (actividades realizadas)'), tipo: 'objetos', rotuloItem: tx('Vídeo'), ajuda: tx('Vídeos gravados no telemóvel (MP4, de preferência na vertical e até 1 minuto). No site aparecem como os estados do WhatsApp: um círculo por actividade, em ecrã inteiro, um a seguir ao outro.'), campos: [
         { nome: 'src', rotulo: tx('Vídeo (MP4)'), tipo: 'video', largura: 'metade' },
         { nome: 'poster', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem capa, usa-se a imagem principal.') },

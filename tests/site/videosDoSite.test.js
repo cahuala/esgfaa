@@ -37,6 +37,18 @@ describe('actividades realizadas como os estados do WhatsApp (site)', () => {
     expect(ids).toEqual(['noticia-n7', 'noticia-n6', 'noticia-n5', 'noticia-n4', 'noticia-n3', 'noticia-n2', 'noticia-n0'])
   })
 
+  it('«Nos Destaques» no painel: «Sempre» aparece primeiro (mesmo antiga ou futura); «Nunca» sai', () => {
+    const g = gruposDoSite({
+      eventos: [
+        { id: 'futuro', titulo: 'Futuro', data: '2026-12-01', capa: '/f.webp', nosDestaques: 'sempre' },
+        { id: 'escondido', titulo: 'Escondido', data: '2026-10-20', capa: '/e.webp', nosDestaques: 'nunca' },
+        { id: 'normal', titulo: 'Normal', data: '2026-10-10', capa: '/n.webp' },
+      ],
+      noticias: Array.from({ length: 8 }, (_, i) => ({ slug: `n${i}`, titulo: `N${i}`, data: `2026-09-0${i + 1}`, capa: `/n${i}.webp`, ...(i === 0 ? { nosDestaques: 'sempre' } : {}), ...(i === 7 ? { nosDestaques: 'nunca' } : {}) })),
+    }, '2026-10-24')
+    expect(g.map((x) => x.id)).toEqual(['evento-futuro', 'noticia-n0', 'evento-normal', 'noticia-n6', 'noticia-n5', 'noticia-n4', 'noticia-n3', 'noticia-n2', 'noticia-n1'])
+  })
+
   it('sem vídeos, o evento mostra as fotografias (capa, galeria, imagens) sem repetir', () => {
     const conf = gruposDoSite(dados, '2026-10-24').find((x) => x.id === 'evento-conferencia')
     expect(conf.itens.map((i) => [i.imagem, i.src, i.legenda])).toEqual([[true, '/conf.webp', 'Painel de oradores'], [true, '/g1.webp', 'Abertura'], [true, '/i1.webp', undefined]])

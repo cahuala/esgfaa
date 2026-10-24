@@ -41,12 +41,15 @@ export function rotasPublicas({ servicos, config, cache }) {
     const hoje = new Date().toISOString().slice(0, 10)
     const media = (l = []) => l.filter((b) => ['imagem', 'galeria', 'video'].includes(b?.tipo))
     const temVideo = (x) => x.videosCurtos?.length || media(x.conteudo).some((b) => b.tipo === 'video' && b.src)
-    const resumir = (x, chave) => ({ [chave]: x[chave], titulo: x.titulo, categoria: x.categoria, data: x.data, capa: x.capa, resumo: x.resumo, videosCurtos: x.videosCurtos, conteudo: media(x.conteudo) })
-    const eventos = (todos.eventos || []).filter((e) => e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15)
+    const resumir = (x, chave) => ({ [chave]: x[chave], titulo: x.titulo, categoria: x.categoria, data: x.data, capa: x.capa, resumo: x.resumo, videosCurtos: x.videosCurtos, nosDestaques: x.nosDestaques, conteudo: media(x.conteudo) })
+    const eventos = [
+      ...(todos.eventos || []).filter((e) => e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15),
+      ...(todos.eventos || []).filter((e) => e.nosDestaques === 'sempre' && !(e.data && e.data <= hoje)),
+    ]
     res.set('Cache-Control', 'public, max-age=300').json(absolutizar({
       eventos: eventos.map((e) => resumir(e, 'id')),
       noticias: [...(todos.noticias || [])].sort((a, b) => (b.data || '').localeCompare(a.data || ''))
-        .filter((n, i) => i < 6 || n.destaque || temVideo(n)).map((n) => ({ ...resumir(n, 'slug'), destaque: n.destaque })),
+        .filter((n, i) => i < 6 || n.destaque || n.nosDestaques === 'sempre' || temVideo(n)).map((n) => ({ ...resumir(n, 'slug'), destaque: n.destaque })),
     }, baseUrl(req, config)))
   })
 

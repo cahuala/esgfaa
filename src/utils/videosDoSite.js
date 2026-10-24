@@ -2,7 +2,8 @@
   Destaques e actividades realizadas como os estados do WhatsApp (site e Portal): cada evento já realizado
   e cada notícia em destaque (ou das mais recentes, ou com vídeo) é um cartão da fila. Mostra os vídeos
   («Vídeos curtos» e os vídeos carregados no texto); sem vídeos, as fotografias (a imagem principal, as
-  imagens e as galerias), cada uma alguns segundos. Do mais recente para o mais antigo.
+  imagens e as galerias), cada uma alguns segundos. Do mais recente para o mais antigo. No painel, «Nos
+  Destaques» força cada um a aparecer sempre (e primeiro) ou nunca.
 */
 const hojeIso = () => new Date().toISOString().slice(0, 10)
 const MAX_EVENTOS = 15
@@ -37,10 +38,17 @@ export function gruposDoSite({ eventos = [], noticias = [] } = {}, hoje = hojeIs
       itens: videos.length ? videos : fotos,
     }
   }
-  const realizados = eventos.filter((e) => e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAX_EVENTOS)
-  const recentes = new Set([...noticias].sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, NOTICIAS_RECENTES).map((n) => n.slug))
-  return [
-    ...realizados.map((e) => grupo(e, 'evento', 'id', { comFotos: true })),
-    ...noticias.map((n) => grupo(n, 'noticia', 'slug', { comFotos: Boolean(n.destaque) || recentes.has(n.slug) })),
-  ].filter((g) => g.itens.length).sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAX_CARTOES)
+  // «Nos Destaques» (painel): sempre ou nunca; vazio = automático
+  const nunca = (x) => x.nosDestaques === 'nunca'
+  const sempre = (x) => x.nosDestaques === 'sempre'
+  const realizados = eventos.filter((e) => !nunca(e) && e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAX_EVENTOS)
+  const fixos = eventos.filter((e) => sempre(e) && !realizados.includes(e))
+  const disponiveis = noticias.filter((n) => !nunca(n))
+  const recentes = new Set([...disponiveis].sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, NOTICIAS_RECENTES).map((n) => n.slug))
+  const grupos = [
+    ...[...realizados, ...fixos].map((e) => ({ g: grupo(e, 'evento', 'id', { comFotos: true }), fixo: sempre(e) })),
+    ...disponiveis.map((n) => ({ g: grupo(n, 'noticia', 'slug', { comFotos: sempre(n) || Boolean(n.destaque) || recentes.has(n.slug) }), fixo: sempre(n) })),
+  ].filter((x) => x.g.itens.length)
+  // os marcados «Sempre» vêm primeiro; depois, do mais recente para o mais antigo
+  return grupos.sort((a, b) => Number(b.fixo) - Number(a.fixo) || b.g.data.localeCompare(a.g.data)).slice(0, MAX_CARTOES).map((x) => x.g)
 }

@@ -83,4 +83,9 @@ export default [
   ['Publicou um vídeo curto numa cadeira', 'Published a short video in a course', 'A publié une vidéo courte dans un cours', 'Publicó un vídeo corto en una asignatura'],
   ['Actividades realizadas', 'Past activities', 'Activités réalisées', 'Actividades realizadas'],
   ['Destaques', 'Highlights', 'À la une', 'Destacados'],
+  ['Nos Destaques do site', 'In the website Highlights', 'Dans les « À la une » du site', 'En los Destacados del sitio'],
+  ['Automático (eventos realizados e notícias recentes ou em manchete)', 'Automatic (past events and recent or headline news)', 'Automatique (événements réalisés et actualités récentes ou à la une)', 'Automático (eventos realizados y noticias recientes o de portada)'],
+  ['Sempre — mostrar nos Destaques', 'Always — show in Highlights', 'Toujours — afficher dans « À la une »', 'Siempre — mostrar en Destacados'],
+  ['Nunca — não mostrar nos Destaques', 'Never — do not show in Highlights', 'Jamais — ne pas afficher dans « À la une »', 'Nunca — no mostrar en Destacados'],
+  ['Os Destaques são os cartões verticais (como os estados do WhatsApp) na página inicial, em Notícias e em Eventos.', 'Highlights are the vertical cards (like WhatsApp statuses) on the home page, News and Events.', "« À la une » ce sont les cartes verticales (comme les statuts WhatsApp) sur la page d'accueil, Actualités et Événements.", 'Los Destacados son las tarjetas verticales (como los estados de WhatsApp) en la página de inicio, Noticias y Eventos.'],
 ]

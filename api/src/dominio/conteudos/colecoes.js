@@ -10,6 +10,8 @@ const texto = (max) => z.string().max(max, `Texto demasiado longo (máximo ${max
 const data = z.union([z.literal(''), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida (use AAAA-MM-DD).')])
 const hora = z.union([z.literal(''), z.string().regex(/^\d{2}:\d{2}$/, 'Hora inválida (use HH:MM).')])
 // vídeos curtos das actividades realizadas (como os estados do WhatsApp): o vídeo carregado, a capa e a legenda
+// «Nos Destaques» do site: vazio = automático
+const nosDestaques = z.enum(['', 'sempre', 'nunca'])
 const videosCurtos = z.array(z.looseObject({ src: texto(2000), poster: texto(2000).optional(), legenda: texto(300).optional() })).max(20, 'No máximo 20 vídeos curtos.')
 const blocos = z.array(z.record(z.string(), z.unknown())).max(400, 'O conteúdo tem demasiados elementos.')
 
@@ -18,7 +20,7 @@ const ESQUEMAS = {
   noticias: z.looseObject({
     titulo: texto(300), categoria: texto(80).optional(), data: data.optional(), autor: texto(120).optional(),
     resumo: texto(1000).optional(), capa: texto(2000).optional(), destaque: z.boolean().optional(), conteudo: blocos.optional(),
-    videosCurtos: videosCurtos.optional(),
+    videosCurtos: videosCurtos.optional(), nosDestaques: nosDestaques.optional(),
   }),
   artigos: z.looseObject({
     titulo: texto(300), tipo: texto(80).optional(), area: texto(80).optional(), autor: texto(80).optional(), data: data.optional(),
@@ -28,7 +30,7 @@ const ESQUEMAS = {
     titulo: texto(300), categoria: texto(80).optional(), data: data.optional(), horaInicio: hora.optional(), horaFim: hora.optional(),
     local: texto(200).optional(), resumo: texto(1000).optional(), inscricoes: z.boolean().optional(), conteudo: blocos.optional(),
     programa: z.array(z.looseObject({ hora: hora.optional(), atividade: texto(300).optional() })).max(60).optional(),
-    videosCurtos: videosCurtos.optional(),
+    videosCurtos: videosCurtos.optional(), nosDestaques: nosDestaques.optional(),
   }),
   cursos: z.looseObject({
     nome: texto(200), sigla: texto(20).optional(), resumo: texto(1000).optional(), duracao: texto(60).optional(),
