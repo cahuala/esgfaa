@@ -94,7 +94,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
 
   // ---------- portal: docente ----------
   await primeiraEntrada(page, docente)
-  await page.locator('#content').getByText('Estratégia Militar').first().click()
+  await page.locator('#content a', { hasText: 'Estratégia Militar' }).first().click()
   await page.getByRole('tab', { name: /Avisos/ }).click()
   await expect(page.getByRole('heading', { name: 'Novo aviso' })).toBeVisible()
   await page.getByLabel('Título').fill('Primeira aula')
