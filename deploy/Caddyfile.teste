@@ -1,0 +1,54 @@
+# Servidor de testes (docker-compose.teste.yml): as páginas e a API atrás de outro Caddy, que trata do
+# HTTPS e dos certificados. Aqui só HTTP, dentro da rede do Docker.
+{
+	auto_https off
+	servers {
+		# o Caddy da frente diz qual é o endereço de quem pede
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(self), microphone=(self), geolocation=()"
+		# é um teste: os motores de busca não o indexam
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	handle /robots.txt {
+		respond "User-agent: *
+Disallow: /
+"
+	}
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle /uploads/* {
+		reverse_proxy api:3001
+	}
+	handle /portal/* {
+		root * /srv
+		try_files {path} {path}index.html /portal/index.html
+		file_server
+	}
+	handle /{$ADMIN_PATH}/* {
+		root * /srv
+		try_files {path} /{$ADMIN_PATH}/index.html
+		file_server
+	}
+	handle {
+		root * /srv
+		try_files {path} {path}/ /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

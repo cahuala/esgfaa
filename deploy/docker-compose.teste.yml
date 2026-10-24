@@ -1,0 +1,134 @@
+# Servidor de TESTES (só dados de demonstração): site, Portal Académico, painel e Sistema de Pessoal numa só
+# máquina, atrás de um Caddy que já lá existe (o da rede «noove_default», que trata do HTTPS):
+#   https://esg.<domínio>          site, /portal/, /<ADMIN_PATH>/ (painel) e /api
+#   https://pessoal-esg.<domínio>  Sistema de Pessoal
+# Não publica portas no servidor. Faixa «Ambiente de teste» em todas as páginas e sem indexação.
+# Na instalação da Escola usam-se docker-compose.portal.yml e docker-compose.pessoal.yml (dois servidores).
+#   docker compose -f deploy/docker-compose.teste.yml --env-file deploy/teste.env up -d --build
+name: esgteste
+services:
+  bd:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: esgfaa
+      POSTGRES_PASSWORD: ${BD_SENHA:?defina BD_SENHA}
+      POSTGRES_DB: esgfaa
+    volumes:
+      - bd:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esgfaa -d esgfaa"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  bd-pessoal:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pessoal
+      POSTGRES_PASSWORD: ${BD_PESSOAL_SENHA:?defina BD_PESSOAL_SENHA}
+      POSTGRES_DB: esgfaa_pessoal
+    volumes:
+      - bd-pessoal:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pessoal -d esgfaa_pessoal"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  # tradução automática (inglês, francês e espanhol), no próprio servidor
+  tradutor:
+    image: libretranslate/libretranslate:v1.9.6
+    restart: unless-stopped
+    environment:
+      LT_LOAD_ONLY: pt,en,fr,es
+    volumes:
+      - tradutor:/home/libretranslate/.local
+
+  api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      bd:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://esgfaa:${BD_SENHA}@bd:5432/esgfaa
+      PUBLIC_URL: https://${DOMINIO}
+      PORTAL_URL: https://${DOMINIO}/portal/
+      CORS_ORIGINS: https://${DOMINIO}
+      # o Caddy da frente e o Caddy das páginas
+      TRUST_PROXY: "2"
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      DADOS_CHAVE: ${DADOS_CHAVE:?defina DADOS_CHAVE}
+      INTEGRACAO_CHAVE: ${INTEGRACAO_CHAVE:?defina INTEGRACAO_CHAVE}
+      LIBRETRANSLATE_URL: http://tradutor:5000
+      # no teste, a verificação em dois passos fica à escolha de cada um
+      DOIS_FATORES_PAPEIS: ${DOIS_FATORES_PAPEIS:-}
+      DADOS_FORA_DE_ANGOLA: "nao"
+    volumes:
+      - dados:/app/api/dados
+
+  pessoal:
+    build:
+      context: ..
+      dockerfile: deploy/pessoal.Dockerfile
+      args:
+        VITE_AMBIENTE: teste
+    restart: unless-stopped
+    depends_on:
+      bd-pessoal:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://pessoal:${BD_PESSOAL_SENHA}@bd-pessoal:5432/esgfaa_pessoal
+      CORS_ORIGINS: https://${DOMINIO_PESSOAL}
+      TRUST_PROXY: "1"
+      JWT_SECRET: ${JWT_SECRET_PESSOAL:?defina JWT_SECRET_PESSOAL}
+      DADOS_CHAVE: ${DADOS_CHAVE_PESSOAL:?defina DADOS_CHAVE_PESSOAL}
+      # TESTE: aberto a quem tiver conta (na Escola, só as redes internas)
+      REDES_INTERNAS: ${REDES_INTERNAS:-0.0.0.0/0}
+      PORTAL_API_URL: http://api:3001
+      INTEGRACAO_CHAVE: ${INTEGRACAO_CHAVE}
+      DOIS_FATORES_PAPEIS: ${DOIS_FATORES_PAPEIS:-}
+    volumes:
+      - dados-pessoal:/app/api-pessoal/dados
+    networks:
+      default:
+      frente:
+        aliases: [esg-pessoal]
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+      args:
+        DOMINIO: ${DOMINIO:?defina DOMINIO}
+        ADMIN_PATH: ${ADMIN_PATH:?defina ADMIN_PATH}
+        VITE_AMBIENTE: teste
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      ADMIN_PATH: ${ADMIN_PATH}
+    volumes:
+      - ./Caddyfile.teste:/etc/caddy/Caddyfile:ro
+    networks:
+      default:
+      frente:
+        aliases: [esg-web]
+
+networks:
+  # a rede do Caddy que já existe no servidor (o que tem as portas 80 e 443)
+  frente:
+    external: true
+    name: ${REDE_FRENTE:-noove_default}
+
+volumes:
+  bd:
+  bd-pessoal:
+  dados:
+  dados-pessoal:
+  tradutor:

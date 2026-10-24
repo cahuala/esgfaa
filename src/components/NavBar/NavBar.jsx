@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import Logo from '../../assets/Logo.png'
+import Logo from '../../assets/Logo-ecra.webp'
 import AlternarTema from '../AlternarTema/AlternarTema'
 import SeletorLingua from '../SeletorLingua/SeletorLingua'
 import style from './NavBar.module.css'

@@ -4,8 +4,8 @@ import AvisoPrivacidade from '../components/AvisoPrivacidade'
 import PesquisaGeral from './componentes/PesquisaGeral'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
 import { useSessao } from './sessao'
-import Brasao from '../assets/Logo.png'
-import Sede from '../assets/Escola De Guerra.png'
+import Brasao from '../assets/Logo-ecra.webp'
+import Sede from '../assets/Escola De Guerra-ecra.webp'
 
 function Item({ para, icone, texto, fim, contador = 0 }) {
   const ativo = useMatch({ path: para, end: Boolean(fim) })

@@ -11,6 +11,7 @@ import { ligarTraducaoDosDados } from '../i18n/tradutorPainel'
 import { API_URL } from '../conteudo/api'
 import { comSessao, temSessao } from './api'
 import { registarServico } from './telemovel'
+import { marcarAmbienteTeste } from '../utils/ambienteTeste'
 
 // a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
 // traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
@@ -19,6 +20,7 @@ const [{ SessaoPortal }, { default: App }] = await Promise.all([import('./sessao
 
 // o portal usa o mesmo tema do painel (Color Admin) com a identidade da Escola;
 // endereços com # (ex.: /portal/#/cadeiras/3) para funcionar no GitHub Pages sem configuração extra
+marcarAmbienteTeste()
 ReactDOM.createRoot(document.getElementById('raiz-portal')).render(
   <React.StrictMode>
     <HashRouter>

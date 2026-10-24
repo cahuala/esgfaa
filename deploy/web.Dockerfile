@@ -8,7 +8,9 @@ COPY . .
 # a API fica no mesmo endereço das páginas (o Caddy encaminha /api): mesmo domínio, o modo mais seguro
 ARG DOMINIO
 ARG ADMIN_PATH
-RUN VITE_API_URL="https://${DOMINIO}" npm run build \
+# «teste» mostra a faixa do servidor de testes (deploy/docker-compose.teste.yml); vazio na instalação da Escola
+ARG VITE_AMBIENTE=
+RUN VITE_API_URL="https://${DOMINIO}" VITE_AMBIENTE="${VITE_AMBIENTE}" npm run build \
   # o sistema de pessoal é só da rede interna: nunca vai para o servidor público
   && rm -rf dist/pessoal \
   # o painel fica num endereço reservado (ADMIN_PATH); sem ele, não é publicado

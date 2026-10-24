@@ -49,3 +49,6 @@ docs/PLANOS*
 # quadro orgânico real da ESG (documento interno: não vai para o repositório público)
 docs/QUADRO ORGANICO*
 docs/~$*
+
+# contas do servidor de testes (deploy/teste-contas.mjs)
+CONTAS-SERVIDOR-TESTE.md

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import Brasao from '../../assets/Logo.png'
+import Brasao from '../../assets/Logo-ecra.webp'
 import styles from './Carregamento.module.css'
 import { t } from '../../i18n/linguas'
 

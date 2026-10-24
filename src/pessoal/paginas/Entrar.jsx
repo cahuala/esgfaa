@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSessao } from '../sessao'
-import Brasao from '../../assets/Logo.png'
-import Sede from '../../assets/Escola De Guerra.png'
+import Brasao from '../../assets/Logo-ecra.webp'
+import Sede from '../../assets/Escola De Guerra-ecra.webp'
 import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
 import { api } from '../api'
 

@@ -1,5 +1,5 @@
-import Brasao from '../../assets/Logo.png'
-import Sede from '../../assets/Escola De Guerra.png'
+import Brasao from '../../assets/Logo-ecra.webp'
+import Sede from '../../assets/Escola De Guerra-ecra.webp'
 import { t as tx } from '../../i18n/linguas'
 import LinguasEntrada from '../../i18n/LinguasEntrada'
 

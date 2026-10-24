@@ -10,6 +10,7 @@ import { prepararLingua } from '../i18n/linguas'
 import { ligarTraducaoDosDados } from '../i18n/tradutorPainel'
 import { API_URL } from '../conteudo/api'
 import { comSessao, temSessao } from './api'
+import { marcarAmbienteTeste } from '../utils/ambienteTeste'
 
 // a aplicação só é carregada depois do dicionário da língua (fora do português): há textos
 // traduzidos logo ao carregar os módulos (menus, listas de tipos), que não podem chegar antes dele
@@ -22,6 +23,7 @@ const router = createHashRouter([
   { path: '*', element: <SessaoProvider><App /></SessaoProvider> },
 ])
 
+marcarAmbienteTeste()
 ReactDOM.createRoot(document.getElementById('raiz-admin')).render(
   <React.StrictMode>
     <RouterProvider router={router} />

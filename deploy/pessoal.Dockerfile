@@ -6,7 +6,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 # a página fala com a API no mesmo endereço (VITE_PESSOAL_API vazio)
-RUN VITE_PESSOAL_API= npm run build && node scripts/preparar-pessoal.mjs /app/dist-pessoal
+# «teste» mostra a faixa do servidor de testes; vazio na instalação da Escola
+ARG VITE_AMBIENTE=
+RUN VITE_PESSOAL_API= VITE_AMBIENTE="${VITE_AMBIENTE}" npm run build && node scripts/preparar-pessoal.mjs /app/dist-pessoal
 
 FROM node:24-alpine
 WORKDIR /app/api-pessoal

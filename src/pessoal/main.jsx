@@ -7,10 +7,12 @@ import '../admin/admin.css'
 import '../admin/identidade.css'
 import './pessoal.css'
 import App from './App'
+import { marcarAmbienteTeste } from '../utils/ambienteTeste'
 
 // endereços com # (ex.: /pessoal/#/pessoas): funciona servido por qualquer servidor, sem configuração
 const router = createHashRouter([{ path: '*', element: <App /> }])
 
+marcarAmbienteTeste()
 ReactDOM.createRoot(document.getElementById('raiz-pessoal')).render(
   <React.StrictMode>
     <RouterProvider router={router} />

@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom'
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa'
-import Logo from '../../assets/Logo.png'
+import Logo from '../../assets/Logo-ecra.webp'
 import { useConteudo } from '../../conteudo/contexto'
 import styles from './Footer.module.css'
 import { t } from '../../i18n/linguas'
