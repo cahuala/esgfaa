@@ -3,6 +3,7 @@ import { abrirCaminho, api, enviarComProgresso } from '../api'
 import ZonaUpload from '../ZonaUpload'
 import { PERIODOS } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
+import { Carregando } from '../componentes'
 
 const NOMES_IGNORADOS = { quiz: tx('questionários'), forum: tx('fóruns'), h5pactivity: 'H5P', scorm: 'SCORM', lesson: tx('lições'), book: tx('livros'), glossary: tx('glossários'), wiki: 'wiki', workshop: tx('avaliações por pares'), choice: tx('sondagens'), feedback: tx('inquéritos'), ficheiros: tx('ficheiros de tipo não aceite'), ligacoes: tx('ligações inválidas') }
 
@@ -85,7 +86,7 @@ function Importar({ c, fechar, avisar, concluido }) {
               </ul>
               {modo === 'cadeira' && (<>
               <p className="small text-muted">{tx('Copia para esta cadeira os capítulos, materiais e ficheiros, trabalhos, questionários, datas, programa e composição das notas de outra cadeira sua (por exemplo, a do ano passado). As datas avançam os anos que separam os anos letivos. Não se copiam entregas, notas nem fórum.')}</p>
-              {!lista ? <div className="text-muted">{tx('A carregar…')}</div> : lista.length === 0 ? <div className="alert alert-info mb-0">{tx('Não tem outras cadeiras de onde importar.')}</div> : (
+              {!lista ? <Carregando compacta /> : lista.length === 0 ? <div className="alert alert-info mb-0">{tx('Não tem outras cadeiras de onde importar.')}</div> : (
                 <div className="list-group">
                   {lista.map((x) => (
                     <label key={x.id} className={`list-group-item list-group-item-action d-flex gap-2 align-items-center ${origem === String(x.id) ? 'active' : ''}`}>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
-import { Campo, Cartao, Etiqueta, Vazio } from '../componentes'
+import { Campo, Cartao, Etiqueta, Vazio, Carregando } from '../componentes'
 import { data } from '../formatar'
 import { t as tx } from '../../i18n/linguas'
 
@@ -40,7 +40,7 @@ function Aulas({ c, avisar }) {
   }).catch((e) => avisar({ tipo: 'erro', texto: e.message })), [c.id, avisar])
   useEffect(() => { carregar() }, [carregar])
 
-  if (!d) return <p className="p-texto-suave">{tx('A carregar…')}</p>
+  if (!d) return <Carregando />
 
   async function registar(e) {
     e.preventDefault()

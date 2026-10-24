@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FaEye, FaEyeSlash, FaPrint, FaSave } from 'react-icons/fa'
-import { Cartao, Vazio } from '../componentes'
+import { Cartao, Vazio, Carregando } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import { dataHora } from '../formatar'
 import { FORMAS_AVALIACAO, NOTA_MAXIMA_RECUPERACAO, REGRA_ESG, SITUACOES, TIPOS_AVALIACAO, resultadoUc } from '../regraAvaliacao'
@@ -39,7 +39,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
   const falhou = useCallback((e) => avisar({ tipo: 'erro', texto: e.message }), [avisar])
   useEffect(() => { pedir(`${base}/pauta`).then(aplicar).catch(falhou) }, [base, pedir, aplicar, falhou])
 
-  if (!p) return <p className="p-texto-suave">{tx('A carregar a pauta…')}</p>
+  if (!p) return <Carregando texto={tx('A carregar a pauta…')} />
   const termo = p.plano?.termo === 'auditor' ? tx('Auditor') : tx('Discente')
   if (p.linhas.length === 0) return <Vazio>{tx('A turma não tem estudantes matriculados.')}</Vazio>
 
@@ -191,7 +191,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
                         )
                       })}
                       <td className="p-matriz-final"><Nota valor={r.final} forte /></td>
-                      <td><Situacao situacao={r.situacao} />{r.mencao && r.situacao === 'aprovado' && <small className="p-classificacao">{r.mencao}</small>}</td>
+                      <td><Situacao situacao={r.situacao} motivo={r.motivo} />{r.mencao && r.situacao === 'aprovado' && <small className="p-classificacao">{r.mencao}</small>}</td>
                     </tr>
                   )
                 })}
@@ -237,7 +237,7 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
     }
   }
   return (
-    <Cartao titulo={tx('As minhas notas')} acoes={<Situacao situacao={n.situacao} />}>
+    <Cartao titulo={tx('As minhas notas')} acoes={<Situacao situacao={n.situacao} motivo={n.motivo} />}>
       {c.tii ? <p className="mb-2">{tx('A nota desta UC é a do Trabalho de Investigação Individual (dissertação e defesa pública).')}</p> : !n.provas.length ? <p className="p-texto-suave mb-2">{tx('Ainda não há notas publicadas.')}</p> : (
         <div className="table-responsive">
           <table className="table table-sm align-middle mb-2">

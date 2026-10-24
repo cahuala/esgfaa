@@ -148,7 +148,7 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recu
   if (!avaliacoes.length) return { final: null, situacao: 'sem_provas', mencao: null, provas: [] }
   const provas = avaliacoes.map((a) => {
     const n = notas[a.id] ?? {}
-    return { id: a.id, tipo: a.tipo, forma: a.forma, peso: num(a.peso), nota: num(n.nota), recuperacao: num(n.recuperacao), conta: notaDaProva(n.nota, n.recuperacao), pedida: Boolean(n.recuperacaoPedidaEm) }
+    return { id: a.id, tipo: a.tipo, forma: a.forma, titulo: a.titulo, peso: num(a.peso), nota: num(n.nota), recuperacao: num(n.recuperacao), conta: notaDaProva(n.nota, n.recuperacao), pedida: Boolean(n.recuperacaoPedidaEm) }
   })
   if (provas.some((p) => p.conta === null)) return { final: null, situacao: 'em_curso', mencao: null, provas }
   // a média das provas; com o peso de cada prova (ex.: TAG 50 % + defesa individual 50 %), quando todas o têm
@@ -167,7 +167,9 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recu
   })
   if ((final < NOTA_MINIMA || testesNegativos.length) && emRecuperacao) return { final, situacao: 'recuperacao', mencao: null, provas }
   const aprovado = final >= NOTA_MINIMA && !testesNegativos.length
-  return { final, situacao: aprovado ? 'aprovado' : 'reprovado', mencao: aprovado ? mencao(final) : 'Reprovado', provas }
+  // com a média positiva, a reprovação vem de um teste escrito abaixo de 10: diz-se qual (senão parece um erro)
+  const motivo = !aprovado && final >= NOTA_MINIMA ? { tipo: 'teste_escrito', provas: testesNegativos.map((p) => ({ titulo: p.titulo || p.tipo, nota: p.conta })) } : null
+  return { final, situacao: aprovado ? 'aprovado' : 'reprovado', mencao: aprovado ? mencao(final) : 'Reprovado', provas, ...(motivo ? { motivo } : {}) }
 }
 
 // tempos escolares da ESG (Agenda do Discente, horário das aulas): 5 tempos de 50 minutos, das 08h30 às 13h30

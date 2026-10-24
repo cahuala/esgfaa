@@ -34,6 +34,9 @@ describe('avaliação pelos planos de curso da ESG', () => {
     assert.equal(resultadoUc(av, { 1: { nota: 14 }, 2: { nota: 15 } }, { agora }).situacao, 'em_curso')
     const r = resultadoUc(av, { 1: { nota: 9 }, 2: { nota: 18 }, 3: { nota: 17 } }, { agora })
     assert.deepEqual([r.final, r.situacao], [14.67, 'reprovado'])
+    // e diz porquê (sem o motivo, «Reprovado» ao lado de 14,67 parecia um erro)
+    assert.deepEqual(r.motivo, { tipo: 'teste_escrito', provas: [{ titulo: 'TAI', nota: 9 }] })
+    assert.equal(resultadoUc(av, { 1: { nota: 4 }, 2: { nota: 9 }, 3: { nota: 8 } }, { agora }).motivo, undefined) // média negativa: o motivo é a média
     // com a recuperação a 13, conta 10: aprovado
     assert.equal(resultadoUc(av, { 1: { nota: 9, recuperacao: 13 }, 2: { nota: 18 }, 3: { nota: 17 } }, { agora }).situacao, 'aprovado')
     // pedida e ainda sem nota: em recuperação

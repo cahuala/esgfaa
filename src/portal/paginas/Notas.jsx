@@ -121,7 +121,7 @@ function BoletimEsg({ lista, semestres }) {
                       {l.tii ? tx('Trabalho de Investigação Individual') : l.provas.length ? l.provas.map((p) => <span key={p.id} className="me-2 text-nowrap"><span className={`badge ${p.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{p.tipo}</span>{p.titulo}: <Nota valor={p.recuperacao !== null ? Math.max(p.nota ?? 0, Math.min(p.recuperacao, 10)) : p.nota} /></span>) : <span className="text-muted">{tx('nenhuma publicada')}</span>}
                     </td>
                     <td className="p-matriz-final"><Nota valor={l.final} forte /></td>
-                    <td><Situacao situacao={l.situacao} />{l.mencao && l.situacao === 'aprovado' && <small className="p-classificacao">{l.mencao}</small>}</td>
+                    <td><Situacao situacao={l.situacao} motivo={l.motivo} />{l.mencao && l.situacao === 'aprovado' && <small className="p-classificacao">{l.mencao}</small>}</td>
                   </tr>
                 ))}
               </tbody>

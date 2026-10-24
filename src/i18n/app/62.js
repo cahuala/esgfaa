@@ -21,4 +21,6 @@ export default [
   ['automática', 'automatic', 'automatique', 'automática'],
   ['o que o tradutor automático traduziu no portal e no painel', 'what the automatic translator translated in the portal and the panel', 'ce que le traducteur automatique a traduit dans le portail et le panneau', 'lo que el traductor automático tradujo en el portal y en el panel'],
   ['revista por {0}', 'reviewed by {0}', 'revue par {0}', 'revisada por {0}'],
+  ['Teste escrito abaixo de 10: {0}', 'Written test below 10: {0}', 'Test écrit en dessous de 10 : {0}', 'Prueba escrita por debajo de 10: {0}'],
+  ['Cada TAI de teste escrito tem de ter pelo menos 10, mesmo com a média positiva (plano do curso).', 'Each written-test TAI must score at least 10, even when the average is a pass (course plan).', 'Chaque TAI sous forme de test écrit doit avoir au moins 10, même avec une moyenne positive (plan du cours).', 'Cada TAI de prueba escrita debe tener al menos 10, aunque la media sea positiva (plan del curso).'],
 ]

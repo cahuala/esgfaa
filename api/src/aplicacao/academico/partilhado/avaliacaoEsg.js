@@ -149,7 +149,7 @@ export class ServicoAvaliacaoEsg {
     })
     // ainda há provas por publicar: a nota da UC não é a final
     const completo = cadeira.tii || (avaliacoes.length > 0 && avaliacoes.length === total)
-    return { modo: 'esg', termo: plano?.termo ?? 'discente', plano: regrasPublicas(plano), provas, final: completo ? r.final : null, situacao: completo ? r.situacao : avaliacoes.length ? 'em_curso' : 'sem_provas', mencao: completo ? r.mencao : null, classificacao: completo ? r.mencao : null, tii: cadeira.tii }
+    return { modo: 'esg', termo: plano?.termo ?? 'discente', plano: regrasPublicas(plano), provas, final: completo ? r.final : null, situacao: completo ? r.situacao : avaliacoes.length ? 'em_curso' : 'sem_provas', ...(completo && r.motivo ? { motivo: r.motivo } : {}), mencao: completo ? r.mencao : null, classificacao: completo ? r.mencao : null, tii: cadeira.tii }
   }
 
   async pedirRecuperacao(ctx, cadeira, avaliacaoId) {

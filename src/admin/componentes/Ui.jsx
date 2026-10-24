@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { t as tx } from '../../i18n/linguas'
+import Espera from '../../components/Espera/Espera'
 
 // Cabeçalho de página no estilo Color Admin: migalhas à direita + título
 export function CabecalhoPagina({ titulo, subtitulo, migalhas = [], children }) {
@@ -84,12 +85,8 @@ export function Confirmar({ pedido, onCancelar }) {
   )
 }
 
-export function Carregando() {
-  return (
-    <div className="text-center text-muted py-5">
-      <span className="spinner-border spinner-border-sm me-2" /> {tx('A carregar…')}
-    </div>
-  )
+export function Carregando({ texto, compacta = false }) {
+  return <Espera texto={texto} compacta={compacta} />
 }
 
 export function Erro({ texto, onRepetir }) {

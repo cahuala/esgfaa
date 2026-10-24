@@ -2,6 +2,7 @@ import { Children, cloneElement, isValidElement, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { textoBloqueio } from './formatar'
 import { t as tx } from '../i18n/linguas'
+import Espera from '../components/Espera/Espera'
 
 // peças comuns do portal, no markup do Color Admin (o mesmo tema do painel)
 
@@ -52,8 +53,8 @@ export function Widget({ cor = 'bg-dark', icone, titulo, valor, nota, para }) {
   )
 }
 
-export function Carregando({ texto = tx('A carregar…') }) {
-  return <div className="d-flex align-items-center gap-2 text-muted py-3"><span className="spinner-border spinner-border-sm" /> {texto}</div>
+export function Carregando({ texto = tx('A carregar…'), compacta = false }) {
+  return <Espera texto={texto} compacta={compacta} />
 }
 
 export function Erro({ texto, onRepetir }) {

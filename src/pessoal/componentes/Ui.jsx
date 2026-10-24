@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import Espera from '../../components/Espera/Espera'
 
 export function Cabecalho({ titulo, subtitulo, migalhas = [], children }) {
   return (
@@ -74,7 +75,7 @@ export function NaoEncontrado({ titulo = 'Página não encontrada', texto = 'O e
   )
 }
 
-export const Carregando = () => <div className="text-center text-muted py-5"><i className="fa fa-spinner fa-spin fa-2x" /></div>
+export const Carregando = ({ texto, compacta = false }) => <Espera texto={texto} compacta={compacta} />
 
 export function Erro({ texto, aoRepetir }) {
   return (

@@ -5,7 +5,7 @@ import ZonaUpload from '../ZonaUpload'
 import VerFicheiro from '../VerFicheiro'
 import AnotarPdf from '../corrigir/AnotarPdf'
 import { gerarPdfCorrigido } from '../corrigir/gerarPdf'
-import { Bloqueio, Campo, Cartao, Etiqueta, Vazio } from '../componentes'
+import { Bloqueio, Campo, Cartao, Etiqueta, Vazio, Carregando } from '../componentes'
 import { dataHora, faltam, iconeFicheiro, localParaIso, nota, tamanho, paraLocal } from '../formatar'
 import { EditorGrelha, TabelaGrelha } from './Grelha'
 import { confirmar } from '../dialogos'
@@ -225,7 +225,7 @@ function Entregas({ trabalho, avisar, baixar, recarregar }) {
     const t = setTimeout(verOriginalidade, 3000)
     return () => clearTimeout(t)
   }, [originalidade, verOriginalidade])
-  if (!d) return <Cartao titulo={tx('Entregas')}><p className="p-texto-suave mb-0">{tx('A carregar entregas…')}</p></Cartao>
+  if (!d) return <Cartao titulo={tx('Entregas')}><Carregando texto={tx('A carregar entregas…')} compacta /></Cartao>
 
   const entregues = d.linhas.filter((l) => l.entrega).length
   const corrigidas = d.linhas.filter((l) => l.entrega?.nota !== null && l.entrega?.nota !== undefined).length

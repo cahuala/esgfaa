@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FaEye, FaEyeSlash, FaPrint, FaSave } from 'react-icons/fa'
 import { api } from '../api'
-import { Cartao, Vazio } from '../componentes'
+import { Cartao, Vazio, Carregando } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import Composicao from './Composicao'
 import { MinhasNotasEsg, PautaEsg } from './PautaEsg'
@@ -23,7 +23,7 @@ function PautaOuEsg(props) {
   const [modo, setModo] = useState(null)
   const { c } = props
   useEffect(() => { api(`/cadeiras/${c.id}/pauta`).then((r) => setModo(r.modo === 'esg' ? 'esg' : 'classica')).catch(() => setModo('classica')) }, [c.id])
-  if (!modo) return <p className="p-texto-suave">{tx('A carregar a pauta…')}</p>
+  if (!modo) return <Carregando texto={tx('A carregar a pauta…')} />
   return modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} /> : <Pauta {...props} />
 }
 
@@ -71,7 +71,7 @@ function Pauta({ c, avisar }) {
   const carregar = useCallback(() => api(`/cadeiras/${c.id}/pauta`).then(aplicar).catch((e) => avisar({ tipo: 'erro', texto: e.message })), [c.id, aplicar, avisar])
   useEffect(() => { carregar() }, [carregar])
 
-  if (!p) return <p className="p-texto-suave">{tx('A carregar a pauta…')}</p>
+  if (!p) return <Carregando texto={tx('A carregar a pauta…')} />
   if (p.linhas.length === 0) return <Vazio>{tx('A turma não tem estudantes matriculados.')}</Vazio>
 
   const mudar = (id, k, v) => { setEdicao({ ...edicao, [id]: { ...edicao[id], [k]: v } }); setAlterado(true) }

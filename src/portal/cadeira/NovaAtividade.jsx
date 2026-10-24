@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { api, enviarComProgresso } from '../api'
-import { Campo } from '../componentes'
+import { Campo, Carregando } from '../componentes'
 import { localParaIso } from '../formatar'
 import ZonaUpload from '../ZonaUpload'
 import { EditorGrelha } from './Grelha'
@@ -309,7 +309,7 @@ function EscolherFerramenta({ f, setF }) {
       if (l[0] && !f.ferramentaId) setF((x) => ({ ...x, ferramentaId: String(l[0].id), titulo: x.titulo || l[0].nome }))
     }).catch(() => setLista([]))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!lista) return <div className="text-muted small">{tx('A carregar…')}</div>
+  if (!lista) return <Carregando compacta />
   if (!lista.length) return <div className="alert alert-info mb-0">{tx('Ainda não há ferramentas externas. A Administração Escolar regista-as no painel (Ferramentas externas).')}</div>
   return (
     <>

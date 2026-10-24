@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
-import { Painel } from '../../componentes/Ui'
+import { Painel, Carregando } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -23,7 +23,7 @@ function Inscricoes({ c, gerir, avisar }) {
     const t = setTimeout(() => api(`/academico/contas?tipo=estudante&q=${encodeURIComponent(q.trim())}`).then((l) => setEncontrados(l.slice(0, 8))).catch(() => {}), 300)
     return () => clearTimeout(t)
   }, [q])
-  if (!d) return <div className="text-muted">{tx('A carregar…')}</div>
+  if (!d) return <Carregando />
 
   async function inscrever(e) {
     e.preventDefault()

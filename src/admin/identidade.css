@@ -441,3 +441,42 @@ body {
 .tm-passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .tm-passos > div { background: #fff; border: 1px solid #e6e6e6; border-radius: 10px; padding: 10px 12px 10px 46px; position: relative; font-size: 13px; }
 .tm-passos b { position: absolute; left: 12px; top: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--bs-theme, #c0392b); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+/* À espera dos dados (components/Espera): o brasão num anel que roda, ao centro do conteúdo */
+.esg-espera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 260px;
+  padding: 32px 16px;
+  animation: esg-espera-entrar 0.25s ease both;
+}
+.esg-espera-compacta { min-height: 0; padding: 20px 12px; gap: 10px; }
+.esg-espera-anel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+}
+.esg-espera-compacta .esg-espera-anel { width: 44px; height: 44px; }
+.esg-espera-anel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(127, 127, 127, 0.18);
+  border-top-color: var(--esg-vermelho);
+  border-right-color: var(--esg-dourado);
+  animation: esg-espera-rodar 0.9s linear infinite;
+}
+.esg-espera-anel img { width: 58%; height: 58%; object-fit: contain; }
+.esg-espera-texto { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--bs-secondary-color, #6c757d); }
+.esg-espera-compacta .esg-espera-texto { font-size: 12px; }
+@keyframes esg-espera-rodar { to { transform: rotate(360deg); } }
+@keyframes esg-espera-entrar { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .esg-espera-anel::before { animation-duration: 2.4s; }
+}
