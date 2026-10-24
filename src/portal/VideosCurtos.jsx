@@ -158,7 +158,7 @@ export function VideosDoInicio() {
     <div className="mb-3">
       <Historias
         grupos={grupos}
-        titulo={tx('Vídeos curtos')}
+        titulo={tx('Destaques')}
         verMais={(g) => (g.tipo === 'cadeira' ? navegar(`/cadeiras/${g.cadeiraId}`) : window.location.assign(new URL(g.ligacao, window.location.origin).href))}
       />
     </div>

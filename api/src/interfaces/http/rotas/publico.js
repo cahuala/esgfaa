@@ -35,7 +35,7 @@ export function rotasPublicas({ servicos, config, cache }) {
     res.set({ 'Cache-Control': 'no-cache', 'Content-Type': 'application/json; charset=utf-8' }).send(json)
   })
 
-  // actividades realizadas (eventos já passados e notícias com vídeo), para o Portal: só o necessário
+  // destaques e actividades realizadas (eventos já passados; notícias em destaque, recentes ou com vídeo), para o Portal
   r.get('/videos-curtos', async (req, res) => {
     const todos = await servicos.conteudos.todosPublicados()
     const hoje = new Date().toISOString().slice(0, 10)
@@ -45,7 +45,8 @@ export function rotasPublicas({ servicos, config, cache }) {
     const eventos = (todos.eventos || []).filter((e) => e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 15)
     res.set('Cache-Control', 'public, max-age=300').json(absolutizar({
       eventos: eventos.map((e) => resumir(e, 'id')),
-      noticias: (todos.noticias || []).filter(temVideo).map((n) => resumir(n, 'slug')),
+      noticias: [...(todos.noticias || [])].sort((a, b) => (b.data || '').localeCompare(a.data || ''))
+        .filter((n, i) => i < 6 || n.destaque || temVideo(n)).map((n) => ({ ...resumir(n, 'slug'), destaque: n.destaque })),
     }, baseUrl(req, config)))
   })
 

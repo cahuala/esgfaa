@@ -5,6 +5,7 @@ import { CartaoLista, Etiqueta, Foto } from '../../components/Corporativo/Corpor
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import Miniatura from './Miniatura'
 import Publicidade from '../../components/Publicidade/Publicidade'
+import ActividadesEmVideo from '../../components/ActividadesEmVideo/ActividadesEmVideo'
 import ResumoInteracoes from '../../components/Interacoes/ResumoInteracoes'
 import { temGaleria, temVideo } from '../../data/noticias'
 import { useConteudo } from '../../conteudo/contexto'
@@ -91,6 +92,8 @@ function Noticias() {
         titulo={t('Notícias')}
         entrada={t('Atividade da Escola: cerimónias, cooperação, formação e investigação.')}
       />
+
+      <ActividadesEmVideo />
 
       <div className={`contentor ${styles.grelha}`}>
         {/* Coluna esquerda — pesquisa e filtros */}

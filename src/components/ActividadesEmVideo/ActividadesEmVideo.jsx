@@ -6,7 +6,7 @@ import { gruposDoSite } from '../../utils/videosDoSite'
 import { t } from '../../i18n/linguas'
 import css from './ActividadesEmVideo.module.css'
 
-// site: as actividades realizadas em vídeos curtos (como os estados do WhatsApp), na página inicial e em Eventos
+// site: os destaques (notícias e actividades realizadas, com vídeos curtos ou fotografias) como os estados do WhatsApp: página inicial, Notícias e Eventos
 function ActividadesEmVideo() {
   const { eventos, noticias } = useConteudo()
   const navegar = useNavigate()
@@ -14,7 +14,7 @@ function ActividadesEmVideo() {
   if (!grupos.length) return null
   return (
     <div className={`contentor ${css.bloco}`}>
-      <Historias grupos={grupos} titulo={t('Actividades realizadas')} verMais={(g) => navegar(g.ligacao)} />
+      <Historias grupos={grupos} titulo={t('Destaques')} verMais={(g) => navegar(g.ligacao)} />
     </div>
   )
 }

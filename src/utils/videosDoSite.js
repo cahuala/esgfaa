@@ -1,12 +1,14 @@
 /*
-  Actividades realizadas como os estados do WhatsApp (site e Portal): cada evento já realizado é um círculo
-  da fila. Mostra os vídeos da actividade («Vídeos curtos» e os vídeos carregados no texto); sem vídeos,
-  mostra as fotografias (a imagem principal, as imagens e as galerias), cada uma alguns segundos.
-  As notícias entram só quando têm vídeos. Da mais recente para a mais antiga.
+  Destaques e actividades realizadas como os estados do WhatsApp (site e Portal): cada evento já realizado
+  e cada notícia em destaque (ou das mais recentes, ou com vídeo) é um cartão da fila. Mostra os vídeos
+  («Vídeos curtos» e os vídeos carregados no texto); sem vídeos, as fotografias (a imagem principal, as
+  imagens e as galerias), cada uma alguns segundos. Do mais recente para o mais antigo.
 */
 const hojeIso = () => new Date().toISOString().slice(0, 10)
 const MAX_EVENTOS = 15
 const MAX_FOTOS = 6
+const NOTICIAS_RECENTES = 6
+const MAX_CARTOES = 24
 
 function videosDe(x) {
   const doTexto = (x.conteudo || []).filter((b) => b?.tipo === 'video' && b.src && !b.youtube).map((b) => ({ src: b.src, poster: b.poster, legenda: b.legenda }))
@@ -36,8 +38,9 @@ export function gruposDoSite({ eventos = [], noticias = [] } = {}, hoje = hojeIs
     }
   }
   const realizados = eventos.filter((e) => e.data && e.data <= hoje).sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAX_EVENTOS)
+  const recentes = new Set([...noticias].sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, NOTICIAS_RECENTES).map((n) => n.slug))
   return [
     ...realizados.map((e) => grupo(e, 'evento', 'id', { comFotos: true })),
-    ...noticias.map((n) => grupo(n, 'noticia', 'slug', { comFotos: false })),
-  ].filter((g) => g.itens.length).sort((a, b) => b.data.localeCompare(a.data))
+    ...noticias.map((n) => grupo(n, 'noticia', 'slug', { comFotos: Boolean(n.destaque) || recentes.has(n.slug) })),
+  ].filter((g) => g.itens.length).sort((a, b) => b.data.localeCompare(a.data)).slice(0, MAX_CARTOES)
 }

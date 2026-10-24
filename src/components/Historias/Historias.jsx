@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import Brasao from '../../assets/Logo-ecra.webp'
 import css from './Historias.module.css'
 
 /*
-  Vídeos curtos como os estados do WhatsApp (site, Portal e cadeiras): uma fila de círculos — um por
-  actividade ou por cadeira — e, ao tocar, o leitor em ecrã inteiro: vertical, começa sozinho, uma barra
+  Vídeos curtos e destaques como os estados do WhatsApp (site, Portal e cadeiras): uma fila de cartões
+  verticais — um por actividade, notícia ou cadeira, com a fotografia a toda a altura, o avatar redondo
+  (avatar, ou o brasão da Escola) e o nome em baixo — e, ao tocar, o leitor em ecrã inteiro: vertical, começa sozinho, uma barra
   por vídeo no topo, toque à direita passa ao seguinte e à esquerda volta, carregar sem largar pausa.
-  No fim de um grupo segue para o seguinte. Os círculos já vistos ficam cinzentos (só neste navegador).
+  No fim de um grupo segue para o seguinte. Os cartões já vistos ficam com o anel cinzento (só neste navegador).
   grupos: [{ id, titulo, subtitulo?, capa?, itens: [{ id, src | obter(), imagem?, poster?, legenda?, data? }] }] — imagem: é uma
   fotografia (fica alguns segundos); obter() dá o
   endereço só quando o vídeo se vai ver (no Portal os ficheiros pedem-se com a sessão); o seguinte prepara-se já.
@@ -45,24 +47,31 @@ export default function Historias({ grupos, titulo = null, adicionar = null, apa
   return (
     <section className={`${css.fila} ${className}`} aria-label={titulo || tx('Vídeos curtos')}>
       {titulo && <h2 className={css.tituloFila}>{titulo}</h2>}
-      <div className={css.circulos}>
+      <div className={css.cartoes}>
         {adicionar && (
-          <button type="button" className={css.circulo} onClick={adicionar.aoClicar}>
-            <span className={`${css.anel} ${css.anelNovo}`}><span className={css.mais} aria-hidden="true">+</span></span>
-            <span className={css.nome}>{adicionar.texto}</span>
+          <button type="button" className={`${css.cartao} ${css.cartaoNovo}`} onClick={adicionar.aoClicar}>
+            <span className={css.mais} aria-hidden="true">+</span>
+            <span className={css.nomeCartao}>{adicionar.texto}</span>
           </button>
         )}
         {ordem.map((k) => {
           const g = cheios[k]
           const todos = g.itens.every(visto)
-          const capa = g.capa || g.itens.find((x) => x.poster)?.poster
+          // o fundo é o que se vai ver: a fotografia, a capa do vídeo ou a imagem da actividade
+          const primeiro = g.itens.find((x) => !visto(x)) || g.itens[0]
+          const fundo = (primeiro.imagem && primeiro.src) || primeiro.poster || g.capa
+          const temVideo = g.itens.some((x) => !x.imagem)
           return (
-            <button key={g.id} type="button" className={css.circulo} onClick={() => abrir(k)} title={g.titulo}>
+            <button key={g.id} type="button" className={css.cartao} onClick={() => abrir(k)} title={g.titulo}>
+              {fundo
+                ? <img className={css.fundo} src={fundo} alt="" loading="lazy" />
+                : typeof primeiro.src === 'string' && <video className={css.fundo} src={`${primeiro.src}#t=0.5`} muted playsInline preload="metadata" aria-hidden="true" />}
               <span className={`${css.anel} ${todos ? css.anelVisto : ''}`}>
-                <span className={css.foto}>{capa ? <img src={capa} alt="" loading="lazy" /> : <span className={css.semFoto} aria-hidden="true">▶</span>}</span>
-                {g.itens.length > 1 && <span className={css.conta}>{g.itens.length}</span>}
+                <span className={css.foto}><img src={g.avatar || Brasao} alt="" loading="lazy" /></span>
               </span>
-              <span className={css.nome}>{g.titulo}</span>
+              {temVideo && <span className={css.play} aria-label={tx('Vídeo')}>▶</span>}
+              {g.itens.length > 1 && <span className={css.partes} aria-hidden="true">{g.itens.map((x) => <i key={x.id} className={visto(x) ? css.parteVista : ''} />)}</span>}
+              <span className={css.nomeCartao}>{g.titulo}</span>
             </button>
           )
         })}

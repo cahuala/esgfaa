@@ -19,15 +19,22 @@ describe('actividades realizadas como os estados do WhatsApp (site)', () => {
     ],
   }
 
-  it('eventos realizados e notícias com vídeo, da mais recente; os futuros e os vazios ficam de fora', () => {
+  it('eventos realizados e notícias (recentes, em destaque ou com vídeo), da mais recente; os futuros e os vazios ficam de fora', () => {
     const g = gruposDoSite(dados, '2026-10-24')
     expect(g.map((x) => [x.id, x.itens.length, x.ligacao])).toEqual([
+      ['noticia-so-fotos', 1, '/Noticias/so-fotos'],
       ['noticia-visita', 1, '/Noticias/visita'],
       ['evento-cerimonia', 2, '/Eventos/cerimonia'],
       ['evento-conferencia', 3, '/Eventos/conferencia'],
     ])
-    expect(g[1].itens[0]).toMatchObject({ src: '/uploads/a.mp4', poster: '/c.webp', legenda: 'Chegada' })
-    expect(g[0].itens[0]).toMatchObject({ src: '/uploads/n.mp4', legenda: 'No quartel' })
+    expect(g[2].itens[0]).toMatchObject({ src: '/uploads/a.mp4', poster: '/c.webp', legenda: 'Chegada' })
+    expect(g[1].itens[0]).toMatchObject({ src: '/uploads/n.mp4', legenda: 'No quartel' })
+  })
+
+  it('as notícias antigas sem destaque nem vídeo ficam de fora', () => {
+    const muitas = Array.from({ length: 8 }, (_, i) => ({ slug: `n${i}`, titulo: `N${i}`, data: `2026-09-0${i + 1}`, capa: `/n${i}.webp`, destaque: i === 0 }))
+    const ids = gruposDoSite({ noticias: muitas }, '2026-10-24').map((x) => x.id)
+    expect(ids).toEqual(['noticia-n7', 'noticia-n6', 'noticia-n5', 'noticia-n4', 'noticia-n3', 'noticia-n2', 'noticia-n0'])
   })
 
   it('sem vídeos, o evento mostra as fotografias (capa, galeria, imagens) sem repetir', () => {

@@ -82,4 +82,5 @@ export default [
   ['Vídeo não encontrado.', 'Video not found.', 'Vidéo introuvable.', 'Vídeo no encontrado.'],
   ['Publicou um vídeo curto numa cadeira', 'Published a short video in a course', 'A publié une vidéo courte dans un cours', 'Publicó un vídeo corto en una asignatura'],
   ['Actividades realizadas', 'Past activities', 'Activités réalisées', 'Actividades realizadas'],
+  ['Destaques', 'Highlights', 'À la une', 'Destacados'],
 ]
