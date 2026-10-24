@@ -11,11 +11,12 @@ const escapar = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;',
 
 // [[Título]] no texto vira ligação para outra página da wiki (a criar, se ainda não existir)
 function comLigacoes(html, titulos) {
-  return DOMPurify.sanitize(html).replace(/\[\[([^\]<>]{1,120})\]\]/g, (_, t) => {
+  // limpa-se outra vez no fim: um [[…]] dentro de um atributo não pode abrir outra etiqueta
+  return DOMPurify.sanitize(DOMPurify.sanitize(html).replace(/\[\[([^\]<>]{1,120})\]\]/g, (_, t) => {
     const titulo = t.trim()
     const existe = titulos.has(titulo.toLowerCase())
     return `<a href="#" data-wiki="${escapar(titulo)}" class="${existe ? '' : 'p-wiki-nova'}">${escapar(titulo)}</a>`
-  })
+  }))
 }
 
 /*

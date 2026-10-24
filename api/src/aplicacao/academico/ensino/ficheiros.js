@@ -1,6 +1,10 @@
 import { NaoEncontrado } from '../../../dominio/comum/erros.js'
 
 // Ficheiros privados do portal: só para quem tem acesso (cadeira, entrega, pedido).
+
+// os que vê quem tem acesso à cadeira (o estudante, só se a atividade estiver aberta)
+const DA_CADEIRA = ['material', 'enunciado', 'programa', 'forum']
+
 export class ServicoFicheirosPortal {
   constructor(dependencias) {
     Object.assign(this, dependencias)
@@ -13,7 +17,7 @@ export class ServicoFicheirosPortal {
     const uso = f && (await this.academico.usoDoFicheiro(f.id))
     const negar = () => { throw new NaoEncontrado('Ficheiro não encontrado.') }
     if (!uso) negar()
-    if (['material', 'enunciado', 'programa', 'forum'].includes(uso.tipo)) {
+    if (DA_CADEIRA.includes(uso.tipo)) {
       await this.apoio.cadeiraAcessivel(conta, uso.cadeiraId)
       if (conta.tipo === 'estudante' && uso.escondido) negar() // capítulo ainda escondido
       if (conta.tipo === 'estudante' && uso.atividade) {
@@ -30,7 +34,9 @@ export class ServicoFicheirosPortal {
     } else if (uso.tipo === 'entrega') {
       if (conta.tipo === 'estudante' && (!uso.estudantes.includes(conta.id) || uso.correcaoPorLibertar)) negar()
       if (conta.tipo === 'docente') await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
-    } else if (uso.tipo === 'pedido' && uso.estudanteId !== conta.id) negar()
+    } else if (uso.tipo === 'pedido') {
+      if (uso.estudanteId !== conta.id) negar()
+    } else negar() // um uso novo sem regra de acesso não se entrega a ninguém
     return { caminho: this.privados.absoluto(f.caminho), nome: f.nome, tipo: f.tipo }
   }
 }

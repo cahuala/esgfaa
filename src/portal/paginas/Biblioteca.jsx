@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, urlFicheiro } from '../api'
 import { Aviso, Carregando, Erro, Titulo, Vazio } from '../componentes'
 import { data, tamanho } from '../formatar'
@@ -15,7 +15,9 @@ const ACADEMICOS = ['tese', 'tfc', 'monografia']
 // biblioteca no portal: a sala com as estantes, a ficha de cada obra e os meus empréstimos
 function Biblioteca() {
   const { id } = useParams()
-  return id ? <FichaObra key={id} id={Number(id)} /> : <Sala />
+  if (!id) return <Sala />
+  // um endereço que não é o número de uma obra volta à biblioteca
+  return /^\d+$/.test(id) ? <FichaObra key={id} id={Number(id)} /> : <Navigate to="/biblioteca" replace />
 }
 
 // largura de um elemento (para saber quantos livros cabem em cada prateleira)
@@ -260,6 +262,10 @@ const ESTADO_RESERVA = { pendente: ['bg-warning text-dark', tx('À espera')], pr
 */
 export function LerObra() {
   const { id } = useParams()
+  return /^\d+$/.test(id) ? <Leitura key={id} id={id} /> : <Navigate to="/biblioteca" replace />
+}
+
+function Leitura({ id }) {
   const { conta } = useSessao()
   const [o, setO] = useState(null)
   const [url, setUrl] = useState(null)

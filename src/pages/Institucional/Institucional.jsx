@@ -47,8 +47,8 @@ function Institucional() {
       </figure>
 
       <dl className={`contentor ${styles.numeros}`}>
-        {numeros.map((n) => (
-          <div key={n.legenda}>
+        {numeros.map((n, iN) => (
+          <div key={`${n.legenda}-${iN}`}>
             <dd>{n.valor}</dd>
             <dt>{n.legenda}</dt>
           </div>
@@ -102,8 +102,8 @@ function Institucional() {
             <table className={styles.cronologia}>
               <caption>{t('Cronologia')}</caption>
               <tbody>
-                {marcos.map((m) => (
-                  <tr key={m.ano}>
+                {marcos.map((m, iM) => (
+                  <tr key={`${m.ano}-${iM}`}>
                     <th scope="row">{m.ano}</th>
                     <td className={styles.cronologiaTitulo}>{m.titulo}</td>
                     <td>{m.texto}</td>
@@ -131,8 +131,8 @@ function Institucional() {
             <div className={styles.valores}>
               <h3 className={styles.subtitulo}>{t('Valores')}</h3>
               <ol>
-                {valores.map((v) => (
-                  <li key={v.nome}>
+                {valores.map((v, iV) => (
+                  <li key={`${v.nome}-${iV}`}>
                     <h3>{v.nome}</h3>
                     <p>{v.texto}</p>
                   </li>
@@ -147,12 +147,12 @@ function Institucional() {
             <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
             <div className={styles.ramos}>
-              {ramos.map((r) => (
-                <div key={r.titulo} className={styles.ramo}>
+              {ramos.map((r, iR) => (
+                <div key={`${r.titulo}-${iR}`} className={styles.ramo}>
                   <h4>{r.titulo}</h4>
                   <ul>
-                    {r.orgaos.map((o) => (
-                      <li key={o.nome}>
+                    {r.orgaos.map((o, iO) => (
+                      <li key={`${o.nome}-${iO}`}>
                         <strong>{o.nome}</strong>
                         <span>{o.texto}</span>
                       </li>
