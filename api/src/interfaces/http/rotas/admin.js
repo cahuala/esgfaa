@@ -257,5 +257,12 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     res.json(await servicos.auditoria.listar(ctx(req), req.dados.query))
   })
 
+  // quem exportou que tabela (Excel ou PDF), com quantas linhas e com que filtro
+  r.post('/exportacao', validar({ body: E.exportacao }), async (req, res) => {
+    const { tabela, formato, linhas, filtro } = req.dados.body
+    await servicos.auditoria.registar(ctx(req), { acao: 'exportar_tabela', alvoTitulo: tabela, detalhes: `${formato === 'pdf' ? 'PDF' : 'Excel'} · ${linhas} linha(s)${filtro ? ` · ${filtro}` : ''}` })
+    res.status(204).end()
+  })
+
   return r
 }

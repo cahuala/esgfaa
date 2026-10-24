@@ -50,6 +50,9 @@ export const filtrosAtividades = z.object({
   porPagina: z.coerce.number().int().min(1).max(100).default(25).catch(25),
 })
 
+// uma tabela exportada no painel (para o registo de atividades)
+export const exportacao = z.object({ tabela: texto(120), formato: z.enum(['excel', 'pdf']), linhas: z.number().int().min(0).max(1_000_000), filtro: texto(300).optional() })
+
 export const dias = z.object({ dias: z.coerce.number().int().min(1).max(365).default(30).catch(30) })
 
 // ---------- público ----------

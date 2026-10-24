@@ -3,6 +3,7 @@ import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
+import Exportar from '../componentes/Exportar'
 import { t as tx } from '../../i18n/linguas'
 
 const CORES = { nova: 'bg-danger', lida: 'bg-secondary', respondida: 'bg-success' }
@@ -85,8 +86,24 @@ function MensagensSite() {
         <div className="col-lg-5">
           <Painel titulo={<>{tx('Caixa de entrada')}{novas > 0 && <span className="badge bg-danger ms-2">{tx('{0} nova(s)', { 0: novas })}</span>}</>} corpo={false}>
             <div className="panel-body pb-2 d-flex flex-column gap-2">
-              <div className="btn-group btn-group-sm">
-                {Object.entries(FILTROS).map(([k, v]) => <button key={k} type="button" className={`btn ${filtro === k ? 'btn-dark' : 'btn-white'}`} onClick={() => setFiltro(k)}>{v}</button>)}
+              <div className="d-flex flex-wrap gap-2">
+                <div className="btn-group btn-group-sm">
+                  {Object.entries(FILTROS).map(([k, v]) => <button key={k} type="button" className={`btn ${filtro === k ? 'btn-dark' : 'btn-white'}`} onClick={() => setFiltro(k)}>{v}</button>)}
+                </div>
+                <Exportar
+                  className="ms-auto"
+                  titulo={tx('Mensagens do site')}
+                  filtro={[FILTROS[filtro], pesquisa.trim() && tx('pesquisa: «{0}»', { 0: pesquisa.trim() })].filter(Boolean).join(' · ')}
+                  linhas={lista}
+                  colunas={[
+                    { titulo: tx('Data'), valor: (m) => dataHora(m.criadoEm) },
+                    { titulo: tx('Nome'), valor: (m) => m.nome },
+                    { titulo: tx('E-mail'), valor: (m) => m.email },
+                    { titulo: tx('Assunto'), valor: (m) => m.assunto },
+                    { titulo: tx('Mensagem'), valor: (m) => m.mensagem },
+                    { titulo: tx('Estado'), valor: (m) => (m.estado === 'respondida' ? tx('Respondida') : m.estado === 'nova' ? tx('Nova') : tx('Lida')) },
+                  ]}
+                />
               </div>
               <div className="input-group input-group-sm">
                 <span className="input-group-text"><i className="fa fa-search" /></span>

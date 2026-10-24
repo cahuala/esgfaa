@@ -7,7 +7,7 @@ const nomeFicheiro = (titulo, ext) => `${titulo.normalize('NFD').replace(/[̀-ͯ
 const registar = (tabela, formato, linhas) => api('/auditoria/exportacao', { metodo: 'POST', corpo: { tabela: tabela.slice(0, 120), formato, linhas } }).catch(() => {})
 
 // colunas: [{ titulo, valor(linha) }] — o valor já em texto/número/data, como deve aparecer no ficheiro
-export async function exportarExcel(titulo, colunas, linhas) {
+export async function exportarExcel(titulo, colunas, linhas, { filtro = '' } = {}) {
   const { default: writeXlsxFile } = await import('write-excel-file/browser')
   const cab = colunas.map((c) => ({ value: c.titulo, fontWeight: 'bold', backgroundColor: '#1f3a2d', textColor: '#ffffff' }))
   const corpo = linhas.map((l) => colunas.map((c) => {
@@ -18,7 +18,8 @@ export async function exportarExcel(titulo, colunas, linhas) {
     return { value: String(v), type: String }
   }))
   const largura = colunas.map((c, i) => ({ width: Math.min(50, Math.max(c.titulo.length, ...linhas.slice(0, 200).map((l) => String(colunas[i].valor(l) ?? '').length)) + 2) }))
-  await writeXlsxFile([[{ value: `${titulo} — ${hoje()}`, fontWeight: 'bold', fontSize: 14 }], [], cab, ...corpo], { columns: largura, sheet: titulo.slice(0, 31).replace(/[\\/?*[\]:]/g, ' '), stickyRowsCount: 3 }).toFile(nomeFicheiro(titulo, 'xlsx'))
+  const topo = [[{ value: `${titulo} — ${hoje()}`, fontWeight: 'bold', fontSize: 14 }], ...(filtro ? [[{ value: `${linhas.length} registo(s) · ${filtro}`, type: String }]] : []), []]
+  await writeXlsxFile([...topo, cab, ...corpo], { columns: largura, sheet: titulo.slice(0, 31).replace(/[\\/?*[\]:]/g, ' '), stickyRowsCount: topo.length + 1 }).toFile(nomeFicheiro(titulo, 'xlsx'))
   registar(titulo, 'excel', linhas.length)
 }
 

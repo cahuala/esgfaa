@@ -4,6 +4,7 @@ import { useSessao } from '../sessaoContexto'
 import { COLECOES } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
+import Exportar from '../componentes/Exportar'
 import { t as tx } from '../../i18n/linguas'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -67,6 +68,20 @@ function Comentarios() {
             <option value="eventos">{tx('Eventos')}</option>
             <option value="artigos">{tx('Artigos')}</option>
           </select>
+          <Exportar
+            className="ms-auto align-self-center"
+            titulo={tx('Comentários')}
+            filtro={[filtro && ROTULOS[filtro], termo && tx('pesquisa: «{0}»', { 0: pesquisa.trim() })].filter(Boolean).join(' · ')}
+            linhas={visiveis}
+            colunas={[
+              { titulo: tx('Autor'), valor: (c) => c.nome },
+              { titulo: tx('Comentário'), valor: (c) => c.texto },
+              { titulo: tx('Conteúdo'), valor: (c) => ROTULOS[c.colecao] },
+              { titulo: tx('Título'), valor: (c) => c.tituloItem },
+              { titulo: tx('Data'), valor: (c) => dataHora(c.data) },
+              { titulo: 'IP', valor: (c) => c.ip },
+            ]}
+          />
         </div>
         {!lista && !erro ? <Carregando /> : (
           <div className="table-responsive mt-3">

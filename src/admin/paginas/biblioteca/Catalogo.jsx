@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import Capa from '../../../portal/biblioteca/Capa'
+import Exportar from '../../componentes/Exportar'
 import { t as tx } from '../../../i18n/linguas'
 
 const NUMEROS = [['obras', tx('Obras'), 'fa-book', 'bg-theme'], ['exemplares', tx('Exemplares'), 'fa-barcode', 'bg-dark'], ['ativos', tx('Emprestados'), 'fa-hand-holding', 'bg-info'], ['atrasados', tx('Em atraso'), 'fa-clock', 'bg-danger'], ['digitais', tx('Digitais'), 'fa-file-pdf', 'bg-success'], ['reservas', tx('Reservas'), 'fa-bookmark', 'bg-purple']]
@@ -48,6 +49,26 @@ function Catalogo() {
             <option value="">{tx('Todos os tipos')}</option>
             {Object.entries(resumo.tipos).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
+          {obras && (
+            <Exportar
+              className="ms-auto align-self-center"
+              titulo={tx('Catálogo da biblioteca')}
+              filtro={[f.tipo && resumo.tipos[f.tipo], f.q.trim() && tx('pesquisa: «{0}»', { 0: f.q.trim() })].filter(Boolean).join(' · ')}
+              linhas={obras}
+              colunas={[
+                { titulo: tx('Título'), valor: (o) => (o.subtitulo ? `${o.titulo}: ${o.subtitulo}` : o.titulo) },
+                { titulo: tx('Autores'), valor: (o) => o.autores.join('; ') },
+                { titulo: tx('Editora'), valor: (o) => o.editora },
+                { titulo: tx('Ano'), valor: (o) => o.ano },
+                { titulo: tx('Tipo'), valor: (o) => resumo.tipos[o.tipo] },
+                { titulo: tx('Cota'), valor: (o) => o.cota },
+                { titulo: 'ISBN', valor: (o) => o.isbn },
+                { titulo: tx('Exemplares'), valor: (o) => o.exemplares.filter((x) => x.estado === 'bom' || x.estado === 'danificado').length },
+                { titulo: tx('Disponíveis'), valor: (o) => o.exemplares.filter((x) => (x.estado === 'bom' || x.estado === 'danificado') && !x.emprestimo).length },
+                { titulo: tx('Digital'), valor: (o) => Boolean(o.ficheiro) },
+              ]}
+            />
+          )}
         </div>
         {!obras ? <Carregando /> : (
           <div className="table-responsive">

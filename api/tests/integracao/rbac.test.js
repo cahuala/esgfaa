@@ -138,4 +138,14 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal((await amb.com(admin).get('/api/admin/atividades?q=%25')).body.total, 0)
     assert.equal((await amb.com(admin).get('/api/admin/atividades?porPagina=abc&pagina=-1')).status, 200)
   })
+
+  it('exportar uma tabela (Excel ou PDF) fica no registo de atividades, com o filtro', async () => {
+    const corpo = { tabela: 'Mensagens do site', formato: 'excel', linhas: 3, filtro: 'pesquisa: «Silva»' }
+    assert.equal((await amb.http().post('/api/admin/exportacao').send(corpo)).status, 401)
+    assert.equal((await amb.com(redator.token).post('/api/admin/exportacao').send({ ...corpo, formato: 'json' })).status, 400)
+    assert.equal((await amb.com(redator.token).post('/api/admin/exportacao').send(corpo)).status, 204)
+    const [r] = (await amb.contentor.repositorios.atividades.listar({ acao: 'exportar_tabela' })).linhas
+    assert.equal(r.alvo_titulo, 'Mensagens do site')
+    assert.match(r.detalhes, /Excel · 3 linha\(s\) · pesquisa: «Silva»/)
+  })
 })

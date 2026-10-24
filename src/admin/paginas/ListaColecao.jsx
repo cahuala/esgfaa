@@ -5,6 +5,7 @@ import { useSessao } from '../sessaoContexto'
 import { COLECOES } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
 import { dataCurta } from '../formatar'
+import Exportar from '../componentes/Exportar'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
 const SITE = import.meta.env.BASE_URL.replace(/\/$/, '')
@@ -102,9 +103,22 @@ function ListaColecao() {
 
       <Painel corpo={false} className="rounded-top-0">
         <div className="panel-body pb-0">
-          <div className="input-group mb-3 lista-pesquisa">
-            <span className="input-group-text"><i className="fa fa-search" /></span>
-            <input className="form-control" placeholder={tx('Pesquisar…')} value={pesquisa} onChange={(e) => { setPesquisa(e.target.value); setPagina(1) }} />
+          <div className="d-flex flex-wrap gap-2 align-items-start mb-3">
+            <div className="input-group lista-pesquisa">
+              <span className="input-group-text"><i className="fa fa-search" /></span>
+              <input className="form-control" placeholder={tx('Pesquisar…')} value={pesquisa} onChange={(e) => { setPesquisa(e.target.value); setPagina(1) }} />
+            </div>
+            <Exportar
+              className="ms-auto"
+              titulo={def.titulo}
+              filtro={[estado === 'publicado' ? tx('Publicados') : estado === 'rascunho' ? tx('Rascunhos') : '', termo && tx('pesquisa: «{0}»', { 0: pesquisa.trim() })].filter(Boolean).join(' · ')}
+              linhas={filtrados}
+              colunas={[
+                ...def.colunas.filter((c) => !c.tipo && c.rotulo).map((c) => ({ titulo: c.rotulo, valor: (i) => (c.data ? dataCurta(c.valor(i)) : c.valor(i)) })),
+                { titulo: tx('Estado'), valor: (i) => (i._estado === 'publicado' ? tx('Publicado') : tx('Rascunho')) },
+                ...(INTERATIVAS.includes(colecao) ? [{ titulo: tx('Visualizações'), valor: (i) => i._estatisticas?.visualizacoes ?? 0 }, { titulo: tx('Gostos'), valor: (i) => i._estatisticas?.gostos ?? 0 }, { titulo: tx('Comentários'), valor: (i) => i._estatisticas?.comentarios ?? 0 }] : []),
+              ]}
+            />
           </div>
         </div>
 

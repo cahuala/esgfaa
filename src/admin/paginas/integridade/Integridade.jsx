@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
+import Exportar from '../../componentes/Exportar'
 import Relatorio, { ChipApa, ChipIA, ChipOriginalidade } from '../../../portal/integridade/Relatorio'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
@@ -69,6 +70,23 @@ function PainelIntegridade() {
             <div className="p-3 d-flex flex-wrap gap-2 border-bottom">
               <input type="search" className="form-control" style={{ maxWidth: 320 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('Título, autor ou cadeira')} aria-label={tx('Procurar análises')} />
               <select className="form-select w-auto" value={filtro} onChange={(e) => setFiltro(e.target.value)} aria-label={tx('Filtrar por semelhança')}>{Object.entries(FILTROS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+              <Exportar
+                className="ms-auto align-self-center"
+                titulo={tx('Análises de originalidade')}
+                filtro={[filtro !== 'todas' && FILTROS[filtro], q.trim() && tx('pesquisa: «{0}»', { 0: q.trim() })].filter(Boolean).join(' · ')}
+                linhas={lista}
+                colunas={[
+                  { titulo: tx('Documento'), valor: (a) => a.documento.titulo },
+                  { titulo: tx('Autor'), valor: (a) => a.documento.autor },
+                  { titulo: tx('Cadeira ou contexto'), valor: (a) => a.documento.contexto },
+                  { titulo: tx('Data'), valor: (a) => dia(a.criadaEm) },
+                  { titulo: tx('Origem'), valor: (a) => d.origens[a.documento.origem] },
+                  { titulo: tx('Semelhança (%)'), valor: (a) => (a.estado === 'concluida' ? a.percentagem : a.estado === 'erro' ? tx('Sem texto') : tx('A verificar')) },
+                  { titulo: tx('Nível'), valor: (a) => a.nivel?.rotulo },
+                  { titulo: tx('Indícios de IA (%)'), valor: (a) => a.iaPontuacao },
+                  { titulo: tx('Maior fonte'), valor: (a) => (a.fontes?.[0] ? `${a.fontes[0].titulo} (${String(a.fontes[0].percentagem).replace('.', ',')}%)` : '') },
+                ]}
+              />
             </div>
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">

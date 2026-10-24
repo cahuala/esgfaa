@@ -4,6 +4,7 @@ import { api } from '../api'
 import { COLECOES, NOMES_ACOES } from '../esquemas'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
+import Exportar from '../componentes/Exportar'
 import { t as tx } from '../../i18n/linguas'
 
 const CORES = {
@@ -62,6 +63,28 @@ function Atividades() {
 
   const totalPaginas = dados ? Math.max(1, Math.ceil(dados.total / dados.porPagina)) : 1
 
+  // exportar: todas as páginas com os filtros aplicados (até 5000 linhas)
+  async function todasAsLinhas() {
+    const q = new URLSearchParams(Object.entries(filtros).filter(([k, v]) => v && k !== 'pagina'))
+    q.set('porPagina', '100')
+    const r = []
+    for (let p = 1; p <= 50; p++) {
+      q.set('pagina', String(p))
+      const d = await api(`/atividades?${q}`)
+      r.push(...d.linhas)
+      if (r.length >= d.total || !d.linhas.length) break
+    }
+    return r
+  }
+  const filtroEscrito = [
+    filtros.utilizador && utilizadores.find((u) => String(u.id) === filtros.utilizador)?.nome,
+    filtros.acao && (NOMES_ACOES[filtros.acao] || filtros.acao),
+    filtros.colecao && (NOMES_COLECOES[filtros.colecao] || filtros.colecao),
+    filtros.desde && tx('desde {0}', { 0: filtros.desde.split('-').reverse().join('/') }),
+    filtros.ate && tx('até {0}', { 0: filtros.ate.split('-').reverse().join('/') }),
+    filtros.q && tx('pesquisa: «{0}»', { 0: filtros.q }),
+  ].filter(Boolean).join(' · ')
+
   return (
     <>
       <CabecalhoPagina titulo={tx('Registo de atividades')} subtitulo={tx('segurança e auditoria')} migalhas={[{ rotulo: tx('Registo de atividades') }]} />
@@ -96,7 +119,26 @@ function Atividades() {
         </div>
       </Painel>
 
-      <Painel titulo={tx('Ações registadas{0}', { 0: dados ? ` (${dados.total})` : '' })} corpo={false}>
+      <Painel
+        titulo={tx('Ações registadas{0}', { 0: dados ? ` (${dados.total})` : '' })}
+        corpo={false}
+        acoes={dados?.total > 0 && (
+          <Exportar
+            titulo={tx('Registo de atividades')}
+            filtro={filtroEscrito}
+            obterLinhas={todasAsLinhas}
+            colunas={[
+              { titulo: tx('Data'), valor: (a) => dataHora(a.data) },
+              { titulo: tx('Utilizador'), valor: (a) => a.utilizador_nome || tx('desconhecido') },
+              { titulo: tx('Ação'), valor: (a) => NOMES_ACOES[a.acao] || a.acao },
+              { titulo: tx('Área'), valor: (a) => (a.colecao ? NOMES_COLECOES[a.colecao] || a.colecao : '') },
+              { titulo: tx('Alvo'), valor: (a) => a.alvo_titulo },
+              { titulo: tx('Detalhes'), valor: (a) => detalhes(a) },
+              { titulo: 'IP', valor: (a) => a.ip },
+            ]}
+          />
+        )}
+      >
         {!dados && !erro ? <Carregando /> : (
           <div className="table-responsive">
             <table className="table table-striped align-middle mb-0 small">

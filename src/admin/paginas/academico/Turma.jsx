@@ -12,6 +12,7 @@ import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
 import FotoConta from '../../componentes/FotoConta'
+import Exportar from '../../componentes/Exportar'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -121,6 +122,21 @@ function Turma() {
               <input type="search" className="form-control" value={procura} onChange={(e) => { setProcura(e.target.value); setPagina(1) }} placeholder={tx('Pesquisar militar: nome, NIP, posto, ramo, n.º ou e-mail')} aria-label={tx('Pesquisar militares da turma')} />
             </div>
             <span className="small text-muted ms-auto">{encontradas.length === t.matriculas.length ? tx('{0} estudante(s)', { 0: t.matriculas.length }) : tx('{0} de {1}', { 0: encontradas.length, 1: t.matriculas.length })}</span>
+            <Exportar
+              titulo={tx('Estudantes da turma {0}', { 0: t.nome })}
+              filtro={procura.trim() && tx('pesquisa: «{0}»', { 0: procura.trim() })}
+              linhas={encontradas}
+              colunas={[
+                { titulo: tx('Nome'), valor: (m) => m.estudante.nome },
+                { titulo: tx('Posto'), valor: (m) => m.estudante.dados?.posto },
+                { titulo: 'NIP', valor: (m) => m.estudante.dados?.nip },
+                { titulo: tx('Ramo'), valor: (m) => m.estudante.dados?.ramo },
+                { titulo: tx('N.º'), valor: (m) => m.estudante.numero },
+                { titulo: tx('E-mail'), valor: (m) => m.estudante.email },
+                { titulo: tx('Matrícula'), valor: (m) => ESTADOS[m.estado]?.[1] ?? m.estado },
+                ...(t.anoFinal ? [{ titulo: tx('Curso'), valor: (m) => { const c = conclusao.get(m.estudante.id); return !c ? '' : c.concluido ? `${tx('Concluiu')} · ${Number(c.mediaFinal).toLocaleString('pt-PT')}` : tx('Por concluir') } }] : []),
+              ]}
+            />
           </div>
           <div className="table-responsive">
             <table className="table align-middle mb-0 tm-tabela">

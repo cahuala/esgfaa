@@ -59,7 +59,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
   async function exportar(formato) {
     setAExportar(formato)
     try {
-      if (formato === 'excel') await exportarExcel(titulo, exportaveis, filtradas)
+      if (formato === 'excel') await exportarExcel(titulo, exportaveis, filtradas, { filtro: pesquisa && `pesquisa: «${pesquisa}»` })
       else await exportarPdf(titulo, exportaveis, filtradas, { subtitulo: [subtitulo, pesquisa && `pesquisa: «${pesquisa}»`].filter(Boolean).join(' · ') })
     } finally {
       setAExportar('')
@@ -99,10 +99,10 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
           </div>
           {!semExportar && (
             <>
-              <button type="button" className="btn btn-sm btn-success" disabled={!filtradas.length || aExportar} onClick={() => exportar('excel')} title="Exportar para Excel">
+              <button type="button" className="btn btn-sm btn-success" disabled={!filtradas.length || aExportar} onClick={() => exportar('excel')} title={pesquisa ? 'Exportar para Excel só o que a pesquisa encontrou' : 'Exportar para Excel'}>
                 <i className={`fa ${aExportar === 'excel' ? 'fa-spinner fa-spin' : 'fa-file-excel'} me-1`} />Excel
               </button>
-              <button type="button" className="btn btn-sm btn-danger" disabled={!filtradas.length || aExportar} onClick={() => exportar('pdf')} title="Exportar para PDF">
+              <button type="button" className="btn btn-sm btn-danger" disabled={!filtradas.length || aExportar} onClick={() => exportar('pdf')} title={pesquisa ? 'Exportar para PDF só o que a pesquisa encontrou' : 'Exportar para PDF'}>
                 <i className={`fa ${aExportar === 'pdf' ? 'fa-spinner fa-spin' : 'fa-file-pdf'} me-1`} />PDF
               </button>
             </>

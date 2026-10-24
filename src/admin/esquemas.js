@@ -550,6 +550,7 @@ export const NOMES_ACOES = {
   editar_ferramenta_lti: tx('Editou ferramenta externa (LTI)'),
   apagar_ferramenta_lti: tx('Apagou ferramenta externa (LTI)'),
   exportar_cadeira: tx('Descarregou a cópia de segurança de uma cadeira'),
+  exportar_tabela: tx('Exportou uma tabela (Excel ou PDF)'),
   restaurar_cadeira: tx('Restaurou uma cópia numa cadeira'),
   criar_utilizador: tx('Criou utilizador'),
   editar_utilizador: tx('Editou utilizador'),
