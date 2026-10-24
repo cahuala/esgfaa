@@ -44,7 +44,7 @@ function Livro({ o }) {
     <Link to={`/biblioteca/${o.id}`} className="b-livro" title={o.titulo}>
       {f && <span className={`b-fita ${f[0]}`}>{f[1]}</span>}
       <Capa o={o} />
-      <div className="b-legenda"><b>{o.titulo}</b><span>{o.autores.join(', ') || '—'}</span></div>
+      <div className="b-legenda"><b translate="no">{o.titulo}</b><span translate="no">{o.autores.join(', ') || '—'}</span></div>
     </Link>
   )
 }
@@ -208,21 +208,21 @@ function FichaObra({ id }) {
         : o.disponiveis ? ['#2a9d8f', tx('{0} de {1} na estante', { 0: o.disponiveis, 1: o.exemplares }), o.localizacoes.length ? tx('Onde está: {0}{1}', { 0: o.localizacoes.join('; '), 1: o.cota ? ` · cota ${o.cota}` : '' }) : tx('Cota {0}', { 0: o.cota || '—' })]
           : o.exemplares ? ['#b5651d', tx('Todos os exemplares estão emprestados'), o.devolucaoPrevista ? tx('Próxima devolução prevista a {0}. Reserve para ser o próximo.', { 0: data(o.devolucaoPrevista) }) : tx('Reserve para ser o próximo.')]
             : ['#6c757d', tx('Sem exemplares em papel'), o.digital ? tx('Esta obra existe só em versão digital.') : '']
-  const detalhes = [[tx('Tipo'), o.tipos[o.tipo]], [tx('Editora'), o.editora], [tx('Ano'), o.ano], [tx('Edição'), o.edicao], ['ISBN', o.isbn], [tx('Idioma'), o.idiomas[o.idioma]], [tx('Cota'), o.cota]].filter(([, v]) => v)
+  const detalhes = [[tx('Tipo'), o.tipos[o.tipo]], [tx('Editora'), o.editora, true], [tx('Ano'), o.ano], [tx('Edição'), o.edicao], ['ISBN', o.isbn, true], [tx('Idioma'), o.idiomas[o.idioma]], [tx('Cota'), o.cota, true]].filter(([, v]) => v)
 
   return (
     <div className="b-sala">
       <ol className="breadcrumb mb-3">
         <li className="breadcrumb-item"><Link to="/">{tx('Portal')}</Link></li>
         <li className="breadcrumb-item"><Link to="/biblioteca">{tx('Biblioteca')}</Link></li>
-        <li className="breadcrumb-item active">{o.titulo}</li>
+        <li className="breadcrumb-item active" translate="no">{o.titulo}</li>
       </ol>
       <div className="b-ficha">
         <div className="b-ficha-livro"><div className="b-livro3d"><Capa o={o} /></div></div>
         <div>
-          <h1>{o.titulo}</h1>
-          {o.subtitulo && <div className="b-ficha-sub">{o.subtitulo}</div>}
-          <div className="b-ficha-autores">{o.autores.length ? <>{tx('de')} <b>{o.autores.join(', ')}</b></> : <span className="text-muted">{tx('Autor não indicado')}</span>}</div>
+          <h1 translate="no">{o.titulo}</h1>
+          {o.subtitulo && <div className="b-ficha-sub" translate="no">{o.subtitulo}</div>}
+          <div className="b-ficha-autores">{o.autores.length ? <>{tx('de')} <b translate="no">{o.autores.join(', ')}</b></> : <span className="text-muted">{tx('Autor não indicado')}</span>}</div>
 
           <div className="b-estado">
             <span className="ponto" style={{ background: cor }} />
@@ -236,7 +236,7 @@ function FichaObra({ id }) {
           </div>
 
           <dl className="b-detalhes mb-0">
-            {detalhes.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+            {detalhes.map(([k, v, nome]) => <div key={k}><dt>{k}</dt><dd translate={nome ? 'no' : undefined}>{v}</dd></div>)}
           </dl>
           {o.resumo && <p className="b-resumo">{o.resumo}</p>}
           {o.assuntos.length > 0 && (
@@ -316,8 +316,8 @@ export function MeusEmprestimos() {
                 <div key={e.id} className="b-emprestimo">
                   <Link to={`/biblioteca/${e.exemplar.obra.id}`}><Capa o={{ id: e.exemplar.obra.id, titulo: e.exemplar.obra.titulo, autores: e.exemplar.obra.autores, capa: e.exemplar.obra.capa, tipo: e.exemplar.obra.tipo }} /></Link>
                   <div>
-                    <Link to={`/biblioteca/${e.exemplar.obra.id}`} className="fw-bold text-body fs-15px">{e.exemplar.obra.titulo}</Link>
-                    <div className="small text-muted">{e.exemplar.obra.autores.join(', ')} {tx('· exemplar')} {e.exemplar.codigo}{e.renovacoes ? tx(' · renovado {0}×', { 0: e.renovacoes }) : ''}</div>
+                    <Link to={`/biblioteca/${e.exemplar.obra.id}`} className="fw-bold text-body fs-15px" translate="no">{e.exemplar.obra.titulo}</Link>
+                    <div className="small text-muted"><span translate="no">{e.exemplar.obra.autores.join(', ')}</span> {tx('· exemplar')} <span translate="no">{e.exemplar.codigo}</span>{e.renovacoes ? tx(' · renovado {0}×', { 0: e.renovacoes }) : ''}</div>
                     <div className="b-prazo"><i style={{ width: `${passou * 100}%`, background: e.emAtraso ? '#9b2226' : dias <= 3 ? '#e09f3e' : '#2a9d8f' }} /></div>
                     <div className={`small mt-1 ${e.emAtraso ? 'text-danger fw-bold' : ''}`}>{e.emAtraso ? tx('{0} dia(s) de atraso: devolva na biblioteca', { 0: e.diasAtraso }) : tx('Devolver até {0} · faltam {1} dia(s)', { 0: data(e.prazo), 1: dias })}</div>
                   </div>
@@ -332,7 +332,7 @@ export function MeusEmprestimos() {
               <div className="list-group list-group-flush">
                 {d.historico.map((e) => (
                   <Link key={e.id} to={`/biblioteca/${e.exemplar.obra.id}`} className="list-group-item list-group-item-action d-flex gap-3">
-                    <span className="flex-grow-1">{e.exemplar.obra.titulo}</span>
+                    <span className="flex-grow-1" translate="no">{e.exemplar.obra.titulo}</span>
                     <span className="small text-muted text-nowrap">{data(e.emprestadoEm)} – {data(e.devolvidoEm)}</span>
                   </Link>
                 ))}
@@ -347,7 +347,7 @@ export function MeusEmprestimos() {
               <div key={r.id} className="b-emprestimo" style={{ gridTemplateColumns: '56px 1fr' }}>
                 <Link to={`/biblioteca/${r.obra.id}`}><Capa o={r.obra} /></Link>
                 <div>
-                  <Link to={`/biblioteca/${r.obra.id}`} className="fw-bold text-body">{r.obra.titulo}</Link>
+                  <Link to={`/biblioteca/${r.obra.id}`} className="fw-bold text-body" translate="no">{r.obra.titulo}</Link>
                   <div className="my-1"><span className={`badge ${ESTADO_RESERVA[r.estado][0]}`}>{ESTADO_RESERVA[r.estado][1]}</span></div>
                   <div className="small text-muted">{r.estado === 'pronta' ? tx('Levante no balcão até {0}.', { 0: data(r.levantarAte) }) : tx('Pedida a {0}.', { 0: data(r.criadaEm) })}</div>
                   <button type="button" className="btn btn-link btn-sm p-0 text-danger" onClick={() => cancelar(r)}>{tx('Cancelar')}</button>

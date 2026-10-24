@@ -1,34 +1,15 @@
 import { createHash } from 'node:crypto'
-import { ErroValidacao } from '../../dominio/comum/erros.js'
+import { ErroValidacao, NaoEncontrado } from '../../dominio/comum/erros.js'
 import { LINGUAS, textoTraduzivel } from '../../dominio/traducoes/textos.js'
+import { NOME_COM_POSTO } from '../../dominio/traducoes/glossario.js'
 
 const chaveDe = (texto) => createHash('sha256').update(texto).digest('hex')
 // o tradutor recebe no máximo isto de cada vez; o resto fica para o pedido seguinte
 const MAXIMO_POR_PEDIDO = 80
-// nomes com o posto à frente ("Cap.-Ten. Pedro Neto", "Cor. Ana Baptista") nunca vão ao tradutor
-const NOME_COM_POSTO = /(?:\b[A-Z][a-z]{0,4}\.?-)?\b[A-Z][a-z]{0,4}\.\s+\p{Lu}[\p{L}'-]+(?:\s+\p{Lu}[\p{L}'-]+)*/gu
-
-// o nome dá lugar a um nome inventado, que o tradutor deixa como está e que mantém a frase inteira
-// (com uma etiqueta no lugar do nome, o tradutor chega a deitar fora o verbo)
-const SUBSTITUTOS = ['Zaqarel', 'Vorumin', 'Kelbaz', 'Torvane', 'Mirsal']
-
-// "Cap.-Ten. Pedro Neto respondeu" -> { texto: "Zaqarel respondeu", nomes: ["Cap.-Ten. Pedro Neto"] }
-function protegerNomes(texto) {
-  const nomes = []
-  const t = texto.replace(NOME_COM_POSTO, (m) => {
-    if (nomes.length >= SUBSTITUTOS.length) return m
-    nomes.push(m)
-    return SUBSTITUTOS[nomes.length - 1]
-  })
-  return { texto: t, nomes }
-}
-// a tradução só serve se trouxer todos os nomes de volta
-function reporNomes(texto, nomes) {
-  if (nomes.some((n, i) => !texto.includes(SUBSTITUTOS[i]))) return ''
-  return nomes.reduce((t, n, i) => t.replaceAll(SUBSTITUTOS[i], n), texto)
-}
 // vale a pena traduzir: tirando os nomes, ainda há texto
-const traduzivel = (t) => textoTraduzivel(t) || textoTraduzivel(t.replace(NOME_COM_POSTO, '').trim())
+// códigos (cotas «355.41 PIN», siglas «CEO», «FR») não se traduzem: sem minúsculas e curtos
+const codigo = (t) => t.length <= 16 && !/\p{Ll}/u.test(t)
+const traduzivel = (t) => !codigo(t) && (textoTraduzivel(t) || textoTraduzivel(t.replace(NOME_COM_POSTO, '').trim()))
 
 /*
   Tradução dos dados que aparecem nos painéis (nomes das cadeiras, capítulos, avisos, notificações,
@@ -38,8 +19,41 @@ const traduzivel = (t) => textoTraduzivel(t) || textoTraduzivel(t.replace(NOME_C
 export class ServicoTraducaoDados {
   #fila = Promise.resolve()
 
-  constructor({ traducoes, tradutor = null, registarErro }) {
-    Object.assign(this, { traducoes, tradutor, registarErro })
+  constructor({ traducoes, tradutor = null, auditoria = null, registarErro }) {
+    Object.assign(this, { traducoes, tradutor, auditoria, registarErro })
+  }
+
+  /*
+    Revisão no painel (Traduções dos dados): o tradutor automático erra nas frases soltas; a redação vê o que
+    ele traduziu, corrige (fica «revista» e serve a todos) ou apaga (volta a ser traduzida na próxima vez).
+  */
+  #podeRever(ctx) {
+    ctx.actor.exigir('paginas.editar')
+  }
+
+  async listarRevisao(ctx, { lingua, q, revisto }) {
+    this.#podeRever(ctx)
+    if (!(lingua in LINGUAS)) throw new ErroValidacao('Língua desconhecida.')
+    return this.traducoes.listarTextos({ lingua, q: String(q || '').trim(), revisto })
+  }
+
+  async corrigir(ctx, lingua, chave, texto) {
+    this.#podeRever(ctx)
+    const t = String(texto ?? '').trim()
+    if (!t) throw new ErroValidacao('Escreva a tradução (ou apague-a para voltar a ser traduzida).', { campo: 'texto' })
+    const atual = await this.traducoes.lerTexto(lingua, chave)
+    if (!atual) throw new NaoEncontrado('Esta tradução já não existe.')
+    const r = await this.traducoes.corrigirTexto(lingua, chave, t, ctx.actor.nome || '')
+    await this.auditoria?.registar(ctx, { acao: 'corrigir_traducao_dados', colecao: 'traducoes', alvoId: chave, alvoTitulo: atual.original.slice(0, 120), detalhes: { lingua, antes: atual.texto, depois: t } })
+    return { chave: r.chave, original: r.original, texto: r.texto, revisto: r.revisto, revistoPor: r.revistoPor }
+  }
+
+  async apagarRevisao(ctx, lingua, chave) {
+    this.#podeRever(ctx)
+    const atual = await this.traducoes.lerTexto(lingua, chave)
+    if (!atual) return
+    await this.traducoes.apagarTexto(lingua, chave)
+    await this.auditoria?.registar(ctx, { acao: 'apagar_traducao_dados', colecao: 'traducoes', alvoId: chave, alvoTitulo: atual.original.slice(0, 120), detalhes: { lingua, texto: atual.texto } })
   }
 
   // textos em português -> { traducoes: { original: tradução }, pendentes: [os que ficam para o pedido seguinte] }
@@ -68,9 +82,9 @@ export class ServicoTraducaoDados {
       const pedir = textos.filter((t) => !(chaves[t] in ainda))
       const r = Object.fromEntries(textos.filter((t) => chaves[t] in ainda).map((t) => [t, ainda[chaves[t]]]))
       if (!pedir.length) return r
-      const prot = pedir.map(protegerNomes)
-      const mapa = await this.tradutor.traduzirMapa(Object.fromEntries(prot.map((p, i) => [String(i), p.texto])), lingua)
-      const novos = pedir.map((t, i) => [t, typeof mapa[String(i)] === 'string' ? reporNomes(mapa[String(i)].trim(), prot[i].nomes) : '']).filter(([, v]) => v)
+      // o tradutor vem com o glossário (nomes, termos da Escola, ordinais: ver dominio/traducoes/glossario.js)
+      const mapa = await this.tradutor.traduzirMapa(Object.fromEntries(pedir.map((t, i) => [String(i), t])), lingua)
+      const novos = pedir.map((t, i) => [t, typeof mapa[String(i)] === 'string' ? mapa[String(i)].trim() : '']).filter(([, v]) => v)
       await this.traducoes.guardarTextos(lingua, novos.map(([o, v]) => ({ chave: chaves[o], original: o, texto: v })))
       return { ...r, ...Object.fromEntries(novos) }
     }).catch((e) => {

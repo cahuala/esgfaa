@@ -26,10 +26,13 @@ export function linguaInicial() {
 let atual = typeof window === 'undefined' ? 'pt' : linguaInicial()
 let dicionario = {}
 let daInterface = new Set()
+let daInterfaceSemNumeros = new Set()
+// «6 non lue(s)», «0 aujourd'hui · 0 J'aime»: sem os números, cada parte é um texto da interface
+const semNumeros = (s) => s.replace(/\{\w+\}/g, '').replace(/[+-]?\d+(?:[.,:]\d+)*\s*%?/g, '').replace(/\s+/g, ' ').trim()
 
 export const linguaAtual = () => atual
 // texto que já é uma tradução da interface (não vai ao tradutor automático)
-export const eTextoDaInterface = (s) => daInterface.has(s)
+export const eTextoDaInterface = (s) => daInterface.has(s) || s.split(/\s+[·|—]\s+/).every((p) => !/\p{L}{2}/u.test(p) || daInterface.has(p) || daInterfaceSemNumeros.has(semNumeros(p)))
 export const localAtual = () => LINGUAS.find((l) => l.codigo === atual).local
 
 export function definirLingua(codigo) {
@@ -45,6 +48,7 @@ export async function prepararLingua() {
   const { dicionarioDe } = await import('./dicionarios')
   dicionario = dicionarioDe(atual)
   daInterface = new Set(Object.values(dicionario))
+  daInterfaceSemNumeros = new Set([...daInterface].map(semNumeros).filter(Boolean))
 }
 
 // muda de língua e recarrega (sem o ?lang= do endereço, que mandaria na escolha)
@@ -63,5 +67,9 @@ export function mudarLingua(codigo) {
 */
 export function t(texto, valores) {
   const r = (atual === 'pt' ? texto : dicionario[texto]) ?? texto
-  return valores ? String(r).replace(/\{(\w+)\}/g, (m, k) => (k in valores ? String(valores[k]) : m)) : r
+  if (!valores) return r
+  const final = String(r).replace(/\{(\w+)\}/g, (m, k) => (k in valores ? String(valores[k]) : m))
+  // o texto já traduzido com os valores não volta a ir ao tradutor dos dados
+  if (atual !== 'pt' && final !== r) daInterface.add(final)
+  return final
 }

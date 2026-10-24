@@ -112,6 +112,7 @@ import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js
 import { ServicoTraducoes } from './aplicacao/traducoes/traducoes.js'
 import { ServicoTraducaoDados } from './aplicacao/traducoes/traducaoDados.js'
 import { traduzirComClaude } from './aplicacao/traducoes/traducaoIA.js'
+import { comGlossario } from './dominio/traducoes/glossario.js'
 import { TradutorLibre } from './infraestrutura/traducao/libreTranslate.js'
 
 /*
@@ -201,6 +202,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     ext.tradutor = ext.claude ? { nome: 'Claude (IA)', traduzirMapa: (m, l) => traduzirComClaude(ext.claude, m, l) }
       : config.tradutor?.url ? Object.assign(new TradutorLibre(config.tradutor), { nome: 'LibreTranslate' }) : null
   }
+  // os termos da Escola, os nomes das pessoas e os ordinais saem sempre certos
+  ext.tradutor = comGlossario(ext.tradutor)
   // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
   const originalidade = new ServicoOriginalidade({
     pesquisaWeb: ext.pesquisaWeb, obterPagina: ext.obterPagina, claude: ext.claude, pesquisasPorDocumento: config.pesquisaWeb?.porDocumento ?? 8,
@@ -293,7 +296,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     integridade: originalidade,
     // traduções do site (redação, com rascunho da IA se houver chave)
     traducoes,
-    traducaoDados: new ServicoTraducaoDados({ traducoes: r.traducoes, tradutor: ext.tradutor, registarErro: (x) => console.error(JSON.stringify(x)) }),
+    traducaoDados: new ServicoTraducaoDados({ traducoes: r.traducoes, tradutor: ext.tradutor, auditoria, registarErro: (x) => console.error(JSON.stringify(x)) }),
     // biblioteca: catálogo e circulação
     biblioteca: {
       catalogo: new ServicoCatalogo({ biblioteca: r.biblioteca, academico: r.academico, privados, auditoria, relogio, originalidade }),

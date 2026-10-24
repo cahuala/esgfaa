@@ -8,6 +8,7 @@ import ListaColecao from './paginas/ListaColecao'
 import EditarItem from './paginas/EditarItem'
 import EditarPagina from './paginas/EditarPagina'
 import Comentarios from './paginas/Comentarios'
+import TraducoesDados from './paginas/TraducoesDados'
 import MensagensSite from './paginas/MensagensSite'
 import FerramentasLti from './paginas/academico/FerramentasLti'
 import CentroSeguranca from './paginas/CentroSeguranca'
@@ -63,6 +64,7 @@ function App() {
         <Route path="/colecao/:colecao/:id" element={<PorEndereco><EditarItem /></PorEndereco>} />
         {pode('paginas.ver') && <Route path="/paginas/:chave" element={<PorEndereco><EditarPagina /></PorEndereco>} />}
         {pode('comentarios.ver') && <Route path="/comentarios" element={<Comentarios />} />}
+        {pode('paginas.editar') && <Route path="/traducoes-dados" element={<TraducoesDados />} />}
         {pode('contactos.ver') && <Route path="/mensagens-site" element={<MensagensSite />} />}
         {pode('academico.ver') && <Route path="/academico/turmas" element={<Turmas />} />}
         {pode('academico.ver') && <Route path="/academico/turmas/:id" element={<Turma />} />}

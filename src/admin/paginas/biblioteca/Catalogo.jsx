@@ -64,13 +64,13 @@ function Catalogo() {
                         <div className="d-flex align-items-center gap-3">
                           <Link to={`/biblioteca/obras/${o.id}`} style={{ width: 42, flex: '0 0 42px' }} tabIndex={-1}><Capa o={o} /></Link>
                           <div>
-                            <Link to={`/biblioteca/obras/${o.id}`} className="fw-bold text-body">{o.titulo}</Link>{o.subtitulo && <span className="text-muted">: {o.subtitulo}</span>}
-                            <div className="small text-muted">{[o.autores.join('; '), o.editora, o.ano].filter(Boolean).join(' · ')}</div>
+                            <Link to={`/biblioteca/obras/${o.id}`} className="fw-bold text-body" translate="no">{o.titulo}</Link>{o.subtitulo && <span className="text-muted" translate="no">: {o.subtitulo}</span>}
+                            <div className="small text-muted" translate="no">{[o.autores.join('; '), o.editora, o.ano].filter(Boolean).join(' · ')}</div>
                           </div>
                         </div>
                       </td>
                       <td className="small">{resumo.tipos[o.tipo]}</td>
-                      <td className="small text-nowrap">{o.cota || '—'}</td>
+                      <td className="small text-nowrap" translate="no">{o.cota || '—'}</td>
                       <td className="text-center">{uteis.length ? <span className={`badge ${livres ? 'bg-success' : 'bg-warning text-dark'}`}>{livres} / {uteis.length}</span> : <span className="text-muted small">—</span>}</td>
                       <td className="text-center">{o.ficheiro ? <i className="fa fa-file-pdf text-danger" title={o.acesso === 'docentes' ? tx('Só docentes') : tx('Todos')} /> : ''}</td>
                     </tr>

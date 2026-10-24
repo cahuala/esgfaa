@@ -53,10 +53,10 @@ function Capa({ o, className = '' }) {
         <div className="b-interior">
         <div className="b-acad-topo"><img src="/Logo.png" alt="" /><span>{tx('Escola Superior de Guerra')}</span></div>
         <div className="b-acad-corpo">
-          <div className="b-titulo">{o.titulo}</div>
-          {o.subtitulo && <div className="b-subtitulo">{o.subtitulo}</div>}
+          <div className="b-titulo" translate="no">{o.titulo}</div>
+          {o.subtitulo && <div className="b-subtitulo" translate="no">{o.subtitulo}</div>}
           <Ornamento />
-          <div className="b-autor">{autores.join(' · ')}</div>
+          <div className="b-autor" translate="no">{autores.join(' · ')}</div>
         </div>
         <div className="b-acad-pe">{ACADEMICOS[o.tipo]}{o.ano ? ` · ${o.ano}` : ''}</div>
         </div>
@@ -70,8 +70,8 @@ function Capa({ o, className = '' }) {
         <div className="b-interior">
         <div className="b-rev-cabeca">{o.tipo === 'revista' ? tx('Revista') : tx('Artigo')}{o.ano ? <span>{o.ano}</span> : null}</div>
         <div className="b-rev-arte" aria-hidden="true"><i /><i /><i /></div>
-        <div className="b-titulo">{o.titulo}</div>
-        <div className="b-autor">{autores.join(' · ')}</div>
+        <div className="b-titulo" translate="no">{o.titulo}</div>
+        <div className="b-autor" translate="no">{autores.join(' · ')}</div>
         </div>
       </div>
     )
@@ -83,22 +83,22 @@ function Capa({ o, className = '' }) {
       <div className="b-interior">
       {desenho === 'classico' && (
         <div className="b-moldura">
-          <div className="b-autor">{autores.map(apelido).join(' · ')}</div>
-          <div><div className="b-titulo">{o.titulo}</div><Ornamento />{o.subtitulo && <div className="b-subtitulo">{o.subtitulo}</div>}</div>
-          <div className="b-editora">{o.editora}</div>
+          <div className="b-autor" translate="no">{autores.map(apelido).join(' · ')}</div>
+          <div><div className="b-titulo" translate="no">{o.titulo}</div><Ornamento />{o.subtitulo && <div className="b-subtitulo" translate="no">{o.subtitulo}</div>}</div>
+          <div className="b-editora" translate="no">{o.editora}</div>
         </div>
       )}
       {desenho === 'moderno' && (
         <>
-          <div className="b-mod-bloco"><div className="b-titulo">{o.titulo}</div>{o.subtitulo && <div className="b-subtitulo">{o.subtitulo}</div>}</div>
-          <div className="b-mod-pe"><span className="b-autor">{autores.join(' · ')}</span><i /></div>
+          <div className="b-mod-bloco"><div className="b-titulo" translate="no">{o.titulo}</div>{o.subtitulo && <div className="b-subtitulo" translate="no">{o.subtitulo}</div>}</div>
+          <div className="b-mod-pe"><span className="b-autor" translate="no">{autores.join(' · ')}</span><i /></div>
         </>
       )}
       {desenho === 'faixa' && (
         <>
-          <div className="b-autor">{autores.join(' · ')}</div>
-          <div className="b-faixa"><div className="b-titulo">{o.titulo}</div></div>
-          <div className="b-editora">{o.editora}{o.ano ? ` · ${o.ano}` : ''}</div>
+          <div className="b-autor" translate="no">{autores.join(' · ')}</div>
+          <div className="b-faixa"><div className="b-titulo" translate="no">{o.titulo}</div></div>
+          <div className="b-editora" translate="no">{o.editora}{o.ano ? ` · ${o.ano}` : ''}</div>
         </>
       )}
       {desenho === 'geometrico' && (
@@ -107,7 +107,7 @@ function Capa({ o, className = '' }) {
             {[46, 36, 26, 16].map((r) => <circle key={r} cx={h % 2 ? 78 : 22} cy="26" r={r} />)}
             <path d={`M0 ${58 + (h % 9)} L100 ${44 + (h % 13)}`} />
           </svg>
-          <div className="b-geo-texto"><div className="b-titulo">{o.titulo}</div><div className="b-autor">{autores.join(' · ')}</div></div>
+          <div className="b-geo-texto"><div className="b-titulo" translate="no">{o.titulo}</div><div className="b-autor" translate="no">{autores.join(' · ')}</div></div>
         </>
       )}
       </div>

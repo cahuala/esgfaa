@@ -62,7 +62,7 @@ function Circulacao() {
                 {lista.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">{estado === 'atrasados' ? tx('Nenhum livro em atraso.') : tx('Nada a mostrar.')}</td></tr>}
                 {lista.map((e) => (
                   <tr key={e.id} className={e.emAtraso ? 'table-danger' : ''}>
-                    <td><Link to={`/biblioteca/obras/${e.exemplar.obra.id}`} className="fw-bold text-body">{e.exemplar.obra.titulo}</Link><div className="small text-muted font-monospace">{e.exemplar.codigo}</div></td>
+                    <td><Link to={`/biblioteca/obras/${e.exemplar.obra.id}`} className="fw-bold text-body" translate="no">{e.exemplar.obra.titulo}</Link><div className="small text-muted font-monospace">{e.exemplar.codigo}</div></td>
                     <td>{e.leitor.nome}<div className="small text-muted">{e.leitor.numero} · {tx(e.leitor.tipo)}</div></td>
                     <td className="small">{dia(e.emprestadoEm)}</td>
                     <td className="small">
@@ -111,7 +111,7 @@ function Reservas({ l, recarregar, avisar, falhou }) {
                   <td>
                     <div className="d-flex align-items-center gap-2">
                       <div style={{ width: 34, flex: '0 0 34px' }}><Capa o={r.obra} /></div>
-                      <div><Link to={`/biblioteca/obras/${r.obra.id}`} className="fw-bold text-body">{r.obra.titulo}</Link><div className="small text-muted">{r.obra.cota}</div></div>
+                      <div><Link to={`/biblioteca/obras/${r.obra.id}`} className="fw-bold text-body" translate="no">{r.obra.titulo}</Link><div className="small text-muted" translate="no">{r.obra.cota}</div></div>
                     </div>
                   </td>
                   <td>{r.leitor.nome}<div className="small text-muted">{r.leitor.numero}</div></td>

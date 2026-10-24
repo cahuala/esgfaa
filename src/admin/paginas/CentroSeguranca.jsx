@@ -209,7 +209,8 @@ function CentroSeguranca() {
   const raiz = useRef(null)
   const nivelAnterior = useRef('normal')
 
-  const carregar = useCallback(() => api('/seguranca').then((r) => { setErro(''); setD(r) }).catch((e) => setErro(e.message)), [])
+  // os nomes dos tipos de evento vêm do servidor em português: passam pelo dicionário da interface
+  const carregar = useCallback(() => api('/seguranca').then((r) => { setErro(''); setD({ ...r, tipos: Object.fromEntries(Object.entries(r.tipos || {}).map(([k, v]) => [k, tx(v)])) }) }).catch((e) => setErro(e.message)), [])
   useEffect(() => {
     carregar()
     const id = setInterval(carregar, ATUALIZAR_MS)

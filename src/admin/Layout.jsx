@@ -172,6 +172,7 @@ function Layout({ children }) {
               </div>
             </div>
             )}
+            {pode('paginas.editar') && <ItemMenu para="/traducoes-dados" icone="fa-language" texto={tx('Traduções dos dados')} />}
 
             {pode('biblioteca.ver') && <div className="menu-header">{tx('Biblioteca')}</div>}
             {pode('biblioteca.ver') && <ItemMenu para="/biblioteca" icone="fa-book" texto={tx('Catálogo')} fim />}

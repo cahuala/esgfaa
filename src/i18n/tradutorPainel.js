@@ -27,7 +27,19 @@ export function ligarTraducaoDosDados(pedir) {
   let relogio = null
   let aPedirAgora = false
 
-  const candidato = (s) => s.length > 1 && /\p{L}{2}/u.test(s) && !eTextoDaInterface(s)
+  // datas já escritas na língua (Intl): só nomes de meses e de dias, números e pontuação
+  const local = { en: 'en-GB', fr: 'fr-FR', es: 'es-ES' }[lingua]
+  const NOMES_DATAS = new Set()
+  for (let m = 0; m < 12; m++) for (const month of ['long', 'short']) NOMES_DATAS.add(new Date(2026, m, 1).toLocaleDateString(local, { month }).toLowerCase().replace(/\.$/, ''))
+  for (let d = 0; d < 7; d++) for (const weekday of ['long', 'short']) NOMES_DATAS.add(new Date(2026, 0, 4 + d).toLocaleDateString(local, { weekday }).toLowerCase().replace(/\.$/, ''))
+  const eData = (s) => { const p = s.toLowerCase().match(/\p{L}+/gu) || []; return p.length > 0 && p.every((x) => NOMES_DATAS.has(x) || x === 'de' || x === 'à' || x === 'at') }
+  const candidato = (s) => s.length > 1 && /\p{L}{2}/u.test(s) && !eTextoDaInterface(s) && !eData(s)
+  // «Questionnaire: Teste formativo» (a interface e um dado): só vai o dado
+  const soDados = (s) => {
+    const i = s.indexOf(': ')
+    if (i > 0 && eTextoDaInterface(s.slice(0, i))) return s.slice(i + 2).trim()
+    return s
+  }
 
   function aplicar(no, original) {
     const t = memoria.get(original)
@@ -42,7 +54,7 @@ export function ligarTraducaoDosDados(pedir) {
     const v = no.nodeValue
     const ja = nos.get(no)
     if (ja && v === ja.traduzido) return
-    const s = v.trim()
+    const s = soDados(v.trim())
     if (!candidato(s) || no.parentElement?.closest(FORA)) return
     if (memoria.has(s)) { aplicar(no, s); return }
     if (!espera.has(s)) espera.set(s, new Set())
@@ -75,7 +87,7 @@ export function ligarTraducaoDosDados(pedir) {
     aPedirAgora = false
     for (const s of textos) {
       if (pendentes.includes(s)) { aPedir.add(s); continue }
-      for (const no of espera.get(s) || []) if (no.isConnected && no.nodeValue.trim() === s) aplicar(no, s)
+      for (const no of espera.get(s) || []) if (no.isConnected && no.nodeValue.includes(s)) aplicar(no, s)
       espera.delete(s)
     }
     if (aPedir.size) agendar(pendentes.length ? 800 : ESPERA)

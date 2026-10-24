@@ -2,8 +2,32 @@ import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { criarAmbiente } from '../apoio/ambiente.js'
 import { aplicarTextos, extrairTextos } from '../../src/dominio/traducoes/textos.js'
+import { comGlossario } from '../../src/dominio/traducoes/glossario.js'
 
 describe('traduções: que textos se traduzem', () => {
+  it('glossário: termos da Escola, ordinais em cada língua, nomes de pessoas e apóstrofos', async () => {
+    const vistos = []
+    const t = comGlossario({ nome: 'falso', traduzirMapa: async (m, l) => { vistos.push(...Object.values(m)); return Object.fromEntries(Object.entries(m).map(([k, v]) => [k, `${l}: ${v.replace("d'", "d ' ")}`])) } })
+    const mapa = { a: '12.º Curso de Estado-Maior Conjunto', b: '1.ª edição', c: 'Prefácio de João Hossi Sebastião', d: 'Conceição Kiala Quissanga', e: "Escola d'armas" }
+    const en = await t.traduzirMapa(mapa, 'en')
+    assert.equal(en.a, '12th Joint Staff Course')
+    assert.equal(en.b, 'en: 1st edição')
+    assert.equal(en.c, 'en: Prefácio de João Hossi Sebastião')
+    assert.equal(en.d, 'Conceição Kiala Quissanga') // só um nome: nem vai ao tradutor
+    assert.equal(en.e, "en: Escola d'armas")
+    assert.ok(vistos.every((v) => !/João|Conceição|Estado-Maior/.test(v)))
+    assert.equal((await t.traduzirMapa(mapa, 'fr')).a, "12e Cours d'état-major interarmées")
+    assert.equal((await t.traduzirMapa(mapa, 'es')).a, '12.º Curso de Estado Mayor Conjunto')
+    // o artigo português volta certo em cada língua
+    const art = { f: 'Coordenadora do Curso de Estado-Maior Conjunto', g: 'Instalações da Escola Superior de Guerra', h: 'Bem-vindos à cadeira' }
+    const fr = await t.traduzirMapa(art, 'fr')
+    assert.deepEqual([fr.f, fr.g, fr.h], ["fr: Coordenadora du Cours d'état-major interarmées", "fr: Instalações de l'École Supérieure de Guerre", "fr: Bem-vindos à l'unité d'enseignement"])
+    const es = await t.traduzirMapa(art, 'es')
+    assert.deepEqual([es.f, es.g, es.h], ['es: Coordenadora del Curso de Estado Mayor Conjunto', 'es: Instalações de la Escuela Superior de Guerra', 'es: Bem-vindos a la asignatura'])
+    // em inglês, antes de um nome próprio, a preposição fica com o tradutor; a que ele deixar em português traduz-se
+    assert.equal((await t.traduzirMapa(art, 'en')).g, 'en: Instalações of the Higher War College')
+  })
+
   it('extrai só texto (sem endereços, imagens, datas, horas, e-mails nem telefones) e volta a aplicá-lo', () => {
     const dados = {
       slug: 'abertura', titulo: 'Abertura do ano', data: '2026-09-12', capa: '/uploads/a.png', resumo: 'Mais de 200 alunos.',
