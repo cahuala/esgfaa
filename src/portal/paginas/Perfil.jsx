@@ -6,6 +6,7 @@ import { dataHora, iniciais } from '../formatar'
 import MudarSenha from './MudarSenha'
 import AvisosAparelho from '../AvisosAparelho'
 import { t as tx } from '../../i18n/linguas'
+import { descarregarMeusDados } from '../../utils/meusDados'
 
 const ESTADOS = { ativa: tx('Ativa'), suspensa: tx('Suspensa'), concluida: tx('Concluída'), anulada: tx('Anulada') }
 
@@ -89,13 +90,8 @@ function OsMeusDados({ avisar }) {
   useEffect(() => { carregar() }, [])
   async function descarregar() {
     try {
-      const d = await api('/eu/dados')
-      const url = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'os-meus-dados.json'
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+      // em Excel, uma folha por tipo de dados (utils/meusDados.js)
+      await descarregarMeusDados(await api('/eu/dados'), { sistema: 'Portal Académico — Escola Superior de Guerra' })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
     }
@@ -117,7 +113,7 @@ function OsMeusDados({ avisar }) {
   return (
     <Cartao titulo={<><i className="fa fa-user-shield me-2" />{tx('Os meus dados')}</>}>
       <p className="small">{tx('Os seus dados são tratados segundo a Lei n.º 22/11 (protecção de dados pessoais).')} <a href={`${import.meta.env.BASE_URL}Privacidade`} target="_blank" rel="noreferrer">{tx('Política de privacidade')}</a></p>
-      <button type="button" className="btn btn-white btn-sm mb-3" onClick={descarregar}><i className="fa fa-download me-1" />{tx('Descarregar os meus dados')}</button>
+      <button type="button" className="btn btn-white btn-sm mb-3" onClick={descarregar}><i className="fa fa-file-excel me-1 text-success" />{tx('Descarregar os meus dados (Excel)')}</button>
       <form onSubmit={pedir}>
         <label className="form-label fw-bold" htmlFor="pd-tipo">{tx('Fazer um pedido')}</label>
         <select id="pd-tipo" className="form-select form-select-sm mb-2" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>

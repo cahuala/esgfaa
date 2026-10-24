@@ -39,4 +39,5 @@ export default [
   ['Prova online: escolha única, múltipla, verdadeiro ou falso… com correção automática', 'Online test: single or multiple choice, true or false… with automatic marking', 'Épreuve en ligne : choix unique, multiple, vrai ou faux… avec correction automatique', 'Prueba en línea: opción única, múltiple, verdadero o falso… con corrección automática'],
   ['Perguntas de opinião como no Google Forms (escolha, escala, grelha, texto), anónimo', 'Opinion questions as in Google Forms (choice, scale, grid, text), anonymous', "Questions d'opinion comme dans Google Forms (choix, échelle, grille, texte), anonyme", 'Preguntas de opinión como en Google Forms (opción, escala, cuadrícula, texto), anónimo'],
   ['Respostas anónimas (não fica registado quem respondeu o quê)', 'Anonymous answers (who answered what is not recorded)', "Réponses anonymes (on n'enregistre pas qui a répondu quoi)", 'Respuestas anónimas (no queda registrado quién respondió qué)'],
+  ['Descarregar os meus dados (Excel)', 'Download my data (Excel)', 'Télécharger mes données (Excel)', 'Descargar mis datos (Excel)'],
 ]

@@ -21,6 +21,7 @@ import { juntarAoProcesso } from '../anexos'
 import Carregar from '../componentes/Carregar'
 import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, NaoEncontrado } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
+import { descarregarMeusDados } from '../../utils/meusDados'
 
 // campo da ficha como no SIGP: rótulo pequeno em maiúsculas e o valor numa caixa
 const Dado = ({ r, v, cheio }) => (
@@ -414,20 +415,15 @@ function OsMeusDados() {
   const [f, setF] = useState({ tipo: 'rectificacao', texto: '' })
   async function descarregar() {
     try {
-      const d = await api('/eu/dados')
-      const url = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'os-meus-dados.json'
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 30_000)
+      // em Excel, uma folha por tipo de dados (utils/meusDados.js)
+      await descarregarMeusDados(await api('/eu/dados'), { sistema: 'Sistema de Gestão de Pessoal — Escola Superior de Guerra' })
     } catch (e) { avisar(e.message, 'erro') }
   }
   const pedir = () => api('/eu/pedidos-dados', { metodo: 'POST', corpo: f }).then(() => { setF({ ...f, texto: '' }); avisar('Pedido enviado à Repartição de Pessoal e Quadros.'); recarregar() }).catch((e) => avisar(e.message, 'erro'))
   return (
     <Bloco titulo="Os meus dados" icone="fa-user-shield">
       <p className="small">Os seus dados são tratados segundo a Lei n.º 22/11. <Link to="/privacidade">Política de privacidade</Link></p>
-      <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={descarregar}><i className="fa fa-download me-1" />Descarregar os meus dados</button>
+      <button type="button" className="btn btn-sm btn-outline-secondary mb-2" onClick={descarregar}><i className="fa fa-file-excel me-1 text-success" />Descarregar os meus dados (Excel)</button>
       <Escolha valor={f.tipo} aoMudar={(v) => setF({ ...f, tipo: v })} opcoes={TIPOS_PEDIDO} vazio={null} aria-label="Tipo de pedido" />
       <textarea className="form-control form-control-sm my-2" rows={3} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} placeholder="Diga o que pretende (ex.: a minha data de ingresso está errada)" aria-label="Descrição do pedido" />
       <button type="button" className="btn btn-sm btn-theme" disabled={f.texto.trim().length < 5} onClick={pedir}><i className="fa fa-paper-plane me-1" />Enviar pedido</button>
