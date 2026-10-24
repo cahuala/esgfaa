@@ -345,6 +345,7 @@ model UnidadeCurricular {
 
   prazosNotas PrazoNotas[]
   avaliacoes  AvaliacaoUc[]
+  videosCurtos VideoCurto[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -426,6 +427,24 @@ model AvisoCadeira {
 
   @@index([cadeiraId])
   @@map("avisos_cadeira")
+}
+
+// vídeos curtos da cadeira, como os estados do WhatsApp: o docente grava a aula, o exercício ou a visita
+// e os estudantes veem-nos em ecrã inteiro, um a seguir ao outro (o vídeo e a capa são ficheiros privados)
+model VideoCurto {
+  id         Int      @id @default(autoincrement())
+  cadeiraId  Int      @map("cadeira_id")
+  autorId    Int?     @map("autor_id")
+  ficheiroId String   @unique @map("ficheiro_id")
+  capaId     String?  @unique @map("capa_id")
+  legenda    String   @default("")
+  duracao    Int? // segundos
+  criadoEm   DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@index([cadeiraId, criadoEm])
+  @@map("videos_curtos")
 }
 
 // avisos da Secretaria (a todos os estudantes ou a uma turma)

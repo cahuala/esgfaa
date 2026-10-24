@@ -35,6 +35,12 @@ export function rotasPublicas({ servicos, config, cache }) {
     res.set({ 'Cache-Control': 'no-cache', 'Content-Type': 'application/json; charset=utf-8' }).send(json)
   })
 
+  // vídeos curtos das actividades realizadas (eventos e notícias), para o Portal: só o necessário
+  r.get('/videos-curtos', async (req, res) => {
+    const todos = await servicos.conteudos.todosPublicados()
+    const comVideos = (l = [], chave) => l.filter((x) => x.videosCurtos?.length).map((x) => ({ [chave]: x[chave], titulo: x.titulo, categoria: x.categoria, data: x.data, capa: x.capa, videosCurtos: x.videosCurtos }))
+    res.set('Cache-Control', 'public, max-age=300').json(absolutizar({ eventos: comVideos(todos.eventos, 'id'), noticias: comVideos(todos.noticias, 'slug') }, baseUrl(req, config)))
+  })
   r.get('/interacoes/:colecao/:id', validar({ params: pItem, query: E.consultaVisitante }), async (req, res) => {
     const { colecao, id } = req.dados.params
     res.json(await servicos.interacoes.resumo(colecao, id, req.dados.query.visitante))

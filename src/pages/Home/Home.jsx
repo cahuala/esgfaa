@@ -8,6 +8,7 @@ import MissaoVisaoValores from '../../components/MissaoVisaoValores/MissaoVisaoV
 import FAQ from '../../components/FAQ/Faq'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import Publicidade from '../../components/Publicidade/Publicidade'
+import ActividadesEmVideo from '../../components/ActividadesEmVideo/ActividadesEmVideo'
 
 
 
@@ -17,6 +18,7 @@ function Home() {
     return(
       <div>
          <HeroSection/>
+         <ActividadesEmVideo />
          <Publicidade posicao="home-topo" />
          <FormacaoDestaque />
          <NoticiaDestaque />

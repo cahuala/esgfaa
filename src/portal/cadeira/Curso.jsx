@@ -5,6 +5,7 @@ import { Bloqueio, Vazio } from '../componentes'
 import { dataHora, estadoSessao, faltam, nota } from '../formatar'
 import NovaAtividade from './NovaAtividade'
 import EditorInquerito from '../inquerito/EditorInquerito'
+import { VideosDaCadeira } from '../VideosCurtos'
 import Importar from './Importar'
 import Restricoes from './Restricoes'
 import Conclusao from './Conclusao'
@@ -238,6 +239,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   return (
     <div className="row">
       <div className="col-xl-9">
+        <VideosDaCadeira c={c} eDocente={eDocente} avisar={avisar} />
         {eDocente && (
           <div className="d-flex align-items-center gap-2 mb-3">
             <div className="form-check form-switch mb-0">

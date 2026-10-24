@@ -25,6 +25,7 @@ export function rotasPortal({ servicos, config, privados }) {
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
   const ficheiros = privados ? receberFicheiro({ privados, config, maximo: 10 }) : (req, res, next) => next()
   const pasta = privados ? receberFicheiro({ privados, config, maximo: 20 }) : (req, res, next) => next()
+  const videoCurto = privados ? receberFicheiro({ privados, config, maximo: 2 }) : (req, res, next) => next()
 
   // «Não sou um robô»: o desafio que o navegador resolve antes de entrar
   const robo = provaRobo({ config, servicos })
@@ -111,6 +112,12 @@ export function rotasPortal({ servicos, config, privados }) {
   })
   r.put('/materiais/:id', pasta, validar({ params: pId, body: E.material }), async (req, res) => res.json(await e.materiais.editarMaterial(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
   r.delete('/materiais/:id', validar({ params: pId }), async (req, res) => { await e.materiais.apagarMaterial(ctx(req), req.dados.params.id); res.status(204).end() })
+
+  // vídeos curtos (como os estados do WhatsApp): o vídeo no campo "ficheiro" e a capa em "ficheiros"
+  r.get('/videos-curtos', async (req, res) => res.json(await e.videosCurtos.meus(ctx(req))))
+  r.get('/cadeiras/:id/videos-curtos', validar({ params: pId }), async (req, res) => res.json(await e.videosCurtos.daCadeira(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/videos-curtos', videoCurto, validar({ params: pId, body: E.videoCurto }), async (req, res) => res.status(201).json(await e.videosCurtos.publicar(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
+  r.delete('/videos-curtos/:id', validar({ params: pId }), async (req, res) => { await e.videosCurtos.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
 
   r.post('/cadeiras/:id/avisos', validar({ params: pId, body: E.avisoCadeira }), async (req, res) => res.status(201).json(await e.materiais.criarAviso(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/avisos/:id', validar({ params: pId }), async (req, res) => { await e.materiais.apagarAviso(ctx(req), req.dados.params.id); res.status(204).end() })

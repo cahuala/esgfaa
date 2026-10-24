@@ -7,6 +7,7 @@ import { dataHora, maiusculaInicial, nota, primeiroNome, tituloAgenda } from '..
 import { lerRecentes } from '../recentes'
 import VisaoCadeiras from '../VisaoCadeiras'
 import CartaoTelemovel from '../CartaoTelemovel'
+import { VideosDoInicio } from '../VideosCurtos'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
 // iniciais dos dias, de segunda a domingo, na língua escolhida (5 de janeiro de 2026 foi segunda-feira)
@@ -72,6 +73,7 @@ function Inicio() {
         {!eDocente && <Link to="/notas" className="btn btn-theme"><i className="fa fa-clipboard-list me-1" /> {tx('As minhas notas')}</Link>}
       </Titulo>
       <CartaoTelemovel />
+      <VideosDoInicio />
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
       {!d && !erro ? <Carregando /> : d && (
         <>

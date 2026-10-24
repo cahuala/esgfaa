@@ -5,6 +5,9 @@ import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 const anexo = (nome) => [PDF, { filename: nome, contentType: 'application/pdf' }]
+// cabeçalho de um MP4 (a caixa ftyp) e de um PNG: chega para a verificação do tipo real
+const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypmp42'), Buffer.alloc(64)])
+const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64)])
 
 describe('mais recursos: página, pasta, videoconferência, sondagem e avaliação do docente', () => {
   let amb, relogio, cadeira, turma, sec
@@ -206,6 +209,38 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     const daAssist = lista.find((i) => i.docenteId === contas.assist.id)
     assert.match((await portal('assist').get(`/api/portal/inqueritos/${daAssist.id}`)).body.aviso, /pelo menos 3 respostas/)
     assert.equal((await amb.com(tokens.ana).get(`/api/admin/academico/turmas/${turma.id}/avaliacao`)).status, 401)
+  })
+
+  it('vídeos curtos da cadeira (como os estados do WhatsApp): o docente publica, os estudantes da cadeira veem, os outros não', async () => {
+    const url = `/api/portal/cadeiras/${cadeira.id}/videos-curtos`
+    const enviar = (quem, ficheiro = [MP4, { filename: 'aula.mp4', contentType: 'video/mp4' }]) => portal(quem).post(url).field('legenda', 'Exercício na carta').field('duracao', '42').attach('ficheiro', ...ficheiro).attach('ficheiros', PNG, { filename: 'capa.png', contentType: 'image/png' })
+    assert.equal((await enviar('ana')).status, 403)
+    assert.equal((await enviar('prof', anexo('falso.pdf'))).status, 400) // um PDF não é vídeo
+    assert.equal((await enviar('prof', [PDF, { filename: 'falso.mp4', contentType: 'video/mp4' }])).status, 400) // diz que é vídeo e não é
+    const v = await enviar('prof')
+    assert.equal(v.status, 201, v.body.erro)
+    assert.deepEqual([v.body.legenda, v.body.duracao, Boolean(v.body.capaId)], ['Exercício na carta', 42, true])
+
+    const lista = (await portal('ana').get(url)).body
+    assert.deepEqual(lista.map((x) => [x.legenda, x.autor, x.podeApagar]), [['Exercício na carta', 'Docente Prof Teste', false]])
+    assert.equal((await portal('ana').get(`/api/portal/ficheiros/${v.body.ficheiroId}?ver=1`)).status, 200)
+    assert.equal((await portal('ana').get(`/api/portal/ficheiros/${v.body.capaId}`)).status, 200)
+    const inicio = (await portal('ana').get('/api/portal/videos-curtos')).body
+    assert.deepEqual(inicio.map((g) => [g.cadeira.codigo, g.videos.length]), [['EST101', 1]])
+
+    // um estudante de outra turma não vê a lista nem o ficheiro
+    const outra = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body
+    await amb.registarEMatricular(sec(), outra.id, { nome: 'Estudante Fora Teste', email: 'fora@esgfaa.gov.ao' })
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'fora@esgfaa.gov.ao', senha: 'fora@esgfaa.gov.ao' })
+    const fora = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: 'fora@esgfaa.gov.ao', nova: NOVA })).body.token)
+    assert.equal((await fora.get(url)).status, 404) // nem sabe que a cadeira existe
+    assert.equal((await fora.get(`/api/portal/ficheiros/${v.body.ficheiroId}`)).status, 404)
+    assert.deepEqual((await fora.get('/api/portal/videos-curtos')).body, [])
+
+    assert.equal((await portal('ana').delete(`/api/portal/videos-curtos/${v.body.id}`)).status, 403)
+    assert.equal((await portal('prof').delete(`/api/portal/videos-curtos/${v.body.id}`)).status, 204)
+    assert.deepEqual((await portal('ana').get(url)).body, [])
+    assert.equal((await portal('ana').get(`/api/portal/ficheiros/${v.body.ficheiroId}`)).status, 404)
   })
 
   it('a cópia leva páginas, pastas, videoconferências e sondagens, mas não as avaliações', async () => {

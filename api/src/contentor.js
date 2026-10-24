@@ -66,6 +66,7 @@ import { ServicoEstudante } from './aplicacao/academico/ensino/estudante.js'
 import { ServicoFicheirosPortal } from './aplicacao/academico/ensino/ficheiros.js'
 import { ServicoOrganizacao } from './aplicacao/academico/ensino/organizacao.js'
 import { ServicoMateriais } from './aplicacao/academico/ensino/materiais.js'
+import { ServicoVideosCurtos } from './aplicacao/academico/ensino/videosCurtos.js'
 import { ServicoCopiaSeguranca } from './aplicacao/academico/ensino/copiaSeguranca.js'
 import { ServicoPacotes } from './aplicacao/academico/ensino/pacotes.js'
 import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.js'
@@ -227,6 +228,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       ficheiros: new ServicoFicheirosPortal(d),
       organizacao: new ServicoOrganizacao(d),
       materiais: new ServicoMateriais(d),
+      videosCurtos: new ServicoVideosCurtos(d),
       pautaDocente: new ServicoPautaDocente(d),
       trabalhos: new ServicoTrabalhos(d),
       presencas: new ServicoPresencas(d),

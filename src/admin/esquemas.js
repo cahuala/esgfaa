@@ -101,6 +101,11 @@ export const COLECOES = {
       { nome: 'resumo', rotulo: tx('Resumo'), tipo: 'textarea', linhas: 2, obrigatorio: true, ajuda: tx('Aparece nas listagens e no topo da notícia.') },
       { nome: 'capa', rotulo: tx('Imagem de capa'), tipo: 'imagem', obrigatorio: true, recomendado: TAMANHOS.capa },
       { nome: 'destaque', rotulo: tx('Manchete (aparece em grande no topo do boletim)'), tipo: 'booleano' },
+      { nome: 'videosCurtos', rotulo: tx('Vídeos curtos (actividades realizadas)'), tipo: 'objetos', rotuloItem: tx('Vídeo'), ajuda: tx('Vídeos gravados no telemóvel (MP4, de preferência na vertical e até 1 minuto). No site aparecem como os estados do WhatsApp: um círculo por actividade, em ecrã inteiro, um a seguir ao outro.'), campos: [
+        { nome: 'src', rotulo: tx('Vídeo (MP4)'), tipo: 'video', largura: 'metade' },
+        { nome: 'poster', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem capa, usa-se a imagem principal.') },
+        { nome: 'legenda', rotulo: tx('Legenda'), tipo: 'texto' },
+      ] },
       { nome: 'conteudo', rotulo: tx('Conteúdo da notícia'), tipo: 'blocos' },
     ],
   },
@@ -153,6 +158,11 @@ export const COLECOES = {
       { nome: 'programa', rotulo: tx('Programa do dia'), tipo: 'objetos', rotuloItem: tx('Momento'), campos: [
         { nome: 'hora', rotulo: tx('Hora'), tipo: 'hora', largura: 'terco' },
         { nome: 'atividade', rotulo: tx('Atividade'), tipo: 'texto', largura: 'doisTercos' },
+      ] },
+      { nome: 'videosCurtos', rotulo: tx('Vídeos curtos (actividades realizadas)'), tipo: 'objetos', rotuloItem: tx('Vídeo'), ajuda: tx('Vídeos gravados no telemóvel (MP4, de preferência na vertical e até 1 minuto). No site aparecem como os estados do WhatsApp: um círculo por actividade, em ecrã inteiro, um a seguir ao outro.'), campos: [
+        { nome: 'src', rotulo: tx('Vídeo (MP4)'), tipo: 'video', largura: 'metade' },
+        { nome: 'poster', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem capa, usa-se a imagem principal.') },
+        { nome: 'legenda', rotulo: tx('Legenda'), tipo: 'texto' },
       ] },
       { nome: 'conteudo', rotulo: tx('Descrição do evento'), tipo: 'blocos' },
     ],
@@ -551,6 +561,7 @@ export const NOMES_ACOES = {
   apagar_ferramenta_lti: tx('Apagou ferramenta externa (LTI)'),
   exportar_cadeira: tx('Descarregou a cópia de segurança de uma cadeira'),
   exportar_tabela: tx('Exportou uma tabela (Excel ou PDF)'),
+  publicar_video_curto: tx('Publicou um vídeo curto numa cadeira'),
   restaurar_cadeira: tx('Restaurou uma cópia numa cadeira'),
   criar_utilizador: tx('Criou utilizador'),
   editar_utilizador: tx('Editou utilizador'),

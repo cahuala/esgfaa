@@ -6,6 +6,7 @@ import Contagem from './Contagem'
 import Calendario from './Calendario'
 import LinhaAgenda from './LinhaAgenda'
 import MiniaturaEvento from './MiniaturaEvento'
+import ActividadesEmVideo from '../../components/ActividadesEmVideo/ActividadesEmVideo'
 import { useConteudo } from '../../conteudo/contexto'
 import {
   diaDaSemana, diaDoMes, formatarDataLonga, formatarMesAno, hoje, mesLongo, paraData,
@@ -65,6 +66,8 @@ function Eventos() {
           <div><dt>{t('Realizados')}</dt><dd>{realizados.length}</dd></div>
         </dl>
       </CabecalhoEditorial>
+
+      <ActividadesEmVideo />
 
       {/* Próximo evento em destaque: cartão branco com a fotografia ao lado */}
       {seguinte && (

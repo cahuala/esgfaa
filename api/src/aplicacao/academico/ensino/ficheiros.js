@@ -3,7 +3,7 @@ import { NaoEncontrado } from '../../../dominio/comum/erros.js'
 // Ficheiros privados do portal: só para quem tem acesso (cadeira, entrega, pedido).
 
 // os que vê quem tem acesso à cadeira (o estudante, só se a atividade estiver aberta)
-const DA_CADEIRA = ['material', 'enunciado', 'programa', 'forum']
+const DA_CADEIRA = ['material', 'enunciado', 'programa', 'forum', 'video_curto']
 
 export class ServicoFicheirosPortal {
   constructor(dependencias) {

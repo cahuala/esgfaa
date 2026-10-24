@@ -665,10 +665,35 @@ export class RepositorioAcademico {
     return /^[0-9a-f-]{36}$/.test(String(id)) ? this.prisma.ficheiro.findUnique({ where: { id: String(id) } }) : null
   }
 
+  // ---------- vídeos curtos (como os estados do WhatsApp) ----------
+
+  criarVideoCurto(dados) {
+    return this.prisma.videoCurto.create({ data: dados })
+  }
+
+  videoCurto(id) {
+    return this.prisma.videoCurto.findUnique({ where: { id } })
+  }
+
+  apagarVideoCurto(id) {
+    return this.prisma.videoCurto.delete({ where: { id } })
+  }
+
+  // os vídeos destas cadeiras desde a data, do mais recente, com o nome de quem os publicou
+  async videosCurtos(cadeiraIds, desde, limite = 200) {
+    const l = await this.prisma.videoCurto.findMany({
+      where: { cadeiraId: { in: cadeiraIds }, criadoEm: { gte: desde } },
+      orderBy: { criadoEm: 'desc' }, take: limite,
+      include: { cadeira: { select: { id: true, nome: true, codigo: true } } },
+    })
+    const autores = new Map((await this.prisma.contaPortal.findMany({ where: { id: { in: [...new Set(l.map((v) => v.autorId).filter(Boolean))] } }, select: { id: true, nome: true } })).map((c) => [c.id, c.nome]))
+    return l.map((v) => ({ ...v, autor: autores.get(v.autorId) ?? '' }))
+  }
+
   // a que pertence um ficheiro (para decidir quem o pode descarregar)
   async usoDoFicheiro(id) {
     const p = this.prisma
-    const [material, trabalho, entrega, pedido, programa, workshop, anexo] = await Promise.all([
+    const [material, trabalho, entrega, pedido, programa, workshop, anexo, video] = await Promise.all([
       p.material.findFirst({ where: { OR: [{ ficheiroId: id }, { ficheiros: { some: { ficheiroId: id } } }] }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, correcaoFicheiroId: true, trabalho: { select: { cadeiraId: true, anonimo: true, notasOcultas: true, notasLibertadasEm: true } }, grupo: { select: { membros: { select: { estudanteId: true } } } } } }),
@@ -676,6 +701,7 @@ export class RepositorioAcademico {
       p.unidadeCurricular.findFirst({ where: { programaFicheiroId: id }, select: { id: true } }),
       p.submissaoWorkshop.findFirst({ where: { ficheiroId: id }, select: { estudanteId: true, workshop: { select: { cadeiraId: true } }, avaliacoes: { select: { avaliadorId: true } } } }),
       p.forumAnexo.findUnique({ where: { ficheiroId: id }, select: { topico: { select: { cadeiraId: true } }, resposta: { select: { topico: { select: { cadeiraId: true } } } } } }),
+      p.videoCurto.findFirst({ where: { OR: [{ ficheiroId: id }, { capaId: id }] }, select: { cadeiraId: true } }),
     ])
     if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false, atividade: `material-${material.id}` }
     if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false, atividade: `trabalho-${trabalho.id}` }
@@ -684,6 +710,7 @@ export class RepositorioAcademico {
     if (programa) return { tipo: 'programa', cadeiraId: programa.id }
     if (workshop) return { tipo: 'workshop', cadeiraId: workshop.workshop.cadeiraId, estudantes: [workshop.estudanteId, ...workshop.avaliacoes.map((a) => a.avaliadorId)] }
     if (anexo) return { tipo: 'forum', cadeiraId: anexo.topico?.cadeiraId ?? anexo.resposta.topico.cadeiraId }
+    if (video) return { tipo: 'video_curto', cadeiraId: video.cadeiraId }
     return null
   }
 }
