@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
@@ -158,6 +159,7 @@ function MenuMais({ itens, atual, escolher }) {
   const [aberto, setAberto] = useState(null) // posição do menu (fixa: o cabeçalho corta o que transborda)
   const ref = useRef(null)
   const botao = useRef(null)
+  const lista = useRef(null)
   const posicao = () => {
     const r = botao.current.getBoundingClientRect()
     return { top: r.bottom, right: Math.max(8, window.innerWidth - r.right) }
@@ -165,7 +167,7 @@ function MenuMais({ itens, atual, escolher }) {
   const estaAberto = Boolean(aberto)
   useEffect(() => {
     if (!estaAberto) return undefined
-    const fora = (e) => { if (!ref.current?.contains(e.target)) setAberto(null) }
+    const fora = (e) => { if (!ref.current?.contains(e.target) && !lista.current?.contains(e.target)) setAberto(null) }
     // a página desloca-se (um toque no trackpad chega): o menu acompanha o botão, e só fecha se ele sair do ecrã
     const seguir = () => {
       const r = botao.current?.getBoundingClientRect()
@@ -192,14 +194,16 @@ function MenuMais({ itens, atual, escolher }) {
       <button ref={botao} type="button" className={`nav-link border-0 bg-transparent ${escolhido ? 'active' : ''}`} aria-haspopup="menu" aria-expanded={estaAberto} onClick={() => setAberto(aberto ? null : posicao())}>
         {escolhido ? <><i className={`fa ${escolhido.icone} me-1 d-none d-md-inline`} />{escolhido.texto}</> : tx('Mais')} <i className="fa fa-caret-down ms-1" />
       </button>
-      {aberto && (
-        <div className="dropdown-menu show p-menu-mais" role="menu" style={{ top: aberto.top, right: aberto.right }}>
+      {/* no corpo da página: a capa da cadeira corta o que lhe sai (e desloca o «fixed»), e o menu ficava escondido */}
+      {aberto && createPortal(
+        <div ref={lista} className="dropdown-menu show p-menu-mais" role="menu" style={{ top: aberto.top, right: aberto.right }}>
           {itens.map((s) => (
             <button key={s.id} type="button" role="menuitem" className={`dropdown-item ${s.id === atual ? 'active' : ''}`} onClick={() => { setAberto(null); escolher(s.id) }}>
               <i className={`fa ${s.icone} fa-fw me-2`} />{s.texto}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </li>
   )
