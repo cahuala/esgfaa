@@ -65,6 +65,17 @@ function Layout({ children }) {
     window.addEventListener('esg-contactos', contar)
     return () => { clearInterval(id); window.removeEventListener('esg-contactos', contar) }
   }, [verContactos])
+  // o que espera por decisão na gestão académica (provas por imprimir, alterações de notas, docentes por verificar)
+  const [pendentes, setPendentes] = useState({})
+  const verAcademico = pode('academico.ver')
+  useEffect(() => {
+    if (!verAcademico) return undefined
+    const contar = () => api('/academico/pendentes').then(setPendentes).catch(() => {})
+    contar()
+    const id = setInterval(contar, 120_000)
+    window.addEventListener('esg-pendentes', contar)
+    return () => { clearInterval(id); window.removeEventListener('esg-pendentes', contar) }
+  }, [verAcademico])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -182,6 +193,9 @@ function Layout({ children }) {
             {pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Estudantes e docentes')} />}
 
             {pode('academico.ver') && <div className="menu-header">{tx('Administração Escolar')}</div>}
+            {pode('academico.ver') && <ItemMenu para="/academico/alteracoes-notas" icone="fa-user-shield" texto={tx('Alterações de notas')} contador={pode('academico.homologar') ? pendentes.alteracoesPendentes : 0} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/docentes" icone="fa-user-check" texto={tx('Docentes (verificação)')} contador={pode('academico.homologar') ? pendentes.docentesPorVerificar : 0} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/provas-escritas" icone="fa-print" texto={tx('Provas para imprimir')} contador={pode('academico.gerir') ? pendentes.provasPorImprimir : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto={tx('Indicadores académicos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto={tx('Inquéritos de satisfação')} />}
             {pode('integridade.ver') && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Integridade académica')} />}

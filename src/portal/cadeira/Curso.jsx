@@ -20,6 +20,7 @@ const ATALHOS = [
   ['ficheiro', 'fa-file-upload', tx('Material (ficheiro)')],
   ['video', 'fa-play', tx('Vídeo')],
   ['questionario', 'fa-question', tx('Prova online')],
+  ['prova_escrita', 'fa-print', tx('Prova escrita (impressão)')],
   ['inquerito', 'fa-clipboard-list', tx('Inquérito de opinião')],
   ['trabalho', 'fa-file-signature', tx('Trabalho')],
   ['videoconferencia', 'fa-video', tx('Videoconferência')],
@@ -47,6 +48,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   }
   // atalhos do docente: abre já o formulário do tipo escolhido (fica no capítulo Geral; arrasta-se depois)
   const criar = (tipo) => {
+    // a prova escrita vai para a Repartição imprimir: envia-se no separador Notas
+    if (tipo === 'prova_escrita') return irPara({ separador: 'avaliacoes' })
     setEdicao(true)
     if (tipo === 'inquerito') abrirInquerito(null)
     else setNova({ secaoId: null, tipo })

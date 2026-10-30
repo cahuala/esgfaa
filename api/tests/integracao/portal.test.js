@@ -165,9 +165,10 @@ describe('portal académico', () => {
     detalhe = (await portal('bruno').get(`/api/portal/cadeiras/${cadeira.id}`)).body
     assert.equal(detalhe.notas.situacao, 'recurso')
 
-    // linha sem notas é apagada
+    // notas publicadas: o docente já não as apaga nem muda sem autorização do Comandante (pedido por estudante)
     const limpa = await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.bruno.id }] })
-    assert.equal(limpa.body.linhas.find((l) => l.estudante.id === contas.bruno.id).p1, null)
+    assert.equal(limpa.status, 409)
+    assert.match(limpa.body.erro, /peça a alteração ao Comandante/)
   })
 
   it('trabalhos: entrega dentro do prazo, substituição, correção e prazo fechado', async () => {

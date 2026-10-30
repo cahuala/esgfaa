@@ -34,6 +34,10 @@ export class ServicoFicheirosPortal {
     } else if (uso.tipo === 'entrega') {
       if (conta.tipo === 'estudante' && (!uso.estudantes.includes(conta.id) || uso.correcaoPorLibertar)) negar()
       if (conta.tipo === 'docente') await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
+    } else if (uso.tipo === 'enunciado_prova') {
+      // a prova escrita antes de ser feita: só os docentes da cadeira (a Repartição abre-a no painel)
+      if (conta.tipo !== 'docente') negar()
+      await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
     } else if (uso.tipo === 'pedido') {
       if (uso.estudanteId !== conta.id) negar()
     } else negar() // um uso novo sem regra de acesso não se entrega a ninguém

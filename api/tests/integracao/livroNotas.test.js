@@ -76,8 +76,9 @@ describe('livro de notas: componentes da pauta calculadas a partir das atividade
     // retirar a composição: a 1.ª prova volta a ser escrita à mão (fica o último valor)
     p = (await portal('prof').put(`${url}/composicao`).send({ componente: 'p1', itens: null })).body
     assert.deepEqual(p.composicoes, {})
-    await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 18, p2: 12 }] })
-    assert.equal(linha((await portal('prof').get(url)).body, 'ana').p1, 18)
+    // a 1.ª prova já está publicada: mudar a nota da Ana pede autorização ao Comandante
+    assert.equal((await portal('prof').put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 18, p2: 12 }] })).status, 409)
+    assert.equal(linha((await portal('prof').get(url)).body, 'ana').p1, 17)
 
     // a Administração Escolar também define composições
     assert.equal((await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/pauta/composicao`).send({ componente: 'p2', itens: [{ tipo: 'trabalho', id: t.id }] })).status, 200)

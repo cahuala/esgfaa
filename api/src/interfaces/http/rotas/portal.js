@@ -113,6 +113,14 @@ export function rotasPortal({ servicos, config, privados }) {
   r.put('/materiais/:id', pasta, validar({ params: pId, body: E.material }), async (req, res) => res.json(await e.materiais.editarMaterial(ctx(req), req.dados.params.id, req.dados.body, req.ficheiros || [])))
   r.delete('/materiais/:id', validar({ params: pId }), async (req, res) => { await e.materiais.apagarMaterial(ctx(req), req.dados.params.id); res.status(204).end() })
 
+  // provas escritas para a Repartição imprimir e pedidos de alteração de notas publicadas (ao Comandante)
+  const ctl = servicos.controlo
+  r.get('/cadeiras/:id/provas-escritas', validar({ params: pId }), async (req, res) => res.json(await ctl.enunciadosDaCadeira(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/provas-escritas', ficheiro, validar({ params: pId, body: E.provaEscrita }), async (req, res) => res.status(201).json(await ctl.enviarEnunciado(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
+  r.delete('/provas-escritas/:id', validar({ params: pId }), async (req, res) => { await ctl.apagarEnunciado(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.get('/cadeiras/:id/alteracoes-notas', validar({ params: pId }), async (req, res) => res.json(await ctl.pedidosDaCadeira(ctx(req), req.dados.params.id)))
+  r.post('/cadeiras/:id/alteracoes-notas', validar({ params: pId, body: E.pedidoAlteracaoNota }), async (req, res) => res.status(201).json(await ctl.pedirAlteracao(ctx(req), req.dados.params.id, req.dados.body)))
+
   // vídeos curtos (como os estados do WhatsApp): o vídeo no campo "ficheiro" e a capa em "ficheiros"
   r.get('/videos-curtos', async (req, res) => res.json(await e.videosCurtos.meus(ctx(req))))
   r.get('/cadeiras/:id/videos-curtos', validar({ params: pId }), async (req, res) => res.json(await e.videosCurtos.daCadeira(ctx(req), req.dados.params.id)))

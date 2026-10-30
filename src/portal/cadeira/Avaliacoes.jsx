@@ -5,6 +5,7 @@ import { Cartao, Vazio, Carregando } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import Composicao from './Composicao'
 import { MinhasNotasEsg, PautaEsg } from './PautaEsg'
+import ControloNotas from './ControloNotas'
 import { exportarPautaExcel } from '../exportarPauta'
 import { COMPONENTES_NOTA, NOMES_COMPONENTES, REGRA, SITUACOES, resultadoDisciplina } from '../regraAvaliacao'
 import { t as tx } from '../../i18n/linguas'
@@ -24,7 +25,12 @@ function PautaOuEsg(props) {
   const { c } = props
   useEffect(() => { api(`/cadeiras/${c.id}/pauta`).then((r) => setModo(r.modo === 'esg' ? 'esg' : 'classica')).catch(() => setModo('classica')) }, [c.id])
   if (!modo) return <Carregando texto={tx('A carregar a pauta…')} />
-  return modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} /> : <Pauta {...props} />
+  return (
+    <>
+      {modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} /> : <Pauta {...props} />}
+      <ControloNotas c={c} avisar={props.avisar} />
+    </>
+  )
 }
 
 // estudante: as suas notas nesta disciplina, em linha

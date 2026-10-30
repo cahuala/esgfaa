@@ -11,6 +11,12 @@ const paraPainel = (c) => ({
 })
 
 // Notícias, artigos, eventos, cursos, pessoas e banners
+// quem, além de quem gere a coleção, pode ler a lista (só ler)
+const LEITURA_ALARGADA = {
+  cursos: ['academico.ver'],
+  pessoas: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'paginas.ver'],
+}
+
 export class ServicoConteudos {
   constructor({ conteudos, interacoes, publicidade, auditoria, filtroHtml, relogio }) {
     Object.assign(this, { conteudos, interacoes, publicidade, auditoria, filtroHtml, relogio })
@@ -55,7 +61,8 @@ export class ServicoConteudos {
 
   async listar(ctx, colecao) {
     definicao(colecao)
-    ctx.actor.exigir(`${colecao}.ver`)
+    // a lista dos cursos serve também a gestão académica (turmas); a das pessoas, quem escolhe o autor de um texto
+    ctx.actor.exigir(`${colecao}.ver`, ...(LEITURA_ALARGADA[colecao] ?? []))
     const [est, metricas, lista] = await Promise.all([
       this.interacoes.porItem(),
       colecao === 'publicidade' ? this.publicidade.metricas() : {},

@@ -1,4 +1,4 @@
-import { ErroValidacao } from '../../../dominio/comum/erros.js'
+import { Conflito, ErroValidacao } from '../../../dominio/comum/erros.js'
 import { notaDosPares } from '../../../dominio/academico/atividades/workshops.js'
 import { notaComposta, validarComposicao } from '../../../dominio/academico/avaliacao/composicao.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
@@ -15,8 +15,8 @@ import { SemPermissao } from '../../../dominio/comum/erros.js'
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio, esg = null }) {
-    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio, esg })
+  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio, esg = null, controlo = null }) {
+    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio, esg, controlo })
   }
 
   // o dia de hoje na hora de Luanda (AAAA-MM-DD)
@@ -170,7 +170,17 @@ export class ServicoPautas {
       const fechada = COMPONENTES_NOTA.find((k) => mudadas.has(k) && prazos && !prazos[k].aberto)
       if (fechada) throw new SemPermissao(mensagemFechado(fechada, prazos[fechada]))
     }
+    // componentes já publicadas: o docente só muda a nota dos estudantes que o Comandante autorizou
+    const usar = []
+    if (ctx.conta && this.controlo) {
+      const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v))
+      for (const k of COMPONENTES_NOTA.filter((x) => (cadeira.notasPublicadas ?? []).includes(x) && !calculadas.includes(x))) {
+        const mudam = notas.filter((l) => num(l[k]) !== num(atuais[l.estudanteId]?.[k])).map((l) => ({ estudanteId: l.estudanteId, nota: num(l[k]) }))
+        if (mudam.length) usar.push(...(await this.controlo.exigirAutorizacoes(cadeira, { componente: k }, mudam, NOMES_COMPONENTES[k])))
+      }
+    }
     await this.academico.gravarPauta(cadeira.id, notas)
+    await this.controlo?.gastarAutorizacoes(usar)
     await this.auditoria.registar(ctx, { acao: 'lancar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: cadeira.nome, detalhes: { estudantes: notas.length }, utilizador })
     return this.pauta(await this.academico.cadeira(cadeira.id))
   }
@@ -180,6 +190,9 @@ export class ServicoPautas {
     const lista = [...new Set(componentes)]
     if (lista.some((k) => !COMPONENTES_NOTA.includes(k))) throw new ErroValidacao('Componente de avaliação desconhecida.')
     const ordenada = COMPONENTES_NOTA.filter((k) => lista.includes(k))
+    // o docente não esconde notas já publicadas (seria a forma de as mudar sem autorização do Comandante)
+    const retiradas = (cadeira.notasPublicadas ?? []).filter((k) => !ordenada.includes(k))
+    if (ctx.conta && retiradas.length) throw new Conflito(`As notas de ${retiradas.map((k) => NOMES_COMPONENTES[k]).join(', ')} já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.`)
     await this.academico.publicarNotas(cadeira.id, ordenada)
     const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
     if (novas.length) {

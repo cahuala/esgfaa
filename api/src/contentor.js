@@ -73,6 +73,8 @@ import { ServicoPautaDocente } from './aplicacao/academico/ensino/pautaDocente.j
 import { ServicoPrazosNotas } from './aplicacao/academico/administracao/prazosNotas.js'
 import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { RepositorioPrazosNotas } from './infraestrutura/repositorios/prazosNotas.js'
+import { RepositorioControloAcademico } from './infraestrutura/repositorios/controloAcademico.js'
+import { ServicoControloAcademico } from './aplicacao/academico/controlo.js'
 import { RepositorioPlanosCurso } from './infraestrutura/repositorios/planosCurso.js'
 import { ServicoAvaliacaoEsg } from './aplicacao/academico/partilhado/avaliacaoEsg.js'
 import { ServicoPlanosCurso } from './aplicacao/academico/administracao/planosCurso.js'
@@ -146,6 +148,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     academico: new RepositorioAcademico({ prisma }),
     recursos: new RepositorioRecursosCadeira({ prisma }),
     prazosNotas: new RepositorioPrazosNotas({ prisma }),
+    controlo: new RepositorioControloAcademico({ prisma }),
     planosCurso: new RepositorioPlanosCurso({ prisma }),
     comunicacao: new RepositorioComunicacao({ prisma }),
     copias: new RepositorioCopias({ prisma }),
@@ -186,11 +189,14 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     push: 'push' in externos ? externos.push : criarPush(config),
   })
   // avaliação pelos planos de curso da ESG (TAI/TAG, blocos, coeficientes): nas turmas com plano
-  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio })
-  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg })
+  // provas escritas, alterações de notas publicadas (autorizadas pelo Comandante) e verificação dos docentes
+  const controlo = new ServicoControloAcademico({ controlo: r.controlo, academico: r.academico, planos: r.planosCurso, privados, auditoria, notificacoes, relogio })
+  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio, controlo })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg, controlo })
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao, esg })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
+  controlo.apoio = apoio
   // serviços externos opcionais: sem chave ficam desligados (os testes substituem-nos)
   // Lei n.º 22/11: a IA e a pesquisa externas (fora de Angola) só com autorização expressa (DADOS_FORA_DE_ANGOLA=sim)
   const fora = config.dadosForaDeAngola
@@ -293,6 +299,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio }),
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     ensino: ensino(),
+    controlo,
     administracaoEscolar: administracaoEscolar(),
     // qualidade: inquéritos institucionais de satisfação
     qualidade: { inqueritos: new ServicoInqueritosInstitucionais({ qualidade: r.qualidade, academico: r.academico, notificacoes, auditoria, relogio }) },

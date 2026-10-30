@@ -53,6 +53,13 @@ export const filtrosAtividades = z.object({
 // um vídeo curto da cadeira (multipart: os campos chegam como texto)
 export const videoCurto = z.object({ legenda: texto(300).optional(), duracao: z.union([texto(10), z.number()]).optional() })
 
+// prova escrita enviada para a Repartição imprimir (multipart: os campos chegam como texto)
+export const provaEscrita = z.object({ titulo: texto(200), data: texto(10).optional(), copias: z.union([texto(6), z.number()]).optional(), observacoes: texto(1000).optional() })
+// pedido de alteração de notas publicadas (um ou mais estudantes)
+export const pedidoAlteracaoNota = z.object({ avaliacaoId: z.union([idNumerico, z.null()]).optional(), componente: texto(20).optional(), estudanteIds: z.array(idNumerico).min(1).max(200), motivo: texto(1000) })
+export const decisaoAlteracaoNota = z.object({ ids: z.array(idNumerico).min(1).max(500), decisao: z.enum(['autorizar', 'recusar']), fundamento: texto(1000).optional() })
+export const verificarDocentes = z.object({ ids: z.array(idNumerico).min(1).max(1000) })
+
 // uma tabela exportada no painel (para o registo de atividades)
 export const exportacao = z.object({ tabela: texto(120), formato: z.enum(['excel', 'pdf']), linhas: z.number().int().min(0).max(1_000_000), filtro: texto(300).optional() })
 

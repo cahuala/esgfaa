@@ -15,6 +15,16 @@ export function rotasSecretaria({ servicos, config, privados }) {
   const ctx = (req) => req.contexto
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
 
+  // controlo centralizado: provas escritas para imprimir (Repartição), alterações de notas e docentes (Comandante)
+  const ctl = servicos.controlo
+  r.get('/pendentes', async (req, res) => res.json(await ctl.pendentes(ctx(req))))
+  r.get('/provas-escritas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.paraImprimir(ctx(req), req.dados.query)))
+  r.put('/provas-escritas/:id', validar({ params: pId, body: z.object({ impresso: z.boolean() }) }), async (req, res) => res.json(await ctl.marcarImpresso(ctx(req), req.dados.params.id, req.dados.body.impresso)))
+  r.get('/alteracoes-notas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.pedidosParaDecidir(ctx(req), req.dados.query)))
+  r.post('/alteracoes-notas/decidir', validar({ body: E.decisaoAlteracaoNota }), async (req, res) => res.json(await ctl.decidir(ctx(req), req.dados.body)))
+  r.get('/docentes-verificacao', async (req, res) => res.json(await ctl.docentes(ctx(req))))
+  r.post('/docentes-verificacao', validar({ body: E.verificarDocentes }), async (req, res) => res.json(await ctl.verificarDocentes(ctx(req), req.dados.body.ids)))
+
   r.get('/contas', validar({ query: E.filtrosContas }), async (req, res) => res.json(await p.registo.listarContas(ctx(req), req.dados.query)))
   r.get('/contas/:id/foto', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await p.registo.fotoDaConta(ctx(req), req.dados.params.id), { soLeitura: true }))
   r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))

@@ -219,6 +219,9 @@ model ContaPortal {
   privacidadeEm      DateTime?     @map("privacidade_em") @db.Timestamptz(3)
   pedidosDados       PedidoDados[]
   notificarEmail     Boolean       @default(true) @map("notificar_email") // receber também por e-mail
+  // docentes: o Comandante verifica a lista (quem e quando); null = ainda por verificar
+  verificadoPor      String?       @map("verificado_por")
+  verificadoEm       DateTime?     @map("verificado_em") @db.Timestamptz(3)
 
   matriculas                  Matricula[]
   docencias                   Docencia[]
@@ -346,6 +349,8 @@ model UnidadeCurricular {
   prazosNotas PrazoNotas[]
   avaliacoes  AvaliacaoUc[]
   videosCurtos VideoCurto[]
+  enunciados  EnunciadoProva[]
+  pedidosAlteracao PedidoAlteracaoNota[]
 
   @@unique([turmaId, codigo])
   @@map("unidades_curriculares")
@@ -427,6 +432,54 @@ model AvisoCadeira {
 
   @@index([cadeiraId])
   @@map("avisos_cadeira")
+}
+
+// prova escrita enviada pelo docente para a Repartição de Administração Escolar imprimir (uma cópia por estudante);
+// o enunciado é um ficheiro privado: só os docentes da cadeira e a Repartição o abrem, nunca os estudantes
+model EnunciadoProva {
+  id          Int       @id @default(autoincrement())
+  cadeiraId   Int       @map("cadeira_id")
+  titulo      String
+  data        String? // AAAA-MM-DD: dia da prova
+  ficheiroId  String    @unique @map("ficheiro_id")
+  copias      Int
+  observacoes String    @default("")
+  estado      String    @default("enviado") // enviado | impresso
+  enviadoPor  Int?      @map("enviado_por") // conta do docente
+  enviadoEm   DateTime  @default(now()) @map("enviado_em") @db.Timestamptz(3)
+  impressoPor String    @default("") @map("impresso_por")
+  impressoEm  DateTime? @map("impresso_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@index([estado, enviadoEm])
+  @@map("enunciados_prova")
+}
+
+// depois de publicadas, as notas só mudam para os estudantes que o Comandante autorizar, um pedido por estudante:
+// pendente -> autorizado | recusado; autorizado -> usado (quando o docente grava a nota nova)
+model PedidoAlteracaoNota {
+  id          Int       @id @default(autoincrement())
+  cadeiraId   Int       @map("cadeira_id")
+  avaliacaoId Int?      @map("avaliacao_id") // prova do plano de curso (TAI/TAG…)
+  componente  String? // ou componente da pauta clássica: p1 | p2 | exame | recurso
+  estudanteId Int       @map("estudante_id")
+  notaAtual   Float?    @map("nota_atual")
+  motivo      String
+  estado      String    @default("pendente")
+  pedidoPor   Int       @map("pedido_por")
+  pedidoEm    DateTime  @default(now()) @map("pedido_em") @db.Timestamptz(3)
+  decididoPor String    @default("") @map("decidido_por")
+  decididoEm  DateTime? @map("decidido_em") @db.Timestamptz(3)
+  fundamento  String    @default("")
+  notaNova    Float?    @map("nota_nova")
+  usadoEm     DateTime? @map("usado_em") @db.Timestamptz(3)
+
+  cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
+
+  @@index([estado, pedidoEm])
+  @@index([cadeiraId, estudanteId])
+  @@map("pedidos_alteracao_nota")
 }
 
 // vídeos curtos da cadeira, como os estados do WhatsApp: o docente grava a aula, o exercício ou a visita

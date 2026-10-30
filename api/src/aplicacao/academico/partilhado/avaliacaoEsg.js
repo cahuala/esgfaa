@@ -10,8 +10,8 @@ import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decis
   painel (Administração Escolar). Quem chama já confirmou o acesso à cadeira.
 */
 export class ServicoAvaliacaoEsg {
-  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio }) {
-    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio })
+  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio, controlo = null }) {
+    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio, controlo })
   }
 
   planoDaCadeira(cadeira) {
@@ -111,7 +111,22 @@ export class ServicoAvaliacaoEsg {
       if (recuperacao !== null && (a.tipo !== 'TAI' || nota === null || nota >= NOTA_MINIMA)) throw new ErroValidacao('O teste de recuperação só existe num TAI com nota negativa.', { campo: 'recuperacao' })
       return { estudanteId, nota, recuperacao }
     })
+    // publicadas: o docente só muda a nota dos estudantes que o Comandante autorizou (a Repartição pode sempre, com registo)
+    let usar = []
+    if (ctx.conta && a.publicadaEm && this.controlo) {
+      const atuais = (await this.planos.notas([a.id]))[a.id] ?? {}
+      // o teste de recuperação que o estudante pediu (ou que o plano dá sozinho) lança-se sem pedir: é o seguimento normal
+      const automatica = (await this.planoDaCadeira(cadeira))?.recuperacaoAutomatica === true
+      const mudam = limpas.filter((l) => {
+        const antes = atuais[l.estudanteId] ?? {}
+        if ((l.nota ?? null) !== (antes.nota ?? null)) return true
+        const recuperacaoMuda = (l.recuperacao ?? null) !== (antes.recuperacao ?? null)
+        return recuperacaoMuda && !(antes.recuperacaoPedidaEm || automatica)
+      })
+      usar = await this.controlo.exigirAutorizacoes(cadeira, { avaliacaoId: a.id }, mudam, `${a.tipo} ${a.titulo}`)
+    }
     await this.planos.gravarNotas(a.id, limpas)
+    await this.controlo?.gastarAutorizacoes(usar)
     await this.auditoria.registar(ctx, { acao: 'lancar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, detalhes: { estudantes: limpas.length }, utilizador })
     return this.pauta(cadeira)
   }
@@ -125,6 +140,8 @@ export class ServicoAvaliacaoEsg {
       await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
       await this.notificacoes?.notificar(await this.notificacoes.estudantesDaCadeira(cadeira), { tipo: 'notas', titulo: `Notas publicadas: ${a.tipo} ${a.titulo}`, texto: cadeira.nome, ligacao: '/notas' })
     } else if (!publicar && a.publicadaEm) {
+      // o docente não retira a publicação (seria a forma de mudar notas sem autorização)
+      if (ctx.conta) throw new Conflito('As notas já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.')
       await this.planos.atualizarAvaliacao(a.id, { publicadaEm: null })
       await this.auditoria.registar(ctx, { acao: 'retirar_publicacao', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
     }
