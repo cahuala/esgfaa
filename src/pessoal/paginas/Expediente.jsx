@@ -43,8 +43,8 @@ function Caixas() {
     { chave: 'arquivo', titulo: 'Armário / prateleira / pasta', valor: (x) => [x.armario && `Armário ${x.armario}`, x.prateleira && `prat. ${x.prateleira}`, x.pasta && `pasta ${x.pasta}`].filter(Boolean).join(' · '), oculta: caixa !== 'arquivo' },
     { chave: 'prazo', titulo: 'Prazo', valor: (x) => x.prazo ?? '', mostrar: (x) => (x.prazo ? <span className={x.prazo < new Date().toISOString().slice(0, 10) && x.estado === 'em_curso' ? 'text-danger fw-bold' : ''}>{dataPt(x.prazo)}</span> : '') },
   ], [caixa])
-  if (!utilizador.unidadeId && !pode('administrar')) return <div className="alert alert-warning">A sua conta não está ligada a nenhuma unidade. Peça ao administrador para a indicar.</div>
-  const caixas = pode('administrar') ? [...CAIXAS, ['todos', 'Livro de expediente', 'fa-book']] : CAIXAS
+  if (!utilizador.unidadeId && !pode('administrar') && !pode('supervisionar')) return <div className="alert alert-warning">A sua conta não está ligada a nenhuma unidade. Peça ao administrador para a indicar.</div>
+  const caixas = pode('administrar') || pode('supervisionar') ? [...CAIXAS, ['todos', 'Livro de expediente', 'fa-book']] : CAIXAS
   return (
     <>
       <Cabecalho titulo="Expediente" subtitulo={utilizador.unidadeNome} migalhas={[['Expediente']]}>

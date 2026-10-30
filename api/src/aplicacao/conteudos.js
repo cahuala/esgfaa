@@ -16,7 +16,7 @@ const paraPainel = (c) => ({
 // quem, além de quem gere a coleção, pode ler a lista (só ler)
 const LEITURA_ALARGADA = {
   cursos: ['academico.ver'],
-  pessoas: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'paginas.ver'],
+  pessoas: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'paginas.ver', 'cursos.ver'],
 }
 
 export class ServicoConteudos {

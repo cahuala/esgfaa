@@ -46,6 +46,28 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await c.post('/api/pessoas').send(militar())).status, 403)
   })
 
+  it('o Comandante e o Chefe de Pessoal veem tudo (utilizadores, auditoria, livro de expediente); o Comandante não altera', async () => {
+    const conta = async (email, papel) => {
+      await adm.post('/api/utilizadores').send({ nome: `${papel} Teste`, email, papel, senha: 'Inicial2026x' }).expect(201)
+      const t = await amb.entrar(email, 'Inicial2026x')
+      return amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' }).expect(200)).body.token)
+    }
+    const cmd = await conta('cmd@pessoal.ao', 'comandante')
+    const chefe = await conta('chefe@pessoal.ao', 'chefe')
+    for (const x of [cmd, chefe]) {
+      assert.equal((await x.get('/api/utilizadores')).status, 200)
+      assert.equal((await x.get('/api/auditoria')).status, 200)
+      assert.equal((await x.get('/api/expediente?caixa=todos')).status, 200)
+      assert.equal((await x.get('/api/pessoas')).status, 200)
+    }
+    assert.equal((await cmd.post('/api/pessoas').send(militar())).status, 403)
+    assert.equal((await cmd.post('/api/utilizadores').send({ nome: 'Nova Conta Teste', email: 'nova.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 403)
+    assert.equal((await chefe.post('/api/utilizadores').send({ nome: 'Nova Conta Teste', email: 'nova.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 403) // contas: só o administrador
+    // a consulta comum continua sem ver a administração
+    const v = await conta('so.ver@pessoal.ao', 'consulta')
+    assert.equal((await v.get('/api/auditoria')).status, 403)
+  })
+
   it('ficha do militar com os campos da lei; NIP repetido é recusado', async () => {
     const r = await adm.post('/api/pessoas').send(militar({ nip: 'NIP0001', ramo: 'MGA', posto: 'coronel', quadroEspecial: 'AN', dataNascimento: '1970-05-20' })).expect(201)
     assert.equal(r.body.postoNome, 'Capitão-de-Mar-e-Guerra')

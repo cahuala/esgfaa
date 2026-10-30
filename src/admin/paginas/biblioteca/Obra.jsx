@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import Capa from '../../../portal/biblioteca/Capa'
@@ -16,6 +17,8 @@ function Obra() {
   const { id } = useParams()
   const nova = id === 'nova'
   const ir = useNavigate()
+  // quem só consulta (o Comandante, o Director de Ensino) vê a ficha sem a poder alterar
+  const gere = useSessao().pode('biblioteca.gerir')
   const [meta, setMeta] = useState(null)
   const [o, setO] = useState(nova ? VAZIA : null)
   const [erro, setErro] = useState('')
@@ -34,14 +37,14 @@ function Obra() {
   return (
     <>
       <CabecalhoPagina titulo={nova ? tx('Nova obra') : o.titulo} subtitulo={nova ? '' : meta.tipos[o.tipo]} migalhas={[{ rotulo: tx('Biblioteca'), para: '/biblioteca' }, { rotulo: nova ? tx('Nova obra') : o.titulo }]}>
-        {!nova && <button type="button" className="btn btn-white text-danger" onClick={apagar}><i className="fa fa-trash-alt me-1" />{tx('Apagar')}</button>}
+        {!nova && gere && <button type="button" className="btn btn-white text-danger" onClick={apagar}><i className="fa fa-trash-alt me-1" />{tx('Apagar')}</button>}
       </CabecalhoPagina>
-      <div className="row">
+      <fieldset disabled={!gere} className="row">
         <div className={nova ? 'col-xl-9' : 'col-xl-7'}>
           <Formulario o={o} meta={meta} nova={nova} feito={(g) => { setAviso({ texto: tx('Obra guardada.') }); if (nova) ir(`/biblioteca/obras/${g.id}`, { replace: true }); else setO(g) }} falhou={falhou} />
         </div>
         {!nova && <div className="col-xl-5"><Exemplares o={o} meta={meta} setO={setO} falhou={falhou} /></div>}
-      </div>
+      </fieldset>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

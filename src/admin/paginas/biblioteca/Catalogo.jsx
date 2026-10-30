@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, obterFicheiro } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import Capa from '../../../portal/biblioteca/Capa'
 import Exportar from '../../componentes/Exportar'
@@ -11,6 +12,7 @@ const NUMEROS = [['obras', tx('Obras'), 'fa-book', 'bg-theme'], ['exemplares', t
 // catálogo da biblioteca: números, pesquisa e lista de obras
 function Catalogo() {
   const [resumo, setResumo] = useState(null)
+  const gere = useSessao().pode('biblioteca.gerir')
   const [obras, setObras] = useState(null)
   const [f, setF] = useState({ q: '', tipo: '' })
   const [erro, setErro] = useState('')
@@ -27,7 +29,7 @@ function Catalogo() {
       <CabecalhoPagina titulo={tx('Biblioteca')} subtitulo={tx('catálogo de obras, exemplares e versões digitais')} migalhas={[{ rotulo: tx('Biblioteca') }, { rotulo: tx('Catálogo') }]}>
         <div className="d-flex gap-2">
           <button type="button" className="btn btn-white" onClick={() => obterFicheiro('/biblioteca/exportar', 'catalogo-dublin-core.xml').catch((e) => setAviso({ tipo: 'erro', texto: e.message }))} title={tx('Registos Dublin Core (OAI-DC) para repositórios e catálogos coletivos')}><i className="fa fa-file-code me-1" />{tx('Exportar Dublin Core')}</button>
-          <Link to="/biblioteca/obras/nova" className="btn btn-theme"><i className="fa fa-plus me-1" />{tx('Nova obra')}</Link>
+          {gere && <Link to="/biblioteca/obras/nova" className="btn btn-theme"><i className="fa fa-plus me-1" />{tx('Nova obra')}</Link>}
         </div>
       </CabecalhoPagina>
       <div className="row g-3 mb-3">

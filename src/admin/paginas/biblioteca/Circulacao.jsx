@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import { descarregarCsv } from '../academico/documentos/csv'
@@ -13,6 +14,7 @@ const SEPARADORES = { ativos: tx('Emprestados'), atrasados: tx('Em atraso'), res
 // balcão da biblioteca: emprestar e devolver pelo código do exemplar; listas e avisos de atraso
 function Circulacao() {
   const [params, setParams] = useSearchParams()
+  const gere = useSessao().pode('biblioteca.gerir')
   const estado = SEPARADORES[params.get('estado')] ? params.get('estado') : 'ativos'
   const [lista, setLista] = useState(null)
   const [aviso, setAviso] = useState(null)
@@ -41,12 +43,15 @@ function Circulacao() {
   return (
     <>
       <CabecalhoPagina titulo={tx('Empréstimos')} subtitulo={tx('balcão da biblioteca')} migalhas={[{ rotulo: tx('Biblioteca'), para: '/biblioteca' }, { rotulo: tx('Empréstimos') }]}>
-        <button type="button" className="btn btn-white" onClick={avisarAtrasados}><i className="fa fa-bell me-1 text-danger" />{tx('Avisar atrasos')}</button>
+        {gere && <button type="button" className="btn btn-white" onClick={avisarAtrasados}><i className="fa fa-bell me-1 text-danger" />{tx('Avisar atrasos')}</button>}
       </CabecalhoPagina>
-      <div className="row">
-        <div className="col-lg-7"><Emprestar feito={(t) => { setAviso({ texto: t }); carregar() }} falhou={falhou} /></div>
-        <div className="col-lg-5"><Devolver feito={(t) => { setAviso({ texto: t }); carregar() }} falhou={falhou} /></div>
-      </div>
+      {/* o balcão (emprestar e devolver) é de quem gere a biblioteca; quem consulta vê as listas */}
+      {gere && (
+        <div className="row">
+          <div className="col-lg-7"><Emprestar feito={(t) => { setAviso({ texto: t }); carregar() }} falhou={falhou} /></div>
+          <div className="col-lg-5"><Devolver feito={(t) => { setAviso({ texto: t }); carregar() }} falhou={falhou} /></div>
+        </div>
+      )}
       <ul className="nav nav-tabs">
         {Object.entries(SEPARADORES).map(([k, v]) => (
           <li key={k} className="nav-item"><button type="button" className={`nav-link ${estado === k ? 'active' : ''}`} onClick={() => setParams(k === 'ativos' ? {} : { estado: k })}>{v}{k === 'reservas' && reservas?.length > 0 && <span className="badge bg-purple ms-1">{reservas.length}</span>}</button></li>
@@ -71,7 +76,7 @@ function Circulacao() {
                     </td>
                     <td className="text-end text-nowrap">
                       {e.ativo && <button type="button" className="btn btn-xs btn-white me-1" disabled={!e.podeRenovar} onClick={() => renovar(e)} title={e.podeRenovar ? tx('Renovar o prazo') : tx('Já não se pode renovar')}><i className="fa fa-redo me-1" />{tx('Renovar')}</button>}
-                      {e.ativo && <button type="button" className="btn btn-xs btn-theme" onClick={() => devolver(e)}><i className="fa fa-undo me-1" />{tx('Devolver')}</button>}
+                      {e.ativo && gere && <button type="button" className="btn btn-xs btn-theme" onClick={() => devolver(e)}><i className="fa fa-undo me-1" />{tx('Devolver')}</button>}
                     </td>
                   </tr>
                 ))}

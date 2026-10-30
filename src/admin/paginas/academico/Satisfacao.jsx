@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import ResultadosInquerito from '../../../portal/cadeira/ResultadosInquerito'
 import { confirmar } from '../../../portal/dialogos'
@@ -17,6 +18,7 @@ const paraCampo = (iso) => (iso ? new Date(new Date(iso).getTime() - new Date(is
 */
 function Satisfacao() {
   const [d, setD] = useState(null)
+  const gere = useSessao().pode('academico.gerir')
   const [turmas, setTurmas] = useState([])
   const [erro, setErro] = useState('')
   const [editar, setEditar] = useState(null) // formulário em edição
@@ -55,10 +57,12 @@ function Satisfacao() {
   return (
     <>
       <CabecalhoPagina titulo={tx('Inquéritos de satisfação')} subtitulo={tx('opinião anónima de estudantes e docentes')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Inquéritos de satisfação') }]}>
-        <div className="btn-group">
-          <button type="button" className="btn btn-theme" onClick={() => novo(null)}><i className="fa fa-plus me-1" />{tx('Novo inquérito')}</button>
-          {Object.entries(d.modelos).map(([k, m]) => <button key={k} type="button" className="btn btn-white" onClick={() => novo(k)}>{m.titulo}</button>)}
-        </div>
+        {gere && (
+          <div className="btn-group">
+            <button type="button" className="btn btn-theme" onClick={() => novo(null)}><i className="fa fa-plus me-1" />{tx('Novo inquérito')}</button>
+            {Object.entries(d.modelos).map(([k, m]) => <button key={k} type="button" className="btn btn-white" onClick={() => novo(k)}>{m.titulo}</button>)}
+          </div>
+        )}
       </CabecalhoPagina>
       {editar && <EditorInquerito f={editar} setF={setEditar} publicos={d.publicos} turmas={turmas}
         guardar={(corpo, id) => (id ? api(`/academico/satisfacao/${id}`, { metodo: 'PUT', corpo }) : api('/academico/satisfacao', { metodo: 'POST', corpo }))} feito={() => { setEditar(null); carregar(); setAviso({ texto: tx('Inquérito guardado como rascunho.') }) }} falhou={falhou} />}
@@ -76,10 +80,10 @@ function Satisfacao() {
                   <td className="small">{dataLocal(i.fecha)}</td>
                   <td><span className={`badge ${ESTADOS[i.estado][0]}`}>{ESTADOS[i.estado][1]}</span></td>
                   <td className="text-end text-nowrap">
-                    {i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-white me-1" onClick={() => setEditar({ ...i, fecha: paraCampo(i.fecha) })}><i className="fa fa-pen me-1" />{tx('Editar')}</button>}
-                    {i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-theme me-1" onClick={() => lancar(i)}><i className="fa fa-paper-plane me-1" />{tx('Lançar')}</button>}
+                    {gere && i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-white me-1" onClick={() => setEditar({ ...i, fecha: paraCampo(i.fecha) })}><i className="fa fa-pen me-1" />{tx('Editar')}</button>}
+                    {gere && i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-theme me-1" onClick={() => lancar(i)}><i className="fa fa-paper-plane me-1" />{tx('Lançar')}</button>}
                     {i.estado !== 'rascunho' && <button type="button" className="btn btn-xs btn-white me-1" onClick={() => verResultados(i)}><i className="fa fa-chart-bar me-1" />{tx('Resultados')}</button>}
-                    <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(i)} aria-label={tx('Apagar {0}', { 0: i.titulo })}><i className="fa fa-trash-alt" /></button>
+                    {gere && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(i)} aria-label={tx('Apagar {0}', { 0: i.titulo })}><i className="fa fa-trash-alt" /></button>}
                   </td>
                 </tr>
               ))}

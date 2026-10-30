@@ -7,13 +7,16 @@ import { eDuplicado } from '../infraestrutura/bd.js'
   administrador — tudo, incluindo utilizadores e a ligação ao portal;
   chefe — consulta, edita e decide as propostas (aprova ou rejeita);
   operador — consulta, edita fichas e prepara propostas;
+  comandante — o Comandante da ESG: vê tudo (também os utilizadores, a auditoria e o livro de expediente), sem alterar;
   consulta — só vê;
   utente — qualquer militar ou civil da Escola: só o expediente da sua área, as mensagens e o seu próprio perfil.
 */
 const COMUNS = ['expediente', 'mensagens']
 export const PAPEIS = {
-  administrador: { nome: 'Administrador', permissoes: ['ver', 'editar', 'propor', 'decidir', 'administrar', ...COMUNS] },
-  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'editar', 'propor', 'decidir', ...COMUNS] },
+  administrador: { nome: 'Administrador', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', 'administrar', ...COMUNS] },
+  // supervisionar: ver tudo o que é do Pessoal (utilizadores, auditoria, livro de expediente), sem alterar
+  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', ...COMUNS] },
+  comandante: { nome: 'Comandante da ESG (vê tudo)', permissoes: ['ver', 'supervisionar', ...COMUNS] },
   operador: { nome: 'Operador', permissoes: ['ver', 'editar', 'propor', ...COMUNS] },
   consulta: { nome: 'Consulta', permissoes: ['ver', ...COMUNS] },
   utente: { nome: 'Utente (expediente e mensagens)', permissoes: COMUNS },
@@ -112,7 +115,7 @@ export class ServicoSessao {
 
   // gestão de utilizadores (só o administrador)
   async listar(u) {
-    exigir(u, 'administrar')
+    exigir(u, 'supervisionar')
     return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map(publico)
   }
 

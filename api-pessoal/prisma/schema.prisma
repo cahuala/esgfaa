@@ -15,7 +15,7 @@ model Utilizador {
   nome          String
   email         String         @unique
   senha         String
-  papel         String // administrador | chefe | operador | consulta | utente (só expediente e mensagens)
+  papel         String // administrador | chefe | comandante (vê tudo) | operador | consulta | utente (só expediente e mensagens)
   pessoaId      Int?           @unique @map("pessoa_id")
   unidadeId     Int?           @map("unidade_id")
   ativo         Boolean        @default(true)

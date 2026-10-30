@@ -149,4 +149,18 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal(r.alvo_titulo, 'Mensagens do site')
     assert.match(r.detalhes, /Excel · 3 linha\(s\) · pesquisa: «Silva»/)
   })
+
+  it('o Comandante vê tudo sem poder alterar; o Director de Ensino vê tudo do Ensino', async () => {
+    const cmd = amb.com((await amb.criarUtilizador('comandante')).token)
+    for (const url of ['/api/admin/utilizadores', '/api/admin/papeis', '/api/admin/atividades', '/api/admin/seguranca', '/api/admin/colecoes/noticias', '/api/admin/comentarios', '/api/admin/estatisticas', '/api/admin/biblioteca', '/api/admin/integridade', '/api/admin/academico/turmas', '/api/admin/academico/contas']) {
+      assert.equal((await cmd.get(url)).status, 200, url)
+    }
+    assert.equal((await cmd.post('/api/admin/utilizadores').send({ nome: 'Nova Pessoa', email: 'nova.pessoa@teste.ao', papel: 'redator', senha: 'Senha-Muito-Segura-2026' })).status, 403)
+    assert.equal((await cmd.post('/api/admin/academico/turmas').send({ curso: 'x', anoLetivo: '2026/2027', nome: 'T' })).status, 403)
+    const dir = amb.com((await amb.criarUtilizador('director_ensino')).token)
+    for (const url of ['/api/admin/academico/turmas', '/api/admin/colecoes/cursos', '/api/admin/integridade', '/api/admin/biblioteca', '/api/admin/academico/contas']) {
+      assert.equal((await dir.get(url)).status, 200, url)
+    }
+    for (const url of ['/api/admin/utilizadores', '/api/admin/seguranca', '/api/admin/colecoes/noticias']) assert.equal((await dir.get(url)).status, 403, url)
+  })
 })

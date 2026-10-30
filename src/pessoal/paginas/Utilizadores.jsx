@@ -8,7 +8,9 @@ import { Cabecalho, Campo, Carregando, Escolha, Modal, Painel } from '../compone
 import { dataHoraPt } from '../formatar'
 
 export default function Utilizadores() {
-  const { ref, avisar, utilizador } = useSessao()
+  const { ref, avisar, utilizador, pode } = useSessao()
+  // o Chefe e o Comandante veem a lista; só o administrador cria e altera contas
+  const gere = pode('administrar')
   const [linhas, setLinhas] = useState(null)
   const [modal, setModal] = useState(null)
   const carregar = useCallback(() => api('/utilizadores').then(setLinhas).catch((e) => avisar(e.message, 'erro')), [avisar])
@@ -38,14 +40,14 @@ export default function Utilizadores() {
   return (
     <>
       <Cabecalho titulo="Utilizadores" subtitulo="quem usa o sistema de pessoal" migalhas={[['Administração'], ['Utilizadores']]}>
-        <button type="button" className="btn btn-outline-theme" onClick={criarContas}><i className="fa fa-users me-1" />Criar contas para todos</button>
-        <button type="button" className="btn btn-theme" onClick={() => setModal({})}><i className="fa fa-user-plus me-1" />Novo utilizador</button>
+        {gere && <button type="button" className="btn btn-outline-theme" onClick={criarContas}><i className="fa fa-users me-1" />Criar contas para todos</button>}
+        {gere && <button type="button" className="btn btn-theme" onClick={() => setModal({})}><i className="fa fa-user-plus me-1" />Novo utilizador</button>}
       </Cabecalho>
       <Painel>
         <div className="row small mb-3">
-          {Object.entries(ref.papeis).map(([k, p]) => <div key={k} className="col-md mb-2"><strong>{p.nome}</strong><div className="text-muted">{{ administrador: 'Tudo, incluindo utilizadores, orgânica e ligação ao portal.', chefe: 'Consulta, edita, envia propostas e regista as respostas.', operador: 'Consulta, edita fichas e prepara propostas.', consulta: 'Só consulta.', utente: 'Militares e civis da Escola: expediente da sua área, mensagens e a sua ficha.' }[k]}</div></div>)}
+          {Object.entries(ref.papeis).map(([k, p]) => <div key={k} className="col-md mb-2"><strong>{p.nome}</strong><div className="text-muted">{{ administrador: 'Tudo, incluindo utilizadores, orgânica e ligação ao portal.', chefe: 'Vê tudo do Pessoal (também utilizadores e auditoria), edita, envia propostas e regista as respostas.', comandante: 'Vê tudo, sem alterar.', operador: 'Consulta, edita fichas e prepara propostas.', consulta: 'Só consulta.', utente: 'Militares e civis da Escola: expediente da sua área, mensagens e a sua ficha.' }[k]}</div></div>)}
         </div>
-        <Tabela titulo="Utilizadores do sistema de pessoal" colunas={colunas} linhas={linhas} aoClicar={setModal} />
+        <Tabela titulo="Utilizadores do sistema de pessoal" colunas={colunas} linhas={linhas} aoClicar={gere ? setModal : undefined} />
       </Painel>
       {modal && <FormUtilizador u={modal} eu={utilizador} papeis={ref.papeis} aoFechar={() => setModal(null)} aoGuardar={(m) => { setModal(null); avisar(m); carregar() }} />}
     </>

@@ -34,6 +34,13 @@ export const DO_ADMINISTRADOR = TODAS.filter((p) => !SO_DO_COMANDANTE.includes(p
 
 const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `${r}.${a}`))
 
+// o Comandante vê tudo (todas as permissões «ver») e decide o que é dele; o Director de Ensino vê tudo do Ensino
+const TODAS_VER = RECURSOS.filter((r) => r.acoes.includes('ver')).map((r) => `${r.id}.ver`)
+export const VER_TUDO_COMANDANTE = [...TODAS_VER, 'academico.homologar', 'publicacoes.aprovar']
+export const VER_ENSINO = ['academico.ver', 'academico.conselho', 'cursos.ver', 'integridade.ver', 'biblioteca.ver', 'pessoal.ver']
+// o que estes papéis têm sempre (os já criados recebem o que falta ao arrancar)
+export const MINIMOS = { comandante: VER_TUDO_COMANDANTE, director_ensino: VER_ENSINO }
+
 export const PAPEIS_PADRAO = [
   {
     id: 'administrador',
@@ -79,16 +86,16 @@ export const PAPEIS_PADRAO = [
   {
     id: 'director_ensino',
     nome: 'Director de Ensino',
-    descricao: 'Juízo ampliativo dos auditores, proposta das classificações finais e confirmação em Conselho de Curso.',
+    descricao: 'Vê tudo o que é do Ensino; juízo ampliativo dos auditores, proposta das classificações finais e confirmação em Conselho de Curso.',
     sistema: 0,
-    permissoes: ['academico.ver', 'academico.conselho'],
+    permissoes: VER_ENSINO,
   },
   {
     id: 'comandante',
     nome: 'Comandante da ESG',
-    descricao: 'Homologa as classificações finais dos cursos, atribui o Distinto e o ajuste previsto no plano; aprova o que se publica no site.',
+    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes e aprova o que se publica no site.',
     sistema: 0,
-    permissoes: ['academico.ver', 'academico.homologar', 'publicacoes.aprovar'],
+    permissoes: VER_TUDO_COMANDANTE,
   },
   {
     id: 'pessoal_quadros',

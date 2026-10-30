@@ -1,7 +1,7 @@
 import { ErroValidacao, NaoEncontrado } from '../dominio/comum/erros.js'
 import { limparTexto, slugificar } from '../dominio/comum/texto.js'
 import { Papel } from '../dominio/identidade/papel.js'
-import { PAPEIS_PADRAO, RECURSOS, DO_ADMINISTRADOR, ADMINISTRADOR, limparPermissoes } from '../dominio/identidade/permissoes.js'
+import { MINIMOS, PAPEIS_PADRAO, RECURSOS, DO_ADMINISTRADOR, ADMINISTRADOR, limparPermissoes } from '../dominio/identidade/permissoes.js'
 
 // Papéis e permissões (RBAC)
 export class ServicoPapeis {
@@ -14,10 +14,10 @@ export class ServicoPapeis {
     for (const p of PAPEIS_PADRAO) await this.papeis.garantir(p)
     const admin = await this.papeis.porId(ADMINISTRADOR)
     await this.papeis.guardar({ ...admin, permissoes: DO_ADMINISTRADOR, sistema: true })
-    // o Comandante aprova sempre as publicações do site (os papéis criados antes desta regra recebem-na)
-    const cmd = await this.papeis.porId('comandante')
-    if (cmd && !cmd.permissoes.includes('publicacoes.aprovar')) {
-      await this.papeis.guardar({ ...cmd, permissoes: limparPermissoes([...cmd.permissoes, 'publicacoes.aprovar']) })
+    // o Comandante vê tudo e aprova as publicações; o Director de Ensino vê tudo do Ensino (os papéis já criados recebem o que falta)
+    for (const [id, minimos] of Object.entries(MINIMOS)) {
+      const p = await this.papeis.porId(id)
+      if (p && minimos.some((x) => !p.permissoes.includes(x))) await this.papeis.guardar({ ...p, permissoes: limparPermissoes([...p.permissoes, ...minimos]) })
     }
   }
 

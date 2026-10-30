@@ -23,9 +23,9 @@ export class ServicoExpediente {
     return u.unidadeId
   }
 
-  // vê o documento quem está numa unidade por onde passou (o administrador vê o livro todo)
+  // vê o documento quem está numa unidade por onde passou (o administrador, o Chefe e o Comandante veem o livro todo)
   #podeVer(u, x) {
-    if (pode(u, 'administrar')) return true
+    if (pode(u, 'administrar') || pode(u, 'supervisionar')) return true
     return x.origemUnidadeId === u.unidadeId || x.movimentos.some((m) => m.paraUnidadeId === u.unidadeId || m.deUnidadeId === u.unidadeId)
   }
 
@@ -47,13 +47,13 @@ export class ServicoExpediente {
     return new Map((await this.bd.unidade.findMany({ select: { id: true, nome: true } })).map((x) => [x.id, x.nome]))
   }
 
-  // caixas: por_receber | na_unidade | enviados | arquivo | todos (livro, só administrador)
+  // caixas: por_receber | na_unidade | enviados | arquivo | todos (livro: administrador, Chefe e Comandante)
   // livro e arquivo: também por período (de/até, pela data de registo), sentido e armário
   async listar(u, { caixa = 'por_receber', de, ate, sentido, armario } = {}) {
     exigir(u, 'expediente')
     const livro = caixa === 'todos'
-    if (livro) exigir(u, 'administrar')
-    else this.#unidade(u)
+    // o livro todo: o administrador, o Chefe de Pessoal e o Comandante; as caixas: a unidade de cada um
+    if (livro) { if (!pode(u, 'administrar')) exigir(u, 'supervisionar') } else this.#unidade(u)
     const where = livro ? {} : { OR: [{ origemUnidadeId: u.unidadeId }, { movimentos: { some: { OR: [{ paraUnidadeId: u.unidadeId }, { deUnidadeId: u.unidadeId }] } } }] }
     if (de || ate) where.criadoEm = { ...(de ? { gte: new Date(`${de}T00:00:00`) } : {}), ...(ate ? { lte: new Date(`${ate}T23:59:59.999`) } : {}) }
     if (sentido) where.sentido = sentido

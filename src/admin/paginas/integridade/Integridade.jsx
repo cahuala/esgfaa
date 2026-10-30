@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import Exportar from '../../componentes/Exportar'
@@ -19,6 +20,8 @@ function Integridade() {
 
 function PainelIntegridade() {
   const [d, setD] = useState(null)
+  // quem só consulta (Comandante, Director de Ensino sem gestão) vê as análises; verificar e indexar é de quem gere
+  const gere = useSessao().pode('integridade.gerir')
   const [repo, setRepo] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
@@ -57,7 +60,7 @@ function PainelIntegridade() {
   return (
     <>
       <CabecalhoPagina titulo={tx('Integridade académica')} subtitulo={tx('verificação de originalidade (anti-plágio)')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Integridade académica') }]}>
-        <button type="button" className="btn btn-white" onClick={reindexar}><i className="fa fa-sync me-1" />{tx('Indexar o acervo')}</button>
+        {gere && <button type="button" className="btn btn-white" onClick={reindexar}><i className="fa fa-sync me-1" />{tx('Indexar o acervo')}</button>}
       </CabecalhoPagina>
       <div className="row g-3 mb-3">
         {numeros.map(([r, v, i, c]) => (
@@ -110,11 +113,11 @@ function PainelIntegridade() {
           </Painel>
         </div>
         <div className="col-xl-4">
-          <Enviar titulo={tx('Verificar um documento')} icone="fa-search" caminho="/integridade/verificar" botao={tx('Verificar')} guardar
-            nota={tx('TFC, tese ou artigo a avaliar. O ficheiro não fica guardado: só o texto.')} feito={(r) => { setAviso({ texto: tx('"{0}" em verificação.', { 0: r.documento.titulo }) }); carregar() }} falhou={falhou} />
-          <Enviar titulo={tx('Repositório de referência')} icone="fa-archive" caminho="/integridade/repositorio" botao={tx('Juntar ao repositório')} contexto
-            nota={tx('Teses, TFC de anos anteriores e outros textos com que os trabalhos passam a ser comparados.')} feito={(r) => { setAviso({ texto: tx('"{0}" juntado ao repositório ({1} palavras).', { 0: r.titulo, 1: r.palavras }) }); carregar() }} falhou={falhou} />
-          <Repositorio l={repo} origens={d.origens} carregar={carregar} falhou={falhou} />
+          {gere && <Enviar titulo={tx('Verificar um documento')} icone="fa-search" caminho="/integridade/verificar" botao={tx('Verificar')} guardar
+            nota={tx('TFC, tese ou artigo a avaliar. O ficheiro não fica guardado: só o texto.')} feito={(r) => { setAviso({ texto: tx('"{0}" em verificação.', { 0: r.documento.titulo }) }); carregar() }} falhou={falhou} />}
+          {gere && <Enviar titulo={tx('Repositório de referência')} icone="fa-archive" caminho="/integridade/repositorio" botao={tx('Juntar ao repositório')} contexto
+            nota={tx('Teses, TFC de anos anteriores e outros textos com que os trabalhos passam a ser comparados.')} feito={(r) => { setAviso({ texto: tx('"{0}" juntado ao repositório ({1} palavras).', { 0: r.titulo, 1: r.palavras }) }); carregar() }} falhou={falhou} />}
+          <Repositorio l={repo} origens={d.origens} carregar={carregar} falhou={falhou} gere={gere} />
         </div>
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
@@ -164,7 +167,7 @@ function Enviar({ titulo, icone, caminho, botao, nota, guardar, contexto, feito,
   )
 }
 
-function Repositorio({ l, origens, carregar, falhou }) {
+function Repositorio({ l, origens, carregar, falhou, gere }) {
   async function apagar(doc) {
     if (!(await confirmar(tx('Retirar "{0}" do repositório? Deixa de servir de comparação.', { 0: doc.titulo }), { titulo: tx('Retirar documento'), botao: tx('Retirar'), perigo: true }))) return
     await api(`/integridade/documentos/${doc.id}`, { metodo: 'DELETE' }).then(carregar).catch(falhou)
@@ -177,7 +180,7 @@ function Repositorio({ l, origens, carregar, falhou }) {
           <div key={doc.id} className="list-group-item d-flex gap-2 align-items-center">
             <i className={`fa ${doc.origem === 'biblioteca' ? 'fa-book text-success' : 'fa-archive text-purple'}`} />
             <span className="flex-grow-1 min-w-0 small"><b className="d-block text-truncate">{doc.titulo}</b><span className="text-muted">{[origens[doc.origem], doc.autor, tx('{0} palavras', { 0: doc.palavras })].filter(Boolean).join(' · ')}</span></span>
-            {doc.origem === 'repositorio' && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(doc)} aria-label={tx('Retirar {0}', { 0: doc.titulo })}><i className="fa fa-times" /></button>}
+            {doc.origem === 'repositorio' && gere && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(doc)} aria-label={tx('Retirar {0}', { 0: doc.titulo })}><i className="fa fa-times" /></button>}
           </div>
         ))}
       </div>

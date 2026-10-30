@@ -11,7 +11,7 @@ export class ServicoAuditoria {
   }
 
   async listar(u, { de, ate, utilizador, acao } = {}) {
-    exigir(u, 'administrar')
+    exigir(u, 'supervisionar')
     const where = {}
     if (de || ate) where.quando = { ...(de ? { gte: new Date(de) } : {}), ...(ate ? { lte: new Date(`${ate}T23:59:59Z`) } : {}) }
     if (utilizador) where.utilizador = utilizador

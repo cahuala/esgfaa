@@ -22,7 +22,12 @@ const CONTAS = {
     utilizadores: ['admin', 'chefe', 'redatora', 'moderador', 'analista', 'pessoal', 'escolar', 'biblioteca', 'director', 'comandante', 'ciberseguranca'].map((n) => `${n}@esgfaa.gov.ao`),
     contas_portal: ['miguel.santos', 'ana.baptista', 'pedro.neto', 'joao.fernandes', 'maria.costa', 'sofia.lima'].map((n) => `${n}@esgfaa.gov.ao`),
   },
-  pessoal: { utilizadores: ['pessoal@esgfaa.gov.ao', '100001@pessoal.interno'] },
+  pessoal: { utilizadores: ['pessoal@esgfaa.gov.ao', 'chefe.pessoal@esgfaa.gov.ao', 'comandante@esgfaa.gov.ao', '100001@pessoal.interno'] },
+}
+
+// contas que o servidor de testes tem de ter (criam-se se faltarem): o Chefe de Pessoal e Quadros e o Comandante, que veem tudo do Pessoal
+const GARANTIR = {
+  pessoal: [['Chefe de Pessoal e Quadros', 'chefe.pessoal@esgfaa.gov.ao', 'chefe'], ['Comandante da ESG', 'comandante@esgfaa.gov.ao', 'comandante']],
 }
 
 // fácil de ditar e de escrever: 4 grupos de letras e algarismos sem 0/O, 1/l
@@ -35,6 +40,7 @@ const sistema = process.argv[2]
 if (!CONTAS[sistema]) { console.error('Uso: node deploy/teste-contas.mjs portal|pessoal'); process.exit(1) }
 
 const sql = ['BEGIN;']
+for (const [nome, email, papel] of GARANTIR[sistema] ?? []) sql.push(`INSERT INTO utilizadores (nome, email, senha, papel, deve_mudar) VALUES (${q(nome)}, ${q(email)}, ${q(resumo(crypto.randomUUID()))}, ${q(papel)}, false) ON CONFLICT (email) DO UPDATE SET papel = EXCLUDED.papel;`)
 const entregues = []
 for (const [tabela, emails] of Object.entries(CONTAS[sistema])) {
   const [deveMudar, falhas] = sistema === 'pessoal' ? ['deve_mudar', 'falhas'] : ['deve_mudar_senha', 'tentativas_falhadas']

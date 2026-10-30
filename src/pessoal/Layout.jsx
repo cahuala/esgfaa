@@ -118,10 +118,10 @@ export default function Layout({ children }) {
             <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
             {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
 
-            {pode('administrar') && <div className="menu-header">Administração</div>}
-            {pode('administrar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
+            {pode('supervisionar') && <div className="menu-header">Administração</div>}
+            {pode('supervisionar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
             {pode('administrar') && <Item para="/assinaturas" icone="fa-signature" texto="Assinaturas dos documentos" />}
-            {pode('administrar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
+            {pode('supervisionar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
             {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
             <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
