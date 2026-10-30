@@ -18,7 +18,8 @@ export const RECURSOS = [
   { id: 'biblioteca', acoes: ['ver', 'gerir'] },
   { id: 'integridade', acoes: ['ver', 'gerir'] },
   { id: 'estatisticas', acoes: ['ver'] },
-  { id: 'utilizadores', acoes: ['ver', 'criar', 'editar'] },
+  // aprovar: contas novas e mudanças de papel só valem com o Comandante
+  { id: 'utilizadores', acoes: ['ver', 'criar', 'editar', 'aprovar'] },
   { id: 'papeis', acoes: ['ver', 'gerir'] },
   { id: 'atividades', acoes: ['ver'] },
   { id: 'seguranca', acoes: ['ver', 'gerir'] },
@@ -29,14 +30,14 @@ export const RECURSOS = [
 export const TODAS = RECURSOS.flatMap((r) => r.acoes.map((a) => `${r.id}.${a}`))
 
 // permissões que nem o Administrador tem (a decisão é do Comandante, ou de quem ele indicar num papel)
-export const SO_DO_COMANDANTE = ['publicacoes.aprovar']
+export const SO_DO_COMANDANTE = ['publicacoes.aprovar', 'utilizadores.aprovar']
 export const DO_ADMINISTRADOR = TODAS.filter((p) => !SO_DO_COMANDANTE.includes(p))
 
 const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `${r}.${a}`))
 
 // o Comandante vê tudo (todas as permissões «ver») e decide o que é dele; o Director de Ensino vê tudo do Ensino
 const TODAS_VER = RECURSOS.filter((r) => r.acoes.includes('ver')).map((r) => `${r.id}.ver`)
-export const VER_TUDO_COMANDANTE = [...TODAS_VER, 'academico.homologar', 'publicacoes.aprovar']
+export const VER_TUDO_COMANDANTE = [...TODAS_VER, 'academico.homologar', 'publicacoes.aprovar', 'utilizadores.aprovar']
 export const VER_ENSINO = ['academico.ver', 'academico.conselho', 'cursos.ver', 'integridade.ver', 'biblioteca.ver', 'pessoal.ver']
 // o que estes papéis têm sempre (os já criados recebem o que falta ao arrancar)
 export const MINIMOS = { comandante: VER_TUDO_COMANDANTE, director_ensino: VER_ENSINO }
@@ -93,7 +94,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'comandante',
     nome: 'Comandante da ESG',
-    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes e aprova o que se publica no site.',
+    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes, aprova o que se publica no site e as contas novas e mudanças de papel do painel.',
     sistema: 0,
     permissoes: VER_TUDO_COMANDANTE,
   },

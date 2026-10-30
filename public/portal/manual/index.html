@@ -485,7 +485,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
         <h3>Calendário académico e avisos do portal</h3>
         <div class="par">
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-calendario.jpg" alt="Calendário académico"></button><figcaption><b>Calendário académico:</b> provas, exames, feriados e eventos, por turma.</figcaption></figure>
-          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-avisos.jpg" alt="Avisos do portal"></button><figcaption><b>Avisos do portal:</b> chegam a todos os estudantes (ou a uma turma), com notificação.</figcaption></figure>
+          <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-avisos.jpg" alt="Avisos do portal"></button><figcaption><b>Avisos do portal:</b> depois de o Comandante aprovar (em <b>Por aprovar</b>), chegam a todos os estudantes (ou a uma turma), com notificação.</figcaption></figure>
         </div>
       </section>
 
@@ -529,7 +529,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
         <ol class="passos">
           <li>Em <b>Inquéritos de satisfação</b>, comece de um modelo (serviços da Escola, avaliação do curso) ou em branco.</li>
           <li>No editor, escreva as perguntas: escala de 1 a 5, escolha ou resposta aberta. <span class="botao">Pré-visualizar</span> mostra como os estudantes o vão ver.</li>
-          <li>Escolha a quem se destina e até quando, e lance-o. O portal avisa cada pessoa.</li>
+          <li>Escolha a quem se destina e até quando, e carregue em <span class="botao">Lançar</span>: o pedido vai ao Comandante, em <b>Por aprovar</b>. Quando ele aprova, o inquérito abre no portal e o portal avisa cada pessoa; se recusar, o motivo aparece na lista.</li>
           <li>Os resultados (anónimos) veem-se ao longo do tempo e exportam-se para Excel.</li>
         </ol>
         <div class="par">
@@ -606,7 +606,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           <li>Em <b>Notícias</b> (ou Artigos, Eventos…), carregue em <span class="botao">Nova notícia</span> (ou o botão de criar dessa lista).</li>
           <li>Escreva o título, a entrada e o texto como num processador de texto. Junte a imagem de capa, imagens, galerias, vídeos ou tabelas.</li>
           <li>Preencha a secção e a data, à direita. <span class="botao">Guardar rascunho</span> guarda sem publicar; <span class="botao">Enviar ao Comandante para aprovação</span> envia o pedido de publicação.</li>
-          <li><b>Nada chega ao site sem a aprovação do Comandante</b> (notícias, artigos, eventos, revista, cursos, corpo docente, banners e páginas do site). O Comandante vê o pedido em <b>Publicações por aprovar</b>, pré-visualiza e carrega em <span class="botao">Aprovar e publicar</span> ou <span class="botao">Recusar</span> (com o motivo, que quem escreveu vê no editor). Ao alterar algo já publicado, o site continua a mostrar a versão aprovada até ele decidir. Retirar do site (voltar a rascunho) é imediato.</li>
+          <li><b>Nada chega ao site sem a aprovação do Comandante</b> (notícias, artigos, eventos, revista, cursos, corpo docente, banners e páginas do site). O Comandante vê o pedido em <b>Por aprovar</b> (e recebe um e-mail, se o servidor de e-mail estiver configurado), pré-visualiza e carrega em <span class="botao">Aprovar e publicar</span> ou <span class="botao">Recusar</span> (com o motivo, que quem escreveu vê no editor). Ao alterar algo já publicado, o site continua a mostrar a versão aprovada até ele decidir. Retirar do site (voltar a rascunho) é imediato.</li>
           <li>O sistema traduz sozinho para inglês, francês e espanhol. As traduções podem ser revistas na própria notícia.</li>
         </ol>
         <div class="nota"><b>Actividades realizadas</b><span>Num evento ou numa notícia, a secção <b>Vídeos curtos (actividades realizadas)</b> recebe vídeos gravados no telemóvel (MP4, de preferência na vertical e até 1 minuto), cada um com uma legenda. No site (página inicial, Notícias e Eventos), a fila <b>Destaques</b> mostra-os como os estados do WhatsApp: um cartão vertical por actividade ou notícia, com a fotografia, o brasão e o nome; ao tocar, abre em ecrã inteiro, passa sozinho ao vídeo seguinte e tem <span class="botao">Ver a actividade</span>. Os eventos ainda por acontecer não aparecem. Em cada evento ou notícia, o campo <b>Nos Destaques do site</b> escolhe: <i>Automático</i>, <i>Sempre</i> (aparece primeiro, mesmo antigo ou futuro) ou <i>Nunca</i>. Entram também as notícias em destaque e as mais recentes. Um evento ou notícia sem vídeos aparece com as suas fotografias (a imagem principal, as imagens e as galerias), cada uma alguns segundos.</span></div>
@@ -638,7 +638,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
 
       <section class="tema" id="adm-utilizadores">
         <h3>Utilizadores e papéis</h3>
-        <p><b>Utilizadores:</b> crie as contas do painel e escolha o papel de cada pessoa. O botão do telemóvel <b>repõe a verificação em dois passos</b> de quem perdeu o telemóvel e os códigos (confirme primeiro a identidade da pessoa). <b>Papéis e permissões:</b> cada papel tem uma grelha do que pode ver, criar, editar, apagar e publicar. Mudar o papel de alguém termina as sessões dessa pessoa.</p>
+        <p><b>Utilizadores:</b> crie as contas do painel e escolha o papel de cada pessoa. <b>Uma conta nova ou uma mudança de papel só vale com a aprovação do Comandante</b>, em <b>Por aprovar</b>: até lá, a conta nova não entra e a pessoa mantém o papel antigo. Se ele recusar, a conta nova é apagada e o papel fica como estava. (Numa instalação nova, enquanto não houver Comandante com conta ativa, vale logo.) O botão do telemóvel <b>repõe a verificação em dois passos</b> de quem perdeu o telemóvel e os códigos (confirme primeiro a identidade da pessoa). <b>Papéis e permissões:</b> cada papel tem uma grelha do que pode ver, criar, editar, apagar e publicar. Mudar o papel de alguém termina as sessões dessa pessoa.</p>
         <p>O papel <b>Responsável de Cibersegurança</b> vê só o <a href="#seguranca">Centro de segurança</a> (tentativas de entrada, ataques, endereços suspeitos, bloquear e desbloquear, a defesa activa) e o registo de atividades. Não edita conteúdos nem utilizadores: serve para quem vigia a segurança sem mexer no resto.</p>
         <div class="par">
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-utilizadores.jpg" alt="Utilizadores do painel"></button><figcaption>Utilizadores.</figcaption></figure>
@@ -648,7 +648,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
 
       <section class="tema" id="adm-registo">
         <h3>Registo de atividades e estatísticas</h3>
-        <p>O <b>registo de atividades</b> guarda quem entrou, quem falhou a palavra-passe, e cada criação, edição, publicação e remoção. As <b>estatísticas</b> mostram visitantes e páginas vistas do site, sem cookies.</p>
+        <p>O <b>registo de atividades</b> guarda quem entrou, quem falhou a palavra-passe, e cada criação, edição, publicação e remoção. Os <b>Acontecimentos importantes</b> mostram só o que conta, por grupo — decisões do Comandante; contas, papéis e acessos; notas e documentos académicos; site e portal; segurança — nas últimas 24 horas, 7 ou 30 dias. As <b>estatísticas</b> mostram visitantes e páginas vistas do site, sem cookies.</p>
         <div class="par">
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-atividades.jpg" alt="Registo de atividades"></button><figcaption>Registo de atividades.</figcaption></figure>
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pai-estatisticas.jpg" alt="Estatísticas do site"></button><figcaption>Estatísticas.</figcaption></figure>

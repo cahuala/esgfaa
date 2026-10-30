@@ -1,5 +1,5 @@
 import { Conflito } from '../../dominio/comum/erros.js'
-import { eDuplicado } from '../bd/prisma.js'
+import { Prisma, eDuplicado } from '../bd/prisma.js'
 import { notasDoTrabalhoVisiveis } from '../../dominio/academico/atividades/trabalhos.js'
 
 const iso = (d) => (d ? new Date(d).toISOString() : null)
@@ -367,7 +367,7 @@ export class RepositorioAcademico {
 
   async avisosGerais(turmaIds) {
     const linhas = await this.prisma.avisoGeral.findMany({
-      where: { OR: [{ turmaId: null }, ...(turmaIds ? [{ turmaId: { in: turmaIds } }] : [])] },
+      where: { estado: 'publicado', OR: [{ turmaId: null }, ...(turmaIds ? [{ turmaId: { in: turmaIds } }] : [])] },
       orderBy: { criadoEm: 'desc' }, take: 50, include: { turma: { select: { nome: true } } },
     })
     return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, criadoEm: iso(a.criadoEm) }))
@@ -375,11 +375,32 @@ export class RepositorioAcademico {
 
   async todosAvisosGerais() {
     const linhas = await this.prisma.avisoGeral.findMany({ orderBy: { criadoEm: 'desc' }, take: 200, include: { turma: { select: { nome: true } } } })
-    return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, criadoEm: iso(a.criadoEm) }))
+    return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, estado: a.estado, aprovacao: a.aprovacao, criadoEm: iso(a.criadoEm) }))
+  }
+
+  async avisoGeral(id) {
+    const n = Number(id)
+    if (!Number.isSafeInteger(n) || n < 1) return null
+    const a = await this.prisma.avisoGeral.findUnique({ where: { id: n }, include: { turma: { select: { nome: true } } } })
+    return a && { id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, estado: a.estado, aprovacao: a.aprovacao, criadoEm: iso(a.criadoEm) }
+  }
+
+  // avisos gerais à espera do Comandante
+  async avisosGeraisPendentes() {
+    const linhas = await this.prisma.avisoGeral.findMany({ where: { estado: 'pendente' }, orderBy: { criadoEm: 'asc' }, include: { turma: { select: { nome: true } } } })
+    return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, aprovacao: a.aprovacao, criadoEm: iso(a.criadoEm) }))
+  }
+
+  contarAvisosGeraisPendentes() {
+    return this.prisma.avisoGeral.count({ where: { estado: 'pendente' } })
   }
 
   criarAvisoGeral(dados) {
-    return this.prisma.avisoGeral.create({ data: dados })
+    return this.prisma.avisoGeral.create({ data: { ...dados, aprovacao: dados.aprovacao ?? Prisma.DbNull } })
+  }
+
+  decidirAvisoGeral(id, estado, aprovacao) {
+    return this.prisma.avisoGeral.update({ where: { id: Number(id) }, data: { estado, aprovacao } })
   }
 
   apagarAvisoGeral(id) {

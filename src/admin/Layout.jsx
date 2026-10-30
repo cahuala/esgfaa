@@ -78,7 +78,7 @@ function Layout({ children }) {
   }, [verAcademico])
   // publicações à espera do Comandante (contador no menu)
   const [porAprovar, setPorAprovar] = useState(0)
-  const aprova = pode('publicacoes.aprovar')
+  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
   useEffect(() => {
     if (!aprova) return undefined
     const contar = () => api('/publicacoes/contagem').then((r) => setPorAprovar(r.pendentes)).catch(() => {})
@@ -169,7 +169,8 @@ function Layout({ children }) {
 
             <div className="menu-header">{tx('Geral')}</div>
             <ItemMenu para="/" fim icone="fa-th-large" texto={tx('Painel')} />
-            {aprova && <ItemMenu para="/publicacoes" icone="fa-stamp" texto={tx('Publicações por aprovar')} contador={porAprovar} />}
+            {aprova && <ItemMenu para="/publicacoes" icone="fa-stamp" texto={tx('Por aprovar')} contador={porAprovar} />}
+            {aprova && pode('atividades.ver') && <ItemMenu para="/acontecimentos" icone="fa-bell" texto={tx('Acontecimentos importantes')} />}
             {pode('estatisticas.ver') && <ItemMenu para="/estatisticas" icone="fa-chart-line" texto={tx('Estatísticas')} />}
 
             {(pode('paginas.ver') || Object.keys(COLECOES).some((chave) => chave !== 'publicidade' && pode(`${chave}.ver`))) && <div className="menu-header">{tx('Conteúdos')}</div>}
@@ -229,6 +230,7 @@ function Layout({ children }) {
             {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto={tx('Utilizadores')} />}
             {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto={tx('Papéis e permissões')} />}
             {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto={tx('Registo de atividades')} />}
+            {!aprova && pode('atividades.ver') && <ItemMenu para="/acontecimentos" icone="fa-bell" texto={tx('Acontecimentos importantes')} />}
             {pode('atividades.ver') && <ItemMenu para="/privacidade" icone="fa-user-lock" texto={tx('Pedidos sobre dados pessoais')} />}
 
             <div className="menu-divider" />

@@ -74,23 +74,59 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal((await amb.com(admin).post('/api/admin/utilizadores').send({ ...base, email: 'invalido' })).status, 400)
     assert.equal((await amb.com(admin).post('/api/admin/utilizadores').send({ ...base, papel: 'inexistente' })).status, 400)
     assert.equal((await amb.com(admin).post('/api/admin/utilizadores').send({ ...base, senha: 'fraca12' })).status, 400)
+    await amb.oComandante()
     const ok = await amb.com(admin).post('/api/admin/utilizadores').send(base)
     assert.equal(ok.status, 201)
     assert.ok(!('senha' in ok.body))
     assert.equal((await amb.com(admin).post('/api/admin/utilizadores').send({ ...base, email: 'RITA@teste.ao' })).status, 409)
+
+    // a conta nova espera o Comandante: até lá não entra
+    assert.equal(ok.body.ativo, false)
+    assert.equal(ok.body.aprovacao.tipo, 'criar')
+    const espera = await amb.http().post('/api/admin/entrar').send({ email: 'rita@teste.ao', senha: 'Segura2026xyz' })
+    assert.equal(espera.status, 403)
+    assert.match(espera.body.erro, /aprovação do Comandante/)
+    // o administrador não a ativa por fora
+    assert.equal((await amb.com(admin).put(`/api/admin/utilizadores/${ok.body.id}`).send({ ativo: true })).status, 400)
+    await amb.aprovar('utilizadores', ok.body.id)
 
     // quem foi criado por outra pessoa tem de mudar a palavra-passe
     const t = await amb.entrar('rita@teste.ao', 'Segura2026xyz')
     assert.equal((await amb.com(t).get('/api/admin/eu')).body.deveMudarSenha, true)
   })
 
-  it('mudar o papel termina as sessões da conta e aplica as novas permissões', async () => {
+  it('mudar o papel (com o Comandante) termina as sessões da conta e aplica as novas permissões', async () => {
+    const cmd = await amb.oComandante()
     const u = await amb.criarUtilizador('redator')
     assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 200)
     const r = await amb.com(admin).put(`/api/admin/utilizadores/${u.id}`).send({ papel: 'moderador' })
     assert.equal(r.status, 200)
-    assert.equal(r.body.papel, 'moderador')
+    // fica pedido: o papel não muda até o Comandante aprovar
+    assert.equal(r.body.papel, 'redator')
+    assert.deepEqual([r.body.aprovacao.tipo, r.body.aprovacao.papel, r.body.aprovacao.de], ['papel', 'moderador', 'redator'])
+    assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 200)
+    const lista = (await amb.com(cmd.token).get('/api/admin/publicacoes')).body
+    assert.ok(lista.some((x) => x.colecao === 'utilizadores' && x.id === String(u.id) && x.tipo === 'papel'))
+    assert.equal((await amb.com(cmd.token).get('/api/admin/publicacoes/contagem')).body.contas >= 1, true)
+    // o administrador não decide
+    assert.equal((await amb.com(admin).post(`/api/admin/publicacoes/utilizadores/${u.id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
+    await amb.aprovar('utilizadores', u.id)
+    assert.equal((await amb.com(admin).get('/api/admin/utilizadores')).body.find((x) => x.id === u.id).papel, 'moderador')
     assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 401)
+  })
+
+  it('o Comandante recusa: a conta nova não fica; o papel fica como estava', async () => {
+    const cmd = await amb.oComandante()
+    const nova = (await amb.com(admin).post('/api/admin/utilizadores').send({ nome: 'Conta Recusada', email: 'recusada@teste.ao', papel: 'redator', senha: 'Segura2026xyz' })).body
+    const r = await amb.com(cmd.token).post(`/api/admin/publicacoes/utilizadores/${nova.id}/decisao`).send({ decisao: 'recusar', motivo: 'Não autorizado' })
+    assert.equal(r.status, 200)
+    assert.equal(r.body.apagada, true)
+    assert.ok(!(await amb.com(admin).get('/api/admin/utilizadores')).body.some((x) => x.id === nova.id))
+    const u = await amb.criarUtilizador('redator')
+    await amb.com(admin).put(`/api/admin/utilizadores/${u.id}`).send({ papel: 'moderador' })
+    await amb.com(cmd.token).post(`/api/admin/publicacoes/utilizadores/${u.id}/decisao`).send({ decisao: 'recusar' }).expect(200)
+    const depois = (await amb.com(admin).get('/api/admin/utilizadores')).body.find((x) => x.id === u.id)
+    assert.deepEqual([depois.papel, depois.aprovacao], ['redator', null])
   })
 
   it('desativar termina as sessões', async () => {

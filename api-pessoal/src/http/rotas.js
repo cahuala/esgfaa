@@ -16,7 +16,7 @@ import { TIPOS_EXTRACTO } from '../aplicacao/extractos.js'
 import { TIPOS_UNIDADE } from '../aplicacao/organica.js'
 import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expediente.js'
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
-import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
+import { DESPACHOS_PROPOSTA, ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
 import { TIPOS_AUSENCIA } from '../aplicacao/ausencias.js'
 import { sessaoEmCookie } from './sessaoCookie.js'
@@ -187,7 +187,8 @@ export function rotas({ servicos: s, config }) {
   r.post('/expediente/:id/anexos', validar({ params: E.pId }), anexos.array('anexos', 20), async (req, res) => res.json(await s.expediente.anexar(u(req), req.dados.params.id, req.files ?? [])))
   r.get('/anexos/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.expediente.anexo(u(req), req.dados.params.id)))
   // Secretária digital: documentos submetidos a despacho do Comandante
-  r.get('/secretaria', async (req, res) => res.json(await s.expediente.secretaria(u(req))))
+  r.get('/secretaria', async (req, res) => res.json({ ...(await s.expediente.secretaria(u(req))), propostas: await s.propostas.aDespacho(u(req)), despachosProposta: DESPACHOS_PROPOSTA }))
+  r.post('/propostas/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.propostas.despachar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/despacho', validar({ params: E.pId, body: z.object({ nota: z.string().max(1000).default('') }) }), async (req, res) => res.json(await s.expediente.submeterDespacho(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.expediente.despachar(u(req), req.dados.params.id, req.dados.body)))
 
@@ -201,7 +202,11 @@ export function rotas({ servicos: s, config }) {
   r.get('/mensagens/anexo/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.mensagens.anexo(u(req), req.dados.params.id)))
 
   // contadores do cabeçalho: documentos por receber e mensagens por ler
-  r.get('/avisos', async (req, res) => res.json({ ...(await s.expediente.contadores(u(req))), mensagens: await s.mensagens.naoLidas(u(req)) }))
+  r.get('/avisos', async (req, res) => {
+    const c = await s.expediente.contadores(u(req))
+    // na Secretária digital: os documentos e as propostas à espera do Comandante
+    res.json({ ...c, porDespachar: c.porDespachar + (await s.propostas.contarADespacho(u(req))), mensagens: await s.mensagens.naoLidas(u(req)) })
+  })
 
   // carreiras
   r.get('/carreira/antiguidade', validar({ query: z.object({ posto: z.string().max(30).optional(), ramo: z.string().max(3).optional() }) }), async (req, res) => res.json(await s.pessoas.antiguidade(u(req), req.dados.query)))

@@ -1,10 +1,11 @@
-import { NaoEncontrado, SemPermissao, Conflito } from '../../dominio/comum/erros.js'
+import { NaoEncontrado, SemPermissao, Conflito, ErroValidacao } from '../../dominio/comum/erros.js'
 import { contarPerguntas, limparRespostasInquerito, mediaGlobal, resultadosInquerito } from '../../dominio/comum/opiniao.js'
 import { InqueritoInstitucional, MODELOS, PUBLICOS } from '../../dominio/qualidade/inquerito.js'
 
 /*
   Inquéritos institucionais de satisfação: a Administração Escolar prepara, lança e vê os resultados;
-  estudantes e docentes respondem no portal, de forma anónima.
+  estudantes e docentes respondem no portal, de forma anónima. O lançamento espera a aprovação do
+  Comandante (permissão «publicacoes.aprovar»); quem a tem lança logo.
 */
 export class ServicoInqueritosInstitucionais {
   constructor({ qualidade, academico, notificacoes, auditoria, relogio }) {
@@ -42,11 +43,23 @@ export class ServicoInqueritosInstitucionais {
     return this.#resumo(await this.qualidade.guardar(i, i.mudancasPermitidas(InqueritoInstitucional.validar(dados, i))))
   }
 
-  // lança: fica visível no portal e avisa quem deve responder
+  // lança: fica visível no portal e avisa quem deve responder (sem a aprovação, fica pedido ao Comandante)
   async lancar(ctx, id) {
     ctx.actor.exigir('academico.gerir')
-    const i = (await this.#inquerito(id)).lancar(this.relogio.agora())
-    const g = await this.qualidade.guardar(i, { lancadoEm: i.lancadoEm })
+    const atual = await this.#inquerito(id)
+    if (!ctx.actor.pode('publicacoes.aprovar')) {
+      if (atual.aprovacao?.estado === 'pendente') throw new Conflito('O lançamento já está à espera do Comandante.')
+      atual.lancar(this.relogio.agora()) // as mesmas verificações (já lançado, data de fecho)
+      const g = await this.qualidade.guardar(atual, { aprovacao: { estado: 'pendente', pedidoPor: ctx.actor.nome ?? null, pedidoEm: this.relogio.agora().toISOString() } })
+      await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_inquerito', colecao: 'inqueritos', alvoId: g.id, alvoTitulo: g.titulo })
+      return this.#resumo(g)
+    }
+    return this.#lancar(ctx, atual)
+  }
+
+  async #lancar(ctx, atual) {
+    const i = atual.lancar(this.relogio.agora())
+    const g = await this.qualidade.guardar(i, { lancadoEm: i.lancadoEm, aprovacao: null })
     const para = await this.qualidade.destinatarios(g)
     await this.notificacoes?.notificar(para, {
       tipo: 'inquerito', titulo: `Inquérito: ${g.titulo}`, texto: `Responda até ${new Date(g.fecha).toLocaleDateString('pt-PT', { timeZone: 'Africa/Luanda' })}. As respostas são anónimas.`,
@@ -54,6 +67,38 @@ export class ServicoInqueritosInstitucionais {
     })
     await this.auditoria.registar(ctx, { acao: 'lancar_inquerito_institucional', colecao: 'inqueritos', alvoId: g.id, alvoTitulo: g.titulo, detalhes: { destinatarios: para.length } })
     return this.#resumo(g, para.length)
+  }
+
+  // ---------- Comandante ----------
+
+  async paraAprovar(ctx) {
+    if (!ctx.actor.pode('publicacoes.aprovar')) return []
+    const PUB = { estudantes: 'Estudantes', docentes: 'Docentes', todos: 'Estudantes e docentes' }
+    return (await this.qualidade.pendentes()).map((i) => ({
+      colecao: 'inqueritos', id: String(i.id), titulo: i.titulo, tipo: 'publicar', pedidoPor: i.aprovacao.pedidoPor, pedidoEm: i.aprovacao.pedidoEm,
+      resumo: `${i.descricao ? `${i.descricao} — ` : ''}${i.perguntas.length} pergunta(s); fecha a ${new Date(i.fecha).toLocaleDateString('pt-PT', { timeZone: 'Africa/Luanda' })}.`,
+      destino: PUB[i.publico] ?? i.publico,
+    }))
+  }
+
+  contarParaAprovar(ctx) {
+    return ctx.actor.pode('publicacoes.aprovar') ? this.qualidade.contarPendentes() : 0
+  }
+
+  async decidir(ctx, id, { decisao, motivo }) {
+    ctx.actor.exigir('publicacoes.aprovar')
+    const i = await this.#inquerito(id)
+    if (i.aprovacao?.estado !== 'pendente') throw new Conflito('Este inquérito não está à espera de aprovação.')
+    if (decisao === 'aprovar') {
+      await this.#lancar(ctx, i)
+      await this.auditoria.registar(ctx, { acao: 'aprovar_publicacao', colecao: 'inqueritos', alvoId: i.id, alvoTitulo: i.titulo, detalhes: { pedidoPor: i.aprovacao.pedidoPor } })
+      return { aprovado: true }
+    }
+    const m = String(motivo ?? '').trim()
+    if (m.length < 3) throw new ErroValidacao('Escreva o motivo da recusa.', { campo: 'motivo' })
+    await this.qualidade.guardar(i, { aprovacao: { ...i.aprovacao, estado: 'recusado', motivo: m.slice(0, 1000), decididoPor: ctx.actor.nome ?? '', decididoEm: this.relogio.agora().toISOString() } })
+    await this.auditoria.registar(ctx, { acao: 'recusar_publicacao', colecao: 'inqueritos', alvoId: i.id, alvoTitulo: i.titulo, detalhes: { motivo: m } })
+    return { aprovado: false }
   }
 
   async apagar(ctx, id) {

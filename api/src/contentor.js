@@ -93,6 +93,7 @@ import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/
 import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/calendario.js'
 import { ServicoPedidos } from './aplicacao/academico/administracao/pedidos.js'
 import { ServicoAvisosGerais } from './aplicacao/academico/administracao/avisos.js'
+import { ServicoAvisosComandante } from './aplicacao/avisosComandante.js'
 import { ApoioCadeiras } from './aplicacao/academico/partilhado/apoio.js'
 import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoes.js'
 import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
@@ -170,7 +171,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const tokensPortal = new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao, audiencia: AUDIENCIAS.portal })
   const privados = config.pastaPrivada ? new ArmazenamentoPrivado({ pasta: config.pastaPrivada, relogio: relogio.agora }) : null
   const armazenamento = config.pastaUploads ? new ArmazenamentoLocal({ pasta: config.pastaUploads, relogio: relogio.agora }) : null
-  const auditoria = new ServicoAuditoria({ atividades: repositorios.atividades })
+  const auditoria = new ServicoAuditoria({ atividades: repositorios.atividades, relogio })
   const doisFatores = new ServicoDoisFatores({ prisma, auditoria, relogio, papeis: config.doisFatoresPapeis })
   const r = repositorios
 
@@ -278,7 +279,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     conteudos,
     sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores }),
     doisFatores,
-    utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
+    utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria, relogio }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
     paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml, relogio }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
     privacidade: new ServicoPrivacidade({ prisma, notificacoes, auditoria, relogio, conservacao: config.conservacao }),
@@ -320,6 +321,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
 
   // um trabalho que tenta dar ordens à IA do antiplágio aparece no Centro de segurança
   originalidade.aoInstrucoesIA = (x) => servicos.seguranca.registarInstrucoesIA(x)
+  // o que fica à espera do Comandante chega-lhe também por e-mail
+  servicos.avisosComandante = new ServicoAvisosComandante({ utilizadores: r.utilizadores, papeis: r.papeis, correio, registar: (x) => console.error(JSON.stringify(x)) })
+  servicos.avisosComandante.ligar(auditoria)
   const fechar = async () => { await servicos.seguranca.parar(); await prismaBase.$disconnect() }
   return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
 }

@@ -123,7 +123,7 @@ export function Condicoes({ condicoes = [] }) {
   )
 }
 
-const CORES_ESTADO = { rascunho: 'secondary', submetida: 'warning', aprovada: 'success', rejeitada: 'danger', cancelada: 'dark', pendente: 'warning', enviado: 'success', erro: 'danger', em_curso: 'success', futura: 'info', terminada: 'secondary' }
+const CORES_ESTADO = { rascunho: 'secondary', a_despacho: 'warning', enviada: 'info', concluida: 'success', indeferida: 'danger', submetida: 'warning', aprovada: 'success', rejeitada: 'danger', cancelada: 'dark', pendente: 'warning', enviado: 'success', erro: 'danger', em_curso: 'success', futura: 'info', terminada: 'secondary' }
 export const Estado = ({ estado, texto }) => <span className={`badge bg-${CORES_ESTADO[estado] ?? 'secondary'}`}>{texto ?? estado}</span>
 
 // campo de formulário simples (rótulo + controlo)

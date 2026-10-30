@@ -15,6 +15,7 @@ export class Utilizador {
       bloqueadoAte: null,
       versaoToken: 0,
       deveMudarSenha: false,
+      aprovacao: null,
       ultimoAcesso: null,
       criadoEm: null,
       ...props,
@@ -81,6 +82,7 @@ export class Utilizador {
       ativo: Boolean(this.ativo),
       criadoEm: this.criadoEm,
       ultimoAcesso: this.ultimoAcesso,
+      aprovacao: this.aprovacao,
     }
   }
 }

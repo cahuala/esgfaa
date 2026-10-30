@@ -53,6 +53,8 @@ model Utilizador {
   bloqueadoAte       DateTime?    @map("bloqueado_ate") @db.Timestamptz(3)
   versaoToken        Int          @default(0) @map("versao_token")
   deveMudarSenha     Boolean      @default(false) @map("deve_mudar_senha")
+  // conta nova ou mudança de papel à espera do Comandante: { tipo: 'criar'|'papel', papel, de?, pedidoPor, pedidoEm }
+  aprovacao          Json?
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 
@@ -349,10 +351,10 @@ model UnidadeCurricular {
   paginasWiki      PaginaWiki[]
   inscricoes       InscricaoCadeira[]
 
-  prazosNotas PrazoNotas[]
-  avaliacoes  AvaliacaoUc[]
-  videosCurtos VideoCurto[]
-  enunciados  EnunciadoProva[]
+  prazosNotas      PrazoNotas[]
+  avaliacoes       AvaliacaoUc[]
+  videosCurtos     VideoCurto[]
+  enunciados       EnunciadoProva[]
   pedidosAlteracao PedidoAlteracaoNota[]
 
   @@unique([turmaId, codigo])
@@ -505,14 +507,18 @@ model VideoCurto {
 
 // avisos da Secretaria (a todos os estudantes ou a uma turma)
 model AvisoGeral {
-  id       Int      @id @default(autoincrement())
-  turmaId  Int?     @map("turma_id")
-  titulo   String
-  texto    String
-  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id        Int      @id @default(autoincrement())
+  turmaId   Int?     @map("turma_id")
+  titulo    String
+  texto     String
+  // pendente (à espera do Comandante) | publicado | recusado
+  estado    String   @default("publicado")
+  aprovacao Json? // { pedidoPor, pedidoEm, motivo?, decididoPor? }
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   turma Turma? @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
+  @@index([estado])
   @@map("avisos_gerais")
 }
 
@@ -1267,6 +1273,8 @@ model InqueritoInstitucional {
   turmaIds  Json      @default("[]") @map("turma_ids") // só estas turmas (vazio = todas)
   fecha     DateTime  @db.Timestamptz(3)
   lancadoEm DateTime? @map("lancado_em") @db.Timestamptz(3) // null = rascunho
+  // lançamento à espera do Comandante: { estado: pendente|recusado, pedidoPor, pedidoEm, motivo? }
+  aprovacao Json?
   autor     String    @default("")
   criadoEm  DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 

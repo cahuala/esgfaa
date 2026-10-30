@@ -38,8 +38,14 @@ describe('inquéritos institucionais de satisfação', () => {
     assert.equal(i.estado, 'rascunho')
     // em rascunho ninguém o vê
     assert.deepEqual((await portal('ana').get('/api/portal/inqueritos-escola')).body, [])
-    const l = (await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)).body
-    assert.deepEqual([l.estado, l.destinatarios], ['aberto', 2])
+    // lançar fica pedido ao Comandante; só com a aprovação chega ao portal
+    const pedido = (await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)).body
+    assert.deepEqual([pedido.estado, pedido.aprovacao.estado], ['rascunho', 'pendente'])
+    assert.equal((await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)).status, 409)
+    assert.deepEqual((await portal('ana').get('/api/portal/inqueritos-escola')).body, [])
+    await amb.aprovar('inqueritos', i.id)
+    const l = (await escola.get('/api/admin/academico/satisfacao')).body.inqueritos.find((x) => x.id === i.id)
+    assert.deepEqual([l.estado, l.destinatarios, l.aprovacao], ['aberto', 2, null])
     assert.equal((await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)).status, 409)
     assert.equal((await escola.put(`/api/admin/academico/satisfacao/${i.id}`).send({ titulo: 'Outro' })).status, 409)
     // a Ana e o Bruno (turma A) veem; a Carla (turma B) e o docente não
@@ -80,6 +86,13 @@ describe('inquéritos institucionais de satisfação', () => {
   it('para docentes: só os docentes veem; os estudantes não podem gerir', async () => {
     const i = (await escola.post('/api/admin/academico/satisfacao').send({ titulo: 'Condições de trabalho', publico: 'docentes', fecha: '2027-01-30T22:59:00Z', perguntas: [{ tipo: 'escala', texto: 'Tenho os meios de que preciso.' }] })).body
     await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)
+    // recusado com motivo: não chega a ninguém; pode pedir-se de novo
+    const cmd = await amb.oComandante()
+    assert.equal((await amb.com(cmd.token).post(`/api/admin/publicacoes/inqueritos/${i.id}/decisao`).send({ decisao: 'recusar' })).status, 400)
+    await amb.com(cmd.token).post(`/api/admin/publicacoes/inqueritos/${i.id}/decisao`).send({ decisao: 'recusar', motivo: 'Rever as perguntas' }).expect(200)
+    assert.deepEqual((await portal('prof').get('/api/portal/inqueritos-escola')).body, [])
+    await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`).expect(200)
+    await amb.aprovar('inqueritos', i.id)
     assert.equal((await portal('prof').get('/api/portal/inqueritos-escola')).body.length, 1)
     assert.deepEqual((await portal('ana').get('/api/portal/inqueritos-escola')).body, [])
     assert.equal((await amb.com(tokens.ana).get('/api/admin/academico/satisfacao')).status, 401)

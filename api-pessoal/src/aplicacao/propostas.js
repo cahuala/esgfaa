@@ -1,8 +1,9 @@
+import { Prisma } from '@prisma/client'
 import { invalido, naoEncontrado } from '../erros.js'
 import { MODALIDADES, verificarGraduacao, verificarNomeacao, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { POSTOS, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { exigir } from './sessao.js'
+import { exigir, pode } from './sessao.js'
 import { comparadorHierarquico } from '../dominio/pessoal/ordem.js'
 import { posicoesUnidades } from './ordem.js'
 
@@ -18,8 +19,10 @@ export const TIPOS_PROPOSTA = {
   A Escola não faz despachos: prepara a proposta (com a ficha de proposta e a síntese biográfica de cada um),
   envia-a ao escalão superior e, quando chega o extracto, regista-o (Extractos) — é o extracto que muda as fichas.
 */
-export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', enviada: 'Enviada ao escalão superior', concluida: 'Concluída (extracto recebido)', indeferida: 'Indeferida', cancelada: 'Cancelada' }
-export const ABERTAS = ['rascunho', 'enviada']
+export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', a_despacho: 'A despacho do Comandante', enviada: 'Enviada ao escalão superior', concluida: 'Concluída (extracto recebido)', indeferida: 'Indeferida', cancelada: 'Cancelada' }
+export const ABERTAS = ['rascunho', 'a_despacho', 'enviada']
+// o despacho do Comandante sobre uma proposta, antes de seguir
+export const DESPACHOS_PROPOSTA = { autorizo: 'Autorizo o envio', devolvo: 'Devolvo para correção' }
 const INCLUIR = { anexos: { orderBy: { id: 'asc' } }, itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -263,15 +266,63 @@ export class ServicoPropostas {
     return nova
   }
 
-  // enviada ao escalão superior (com as fichas de proposta impressas): fica à espera do extracto
+  /*
+    Pronta: vai a despacho do Comandante (Secretária digital); com «Autorizo o envio» segue para o escalão
+    superior (com as fichas de proposta impressas) e fica à espera do extracto. Enquanto não houver
+    Comandante com conta ativa no sistema, segue logo.
+  */
   async submeter(u, id, { documento = '' } = {}) {
     exigir(u, 'propor')
     const pr = await this.#emPreparacao(id)
     if (!pr.itens.length) throw invalido('A proposta não tem ninguém.')
     await this.#reverificar(pr)
-    await this.bd.proposta.update({ where: { id }, data: { estado: 'enviada', submetidaEm: this.agora(), ...(documento ? { documento } : {}) } })
-    await this.auditoria.registar(u, 'enviar_proposta', `#${id}: ${pr.titulo}`)
-    return this.obter(u, id)
+    const haComandante = await this.bd.utilizador.count({ where: { papel: 'comandante', ativo: true } })
+    if (haComandante) {
+      const despacho = { estado: 'pendente', pedidoPor: u.nome ?? u.email, pedidoEm: this.agora().toISOString(), documento }
+      await this.bd.proposta.update({ where: { id }, data: { estado: 'a_despacho', despacho, motivo: '' } })
+      await this.auditoria.registar(u, 'proposta_a_despacho', `#${id}: ${pr.titulo}`)
+      return this.obter(u, id)
+    }
+    return this.#enviar(u, pr, documento)
+  }
+
+  async #enviar(u, pr, documento) {
+    await this.bd.proposta.update({ where: { id: pr.id }, data: { estado: 'enviada', submetidaEm: this.agora(), ...(documento ? { documento } : {}) } })
+    await this.auditoria.registar(u, 'enviar_proposta', `#${pr.id}: ${pr.titulo}`)
+    return this.obter(u, pr.id)
+  }
+
+  // ---------- Secretária digital do Comandante ----------
+
+  async aDespacho(u) {
+    if (!pode(u, 'despachar')) return { pendentes: [], despachadas: [] }
+    const l = await this.bd.proposta.findMany({ where: { despacho: { not: Prisma.DbNull } }, include: { _count: { select: { itens: true } } }, orderBy: { criadoEm: 'desc' }, take: 300 })
+    const linha = ({ _count, ...p }) => ({ id: p.id, titulo: p.titulo, tipo: p.tipo, tipoNome: TIPOS_PROPOSTA[p.tipo]?.nome, estado: p.estado, estadoNome: ESTADOS_PROPOSTA[p.estado], total: _count.itens, despacho: { ...p.despacho, decisaoNome: DESPACHOS_PROPOSTA[p.despacho.decisao] ?? null } })
+    return {
+      pendentes: l.filter((p) => p.estado === 'a_despacho' && p.despacho.estado === 'pendente').map(linha).sort((a, b) => String(a.despacho.pedidoEm).localeCompare(String(b.despacho.pedidoEm))),
+      despachadas: l.filter((p) => p.despacho.estado === 'despachado').map(linha).sort((a, b) => String(b.despacho.despachadoEm).localeCompare(String(a.despacho.despachadoEm))).slice(0, 30),
+    }
+  }
+
+  contarADespacho(u) {
+    return pode(u, 'despachar') ? this.bd.proposta.count({ where: { estado: 'a_despacho' } }) : 0
+  }
+
+  async despachar(u, id, { decisao, texto = '' }) {
+    exigir(u, 'despachar')
+    if (!DESPACHOS_PROPOSTA[decisao]) throw invalido('Escolha o despacho.', 'decisao')
+    const pr = await this.#obter(id)
+    if (pr.estado !== 'a_despacho' || pr.despacho?.estado !== 'pendente') throw invalido('Esta proposta não está à espera de despacho.')
+    const t = String(texto).trim().slice(0, 3000)
+    if (decisao === 'devolvo' && t.length < 3) throw invalido('Escreva o que há a corrigir.', 'texto')
+    const despacho = { ...pr.despacho, estado: 'despachado', decisao, texto: t, despachadoPor: u.nome ?? u.email, despachadoEm: this.agora().toISOString() }
+    await this.auditoria.registar(u, 'despachar_proposta', `#${id}: ${pr.titulo} — ${DESPACHOS_PROPOSTA[decisao]}`)
+    if (decisao === 'devolvo') {
+      await this.bd.proposta.update({ where: { id }, data: { estado: 'rascunho', despacho, motivo: t } })
+      return this.obter(u, id)
+    }
+    await this.bd.proposta.update({ where: { id }, data: { despacho } })
+    return this.#enviar(u, pr, pr.despacho.documento ?? '')
   }
 
   // o escalão superior respondeu que não (fica o motivo e o documento da resposta)

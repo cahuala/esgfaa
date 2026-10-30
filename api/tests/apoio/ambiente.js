@@ -69,8 +69,9 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
 
   // o Comandante aprova uma publicação do site (nada chega ao público sem ele)
   let comandante = null
+  const oComandante = async () => (comandante ??= await criarUtilizador('comandante'))
   async function aprovar(colecao, id) {
-    comandante ??= await criarUtilizador('comandante')
+    await oComandante()
     const r = await http().post(`/api/admin/publicacoes/${colecao}/${encodeURIComponent(id)}/decisao`).set('Authorization', `Bearer ${comandante.token}`).send({ decisao: 'aprovar' })
     if (r.status !== 200) throw new Error(`Falha ao aprovar ${colecao}/${id} (${r.status}): ${r.body.erro}`)
     return r.body
@@ -103,7 +104,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
     return r
   }
 
-  return { registarEMatricular, senhaInicial, app, http, contentor, config, entrar, criarUtilizador, com, aprovar, fechar, erros, pastaUploads, pastaPrivada, esquema }
+  return { registarEMatricular, senhaInicial, oComandante, app, http, contentor, config, entrar, criarUtilizador, com, aprovar, fechar, erros, pastaUploads, pastaPrivada, esquema }
 }
 
 export const noticia = (extra = {}) => ({

@@ -224,8 +224,13 @@ describe('portal académico', () => {
   })
 
   it('avisos gerais por turma e página inicial', async () => {
-    await sec().post('/api/admin/academico/avisos').send({ titulo: 'Para todos', texto: 'Aviso geral.' })
-    await sec().post('/api/admin/academico/avisos').send({ turmaId: outraTurmaId, titulo: 'Só turma B', texto: 'Aviso.' })
+    const todos = (await sec().post('/api/admin/academico/avisos').send({ titulo: 'Para todos', texto: 'Aviso geral.' })).body
+    const turmaB = (await sec().post('/api/admin/academico/avisos').send({ turmaId: outraTurmaId, titulo: 'Só turma B', texto: 'Aviso.' })).body
+    // só chegam aos estudantes depois de o Comandante aprovar
+    assert.equal(todos.estado, 'pendente')
+    assert.ok(!(await portal('ana').get('/api/portal/avisos')).body.some((a) => a.titulo === 'Para todos'))
+    await amb.aprovar('avisos_gerais', todos.id)
+    await amb.aprovar('avisos_gerais', turmaB.id)
     const avisos = (await portal('ana').get('/api/portal/avisos')).body.map((a) => a.titulo)
     assert.ok(avisos.includes('Para todos'))
     assert.ok(!avisos.includes('Só turma B'))

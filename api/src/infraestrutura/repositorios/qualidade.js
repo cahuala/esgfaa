@@ -1,10 +1,11 @@
 import { InqueritoInstitucional } from '../../dominio/qualidade/inquerito.js'
 import { Conflito } from '../../dominio/comum/erros.js'
-import { eDuplicado } from '../bd/prisma.js'
+import { Prisma, eDuplicado } from '../bd/prisma.js'
 
 const paraEntidade = (i) => i && new InqueritoInstitucional({
   id: i.id, titulo: i.titulo, descricao: i.descricao, perguntas: i.perguntas, publico: i.publico, turmaIds: i.turmaIds || [],
   fecha: i.fecha.toISOString(), lancadoEm: i.lancadoEm ? i.lancadoEm.toISOString() : null, autor: i.autor, criadoEm: i.criadoEm.toISOString(),
+  aprovacao: i.aprovacao ?? null,
   ...(i._count ? { respostas: i._count.participacoes } : {}),
 })
 
@@ -21,6 +22,15 @@ export class RepositorioQualidade {
     return l.map(paraEntidade)
   }
 
+  // lançamentos à espera do Comandante
+  async pendentes() {
+    return (await this.prisma.inqueritoInstitucional.findMany({ where: { aprovacao: { path: ['estado'], equals: 'pendente' } }, orderBy: { criadoEm: 'asc' } })).map(paraEntidade)
+  }
+
+  contarPendentes() {
+    return this.prisma.inqueritoInstitucional.count({ where: { aprovacao: { path: ['estado'], equals: 'pendente' } } })
+  }
+
   async porId(id) {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
@@ -32,7 +42,8 @@ export class RepositorioQualidade {
   }
 
   async guardar(i, dados) {
-    return paraEntidade(await this.prisma.inqueritoInstitucional.update({ where: { id: i.id }, data: dados }))
+    const d = 'aprovacao' in dados ? { ...dados, aprovacao: dados.aprovacao ?? Prisma.DbNull } : dados
+    return paraEntidade(await this.prisma.inqueritoInstitucional.update({ where: { id: i.id }, data: d }))
   }
 
   apagar(id) {

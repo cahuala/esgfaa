@@ -95,20 +95,37 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
 
   r.get('/painel', async (req, res) => res.json(await servicos.estatisticas.painel(ctx(req))))
 
-  // ---------- publicações à espera do Comandante (conteúdos e páginas do site) ----------
+  // ---------- à espera do Comandante: o site, os avisos e inquéritos do portal, as contas do painel ----------
+  const avisosGerais = servicos.administracaoEscolar.avisos
+  const inqueritos = servicos.qualidade.inqueritos
   r.get('/publicacoes', async (req, res) => {
-    const [itens, paginas] = await Promise.all([servicos.conteudos.paraAprovar(ctx(req)), servicos.paginas.paraAprovar(ctx(req))])
-    enviar(req, res, [...itens, ...paginas].sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm))))
+    const c = ctx(req)
+    if (!c.actor.pode('utilizadores.aprovar')) c.actor.exigir('publicacoes.aprovar')
+    const site = c.actor.pode('publicacoes.aprovar') ? [...(await servicos.conteudos.paraAprovar(c)), ...(await servicos.paginas.paraAprovar(c))] : []
+    const contas = c.actor.pode('utilizadores.aprovar') ? (await servicos.utilizadores.listar(c)).filter((u) => u.aprovacao).map((u) => ({
+      colecao: 'utilizadores', id: String(u.id), titulo: u.nome, tipo: u.aprovacao.tipo === 'criar' ? 'conta' : 'papel', pedidoPor: u.aprovacao.pedidoPor, pedidoEm: u.aprovacao.pedidoEm,
+      email: u.email, papel: u.aprovacao.papel, de: u.aprovacao.de ?? null,
+    })) : []
+    const lista = [...site, ...(await avisosGerais.paraAprovar(c)), ...(await inqueritos.paraAprovar(c)), ...contas]
+    enviar(req, res, lista.sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm))))
   })
   r.get('/publicacoes/contagem', async (req, res) => {
-    const [a, b] = await Promise.all([servicos.conteudos.contarParaAprovar(ctx(req)), servicos.paginas.contarParaAprovar(ctx(req))])
-    res.json({ pendentes: a + b })
+    const c = ctx(req)
+    const site = c.actor.pode('publicacoes.aprovar') ? (await servicos.conteudos.contarParaAprovar(c)) + (await servicos.paginas.contarParaAprovar(c)) : 0
+    const portal = (await avisosGerais.contarParaAprovar(c)) + (await inqueritos.contarParaAprovar(c))
+    const contas = await servicos.utilizadores.contarPorAprovar(c)
+    res.json({ pendentes: site + portal + contas, site, portal, contas })
   })
   r.post('/publicacoes/:colecao/:id/decisao', validar({ params: z.object({ colecao: z.string().max(40), id: z.string().max(200) }), body: E.decisaoPublicacao }), async (req, res) => {
     const { colecao, id } = req.dados.params
-    enviar(req, res, colecao === 'paginas'
-      ? await servicos.paginas.decidir(ctx(req), id, req.dados.body)
-      : await servicos.conteudos.decidirPublicacao(ctx(req), colecao, id, req.dados.body))
+    const c = ctx(req)
+    const decidir = {
+      paginas: () => servicos.paginas.decidir(c, id, req.dados.body),
+      avisos_gerais: () => avisosGerais.decidir(c, id, req.dados.body),
+      inqueritos: () => inqueritos.decidir(c, id, req.dados.body),
+      utilizadores: () => servicos.utilizadores.decidir(c, id, req.dados.body),
+    }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, req.dados.body))
+    enviar(req, res, await decidir())
   })
 
   r.get('/estatisticas', validar({ query: E.dias }), async (req, res) => {
@@ -271,6 +288,9 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
 
   r.get('/atividades', validar({ query: E.filtrosAtividades }), async (req, res) => {
     res.json(await servicos.auditoria.listar(ctx(req), req.dados.query))
+  })
+  r.get('/acontecimentos', validar({ query: z.object({ dias: z.coerce.number().int().min(1).max(90).default(7).catch(7) }) }), async (req, res) => {
+    res.json(await servicos.auditoria.acontecimentos(ctx(req), { dias: req.dados.query.dias }))
   })
 
   // quem exportou que tabela (Excel ou PDF), com quantas linhas e com que filtro

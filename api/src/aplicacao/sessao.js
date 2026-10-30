@@ -43,7 +43,7 @@ export class ServicoSessao {
 
     if (!u.ativo) {
       await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: 'conta desativada', utilizador: u })
-      throw new SemPermissao('Esta conta está desativada. Contacte um administrador.')
+      throw new SemPermissao(u.aprovacao ? 'A conta ainda espera a aprovação do Comandante.' : 'Esta conta está desativada. Contacte um administrador.')
     }
     // verificação em dois passos: a palavra-passe está certa, falta (ou está errado) o código do telemóvel
     if (this.doisFatores && (await this.doisFatores.ativo(u.id))) {

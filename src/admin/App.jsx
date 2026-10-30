@@ -33,6 +33,7 @@ import Integridade from './paginas/integridade/Integridade'
 import PedidosAcademicos from './paginas/academico/Pedidos'
 import ProvasImprimir from './paginas/academico/ProvasImprimir'
 import Publicacoes from './paginas/Publicacoes'
+import Acontecimentos from './paginas/Acontecimentos'
 import AlteracoesNotas from './paginas/academico/AlteracoesNotas'
 import VerificarDocentes from './paginas/academico/VerificarDocentes'
 import AvisosGerais from './paginas/academico/AvisosGerais'
@@ -92,7 +93,8 @@ function App() {
         <Route path="/academico/contas" element={<Navigate to="/pessoal/registo" replace />} />
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}
         {pode('academico.ver') && <Route path="/academico/provas-escritas" element={<ProvasImprimir />} />}
-        {pode('publicacoes.aprovar') && <Route path="/publicacoes" element={<Publicacoes />} />}
+        {(pode('publicacoes.aprovar') || pode('utilizadores.aprovar')) && <Route path="/publicacoes" element={<Publicacoes />} />}
+        {pode('atividades.ver') && <Route path="/acontecimentos" element={<Acontecimentos />} />}
         {pode('academico.ver') && <Route path="/academico/alteracoes-notas" element={<AlteracoesNotas />} />}
         {pode('academico.ver') && <Route path="/academico/docentes" element={<VerificarDocentes />} />}
         {pode('academico.ver') && <Route path="/academico/avisos" element={<AvisosGerais />} />}

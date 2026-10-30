@@ -80,10 +80,11 @@ describe('utilizador', () => {
 })
 
 describe('papéis e permissões', () => {
-  it('o administrador tem sempre todas as permissões, menos aprovar publicações (é do Comandante)', () => {
+  it('o administrador tem sempre todas as permissões, menos aprovar publicações e contas (é do Comandante)', () => {
     const p = new Papel({ id: 'administrador', nome: 'Admin', permissoes: [] }).permissoes
-    assert.deepEqual(p, TODAS.filter((x) => x !== 'publicacoes.aprovar'))
+    assert.deepEqual(p, TODAS.filter((x) => !['publicacoes.aprovar', 'utilizadores.aprovar'].includes(x)))
     assert.ok(!p.includes('publicacoes.aprovar'))
+    assert.ok(!p.includes('utilizadores.aprovar'))
   })
 
   it('limparPermissoes descarta lixo e acrescenta "ver"', () => {

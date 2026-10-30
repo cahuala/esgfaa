@@ -33,7 +33,10 @@ function Satisfacao() {
   const novo = (modelo) => setEditar({ titulo: '', descricao: '', publico: 'todos', turmaIds: [], fecha: '', perguntas: [{ tipo: 'escolha', texto: '', opcoes: [''], obrigatoria: true }], ...(modelo ? structuredClone(d.modelos[modelo]) : {}) })
   async function lancar(i) {
     if (!(await confirmar(tx('Lançar "{0}" a {1} pessoa(s)? Depois de lançado, as perguntas já não mudam.', { 0: i.titulo, 1: i.destinatarios }), { titulo: tx('Lançar inquérito'), botao: tx('Lançar') }))) return
-    await api(`/academico/satisfacao/${i.id}/lancar`, { metodo: 'POST' }).then((r) => { setAviso({ texto: tx('Inquérito lançado: {0} pessoa(s) avisada(s) no portal.', { 0: r.destinatarios }) }); carregar() }).catch(falhou)
+    await api(`/academico/satisfacao/${i.id}/lancar`, { metodo: 'POST' }).then((r) => {
+      setAviso({ texto: r.aprovacao?.estado === 'pendente' ? tx('Lançamento enviado ao Comandante: o inquérito chega ao portal quando ele aprovar.') : tx('Inquérito lançado: {0} pessoa(s) avisada(s) no portal.', { 0: r.destinatarios }) })
+      carregar()
+    }).catch(falhou)
   }
   async function apagar(i) {
     if (!(await confirmar(tx('Apagar "{0}"{1}?', { 0: i.titulo, 1: i.respostas ? ` e as ${i.respostas} respostas` : '' }), { titulo: tx('Apagar inquérito'), botao: tx('Apagar'), perigo: true }))) return
@@ -78,10 +81,13 @@ function Satisfacao() {
                   <td className="small">{tx(d.publicos[i.publico])}{i.turmaIds.length ? tx(' · {0} turma(s)', { 0: i.turmaIds.length }) : ''}</td>
                   <td className="text-center">{i.respostas} / {i.destinatarios}</td>
                   <td className="small">{dataLocal(i.fecha)}</td>
-                  <td><span className={`badge ${ESTADOS[i.estado][0]}`}>{ESTADOS[i.estado][1]}</span></td>
+                  <td>
+                    {i.aprovacao?.estado === 'pendente' ? <span className="badge bg-warning text-dark">{tx('À espera do Comandante')}</span> : <span className={`badge ${ESTADOS[i.estado][0]}`}>{ESTADOS[i.estado][1]}</span>}
+                    {i.aprovacao?.estado === 'recusado' && <div className="small text-danger mt-1">{tx('Recusado pelo Comandante: {0}', { 0: i.aprovacao.motivo })}</div>}
+                  </td>
                   <td className="text-end text-nowrap">
                     {gere && i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-white me-1" onClick={() => setEditar({ ...i, fecha: paraCampo(i.fecha) })}><i className="fa fa-pen me-1" />{tx('Editar')}</button>}
-                    {gere && i.estado === 'rascunho' && <button type="button" className="btn btn-xs btn-theme me-1" onClick={() => lancar(i)}><i className="fa fa-paper-plane me-1" />{tx('Lançar')}</button>}
+                    {gere && i.estado === 'rascunho' && i.aprovacao?.estado !== 'pendente' && <button type="button" className="btn btn-xs btn-theme me-1" onClick={() => lancar(i)}><i className="fa fa-paper-plane me-1" />{tx('Lançar')}</button>}
                     {i.estado !== 'rascunho' && <button type="button" className="btn btn-xs btn-white me-1" onClick={() => verResultados(i)}><i className="fa fa-chart-bar me-1" />{tx('Resultados')}</button>}
                     {gere && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => apagar(i)} aria-label={tx('Apagar {0}', { 0: i.titulo })}><i className="fa fa-trash-alt" /></button>}
                   </td>

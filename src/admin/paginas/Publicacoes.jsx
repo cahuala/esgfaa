@@ -14,12 +14,22 @@ function camposAlterados(p) {
   return Object.keys({ ...p.publicados, ...p.dados }).filter((k) => !k.startsWith('_') && JSON.stringify(p.publicados[k]) !== JSON.stringify(p.dados[k])).map(rotulo)
 }
 
+// o que não é do site: avisos e inquéritos do portal, contas e papéis do painel
+const OUTROS = {
+  avisos_gerais: { rotulo: tx('Aviso geral do portal'), cor: 'bg-teal', feito: tx('«{0}» aprovado: os estudantes já o recebem.') },
+  inqueritos: { rotulo: tx('Inquérito institucional'), cor: 'bg-purple', feito: tx('«{0}» aprovado: o inquérito foi lançado no portal.') },
+  utilizadores: { rotulo: tx('Conta do painel de gestão'), cor: 'bg-dark', feito: tx('«{0}»: aprovado.') },
+}
+
 /*
-  Publicações à espera do Comandante: notícias, artigos, eventos, revistas, banners, cursos, pessoas e páginas
-  do site que alguém quer publicar ou alterar. Pré-visualizar mostra como fica no site; numa alteração, o site
-  continua com a versão aprovada até se decidir. Recusar pede o motivo, que quem escreveu vê no editor.
+  À espera do Comandante: notícias, artigos, eventos, revistas, banners, cursos, pessoas e páginas do site que
+  alguém quer publicar ou alterar; os avisos gerais e os inquéritos institucionais do portal; as contas novas e as
+  mudanças de papel do painel. Pré-visualizar mostra como fica no site; numa alteração, o site continua com a versão
+  aprovada até se decidir. Recusar pede o motivo, que quem pediu vê.
 */
 function Publicacoes() {
+  const [papeis, setPapeis] = useState({})
+  useEffect(() => { api('/papeis').then((r) => setPapeis(Object.fromEntries(r.papeis.map((p) => [p.id, p.nome])))).catch(() => {}) }, [])
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
@@ -31,7 +41,10 @@ function Publicacoes() {
   async function decidir(p, decisao, motivo) {
     try {
       await api(`/publicacoes/${p.colecao}/${encodeURIComponent(p.id)}/decisao`, { metodo: 'POST', corpo: { decisao, ...(motivo ? { motivo } : {}) } })
-      setAviso({ texto: decisao === 'aprovar' ? tx('«{0}» aprovado: já está no site.', { 0: p.titulo }) : tx('«{0}» recusado. Quem o escreveu vê o motivo no editor.', { 0: p.titulo }) })
+      const outro = OUTROS[p.colecao]
+      setAviso({ texto: decisao === 'aprovar'
+        ? (outro ? outro.feito.replace('{0}', p.titulo) : tx('«{0}» aprovado: já está no site.', { 0: p.titulo }))
+        : (outro ? tx('«{0}» recusado.', { 0: p.titulo }) : tx('«{0}» recusado. Quem o escreveu vê o motivo no editor.', { 0: p.titulo })) })
       setRecusar(null)
       carregar()
       window.dispatchEvent(new Event('esg-publicacoes'))
@@ -42,11 +55,40 @@ function Publicacoes() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Publicações por aprovar')} subtitulo={tx('nada chega ao site sem a aprovação do Comandante')} migalhas={[{ rotulo: tx('Publicações por aprovar') }]} />
+      <CabecalhoPagina titulo={tx('Por aprovar')} subtitulo={tx('o site, os avisos e inquéritos do portal e as contas do painel só avançam com a aprovação do Comandante')} migalhas={[{ rotulo: tx('Por aprovar') }]} />
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!lista && !erro && <Carregando />}
-      {lista?.length === 0 && <div className="alert alert-success"><i className="fa fa-check-circle me-2" />{tx('Não há publicações à espera de aprovação.')}</div>}
+      {lista?.length === 0 && <div className="alert alert-success"><i className="fa fa-check-circle me-2" />{tx('Não há nada à espera de aprovação.')}</div>}
       {lista?.map((p) => {
+        const outro = OUTROS[p.colecao]
+        if (outro) {
+          const conta = p.colecao === 'utilizadores'
+          return (
+            <Painel key={`${p.colecao}/${p.id}`} titulo={<><span className={`badge ${outro.cor} me-2`}>{conta ? (p.tipo === 'conta' ? tx('Conta nova') : tx('Mudança de papel')) : tx('Nova publicação')}</span>{outro.rotulo}</>}>
+              <div className="d-flex flex-wrap gap-3 align-items-start">
+                <div className="flex-grow-1" style={{ minWidth: 240 }}>
+                  <h4 className="mb-1">{p.titulo}</h4>
+                  {conta
+                    ? <p className="mb-2">{p.email} · {p.tipo === 'conta' ? tx('papel: {0}', { 0: papeis[p.papel] || p.papel }) : tx('de {0} para {1}', { 0: papeis[p.de] || p.de, 1: papeis[p.papel] || p.papel })}</p>
+                    : <p className="text-muted mb-2" style={{ whiteSpace: 'pre-wrap' }}>{p.resumo}</p>}
+                  {p.destino && <div className="small mb-1"><b>{tx('Para:')}</b> {p.destino}</div>}
+                  <div className="small text-muted">{tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                  <button type="button" className="btn btn-success" onClick={() => decidir(p, 'aprovar')}><i className="fa fa-check me-1" />{tx('Aprovar')}</button>
+                  <button type="button" className="btn btn-danger" onClick={() => setRecusar({ p, motivo: '' })}><i className="fa fa-times me-1" />{tx('Recusar')}</button>
+                </div>
+              </div>
+              {recusar?.p === p && (
+                <div className="d-flex flex-wrap gap-2 mt-3">
+                  <input className="form-control flex-grow-1" style={{ minWidth: 240 }} autoFocus value={recusar.motivo} onChange={(e) => setRecusar({ ...recusar, motivo: e.target.value })} placeholder={tx('Motivo da recusa')} aria-label={tx('Motivo da recusa')} />
+                  <button type="button" className="btn btn-danger" disabled={recusar.motivo.trim().length < 3} onClick={() => decidir(p, 'recusar', recusar.motivo.trim())}>{tx('Confirmar recusa')}</button>
+                  <button type="button" className="btn btn-white" onClick={() => setRecusar(null)}>{tx('Cancelar')}</button>
+                </div>
+              )}
+            </Painel>
+          )
+        }
         const def = COLECOES[p.colecao]
         const mudam = camposAlterados(p)
         return (

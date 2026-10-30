@@ -38,6 +38,16 @@ export class RepositorioAtividades {
     return { total, pagina, porPagina, linhas: linhas.map(linha), acoes: acoes.map((a) => a.acao) }
   }
 
+  // por ação, desde uma data: quantas e as mais recentes (para os acontecimentos importantes)
+  async porAcoes(acoes, desde, limite = 15) {
+    const where = { acao: { in: acoes }, data: { gte: desde } }
+    const [total, linhas] = await Promise.all([
+      this.prisma.atividade.count({ where }),
+      this.prisma.atividade.findMany({ where, orderBy: { id: 'desc' }, take: limite }),
+    ])
+    return { total, linhas: linhas.map(linha) }
+  }
+
   async ultimas({ utilizadorId = null, limite = 8 } = {}) {
     const linhas = await this.prisma.atividade.findMany({ where: utilizadorId == null ? {} : { utilizadorId }, orderBy: { id: 'desc' }, take: limite })
     return linhas.map(linha)

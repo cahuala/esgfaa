@@ -332,6 +332,8 @@ model Proposta {
   entidade      String          @default("")
   motivo        String          @default("") // do indeferimento ou do cancelamento
   extractoId    Int?            @map("extracto_id")
+  // despacho do Comandante antes de seguir (Secretária digital): { estado, pedidoPor, pedidoEm, documento, decisao?, texto?, despachadoPor?, despachadoEm? }
+  despacho      Json?
   criadoEm      DateTime        @default(now()) @map("criado_em") @db.Timestamptz(3)
   itens         ItemProposta[]
   anexos        AnexoProposta[]

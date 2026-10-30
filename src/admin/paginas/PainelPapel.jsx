@@ -46,7 +46,7 @@ export default function PainelPapel() {
   const verBib = pode('biblioteca.ver')
   const verSeg = pode('seguranca.ver')
   const verPes = pode('pessoal.ver')
-  const aprova = pode('publicacoes.aprovar')
+  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
   useEffect(() => {
     if (verAc) api('/academico/pendentes').then(setAc).catch(() => {})
     if (verBib) api('/biblioteca').then(setBib).catch(() => {})
@@ -59,7 +59,7 @@ export default function PainelPapel() {
   const conselho = pode('academico.conselho')
   const gere = pode('academico.gerir')
   const tarefas = (ac || porAprovar !== null) && [
-    aprova && { para: '/publicacoes', icone: 'fa-stamp', cor: 'bg-danger', texto: tx('Publicações do site por aprovar'), valor: porAprovar ?? 0 },
+    aprova && { para: '/publicacoes', icone: 'fa-stamp', cor: 'bg-danger', texto: tx('Por aprovar: site, avisos e inquéritos do portal, contas do painel'), valor: porAprovar ?? 0 },
     ...(!ac ? [] : [
     homologa && { para: '/academico/alteracoes-notas', icone: 'fa-user-shield', cor: 'bg-danger', texto: tx('Pedidos de alteração de notas por decidir'), valor: ac.alteracoesPendentes },
     homologa && { para: '/academico/docentes', icone: 'fa-user-check', cor: 'bg-warning text-dark', texto: tx('Docentes por verificar'), valor: ac.docentesPorVerificar },

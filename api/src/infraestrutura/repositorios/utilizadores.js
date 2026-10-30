@@ -1,20 +1,20 @@
 import { Utilizador, MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../../dominio/identidade/utilizador.js'
 import { Conflito } from '../../dominio/comum/erros.js'
-import { eDuplicado } from '../bd/prisma.js'
+import { Prisma, eDuplicado } from '../bd/prisma.js'
 
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 
 const paraEntidade = (l) => l && new Utilizador({
   id: l.id, nome: l.nome, email: l.email, senha: l.senha, papel: l.papel, ativo: l.ativo,
   criadoEm: iso(l.criadoEm), ultimoAcesso: iso(l.ultimoAcesso), tentativasFalhadas: l.tentativasFalhadas,
-  bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha,
+  bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha, aprovacao: l.aprovacao ?? null,
 })
 
 const colunas = (u) => ({
   nome: u.nome, email: u.email, senha: u.senha, papel: u.papel, ativo: Boolean(u.ativo),
   ultimoAcesso: u.ultimoAcesso ? new Date(u.ultimoAcesso) : null,
   tentativasFalhadas: u.tentativasFalhadas, bloqueadoAte: u.bloqueadoAte ? new Date(u.bloqueadoAte) : null,
-  versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha),
+  versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha), aprovacao: u.aprovacao ?? Prisma.DbNull,
 })
 
 export class RepositorioUtilizadores {
@@ -42,6 +42,21 @@ export class RepositorioUtilizadores {
 
   contarAdministradoresAtivos({ exceto = null } = {}) {
     return this.prisma.utilizador.count({ where: { papel: 'administrador', ativo: true, ...(exceto ? { id: { not: exceto } } : {}) } })
+  }
+
+  // só para contas que nunca foram usadas (conta nova recusada pelo Comandante)
+  async apagar(id) {
+    await this.prisma.utilizador.delete({ where: { id: Number(id) } })
+  }
+
+  // contas e mudanças de papel à espera do Comandante
+  contarPorAprovar() {
+    return this.prisma.utilizador.count({ where: { aprovacao: { not: Prisma.DbNull } } })
+  }
+
+  // há alguém ativo com um destes papéis? (para saber se existe quem aprove)
+  async haAtivoComPapel(papeis) {
+    return papeis.length > 0 && Boolean(await this.prisma.utilizador.findFirst({ where: { papel: { in: papeis }, ativo: true, aprovacao: { equals: Prisma.DbNull } }, select: { id: true } }))
   }
 
   async contarPorPapel() {
