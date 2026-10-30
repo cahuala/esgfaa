@@ -22,9 +22,15 @@ export const RECURSOS = [
   { id: 'papeis', acoes: ['ver', 'gerir'] },
   { id: 'atividades', acoes: ['ver'] },
   { id: 'seguranca', acoes: ['ver', 'gerir'] },
+  // aprovar: só com isto um conteúdo do site (notícia, artigo, evento, página…) chega ao público — o Comandante
+  { id: 'publicacoes', acoes: ['aprovar'] },
 ]
 
 export const TODAS = RECURSOS.flatMap((r) => r.acoes.map((a) => `${r.id}.${a}`))
+
+// permissões que nem o Administrador tem (a decisão é do Comandante, ou de quem ele indicar num papel)
+export const SO_DO_COMANDANTE = ['publicacoes.aprovar']
+export const DO_ADMINISTRADOR = TODAS.filter((p) => !SO_DO_COMANDANTE.includes(p))
 
 const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `${r}.${a}`))
 
@@ -32,9 +38,9 @@ export const PAPEIS_PADRAO = [
   {
     id: 'administrador',
     nome: 'Administrador',
-    descricao: 'Acesso total, incluindo utilizadores, papéis e registo de atividades.',
+    descricao: 'Acesso total, incluindo utilizadores, papéis e registo de atividades (a aprovação das publicações é do Comandante).',
     sistema: 1,
-    permissoes: TODAS,
+    permissoes: DO_ADMINISTRADOR,
   },
   {
     id: 'editor_chefe',
@@ -80,9 +86,9 @@ export const PAPEIS_PADRAO = [
   {
     id: 'comandante',
     nome: 'Comandante da ESG',
-    descricao: 'Homologa as classificações finais dos cursos, atribui o Distinto e o ajuste previsto no plano.',
+    descricao: 'Homologa as classificações finais dos cursos, atribui o Distinto e o ajuste previsto no plano; aprova o que se publica no site.',
     sistema: 0,
-    permissoes: ['academico.ver', 'academico.homologar'],
+    permissoes: ['academico.ver', 'academico.homologar', 'publicacoes.aprovar'],
   },
   {
     id: 'pessoal_quadros',

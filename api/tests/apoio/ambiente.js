@@ -56,6 +56,15 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
     return { ...criado, senha, token: ativo ? await entrar(email, senha) : null }
   }
 
+  // o Comandante aprova uma publicação do site (nada chega ao público sem ele)
+  let comandante = null
+  async function aprovar(colecao, id) {
+    comandante ??= await criarUtilizador('comandante')
+    const r = await http().post(`/api/admin/publicacoes/${colecao}/${encodeURIComponent(id)}/decisao`).set('Authorization', `Bearer ${comandante.token}`).send({ decisao: 'aprovar' })
+    if (r.status !== 200) throw new Error(`Falha ao aprovar ${colecao}/${id} (${r.status}): ${r.body.erro}`)
+    return r.body
+  }
+
   // pedido autenticado: com(token).get('/api/admin/eu')
   const com = (token) => {
     const ag = {}
@@ -83,7 +92,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
     return r
   }
 
-  return { registarEMatricular, app, http, contentor, config, entrar, criarUtilizador, com, fechar, erros, pastaUploads, pastaPrivada, esquema }
+  return { registarEMatricular, app, http, contentor, config, entrar, criarUtilizador, com, aprovar, fechar, erros, pastaUploads, pastaPrivada, esquema }
 }
 
 export const noticia = (extra = {}) => ({

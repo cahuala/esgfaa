@@ -80,6 +80,7 @@ describe('traduções do site: IA, revisão e publicação', () => {
       conteudo: [{ tipo: 'paragrafo', texto: 'A Escola abriu o ano com uma cerimónia.' }], _estado: 'publicado',
     })).body
     const id = n.slug
+    await amb.aprovar('noticias', id) // traduz-se quando o Comandante aprova
     await esperar()
     let e = (await admin.get(`/api/admin/traducoes/noticias/${id}`)).body
     assert.deepEqual(Object.keys(e.originais).sort(), ['categoria', 'conteudo.0.texto', 'resumo', 'titulo'])
@@ -102,6 +103,7 @@ describe('traduções do site: IA, revisão e publicação', () => {
     // o original muda e volta a ser publicado: só o resumo é traduzido de novo; o título revisto fica
     pedidos.length = 0
     await admin.put(`/api/admin/colecoes/noticias/${id}`).send({ ...n, resumo: 'Mais de 250 novos alunos.', _estado: 'publicado' })
+    await amb.aprovar('noticias', id)
     await esperar()
     assert.ok(pedidos.length === 3 && pedidos.every((p) => JSON.stringify(Object.keys(JSON.parse(p))) === '["resumo"]'))
     e = (await admin.get(`/api/admin/traducoes/noticias/${id}`)).body
@@ -117,6 +119,7 @@ describe('traduções do site: IA, revisão e publicação', () => {
 
   it("a tradução automática não deixa espaços à volta do apóstrofo («d ' officiers» → «d'officiers»)", async () => {
     const n = (await admin.post('/api/admin/colecoes/noticias').send({ titulo: "Formação d ' oficiais", resumo: 'Resumo.', data: '2026-09-12', conteudo: [], _estado: 'publicado' })).body
+    await amb.aprovar('noticias', n.slug)
     await amb.contentor.servicos.traducoes.esvaziar()
     const e = (await admin.get(`/api/admin/traducoes/noticias/${n.slug}`)).body
     assert.equal(e.traducoes.fr.textos.titulo, "[FR] Formação d'oficiais")
@@ -132,6 +135,7 @@ describe('traduções do site: IA, revisão e publicação', () => {
     const chefe = amb.com((await amb.criarUtilizador('editor_chefe')).token)
     const r = (await chefe.post('/api/admin/colecoes/revistas').send(numero)).body
     assert.equal(r.slug, 'ciberdefesa')
+    await amb.aprovar('revistas', r.slug)
     await esperar()
     const site = (await amb.http().get('/api/publico/conteudo')).body
     const publicado = site.revistas.find((x) => x.slug === 'ciberdefesa')

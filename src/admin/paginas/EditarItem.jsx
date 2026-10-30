@@ -45,6 +45,8 @@ function EditarItem() {
   const preparar = useCallback((i) => (doc ? { ...i, [doc.corpo]: prepararCorpo(i[doc.corpo]) } : i), [doc])
 
   const podePublicar = pode(`${colecao}.publicar`)
+  // só quem aprova publicações (o Comandante) publica; os outros enviam-lhe o pedido
+  const aprova = pode('publicacoes.aprovar')
   const podeEditar = pode(`${colecao}.editar`) || podePublicar
   const podeCriar = pode(`${colecao}.criar`)
 
@@ -100,10 +102,13 @@ function EditarItem() {
       const pronto = preparar(guardado)
       setItem(pronto)
       setOriginal(JSON.stringify(pronto))
+      const pendente = guardado._aprovacao?.estado === 'pendente'
       const mensagem = {
-        texto: guardado._estado === 'publicado'
-          ? tx('Publicado — já está visível no site.')
-          : podePublicar ? tx('Guardado como rascunho (não aparece no site).') : tx('Rascunho guardado. Um editor-chefe vai rever e publicar.'),
+        texto: pendente
+          ? (guardado._estado === 'publicado' ? tx('Alterações enviadas ao Comandante. O site continua a mostrar a versão aprovada até ele decidir.') : tx('Enviado ao Comandante para aprovação. Aparece no site quando ele aprovar.'))
+          : guardado._estado === 'publicado'
+            ? tx('Publicado — já está visível no site.')
+            : podePublicar ? tx('Guardado como rascunho (não aparece no site).') : tx('Rascunho guardado. Um editor-chefe vai rever e enviar ao Comandante.'),
       }
       setAviso(mensagem)
       if (novo) navegar(`/colecao/${colecao}/${guardado[def.chave]}`, { replace: true, state: { aviso: mensagem } })
@@ -154,6 +159,18 @@ function EditarItem() {
             }
           }}
         >
+          {item._aprovacao?.estado === 'pendente' && (
+            <div className="alert alert-info d-flex align-items-center">
+              <i className="fa fa-hourglass-half fa-lg me-3" />
+              <div><b>{tx('À espera da aprovação do Comandante.')}</b> {tx('Pedido por {0}, {1}.', { 0: item._aprovacao.pedidoPor, 1: dataHora(item._aprovacao.pedidoEm) })} {publicado ? tx('O site mostra a versão aprovada; o que vê aqui é a alteração proposta.') : tx('Ainda não aparece no site.')}</div>
+            </div>
+          )}
+          {item._aprovacao?.estado === 'recusado' && (
+            <div className="alert alert-danger d-flex align-items-center">
+              <i className="fa fa-times-circle fa-lg me-3" />
+              <div><b>{tx('O Comandante recusou a publicação')}</b> ({item._aprovacao.decididoPor}, {dataHora(item._aprovacao.decididoEm)}): {item._aprovacao.motivo} {tx('Corrija e envie de novo.')}</div>
+            </div>
+          )}
           {soLeitura && (
             <div className="alert alert-warning d-flex align-items-center">
               <i className="fa fa-lock fa-lg me-3" />
@@ -202,6 +219,8 @@ function EditarItem() {
                       {publicado
                         ? <span className="badge bg-success"><i className="fa fa-globe me-1" />{tx('Publicado')}</span>
                         : <span className="badge bg-warning text-dark"><i className="fa fa-pencil-alt me-1" />{tx('Rascunho')}</span>}
+                      {item._aprovacao?.estado === 'pendente' && <span className="badge bg-info ms-1"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante')}</span>}
+                      {item._aprovacao?.estado === 'recusado' && <span className="badge bg-danger ms-1">{tx('Recusado')}</span>}
                     </dd>
                     {!novo && <><dt>{tx('Última edição')}</dt><dd>{dataHora(item._atualizado)}{item._editadoPor && <><br /><small className="text-muted">{tx('por')} {item._editadoPor}</small></>}</dd></>}
                   </dl>
@@ -210,7 +229,9 @@ function EditarItem() {
                     <div className="d-grid gap-2">
                       {podePublicar && (
                         <button type="button" className="btn btn-theme" disabled={aGuardar} onClick={() => guardar('publicado')}>
-                          <i className="fa fa-globe me-1" /> {publicado ? tx('Guardar e publicar') : tx('Publicar')}
+                          {aprova
+                            ? <><i className="fa fa-globe me-1" /> {publicado ? tx('Guardar e publicar') : tx('Publicar')}</>
+                            : <><i className="fa fa-paper-plane me-1" /> {publicado ? tx('Enviar alterações ao Comandante') : tx('Enviar ao Comandante para aprovação')}</>}
                         </button>
                       )}
                       <button type="button" className={`btn ${podePublicar ? 'btn-white' : 'btn-theme'}`} disabled={aGuardar} onClick={() => guardar('rascunho')}>

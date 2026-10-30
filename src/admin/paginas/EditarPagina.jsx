@@ -52,7 +52,7 @@ function EditarPagina() {
       const guardado = await api(`/paginas/${chave}`, { metodo: 'PUT', corpo: dados })
       setDados(guardado)
       setOriginal(JSON.stringify(guardado))
-      setAviso({ texto: tx('Página guardada e publicada.') })
+      setAviso({ texto: guardado._aprovacao?.estado === 'pendente' ? tx('Alterações enviadas ao Comandante. O site continua a mostrar a versão aprovada até ele decidir.') : tx('Página guardada e publicada.') })
     } catch (falha) {
       setAviso({ tipo: 'erro', texto: falha.message })
     } finally {
@@ -72,6 +72,8 @@ function EditarPagina() {
       {dados && <Traducoes colecao="paginas" id={chave} horizontal />}
       {!dados && !erro && <Carregando />}
 
+      {dados?._aprovacao?.estado === 'pendente' && <div className="alert alert-info"><i className="fa fa-hourglass-half me-2" /><b>{tx('À espera da aprovação do Comandante.')}</b> {tx('Pedido por {0}, {1}.', { 0: dados._aprovacao.pedidoPor, 1: new Date(dados._aprovacao.pedidoEm).toLocaleString() })} {tx('O site mostra a versão aprovada; o que vê aqui é a alteração proposta.')}</div>}
+      {dados?._aprovacao?.estado === 'recusado' && <div className="alert alert-danger"><i className="fa fa-times-circle me-2" /><b>{tx('O Comandante recusou a publicação')}</b>: {dados._aprovacao.motivo} {tx('Corrija e envie de novo.')}</div>}
       {dados && (
         <form onSubmit={guardar}>
           <ul className="nav nav-tabs nav-tabs-inverse">
@@ -92,7 +94,7 @@ function EditarPagina() {
               {alterado ? <><i className="fa fa-circle text-warning fs-8px me-2" />{tx('Alterações por guardar')}</> : <><i className="fa fa-check text-success me-2" />{tx('Tudo guardado')}</>}
             </span>
             <button type="submit" className="btn btn-theme" disabled={aGuardar || !alterado || !podeEditar}>
-              {aGuardar ? <><span className="spinner-border spinner-border-sm me-1" /> {tx('A guardar…')}</> : <><i className="fa fa-save me-1" /> {tx('Guardar e publicar')}</>}
+              {aGuardar ? <><span className="spinner-border spinner-border-sm me-1" /> {tx('A guardar…')}</> : (pode('publicacoes.aprovar') ? <><i className="fa fa-save me-1" /> {tx('Guardar e publicar')}</> : <><i className="fa fa-paper-plane me-1" /> {tx('Enviar alterações ao Comandante')}</>)}
             </button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-import { ADMINISTRADOR, TODAS, limparPermissoes } from './permissoes.js'
+import { ADMINISTRADOR, DO_ADMINISTRADOR, limparPermissoes } from './permissoes.js'
 import { ErroValidacao, SemPermissao } from '../comum/erros.js'
 import { limparTexto } from '../comum/texto.js'
 
@@ -9,8 +9,8 @@ export class Papel {
     this.nome = nome
     this.descricao = descricao
     this.sistema = Boolean(sistema)
-    // o administrador tem sempre todas as permissões, independentemente do que está guardado
-    this.permissoes = id === ADMINISTRADOR ? [...TODAS] : limparPermissoes(permissoes)
+    // o administrador tem sempre todas as permissões (menos aprovar publicações), independentemente do que está guardado
+    this.permissoes = id === ADMINISTRADOR ? [...DO_ADMINISTRADOR] : limparPermissoes(permissoes)
     this.utilizadores = utilizadores
   }
 

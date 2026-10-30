@@ -1,7 +1,7 @@
 import { ErroValidacao, NaoEncontrado } from '../dominio/comum/erros.js'
 import { limparTexto, slugificar } from '../dominio/comum/texto.js'
 import { Papel } from '../dominio/identidade/papel.js'
-import { PAPEIS_PADRAO, RECURSOS, TODAS, ADMINISTRADOR, limparPermissoes } from '../dominio/identidade/permissoes.js'
+import { PAPEIS_PADRAO, RECURSOS, DO_ADMINISTRADOR, ADMINISTRADOR, limparPermissoes } from '../dominio/identidade/permissoes.js'
 
 // Papéis e permissões (RBAC)
 export class ServicoPapeis {
@@ -13,7 +13,12 @@ export class ServicoPapeis {
   async garantirPadrao() {
     for (const p of PAPEIS_PADRAO) await this.papeis.garantir(p)
     const admin = await this.papeis.porId(ADMINISTRADOR)
-    await this.papeis.guardar({ ...admin, permissoes: TODAS, sistema: true })
+    await this.papeis.guardar({ ...admin, permissoes: DO_ADMINISTRADOR, sistema: true })
+    // o Comandante aprova sempre as publicações do site (os papéis criados antes desta regra recebem-na)
+    const cmd = await this.papeis.porId('comandante')
+    if (cmd && !cmd.permissoes.includes('publicacoes.aprovar')) {
+      await this.papeis.guardar({ ...cmd, permissoes: limparPermissoes([...cmd.permissoes, 'publicacoes.aprovar']) })
+    }
   }
 
   async listar(ctx) {

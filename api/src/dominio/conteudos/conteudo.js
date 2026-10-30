@@ -4,8 +4,9 @@ export const ESTADOS = ['rascunho', 'publicado']
 
 // Notícia, artigo, evento, curso, pessoa ou banner
 export class Conteudo {
-  constructor({ colecao, id, dados, estado = 'rascunho', ordem = 0, criadoEm = null, atualizadoEm = null, editadoPor = null }) {
-    Object.assign(this, { colecao, id, dados, estado, ordem, criadoEm, atualizadoEm, editadoPor })
+  // aprovacao: publicação à espera do Comandante (ou recusada), com os dados propostos
+  constructor({ colecao, id, dados, estado = 'rascunho', ordem = 0, criadoEm = null, atualizadoEm = null, editadoPor = null, aprovacao = null }) {
+    Object.assign(this, { colecao, id, dados, estado, ordem, criadoEm, atualizadoEm, editadoPor, aprovacao })
   }
 
   get titulo() {

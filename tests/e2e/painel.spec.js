@@ -44,10 +44,21 @@ test.describe('painel de administração', () => {
     await envio
     // o brasão (PNG de 1,2 MB) fica leve ao carregar: WebP
     await expect(page.locator('.doc-capa img')).toHaveAttribute('src', /\/uploads\/\d{4}-\d{2}\/[0-9a-f-]+\.webp$/)
-    await page.getByRole('button', { name: 'Publicar' }).click()
-    await expect(page.getByText('Publicado — já está visível no site.')).toBeVisible()
+    // o administrador não publica: envia ao Comandante
+    await page.getByRole('button', { name: 'Enviar ao Comandante para aprovação' }).click()
+    await expect(page.getByText('Enviado ao Comandante para aprovação. Aparece no site quando ele aprovar.')).toBeVisible()
     await expect(page).toHaveURL(/#\/colecao\/noticias\/noticia-de-teste-\d+$/)
     const slug = page.url().split('/').pop()
+
+    // o Comandante (uma conta criada agora pelo administrador) aprova
+    const cmd = { email: `comandante.${Date.now()}@esgfaa.gov.ao`, senha: 'Aprovar#2026segura' }
+    const criada = await page.request.post('http://localhost:3101/api/admin/utilizadores', { headers: { 'X-Sessao': 'cookie' }, data: { nome: 'Comandante E2E', email: cmd.email, papel: 'comandante', senha: cmd.senha } })
+    expect(criada.status()).toBe(201)
+    await page.context().clearCookies()
+    await entrar(page, cmd)
+    await page.goto('/admin/#/publicacoes')
+    await page.locator('.panel', { hasText: titulo }).getByRole('button', { name: 'Aprovar e publicar' }).click()
+    await expect(page.getByText(/aprovado: já está no site/)).toBeVisible()
 
     await page.goto('/Noticias')
     await expect(page.getByText(titulo).first()).toBeVisible()

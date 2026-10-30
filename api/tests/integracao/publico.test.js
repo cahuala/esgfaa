@@ -11,12 +11,13 @@ describe('site público', () => {
     amb = await criarAmbiente({ relogio: relogioFalso('2026-10-10T12:00:00Z') })
     admin = await amb.entrar()
     publicada = (await amb.com(admin).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Notícia pública' }))).body.slug
+    await amb.aprovar('noticias', publicada) // o Comandante aprova a publicação
     rascunho = (await amb.com(admin).post('/api/admin/colecoes/noticias').send({ ...noticia({ titulo: 'Notícia em rascunho' }), _estado: 'rascunho' })).body.slug
     for (const b of [
       { titulo: 'Em vigor', inicio: '2026-10-01', fim: '2026-10-31' },
       { titulo: 'Expirado', fim: '2026-10-09' },
       { titulo: 'Desligado', ativo: false },
-    ]) await amb.com(admin).post('/api/admin/colecoes/publicidade').send(b)
+    ]) await amb.aprovar('publicidade', (await amb.com(admin).post('/api/admin/colecoes/publicidade').send(b)).body.id)
   })
   after(() => amb.fechar())
 
@@ -74,6 +75,7 @@ describe('site público', () => {
     try {
       const t = await lim.entrar()
       const slug = (await lim.com(t).post('/api/admin/colecoes/noticias').send(noticia())).body.slug
+      await lim.aprovar('noticias', slug)
       const url = `/api/publico/interacoes/noticias/${slug}/comentarios`
       for (let i = 0; i < 2; i++) assert.equal((await lim.http().post(url).send({ nome: 'Ana', texto: `Comentário ${i}` })).status, 201)
       const r = await lim.http().post(url).send({ nome: 'Ana', texto: 'Mais um' })

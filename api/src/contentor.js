@@ -280,7 +280,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     doisFatores,
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
-    paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
+    paginas: Object.assign(new ServicoPaginas({ paginas: r.paginas, auditoria, filtroHtml: filtrarCamposHtml, relogio }), { aoPublicar: (c, id) => traducoes.agendar(c, id) }),
     privacidade: new ServicoPrivacidade({ prisma, notificacoes, auditoria, relogio, conservacao: config.conservacao }),
     seguranca: new ServicoSeguranca({ monitor: new Monitor(), seguranca: r.seguranca, correio, emailAlerta: config.emailSeguranca, auditoria, pastaDados: config.pastaDados, registar: (x) => console.error(JSON.stringify(x)) }),
     contactos: new ServicoContactos({ contactos: r.contactos, correio, emailDestino: config.emailContactos, auditoria, registar: (x) => console.error(JSON.stringify(x)) }),

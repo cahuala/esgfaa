@@ -41,21 +41,26 @@ export default function PainelPapel() {
   const [bib, setBib] = useState(null)
   const [seg, setSeg] = useState(null)
   const [contas, setContas] = useState(null)
+  const [porAprovar, setPorAprovar] = useState(null)
   const verAc = pode('academico.ver')
   const verBib = pode('biblioteca.ver')
   const verSeg = pode('seguranca.ver')
   const verPes = pode('pessoal.ver')
+  const aprova = pode('publicacoes.aprovar')
   useEffect(() => {
     if (verAc) api('/academico/pendentes').then(setAc).catch(() => {})
     if (verBib) api('/biblioteca').then(setBib).catch(() => {})
     if (verSeg) api('/seguranca').then(setSeg).catch(() => {})
     if (verPes) api('/academico/contas').then(setContas).catch(() => {})
-  }, [verAc, verBib, verSeg, verPes])
+    if (aprova) api('/publicacoes/contagem').then((r) => setPorAprovar(r.pendentes)).catch(() => {})
+  }, [verAc, verBib, verSeg, verPes, aprova])
 
   const homologa = pode('academico.homologar')
   const conselho = pode('academico.conselho')
   const gere = pode('academico.gerir')
-  const tarefas = ac && [
+  const tarefas = (ac || porAprovar !== null) && [
+    aprova && { para: '/publicacoes', icone: 'fa-stamp', cor: 'bg-danger', texto: tx('Publicações do site por aprovar'), valor: porAprovar ?? 0 },
+    ...(!ac ? [] : [
     homologa && { para: '/academico/alteracoes-notas', icone: 'fa-user-shield', cor: 'bg-danger', texto: tx('Pedidos de alteração de notas por decidir'), valor: ac.alteracoesPendentes },
     homologa && { para: '/academico/docentes', icone: 'fa-user-check', cor: 'bg-warning text-dark', texto: tx('Docentes por verificar'), valor: ac.docentesPorVerificar },
     ...(homologa ? ac.porHomologar.map((t) => ({ para: `/academico/turmas/${t.id}?aba=plano`, icone: 'fa-stamp', cor: 'bg-dark', texto: tx('Homologar as classificações: {0}', { 0: t.nome }) })) : []),
@@ -63,10 +68,11 @@ export default function PainelPapel() {
     conselho && ac.revisoes > 0 && { para: '/academico/turmas', icone: 'fa-search', cor: 'bg-info', texto: tx('Pedidos de revisão de provas por decidir'), valor: ac.revisoes },
     gere && { para: '/academico/provas-escritas', icone: 'fa-print', cor: 'bg-primary', texto: tx('Provas escritas para imprimir'), valor: ac.provasPorImprimir },
     gere && { para: '/academico/pedidos', icone: 'fa-file-signature', cor: 'bg-teal', texto: tx('Pedidos de documentos por tratar'), valor: ac.pedidosDocumentos },
+    ]),
   ].filter(Boolean)
   const docentes = contas?.filter((c) => c.tipo === 'docente').length
   const estudantes = contas?.filter((c) => c.tipo === 'estudante').length
-  if (!ac && !bib && !seg && !contas) return null
+  if (!ac && !bib && !seg && !contas && porAprovar === null) return null
 
   return (
     <>

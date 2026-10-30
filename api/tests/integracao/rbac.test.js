@@ -22,18 +22,19 @@ describe('permissões (RBAC) e utilizadores', () => {
 
   it('redator não altera conteúdos já publicados', async () => {
     const pub = await amb.com(chefe.token).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Publicada pelo chefe' }))
-    assert.equal(pub.body._estado, 'publicado')
+    await amb.aprovar('noticias', pub.body.slug)
     const r = await amb.com(redator.token).put(`/api/admin/colecoes/noticias/${pub.body.slug}`).send(noticia({ titulo: 'Alterada' }))
     assert.equal(r.status, 403)
     assert.match(r.body.erro, /já está publicado/)
   })
 
-  it('editor-chefe publica rascunhos', async () => {
+  it('editor-chefe envia os rascunhos ao Comandante, que os publica', async () => {
     const rasc = await amb.com(redator.token).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Para publicar' }))
     const r = await amb.com(chefe.token).put(`/api/admin/colecoes/noticias/${rasc.body.slug}`).send({ ...rasc.body, _estado: 'publicado' })
     assert.equal(r.status, 200)
-    assert.equal(r.body._estado, 'publicado')
-    const log = await amb.contentor.repositorios.atividades.listar({ acao: 'publicar' })
+    assert.deepEqual([r.body._estado, r.body._aprovacao.estado], ['rascunho', 'pendente'])
+    assert.equal((await amb.aprovar('noticias', rasc.body.slug))._estado, 'publicado')
+    const log = await amb.contentor.repositorios.atividades.listar({ acao: 'aprovar_publicacao' })
     assert.equal(log.linhas[0].alvo_id, rasc.body.slug)
   })
 

@@ -1,9 +1,9 @@
 import { Conteudo } from '../../dominio/conteudos/conteudo.js'
 import { Conflito } from '../../dominio/comum/erros.js'
-import { eDuplicado } from '../bd/prisma.js'
+import { Prisma, eDuplicado } from '../bd/prisma.js'
 
 const paraEntidade = (l) => l && new Conteudo({
-  colecao: l.colecao, id: l.id, dados: l.dados, estado: l.estado, ordem: l.ordem,
+  colecao: l.colecao, id: l.id, dados: l.dados, estado: l.estado, ordem: l.ordem, aprovacao: l.aprovacao ?? null,
   criadoEm: l.criadoEm.toISOString(), atualizadoEm: l.atualizadoEm.toISOString(), editadoPor: l.autorEdicao?.nome ?? null,
 })
 
@@ -36,6 +36,16 @@ export class RepositorioConteudos {
     return Boolean(await this.prisma.item.findFirst({ where: { colecao, id: String(id), estado: 'publicado' }, select: { id: true } }))
   }
 
+  // as publicações à espera do Comandante (em todas as coleções)
+  async pendentes() {
+    const linhas = await this.prisma.item.findMany({ where: { aprovacao: { path: ['estado'], equals: 'pendente' } }, include: COM_AUTOR })
+    return linhas.map(paraEntidade)
+  }
+
+  contarPendentes() {
+    return this.prisma.item.count({ where: { aprovacao: { path: ['estado'], equals: 'pendente' } } })
+  }
+
   contar(colecao, estado) {
     return this.prisma.item.count({ where: { colecao, estado } })
   }
@@ -53,7 +63,7 @@ export class RepositorioConteudos {
   async criar(c, autorId) {
     try {
       await this.prisma.item.create({
-        data: { colecao: c.colecao, id: c.id, dados: c.dados, ordem: c.ordem, estado: c.estado, atualizadoPor: autorId, criadoPor: autorId },
+        data: { colecao: c.colecao, id: c.id, dados: c.dados, ordem: c.ordem, estado: c.estado, aprovacao: c.aprovacao ?? undefined, atualizadoPor: autorId, criadoPor: autorId },
       })
     } catch (erro) {
       if (eDuplicado(erro)) throw new Conflito('Já existe um conteúdo com este identificador.')
@@ -73,7 +83,7 @@ export class RepositorioConteudos {
   async guardar(c, autorId) {
     await this.prisma.item.update({
       where: chave(c.colecao, c.id),
-      data: { dados: c.dados, estado: c.estado, atualizadoEm: new Date(), atualizadoPor: autorId },
+      data: { dados: c.dados, estado: c.estado, aprovacao: c.aprovacao ?? Prisma.DbNull, atualizadoEm: new Date(), atualizadoPor: autorId },
     })
     return this.ler(c.colecao, c.id)
   }

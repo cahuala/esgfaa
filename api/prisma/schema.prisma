@@ -15,6 +15,8 @@ model Item {
   dados         Json
   ordem         Int         @default(0)
   estado        String      @default("publicado")
+  // publicação à espera do Comandante: { estado: pendente|recusado, tipo: publicar|alterar, dados, pedidoPor, pedidoEm, motivo… }
+  aprovacao     Json?
   criadoEm      DateTime    @default(now()) @map("criado_em") @db.Timestamptz(3)
   atualizadoEm  DateTime    @default(now()) @map("atualizado_em") @db.Timestamptz(3)
   criadoPor     Int?        @map("criado_por")
@@ -30,6 +32,7 @@ model Item {
 model Pagina {
   chave         String   @id
   dados         Json
+  aprovacao     Json? // alteração à espera do Comandante (o site mostra a versão aprovada)
   atualizadoEm  DateTime @default(now()) @map("atualizado_em") @db.Timestamptz(3)
   atualizadoPor Int?     @map("atualizado_por")
 

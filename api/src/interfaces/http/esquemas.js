@@ -60,6 +60,9 @@ export const pedidoAlteracaoNota = z.object({ avaliacaoId: z.union([idNumerico, 
 export const decisaoAlteracaoNota = z.object({ ids: z.array(idNumerico).min(1).max(500), decisao: z.enum(['autorizar', 'recusar']), fundamento: texto(1000).optional() })
 export const verificarDocentes = z.object({ ids: z.array(idNumerico).min(1).max(1000) })
 
+// decisão do Comandante sobre uma publicação do site
+export const decisaoPublicacao = z.object({ decisao: z.enum(['aprovar', 'recusar']), motivo: texto(1000).optional() })
+
 // uma tabela exportada no painel (para o registo de atividades)
 export const exportacao = z.object({ tabela: texto(120), formato: z.enum(['excel', 'pdf']), linhas: z.number().int().min(0).max(1_000_000), filtro: texto(300).optional() })
 

@@ -20,3 +20,14 @@ export function garantirPodeEditar({ actor, colecao, atual, pedido }) {
   if (!actor.pode(`${colecao}.editar`) && !podePublicar) throw new SemPermissao()
   if (!actor.pode(`${colecao}.editar`) && pedido === atual) throw new SemPermissao('Não tem permissão para editar este conteúdo.')
 }
+
+/*
+  Aprovação do Comandante: nada chega ao público sem «publicacoes.aprovar».
+  Quem pode publicar mas não aprovar envia um pedido: o conteúdo novo fica em rascunho e a alteração de um
+  já publicado fica à parte — o site continua a mostrar a versão aprovada até o Comandante decidir.
+*/
+export const podeAprovar = (actor) => actor.pode('publicacoes.aprovar')
+
+export const pedidoDeAprovacao = ({ actor, tipo, dados, quando }) => ({
+  estado: 'pendente', tipo, dados, pedidoPor: actor.nome ?? '', pedidoPorId: actor.id ?? null, pedidoEm: quando.toISOString(),
+})

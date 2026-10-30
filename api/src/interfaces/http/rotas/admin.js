@@ -95,6 +95,22 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
 
   r.get('/painel', async (req, res) => res.json(await servicos.estatisticas.painel(ctx(req))))
 
+  // ---------- publicações à espera do Comandante (conteúdos e páginas do site) ----------
+  r.get('/publicacoes', async (req, res) => {
+    const [itens, paginas] = await Promise.all([servicos.conteudos.paraAprovar(ctx(req)), servicos.paginas.paraAprovar(ctx(req))])
+    enviar(req, res, [...itens, ...paginas].sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm))))
+  })
+  r.get('/publicacoes/contagem', async (req, res) => {
+    const [a, b] = await Promise.all([servicos.conteudos.contarParaAprovar(ctx(req)), servicos.paginas.contarParaAprovar(ctx(req))])
+    res.json({ pendentes: a + b })
+  })
+  r.post('/publicacoes/:colecao/:id/decisao', validar({ params: z.object({ colecao: z.string().max(40), id: z.string().max(200) }), body: E.decisaoPublicacao }), async (req, res) => {
+    const { colecao, id } = req.dados.params
+    enviar(req, res, colecao === 'paginas'
+      ? await servicos.paginas.decidir(ctx(req), id, req.dados.body)
+      : await servicos.conteudos.decidirPublicacao(ctx(req), colecao, id, req.dados.body))
+  })
+
   r.get('/estatisticas', validar({ query: E.dias }), async (req, res) => {
     res.json(await servicos.estatisticas.relatorio(ctx(req), req.dados.query.dias))
   })

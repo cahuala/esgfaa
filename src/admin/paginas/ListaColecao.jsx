@@ -172,6 +172,8 @@ function ListaColecao() {
                         {item._estado === 'publicado'
                           ? <span className="badge bg-success">{publicidade && item.ativo === false ? tx('Publicado · inativo') : tx('Publicado')}</span>
                           : <span className="badge bg-warning text-dark">{tx('Rascunho')}</span>}
+                        {item._aprovacao?.estado === 'pendente' && <div><span className="badge bg-info mt-1"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante')}</span></div>}
+                        {item._aprovacao?.estado === 'recusado' && <div><span className="badge bg-danger mt-1" title={item._aprovacao.motivo}>{tx('Recusado')}</span></div>}
                         {item._editadoPor && <div className="small text-muted text-nowrap">{item._editadoPor}</div>}
                       </td>
                       {INTERATIVAS.includes(colecao) && (

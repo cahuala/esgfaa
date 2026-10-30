@@ -76,6 +76,17 @@ function Layout({ children }) {
     window.addEventListener('esg-pendentes', contar)
     return () => { clearInterval(id); window.removeEventListener('esg-pendentes', contar) }
   }, [verAcademico])
+  // publicações à espera do Comandante (contador no menu)
+  const [porAprovar, setPorAprovar] = useState(0)
+  const aprova = pode('publicacoes.aprovar')
+  useEffect(() => {
+    if (!aprova) return undefined
+    const contar = () => api('/publicacoes/contagem').then((r) => setPorAprovar(r.pendentes)).catch(() => {})
+    contar()
+    const id = setInterval(contar, 120_000)
+    window.addEventListener('esg-publicacoes', contar)
+    return () => { clearInterval(id); window.removeEventListener('esg-publicacoes', contar) }
+  }, [aprova])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -158,6 +169,7 @@ function Layout({ children }) {
 
             <div className="menu-header">{tx('Geral')}</div>
             <ItemMenu para="/" fim icone="fa-th-large" texto={tx('Painel')} />
+            {aprova && <ItemMenu para="/publicacoes" icone="fa-stamp" texto={tx('Publicações por aprovar')} contador={porAprovar} />}
             {pode('estatisticas.ver') && <ItemMenu para="/estatisticas" icone="fa-chart-line" texto={tx('Estatísticas')} />}
 
             {(pode('paginas.ver') || Object.keys(COLECOES).some((chave) => chave !== 'publicidade' && pode(`${chave}.ver`))) && <div className="menu-header">{tx('Conteúdos')}</div>}

@@ -3,11 +3,13 @@ import { slugificar } from '../dominio/comum/texto.js'
 import { relativizar } from '../dominio/comum/urls.js'
 import { COLECOES, INTERATIVAS, NOMES_COLECOES, definicao, validarDados } from '../dominio/conteudos/colecoes.js'
 import { Conteudo } from '../dominio/conteudos/conteudo.js'
-import { estadoFinal, garantirPodeEditar } from '../dominio/conteudos/politicaPublicacao.js'
+import { estadoFinal, garantirPodeEditar, pedidoDeAprovacao, podeAprovar } from '../dominio/conteudos/politicaPublicacao.js'
 import { bannerEmVigor } from '../dominio/publicidade/banner.js'
 
+// no painel, quem edita continua a partir do que propôs (à espera do Comandante ou recusado)
 const paraPainel = (c) => ({
-  ...c.dados, _estado: c.estado, _ordem: c.ordem, _criado: c.criadoEm, _atualizado: c.atualizadoEm, _editadoPor: c.editadoPor,
+  ...(c.aprovacao?.dados ?? c.dados), _estado: c.estado, _ordem: c.ordem, _criado: c.criadoEm, _atualizado: c.atualizadoEm, _editadoPor: c.editadoPor,
+  _aprovacao: c.aprovacao ? { estado: c.aprovacao.estado, tipo: c.aprovacao.tipo, pedidoPor: c.aprovacao.pedidoPor, pedidoEm: c.aprovacao.pedidoEm, decididoPor: c.aprovacao.decididoPor, decididoEm: c.aprovacao.decididoEm, motivo: c.aprovacao.motivo } : null,
 })
 
 // Notícias, artigos, eventos, cursos, pessoas e banners
@@ -88,17 +90,23 @@ export class ServicoConteudos {
     const def = definicao(colecao)
     ctx.actor.exigir(`${colecao}.criar`)
     const dados = this.#preparar(colecao, corpo)
-    const estado = estadoFinal({ actor: ctx.actor, colecao, pedido: corpo?._estado, atual: null })
+    let estado = estadoFinal({ actor: ctx.actor, colecao, pedido: corpo?._estado, atual: null })
+    // sem aprovar publicações: fica em rascunho e o pedido vai ao Comandante
+    let aprovacao = null
+    if (estado === 'publicado' && !podeAprovar(ctx.actor)) {
+      estado = 'rascunho'
+      aprovacao = pedidoDeAprovacao({ actor: ctx.actor, tipo: 'publicar', dados: null, quando: this.relogio?.agora?.() ?? new Date() })
+    }
     const base = slugificar(dados[def.chave] || dados[def.titulo])
 
     // identificador único; se outro pedido o ocupar ao mesmo tempo, tenta o seguinte
     for (let n = 1; n < 50; n++) {
       const id = n === 1 ? base : `${base}-${n}`
       if (await this.conteudos.existe(colecao, id)) continue
-      const c = new Conteudo({ colecao, id, dados: { ...dados, [def.chave]: id }, estado, ordem: await this.conteudos.proximaOrdem(colecao) })
+      const c = new Conteudo({ colecao, id, dados: { ...dados, [def.chave]: id }, estado, ordem: await this.conteudos.proximaOrdem(colecao), aprovacao })
       try {
         const criado = await this.conteudos.criar(c, ctx.actor.id)
-        await this.auditoria.registar(ctx, { acao: 'criar', colecao, alvoId: id, alvoTitulo: c.titulo, detalhes: { estado } })
+        await this.auditoria.registar(ctx, { acao: aprovacao ? 'pedir_aprovacao' : 'criar', colecao, alvoId: id, alvoTitulo: c.titulo, detalhes: { estado } })
         if (estado === 'publicado') this.aoPublicar?.(colecao, id)
         return paraPainel(criado)
       } catch (erro) {
@@ -121,7 +129,20 @@ export class ServicoConteudos {
     const estado = estadoFinal({ actor: ctx.actor, colecao, pedido: corpo?._estado, atual: atual.estado })
     const alterados = atual.camposAlterados(dados)
 
-    const novo = new Conteudo({ ...atual, dados, estado })
+    // sem aprovar publicações: publicar ou alterar o que está publicado é um pedido ao Comandante
+    if (!podeAprovar(ctx.actor) && estado === 'publicado') {
+      const quando = this.relogio?.agora?.() ?? new Date()
+      if (atual.estado === 'publicado' && !alterados.length && !atual.aprovacao) return paraPainel(atual)
+      const proposta = atual.estado === 'publicado'
+        ? new Conteudo({ ...atual, aprovacao: pedidoDeAprovacao({ actor: ctx.actor, tipo: 'alterar', dados, quando }) }) // o site mantém a versão aprovada
+        : new Conteudo({ ...atual, dados, estado: 'rascunho', aprovacao: pedidoDeAprovacao({ actor: ctx.actor, tipo: 'publicar', dados: null, quando }) })
+      const guardado = await this.conteudos.guardar(proposta, ctx.actor.id)
+      await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao', colecao, alvoId: id, alvoTitulo: proposta.titulo, detalhes: { campos: alterados } })
+      return paraPainel(guardado)
+    }
+
+    // guardar como rascunho (ou retirar do site) desfaz um pedido em aberto
+    const novo = new Conteudo({ ...atual, dados, estado, aprovacao: null })
     const guardado = await this.conteudos.guardar(novo, ctx.actor.id)
     const acao = estado !== atual.estado ? (estado === 'publicado' ? 'publicar' : 'despublicar') : 'editar'
     await this.auditoria.registar(ctx, { acao, colecao, alvoId: id, alvoTitulo: novo.titulo, detalhes: { campos: alterados } })
@@ -136,6 +157,43 @@ export class ServicoConteudos {
     if (!atual) throw new NaoEncontrado('Item não encontrado.')
     await this.conteudos.apagar(colecao, id)
     await this.auditoria.registar(ctx, { acao: 'apagar', colecao, alvoId: id, alvoTitulo: atual.titulo })
+  }
+
+  // ---------- aprovação do Comandante ----------
+
+  async paraAprovar(ctx) {
+    ctx.actor.exigir('publicacoes.aprovar')
+    return (await this.conteudos.pendentes()).map((c) => ({
+      colecao: c.colecao, id: c.id, titulo: (c.aprovacao.dados ?? c.dados)[definicao(c.colecao).titulo], tipo: c.aprovacao.tipo,
+      pedidoPor: c.aprovacao.pedidoPor, pedidoEm: c.aprovacao.pedidoEm, estadoAtual: c.estado,
+      dados: c.aprovacao.dados ?? c.dados, publicados: c.aprovacao.tipo === 'alterar' ? c.dados : null,
+    })).sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm)))
+  }
+
+  async decidirPublicacao(ctx, colecao, id, { decisao, motivo }) {
+    ctx.actor.exigir('publicacoes.aprovar')
+    definicao(colecao)
+    const atual = await this.conteudos.ler(colecao, id)
+    if (!atual) throw new NaoEncontrado('Item não encontrado.')
+    if (atual.aprovacao?.estado !== 'pendente') throw new Conflito('Este conteúdo não está à espera de aprovação.')
+    const quando = (this.relogio?.agora?.() ?? new Date()).toISOString()
+    if (decisao === 'aprovar') {
+      const novo = new Conteudo({ ...atual, dados: atual.aprovacao.dados ?? atual.dados, estado: 'publicado', aprovacao: null })
+      const guardado = await this.conteudos.guardar(novo, ctx.actor.id)
+      await this.auditoria.registar(ctx, { acao: 'aprovar_publicacao', colecao, alvoId: id, alvoTitulo: novo.titulo, detalhes: { tipo: atual.aprovacao.tipo, pedidoPor: atual.aprovacao.pedidoPor } })
+      this.aoPublicar?.(colecao, id)
+      return paraPainel(guardado)
+    }
+    const m = String(motivo ?? '').trim()
+    if (m.length < 3) throw new ErroValidacao('Escreva o motivo da recusa.', { campo: 'motivo' })
+    const novo = new Conteudo({ ...atual, aprovacao: { ...atual.aprovacao, estado: 'recusado', motivo: m.slice(0, 1000), decididoPor: ctx.actor.nome ?? '', decididoEm: quando } })
+    const guardado = await this.conteudos.guardar(novo, ctx.actor.id)
+    await this.auditoria.registar(ctx, { acao: 'recusar_publicacao', colecao, alvoId: id, alvoTitulo: novo.titulo, detalhes: { motivo: m } })
+    return paraPainel(guardado)
+  }
+
+  contarParaAprovar(ctx) {
+    return ctx.actor.pode('publicacoes.aprovar') ? this.conteudos.contarPendentes() : 0
   }
 
   // ordem manual de cursos, pessoas e banners
