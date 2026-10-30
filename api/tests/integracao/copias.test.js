@@ -28,8 +28,8 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     await sec().put(`/api/admin/academico/cadeiras/${origem.id}/programa`).send({ texto: '<p>Objetivos do curso.</p>' })
     for (const k of ['prof', 'prof2', 'velho', 'ana']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
 
     // conteúdos de 2025/2026

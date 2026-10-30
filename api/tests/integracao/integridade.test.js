@@ -30,8 +30,8 @@ describe('integridade académica (anti-plágio)', () => {
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })
     for (const k of ['prof', 'outro', 'ana', 'bruno', 'carla']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
     trabalho = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).send({ titulo: 'Ensaio de logística', prazo: '2026-11-20T23:59:00Z' })).body
   })

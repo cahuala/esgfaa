@@ -39,8 +39,8 @@ describe('anti-plágio: paráfrase, tradução e PDF digitalizado (OCR)', () => 
     escola = amb.com((await amb.criarUtilizador('secretaria')).token)
     const sec = amb.com((await amb.criarUtilizador('administrador')).token)
     await sec.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })
-    const r = await amb.http().post('/api/portal/entrar').send({ email: 'prof@esgfaa.gov.ao', senha: 'prof@esgfaa.gov.ao' })
-    prof = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: 'prof@esgfaa.gov.ao', nova: NOVA })).body.token)
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'prof@esgfaa.gov.ao', senha: amb.senhaInicial('prof@esgfaa.gov.ao') })
+    prof = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial('prof@esgfaa.gov.ao'), nova: NOVA })).body.token)
     for (const [titulo, texto] of [['Segurança marítima', REF_PT], ['Hybrid warfare', REF_EN]]) {
       assert.equal((await escola.post('/api/admin/integridade/repositorio').field('titulo', titulo).attach('ficheiro', ...anexo(docxComTexto(texto), 'ref.docx', DOCX))).status, 201)
     }

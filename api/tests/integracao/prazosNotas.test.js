@@ -23,8 +23,8 @@ describe('prazos de lançamento das notas', () => {
     ana = (await amb.registarEMatricular(sec(), turma.id, { nome: 'Estudante Ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia', horas: 60 })).body
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: docente.id, papel: 'regente' }] })
-    const r = await amb.http().post('/api/portal/entrar').send({ email: 'prof@esgfaa.gov.ao', senha: 'prof@esgfaa.gov.ao' })
-    prof = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: 'prof@esgfaa.gov.ao', nova: NOVA })).body.token
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'prof@esgfaa.gov.ao', senha: amb.senhaInicial('prof@esgfaa.gov.ao') })
+    prof = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial('prof@esgfaa.gov.ao'), nova: NOVA })).body.token
   })
   after(() => amb.fechar())
 

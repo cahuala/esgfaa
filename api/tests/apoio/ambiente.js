@@ -42,6 +42,17 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
   const app = criarApp(contentor, { registarErro: (e) => erros.push(e) })
   const http = () => request(app)
 
+  // a palavra-passe inicial (aleatória) de cada conta do portal, como na ficha de acesso que a Repartição entrega
+  const senhas = new Map()
+  const registo = contentor.servicos.pessoal.registo
+  const gerar = registo.gerarSenha
+  registo.gerarSenha = (email) => {
+    const s = gerar(email)
+    senhas.set(email, s)
+    return s
+  }
+  const senhaInicial = (email) => senhas.get(String(email).trim().toLowerCase()) ?? 'sem-ficha-de-acesso'
+
   async function entrar(email = ADMIN.email, senha = ADMIN.senha) {
     const r = await http().post('/api/admin/entrar').send({ email, senha })
     if (r.status !== 200) throw new Error(`Falha ao entrar (${r.status}): ${r.body.erro}`)
@@ -92,7 +103,7 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
     return r
   }
 
-  return { registarEMatricular, app, http, contentor, config, entrar, criarUtilizador, com, aprovar, fechar, erros, pastaUploads, pastaPrivada, esquema }
+  return { registarEMatricular, senhaInicial, app, http, contentor, config, entrar, criarUtilizador, com, aprovar, fechar, erros, pastaUploads, pastaPrivada, esquema }
 }
 
 export const noticia = (extra = {}) => ({

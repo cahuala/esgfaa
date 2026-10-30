@@ -116,7 +116,7 @@ export function criarConfig(env = process.env, extras = {}) {
     origens: e.CORS_ORIGINS,
     segredoJwt,
     sessaoEntreSites: e.SESSAO_ENTRE_SITES === 'sim',
-    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador' : '')).split(',').map((x) => x.trim()).filter(Boolean),
+    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,comandante,director_ensino' : '')).split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('portal-desenvolvimento-dados').digest('hex'),
     segredoDesenvolvimento: segredoJwt === SEGREDO_DESENVOLVIMENTO,

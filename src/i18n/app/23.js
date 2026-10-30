@@ -10,7 +10,6 @@ export default [
   ["Nada nas próximas semanas.", "Nothing in the coming weeks.", "Rien dans les prochaines semaines.", "Nada en las próximas semanas."],
   ["Entre com o seu e-mail da Escola", "Sign in with your School e-mail", "Connectez-vous avec votre e-mail de l'École", "Entre con su correo de la Escuela"],
   ["A entrar…", "Signing in…", "Connexion…", "Entrando…"],
-  ["Primeira vez? A palavra-passe inicial é o seu e-mail da Escola; vai ser-lhe pedido que a mude. Problemas no acesso: Administração Escolar.", "First time? The initial password is your School e-mail; you will be asked to change it. Access problems: School Administration.", "Première fois ? Le mot de passe initial est votre e-mail de l'École ; il vous sera demandé de le changer. Problèmes d'accès : Administration scolaire.", "¿Primera vez? La contraseña inicial es su correo de la Escuela; se le pedirá que la cambie. Problemas de acceso: Administración Escolar."],
   ["Voltar ao site da Escola", "Back to the School website", "Retour au site de l'École", "Volver al sitio de la Escuela"],
   ["Semana", "Week", "Semaine", "Semana"],
   ["O horário ainda não foi publicado pela Administração Escolar.", "The timetable has not yet been published by School Administration.", "L'emploi du temps n'a pas encore été publié par l'Administration scolaire.", "El horario aún no ha sido publicado por la Administración Escolar."],

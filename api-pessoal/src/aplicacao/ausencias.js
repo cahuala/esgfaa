@@ -102,6 +102,8 @@ export class ServicoAusencias {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data ?? ''))) throw invalido('Data inválida.', 'data')
     const p = await this.bd.pessoa.findUnique({ where: { id: Number(pessoaId) }, select: { id: true, nome: true, tipo: true } })
     if (!p) throw naoEncontrado('Ficha não encontrada.')
+    // o mapa de efectividade é só do pessoal civil; as faltas dos militares registam-se em «Faltas e ausências»
+    if (p.tipo !== 'civil') throw invalido('O mapa de efectividade é só do pessoal civil.')
     const d = new Date(`${data}T00:00:00Z`)
     const existente = await this.bd.ausencia.findFirst({ where: { pessoaId: p.id, tipo: 'falta', inicio: { lte: d }, OR: [{ fim: null }, { fim: { gte: d } }] } })
     if (falta && !existente) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../../api'
 import { lerFolha } from '../academico/lerFolha'
+import { imprimirFichas } from './fichasAcesso'
 import { t as tx } from '../../../i18n/linguas'
 
 const ACOES = {
@@ -69,7 +70,7 @@ function ImportarPessoas({ fechar, concluido }) {
             </div>
             <div className="modal-body">
               <p className="text-muted small mb-2">
-                {tx('Excel (.xlsx) ou CSV com uma linha de cabeçalho. Colunas obrigatórias:')} <b>{tx('Nome')}</b> {tx('e')} <b>{tx('E-mail')}</b> {tx('(da Escola); opcionais: Posto, Ramo, NIP, Telefone. Cada pessoa nova recebe a conta do portal (a palavra-passe inicial é o e-mail); quem já está registado não se repete.')}
+                {tx('Excel (.xlsx) ou CSV com uma linha de cabeçalho. Colunas obrigatórias:')} <b>{tx('Nome')}</b> {tx('e')} <b>{tx('E-mail')}</b> {tx('(da Escola); opcionais: Posto, Ramo, NIP, Telefone. Cada pessoa nova recebe a conta do portal e uma ficha de acesso com a palavra-passe inicial; quem já está registado não se repete.')}
               </p>
               {!feito && (
                 <div className="btn-group mb-2" role="group" aria-label={tx('Tipo de pessoa')}>
@@ -86,6 +87,12 @@ function ImportarPessoas({ fechar, concluido }) {
               {aTrabalhar && <p className="text-muted mt-3 mb-0"><span className="spinner-border spinner-border-sm me-2" />{tx('A tratar a folha…')}</p>}
               {erro && <div className="alert alert-danger mt-3 mb-0">{erro}</div>}
               {feito && <div className="alert alert-success">{tx('Registo concluído:')} {feito.resumo.registar} {tx('pessoa(s) registada(s)')}{feito.resumo.ja_registado ? tx(', {0} já estava(m) registada(s)', { 0: feito.resumo.ja_registado }) : ''}{feito.resumo.erro ? tx(', {0} linha(s) com erro', { 0: feito.resumo.erro }) : ''}.</div>}
+              {feito && feito.linhas.some((l) => l.senhaInicial) && (
+                <div className="alert alert-warning d-flex flex-wrap align-items-center gap-2">
+                  <span className="flex-grow-1"><i className="fa fa-id-card me-1" />{tx('As palavras-passe iniciais só se mostram agora: imprima as fichas de acesso e entregue-as em mão.')}</span>
+                  <button type="button" className="btn btn-theme btn-sm" onClick={() => imprimirFichas(feito.linhas.filter((l) => l.senhaInicial))}><i className="fa fa-print me-1" />{tx('Fichas de acesso (PDF)')}</button>
+                </div>
+              )}
               {previa && (
                 <>
                   <div className="d-flex flex-wrap gap-2 my-3">

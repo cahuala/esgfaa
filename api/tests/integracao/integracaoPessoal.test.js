@@ -28,7 +28,7 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     const conta = await amb.contentor.repositorios.contasPortal.porEmail('kiala@esgfaa.gov.ao')
     assert.equal(conta.tipo, 'docente')
     assert.equal(conta.dados.posto, 'Coronel')
-    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: p.email })).status, 200)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: amb.senhaInicial(p.email) })).status, 200)
 
     await enviar([{ ...p, dados: { ...p.dados, posto: 'Brigadeiro' } }]).expect(200)
     assert.equal((await amb.contentor.repositorios.contasPortal.porEmail(p.email)).dados.posto, 'Brigadeiro')
@@ -44,7 +44,7 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     const f = await adm.get(`/api/admin/academico/contas/${contaId}/foto`).expect(200)
     assert.equal(f.headers['content-type'], 'image/jpeg')
     assert.ok((await adm.get('/api/admin/academico/contas?tipo=estudante')).body.find((c) => c.id === contaId).temFoto)
-    const portal = amb.com((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: p.email })).body.token)
+    const portal = amb.com((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: amb.senhaInicial(p.email) })).body.token)
     assert.equal((await portal.get('/api/portal/eu/foto')).status, 200)
     assert.equal((await enviar([{ ...p, foto: { id: 'x.jpg', dados: Buffer.from('não é imagem').toString('base64') } }])).body.resultados[0].ok, false)
     await enviar([{ ...p, foto: null }]).expect(200)

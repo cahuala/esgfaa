@@ -73,7 +73,7 @@ export function criarConfig(env = process.env) {
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     ligacoesBd: e.DB_POOL,
     segredoJwt: segredo,
-    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,chefe,operador,consulta' : '')).split(',').map((x) => x.trim()).filter(Boolean),
+    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,chefe,comandante,operador,consulta' : '')).split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('pessoal-desenvolvimento-dados').digest('hex'),
     duracaoSessao: e.SESSION_TTL,

@@ -81,6 +81,9 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.deepEqual([m.dias, linha.categoria, linha.faltas], [31, 'Terceiro Oficial', [3, 9, 11]])
     assert.ok(m.fimDeSemana.includes(6) && m.fimDeSemana.includes(7)) // 6 e 7 de Março de 2027: sábado e domingo
     assert.equal((await adm.get('/api/faltas-civis?mes=2027-13x')).status, 400)
+    // um militar não entra no mapa dos civis
+    const mil = (await adm.post('/api/pessoas').send(militar())).body
+    assert.equal((await adm.put('/api/faltas-civis').send({ pessoaId: mil.id, data: '2027-03-15', falta: true })).status, 400)
     await adm.post('/api/utilizadores').send({ nome: 'So Consulta Faltas', email: 'faltas.ver@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' }).expect(201)
     const t = await amb.entrar('faltas.ver@pessoal.ao', 'Inicial2026x')
     const v = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' })).body.token)

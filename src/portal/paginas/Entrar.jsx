@@ -59,7 +59,7 @@ function Entrar() {
 
         <div className="entrada-aviso">
           <i className="fa fa-info-circle" aria-hidden="true" />
-          <span>{tx('Primeira vez? A palavra-passe inicial é o seu e-mail da Escola; vai ser-lhe pedido que a mude. Problemas no acesso: Administração Escolar.')}</span>
+          <span>{tx('Primeira vez? Use a palavra-passe da ficha de acesso entregue pela Repartição de Pessoal e Quadros; vai ser-lhe pedido que a mude.')}</span>
         </div>
         <a href={SITE} className="entrada-voltar"><i className="fa fa-arrow-left me-2" />{tx('Voltar ao site da Escola')}</a>
       </form>

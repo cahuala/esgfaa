@@ -38,6 +38,11 @@ export class ServicoSessaoPortal {
       throw new NaoAutenticado(CREDENCIAIS_ERRADAS)
     }
     if (!c.ativo) throw new SemPermissao('Esta conta está desativada. Contacte a Administração Escolar.')
+    // contas antigas cuja palavra-passe inicial era o e-mail (que qualquer colega sabe): só com a ficha de acesso nova
+    if (c.deveMudarSenha && String(senha).trim().toLowerCase() === c.email) {
+      await this.auditoria.registar(ctx, { acao: 'falha_entrada_portal', detalhes: { email: emailLimpo.slice(0, 120), motivo: 'senha_igual_email' }, utilizador: quem(c) })
+      throw new NaoAutenticado('A palavra-passe inicial já não é o e-mail. Peça a ficha de acesso à Repartição de Pessoal e Quadros.')
+    }
 
     await this.contas.registarEntrada(c.id, agora)
     await this.auditoria.registar(ctx, { acao: 'entrar_portal', utilizador: quem(c) })

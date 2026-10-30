@@ -29,7 +29,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/contas/:id/foto', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await p.registo.fotoDaConta(ctx(req), req.dados.params.id), { soLeitura: true }))
   r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))
   r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await p.registo.editarConta(ctx(req), req.dados.params.id, req.dados.body)))
-  r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => { await p.registo.reporSenha(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => res.json(await p.registo.reporSenha(ctx(req), req.dados.params.id)))
 
   r.get('/turmas', async (req, res) => res.json(await a.turmas.listarTurmas(ctx(req))))
   r.post('/turmas', validar({ body: E.turma }), async (req, res) => res.status(201).json(await a.turmas.criarTurma(ctx(req), req.dados.body)))

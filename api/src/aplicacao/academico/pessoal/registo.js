@@ -1,16 +1,17 @@
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
-import { emailDaEscola, numeroConta, TIPOS_CONTA } from '../../../dominio/academico/pessoas/contas.js'
+import { emailDaEscola, numeroConta, senhaInicial, TIPOS_CONTA } from '../../../dominio/academico/pessoas/contas.js'
 
 /*
   Registo de pessoas (Repartição de Pessoal e Quadros): estudantes e docentes, com os dados pessoais
   e a conta do portal. A Administração Escolar consulta este registo para matricular, inscrever
   e alocar, mas não regista ninguém.
+  A palavra-passe inicial é aleatória e só se mostra uma vez (na ficha de acesso que a Repartição entrega).
 */
 export class ServicoRegistoPessoal {
   constructor(dependencias) {
-    Object.assign(this, dependencias)
+    Object.assign(this, { gerarSenha: senhaInicial }, dependencias)
   }
 
   // quem pode ver o registo: o Pessoal e Quadros e a Administração Escolar (para escolher)
@@ -32,8 +33,9 @@ export class ServicoRegistoPessoal {
     const e = emailDaEscola(email, this.dominioEmail)
     const n = texto(nome, 'nome', 'Nome completo', { min: 5, max: 150 })
     const ano = this.relogio.agora().getFullYear()
-    // a palavra-passe inicial é o e-mail; o portal obriga a mudá-la na primeira entrada
-    const senha = await this.cifra.cifrar(e)
+    // a palavra-passe inicial vai na resposta (para a ficha de acesso); o portal obriga a mudá-la na primeira entrada
+    const inicial = this.gerarSenha(e)
+    const senha = await this.cifra.cifrar(inicial)
     let conta
     for (let tentativa = 0; !conta; tentativa++) {
       try {
@@ -44,7 +46,7 @@ export class ServicoRegistoPessoal {
       }
     }
     await this.auditoria.registar(ctx, { acao: 'criar_conta_portal', colecao: 'contas_portal', alvoId: conta.id, alvoTitulo: `${conta.nome} (${conta.numero})`, detalhes: { tipo: t } })
-    return { ...conta.publico(), deveMudarSenha: true }
+    return { ...conta.publico(), deveMudarSenha: true, senhaInicial: inicial }
   }
 
   async editarConta(ctx, id, { nome, email, ativo, dados }) {
@@ -63,17 +65,19 @@ export class ServicoRegistoPessoal {
     return { ...g.publico(), deveMudarSenha: g.deveMudarSenha }
   }
 
-  // repõe a palavra-passe inicial (o e-mail) e termina as sessões abertas
+  // dá uma palavra-passe inicial nova (para a ficha de acesso) e termina as sessões abertas
   async reporSenha(ctx, id) {
     ctx.actor.exigir('pessoal.registar')
     const c = await this.contas.porId(id)
     if (!c) throw new NaoEncontrado('Conta não encontrada.')
-    c.mudarSenha(await this.cifra.cifrar(c.email))
+    const inicial = this.gerarSenha(c.email)
+    c.mudarSenha(await this.cifra.cifrar(inicial))
     c.deveMudarSenha = true
     c.tentativasFalhadas = 0
     c.bloqueadoAte = null
     await this.contas.guardar(c)
     await this.auditoria.registar(ctx, { acao: 'repor_senha_portal', colecao: 'contas_portal', alvoId: c.id, alvoTitulo: `${c.nome} (${c.numero})` })
+    return { ...c.publico(), senhaInicial: inicial }
   }
 
   /*
@@ -129,11 +133,12 @@ export class ServicoRegistoPessoal {
             continue
           }
           const nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
+          // a palavra-passe fica desconhecida: a Repartição dá a ficha de acesso com «Repor a palavra-passe»
           let conta
           for (let tentativa = 0; !conta; tentativa++) {
             try {
               const ano = this.relogio.agora().getFullYear()
-              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(email), dados: await this.#dadosConta(p.dados) })
+              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: await this.#dadosConta(p.dados) })
             } catch (erro) {
               if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
             }
@@ -184,12 +189,15 @@ export class ServicoRegistoPessoal {
         const existente = await this.contas.porEmail(email)
         let acao = existente ? 'ja_registado' : 'registar'
         let numero = existente?.numero ?? null
+        let senhaInicial
         if (existente && existente.tipo !== t) throw new ErroValidacao(`Já está registado como ${existente.tipo}.`)
         if (!simular && !existente) {
-          numero = (await this.criarConta(ctx, { tipo: t, nome, email, dados: { posto: l.posto, ramo: l.ramo, nip: l.nip, telefone: l.telefone } })).numero
+          const nova = await this.criarConta(ctx, { tipo: t, nome, email, dados: { posto: l.posto, ramo: l.ramo, nip: l.nip, telefone: l.telefone } })
+          numero = nova.numero
+          senhaInicial = nova.senhaInicial
           acao = 'registado'
         }
-        resultado.push({ ...linha, nome, email, acao, numero })
+        resultado.push({ ...linha, nome, email, acao, numero, ...(senhaInicial ? { senhaInicial } : {}) })
       } catch (e) {
         if (!(e instanceof ErroValidacao)) throw e
         resultado.push({ ...linha, acao: 'erro', erro: e.message })

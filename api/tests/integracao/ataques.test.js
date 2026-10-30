@@ -35,8 +35,8 @@ describe('ataques ao portal: tudo tem de ser recusado', () => {
     await sec().put(`/api/admin/academico/cadeiras/${c2.id}/docentes`).send({ docentes: [{ docenteId: contas.profb.id, papel: 'regente' }] })
     for (const k of ['profa', 'profb', 'ana', 'bruno', 'carla', 'dina']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
     tokens.admin = admin
     trabalho = (await como('profa').post(`/api/portal/cadeiras/${c1.id}/trabalhos`).send({ titulo: 'Ensaio', prazo: '2030-11-20T23:59:00Z' })).body

@@ -7,6 +7,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { dataHora } from '../../formatar'
 import { confirmar } from '../../../portal/dialogos'
 import ImportarPessoas from './ImportarPessoas'
+import { imprimirFichas } from './fichasAcesso'
 import { t as tx } from '../../../i18n/linguas'
 
 const RAMOS = [tx('Exército'), tx('Força Aérea Nacional'), tx('Marinha de Guerra Angolana')]
@@ -28,6 +29,7 @@ function Registo() {
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
   const [importar, setImportar] = useState(false)
+  const [ficha, setFicha] = useState(null) // conta acabada de registar ou com a palavra-passe reposta
 
   const carregar = useCallback(() => {
     const p = new URLSearchParams()
@@ -50,7 +52,7 @@ function Registo() {
         setAviso({ texto: tx('Dados atualizados.') })
       } else {
         const c = await api('/academico/contas', { metodo: 'POST', corpo: { tipo: f.tipo, nome: f.nome, email: f.email, dados: dadosDe(f) } })
-        setAviso({ texto: tx('{0} registado (n.º {1}). Entra no portal com {2} e essa mesma palavra-passe na primeira vez.', { 0: f.tipo === 'docente' ? 'Docente' : 'Estudante', 1: c.numero, 2: c.email }) })
+        setFicha(c)
       }
       setF(VAZIO)
       setEditar(null)
@@ -69,8 +71,8 @@ function Registo() {
     .then(() => { setAviso({ texto: c.ativo ? tx('Conta desativada (sessões terminadas).') : tx('Conta ativada.') }); carregar() })
     .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   async function repor(c) {
-    if (!(await confirmar(tx('A palavra-passe de {0} volta a ser o e-mail ({1}) e terá de a mudar ao entrar. As sessões abertas terminam.', { 0: c.nome, 1: c.email }), { titulo: tx('Repor a palavra-passe'), botao: tx('Repor') }))) return
-    await api(`/academico/contas/${c.id}/repor-senha`, { metodo: 'POST' }).then(() => setAviso({ texto: tx('Palavra-passe reposta.') })).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
+    if (!(await confirmar(tx('{0} recebe uma palavra-passe inicial nova (na ficha de acesso) e terá de a mudar ao entrar. A antiga deixa de servir e as sessões abertas terminam.', { 0: c.nome }), { titulo: tx('Repor a palavra-passe'), botao: tx('Repor') }))) return
+    await api(`/academico/contas/${c.id}/repor-senha`, { metodo: 'POST' }).then(setFicha).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
     carregar()
   }
 
@@ -151,7 +153,7 @@ function Registo() {
                   <div className="col-md-6"><label className="form-label" htmlFor="r-tel">{tx('Telefone')}</label><input id="r-tel" className="form-control" value={f.telefone} onChange={(e) => setF({ ...f, telefone: e.target.value })} /></div>
                   {f.tipo === 'docente' && <div className="col-12"><label className="form-label" htmlFor="r-dep">{tx('Departamento')}</label><input id="r-dep" className="form-control" value={f.departamento} onChange={(e) => setF({ ...f, departamento: e.target.value })} /></div>}
                 </div>
-                {!editar && <div className="form-text mb-3">{tx('A palavra-passe inicial é o próprio e-mail; o portal obriga a mudá-la na primeira entrada.')}</div>}
+                {!editar && <div className="form-text mb-3">{tx('O sistema dá uma palavra-passe inicial ao acaso, na ficha de acesso a entregar à pessoa; o portal obriga a mudá-la na primeira entrada.')}</div>}
                 <div className="d-flex gap-2 mt-2">
                   <button type="submit" className="btn btn-theme flex-grow-1"><i className={`fa ${editar ? 'fa-save' : 'fa-user-plus'} me-1`} />{editar ? tx('Guardar') : (f.tipo === 'docente' ? tx('Registar docente') : tx('Registar estudante'))}</button>
                   {editar && <button type="button" className="btn btn-white" onClick={() => { setEditar(null); setF(VAZIO) }}>{tx('Cancelar')}</button>}
@@ -161,9 +163,38 @@ function Registo() {
           </div>
         )}
       </div>
+      {ficha && <FichaAcesso c={ficha} fechar={() => setFicha(null)} />}
       {importar && <ImportarPessoas fechar={() => setImportar(false)} concluido={carregar} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+// a palavra-passe inicial só se vê aqui (uma vez): imprime-se a ficha para entregar em mão
+function FichaAcesso({ c, fechar }) {
+  return (
+    <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
+      <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h4 className="modal-title" id="ficha-titulo"><i className="fa fa-id-card me-2" />{tx('Ficha de acesso ao portal')}</h4>
+          </div>
+          <div className="modal-body">
+            <dl className="row mb-2">
+              <dt className="col-5">{tx('Nome')}</dt><dd className="col-7">{c.nome}</dd>
+              <dt className="col-5">{tx('Número')}</dt><dd className="col-7 font-monospace">{c.numero}</dd>
+              <dt className="col-5">{tx('E-mail (entrada)')}</dt><dd className="col-7">{c.email}</dd>
+              <dt className="col-5">{tx('Palavra-passe inicial')}</dt><dd className="col-7 font-monospace fs-5 fw-bold">{c.senhaInicial}</dd>
+            </dl>
+            <div className="alert alert-warning py-2 small mb-0"><i className="fa fa-exclamation-triangle me-1" />{tx('Esta palavra-passe não volta a ser mostrada. Imprima a ficha e entregue-a em mão; se se perder, use «Repor a palavra-passe».')}</div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-white" onClick={fechar}>{tx('Fechar')}</button>
+            <button type="button" className="btn btn-theme" onClick={() => imprimirFichas([c])}><i className="fa fa-print me-1" />{tx('Imprimir ficha (PDF)')}</button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

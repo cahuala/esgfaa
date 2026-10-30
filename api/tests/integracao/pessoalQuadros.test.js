@@ -28,7 +28,14 @@ describe('Pessoal e Quadros regista; Administração Escolar matricula', () => {
     const d = await pessoal.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Cor. Docente Teste', email: 'docente@esgfaa.gov.ao' })
     assert.equal(d.status, 201, d.body.erro)
     assert.equal((await pessoal.put(`/api/admin/academico/contas/${e.body.id}`).send({ dados: { posto: 'Major', nip: '12345' } })).body.dados.posto, 'Major')
-    assert.equal((await pessoal.post(`/api/admin/academico/contas/${e.body.id}/repor-senha`)).status, 204)
+    // a palavra-passe inicial é aleatória e vem só na resposta (para a ficha de acesso); o e-mail não serve
+    assert.match(e.body.senhaInicial, /^[A-Z][a-z]\d[a-z]-[A-Z][a-z]\d[a-z]-[A-Z][a-z]\d[a-z]$/i)
+    const reposta = await pessoal.post(`/api/admin/academico/contas/${e.body.id}/repor-senha`)
+    assert.equal(reposta.status, 200)
+    assert.notEqual(reposta.body.senhaInicial, e.body.senhaInicial)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'carlos@esgfaa.gov.ao', senha: e.body.senhaInicial })).status, 401)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'carlos@esgfaa.gov.ao', senha: 'carlos@esgfaa.gov.ao' })).status, 401)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'carlos@esgfaa.gov.ao', senha: reposta.body.senhaInicial })).status, 200)
     // mas não trata da vida académica
     assert.equal((await pessoal.post(`/api/admin/academico/turmas/${turma.id}/matriculas`).send({ estudanteId: e.body.id })).status, 403)
     assert.equal((await pessoal.post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'X' })).status, 403)
@@ -56,7 +63,19 @@ describe('Pessoal e Quadros regista; Administração Escolar matricula', () => {
     const r = (await pessoal.post('/api/admin/academico/contas/importar').send({ tipo: 'estudante', linhas, simular: false })).body
     assert.deepEqual(r.resumo, { registar: 1, ja_registado: 1, erro: 3 })
     assert.match(r.linhas[0].numero, /^E\d{4}-/)
-    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'rui.tavares@esgfaa.gov.ao', senha: 'rui.tavares@esgfaa.gov.ao' })).status, 200)
+    assert.equal(r.linhas[0].senhaInicial, amb.senhaInicial('rui.tavares@esgfaa.gov.ao'))
+    assert.equal(r.linhas[1].senhaInicial, undefined)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: 'rui.tavares@esgfaa.gov.ao', senha: amb.senhaInicial('rui.tavares@esgfaa.gov.ao') })).status, 200)
+  })
+
+  it('conta antiga com o e-mail como palavra-passe: não entra; só com a ficha de acesso nova', async () => {
+    const antiga = await amb.contentor.repositorios.contasPortal.porEmail('docente@esgfaa.gov.ao')
+    antiga.mudarSenha(await amb.contentor.cifra.cifrar('docente@esgfaa.gov.ao'))
+    antiga.deveMudarSenha = true
+    await amb.contentor.repositorios.contasPortal.guardar(antiga)
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'docente@esgfaa.gov.ao', senha: 'docente@esgfaa.gov.ao' })
+    assert.equal(r.status, 401)
+    assert.match(r.body.erro, /ficha de acesso/)
   })
 
   it('matrícula por folha (Administração Escolar): só quem já está registado, pelo e-mail ou pelo número', async () => {

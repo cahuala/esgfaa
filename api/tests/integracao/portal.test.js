@@ -14,10 +14,10 @@ describe('portal académico', () => {
 
   // entra com a palavra-passe inicial (o e-mail) e muda-a
   async function primeiraEntrada(email) {
-    const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
+    const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
     assert.equal(r.status, 200, r.body.erro)
     assert.equal(r.body.deveMudarSenha, true)
-    const m = await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })
+    const m = await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })
     assert.equal(m.status, 200, m.body.erro)
     return m.body.token
   }
@@ -65,13 +65,13 @@ describe('portal académico', () => {
 
   it('com a palavra-passe inicial só se pode mudá-la', async () => {
     const r = await sec().post('/api/admin/academico/contas').send({ tipo: 'estudante', nome: 'Novo Estudante', email: 'novo@esgfaa.gov.ao' })
-    const t = (await amb.http().post('/api/portal/entrar').send({ email: 'novo@esgfaa.gov.ao', senha: 'novo@esgfaa.gov.ao' })).body.token
+    const t = (await amb.http().post('/api/portal/entrar').send({ email: 'novo@esgfaa.gov.ao', senha: amb.senhaInicial('novo@esgfaa.gov.ao') })).body.token
     assert.equal((await amb.com(t).get('/api/portal/eu')).status, 200)
     const bloqueado = await amb.com(t).get('/api/portal/cadeiras')
     assert.equal(bloqueado.status, 403)
     assert.equal(bloqueado.body.codigo, 'mudar_senha')
     // a nova não pode ser o e-mail nem fraca
-    assert.equal((await amb.com(t).put('/api/portal/eu/senha').send({ atual: 'novo@esgfaa.gov.ao', nova: 'novo@esgfaa.gov.ao' })).status, 400)
+    assert.equal((await amb.com(t).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial('novo@esgfaa.gov.ao'), nova: 'novo@esgfaa.gov.ao' })).status, 400)
     void r
   })
 
@@ -344,7 +344,7 @@ describe('portal académico', () => {
   it('repor a palavra-passe volta a exigir a mudança', async () => {
     await sec().post(`/api/admin/academico/contas/${contas.ana.id}/repor-senha`)
     assert.equal((await portal('ana').get('/api/portal/eu')).status, 401) // sessões terminadas
-    const r = await amb.http().post('/api/portal/entrar').send({ email: 'ana@esgfaa.gov.ao', senha: 'ana@esgfaa.gov.ao' })
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'ana@esgfaa.gov.ao', senha: amb.senhaInicial('ana@esgfaa.gov.ao') })
     assert.equal(r.body.deveMudarSenha, true)
   })
 

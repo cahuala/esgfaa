@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../api'
+import { useSessao } from '../sessaoContexto'
 import { COLECOES, NOMES_ACOES } from '../esquemas'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
 import { dataHora } from '../formatar'
@@ -40,6 +41,8 @@ function detalhes(a) {
 
 function Atividades() {
   const [parametros, setParametros] = useSearchParams()
+  const { pode } = useSessao()
+  const verUtilizadores = pode('utilizadores.ver')
   const [dados, setDados] = useState(null)
   const [utilizadores, setUtilizadores] = useState([])
   const [erro, setErro] = useState('')
@@ -51,7 +54,8 @@ function Atividades() {
     api(`/atividades?${q}`).then((r) => { setErro(''); setDados(r) }).catch((e) => setErro(e.message))
   }, [parametros])
   useEffect(carregar, [carregar])
-  useEffect(() => { api('/utilizadores').then(setUtilizadores).catch(() => {}) }, [])
+  // os nomes para o filtro por utilizador só se pedem a quem pode ver a lista de utilizadores
+  useEffect(() => { if (verUtilizadores) api('/utilizadores').then(setUtilizadores).catch(() => {}) }, [verUtilizadores])
 
   function mudar(campo, valor) {
     const novo = new URLSearchParams(parametros)

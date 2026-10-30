@@ -31,8 +31,8 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }, { docenteId: contas.assist.id, papel: 'assistente' }] })
     for (const k of ['prof', 'assist', 'ana', 'bruno', 'carla', 'dino']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
   })
   after(() => amb.fechar())
@@ -231,8 +231,8 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     // um estudante de outra turma não vê a lista nem o ficheiro
     const outra = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM B' })).body
     await amb.registarEMatricular(sec(), outra.id, { nome: 'Estudante Fora Teste', email: 'fora@esgfaa.gov.ao' })
-    const r = await amb.http().post('/api/portal/entrar').send({ email: 'fora@esgfaa.gov.ao', senha: 'fora@esgfaa.gov.ao' })
-    const fora = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: 'fora@esgfaa.gov.ao', nova: NOVA })).body.token)
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'fora@esgfaa.gov.ao', senha: amb.senhaInicial('fora@esgfaa.gov.ao') })
+    const fora = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial('fora@esgfaa.gov.ao'), nova: NOVA })).body.token)
     assert.equal((await fora.get(url)).status, 404) // nem sabe que a cadeira existe
     assert.equal((await fora.get(`/api/portal/ficheiros/${v.body.ficheiroId}`)).status, 404)
     assert.deepEqual((await fora.get('/api/portal/videos-curtos')).body, [])

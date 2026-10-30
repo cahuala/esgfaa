@@ -4,6 +4,7 @@
 import { criarConfig } from '../src/infraestrutura/config.js'
 import { criarContentor } from '../src/contentor.js'
 import { numeroConta } from '../src/dominio/academico/regras.js'
+import { senhaInicial } from '../src/dominio/academico/pessoas/contas.js'
 
 const config = criarConfig()
 if (config.producao) {
@@ -160,13 +161,16 @@ if (existente) {
 const curso = (await prisma.item.findFirst({ where: { colecao: 'cursos' }, orderBy: { ordem: 'asc' } }))?.id
 if (!curso) throw new Error('Não há cursos na base de dados: corra primeiro a API (carga inicial).')
 
+const fichas = []
 async function conta(tipo, nome, usuario, dados) {
   const email = `${usuario}@${dominio}`
   const existente = await prisma.contaPortal.findUnique({ where: { email } })
   if (existente) return existente
   const seq = await c.repositorios.contasPortal.proximaSequencia(tipo, ano)
+  const inicial = senhaInicial()
+  fichas.push(`${email}  ${inicial}`)
   return prisma.contaPortal.create({
-    data: { tipo, numero: numeroConta(tipo, ano, seq), nome, email, senha: await c.cifra.cifrar(email), dados, deveMudarSenha: true },
+    data: { tipo, numero: numeroConta(tipo, ano, seq), nome, email, senha: await c.cifra.cifrar(inicial), dados, deveMudarSenha: true },
   })
 }
 
@@ -220,5 +224,5 @@ prazo.setHours(23, 59, 0, 0)
 await prisma.trabalho.create({ data: { cadeiraId: cadeiras.EST101.id, titulo: 'Ensaio: estratégia de defesa regional', enunciado: 'Ensaio de 2 000 a 3 000 palavras sobre a cooperação em defesa na África Austral.', prazo } })
 
 console.log(`Demonstração criada: turma "${turma.nome}", 4 cadeiras, 2 docentes e 4 estudantes (@${dominio}).`)
-console.log('Palavra-passe inicial de cada conta: o próprio e-mail.')
+console.log(`Palavras-passe iniciais (só agora; o portal obriga a mudá-las):\n  ${fichas.join('\n  ')}`)
 await c.fechar()

@@ -16,8 +16,8 @@ describe('protecção de dados pessoais', () => {
     sec = () => amb.com(s.token)
     const turma = (await sec().post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2026/2027', nome: 'CEM A' })).body
     await amb.registarEMatricular(sec(), turma.id, { nome: 'Estudante Ana Teste', email: 'ana@esgfaa.gov.ao' })
-    const r = await amb.http().post('/api/portal/entrar').send({ email: 'ana@esgfaa.gov.ao', senha: 'ana@esgfaa.gov.ao' })
-    ana = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: 'ana@esgfaa.gov.ao', nova: NOVA })).body.token)
+    const r = await amb.http().post('/api/portal/entrar').send({ email: 'ana@esgfaa.gov.ao', senha: amb.senhaInicial('ana@esgfaa.gov.ao') })
+    ana = amb.com((await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial('ana@esgfaa.gov.ao'), nova: NOVA })).body.token)
   })
   after(() => amb.fechar())
 

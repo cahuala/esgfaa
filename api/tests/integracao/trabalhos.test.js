@@ -26,8 +26,8 @@ describe('trabalhos completos: vários ficheiros, texto, grelha, correção em f
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })
     for (const k of ['prof', 'ana', 'bruno']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
   })
   after(() => amb.fechar())

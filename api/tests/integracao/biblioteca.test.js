@@ -47,8 +47,8 @@ describe('biblioteca: catálogo e circulação', () => {
     await tudo.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })
     for (const k of ['ana', 'bruno', 'prof']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
       ids[k] = (await portal(k).get('/api/portal/eu')).body.conta?.id ?? (await portal(k).get('/api/portal/eu')).body.id
     }
   })

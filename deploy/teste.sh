@@ -58,5 +58,8 @@ EOF
   node "$RAIZ/deploy/teste-contas.mjs" pessoal | remoto "$C exec -T bd-pessoal psql -q -v ON_ERROR_STOP=1 -U pessoal -d esgfaa_pessoal"
 fi
 
+# a chave das cópias de segurança diárias (gerada uma vez, só no servidor)
+remoto "grep -q '^COPIAS_CHAVE=' deploy/teste.env || echo \"COPIAS_CHAVE=\$(openssl rand -hex 32)\" >> deploy/teste.env"
+
 echo "→ arrancar"
 remoto "$C up -d --build && $C ps"

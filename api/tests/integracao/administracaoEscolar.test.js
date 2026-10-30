@@ -30,8 +30,8 @@ describe('Administração Escolar: inscrições, TFC, conclusão do curso, hist�
     for (const c of [cad1, cad2, cad3]) await sec().put(`/api/admin/academico/cadeiras/${c.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })
     for (const k of ['prof', 'ana', 'bruno']) {
       const email = `${k}@esgfaa.gov.ao`
-      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: email })
-      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: email, nova: NOVA })).body.token
+      const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
+      tokens[k] = (await amb.com(r.body.token).put('/api/portal/eu/senha').send({ atual: amb.senhaInicial(email), nova: NOVA })).body.token
     }
   })
   after(() => amb.fechar())
