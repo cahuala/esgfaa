@@ -1,6 +1,10 @@
 import { invalido, naoEncontrado, semPermissao } from '../erros.js'
+import { Prisma } from '@prisma/client'
 import { eDuplicado } from '../infraestrutura/bd.js'
 import { exigir, pode } from './sessao.js'
+
+// o que o Comandante escreve no despacho
+export const DECISOES_DESPACHO = { visto: 'Visto', concordo: 'Concordo', autorizo: 'Autorizo', nao_concordo: 'Não concordo', indefiro: 'Indefiro', tomei_conhecimento: 'Tomei conhecimento', informe: 'Informe / ver comigo', arquive_se: 'Arquive-se' }
 
 export const TIPOS_EXPEDIENTE = { oficio: 'Ofício', nota: 'Nota', informacao: 'Informação', requerimento: 'Requerimento', relatorio: 'Relatório', ordem: 'Ordem de serviço', convocatoria: 'Convocatória', circular: 'Circular', parecer: 'Parecer', proposta: 'Proposta', extracto: 'Extracto', declaracao: 'Declaração', guia: 'Guia de marcha', outro: 'Outro' }
 export const CLASSIFICACOES = { normal: 'Normal', urgente: 'Urgente', confidencial: 'Confidencial' }
@@ -39,6 +43,7 @@ export class ServicoExpediente {
       estado: x.estado, armario: x.armario, prateleira: x.prateleira, pasta: x.pasta, arquivadoEm: x.arquivadoEm, criadoEm: x.criadoEm, prazo: x.prazo?.toISOString().slice(0, 10) ?? null, temFisico: x.temFisico, anexos: x.anexos?.length ?? x._count?.anexos ?? 0,
       origem: x.entidadeExterna || nome(x.origemUnidadeId), localAtual: ultimo ? nome(ultimo.paraUnidadeId) : nome(x.origemUnidadeId),
       porReceber, fisicoPendente: x.movimentos.some((m) => m.paraUnidadeId === u.unidadeId && ['a_enviar', 'entregue'].includes(m.fisico)),
+      despacho: x.despacho ? { estado: x.despacho.estado, decisao: x.despacho.decisao ?? null, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null } : null,
       naMinhaUnidade: (ultimo?.paraUnidadeId ?? x.origemUnidadeId) === u.unidadeId, enviadoPorMim: x.origemUnidadeId === u.unidadeId || x.movimentos.some((m) => m.deUnidadeId === u.unidadeId),
     }
   }
@@ -69,9 +74,48 @@ export class ServicoExpediente {
   }
 
   async contadores(u) {
-    if (!u.unidadeId) return { porReceber: 0 }
+    const porDespachar = pode(u, 'despachar') ? await this.bd.expediente.count({ where: { despacho: { path: ['estado'], equals: 'pendente' } } }) : 0
+    if (!u.unidadeId) return { porReceber: 0, porDespachar }
     const porReceber = await this.bd.movimento.count({ where: { paraUnidadeId: u.unidadeId, recebidoEm: null } })
-    return { porReceber }
+    return { porReceber, porDespachar }
+  }
+
+  // ---------- Secretária digital: despacho do Comandante ----------
+
+  // a unidade onde o documento está submete-o a despacho (com uma nota para o Comandante)
+  async submeterDespacho(u, id, { nota = '' } = {}) {
+    exigir(u, 'expediente')
+    const x = await this.obter(u, id)
+    if (!x.naMinhaUnidade && !pode(u, 'administrar')) throw semPermissao('Só a unidade onde o documento está o submete a despacho.')
+    if (x.estado === 'arquivado') throw invalido('O documento está arquivado: reabra-o primeiro.')
+    if (x.despacho?.estado === 'pendente') throw invalido('O documento já está à espera do despacho do Comandante.')
+    await this.bd.expediente.update({ where: { id }, data: { despacho: { estado: 'pendente', nota: String(nota).trim().slice(0, 1000), pedidoPor: u.nome ?? u.email, pedidoUnidadeId: u.unidadeId ?? null, pedidoEm: this.agora().toISOString() } } })
+    await this.auditoria.registar(u, 'submeter_despacho', `${x.protocolo} — ${x.assunto}`)
+    return this.obter(u, id)
+  }
+
+  // a Secretária digital do Comandante: os por despachar (do mais antigo, os urgentes primeiro) e os últimos despachados
+  async secretaria(u) {
+    exigir(u, 'despachar')
+    const l = await this.bd.expediente.findMany({ where: { despacho: { not: Prisma.DbNull } }, include: { movimentos: { orderBy: { id: 'asc' } }, _count: { select: { anexos: true } } }, orderBy: { criadoEm: 'desc' }, take: 500 })
+    const unidades = await this.#unidades()
+    const linha = (x) => ({ ...this.#resumo(x, u, unidades), despacho: { ...x.despacho, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null, pedidoUnidade: unidades.get(x.despacho.pedidoUnidadeId) ?? '' } })
+    const pendentes = l.filter((x) => x.despacho.estado === 'pendente').map(linha)
+      .sort((a, b) => Number(b.classificacao === 'urgente') - Number(a.classificacao === 'urgente') || String(a.despacho.pedidoEm).localeCompare(String(b.despacho.pedidoEm)))
+    const despachados = l.filter((x) => x.despacho.estado === 'despachado').map(linha)
+      .sort((a, b) => String(b.despacho.despachadoEm).localeCompare(String(a.despacho.despachadoEm))).slice(0, 50)
+    return { pendentes, despachados, decisoes: DECISOES_DESPACHO }
+  }
+
+  async despachar(u, id, { decisao, texto = '' }) {
+    exigir(u, 'despachar')
+    if (!DECISOES_DESPACHO[decisao]) throw invalido('Escolha o despacho.', 'decisao')
+    const x = await this.bd.expediente.findUnique({ where: { id } })
+    if (!x) throw naoEncontrado('Documento não encontrado.')
+    if (x.despacho?.estado !== 'pendente') throw invalido('Este documento não está à espera de despacho.')
+    await this.bd.expediente.update({ where: { id }, data: { despacho: { ...x.despacho, estado: 'despachado', decisao, texto: String(texto).trim().slice(0, 3000), despachadoPor: u.nome ?? u.email, despachadoEm: this.agora().toISOString() } } })
+    await this.auditoria.registar(u, 'despachar', `${x.protocolo} — ${DECISOES_DESPACHO[decisao]}`)
+    return this.obter(u, id)
   }
 
   async obter(u, id) {
@@ -83,7 +127,8 @@ export class ServicoExpediente {
     const ids = [...new Set([x.criadoPorId, ...x.movimentos.flatMap((m) => [m.enviadoPorId, m.recebidoPorId]), ...x.anexos.map((a) => a.criadoPorId)].filter(Boolean))]
     const pessoas = new Map((await this.bd.utilizador.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true } })).map((p) => [p.id, p.nome]))
     return {
-      ...this.#resumo(x, u, unidades), resumo: x.resumo, entidadeExterna: x.entidadeExterna, criadoPor: pessoas.get(x.criadoPorId) ?? '', origemUnidadeId: x.origemUnidadeId,
+      ...this.#resumo(x, u, unidades), resumo: x.resumo, entidadeExterna: x.entidadeExterna,
+      despacho: x.despacho ? { ...x.despacho, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null, pedidoUnidade: unidades.get(x.despacho.pedidoUnidadeId) ?? '' } : null, criadoPor: pessoas.get(x.criadoPorId) ?? '', origemUnidadeId: x.origemUnidadeId,
       anexos: x.anexos.map((a) => ({ id: a.id, nome: a.nomeOriginal, mime: a.mime, tamanho: a.tamanho, criadoEm: a.criadoEm, por: pessoas.get(a.criadoPorId) ?? '' })),
       movimentos: x.movimentos.map((m) => ({ ...m, de: unidades.get(m.deUnidadeId) ?? (x.entidadeExterna || ''), para: unidades.get(m.paraUnidadeId) ?? '', enviadoPor: pessoas.get(m.enviadoPorId) ?? '', recebidoPor: pessoas.get(m.recebidoPorId) ?? '', fisicoNome: FISICO[m.fisico] })),
     }

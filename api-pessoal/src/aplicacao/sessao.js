@@ -16,7 +16,8 @@ export const PAPEIS = {
   administrador: { nome: 'Administrador', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', 'administrar', ...COMUNS] },
   // supervisionar: ver tudo o que é do Pessoal (utilizadores, auditoria, livro de expediente), sem alterar
   chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', ...COMUNS] },
-  comandante: { nome: 'Comandante da ESG (vê tudo)', permissoes: ['ver', 'supervisionar', ...COMUNS] },
+  // despachar: a Secretária digital (os documentos submetidos a despacho do Comandante)
+  comandante: { nome: 'Comandante da ESG (vê tudo e despacha)', permissoes: ['ver', 'supervisionar', 'despachar', ...COMUNS] },
   operador: { nome: 'Operador', permissoes: ['ver', 'editar', 'propor', ...COMUNS] },
   consulta: { nome: 'Consulta', permissoes: ['ver', ...COMUNS] },
   utente: { nome: 'Utente (expediente e mensagens)', permissoes: COMUNS },

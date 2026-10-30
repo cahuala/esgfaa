@@ -186,6 +186,10 @@ export function rotas({ servicos: s, config }) {
   r.post('/expediente/:id/reabrir', validar({ params: E.pId }), async (req, res) => res.json(await s.expediente.arquivar(u(req), req.dados.params.id, false)))
   r.post('/expediente/:id/anexos', validar({ params: E.pId }), anexos.array('anexos', 20), async (req, res) => res.json(await s.expediente.anexar(u(req), req.dados.params.id, req.files ?? [])))
   r.get('/anexos/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.expediente.anexo(u(req), req.dados.params.id)))
+  // Secretária digital: documentos submetidos a despacho do Comandante
+  r.get('/secretaria', async (req, res) => res.json(await s.expediente.secretaria(u(req))))
+  r.post('/expediente/:id/despacho', validar({ params: E.pId, body: z.object({ nota: z.string().max(1000).default('') }) }), async (req, res) => res.json(await s.expediente.submeterDespacho(u(req), req.dados.params.id, req.dados.body)))
+  r.post('/expediente/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.expediente.despachar(u(req), req.dados.params.id, req.dados.body)))
 
   // mensagens internas
   r.get('/mensagens/conversas', async (req, res) => res.json(await s.mensagens.conversas(u(req))))

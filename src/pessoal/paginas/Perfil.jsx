@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { abrirFicheiro, api, enviarComProgresso, urlFoto } from '../api'
-import { etiquetaProcesso } from '../documentos'
+import { etiquetaProcesso, referenciaElogiosa } from '../documentos'
 import Foto from '../componentes/Foto'
 import { reduzirFoto } from '../fotos'
 import { useDados } from '../useDados'
@@ -350,7 +350,7 @@ export default function Perfil() {
             { chave: 'data', titulo: 'Data', valor: (e) => e.data?.slice(0, 10), mostrar: (e) => dataPt(e.data) },
             { chave: 'tipo', titulo: 'Registo', valor: (e) => e.tipoNome, mostrar: (e) => <span className="badge bg-light text-dark border">{e.tipoNome}</span> },
             { chave: 'desc', titulo: 'Descrição', valor: (e) => [e.postoNovoNome && `${e.postoAnteriorNome ? `${e.postoAnteriorNome} → ` : ''}${e.postoNovoNome}`, e.cargoNome, e.descricao].filter(Boolean).join(' · ') },
-            { chave: 'doc', titulo: 'Documento', valor: (e) => e.documento },
+            { chave: 'doc', titulo: 'Documento', valor: (e) => e.documento, mostrar: (e) => <>{e.documento}{e.tipo === 'referencia_elogiosa' && <button type="button" className="btn btn-xs btn-outline-danger ms-1" title="Documento da referência elogiosa (PDF)" onClick={(x) => { x.stopPropagation(); referenciaElogiosa(p, e).catch((er) => avisar(er.message, 'erro')) }}><i className="fa fa-file-pdf" /> PDF</button>}</> },
             { chave: 'proposta', titulo: 'Proposta', valor: (e) => (e.propostaId ? `#${e.propostaId}` : ''), mostrar: (e) => (e.propostaId ? <Link to={`/propostas/${e.propostaId}`} onClick={(x) => x.stopPropagation()}>#{e.propostaId}</Link> : '') },
             ...(editar ? [{ chave: 'apagar', titulo: '', exportar: false, valor: () => '', mostrar: (e) => ref.eventosManuais.includes(e.tipo) && <button type="button" className="btn btn-xs btn-outline-danger" title="Apagar" onClick={() => api(`/pessoas/${p.id}/eventos/${e.id}`, { metodo: 'DELETE' }).then(() => depois('Registo apagado.')).catch((x) => avisar(x.message, 'erro'))}><i className="fa fa-trash" /></button> }] : []),
           ]} />
@@ -526,7 +526,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
       setErro(e.message)
       return
     }
-    const tipo = { louvor: 'louvor', condecoracao: 'louvor', punicao: 'punicao' }[d.tipo] ?? 'outro'
+    const tipo = { louvor: 'louvor', referencia_elogiosa: 'louvor', condecoracao: 'louvor', punicao: 'punicao' }[d.tipo] ?? 'outro'
     await juntarAoProcesso(p.id, ficheiro, { tipo, titulo: `${ref.tiposEvento[d.tipo] ?? 'Documento'}${d.documento ? ` — ${d.documento}` : ''}`, data: d.data }).catch((e) => avisar(`Lançado, mas o documento não foi enviado: ${e.message}`, 'erro'))
     aoGuardar()
   }
@@ -537,7 +537,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
       <div className="row">
         <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.eventosManuais.map((k) => [k, ref.tiposEvento[k]])} vazio={null} /></Campo>
         <Campo rotulo="Data"><input type="date" className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
-        <Campo rotulo="Descrição" col="col-12"><textarea className="form-control form-control-sm" rows={2} value={d.descricao} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
+        <Campo rotulo={d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho…)"><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
         <Campo rotulo="Entidade"><input className="form-control form-control-sm" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
         <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>

@@ -142,8 +142,39 @@ async function desenharSintese(doc, autoTable, p) {
   const carreira = p.eventos.filter((e) => ['ingresso', 'admissao', 'promocao', 'graduacao', 'nomeacao', 'exoneracao', 'situacao', 'progressao', 'colocacao', 'transferencia'].includes(e.tipo)).reverse()
   tabela('Percurso na carreira', ['Data', 'Acto', 'Descrição', 'Documento'], carreira.map((e) => [pt(e.data), e.tipoNome, [e.postoNovoNome && `${e.postoAnteriorNome ? `${e.postoAnteriorNome} → ` : ''}${e.postoNovoNome}`, e.cargoNome, e.descricao].filter(Boolean).join(' · '), e.documento]))
   tabela('Cursos', ['Curso', 'Local', 'Conclusão', 'Resultado'], p.cursos.map((c) => [c.nome, c.local, pt(c.fim), c.aproveitamento === false ? 'Sem aproveitamento' : c.classificacao ? `${c.classificacao} valores` : 'Com aproveitamento']))
-  tabela('Louvores e condecorações', ['Data', 'Registo', 'Descrição'], p.eventos.filter((e) => ['louvor', 'condecoracao'].includes(e.tipo)).map((e) => [pt(e.data), e.tipoNome, e.descricao]))
+  tabela('Louvores e condecorações', ['Data', 'Registo', 'Descrição'], p.eventos.filter((e) => ['louvor', 'referencia_elogiosa', 'condecoracao'].includes(e.tipo)).map((e) => [pt(e.data), e.tipoNome, e.descricao]))
   assinaturas(doc, y + 6, ['O Chefe da Repartição de Pessoal e Quadros'])
+}
+
+/*
+  Referência elogiosa: o documento do registo «Referência elogiosa» da ficha — quem é referido (posto ou
+  categoria, nome, cargo e unidade), o texto do elogio e o documento que a publica, assinado pelo Comandante
+  (nome e posto das Assinaturas dos documentos). e = o registo do histórico.
+*/
+export async function referenciaElogiosa(p, e) {
+  const { doc } = await novoDocumento()
+  const quem = await api('/definicoes/assinaturas').catch(() => ({}))
+  const w = doc.internal.pageSize.getWidth()
+  let y = cabecalho(doc, 'REFERÊNCIA ELOGIOSA') + 8
+  const tratamento = p.tipo === 'militar' ? `o ${p.postoNome}` : `o(a) ${p.categoriaCivil || p.carreiraNome || 'funcionário(a) civil'}`
+  const funcao = [p.cargoNome, p.unidadeNome].filter(Boolean).join(', ')
+  const motivo = String(e.descricao || '').trim() || 'pelo zelo, dedicação e competência demonstrados no serviço'
+  const ident = p.tipo === 'militar' && p.nip ? ` (NIP ${p.nip})` : p.numeroAgente ? ` (n.º de agente ${p.numeroAgente})` : ''
+  const corpo = `${quem.comandante?.cargo || 'O Comandante da Escola Superior de Guerra'} refere elogiosamente ${tratamento} ${p.nome.toUpperCase()}${funcao ? `, ${funcao}` : ''}${ident}, ${motivo}${/[.!]$/.test(motivo) ? '' : '.'}`
+  doc.setFont('times', 'normal').setFontSize(12)
+  const linhas = doc.splitTextToSize(corpo, w - 50)
+  doc.text(linhas, 25, y, { align: 'justify', maxWidth: w - 50, lineHeightFactor: 1.6 })
+  y += linhas.length * 7.2 + 6
+  if (e.documento) { doc.setFontSize(10).setTextColor(70).text(`Publicado em: ${e.documento}${e.entidade ? ` — ${e.entidade}` : ''}`, 25, y).setTextColor(0); y += 8 }
+  doc.setFontSize(11).text(`Luanda, ${new Date(`${String(e.data).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}`, w - 25, y + 6, { align: 'right' })
+  const c = quem.comandante ?? {}
+  doc.setFont('times', 'bold').text((c.cargo || 'O Comandante da Escola Superior de Guerra').toUpperCase(), w / 2, y + 26, { align: 'center' })
+  doc.setFont('times', 'normal').line(w / 2 - 40, y + 44, w / 2 + 40, y + 44)
+  if (c.nome) doc.text(c.nome.toUpperCase(), w / 2, y + 50, { align: 'center' })
+  if (c.posto) doc.text(`** ${c.posto.toUpperCase()} **`, w / 2, y + 55, { align: 'center' })
+  rodape(doc)
+  doc.save(`referencia-elogiosa-${(p.nip || p.numeroAgente || p.id).toString().replace(/[^\w-]/g, '')}.pdf`)
+  registar(`Referência elogiosa: ${p.nome}`)
 }
 
 const ESTADO = { ok: 'Cumpre', falta: 'Não cumpre', alerta: 'Alerta', confirmar: 'A confirmar' }

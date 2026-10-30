@@ -330,7 +330,7 @@ export function fichaDisciplinar(d, p) {
   doc.text('DATA', 108.8, 119, { align: 'center' })
   doc.text(['ASSIN.DA', 'ENT.EMPR.'], 134.8, 116, { align: 'center', lineHeightFactor: 1.7 })
   doc.text(['ASSIN.DO', 'TRABALHADOR'], 170.6, 116, { align: 'center', lineHeightFactor: 1.7 })
-  const oc = (p.eventos ?? []).filter((e) => ['punicao', 'condenacao', 'louvor', 'condecoracao'].includes(e.tipo))
+  const oc = (p.eventos ?? []).filter((e) => ['punicao', 'condenacao', 'louvor', 'referencia_elogiosa', 'condecoracao'].includes(e.tipo))
   for (let i = 0; i < 19; i++) {
     const y = 127.4 + i * 7.895
     if (i) doc.setLineWidth(0.25).line(19.1, y, 190.9, y)
@@ -756,7 +756,7 @@ export function fichaRegistoBiografico(d, p) {
   const c7 = [L(775), L(1140)]
   traco(doc, 0.4).rect(c7[0], 61.6, c7[1] - c7[0], 52)
   H(doc, 10.5, 'bold').text('7.DISTINÇÃO OU LOUVORES', (c7[0] + c7[1]) / 2, 65.4, { align: 'center' })
-  const lv = (p.eventos ?? []).filter((e) => e.tipo === 'louvor' || e.tipo === 'condecoracao')
+  const lv = (p.eventos ?? []).filter((e) => ['louvor', 'referencia_elogiosa', 'condecoracao'].includes(e.tipo))
   for (let i = 0; i < 11; i++) {
     const y = 66.1 + i * 4.32
     doc.setLineWidth(0.15).line(c7[0], y, c7[1], y)

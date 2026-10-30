@@ -499,6 +499,9 @@ model Expediente {
   prateleira      String            @default("")
   pasta           String            @default("")
   arquivadoEm     DateTime?         @map("arquivado_em") @db.Timestamptz(3)
+  // Secretária digital: o documento submetido a despacho do Comandante e a decisão dele
+  // { estado: pendente|despachado, nota, pedidoPor, pedidoUnidadeId, pedidoEm, decisao, texto, despachadoPor, despachadoEm }
+  despacho        Json?
   criadoPorId     Int               @map("criado_por_id")
   criadoEm        DateTime          @default(now()) @map("criado_em") @db.Timestamptz(3)
   anexos          AnexoExpediente[]

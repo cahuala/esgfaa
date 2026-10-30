@@ -23,6 +23,9 @@ const EXTRA = {
   // quem saiu da Escola (transferidos, mortos, condenados)
   saidas: () => api('/pessoas', { consulta: { ativo: 'nao' } }),
   domiciliares: () => api('/pessoas', { consulta: { vinculo: 'domiciliar' } }),
+  // o Plano de férias e as licenças de um ano (mapa da dispensa anual)
+  plano: async (o) => (await api('/plano-ferias', { consulta: { ano: o.ano } })).linhas,
+  licencasAno: (o) => api('/licencas', { consulta: { ano: o.ano } }),
 }
 
 function Documento({ d, contexto, aoFazer }) {
@@ -84,6 +87,8 @@ export default function Documentos() {
       if (d.precisa === 'propostos') ctx.propostos = (await EXTRA.propostos(o)).filter((i) => !ids || pessoas.some((p) => p.id === i.pessoaId))
       if ([].concat(d.precisa).includes('licencas')) ctx.licencas = await EXTRA.licencas(o)
       if ([].concat(d.precisa).includes('ausencias')) ctx.ausencias = await EXTRA.ausencias(o)
+      if ([].concat(d.precisa).includes('plano')) ctx.plano = await EXTRA.plano(o)
+      if ([].concat(d.precisa).includes('licencasAno')) ctx.licencas = await EXTRA.licencasAno(o)
       if (d.id === 'ausencias') ctx.saidas = (await EXTRA.saidas()).filter((p) => !ids || ids.has(p.unidadeId))
       if (d.precisa === 'domiciliares') ctx.domiciliares = (await EXTRA.domiciliares()).filter((p) => !ids || ids.has(p.unidadeId) || pessoas.some((x) => x.id === p.militarAlocadoId))
       const doc = d.fazer(ctx, o)

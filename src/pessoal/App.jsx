@@ -17,6 +17,7 @@ import NovaProposta from './paginas/NovaProposta'
 import Elegiveis from './paginas/Elegiveis'
 import Ausencias from './paginas/Ausencias'
 import FaltasCivis from './paginas/FaltasCivis'
+import Secretaria from './paginas/Secretaria'
 import ImportarOrganica from './paginas/ImportarOrganica'
 import Antiguidade from './paginas/Antiguidade'
 import Reserva from './paginas/Reserva'
@@ -114,6 +115,7 @@ export default function App() {
           <Route path="/licencas" element={<Licencas />} />
           <Route path="/ausencias" element={<Ausencias />} />
           <Route path="/faltas-civis" element={<FaltasCivis />} />
+          <Route path="/secretaria" element={<Secretaria />} />
           <Route path="/quadro" element={<Navigate to="/organica" replace />} />
           <Route path="/organica/importar" element={<ImportarOrganica />} />
           <Route path="/organica" element={<Organica />} />

@@ -323,6 +323,29 @@ describe('Expediente, mensagens e contas de utente', () => {
     assert.ok((await adm.get(`/api/expediente?caixa=todos&sentido=${arq.sentido}`)).body.some((x) => x.id === d.id))
   })
 
+  it('Secretária digital: a unidade submete a despacho; o Comandante despacha; a unidade vê o despacho', async () => {
+    const d = (await ana.post('/api/expediente').field('dados', JSON.stringify({ tipo: 'informacao', assunto: 'Pedido de viatura para a visita de estudo', destinos: [logistica.id], classificacao: 'urgente' })).expect(201)).body
+    // quem tem o documento (a Logística, para onde foi enviado) submete-o a despacho
+    assert.equal((await ana.post(`/api/expediente/${d.id}/despacho`).send({})).status, 403)
+    const sub = (await rui.post(`/api/expediente/${d.id}/despacho`).send({ nota: 'Para autorização da saída' }).expect(200)).body
+    assert.equal(sub.despacho.estado, 'pendente')
+    assert.equal((await rui.post(`/api/expediente/${d.id}/despacho`).send({})).status, 400) // já está à espera
+    await adm.post('/api/utilizadores').send({ nome: 'Comandante Teste', email: 'cmd.desp@pessoal.ao', papel: 'comandante', senha: 'Inicial2026x' }).expect(201)
+    const t = await amb.entrar('cmd.desp@pessoal.ao', 'Inicial2026x')
+    const cmd = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' }).expect(200)).body.token)
+    assert.equal((await cmd.get('/api/avisos')).body.porDespachar, 1)
+    const sec = (await cmd.get('/api/secretaria').expect(200)).body
+    assert.deepEqual(sec.pendentes.map((x) => [x.protocolo, x.despacho.nota, x.despacho.pedidoUnidade]), [[d.protocolo, 'Para autorização da saída', 'Repartição de Logística']])
+    assert.equal((await cmd.get(`/api/expediente/${d.id}`)).status, 200) // o Comandante vê o documento (anexos incluídos)
+    assert.equal((await rui.post(`/api/expediente/${d.id}/despachar`).send({ decisao: 'autorizo' })).status, 403)
+    assert.equal((await cmd.post(`/api/expediente/${d.id}/despachar`).send({ decisao: 'qualquer' })).status, 400)
+    await cmd.post(`/api/expediente/${d.id}/despachar`).send({ decisao: 'autorizo', texto: 'Autorizo. Viatura da Logística.' }).expect(200)
+    const visto = (await ana.get(`/api/expediente/${d.id}`)).body.despacho
+    assert.deepEqual([visto.estado, visto.decisaoNome, visto.texto, visto.despachadoPor], ['despachado', 'Autorizo', 'Autorizo. Viatura da Logística.', 'Comandante Teste'])
+    assert.equal((await cmd.get('/api/avisos')).body.porDespachar, 0)
+    assert.equal((await adm.get('/api/secretaria')).status, 403) // é só do Comandante
+  })
+
   it('protecção de dados: aviso, a própria ficha para descarregar e pedidos respondidos pela RPQ', async () => {
     assert.equal((await ana.get('/api/eu/privacidade')).body.conhecimentoEm, null)
     assert.ok((await ana.post('/api/eu/privacidade')).body.conhecimentoEm)

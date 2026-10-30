@@ -244,6 +244,37 @@ function simples(titulo, filtro, cols, { ordem = porHierarquia, assinatura, extr
 const QUEM = { campo: 'quem', rotulo: 'Pessoal', opcoes: [['todos', 'Militares e civis'], ['militar', 'Só militares'], ['civil', 'Só civis']] }
 
 /*
+  Mapa de controlo quantitativo de dispensa anual (férias): quantas pessoas, por categoria, têm a dispensa
+  anual em cada mês do ano — as planeadas (Plano de férias) e as gozadas (férias registadas nas licenças,
+  pelo mês em que começam). ctx.plano = linhas do plano do ano; ctx.licencas = licenças do ano.
+*/
+const MESES_CURTOS = ['Jan.', 'Fev.', 'Mar.', 'Abr.', 'Mai.', 'Jun.', 'Jul.', 'Ago.', 'Set.', 'Out.', 'Nov.', 'Dez.']
+const GRUPOS_DISPENSA = [['Oficiais', (p) => militar(p) && String(p.categoria).startsWith('oficial')], ['Sargentos', (p) => militar(p) && p.categoria === 'sargento'], ['Praças', (p) => militar(p) && p.categoria === 'praca'], ['Civis', (p) => !militar(p)]]
+function dispensaAnual(ctx, o) {
+  const ano = Number(o.ano)
+  const porId = new Map(ctx.pessoas.map((p) => [p.id, p]))
+  const quadro = (titulo, registos) => {
+    // registos: [{ pessoa, mes (1-12) }] — cada pessoa conta uma vez por mês
+    const conta = (f, m) => new Set(registos.filter((r) => r.pessoa && f(r.pessoa) && (m === null || r.mes === m)).map((r) => r.pessoa.id)).size
+    const linhas = GRUPOS_DISPENSA.map(([nome, f]) => [nome, ...MESES_CURTOS.map((_, k) => conta(f, k + 1)), conta(f, null)])
+    linhas.push(['TOTAL', ...MESES_CURTOS.map((_, k) => conta(() => true, k + 1)), conta(() => true, null)])
+    return {
+      titulo, contar: false,
+      colunas: [{ titulo: 'Categoria', valor: (l) => l[0], largura: 30 }, ...MESES_CURTOS.map((t, k) => ({ titulo: t, valor: (l) => l[k + 1] || '', alinhar: 'center' })), { titulo: 'Total do ano', valor: (l) => l[13] || '', alinhar: 'center', largura: 20 }],
+      linhas: linhas.map((l, i) => Object.assign([...l], i === linhas.length - 1 ? { negrito: true } : {})),
+    }
+  }
+  const planeados = (ctx.plano ?? []).filter((l) => l.mes).map((l) => ({ pessoa: porId.get(l.id), mes: l.mes }))
+  const gozados = (ctx.licencas ?? []).filter((x) => x.tipo === 'ferias' && Number(x.inicio.slice(0, 4)) === ano).map((x) => ({ pessoa: porId.get(x.pessoaId), mes: Number(x.inicio.slice(5, 7)) }))
+  return {
+    titulo: 'Mapa de controlo quantitativo de dispensa anual', subtitulo: `Ano de ${ano} · ${subtituloBase(ctx)}`, orientacao: 'landscape',
+    seccoes: [quadro('Dispensa anual planeada (Plano de férias)', planeados), quadro('Dispensa anual gozada (férias registadas)', gozados)],
+    nota: 'Número de pessoas em dispensa anual (férias) em cada mês, por categoria. Planeada: o mês do Plano de férias. Gozada: as férias registadas nas licenças, pelo mês em que começam.',
+  }
+}
+const OPCAO_ANO = (() => { const a = new Date().getFullYear(); return { campo: 'ano', rotulo: 'Ano', opcoes: [a + 1, a, a - 1, a - 2].map((x) => [String(x), String(x)]), inicial: String(a) } })()
+
+/*
   Catálogo: grupo, título, o que tem, as opções (com valores iniciais) e o que precisa de carregar.
 */
 export const DOCUMENTOS = [
@@ -255,6 +286,7 @@ export const DOCUMENTOS = [
   { id: 'lista-efectividade', grupo: 'efectividade', titulo: 'Lista de efectividade', icone: 'fa-list-ol', descricao: 'O modelo da Escola: NIP, posto, ramo, nome, cargo, ASEC, FPS, nascimento, incorporação e habilitações (civil e militar), do mais graduado ao mais moderno.', fazer: listaEfectividade },
   { id: 'situacao', grupo: 'efectividade', titulo: 'Militares por situação', icone: 'fa-sitemap', descricao: 'Activo em efectividade (comissão normal, inactividade temporária), fora de efectividade (comissão especial, licenças), reserva e reforma.', fazer: porSituacao },
   { id: 'estado', grupo: 'efectividade', titulo: 'Militares por estado', icone: 'fa-route', descricao: 'Destacados, em missão, em formação, em substituição, a cargo da Direcção, suspensos, aguardando colocação…', opcoes: [{ campo: 'todos', rotulo: 'Incluir', opcoes: [['', 'Só quem tem estado'], ['1', 'Também os que estão ao serviço']] }], fazer: (c, o) => porEstado(c, { todos: Boolean(o.todos) }) },
+  { id: 'dispensa-anual', grupo: 'efectividade', titulo: 'Mapa de controlo quantitativo de dispensa anual', icone: 'fa-umbrella-beach', descricao: 'Quantas pessoas, por categoria (oficiais, sargentos, praças e civis), têm a dispensa anual (férias) em cada mês: as planeadas e as gozadas.', opcoes: [OPCAO_ANO], precisa: ['plano', 'licencasAno'], fazer: dispensaAnual },
   { id: 'licencas', grupo: 'efectividade', titulo: 'Licenças em curso', icone: 'fa-plane-departure', descricao: 'Quem está de licença hoje, por tipo de licença.', precisa: 'licencas', fazer: licencas },
 
   // ---------- propostas ----------

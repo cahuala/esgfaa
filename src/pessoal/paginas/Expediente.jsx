@@ -130,7 +130,7 @@ function NovoDocumento({ aoFechar, aoCriar }) {
 }
 
 function Documento({ id }) {
-  const { utilizador, avisar } = useSessao()
+  const { utilizador, avisar, pode } = useSessao()
   const navegar = useNavigate()
   const { dados: carregado, erro } = useDados(`/expediente/${id}`)
   const [alterado, setX] = useState(null)
@@ -160,7 +160,9 @@ function Documento({ id }) {
         {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-theme" onClick={() => setModal('encaminhar')}><i className="fa fa-share me-1" />Encaminhar</button>}
         {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && <button type="button" className="btn btn-outline-secondary" onClick={() => setModal('arquivar')}><i className="fa fa-archive me-1" />Arquivar</button>}
         {x.estado === 'arquivado' && <button type="button" className="btn btn-outline-secondary" onClick={() => acao('/reabrir', undefined, 'Reaberto.')}>Reabrir</button>}
+        {x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber && x.despacho?.estado !== 'pendente' && <button type="button" className="btn btn-outline-dark" onClick={() => setModal('despacho')}><i className="fa fa-stamp me-1" />Submeter a despacho do Comandante</button>}
       </Cabecalho>
+      {x.despacho && <Despacho x={x} podeDespachar={pode('despachar')} aoDespachar={(c) => acao('/despachar', c, 'Despachado. A unidade vê o despacho no documento.')} />}
       <div className="row">
         <div className="col-xl-5">
           <Painel titulo="Documento" icone="fa-file-alt">
@@ -202,6 +204,7 @@ function Documento({ id }) {
           </Painel>
         </div>
       </div>
+      {modal === 'despacho' && <SubmeterDespacho x={x} aoFechar={() => setModal(null)} aoSubmeter={(c) => acao('/despacho', c, 'Submetido a despacho do Comandante.')} />}
       {modal === 'arquivar' && <Arquivar x={x} aoFechar={() => setModal(null)} aoArquivar={(sitio) => acao('/arquivar', sitio, 'Arquivado.')} />}
       {modal === 'encaminhar' && <Encaminhar x={x} unidades={unidades ?? []} minha={utilizador.unidadeId} aoFechar={() => setModal(null)} aoEnviar={(c) => acao('/encaminhar', c, 'Encaminhado.')} />}
       {modal?.entregue && <Entrega aoFechar={() => setModal(null)} aoConfirmar={(portador) => api(`/expediente/${id}/movimentos/${modal.entregue.id}/entregue`, { metodo: 'POST', corpo: { portador } }).then((r) => { setX(r); setModal(null); avisar('Entrega do original registada.') }).catch((e) => avisar(e.message, 'erro'))} portador={modal.entregue.fisicoPortador} />}
@@ -230,6 +233,50 @@ function Entrega({ portador: inicial = '', aoFechar, aoConfirmar }) {
       <Campo rotulo="Entregue por (portador)" col="col-12"><input className="form-control form-control-sm" value={portador} onChange={(e) => setPortador(e.target.value)} /></Campo>
       <p className="small text-muted mb-0">A unidade que recebe confirma depois «Recebi o original».</p>
     </Modal>
+  )
+}
+
+// Secretária digital: a unidade que tem o documento submete-o a despacho do Comandante, com uma nota
+function SubmeterDespacho({ x, aoFechar, aoSubmeter }) {
+  const [nota, setNota] = useState('')
+  return (
+    <Modal titulo={`Submeter ${x.protocolo} a despacho`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-dark" onClick={() => aoSubmeter({ nota })}><i className="fa fa-stamp me-1" />Submeter</button></>}>
+      <p className="small text-muted">O documento (com os anexos) aparece na Secretária digital do Comandante. O despacho dele fica registado aqui, no documento.</p>
+      <label className="form-label small fw-bold" htmlFor="desp-nota">Nota para o Comandante (opcional)</label>
+      <textarea id="desp-nota" className="form-control" rows={3} value={nota} onChange={(e) => setNota(e.target.value)} placeholder="Ex.: para autorização; parecer favorável da Repartição" />
+    </Modal>
+  )
+}
+
+// o despacho no documento: à espera, ou a decisão do Comandante; quem despacha escolhe aqui
+const DECISOES = { visto: 'Visto', concordo: 'Concordo', autorizo: 'Autorizo', nao_concordo: 'Não concordo', indefiro: 'Indefiro', tomei_conhecimento: 'Tomei conhecimento', informe: 'Informe / ver comigo', arquive_se: 'Arquive-se' }
+function Despacho({ x, podeDespachar, aoDespachar }) {
+  const [d, setD] = useState({ decisao: 'visto', texto: '' })
+  const p = x.despacho
+  if (p.estado === 'despachado') {
+    return (
+      <div className="alert alert-success d-flex gap-3 align-items-start">
+        <i className="fa fa-stamp fa-2x mt-1" />
+        <div>
+          <div className="fw-bold">Despacho do Comandante: {p.decisaoNome}</div>
+          {p.texto && <div style={{ whiteSpace: 'pre-wrap' }}>{p.texto}</div>}
+          <div className="small text-muted mt-1">{p.despachadoPor} · {dataHoraPt(p.despachadoEm)} — submetido por {p.pedidoPor}{p.pedidoUnidade ? ` (${p.pedidoUnidade})` : ''}</div>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="alert alert-warning">
+      <div className="fw-bold"><i className="fa fa-hourglass-half me-2" />À espera do despacho do Comandante</div>
+      <div className="small">Submetido por {p.pedidoPor}{p.pedidoUnidade ? ` (${p.pedidoUnidade})` : ''} · {dataHoraPt(p.pedidoEm)}{p.nota ? ` — «${p.nota}»` : ''}</div>
+      {podeDespachar && (
+        <div className="mt-2 d-flex flex-wrap gap-2 align-items-start">
+          <select className="form-select w-auto" value={d.decisao} onChange={(e) => setD({ ...d, decisao: e.target.value })} aria-label="Despacho">{Object.entries(DECISOES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <textarea className="form-control flex-grow-1" style={{ minWidth: 240 }} rows={2} value={d.texto} onChange={(e) => setD({ ...d, texto: e.target.value })} placeholder="Texto do despacho (opcional)" aria-label="Texto do despacho" />
+          <button type="button" className="btn btn-dark" onClick={() => aoDespachar(d)}><i className="fa fa-stamp me-1" />Despachar</button>
+        </div>
+      )}
+    </div>
   )
 }
 

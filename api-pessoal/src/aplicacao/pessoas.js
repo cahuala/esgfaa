@@ -33,6 +33,7 @@ export const TIPOS_EVENTO = {
   colocacao: 'Colocação na Escola',
   transferencia: 'Transferência',
   louvor: 'Louvor',
+  referencia_elogiosa: 'Referência elogiosa',
   condecoracao: 'Condecoração',
   punicao: 'Punição disciplinar',
   condenacao: 'Condenação criminal',
@@ -40,7 +41,7 @@ export const TIPOS_EVENTO = {
   correcao: 'Correção de dados',
   outro: 'Outro',
 }
-export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
+export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'referencia_elogiosa', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
 const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true, postoRequerido: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 const vazioANulo = (v) => (v === '' ? null : v)
