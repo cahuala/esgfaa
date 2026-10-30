@@ -36,7 +36,7 @@ const texto = (v) => (v === null || v === undefined ? '' : typeof v === 'boolean
   COMANDANTE DA ESG» à esquerda, o emblema e as três linhas ao centro (a última sublinhada), o título
   sublinhado, a tabela (N/O 01, 02…; as datas em D/M/A, uma coluna para cada) e, no fim, a data e a
   assinatura do Chefe da Repartição de Pessoal e Quadros.
-  d = { titulo, subtitulo, seccoes: [{ titulo, colunas: [{ titulo, valor(linha, i), alinhar, largura, data }], linhas, totais }],
+  d = { titulo, subtitulo, seccoes: [{ titulo, colunas: [{ titulo, valor(linha, i), alinhar, largura, data, sombra }], linhas, totais }],
         orientacao: 'portrait' | 'landscape', assinatura, nota }
 */
 const partes = (v) => { const t = v ? String(v).slice(0, 10) : ''; return /^\d{4}-\d{2}-\d{2}$/.test(t) ? [t.slice(8, 10), t.slice(5, 7), t.slice(0, 4)] : /^\d{2}\/\d{2}\/\d{4}$/.test(t) ? t.split('/') : ['', '', ''] }
@@ -69,7 +69,10 @@ export async function documentoPdf(d) {
     y = 44 + linhas.length * 4.6 - 1
   } else {
     // cabeçalho do modelo
-    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text('O COMANDANTE DA ESG', 38, 24, { align: 'center' })
+    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text((quem.comandante?.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 38, 24, { align: 'center' })
+    // o nome e o posto de quem ocupa hoje o cargo (Assinaturas dos documentos), como no modelo
+    if (quem.comandante?.nome) doc.text(quem.comandante.nome.toUpperCase(), 38, 30, { align: 'center' })
+    if (quem.comandante?.posto) doc.text(`** ${quem.comandante.posto.toUpperCase()} **`, 38, 34, { align: 'center' })
     emblema(doc, brasao, w / 2, 6, 17)
     doc.setFont('helvetica', 'normal').setFontSize(8.5).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' })
     doc.setFont('helvetica', 'italic').text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
@@ -129,6 +132,8 @@ export async function documentoPdf(d) {
       didParseCell: (c) => {
         if (c.section === 'head' && c.cell.raw?.vertical) { if (c.cell.raw.alto) c.cell.styles.minCellHeight = c.cell.raw.alto; c.cell.textoAlto = c.cell.text.join(' '); c.cell.text = [''] }
         if (c.section === 'body' && s.linhas[c.row.index]?.negrito) c.cell.styles.fontStyle = 'bold'
+        // colunas a sombreado (os sábados e domingos no mapa de efectividade)
+        if (c.section !== 'foot' && !temDatas && s.colunas[c.column.index]?.sombra) c.cell.styles.fillColor = 190
       },
       didDrawCell: (c) => {
         if (c.section !== 'head' || !c.cell.textoAlto) return

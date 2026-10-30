@@ -1,5 +1,6 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
 import { exigir } from './sessao.js'
 
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
@@ -61,5 +62,61 @@ export class ServicoAusencias {
     const r = await this.bd.ausencia.deleteMany({ where: { id } })
     if (!r.count) throw naoEncontrado('Registo não encontrado.')
     await this.auditoria.registar(u, 'remover_ausencia', `#${id}`)
+  }
+
+  /*
+    Mapa de efectividade (controlo de faltas) do pessoal civil, mês a mês, como o modelo da Escola: cada civil
+    no activo (sem os domiciliares, que servem fora da Escola), a categoria e os dias com falta.
+    mes: AAAA-MM. As faltas são as do registo «Faltas e ausências» (tipo falta) que tocam o mês.
+  */
+  async mapaCivis(u, { mes }) {
+    exigir(u, 'ver')
+    if (!/^\d{4}-\d{2}$/.test(String(mes ?? ''))) throw invalido('Indique o mês (AAAA-MM).', 'mes')
+    const [a, m] = mes.split('-').map(Number)
+    const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate()
+    const inicio = new Date(Date.UTC(a, m - 1, 1))
+    const fim = new Date(Date.UTC(a, m - 1, nDias))
+    const pessoas = await this.bd.pessoa.findMany({
+      where: { tipo: 'civil', ativo: true, NOT: { vinculo: 'domiciliar' } },
+      select: { id: true, nome: true, carreiraCivil: true, categoriaCivil: true },
+    })
+    const ordem = (p) => CARREIRAS_CIVIS[p.carreiraCivil]?.nivel ?? 99
+    pessoas.sort((x, y) => ordem(x) - ordem(y) || x.nome.localeCompare(y.nome, 'pt'))
+    const faltas = await this.bd.ausencia.findMany({ where: { tipo: 'falta', pessoaId: { in: pessoas.map((p) => p.id) }, inicio: { lte: fim }, OR: [{ fim: null }, { fim: { gte: inicio } }] } })
+    const dias = {}
+    for (const f of faltas) {
+      const de = Math.max(f.inicio.getTime(), inicio.getTime())
+      const ate = Math.min((f.fim ?? fim).getTime(), fim.getTime())
+      for (let t = de; t <= ate; t += 86_400_000) (dias[f.pessoaId] ??= new Set()).add(new Date(t).getUTCDate())
+    }
+    const fimDeSemana = Array.from({ length: nDias }, (_, i) => i + 1).filter((d) => [0, 6].includes(new Date(Date.UTC(a, m - 1, d)).getUTCDay()))
+    return {
+      mes, dias: nDias, fimDeSemana,
+      pessoas: pessoas.map((p) => ({ id: p.id, nome: p.nome, categoria: p.categoriaCivil || CARREIRAS_CIVIS[p.carreiraCivil]?.nome || '', faltas: [...(dias[p.id] ?? [])].sort((x, y) => x - y) })),
+    }
+  }
+
+  // marca ou tira a falta de um dia (no mapa): um dia novo é uma falta de um dia; tirar um dia do meio de uma falta mais longa divide-a
+  async marcarFalta(u, { pessoaId, data, falta }) {
+    exigir(u, 'editar')
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data ?? ''))) throw invalido('Data inválida.', 'data')
+    const p = await this.bd.pessoa.findUnique({ where: { id: Number(pessoaId) }, select: { id: true, nome: true, tipo: true } })
+    if (!p) throw naoEncontrado('Ficha não encontrada.')
+    const d = new Date(`${data}T00:00:00Z`)
+    const existente = await this.bd.ausencia.findFirst({ where: { pessoaId: p.id, tipo: 'falta', inicio: { lte: d }, OR: [{ fim: null }, { fim: { gte: d } }] } })
+    if (falta && !existente) {
+      await this.bd.ausencia.create({ data: { pessoaId: p.id, tipo: 'falta', inicio: d, fim: d, motivo: 'Mapa de efectividade', criadoPor: u.email } })
+      await this.auditoria.registar(u, 'registar_ausencia', `${p.nome}: Falta ${data}`)
+    } else if (!falta && existente) {
+      const antes = new Date(d.getTime() - 86_400_000)
+      const depois = new Date(d.getTime() + 86_400_000)
+      await this.bd.$transaction([
+        this.bd.ausencia.delete({ where: { id: existente.id } }),
+        ...(existente.inicio < d ? [this.bd.ausencia.create({ data: { pessoaId: p.id, tipo: 'falta', inicio: existente.inicio, fim: antes, motivo: existente.motivo, documento: existente.documento, criadoPor: existente.criadoPor } })] : []),
+        ...(!existente.fim || existente.fim > d ? [this.bd.ausencia.create({ data: { pessoaId: p.id, tipo: 'falta', inicio: depois, fim: existente.fim, motivo: existente.motivo, documento: existente.documento, criadoPor: existente.criadoPor } })] : []),
+      ])
+      await this.auditoria.registar(u, 'remover_ausencia', `${p.nome}: sem falta ${data}`)
+    }
+    return { pessoaId: p.id, data, falta: Boolean(falta) }
   }
 }

@@ -68,6 +68,26 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await v.get('/api/auditoria')).status, 403)
   })
 
+  it('mapa de efectividade dos civis: marca e tira faltas dia a dia (divide uma falta mais longa); a consulta não marca', async () => {
+    const c = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'funcionario', nome: 'Rosa Maria Tchissola', genero: 'F', numeroAgente: 'CV900', carreiraCivil: 'administrativo', categoriaCivil: 'Terceiro Oficial' })).body
+    assert.ok(c.id, JSON.stringify(c))
+    const marcar = (data, falta = true) => adm.put('/api/faltas-civis').send({ pessoaId: c.id, data, falta })
+    await adm.post('/api/ausencias').send({ pessoaId: c.id, tipo: 'falta', inicio: '2027-03-09', fim: '2027-03-11' }).expect(201)
+    await marcar('2027-03-03').expect(200)
+    await marcar('2027-03-03').expect(200) // já estava: não duplica
+    await marcar('2027-03-10', false).expect(200) // tira o dia do meio
+    const m = (await adm.get('/api/faltas-civis?mes=2027-03')).body
+    const linha = m.pessoas.find((p) => p.id === c.id)
+    assert.deepEqual([m.dias, linha.categoria, linha.faltas], [31, 'Terceiro Oficial', [3, 9, 11]])
+    assert.ok(m.fimDeSemana.includes(6) && m.fimDeSemana.includes(7)) // 6 e 7 de Março de 2027: sábado e domingo
+    assert.equal((await adm.get('/api/faltas-civis?mes=2027-13x')).status, 400)
+    await adm.post('/api/utilizadores').send({ nome: 'So Consulta Faltas', email: 'faltas.ver@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' }).expect(201)
+    const t = await amb.entrar('faltas.ver@pessoal.ao', 'Inicial2026x')
+    const v = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' })).body.token)
+    assert.equal((await v.get('/api/faltas-civis?mes=2027-03')).status, 200)
+    assert.equal((await v.put('/api/faltas-civis').send({ pessoaId: c.id, data: '2027-03-15', falta: true })).status, 403)
+  })
+
   it('ficha do militar com os campos da lei; NIP repetido é recusado', async () => {
     const r = await adm.post('/api/pessoas').send(militar({ nip: 'NIP0001', ramo: 'MGA', posto: 'coronel', quadroEspecial: 'AN', dataNascimento: '1970-05-20' })).expect(201)
     assert.equal(r.body.postoNome, 'Capitão-de-Mar-e-Guerra')
