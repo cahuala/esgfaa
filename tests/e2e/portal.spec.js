@@ -9,13 +9,22 @@ test.beforeEach(async ({ page }) => {
 
 const NOVA = 'Portal2026segura'
 
-async function primeiraEntrada(page, email) {
+// a palavra-passe inicial vem na ficha de acesso que aparece ao registar (só uma vez)
+async function lerFicha(page) {
+  const ficha = page.getByRole('dialog', { name: 'Ficha de acesso ao portal' })
+  await expect(ficha).toBeVisible()
+  const senha = (await ficha.locator('dd.font-monospace.fs-5').innerText()).trim()
+  await ficha.getByRole('button', { name: 'Fechar' }).click()
+  return senha
+}
+
+async function primeiraEntrada(page, email, senha) {
   await page.goto('/portal/')
   await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Palavra-passe', { exact: true }).fill(email)
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(senha)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByText(/Escolha uma palavra-passe nova para continuar/)).toBeVisible()
-  await page.getByLabel(/Palavra-passe atual/).fill(email)
+  await page.getByLabel(/Palavra-passe atual/).fill(senha)
   await page.getByLabel('Nova palavra-passe', { exact: true }).fill(NOVA)
   await page.getByLabel('Repetir a nova palavra-passe').fill(NOVA)
   await page.getByRole('button', { name: 'Guardar nova palavra-passe' }).click()
@@ -47,12 +56,12 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Nome completo').fill('Cor. Docente Teste')
   await page.getByLabel('E-mail da Escola').fill(docente)
   await page.getByRole('button', { name: 'Registar docente' }).click()
-  await expect(page.getByText(/Docente registado/)).toBeVisible()
+  const senhaDocente = await lerFicha(page)
   await page.getByRole('button', { name: 'Estudante', exact: true }).click()
   await page.getByLabel('Nome completo').fill('Maj. Estudante Teste')
   await page.getByLabel('E-mail da Escola').fill(estudante)
   await page.getByRole('button', { name: 'Registar estudante' }).click()
-  await expect(page.getByText(/Estudante registado/)).toBeVisible()
+  const senhaEstudante = await lerFicha(page)
 
   // Administração Escolar: turma e matrícula de quem já está registado
 
@@ -93,7 +102,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('Programa guardado.')).toBeVisible()
 
   // ---------- portal: docente ----------
-  await primeiraEntrada(page, docente)
+  await primeiraEntrada(page, docente, senhaDocente)
   await page.locator('#content a', { hasText: 'Estratégia Militar' }).first().click()
   await page.getByRole('tab', { name: /Avisos/ }).click()
   await expect(page.getByRole('heading', { name: 'Novo aviso' })).toBeVisible()
@@ -170,7 +179,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Sair' }).click()
 
   // ---------- portal: estudante ----------
-  await primeiraEntrada(page, estudante)
+  await primeiraEntrada(page, estudante, senhaEstudante)
   await expect(page.getByText('Primeira aula')).toBeVisible() // avisos das cadeiras na página inicial
   // o aviso do docente chegou como notificação (sino do cabeçalho)
   await page.getByRole('button', { name: /Notificações \(\d+ por ler\)/ }).click()
