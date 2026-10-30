@@ -34,7 +34,7 @@ test.describe('painel de administração', () => {
     await page.keyboard.type('Corpo escrito pelo teste automático.')
 
     // sem secção não se publica
-    await page.getByRole('button', { name: 'Publicar' }).click()
+    await page.getByRole('button', { name: 'Enviar ao Comandante para aprovação' }).click()
     await expect(page.getByText(/Para publicar, preencha: Secção/)).toBeVisible()
 
     await page.getByLabel('Secção *').fill('Institucional')
