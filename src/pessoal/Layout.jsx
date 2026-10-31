@@ -64,13 +64,13 @@ export default function Layout({ children }) {
         </div>
         {gestao && <div className="navbar-form flex-grow-1 d-none d-md-flex align-items-center px-3"><PesquisaGeral /></div>}
         <div className="navbar-nav">
-          <div className="navbar-item d-none d-md-flex align-items-center me-2">
+          <div className="navbar-item d-none d-xl-flex align-items-center me-2">
             <span className="badge bg-success-subtle text-success border border-success"><i className="fa fa-network-wired me-1" />Rede interna</span>
           </div>
           <div className="navbar-item navbar-user d-flex align-items-center gap-2 pe-3">
             <span className="admin-avatar">{iniciais}</span>
-            <span className="d-none d-md-inline">
-              <span className="fw-bold d-block lh-1">{utilizador.nome}</span>
+            <span className="d-none d-lg-inline pes-cab-utilizador" title={utilizador.nome}>
+              <span className="fw-bold lh-1">{utilizador.nome}</span>
               <small className="text-muted">{utilizador.unidadeNome || utilizador.papelNome}</small>
             </span>
             <button type="button" className="btn btn-sm btn-outline-secondary ms-2" onClick={sair} title="Sair"><i className="fa fa-sign-out-alt" /></button>

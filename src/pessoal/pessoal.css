@@ -281,8 +281,26 @@
 .pes-badge-civ { background: #f3e5f5; color: #6a1b9a; font-size: 9px; }
 .pes-modelo { border: 1.5px solid #e5e2d8; border-radius: 8px; padding: 6px 10px; font-size: 12.5px; cursor: pointer; background: #fff; }
 .pes-modelo.activo { border-color: #c09820; background: #faf8f2; font-weight: 600; }
-.app-header .navbar-form { flex: 1 1 auto; max-width: 600px; margin: 0 16px; padding: 0; }
-.app-header .navbar-form .pes-geral { width: 460px; max-width: 100%; }
+.app-header .navbar-form { flex: 1 1 auto; min-width: 0; width: auto; max-width: 600px; margin: 0 16px; padding: 0; }
+.app-header .navbar-form .pes-geral { width: 100%; max-width: 460px; }
+/* cabeçalho numa só linha, em qualquer largura: o que não cabe esconde-se, nada se sobrepõe */
+.app-header { flex-wrap: nowrap; }
+.app-header .navbar-nav { flex: none; flex-wrap: nowrap; margin-left: auto; }
+.pes-cab-utilizador { max-width: 190px; min-width: 0; }
+.pes-cab-utilizador > * { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 767.98px) {
+  .app-header { display: flex; align-items: center; }
+  .app-header .navbar-header { flex: 1 1 auto; width: auto; min-width: 0; padding-right: 8px; }
+  .app-header .navbar-nav { width: auto; }
+  .app-header .navbar-header .navbar-brand { min-width: 0; overflow: hidden; }
+  .app-header .esg-cabecalho-titulo { min-width: 0; overflow: hidden; }
+  .app-header .esg-cabecalho-titulo b, .app-header .esg-cabecalho-titulo small { overflow: hidden; text-overflow: ellipsis; }
+  .app-header .navbar-nav { order: 2; }
+  .app-header .navbar-user { padding-right: 8px !important; gap: 0 !important; }
+  .app-header .navbar-user .admin-avatar { display: none; }
+  .app-header .navbar-user .btn { margin-left: 0 !important; }
+  .app-header .navbar-header .navbar-mobile-toggler { order: 3; }
+}
 
 /* cartão Multicaixa (dados bancários da ficha) */
 .pes-mcx { position: relative; width: 100%; max-width: 340px; aspect-ratio: 85.6 / 54; border-radius: 14px; padding: 16px 18px; color: #fff; overflow: hidden; display: flex; flex-direction: column; background: linear-gradient(135deg, var(--mcx-1), var(--mcx-2)); box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .55); font-family: 'Helvetica Neue', Arial, sans-serif; }

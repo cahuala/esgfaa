@@ -89,7 +89,7 @@ function Layout({ children }) {
         </div>
 
         <div className="navbar-nav">
-          <div className="navbar-item navbar-form d-none d-md-block">
+          <div className="navbar-item navbar-form d-none d-lg-block">
             <form onSubmit={(e) => { e.preventDefault(); const q = e.currentTarget.q.value.trim(); if (q) navegar(`/pesquisa?q=${encodeURIComponent(q)}`) }} role="search">
               <div className="form-group">
                 <input name="q" type="search" className="form-control" placeholder={tx('Pesquisar no portal')} aria-label={tx('Pesquisar no portal')} />
@@ -97,7 +97,7 @@ function Layout({ children }) {
               </div>
             </form>
           </div>
-          <div className="navbar-item d-md-none">
+          <div className="navbar-item d-lg-none">
             <Link to="/pesquisa" className="navbar-link icon" aria-label={tx('Pesquisar')}><i className="fa fa-search" /></Link>
           </div>
           <div className="navbar-item">
@@ -116,7 +116,7 @@ function Layout({ children }) {
             <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center p-conta-botao" aria-expanded={menuConta} onClick={() => setContaEm(menuConta ? null : pathname)}>
               <FotoPortal conta={conta} grande={false} />
               <span>
-                <span className="d-none d-md-inline fw-bold">{conta.nome}</span>
+                <span className="d-none d-xl-inline fw-bold p-conta-nome" title={conta.nome}>{conta.nome}</span>
                 <b className="caret" />
               </span>
             </button>
