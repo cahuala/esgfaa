@@ -90,6 +90,8 @@ export default function Layout({ children }) {
               <div className="menu-header">Geral</div>
               <Item para="/" fim icone="fa-chart-pie" texto="Painel" />
               <Item para="/pessoas" icone="fa-users" texto="Pessoal" />
+              <Item para="/estudantes" icone="fa-user-graduate" texto="Estudantes" />
+              <Item para="/docentes" icone="fa-chalkboard-teacher" texto="Docentes" />
               {pode('editar') && <Item para="/pessoas/nova" icone="fa-user-plus" texto="Nova ficha" />}
               {pode('editar') && <Item para="/importar" icone="fa-file-import" texto="Importar Excel e fotos" />}
               <Item para="/processos" icone="fa-folder-open" texto="Processos individuais" />

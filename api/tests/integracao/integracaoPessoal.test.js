@@ -54,6 +54,14 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal(f.status, 200, f.body.erro)
     assert.equal(f.body.numero.startsWith('E'), true)
     assert.equal((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: f.body.senhaInicial })).status, 200)
+    // o estado da conta (para a tabela do Pessoal): já entrou, ativa
+    const corpoEstado = JSON.stringify({ ids: [contaId] })
+    const d2 = agora()
+    const est = await amb.http().post('/api/integracao/pessoal/estado-contas').set('Content-Type', 'application/json').set('X-Pessoal-Data', d2).set('X-Pessoal-Assinatura', assinar(d2, corpoEstado)).send(corpoEstado).expect(200)
+    assert.equal(est.body[0].id, contaId)
+    assert.equal(est.body[0].ativo, true)
+    assert.ok(est.body[0].ultimoAcesso)
+    assert.equal(est.body[0].deveMudarSenha, true)
     // sem assinatura válida, nada
     assert.equal((await amb.http().post('/api/integracao/pessoal/ficha-acesso').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', '0'.repeat(64)).send(corpo)).status, 401)
     const registo = (await adm.get('/api/admin/atividades?acao=repor_senha_portal')).body

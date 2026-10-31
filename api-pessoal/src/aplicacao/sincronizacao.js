@@ -100,6 +100,45 @@ export class ServicoSincronizacao {
   }
 
   /*
+    O estado no portal de cada pessoa (para as tabelas dos estudantes e docentes): o envio (pendente, enviado,
+    erro) e, se o portal responder, a conta (número, ativa, último acesso, palavra-passe inicial).
+    Sem ligação ao portal, vem só o estado do envio.
+  */
+  async estadoNoPortal(pessoaIds) {
+    const sinc = await this.bd.sincronizacao.findMany({ where: { pessoaId: { in: pessoaIds } } })
+    const contas = new Map()
+    const ids = sinc.map((x) => x.contaPortalId).filter(Boolean)
+    if (this.ativa && ids.length) {
+      try {
+        const corpo = JSON.stringify({ ids })
+        const data = String(Math.floor(this.agora().getTime() / 1000))
+        const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/estado-contas`, {
+          method: 'POST', body: corpo, signal: AbortSignal.timeout(8_000),
+          headers: { 'Content-Type': 'application/json', 'X-Pessoal-Data': data, 'X-Pessoal-Assinatura': assinar(this.config.portal.chave, data, corpo) },
+        })
+        if (r.ok) for (const c of await r.json()) contas.set(c.id, c)
+      } catch { /* sem ligação: fica só o estado do envio */ }
+    }
+    return new Map(sinc.map((x) => [x.pessoaId, { envio: x.estado, erro: x.erro, conta: x.contaPortalId ? contas.get(x.contaPortalId) ?? { id: x.contaPortalId } : null }]))
+  }
+
+  // fichas de acesso de várias pessoas de uma vez (ex.: uma turma nova); as que falham vêm com o motivo
+  async fichasAcesso(u, ids) {
+    exigir(u, 'editar')
+    const fichas = []
+    const erros = []
+    for (const id of ids.slice(0, 100)) {
+      try {
+        fichas.push(await this.fichaAcesso(u, id))
+      } catch (e) {
+        const p = await this.bd.pessoa.findUnique({ where: { id }, select: { nome: true } })
+        erros.push({ id, nome: p?.nome ?? `#${id}`, erro: e.message })
+      }
+    }
+    return { fichas, erros }
+  }
+
+  /*
     Ficha de acesso ao portal pedida aqui (a Repartição regista e entrega no mesmo sítio): o portal dá uma
     palavra-passe inicial nova, que vem só na resposta para se imprimir (não fica guardada no Pessoal).
   */

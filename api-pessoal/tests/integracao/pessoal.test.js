@@ -306,6 +306,7 @@ describe('Envio para o Portal Académico', () => {
       const corpo = JSON.parse(op.body)
       // quem assina os diplomas vai à parte (só quando muda)
       if (url.endsWith('/assinaturas')) { assinaturas.push(corpo.assinaturas); return { ok: true, status: 200, json: async () => ({ ok: true }) } }
+      if (url.endsWith('/estado-contas')) return { ok: true, status: 200, json: async () => corpo.ids.map((id) => ({ id, numero: `E2026-${id}`, ativo: true, ultimoAcesso: null, deveMudarSenha: true })) }
       if (url.endsWith('/ficha-acesso')) { pedidos.push({ url, op }); return { ok: true, status: 200, json: async () => ({ nome: 'Aluno', numero: 'E2026-0009', email: 'aluno.fora@esgfaa.gov.ao', senhaInicial: 'Kx7m-Pq4r-Zt9w', portal: 'https://portal.escola' }) } }
       pedidos.push({ url, op })
       return { ok: true, status: 200, json: async () => ({ resultados: corpo.pessoas.map((p, i) => ({ ref: p.ref, ok: true, contaId: 100 + i })) }) }
@@ -343,7 +344,7 @@ describe('Envio para o Portal Académico', () => {
 
       // estudante militar de outra unidade (fora da orgânica da ESG) e docente civil colaborador, sem unidade
       const alunoFora = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0102', vinculo: 'estudante', email: 'aluno.fora@esgfaa.gov.ao', unidadeOrigem: 'Regimento de Infantaria n.º 10' })).expect(201)).body
-      await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Maria da Conceição Neto', email: 'civil.colab@esgfaa.gov.ao', tipoDocente: 'colaborador', funcaoActual: 'Professora na Universidade Agostinho Neto' }).expect(201)
+      const civilColab = await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Maria da Conceição Neto', email: 'civil.colab@esgfaa.gov.ao', tipoDocente: 'colaborador', funcaoActual: 'Professora na Universidade Agostinho Neto' }).expect(201)
       await amb.contentor.servicos.sincronizacao.enviarPendentes()
       const fora = JSON.parse(pedidos.at(-1).op.body).pessoas
       const aluno = fora.find((p) => p.email === 'aluno.fora@esgfaa.gov.ao')
@@ -357,6 +358,16 @@ describe('Envio para o Portal Académico', () => {
       assert.equal(pedido.url, 'http://portal.interno:3001/api/integracao/pessoal/ficha-acesso')
       assert.equal(pedido.op.headers['X-Pessoal-Assinatura'], assinar(chave, pedido.op.headers['X-Pessoal-Data'], pedido.op.body))
       assert.equal(typeof JSON.parse(pedido.op.body).contaId, 'number')
+      // a tabela só dos estudantes, com o estado no portal; e fichas de acesso de vários de uma vez
+      const est = (await adm.get('/api/academicos?tipo=estudante').expect(200)).body
+      assert.equal(est.portalLigado, true)
+      const linha = est.pessoas.find((x) => x.id === alunoFora.id)
+      assert.deepEqual([linha.unidadeOrigem, linha.portal.envio, linha.portal.conta.ativo, linha.portal.conta.deveMudarSenha], ['Regimento de Infantaria n.º 10', 'enviado', true, true])
+      assert.ok(!est.pessoas.some((x) => x.email === 'func@esgfaa.gov.ao')) // funcionário: não é estudante
+      const doc = (await adm.get('/api/academicos?tipo=docente').expect(200)).body.pessoas
+      assert.ok(doc.some((x) => x.email === 'civil.colab@esgfaa.gov.ao'))
+      const lote = (await adm.post('/api/fichas-acesso').send({ ids: [alunoFora.id, civilColab.body.id] }).expect(200)).body
+      assert.deepEqual([lote.fichas.length, lote.erros.length], [2, 0])
     } finally { await amb.fechar() }
   })
 })

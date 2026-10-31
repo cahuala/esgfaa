@@ -292,6 +292,21 @@ export function rotas({ servicos: s, config }) {
     res.status(204).end()
   })
   r.get('/portal', async (req, res) => res.json(await s.sincronizacao.estado(u(req))))
+  // estudantes e docentes (também os de fora da ESG), com o estado no portal
+  r.get('/academicos', validar({ query: z.object({ tipo: z.enum(['estudante', 'docente']), q: z.string().max(100).optional(), ativo: z.enum(['sim', 'nao', 'todos']).optional() }) }), async (req, res) => {
+    const { tipo, q, ativo } = req.dados.query
+    const lista = await s.pessoas.listar(u(req), { vinculo: tipo, q, ativo })
+    const estado = await s.sincronizacao.estadoNoPortal(lista.map((p) => p.id))
+    res.json({
+      portalLigado: s.sincronizacao.ativa,
+      pessoas: lista.map((p) => ({
+        id: p.id, nome: p.nome, fotoId: p.fotoId, tipo: p.tipo, vinculo: p.vinculo, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, ramo: p.ramo,
+        nip: p.nip, numeroAgente: p.numeroAgente, email: p.email, ativo: p.ativo, unidadeNome: p.unidadeNome, unidadeOrigem: p.unidadeOrigem,
+        tipoDocente: p.tipoDocente, categoriaDocente: p.categoriaDocente, funcaoActual: p.funcaoActual, portal: estado.get(p.id) ?? null,
+      })),
+    })
+  })
+  r.post('/fichas-acesso', validar({ body: z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) }) }), async (req, res) => res.json(await s.sincronizacao.fichasAcesso(u(req), req.dados.body.ids)))
   // ficha de acesso ao portal (palavra-passe inicial nova, só para imprimir)
   r.post('/pessoas/:id/ficha-acesso', validar({ params: E.pId }), async (req, res) => res.json(await s.sincronizacao.fichaAcesso(u(req), req.dados.params.id)))
   r.post('/portal/enviar', async (req, res) => { exigir(u(req), 'administrar'); res.json(await s.sincronizacao.enviarPendentes()) })

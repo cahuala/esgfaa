@@ -88,6 +88,11 @@ export class ServicoRegistoPessoal {
   }
 
   // pedido assinado do Sistema de Gestão de Pessoal: a Repartição imprime lá a ficha de acesso
+  // o Pessoal mostra, na tabela dos estudantes e docentes, o estado de cada conta no portal
+  estadoContasDoPessoal(ctx, ids) {
+    return this.contas.estados(ids)
+  }
+
   reporSenhaDoPessoal(ctx, contaId, pedidoPor = '') {
     const quem = { id: null, nome: `${String(pedidoPor).slice(0, 100) || 'Repartição de Pessoal e Quadros'} (Sistema de Gestão de Pessoal)` }
     // o endereço público do portal vai na ficha (o Pessoal só conhece o endereço interno)

@@ -9,6 +9,7 @@ import DoisFatores from './componentes/DoisFatores'
 import MudarSenha from './paginas/MudarSenha'
 import PainelInicial from './paginas/PainelInicial'
 import Pessoas from './paginas/Pessoas'
+import Academicos from './paginas/Academicos'
 import Perfil from './paginas/Perfil'
 import FormularioFicha from './paginas/FormularioFicha'
 import Propostas from './paginas/Propostas'
@@ -103,6 +104,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={utilizador.permissoes.includes('ver') ? <PainelInicial /> : <Navigate to="/expediente" replace />} />
           <Route path="/pessoas" element={<Pessoas />} />
+          <Route path="/estudantes" element={<Academicos key="estudante" tipo="estudante" />} />
+          <Route path="/docentes" element={<Academicos key="docente" tipo="docente" />} />
           <Route path="/pessoas/nova" element={<FormularioFicha />} />
           <Route path="/pessoas/:id" element={<Perfil />} />
           <Route path="/pessoas/:id/editar" element={<FichaPorId />} />

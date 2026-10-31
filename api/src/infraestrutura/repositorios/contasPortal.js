@@ -51,6 +51,12 @@ export class RepositorioContasPortal {
     return paraConta(await this.prisma.contaPortal.findUnique({ where: { email: String(email).toLowerCase() } }))
   }
 
+  // o estado de várias contas de uma vez (para o Pessoal): número, ativa, último acesso e palavra-passe inicial
+  async estados(ids) {
+    const linhas = await this.prisma.contaPortal.findMany({ where: { id: { in: ids } }, select: { id: true, numero: true, ativo: true, ultimoAcesso: true, deveMudarSenha: true } })
+    return linhas.map((l) => ({ ...l, ultimoAcesso: iso(l.ultimoAcesso) }))
+  }
+
   async listar({ tipo, q } = {}) {
     const termo = q ? { contains: q.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } : undefined
     const linhas = await this.prisma.contaPortal.findMany({
