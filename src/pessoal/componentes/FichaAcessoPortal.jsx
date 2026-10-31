@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
 import { Modal } from './Ui'
+import Logo from '../../assets/Logo.png'
 
 /*
   Ficha de acesso ao Portal Académico, dada aqui mesmo (quem regista o estudante ou o docente entrega-lhe a
@@ -40,14 +41,27 @@ export default function FichaAcessoPortal({ p, aoFechar }) {
       )}
       {erro && <div className="alert alert-danger mt-3 mb-0">{erro}</div>}
       {ficha && (
-        <dl className="row mb-0">
-          <dt className="col-sm-4">Nome</dt><dd className="col-sm-8">{ficha.nome}</dd>
-          <dt className="col-sm-4">Número</dt><dd className="col-sm-8">{ficha.numero}</dd>
-          <dt className="col-sm-4">E-mail (entrada)</dt><dd className="col-sm-8">{ficha.email}</dd>
-          <dt className="col-sm-4">Palavra-passe inicial</dt><dd className="col-sm-8 font-monospace fs-5">{ficha.senhaInicial}</dd>
-          {ficha.portal && <><dt className="col-sm-4">Endereço</dt><dd className="col-sm-8">{ficha.portal}/</dd></>}
-          <dd className="col-12 small text-muted mt-2 mb-0">Esta palavra-passe só se mostra agora: imprima a ficha antes de fechar.</dd>
-        </dl>
+        <div className="pes-ficha-acesso">
+          <div className="pes-ficha-acesso-topo">
+            <img src={Logo} alt="" />
+            <div><strong>ESCOLA SUPERIOR DE GUERRA</strong><span>Portal Académico · Ficha de acesso</span></div>
+          </div>
+          <div className="pes-ficha-acesso-risca" />
+          <div className="pes-ficha-acesso-corpo">
+            <dl>
+              <dt>Nome</dt><dd>{ficha.nome}</dd>
+              <dt>Número</dt><dd>{ficha.numero}</dd>
+              <dt>E-mail (para entrar)</dt><dd>{ficha.email}</dd>
+              {ficha.portal && <><dt>Endereço</dt><dd className="pes-ficha-acesso-url">{ficha.portal}/</dd></>}
+            </dl>
+            <div className="pes-ficha-acesso-senha">
+              <span>Palavra-passe inicial</span>
+              <code>{ficha.senhaInicial}</code>
+              <small>Muda-se na primeira entrada</small>
+            </div>
+          </div>
+          <div className="pes-ficha-acesso-aviso"><i className="fa fa-exclamation-circle me-1" />Esta palavra-passe só se mostra agora: imprima a ficha antes de fechar.</div>
+        </div>
       )}
     </Modal>
   )

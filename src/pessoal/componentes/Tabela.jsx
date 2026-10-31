@@ -15,7 +15,7 @@ const TAMANHOS = [10, 25, 50, 100]
 */
 const lerEscolha = (k) => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } }
 const guardarEscolha = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* sem armazenamento: fica só nesta visita */ } }
-export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial }) {
+export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial, pesquisarEm, dica = 'Pesquisar…' }) {
   const [pesquisa, setPesquisa] = useState('')
   const [ordem, setOrdem] = useState(ordemInicial ?? null) // { chave, dir: 1 | -1 }
   const [pagina, setPagina] = useState(1)
@@ -31,7 +31,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
 
   const filtradas = useMemo(() => {
     const termos = normalizar(pesquisa).split(/\s+/).filter(Boolean)
-    let r = termos.length ? linhas.filter((l) => { const t = normalizar(colunas.map((c) => valor(c, l)).join(' ')); return termos.every((x) => t.includes(x)) }) : linhas
+    let r = termos.length ? linhas.filter((l) => { const t = normalizar(`${todas.map((c) => valor(c, l)).join(' ')} ${pesquisarEm ? pesquisarEm(l) : ''}`); return termos.every((x) => t.includes(x)) }) : linhas
     if (ordem) {
       const c = colunas.find((x) => x.chave === ordem.chave)
       if (c) {
@@ -49,7 +49,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
       }
     }
     return r
-  }, [linhas, pesquisa, ordem, colunas])
+  }, [linhas, pesquisa, ordem, colunas, todas, pesquisarEm])
 
   const paginas = Math.max(1, Math.ceil(filtradas.length / tamanho))
   const atual = Math.min(pagina, paginas)
@@ -74,10 +74,10 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
       <div className="pes-tabela-barra">
         <div className="pes-pesquisa">
           <i className="fa fa-search" />
-          <input type="search" className="form-control form-control-sm" placeholder="Pesquisar…" value={pesquisa} onChange={(e) => { setPesquisa(e.target.value); setPagina(1) }} aria-label={`Pesquisar em ${titulo}`} />
+          <input type="search" className="form-control form-control-sm" placeholder={dica} value={pesquisa} onChange={(e) => { setPesquisa(e.target.value); setPagina(1) }} aria-label={`Pesquisar em ${titulo}`} />
         </div>
         <span className="pes-tabela-conta">{filtradas.length === linhas.length ? `${linhas.length} registo(s)` : `${filtradas.length} de ${linhas.length}`}</span>
-        <div className="ms-auto d-flex gap-1 flex-wrap">
+        <div className="ms-auto d-flex gap-2 flex-wrap">
           {acoes}
           <div className="position-relative">
             <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setVerColunas(!verColunas)} aria-expanded={verColunas} title="Escolher as colunas (também as do Excel e do PDF)"><i className="fa fa-columns me-1" />Colunas{colunas.length < todas.length && ` (${colunas.length}/${todas.length})`}</button>

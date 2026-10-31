@@ -303,6 +303,9 @@ export function rotas({ servicos: s, config }) {
         id: p.id, nome: p.nome, fotoId: p.fotoId, tipo: p.tipo, vinculo: p.vinculo, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, ramo: p.ramo,
         nip: p.nip, numeroAgente: p.numeroAgente, email: p.email, ativo: p.ativo, unidadeNome: p.unidadeNome, unidadeOrigem: p.unidadeOrigem,
         tipoDocente: p.tipoDocente, categoriaDocente: p.categoriaDocente, funcaoActual: p.funcaoActual, portal: estado.get(p.id) ?? null,
+        // para a pesquisa e as colunas que se escolhem
+        bi: p.bi, telefone: p.telefone, nomeGuerra: p.nomeGuerra, genero: p.genero, idade: p.idade, dataNascimento: p.dataNascimento, naturalidade: p.naturalidade, provincia: p.provincia,
+        nacionalidade: p.nacionalidade, habilitacao: p.habilitacao, areaFormacao: p.areaFormacao, especialidade: p.especialidade,
       })),
     })
   })
