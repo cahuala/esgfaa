@@ -79,7 +79,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('tab', { name: /Cadeiras e horário/ }).click()
   await page.getByLabel('Código').fill('EST101')
   await page.getByLabel('Nome', { exact: true }).fill('Estratégia Militar')
-  await page.getByLabel('Período').selectOption('anual')
+  await page.getByLabel('Semestre').selectOption('anual')
   await page.getByRole('button', { name: 'Criar cadeira' }).click()
   await expect(page.getByText('EST101 · Estratégia Militar')).toBeVisible()
   await expect(page.getByText('Docentes por alocar')).toBeVisible()
