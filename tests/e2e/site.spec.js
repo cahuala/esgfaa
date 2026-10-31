@@ -23,7 +23,7 @@ test.describe('site público', () => {
 
     const texto = `Comentário automático ${Date.now()}`
     await page.locator('#comentarios').getByLabel('Nome').fill('Teste E2E')
-    await page.locator('#comentarios').getByLabel('Comentário').fill(texto)
+    await page.locator('#comentarios').getByLabel('Comentário', { exact: true }).fill(texto)
     await page.getByRole('button', { name: 'Publicar comentário' }).click()
     await expect(page.getByText(texto)).toBeVisible()
   })
