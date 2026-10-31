@@ -13,6 +13,7 @@ import MensagensSite from './paginas/MensagensSite'
 import FerramentasLti from './paginas/academico/FerramentasLti'
 import CentroSeguranca from './paginas/CentroSeguranca'
 import Turmas from './paginas/academico/Turmas'
+import AnosLetivos from './paginas/academico/AnosLetivos'
 import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
 import Alocacao from './paginas/academico/Alocacao'
@@ -71,6 +72,7 @@ function App() {
         {pode('comentarios.ver') && <Route path="/comentarios" element={<Comentarios />} />}
         {pode('paginas.editar') && <Route path="/traducoes-dados" element={<TraducoesDados />} />}
         {pode('contactos.ver') && <Route path="/mensagens-site" element={<MensagensSite />} />}
+        {pode('academico.ver') && <Route path="/academico/anos-letivos" element={<AnosLetivos />} />}
         {pode('academico.ver') && <Route path="/academico/turmas" element={<Turmas />} />}
         {pode('academico.ver') && <Route path="/academico/turmas/:id" element={<Turma />} />}
         {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}

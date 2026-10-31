@@ -119,6 +119,10 @@ Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-port
 
 Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (revê e remove comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
 
+### Ano letivo, cursos, turmas, cadeiras e docentes
+
+Em **Administração Escolar › Ano letivo e semestres** configura-se cada ano letivo (ex.: 2026/2027) com as datas do ano e dos dois semestres, e marca-se o **atual**. Depois, por esta ordem: os **cursos** (Conteúdos › Cursos), as **turmas** de cada curso e ano letivo (o ano escolhe-se da lista), as **cadeiras** de cada turma com o **semestre** (1.º, 2.º ou anual) e a **alocação dos docentes** (regente e assistentes). Na turma, as cadeiras aparecem por semestre, cada um com o estado (por começar, a decorrer, terminado); a alocação filtra por ano letivo e semestre. Uma turma criada num ano ainda não configurado regista-o com as datas habituais (outubro a julho), que se corrigem depois.
+
 ## Sistema de Gestão de Pessoal (rede interna)
 
 Sistema próprio da Repartição de Pessoal e Quadros, **separado do site e do portal**: tem API própria (`api-pessoal/`, porta 3002), base de dados própria (`esgfaa_pessoal`) e aplicação própria (`pessoal/`). **Não vai para a internet**: a API recusa qualquer pedido que não venha das redes internas da Escola, e a publicação no GitHub Pages retira a aplicação.

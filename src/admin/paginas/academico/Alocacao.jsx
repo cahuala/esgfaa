@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
-import { PAPEIS_DOCENCIA, PERIODOS } from './comum'
+import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
 import { t as tx } from '../../../i18n/linguas'
 
 // alocação de docentes: carga horária de cada docente e cadeiras por alocar (turmas ativas)
@@ -10,20 +10,27 @@ function Alocacao() {
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
   const [filtro, setFiltro] = useState('todas')
+  // filtros: o ano letivo (o atual por omissão) e o semestre em que a cadeira é dada
+  const [anos, setAnos] = useState([])
+  const [ano, setAno] = useState('')
+  const [semestre, setSemestre] = useState('')
   useEffect(() => { api('/academico/alocacao').then(setD).catch((e) => setErro(e.message)) }, [])
+  useEffect(() => { api('/academico/anos-letivos').then((l) => { setAnos(l); setAno(l.find((a) => a.atual)?.id ?? '') }).catch(() => {}) }, [])
 
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
 
-  const semRegente = d.cadeiras.filter((c) => !c.docentes.some((x) => x.papel === 'regente'))
-  const semDocentes = d.cadeiras.filter((c) => c.docentes.length === 0)
+  const doFiltro = d.cadeiras.filter((c) => (!ano || c.turma?.anoLetivo === ano) && (!semestre || String(c.periodo) === semestre))
+  const anoDe = (c) => anos.find((a) => a.id === c.turma?.anoLetivo)
+  const semRegente = doFiltro.filter((c) => !c.docentes.some((x) => x.papel === 'regente'))
+  const semDocentes = doFiltro.filter((c) => c.docentes.length === 0)
   const horasTotal = d.docentes.reduce((s, x) => s + x.horas, 0)
-  const cadeiras = filtro === 'sem-regente' ? semRegente : d.cadeiras
+  const cadeiras = filtro === 'sem-regente' ? semRegente : doFiltro
   const maxHoras = Math.max(1, ...d.docentes.map((x) => x.horas))
 
   const widgets = [
     ['bg-dark', 'fa-chalkboard-teacher', tx('DOCENTES'), d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
-    ['bg-red', 'fa-book', tx('CADEIRAS (TURMAS ATIVAS)'), d.cadeiras.length, tx('{0} sem docentes', { 0: semDocentes.length })],
+    ['bg-red', 'fa-book', tx('CADEIRAS (TURMAS ATIVAS)'), doFiltro.length, tx('{0} sem docentes', { 0: semDocentes.length })],
     ['bg-orange', 'fa-user-clock', tx('SEM REGENTE'), semRegente.length, tx('precisam de alocação')],
     ['bg-teal', 'fa-clock', tx('HORAS ALOCADAS'), horasTotal, tx('em todas as cadeiras')],
   ]
@@ -31,6 +38,16 @@ function Alocacao() {
   return (
     <>
       <CabecalhoPagina titulo={tx('Alocação de docentes')} subtitulo={tx('regentes, assistentes e carga horária')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Alocação de docentes') }]} />
+      <div className="d-flex flex-wrap gap-2 mb-3">
+        <select className="form-select w-auto" value={ano} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano letivo')}>
+          <option value="">{tx('Todos os anos letivos')}</option>
+          {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
+        </select>
+        <select className="form-select w-auto" value={semestre} onChange={(e) => setSemestre(e.target.value)} aria-label={tx('Semestre')}>
+          <option value="">{tx('Todos os semestres')}</option>
+          {Object.entries(PERIODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </div>
       <div className="row">
         {widgets.map(([cor, icone, titulo, valor, nota]) => (
           <div key={titulo} className="col-xl-3 col-md-6">
@@ -78,14 +95,17 @@ function Alocacao() {
           >
             <div className="table-responsive">
               <table className="table table-striped align-middle mb-0">
-                <thead><tr><th>{tx('Cadeira')}</th><th>{tx('Turma')}</th><th>{tx('Período')}</th><th>{tx('Docentes')}</th><th className="text-end">{tx('Horas')}</th><th /></tr></thead>
+                <thead><tr><th>{tx('Cadeira')}</th><th>{tx('Turma')}</th><th>{tx('Semestre')}</th><th>{tx('Docentes')}</th><th className="text-end">{tx('Horas')}</th><th /></tr></thead>
                 <tbody>
                   {cadeiras.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">{tx('Nada a mostrar.')}</td></tr>}
                   {cadeiras.map((c) => (
                     <tr key={c.id}>
                       <td><span className="fw-bold">{c.codigo}</span> {c.nome}</td>
-                      <td className="small">{c.turma?.nome}</td>
-                      <td className="small text-nowrap">{PERIODOS[c.periodo]}</td>
+                      <td className="small">{c.turma?.nome}<div className="text-muted">{c.turma?.anoLetivo}</div></td>
+                      <td className="small text-nowrap">
+                        {PERIODOS[c.periodo]}
+                        {(() => { const e = ESTADOS_PERIODO[estadoDoPeriodo(anoDe(c), String(c.periodo))]; return e && <div><span className={`badge ${e.cor}`}>{e.rotulo}</span></div> })()}
+                      </td>
                       <td className="small">
                         {c.docentes.length === 0 ? <span className="badge bg-warning text-dark">{tx('Por alocar')}</span> : c.docentes.map((x) => (
                           <div key={x.id}>{x.papel === 'regente' ? <i className="fa fa-star text-warning me-1" title={tx('Regente')} /> : <i className="fa fa-user text-muted me-1" title={tx('Assistente')} />}{x.nome}</div>

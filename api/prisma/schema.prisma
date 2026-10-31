@@ -275,6 +275,21 @@ model ContaPortal {
 }
 
 // turma de um curso num ano letivo (ex.: CEM 2026/2027)
+// ano letivo (ex.: "2026/2027"): datas do ano e dos semestres; as cadeiras são de um semestre (ou anuais)
+model AnoLetivo {
+  id              String   @id
+  inicio          DateTime @db.Date
+  fim             DateTime @db.Date
+  semestre1Inicio DateTime @map("semestre1_inicio") @db.Date
+  semestre1Fim    DateTime @map("semestre1_fim") @db.Date
+  semestre2Inicio DateTime @map("semestre2_inicio") @db.Date
+  semestre2Fim    DateTime @map("semestre2_fim") @db.Date
+  atual           Boolean  @default(false)
+  criadoEm        DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@map("anos_letivos")
+}
+
 model Turma {
   id            Int      @id @default(autoincrement())
   curso         String // identificador do curso (coleção "cursos")

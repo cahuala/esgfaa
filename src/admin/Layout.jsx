@@ -229,6 +229,7 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto={tx('Indicadores académicos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto={tx('Inquéritos de satisfação')} />}
             {pode('integridade.ver') && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Integridade académica')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano letivo e semestres')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}

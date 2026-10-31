@@ -16,6 +16,7 @@ function Turmas() {
   const { pode } = useSessao()
   const [lista, setLista] = useState(null)
   const [cursos, setCursos] = useState([])
+  const [anos, setAnos] = useState([])
   const [erro, setErro] = useState('')
   const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), anoCurricular: '1', nome: '' })
   const [erroForm, setErroForm] = useState('')
@@ -25,6 +26,8 @@ function Turmas() {
   useEffect(() => {
     carregar()
     api('/colecoes/cursos').then((c) => { setCursos(c); setF((x) => ({ ...x, curso: x.curso || c[0]?.id || '' })) }).catch(() => {})
+    // o ano letivo escolhe-se dos configurados (o atual por omissão)
+    api('/academico/anos-letivos').then((l) => { setAnos(l); const atual = l.find((a) => a.atual); if (atual) setF((x) => ({ ...x, anoLetivo: atual.id })) }).catch(() => {})
   }, [carregar])
 
   const nomeCurso = (id) => cursos.find((c) => c.id === id)?.nome || id
@@ -82,7 +85,13 @@ function Turmas() {
                   {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
                 <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano letivo')}</label>
-                <input id="t-ano" className="form-control mb-3" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />
+                {anos.length ? (
+                  <select id="t-ano" className="form-select mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} required>
+                    {!anos.some((a) => a.id === f.anoLetivo) && <option value="">—</option>}
+                    {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
+                  </select>
+                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
+                <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos letivos e semestres')}</Link></div>
                 <label className="form-label fw-bold" htmlFor="t-anocur">{tx('Ano curricular')}</label>
                 <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
                   {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}

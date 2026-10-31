@@ -15,6 +15,17 @@ export function rotasSecretaria({ servicos, config, privados }) {
   const ctx = (req) => req.contexto
   const ficheiro = privados ? receberFicheiro({ privados, config }) : (req, res, next) => next()
 
+  // anos letivos: datas do ano e dos semestres, e qual é o atual
+  const anos = a.anosLetivos
+  const pAno = z.object({ id: z.string().regex(/^\d{4}-\d{4}$/, 'Ano letivo não encontrado.') })
+  const idAno = (req) => req.dados.params.id.replace('-', '/')
+  const datasAno = z.object({ inicio: z.string().max(10), fim: z.string().max(10), semestre1Inicio: z.string().max(10), semestre1Fim: z.string().max(10), semestre2Inicio: z.string().max(10), semestre2Fim: z.string().max(10) })
+  r.get('/anos-letivos', async (req, res) => res.json(await anos.listar(ctx(req))))
+  r.post('/anos-letivos', validar({ body: datasAno.extend({ id: z.string().max(9) }) }), async (req, res) => res.status(201).json(await anos.criar(ctx(req), req.dados.body)))
+  r.put('/anos-letivos/:id', validar({ params: pAno, body: datasAno }), async (req, res) => res.json(await anos.editar(ctx(req), idAno(req), req.dados.body)))
+  r.post('/anos-letivos/:id/atual', validar({ params: pAno }), async (req, res) => res.json(await anos.tornarAtual(ctx(req), idAno(req))))
+  r.delete('/anos-letivos/:id', validar({ params: pAno }), async (req, res) => { await anos.apagar(ctx(req), idAno(req)); res.status(204).end() })
+
   // controlo centralizado: provas escritas para imprimir (Repartição), alterações de notas e docentes (Comandante)
   const ctl = servicos.controlo
   r.get('/pendentes', async (req, res) => res.json(await ctl.pendentes(ctx(req))))

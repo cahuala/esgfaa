@@ -88,6 +88,7 @@ import { ServicoQuestionarios } from './aplicacao/academico/ensino/questionarios
 import { ServicoLicoes } from './aplicacao/academico/ensino/licoes.js'
 import { ServicoRegistoPessoal } from './aplicacao/academico/pessoal/registo.js'
 import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
+import { ServicoAnosLetivos } from './aplicacao/academico/administracao/anosLetivos.js'
 import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
 import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/pautas.js'
 import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/calendario.js'
@@ -254,8 +255,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     }
   }
   // casos de uso da Administração Escolar (painel)
+  const anosLetivos = new ServicoAnosLetivos({ prisma, auditoria, relogio })
   const administracaoEscolar = () => {
     const d = {
+      anosLetivos,
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, esg, planosCurso: r.planosCurso, notificacoes, copias, copiasRepo: r.copias,
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
     }
@@ -264,6 +267,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       conclusao: new ServicoConclusaoCurso(d),
       documentos: new ServicoDocumentos(d),
       turmas: new ServicoTurmas(d),
+      anosLetivos,
       cadeiras: new ServicoCadeiras(d),
       pautas: new ServicoPautasAdministracao(d),
       planosCurso: new ServicoPlanosCurso(d),

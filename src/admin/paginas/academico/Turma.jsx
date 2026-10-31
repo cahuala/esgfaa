@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
-import { PERIODOS } from './comum'
+import { ESTADOS_PERIODO, PERIODOS, estadoDoPeriodo } from './comum'
 import { BLOCOS_DE_TEMPOS } from '../../../portal/regraAvaliacao'
 import CopiarTurma from './CopiarTurma'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
@@ -54,6 +54,9 @@ function Turma() {
 
   const carregar = useCallback(() => api(`/academico/turmas/${id}`).then((r) => { setErro(''); setT(r) }).catch((e) => setErro(e.message)), [id])
   useEffect(() => { carregar() }, [carregar])
+  // as datas do ano letivo da turma: o semestre de cada cadeira está por começar, a decorrer ou terminado
+  const [anos, setAnos] = useState([])
+  useEffect(() => { api('/academico/anos-letivos').then(setAnos).catch(() => {}) }, [])
   // a conclusão do curso de cada finalista (só esses têm certificado e diploma)
   useEffect(() => {
     if (!t?.anoFinal) return
@@ -198,7 +201,23 @@ function Turma() {
       {aba === 'cadeiras' && (
         <div className="row">
           <div className="col-xl-8">
-            {t.cadeiras.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+            {['1', '2', 'anual'].map((per) => {
+              const lista = t.cadeiras.filter((c) => String(c.periodo) === per)
+              if (!lista.length) return null
+              const ano = anos.find((a) => a.id === t.anoLetivo)
+              const estado = ESTADOS_PERIODO[estadoDoPeriodo(ano, per)]
+              const datas = ano && (per === '1' ? [ano.semestre1Inicio, ano.semestre1Fim] : per === '2' ? [ano.semestre2Inicio, ano.semestre2Fim] : [ano.inicio, ano.fim])
+              return (
+                <section key={per} className="mb-3" aria-label={PERIODOS[per]}>
+                  <h3 className="h5 d-flex flex-wrap align-items-center gap-2 mb-2">
+                    {PERIODOS[per]} <span className="badge bg-dark">{tx('{0} cadeira(s)', { 0: lista.length })}</span>
+                    {estado && <span className={`badge ${estado.cor}`}>{estado.rotulo}</span>}
+                    {datas && <small className="text-muted fw-normal">{datas.map((x) => x.split('-').reverse().join('/')).join(' – ')}</small>}
+                  </h3>
+                  {lista.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+                </section>
+              )
+            })}
             {t.cadeiras.length === 0 && <div className="alert alert-info">{tx('Ainda não há cadeiras nesta turma.')}</div>}
           </div>
           <div className="col-xl-4">
@@ -361,7 +380,7 @@ function NovaCadeira({ turma, carregar, avisar }) {
         <div className="row g-2">
           <div className="col-md-4"><label className="form-label fw-bold" htmlFor="c-codigo">{tx('Código')}</label><input id="c-codigo" className="form-control" value={f.codigo} onChange={(e) => setF({ ...f, codigo: e.target.value })} placeholder={tx('EST101')} required /></div>
           <div className="col-md-8"><label className="form-label fw-bold" htmlFor="c-nome">{tx('Nome')}</label><input id="c-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
-          <div className="col-md-6"><label className="form-label" htmlFor="c-periodo">{tx('Período')}</label><select id="c-periodo" className="form-select" value={f.periodo} onChange={(e) => setF({ ...f, periodo: e.target.value })}>{Object.entries(PERIODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
+          <div className="col-md-6"><label className="form-label" htmlFor="c-periodo">{tx('Semestre')}</label><select id="c-periodo" className="form-select" value={f.periodo} onChange={(e) => setF({ ...f, periodo: e.target.value })}>{Object.entries(PERIODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
           <div className="col-md-6"><label className="form-label" htmlFor="c-horas">{tx('Horas')}</label><input id="c-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
         </div>
         <button type="submit" className="btn btn-theme w-100 mt-3"><i className="fa fa-plus me-1" /> {tx('Criar cadeira')}</button>
