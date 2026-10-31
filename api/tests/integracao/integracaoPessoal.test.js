@@ -36,6 +36,31 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await amb.contentor.repositorios.contasPortal.porEmail(p.email)).ativo, false)
   })
 
+  it('com o Pessoal ligado, o painel só consulta; a ficha de acesso pede-se do Pessoal (assinada)', async () => {
+    const p = { ref: 'pessoal-90', tipo: 'estudante', nome: 'Major Estudante de Fora', email: 'de.fora@esgfaa.gov.ao', ativo: true, dados: { departamento: 'Regimento de Infantaria n.º 10' } }
+    const contaId = (await enviar([p]).expect(200)).body.resultados[0].contaId
+    const adm = amb.com(await amb.entrar())
+    assert.deepEqual((await adm.get('/api/admin/academico/contas/origem').expect(200)).body, { noPessoal: true })
+    // registar, mudar e importar no painel: não (é no Pessoal)
+    assert.equal((await adm.post('/api/admin/academico/contas').send({ tipo: 'estudante', nome: 'Pessoa Nova Teste', email: 'nova@esgfaa.gov.ao' })).status, 409)
+    assert.equal((await adm.put(`/api/admin/academico/contas/${contaId}`).send({ nome: 'Outro Nome Teste' })).status, 409)
+    assert.equal((await adm.post('/api/admin/academico/contas/importar').send({ tipo: 'estudante', linhas: [{ nome: 'Fulano de Tal', email: 'f@esgfaa.gov.ao' }] })).status, 409)
+    // a ficha de acesso continua no painel…
+    assert.equal((await adm.post(`/api/admin/academico/contas/${contaId}/repor-senha`)).status, 200)
+    // …e pede-se também do Pessoal: a palavra-passe nova vem na resposta e serve para entrar
+    const corpo = JSON.stringify({ contaId, pedidoPor: 'Sargento da RPQ' })
+    const data = agora()
+    const f = await amb.http().post('/api/integracao/pessoal/ficha-acesso').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinar(data, corpo)).send(corpo)
+    assert.equal(f.status, 200, f.body.erro)
+    assert.equal(f.body.numero.startsWith('E'), true)
+    assert.equal((await amb.http().post('/api/portal/entrar').send({ email: p.email, senha: f.body.senhaInicial })).status, 200)
+    // sem assinatura válida, nada
+    assert.equal((await amb.http().post('/api/integracao/pessoal/ficha-acesso').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', '0'.repeat(64)).send(corpo)).status, 401)
+    const registo = (await adm.get('/api/admin/atividades?acao=repor_senha_portal')).body
+    const linhas = registo.linhas ?? registo
+    assert.ok(linhas.some((l) => /Sargento da RPQ \(Sistema de Gestão de Pessoal\)/.test(l.utilizador_nome ?? l.utilizadorNome ?? '')))
+  })
+
   it('a fotografia vem do Pessoal: guarda-se, vê-se no painel e no portal, e apaga-se', async () => {
     const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]).toString('base64')
     const p = { ref: 'pessoal-70', tipo: 'estudante', nome: 'Major Foto de Teste', email: 'foto.teste@esgfaa.gov.ao', ativo: true, foto: { id: 'abc.jpg', dados: jpg } }

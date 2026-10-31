@@ -43,6 +43,8 @@ export function rotasIntegracao({ servicos, config }) {
     }
     res.json(await tratar({ actor: null, ip: req.ip, agente: 'Sistema de Gestão de Pessoal' }, dados))
   }]
+  // ficha de acesso pedida no Pessoal: palavra-passe inicial nova (só vai na resposta, para imprimir)
+  r.post('/pessoal/ficha-acesso', ...receber(z.object({ contaId: z.number().int().positive(), pedidoPor: z.string().max(150).default('') }), (ctx, d) => servicos.pessoal.registo.reporSenhaDoPessoal(ctx, d.contaId, d.pedidoPor), '2kb'))
   r.post('/pessoal/contas', ...receber(corpo, (ctx, d) => servicos.pessoal.registo.sincronizarDoPessoal(ctx, d.pessoas)))
   // quem ocupa hoje os cargos que assinam os diplomas e certificados (Comandante, Director de Ensino…)
   r.post('/pessoal/assinaturas', ...receber(corpoAssinaturas, (ctx, d) => servicos.administracaoEscolar.conclusao.receberAssinaturasDoPessoal(ctx, d.assinaturas), '20kb'))

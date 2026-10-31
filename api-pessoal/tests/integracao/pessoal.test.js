@@ -306,6 +306,7 @@ describe('Envio para o Portal Académico', () => {
       const corpo = JSON.parse(op.body)
       // quem assina os diplomas vai à parte (só quando muda)
       if (url.endsWith('/assinaturas')) { assinaturas.push(corpo.assinaturas); return { ok: true, status: 200, json: async () => ({ ok: true }) } }
+      if (url.endsWith('/ficha-acesso')) { pedidos.push({ url, op }); return { ok: true, status: 200, json: async () => ({ nome: 'Aluno', numero: 'E2026-0009', email: 'aluno.fora@esgfaa.gov.ao', senhaInicial: 'Kx7m-Pq4r-Zt9w', portal: 'https://portal.escola' }) } }
       pedidos.push({ url, op })
       return { ok: true, status: 200, json: async () => ({ resultados: corpo.pessoas.map((p, i) => ({ ref: p.ref, ok: true, contaId: 100 + i })) }) }
     }
@@ -341,7 +342,7 @@ describe('Envio para o Portal Académico', () => {
       assert.equal(assinaturas[0].comandante.cargo, 'O COMANDANTE DA ESG')
 
       // estudante militar de outra unidade (fora da orgânica da ESG) e docente civil colaborador, sem unidade
-      await adm.post('/api/pessoas').send(militar({ nip: 'NIP0102', vinculo: 'estudante', email: 'aluno.fora@esgfaa.gov.ao', unidadeOrigem: 'Regimento de Infantaria n.º 10' })).expect(201)
+      const alunoFora = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0102', vinculo: 'estudante', email: 'aluno.fora@esgfaa.gov.ao', unidadeOrigem: 'Regimento de Infantaria n.º 10' })).expect(201)).body
       await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Maria da Conceição Neto', email: 'civil.colab@esgfaa.gov.ao', tipoDocente: 'colaborador', funcaoActual: 'Professora na Universidade Agostinho Neto' }).expect(201)
       await amb.contentor.servicos.sincronizacao.enviarPendentes()
       const fora = JSON.parse(pedidos.at(-1).op.body).pessoas
@@ -349,6 +350,13 @@ describe('Envio para o Portal Académico', () => {
       const civil = fora.find((p) => p.email === 'civil.colab@esgfaa.gov.ao')
       assert.deepEqual([aluno.tipo, aluno.ativo, aluno.dados.departamento], ['estudante', true, 'Regimento de Infantaria n.º 10'])
       assert.deepEqual([civil.tipo, civil.ativo, civil.dados.departamento], ['docente', true, ''])
+      // a ficha de acesso pede-se daqui ao portal (assinada, com a conta que o portal criou); a palavra-passe só vem na resposta
+      const ficha = (await adm.post(`/api/pessoas/${alunoFora.id}/ficha-acesso`).expect(200)).body
+      assert.deepEqual([ficha.numero, ficha.senhaInicial, ficha.portal], ['E2026-0009', 'Kx7m-Pq4r-Zt9w', 'https://portal.escola'])
+      const pedido = pedidos.at(-1)
+      assert.equal(pedido.url, 'http://portal.interno:3001/api/integracao/pessoal/ficha-acesso')
+      assert.equal(pedido.op.headers['X-Pessoal-Assinatura'], assinar(chave, pedido.op.headers['X-Pessoal-Data'], pedido.op.body))
+      assert.equal(typeof JSON.parse(pedido.op.body).contaId, 'number')
     } finally { await amb.fechar() }
   })
 })

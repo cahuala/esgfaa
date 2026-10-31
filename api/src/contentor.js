@@ -319,7 +319,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     },
     // Repartição de Pessoal e Quadros: registo de estudantes e docentes
     pessoal: {
-      registo: new ServicoRegistoPessoal({ contas: r.contasPortal, cifra, auditoria, relogio, privados, dominioEmail: config.dominioEmail }),
+      registo: new ServicoRegistoPessoal({ contas: r.contasPortal, cifra, auditoria, relogio, privados, dominioEmail: config.dominioEmail, noPessoal: Boolean(config.chaveIntegracaoPessoal), urlPortal: config.urlPortal }),
     },
   }
 

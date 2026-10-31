@@ -20,6 +20,10 @@ const VAZIO = { tipo: 'estudante', nome: '', email: '', posto: '', ramo: '', nip
 function Registo() {
   const { pode } = useSessao()
   const registar = pode('pessoal.registar')
+  // com o Sistema de Gestão de Pessoal ligado, regista-se e muda-se lá; aqui fica a consulta e a ficha de acesso
+  const [noPessoal, setNoPessoal] = useState(false)
+  useEffect(() => { api('/academico/contas/origem').then((r) => setNoPessoal(r.noPessoal)).catch(() => {}) }, [])
+  const mudar = registar && !noPessoal
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [tipo, setTipo] = useState('')
@@ -79,11 +83,12 @@ function Registo() {
   return (
     <>
       <CabecalhoPagina titulo={tx('Registo de estudantes e docentes')} subtitulo={tx('Repartição de Pessoal e Quadros')} migalhas={[{ rotulo: tx('Pessoal e Quadros') }, { rotulo: tx('Registo') }]}>
-        {registar && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> {tx('Registar a partir de Excel/CSV')}</button>}
+        {mudar && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> {tx('Registar a partir de Excel/CSV')}</button>}
       </CabecalhoPagina>
-      {!registar && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Registo mantido pela Repartição de Pessoal e Quadros. A Administração Escolar consulta-o para matricular, inscrever e alocar docentes.')}</div>}
+      {noPessoal && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Os estudantes e os docentes registam-se e mudam-se no Sistema de Gestão de Pessoal (também os de outras unidades e os civis colaboradores); chegam aqui sozinhos. Aqui consulta-se e imprime-se a ficha de acesso ao portal (a chave).')}</div>}
+      {!registar && !noPessoal && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Registo mantido pela Repartição de Pessoal e Quadros. A Administração Escolar consulta-o para matricular, inscrever e alocar docentes.')}</div>}
       <div className="row">
-        <div className={registar ? 'col-xl-8' : 'col-12'}>
+        <div className={mudar ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
           <Painel titulo={tx('Pessoas registadas{0}', { 0: lista ? ` (${lista.length})` : '' })} corpo={false}>
             <div className="panel-body d-flex gap-2 flex-wrap pb-0">
@@ -118,9 +123,9 @@ function Registo() {
                         <td className="text-end text-nowrap">
                           {registar && (
                             <>
-                              <button type="button" className="btn btn-sm btn-white me-1" onClick={() => abrirEdicao(c)} title={tx('Editar dados')} aria-label={tx('Editar {0}', { 0: c.nome })}><i className="fa fa-pen" /></button>
+                              {mudar && <button type="button" className="btn btn-sm btn-white me-1" onClick={() => abrirEdicao(c)} title={tx('Editar dados')} aria-label={tx('Editar {0}', { 0: c.nome })}><i className="fa fa-pen" /></button>}
                               <button type="button" className="btn btn-sm btn-white me-1" onClick={() => repor(c)} title={tx('Repor a palavra-passe')} aria-label={tx('Repor a palavra-passe de {0}', { 0: c.nome })}><i className="fa fa-key" /></button>
-                              <button type="button" className={`btn btn-sm ${c.ativo ? 'btn-white text-danger' : 'btn-success'}`} onClick={() => ativar(c)}>{c.ativo ? tx('Desativar') : tx('Ativar')}</button>
+                              {mudar && <button type="button" className={`btn btn-sm ${c.ativo ? 'btn-white text-danger' : 'btn-success'}`} onClick={() => ativar(c)}>{c.ativo ? tx('Desativar') : tx('Ativar')}</button>}
                             </>
                           )}
                         </td>
@@ -132,7 +137,7 @@ function Registo() {
             )}
           </Painel>
         </div>
-        {registar && (
+        {mudar && (
           <div className="col-xl-4">
             <Painel titulo={editar ? tx('Editar dados') : tx('Registar pessoa')}>
               <form onSubmit={guardar}>

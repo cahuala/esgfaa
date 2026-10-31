@@ -17,6 +17,7 @@ import Tabela from '../componentes/Tabela'
 import Estante from '../componentes/Estante'
 import NovaLicenca from '../componentes/NovaLicenca'
 import Anexo from '../componentes/Anexo'
+import FichaAcessoPortal from '../componentes/FichaAcessoPortal'
 import { juntarAoProcesso } from '../anexos'
 import Carregar from '../componentes/Carregar'
 import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, NaoEncontrado } from '../componentes/Ui'
@@ -113,6 +114,7 @@ export default function Perfil() {
           <button type="button" className="pes-btn-hdr" onClick={() => navegar(-1)}><i className="fa fa-arrow-left" />Voltar</button>
           {editar && <Link to={`/pessoas/${p.id}/editar`} className="pes-btn-hdr pes-btn-ouro"><i className="fa fa-user-edit" />Editar</Link>}
           {editar && <button type="button" className="pes-btn-hdr" onClick={() => setModal({ documentos: true })}><i className="fa fa-file-signature" />Documentos</button>}
+          {editar && p.ativo && p.email && (p.docente || p.discente) && <button type="button" className="pes-btn-hdr" onClick={() => setModal({ ficha: true })} title="Palavra-passe inicial do Portal Académico, para imprimir e entregar"><i className="fa fa-key" />Ficha de acesso</button>}
         </div>
       </div>
 
@@ -398,6 +400,7 @@ export default function Perfil() {
         </Bloco>
       )}
 
+      {modal?.ficha && <FichaAcessoPortal p={p} aoFechar={fechar} />}
       {modal?.licenca && <NovaLicenca pessoa={p} aoFechar={fechar} aoGuardar={() => depois('Licença registada.')} />}
       {modal?.evento && <NovoEvento p={p} aoFechar={fechar} aoGuardar={() => depois('Registado no histórico.')} />}
       {modal?.curso && <FormCurso p={p} curso={modal.curso} aoFechar={fechar} aoGuardar={(m) => depois(m)} />}

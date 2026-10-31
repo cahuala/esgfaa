@@ -1,4 +1,4 @@
-import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
+import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
 import { emailDaEscola, numeroConta, senhaInicial, TIPOS_CONTA } from '../../../dominio/academico/pessoas/contas.js'
@@ -8,10 +8,24 @@ import { emailDaEscola, numeroConta, senhaInicial, TIPOS_CONTA } from '../../../
   e a conta do portal. A Administração Escolar consulta este registo para matricular, inscrever
   e alocar, mas não regista ninguém.
   A palavra-passe inicial é aleatória e só se mostra uma vez (na ficha de acesso que a Repartição entrega).
+  Com o Sistema de Gestão de Pessoal ligado (noPessoal), é lá que se registam e mudam os estudantes e os
+  docentes; aqui ficam só a consulta e a ficha de acesso (repor a palavra-passe).
 */
+const SO_NO_PESSOAL = 'Os estudantes e os docentes registam-se e mudam-se no Sistema de Gestão de Pessoal; o portal recebe-os de lá. Aqui pode imprimir a ficha de acesso.'
+
 export class ServicoRegistoPessoal {
   constructor(dependencias) {
-    Object.assign(this, { gerarSenha: senhaInicial }, dependencias)
+    Object.assign(this, { gerarSenha: senhaInicial, noPessoal: false }, dependencias)
+  }
+
+  #soNoPessoal() {
+    if (this.noPessoal) throw new Conflito(SO_NO_PESSOAL)
+  }
+
+  // o painel sabe se o registo é aqui ou no Pessoal (para mostrar ou esconder «Novo registo» e «Importar»)
+  origem(ctx) {
+    ctx.actor.exigir('pessoal.ver', 'academico.ver')
+    return { noPessoal: this.noPessoal }
   }
 
   // quem pode ver o registo: o Pessoal e Quadros e a Administração Escolar (para escolher)
@@ -29,6 +43,7 @@ export class ServicoRegistoPessoal {
 
   async criarConta(ctx, { tipo, nome, email, dados }) {
     ctx.actor.exigir('pessoal.registar')
+    this.#soNoPessoal()
     const t = escolha(tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
     const e = emailDaEscola(email, this.dominioEmail)
     const n = texto(nome, 'nome', 'Nome completo', { min: 5, max: 150 })
@@ -51,6 +66,7 @@ export class ServicoRegistoPessoal {
 
   async editarConta(ctx, id, { nome, email, ativo, dados }) {
     ctx.actor.exigir('pessoal.registar')
+    this.#soNoPessoal()
     const c = await this.contas.porId(id)
     if (!c) throw new NaoEncontrado('Conta não encontrada.')
     if (nome !== undefined) c.nome = texto(nome, 'nome', 'Nome completo', { min: 5, max: 150 })
@@ -68,6 +84,17 @@ export class ServicoRegistoPessoal {
   // dá uma palavra-passe inicial nova (para a ficha de acesso) e termina as sessões abertas
   async reporSenha(ctx, id) {
     ctx.actor.exigir('pessoal.registar')
+    return this.#reporSenha(ctx, id)
+  }
+
+  // pedido assinado do Sistema de Gestão de Pessoal: a Repartição imprime lá a ficha de acesso
+  reporSenhaDoPessoal(ctx, contaId, pedidoPor = '') {
+    const quem = { id: null, nome: `${String(pedidoPor).slice(0, 100) || 'Repartição de Pessoal e Quadros'} (Sistema de Gestão de Pessoal)` }
+    // o endereço público do portal vai na ficha (o Pessoal só conhece o endereço interno)
+    return this.#reporSenha({ ...ctx, actor: quem }, contaId).then((r) => ({ ...r, portal: this.urlPortal || '' }))
+  }
+
+  async #reporSenha(ctx, id) {
     const c = await this.contas.porId(id)
     if (!c) throw new NaoEncontrado('Conta não encontrada.')
     const inicial = this.gerarSenha(c.email)
@@ -174,6 +201,7 @@ export class ServicoRegistoPessoal {
   */
   async importar(ctx, { tipo = 'estudante', linhas, simular = true }) {
     ctx.actor.exigir('pessoal.registar')
+    this.#soNoPessoal()
     const t = escolha(tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
     if (!Array.isArray(linhas) || !linhas.length) throw new ErroValidacao('A folha não tem pessoas.', { campo: 'linhas' })
     if (linhas.length > 500) throw new ErroValidacao('No máximo 500 pessoas de cada vez.', { campo: 'linhas' })

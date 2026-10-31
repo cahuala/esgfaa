@@ -4,12 +4,11 @@ import { t as tx } from '../../../i18n/linguas'
   Fichas de acesso ao Portal Académico (PDF A4, quatro por página, para recortar): nome, número, e-mail e a
   palavra-passe inicial, que o sistema só mostra uma vez. A Repartição entrega a ficha em mão; o portal
   obriga a mudar a palavra-passe na primeira entrada.
-  pessoas: [{ nome, numero, email, senhaInicial }]
+  pessoas: [{ nome, numero, email, senhaInicial }]; portal: o endereço do portal (por omissão, o deste site)
 */
-export async function imprimirFichas(pessoas) {
+export async function imprimirFichas(pessoas, { portal = `${window.location.origin}/portal/` } = {}) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  const portal = `${window.location.origin}/portal/`
   const altura = 297 / 4
   pessoas.forEach((p, i) => {
     if (i && i % 4 === 0) doc.addPage()

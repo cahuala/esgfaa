@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
+import { invalido } from '../erros.js'
 import { calcularAssinantes } from './assinantes.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
@@ -96,6 +97,32 @@ export class ServicoSincronizacao {
     if (!r.ok) throw new Error(`O portal respondeu ${r.status} às assinaturas.`)
     this.ultimasAssinaturas = corpo
     return { enviado: true }
+  }
+
+  /*
+    Ficha de acesso ao portal pedida aqui (a Repartição regista e entrega no mesmo sítio): o portal dá uma
+    palavra-passe inicial nova, que vem só na resposta para se imprimir (não fica guardada no Pessoal).
+  */
+  async fichaAcesso(u, pessoaId) {
+    exigir(u, 'editar')
+    if (!this.ativa) throw invalido('O Pessoal não está ligado ao Portal Académico.')
+    const s = await this.bd.sincronizacao.findUnique({ where: { pessoaId }, include: { pessoa: { select: { nome: true } } } })
+    if (!s?.contaPortalId) throw invalido('Esta pessoa ainda não tem conta no portal (é docente ou estudante, com e-mail? espere o envio e tente de novo).')
+    const corpo = JSON.stringify({ contaId: s.contaPortalId, pedidoPor: u.nome || u.email || '' })
+    const data = String(Math.floor(this.agora().getTime() / 1000))
+    let r
+    try {
+      r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/ficha-acesso`, {
+        method: 'POST', body: corpo, signal: AbortSignal.timeout(15_000),
+        headers: { 'Content-Type': 'application/json', 'X-Pessoal-Data': data, 'X-Pessoal-Assinatura': assinar(this.config.portal.chave, data, corpo) },
+      })
+    } catch (e) {
+      throw invalido(`Sem ligação ao portal: ${e.message}`)
+    }
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw invalido(j.erro || `O portal respondeu ${r.status}.`)
+    await this.auditoria.registar(u, 'ficha_acesso_portal', `${s.pessoa.nome} (${j.numero})`)
+    return { nome: j.nome, numero: j.numero, email: j.email, senhaInicial: j.senhaInicial, portal: j.portal || '' }
   }
 
   async enviarPendentes() {
