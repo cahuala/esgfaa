@@ -14,7 +14,7 @@ const avisarMenu = () => window.dispatchEvent(new Event('pes-avisos'))
 export default function Mensagens() {
   const { id } = useParams()
   const navegar = useNavigate()
-  const { dados: conversas, recarregar } = useDados('/mensagens/conversas')
+  const { dados: conversas, recarregar } = useDados('/mensagens/conversas', undefined, { tempoReal: true })
   const [modal, setModal] = useState(null)
   // a lista também se actualiza (mensagens por ler, última mensagem)
   useEffect(() => { const t = setInterval(recarregar, 10_000); return () => clearInterval(t) }, [recarregar])
@@ -82,7 +82,9 @@ function Conversa({ id, aoMudar }) {
     }).catch(() => {})
     buscar()
     const t = setInterval(buscar, 4000)
-    return () => { vivo = false; clearInterval(t) }
+    // a mensagem nova chega logo (aviso instantâneo); o intervalo fica de reserva
+    window.addEventListener('pes-tempo-real', buscar)
+    return () => { vivo = false; clearInterval(t); window.removeEventListener('pes-tempo-real', buscar) }
   }, [id, aoMudar])
   useEffect(() => { fim.current?.scrollIntoView({ block: 'end' }) }, [estado.mensagens.length])
 

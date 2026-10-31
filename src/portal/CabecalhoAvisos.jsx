@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { api } from './api'
+import { api, comSessao } from './api'
+import { API_URL } from '../conteudo/api'
+import { ouvirTempoReal } from '../utils/tempoReal'
 import { ICONES_NOTIFICACAO, ha } from './formatar'
 import { t as tx } from '../i18n/linguas'
 
@@ -8,7 +10,8 @@ const INTERVALO = 60_000
 
 /*
   Sino de notificações e envelope de mensagens no cabeçalho (como no Color Admin / Moodle).
-  Atualiza de minuto a minuto e quando se muda de página.
+  Atualiza logo que chega uma notificação ou mensagem (aviso instantâneo do servidor), de minuto a minuto
+  (reserva) e quando se muda de página.
 */
 function CabecalhoAvisos() {
   const { pathname } = useLocation()
@@ -26,6 +29,10 @@ function CabecalhoAvisos() {
     window.addEventListener('portal-avisos', atualizar)
     return () => { clearInterval(t); window.removeEventListener('portal-avisos', atualizar) }
   }, [atualizar, pathname])
+  useEffect(() => ouvirTempoReal(`${API_URL}/api/portal/eventos`, () => comSessao(), () => {
+    window.dispatchEvent(new Event('portal-avisos'))
+    window.dispatchEvent(new Event('portal-tempo-real'))
+  }), [])
   useEffect(() => {
     if (!aberto) return undefined
     const fora = (e) => { if (!caixa.current?.contains(e.target)) setAberto(false) }

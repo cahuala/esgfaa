@@ -256,6 +256,15 @@
   font-size: 14px;
 }
 
+.enviado {
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: var(--tinte-marca);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
 .semComentarios {
   margin: 28px 0 0;
   font-size: 15px;

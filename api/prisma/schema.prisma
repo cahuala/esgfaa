@@ -126,9 +126,14 @@ model Comentario {
   texto   String
   ip      String?
   data    DateTime @default(now()) @db.Timestamptz(3)
+  // pendente (equipa de comunicação) → revisto (Comandante) → publicado
+  estado     String    @default("publicado")
+  revistoPor String?   @map("revisto_por")
+  revistoEm  DateTime? @map("revisto_em") @db.Timestamptz(3)
 
   @@index([colecao, itemId])
   @@index([data(sort: Desc)])
+  @@index([estado])
   @@map("comentarios")
 }
 

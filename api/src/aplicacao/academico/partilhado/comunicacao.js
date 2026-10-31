@@ -10,8 +10,8 @@ const LEMBRETE_HORAS = 24
   Os e-mails saem em segundo plano: uma falha de envio nunca estraga a ação que os originou.
 */
 export class ServicoComunicacao {
-  constructor({ comunicacao, academico, acesso, correio, push = null, relogio, urlPortal = '', registar = () => {} }) {
-    Object.assign(this, { comunicacao, academico, acesso, correio, push, relogio, urlPortal, registar })
+  constructor({ comunicacao, academico, acesso, correio, push = null, relogio, tempoReal = null, urlPortal = '', registar = () => {} }) {
+    Object.assign(this, { comunicacao, academico, acesso, correio, push, relogio, tempoReal, urlPortal, registar })
     this.emCurso = new Set()
   }
 
@@ -26,6 +26,8 @@ export class ServicoComunicacao {
     if (!ids.length) return
     const limpo = { tipo: dados.tipo, titulo: String(dados.titulo).slice(0, 200), texto: String(dados.texto || '').slice(0, 500), ligacao: dados.ligacao || '' }
     await this.comunicacao.notificar(ids, limpo)
+    // as páginas do portal abertas por estas contas atualizam-se logo (sino, mensagens)
+    this.tempoReal?.emitir('portal', { tipo: limpo.tipo }, { contas: ids })
     const envio = this.#enviarEmails(ids, limpo).catch((e) => this.registar({ nivel: 'erro', mensagem: 'Falha nas notificações por e-mail', erro: e.message }))
     this.emCurso.add(envio)
     envio.finally(() => this.emCurso.delete(envio))

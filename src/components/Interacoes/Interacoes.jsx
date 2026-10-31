@@ -4,6 +4,7 @@ import { useConteudo } from '../../conteudo/contexto'
 import { API_URL, idVisitante, pedido } from '../../conteudo/api'
 import { tempoRelativo } from '../../utils/datas'
 import styles from './Interacoes.module.css'
+import { ouvirTempoReal } from '../../utils/tempoReal'
 import { t } from '../../i18n/linguas'
 
 /*
@@ -33,6 +34,7 @@ function Interacoes({ colecao, id, titulo }) {
   const formRef = useRef(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
+  const [enviado, setEnviado] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const visitante = idVisitante()
 
@@ -44,6 +46,17 @@ function Interacoes({ colecao, id, titulo }) {
       .catch(() => { if (ativo) setIndisponivel(true) })
     pedido(`/api/publico/interacoes/${colecao}/${id}/visualizacao`, { method: 'POST', body: JSON.stringify({ visitante }) }).catch(() => {})
     return () => { ativo = false }
+  }, [colecao, id, visitante])
+
+  // um comentário aprovado (ou apagado) aparece logo a quem está a ler, sem recarregar a página
+  useEffect(() => {
+    if (!API_URL) return undefined
+    return ouvirTempoReal(`${API_URL}/api/publico/eventos`, () => ({}), (a) => {
+      if (a.tipo !== 'comentarios' || a.colecao !== colecao || a.id !== id) return
+      pedido(`/api/publico/interacoes/${colecao}/${id}?visitante=${visitante}`).then(aplicar).catch(() => {})
+    })
+    // aplicar só mexe no estado: não precisa de voltar a ligar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colecao, id, visitante])
 
   function aplicar(r) {
@@ -79,6 +92,7 @@ function Interacoes({ colecao, id, titulo }) {
   async function comentar(e) {
     e.preventDefault()
     setErro('')
+    setEnviado(false)
     setEnviando(true)
     try {
       const r = await pedido(`/api/publico/interacoes/${colecao}/${id}/comentarios`, {
@@ -86,6 +100,7 @@ function Interacoes({ colecao, id, titulo }) {
         body: JSON.stringify({ ...form, visitante }),
       })
       if (r) aplicar(r)
+      if (r?.emAprovacao) setEnviado(true)
       guardarNome(form.nome)
       setForm({ nome: form.nome, texto: '', website: '' })
       const caixa = formRef.current?.querySelector('textarea')
@@ -192,8 +207,9 @@ function Interacoes({ colecao, id, titulo }) {
                   <FaPaperPlane aria-hidden="true" />
                 </button>
               </div>
-              <small className={styles.nota}>{enviando ? t('A publicar…') : t('Os comentários são públicos. Seja respeitoso: comentários ofensivos são removidos.')}</small>
+              <small className={styles.nota}>{enviando ? t('A publicar…') : t('Os comentários são revistos antes de aparecerem. Seja respeitoso: os ofensivos não são publicados.')}</small>
               {erro && <p className={styles.erro} role="alert">{erro}</p>}
+              {enviado && <p className={styles.enviado} role="status">{t('Obrigado! O seu comentário foi enviado e aparece aqui depois de aprovado.')}</p>}
             </div>
           </form>
 

@@ -107,7 +107,8 @@ Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-port
 
 - **Conteúdos:** notícias, artigos, eventos, cursos e corpo docente, com imagens, galerias, vídeos (YouTube ou ficheiro) e PDF.
 - **Páginas do site:** página inicial, Institucional, admissão aos cursos e Contactos.
-- **Comentários:** são publicados de imediato; o painel permite apagá-los.
+- **Comentários:** só aparecem no site depois de duas aprovações — a equipa de comunicação revê em «Comentários» (permissão *comentarios.aprovar*: Editor-chefe e Moderador) e o Comandante aprova em «Por aprovar»; recusar apaga o comentário (o texto fica no registo de atividades). Quem comenta vê «aparece aqui depois de aprovado».
+- **Atualização instantânea:** o painel, o portal, o sistema de Pessoal e as notícias do site recebem avisos do servidor (Server-Sent Events em `/api/admin/eventos`, `/api/portal/eventos`, `/api/publico/eventos` e, no Pessoal, `/api/eventos`) e voltam a pedir o que mudou sem recarregar a página: contadores do menu, «Por aprovar», comentários, mensagens, notificações e a Secretária digital. O aviso só diz o que mudou; os dados vêm pelas rotas de sempre, com as permissões de sempre. Os intervalos de atualização ficam como reserva.
 - **Formulário de contacto:** as mensagens do site ficam no painel, em **Mensagens do site** (caixa de entrada com contador no menu, "Por tratar / Todas / Respondidas", pesquisa, "Responder por e-mail" já com a mensagem citada, marcar como respondida, notas internas e apagar). Com `CONTACTOS_EMAIL` e `SMTP_URL`, cada mensagem chega também por e-mail. Tem proteção contra robôs (campo escondido) e limite de 3 mensagens em 10 minutos por endereço. Sem API (GitHub Pages), o formulário abre o programa de e-mail com a mensagem já escrita. Permissões `contactos.ver` e `contactos.gerir` (o editor-chefe tem as duas).
 - **Utilizadores** (só administradores): criar contas, mudar o papel, desativar.
 - **Registo de atividades** (só administradores): entradas, tentativas falhadas, criações, edições (com os campos alterados), remoções e envios de ficheiros, com data, utilizador e IP.
@@ -116,7 +117,7 @@ Dados de demonstração (só em desenvolvimento): `cd api && npm run semear-port
 - **Estatísticas:** visitantes, páginas vistas, online agora, páginas mais vistas, origens, dispositivos e horas (sem cookies nem IP).
 - **Papéis e permissões (RBAC):** cada papel tem uma grelha de permissões (ver, criar, editar, apagar, publicar) por área, editável no painel. A API verifica todas as permissões.
 
-Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
+Papéis iniciais: **Administrador** (tudo, não editável), **Editor-chefe** (publica conteúdos, páginas, publicidade e comentários), **Redator** (escreve rascunhos de notícias, artigos e eventos), **Moderador** (revê e remove comentários) e **Analista** (estatísticas). Quem não tem a permissão *publicar* só guarda rascunhos e não altera conteúdos já publicados.
 
 ## Sistema de Gestão de Pessoal (rede interna)
 

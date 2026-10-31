@@ -5,6 +5,7 @@ import { TIPOS } from '../../../infraestrutura/ficheiros/armazenamento.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { COOKIE_PAINEL, autenticar } from '../middlewares/autenticacao.js'
 import { limitar } from '../middlewares/limites.js'
+import { fluxoEventos } from '../../../aplicacao/tempoReal.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
 import { validar } from '../middlewares/validar.js'
 import { absolutizar, baseUrl } from '../apresentacao.js'
@@ -57,6 +58,8 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.use(autenticar(servicos.sessao))
   // por conta (o pessoal da Escola sai pelo mesmo IP)
   r.use(limitar(config.limites.admin, { chave: (req) => req.contexto.actor.id }))
+  // avisos instantâneos: contadores e listas do painel atualizam-se sem recarregar
+  r.get('/eventos', (req, res) => fluxoEventos(req, res, (enviar) => servicos.tempoReal.ouvir('painel', enviar, { conta: req.contexto.actor.id })))
 
   r.get('/eu', async (req, res) => res.json(await servicos.sessao.eu(ctx(req))))
   r.get('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.avisoUtilizador(ctx(req))))
@@ -108,7 +111,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
       colecao: 'utilizadores', id: String(u.id), titulo: u.nome, tipo: u.aprovacao.tipo === 'criar' ? 'conta' : 'papel', pedidoPor: u.aprovacao.pedidoPor, pedidoEm: u.aprovacao.pedidoEm,
       email: u.email, papel: u.aprovacao.papel, de: u.aprovacao.de ?? null,
     })) : []
-    const lista = [...site, ...(await avisosGerais.paraAprovar(c)), ...(await inqueritos.paraAprovar(c)), ...contas]
+    const lista = [...site, ...(await avisosGerais.paraAprovar(c)), ...(await inqueritos.paraAprovar(c)), ...(await servicos.interacoes.paraAprovar(c)), ...contas]
     enviar(req, res, lista.sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm))))
   })
   r.get('/publicacoes/contagem', async (req, res) => {
@@ -116,7 +119,8 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     const site = c.actor.pode('publicacoes.aprovar') ? (await servicos.conteudos.contarParaAprovar(c)) + (await servicos.paginas.contarParaAprovar(c)) : 0
     const portal = (await avisosGerais.contarParaAprovar(c)) + (await inqueritos.contarParaAprovar(c))
     const contas = await servicos.utilizadores.contarPorAprovar(c)
-    res.json({ pendentes: site + portal + contas, site, portal, contas })
+    const comentarios = await servicos.interacoes.contarParaAprovar(c)
+    res.json({ pendentes: site + portal + contas + comentarios, site, portal, contas, comentarios })
   })
   r.post('/publicacoes/:colecao/:id/decisao', validar({ params: z.object({ colecao: z.string().max(40), id: z.string().max(200) }), body: E.decisaoPublicacao }), async (req, res) => {
     const { colecao, id } = req.dados.params
@@ -126,6 +130,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
       avisos_gerais: () => avisosGerais.decidir(c, id, req.dados.body),
       inqueritos: () => inqueritos.decidir(c, id, req.dados.body),
       utilizadores: () => servicos.utilizadores.decidir(c, id, req.dados.body),
+      comentarios: () => servicos.interacoes.decidir(c, id, req.dados.body),
     }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, req.dados.body))
     enviar(req, res, await decidir())
   })
@@ -243,6 +248,11 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   // ---------- comentários ----------
 
   r.get('/comentarios', async (req, res) => res.json(await servicos.interacoes.listarComentarios(ctx(req))))
+  r.get('/comentarios/contagem', async (req, res) => res.json({ porRever: await servicos.interacoes.contarPorRever(ctx(req)) }))
+  // 1.º passo da aprovação: a equipa de comunicação (aprovado, vai ao Comandante)
+  r.post('/comentarios/:id/revisao', validar({ params: pNumero, body: E.decisaoPublicacao }), async (req, res) => {
+    res.json(await servicos.interacoes.rever(ctx(req), req.dados.params.id, req.dados.body))
+  })
 
   r.delete('/comentarios/:id', validar({ params: pNumero }), async (req, res) => {
     await servicos.interacoes.apagarComentario(ctx(req), req.dados.params.id)

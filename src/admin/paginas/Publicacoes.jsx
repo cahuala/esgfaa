@@ -19,6 +19,7 @@ const OUTROS = {
   avisos_gerais: { rotulo: tx('Aviso geral do portal'), cor: 'bg-teal', feito: tx('«{0}» aprovado: os estudantes já o recebem.') },
   inqueritos: { rotulo: tx('Inquérito institucional'), cor: 'bg-purple', feito: tx('«{0}» aprovado: o inquérito foi lançado no portal.') },
   utilizadores: { rotulo: tx('Conta do painel de gestão'), cor: 'bg-dark', feito: tx('«{0}»: aprovado.') },
+  comentarios: { rotulo: tx('Comentário de um visitante do site'), cor: 'bg-indigo', feito: tx('«{0}» aprovado: já aparece no site.') },
 }
 
 /*
@@ -37,6 +38,11 @@ function Publicacoes() {
   const [recusar, setRecusar] = useState(null) // { p, motivo }
   const carregar = useCallback(() => api('/publicacoes').then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message)), [])
   useEffect(() => { carregar() }, [carregar])
+  // chega logo o que outros pedem entretanto (avisos instantâneos)
+  useEffect(() => {
+    window.addEventListener('esg-tempo-real', carregar)
+    return () => window.removeEventListener('esg-tempo-real', carregar)
+  }, [carregar])
 
   async function decidir(p, decisao, motivo) {
     try {
@@ -55,7 +61,7 @@ function Publicacoes() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Por aprovar')} subtitulo={tx('o site, os avisos e inquéritos do portal e as contas do painel só avançam com a aprovação do Comandante')} migalhas={[{ rotulo: tx('Por aprovar') }]} />
+      <CabecalhoPagina titulo={tx('Por aprovar')} subtitulo={tx('o site, os comentários dos visitantes, os avisos e inquéritos do portal e as contas do painel só avançam com a aprovação do Comandante')} migalhas={[{ rotulo: tx('Por aprovar') }]} />
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!lista && !erro && <Carregando />}
       {lista?.length === 0 && <div className="alert alert-success"><i className="fa fa-check-circle me-2" />{tx('Não há nada à espera de aprovação.')}</div>}
@@ -71,8 +77,10 @@ function Publicacoes() {
                   {conta
                     ? <p className="mb-2">{p.email} · {p.tipo === 'conta' ? tx('papel: {0}', { 0: papeis[p.papel] || p.papel }) : tx('de {0} para {1}', { 0: papeis[p.de] || p.de, 1: papeis[p.papel] || p.papel })}</p>
                     : <p className="text-muted mb-2" style={{ whiteSpace: 'pre-wrap' }}>{p.resumo}</p>}
-                  {p.destino && <div className="small mb-1"><b>{tx('Para:')}</b> {p.destino}</div>}
-                  <div className="small text-muted">{tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>
+                  {p.destino && <div className="small mb-1"><b>{p.colecao === 'comentarios' ? tx('Em:') : tx('Para:')}</b> {p.destino}</div>}
+                  <div className="small text-muted">{p.colecao === 'comentarios'
+                    ? tx('Revisto pela equipa de comunicação ({0}), {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })
+                    : tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>
                 </div>
                 <div className="d-flex flex-wrap gap-2">
                   <button type="button" className="btn btn-success" onClick={() => decidir(p, 'aprovar')}><i className="fa fa-check me-1" />{tx('Aprovar')}</button>

@@ -20,6 +20,7 @@ import { DESPACHOS_PROPOSTA, ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicac
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
 import { TIPOS_AUSENCIA } from '../aplicacao/ausencias.js'
 import { sessaoEmCookie } from './sessaoCookie.js'
+import { fluxoEventos } from '../aplicacao/tempoReal.js'
 import { COOKIE_PESSOAL } from './middlewares.js'
 
 // assinaturas dos formatos de imagem aceites para a fotografia
@@ -50,11 +51,19 @@ export function rotas({ servicos: s, config }) {
   })
 
   r.use(autenticar(s.sessao))
-  // depois de uma gravação bem-sucedida, o painel volta a calcular os números
+  // depois de uma gravação bem-sucedida, o painel volta a calcular os números e as páginas abertas atualizam-se
   r.use((req, res, next) => {
-    if (req.method !== 'GET') res.on('finish', () => { if (res.statusCode < 400) s.painel.esquecer() })
+    if (req.method !== 'GET') {
+      res.on('finish', () => {
+        if (res.statusCode >= 400) return
+        s.painel.esquecer()
+        s.tempoReal.avisar('pessoal', { tipo: 'atualizar' })
+      })
+    }
     next()
   })
+  // avisos instantâneos (mensagens, despachos, avisos): a página volta a pedir o que mudou
+  r.get('/eventos', (req, res) => fluxoEventos(req, res, (enviar) => s.tempoReal.ouvir('pessoal', enviar, { conta: u(req).id })))
   r.get('/eu', async (req, res) => res.json(await s.sessao.eu(u(req))))
   // verificação em dois passos (aplicação de autenticação)
   r.get('/eu/2fa', async (req, res) => res.json(await s.doisFatores.estado(u(req))))

@@ -25,7 +25,9 @@ test.describe('site público', () => {
     await page.locator('#comentarios').getByLabel('Nome').fill('Teste E2E')
     await page.locator('#comentarios').getByLabel('Comentário', { exact: true }).fill(texto)
     await page.getByRole('button', { name: 'Publicar comentário' }).click()
-    await expect(page.getByText(texto)).toBeVisible()
+    // só aparece depois da equipa de comunicação e do Comandante
+    await expect(page.locator('#comentarios').getByRole('status')).toContainText('aparece aqui depois de aprovado')
+    await expect(page.getByText(texto)).toHaveCount(0)
   })
 
   test('lê a revista no leitor e salta para um artigo pelo sumário', async ({ page }) => {

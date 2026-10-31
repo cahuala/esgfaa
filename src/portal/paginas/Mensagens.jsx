@@ -92,7 +92,9 @@ function Conversa({ id, aoEnviar, voltar }) {
   useEffect(() => {
     carregar().then(aoEnviar)
     const t = setInterval(carregar, 15_000)
-    return () => clearInterval(t)
+    // a resposta chega logo (aviso instantâneo); o intervalo fica de reserva
+    window.addEventListener('portal-tempo-real', carregar)
+    return () => { clearInterval(t); window.removeEventListener('portal-tempo-real', carregar) }
   }, [carregar, aoEnviar])
   useEffect(() => { fim.current?.scrollIntoView({ block: 'end' }) }, [d?.mensagens.length])
 

@@ -59,6 +59,30 @@ describe('Interacoes (gostos e comentários no site)', () => {
     expect(document.querySelector('img[src="x"]')).toBeNull()
   })
 
+  it('o comentário fica à espera de aprovação; quando é aprovado aparece sem recarregar a página', async () => {
+    let aprovado = false
+    let emitir
+    const fluxo = new ReadableStream({ start(c) { emitir = (d) => c.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(d)}\n\n`)) } })
+    fetchMock.mockImplementation((url, opcoes = {}) => {
+      if (url.endsWith('/api/publico/eventos')) return Promise.resolve(new Response(fluxo, { headers: { 'Content-Type': 'text/event-stream' } }))
+      if (url.endsWith('/visualizacao')) return resposta(null, 204)
+      if (opcoes.method === 'POST') return resposta(resumo({ emAprovacao: true }), 201)
+      return resposta(resumo(aprovado ? { comentarios: [{ id: 1, nome: 'Ana Silva', texto: 'Parabéns à Escola', data: '2026-10-10 10:00:00' }] } : {}))
+    })
+    montar()
+    await screen.findByText(/visualizações/)
+    await userEvent.type(screen.getByLabelText('Nome'), 'Ana Silva')
+    await userEvent.type(screen.getByLabelText('Comentário'), 'Parabéns à Escola')
+    await userEvent.click(screen.getByRole('button', { name: 'Publicar comentário' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('aparece aqui depois de aprovado')
+    expect(screen.queryByText('Parabéns à Escola')).toBeNull()
+    // o Comandante aprova: o servidor avisa a página
+    aprovado = true
+    emitir({ tipo: 'comentarios', colecao: 'noticias', id: 'outra' })
+    emitir({ tipo: 'comentarios', colecao: 'noticias', id: 'abertura' })
+    expect(await screen.findByText('Parabéns à Escola')).toBeInTheDocument()
+  })
+
   it('mostra o erro devolvido pela API', async () => {
     montar()
     await screen.findByText(/visualizações/)

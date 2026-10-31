@@ -94,6 +94,7 @@ import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/
 import { ServicoPedidos } from './aplicacao/academico/administracao/pedidos.js'
 import { ServicoAvisosGerais } from './aplicacao/academico/administracao/avisos.js'
 import { ServicoAvisosComandante } from './aplicacao/avisosComandante.js'
+import { TempoReal } from './aplicacao/tempoReal.js'
 import { ApoioCadeiras } from './aplicacao/academico/partilhado/apoio.js'
 import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoes.js'
 import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
@@ -172,6 +173,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const privados = config.pastaPrivada ? new ArmazenamentoPrivado({ pasta: config.pastaPrivada, relogio: relogio.agora }) : null
   const armazenamento = config.pastaUploads ? new ArmazenamentoLocal({ pasta: config.pastaUploads, relogio: relogio.agora }) : null
   const auditoria = new ServicoAuditoria({ atividades: repositorios.atividades, relogio })
+  // avisos instantâneos às páginas abertas; no painel, cada atividade (menos entradas e saídas) atualiza contadores e listas
+  const tempoReal = new TempoReal()
+  auditoria.ouvir(({ acao }) => { if (!/entrar|entrada|sair|senha|2fa/.test(acao)) tempoReal.avisar('painel', { tipo: 'atividade' }) })
   const doisFatores = new ServicoDoisFatores({ prisma, auditoria, relogio, papeis: config.doisFatoresPapeis })
   const r = repositorios
 
@@ -185,7 +189,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria })
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
-    comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
+    comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, tempoReal, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
     // avisos no telemóvel (os testes trazem um falso; null desliga)
     push: 'push' in externos ? externos.push : criarPush(config),
   })
@@ -285,7 +289,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     privacidade: new ServicoPrivacidade({ prisma, notificacoes, auditoria, relogio, conservacao: config.conservacao }),
     seguranca: new ServicoSeguranca({ monitor: new Monitor(), seguranca: r.seguranca, correio, emailAlerta: config.emailSeguranca, auditoria, pastaDados: config.pastaDados, registar: (x) => console.error(JSON.stringify(x)) }),
     contactos: new ServicoContactos({ contactos: r.contactos, correio, emailDestino: config.emailContactos, auditoria, registar: (x) => console.error(JSON.stringify(x)) }),
-    interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos }),
+    interacoes: new ServicoInteracoes({ interacoes: r.interacoes, conteudos: r.conteudos, auditoria, vistasRecentes: new CacheLimitada(), titulos, relogio, tempoReal }),
     estatisticas: new ServicoEstatisticas({
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,
     }),
@@ -322,8 +326,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // um trabalho que tenta dar ordens à IA do antiplágio aparece no Centro de segurança
   originalidade.aoInstrucoesIA = (x) => servicos.seguranca.registarInstrucoesIA(x)
   // o que fica à espera do Comandante chega-lhe também por e-mail
+  servicos.tempoReal = tempoReal
   servicos.avisosComandante = new ServicoAvisosComandante({ utilizadores: r.utilizadores, papeis: r.papeis, correio, registar: (x) => console.error(JSON.stringify(x)) })
   servicos.avisosComandante.ligar(auditoria)
   const fechar = async () => { await servicos.seguranca.parar(); await prismaBase.$disconnect() }
-  return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio }
+  return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio, tempoReal }
 }

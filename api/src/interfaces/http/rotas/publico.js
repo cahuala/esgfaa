@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { limitar } from '../middlewares/limites.js'
+import { fluxoEventos } from '../../../aplicacao/tempoReal.js'
 import { validar } from '../middlewares/validar.js'
 import { absolutizar, baseUrl } from '../apresentacao.js'
 import * as E from '../esquemas.js'
@@ -81,6 +82,9 @@ export function rotasPublicas({ servicos, config, cache }) {
   )
 
 
+  // avisos instantâneos: um comentário aprovado aparece logo a quem está a ler a notícia
+  r.get('/eventos', (req, res) => fluxoEventos(req, res, (enviar) => servicos.tempoReal.ouvir('publico', enviar)))
+
   // formulário de contacto do site
   r.post(
     '/contactos',
@@ -89,6 +93,7 @@ export function rotasPublicas({ servicos, config, cache }) {
     async (req, res) => {
       if (req.dados.body.website) return res.status(201).json({ ok: true }) // campo escondido: só robôs o preenchem
       res.status(201).json(await servicos.contactos.enviar(req.dados.body))
+      servicos.tempoReal.avisar('painel', { tipo: 'contactos' })
     },
   )
 

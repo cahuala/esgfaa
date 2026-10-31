@@ -1,6 +1,10 @@
 import { eDuplicado } from '../bd/prisma.js'
 
 const iso = (d) => new Date(d).toISOString()
+const linha = (c) => ({
+  id: c.id, colecao: c.colecao, item_id: c.itemId, nome: c.nome, texto: c.texto, ip: c.ip, data: iso(c.data),
+  estado: c.estado, revistoPor: c.revistoPor ?? null, revistoEm: c.revistoEm ? iso(c.revistoEm) : null,
+})
 
 export class RepositorioInteracoes {
   constructor({ prisma, fuso }) {
@@ -13,7 +17,7 @@ export class RepositorioInteracoes {
     const [gostos, meu, comentarios, vistas] = await Promise.all([
       p.gosto.count({ where: { colecao, itemId: id } }),
       visitante ? p.gosto.findUnique({ where: { colecao_itemId_visitante: { colecao, itemId: id, visitante } }, select: { visitante: true } }) : null,
-      p.comentario.findMany({ where: { colecao, itemId: id }, select: { id: true, nome: true, texto: true, data: true }, orderBy: [{ data: 'desc' }, { id: 'desc' }] }),
+      p.comentario.findMany({ where: { colecao, itemId: id, estado: 'publicado' }, select: { id: true, nome: true, texto: true, data: true }, orderBy: [{ data: 'desc' }, { id: 'desc' }] }),
       p.visualizacao.findUnique({ where: { colecao_itemId: { colecao, itemId: id } } }),
     ])
     return { gostos, gostei: Boolean(meu), comentarios: comentarios.map((c) => ({ ...c, data: iso(c.data) })), visualizacoes: vistas?.total || 0 }
@@ -30,8 +34,9 @@ export class RepositorioInteracoes {
     }
   }
 
+  // o comentário novo espera a equipa de comunicação (e depois o Comandante)
   async comentar(colecao, id, { nome, texto }, ip) {
-    await this.prisma.comentario.create({ data: { colecao, itemId: id, nome, texto, ip } })
+    await this.prisma.comentario.create({ data: { colecao, itemId: id, nome, texto, ip, estado: 'pendente' } })
   }
 
   // incremento atómico (sem perder contagens com pedidos simultâneos)
@@ -45,12 +50,20 @@ export class RepositorioInteracoes {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
     const c = await this.prisma.comentario.findUnique({ where: { id: n } })
-    return c && { id: c.id, colecao: c.colecao, item_id: c.itemId, nome: c.nome, texto: c.texto, ip: c.ip, data: iso(c.data) }
+    return c && linha(c)
   }
 
-  async listarComentarios({ limite = 500 } = {}) {
-    const linhas = await this.prisma.comentario.findMany({ orderBy: [{ data: 'desc' }, { id: 'desc' }], take: limite })
-    return linhas.map((c) => ({ id: c.id, colecao: c.colecao, item_id: c.itemId, nome: c.nome, texto: c.texto, ip: c.ip, data: iso(c.data) }))
+  async listarComentarios({ limite = 500, estado } = {}) {
+    const linhas = await this.prisma.comentario.findMany({ where: estado ? { estado } : {}, orderBy: [{ data: 'desc' }, { id: 'desc' }], take: limite })
+    return linhas.map(linha)
+  }
+
+  contarComentarios(estado) {
+    return this.prisma.comentario.count({ where: { estado } })
+  }
+
+  async mudarEstadoComentario(id, estado, revisao = {}) {
+    await this.prisma.comentario.update({ where: { id: Number(id) }, data: { estado, ...revisao } })
   }
 
   async apagarComentario(id) {
@@ -62,7 +75,7 @@ export class RepositorioInteracoes {
     const p = this.prisma
     const [gostos, comentarios, vistas] = await Promise.all([
       p.gosto.groupBy({ by: ['colecao', 'itemId'], _count: { _all: true } }),
-      p.comentario.groupBy({ by: ['colecao', 'itemId'], _count: { _all: true } }),
+      p.comentario.groupBy({ by: ['colecao', 'itemId'], where: { estado: 'publicado' }, _count: { _all: true } }),
       p.visualizacao.findMany(),
     ])
     const mapa = {}

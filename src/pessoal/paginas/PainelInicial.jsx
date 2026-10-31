@@ -38,7 +38,7 @@ function GraficoGrupo({ titulo, icone, dados, tipo = 'bar', para = lista, altura
 
 export default function PainelInicial() {
   const navegar = useNavigate()
-  const { dados: d, erro, recarregar: carregar } = useDados('/painel')
+  const { dados: d, erro, recarregar: carregar } = useDados('/painel', undefined, { tempoReal: true })
 
   const g = d?.graficos
   const categoriasRamo = useMemo(() => g && ({ rotulos: g.categorias.map((c) => c.rotulo), series: g.postoPorRamo.map((r) => ({ rotulo: r.rotulo, valores: r.valores })) }), [g])

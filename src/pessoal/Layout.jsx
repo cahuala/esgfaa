@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api } from './api'
+import { API, api, comSessao } from './api'
+import { ouvirTempoReal } from '../utils/tempoReal'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
 import PesquisaGeral from './componentes/PesquisaGeral'
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
@@ -38,6 +39,11 @@ export default function Layout({ children }) {
     window.addEventListener('pes-avisos', ver)
     return () => { clearInterval(id); window.removeEventListener('pes-avisos', ver) }
   }, [])
+  // avisos instantâneos: quando alguém grava alguma coisa, o menu e as listas abertas atualizam-se
+  useEffect(() => ouvirTempoReal(`${API}/api/eventos`, () => comSessao(), () => {
+    window.dispatchEvent(new Event('pes-avisos'))
+    window.dispatchEvent(new Event('pes-tempo-real'))
+  }), [])
   const gestao = pode('ver')
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 

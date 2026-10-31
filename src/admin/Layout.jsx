@@ -6,7 +6,9 @@ import Brasao from '../assets/Logo-ecra.webp'
 import Sede from '../assets/Escola De Guerra-ecra.webp'
 import { t as tx } from '../i18n/linguas'
 import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
-import { api } from './api'
+import { api, comSessao } from './api'
+import { API_URL } from '../conteudo/api'
+import { ouvirTempoReal } from '../utils/tempoReal'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
 
 const SITE = import.meta.env.BASE_URL
@@ -87,6 +89,21 @@ function Layout({ children }) {
     window.addEventListener('esg-publicacoes', contar)
     return () => { clearInterval(id); window.removeEventListener('esg-publicacoes', contar) }
   }, [aprova])
+  // comentários à espera da equipa de comunicação (1.º passo, antes do Comandante)
+  const [comentariosPorRever, setComentariosPorRever] = useState(0)
+  const revComentarios = pode('comentarios.aprovar')
+  useEffect(() => {
+    if (!revComentarios) return undefined
+    const contar = () => api('/comentarios/contagem').then((r) => setComentariosPorRever(r.porRever)).catch(() => {})
+    contar()
+    const id = setInterval(contar, 120_000)
+    window.addEventListener('esg-comentarios', contar)
+    return () => { clearInterval(id); window.removeEventListener('esg-comentarios', contar) }
+  }, [revComentarios])
+  // avisos instantâneos: quando algo muda, os contadores e a página aberta voltam a pedir os dados
+  useEffect(() => ouvirTempoReal(`${API_URL}/api/admin/eventos`, () => comSessao(), () => {
+    for (const e of ['esg-contactos', 'esg-pendentes', 'esg-publicacoes', 'esg-comentarios', 'esg-tempo-real']) window.dispatchEvent(new Event(e))
+  }), [])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -222,7 +239,7 @@ function Layout({ children }) {
 
             {(pode('comentarios.ver') || pode('publicidade.ver') || verContactos) && <div className="menu-header">{tx('Interação e publicidade')}</div>}
             {verContactos && <ItemMenu para="/mensagens-site" icone="fa-envelope-open-text" texto={tx('Mensagens do site')} contador={contactosNovos} />}
-            {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto={tx('Comentários')} />}
+            {pode('comentarios.ver') && <ItemMenu para="/comentarios" icone="fa-comments" texto={tx('Comentários')} contador={comentariosPorRever} />}
             {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto={tx('Publicidade')} />}
 
             {(pode('utilizadores.ver') || pode('papeis.ver') || pode('atividades.ver') || pode('seguranca.ver')) && <div className="menu-header">{tx('Segurança')}</div>}

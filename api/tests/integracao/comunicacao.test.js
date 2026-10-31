@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import { abrirEventos } from '../apoio/eventos.js'
 import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 
 const NOVA = 'Portal2026segura'
@@ -143,5 +144,18 @@ describe('portal: notificações, e-mails, lembretes e mensagens', () => {
     assert.deepEqual((await portal('ana').get(`/api/portal/mensagens/${contas.prof.id}`)).body.mensagens.map((x) => x.minha), [true, false])
     // terceiros não leem a conversa
     assert.equal((await portal('carla').get(`/api/portal/mensagens/${contas.ana.id}`)).status, 404)
+  })
+
+  it('uma mensagem chega logo à página aberta de quem a recebe (e a mais ninguém)', async () => {
+    const ana = await abrirEventos(amb.app, '/api/portal/eventos', tokens.ana)
+    const carla = await abrirEventos(amb.app, '/api/portal/eventos', tokens.carla)
+    try {
+      await portal('prof').post(`/api/portal/mensagens/${contas.ana.id}`).send({ texto: 'Bom dia, Ana.' })
+      assert.deepEqual(await ana.esperar('mensagem'), [{ tipo: 'mensagem' }])
+      assert.equal(carla.recebidos.length, 0)
+    } finally {
+      ana.fechar()
+      carla.fechar()
+    }
   })
 })

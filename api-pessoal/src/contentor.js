@@ -14,6 +14,7 @@ import { ServicoLicencas } from './aplicacao/licencas.js'
 import { ServicoAusencias } from './aplicacao/ausencias.js'
 import { ServicoOrganica } from './aplicacao/organica.js'
 import { ServicoPainel } from './aplicacao/painel.js'
+import { TempoReal } from './aplicacao/tempoReal.js'
 import { ServicoSincronizacao } from './aplicacao/sincronizacao.js'
 import { ServicoImportacao } from './aplicacao/importacao.js'
 import { ServicoProcessos } from './aplicacao/processos.js'
@@ -48,6 +49,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     ausencias: new ServicoAusencias({ bd, auditoria, ...relogio }),
     organica: new ServicoOrganica({ bd, auditoria }),
     painel: new ServicoPainel({ bd, pessoas, ...relogio }),
+    tempoReal: new TempoReal(),
     importacao: new ServicoImportacao({ bd, pessoas, auditoria }),
     processos: new ServicoProcessos({ bd, auditoria, ficheiros }),
     extractos: new ServicoExtractos({ bd, auditoria, ficheiros, ...relogio }),

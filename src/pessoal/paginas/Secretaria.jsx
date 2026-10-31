@@ -13,7 +13,7 @@ const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light t
 */
 function Secretaria() {
   const navegar = useNavigate()
-  const { dados, erro } = useDados('/secretaria')
+  const { dados, erro } = useDados('/secretaria', undefined, { tempoReal: true })
   if (erro) return <Erro texto={erro} />
   if (!dados) return <Carregando />
   const linha = (x) => (

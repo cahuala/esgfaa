@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { SenhaPorMudar } from '../../../dominio/comum/erros.js'
 import { limitar } from '../middlewares/limites.js'
+import { fluxoEventos } from '../../../aplicacao/tempoReal.js'
 import { contextoAnonimo } from '../middlewares/pedido.js'
 import { sessaoEmCookie, tokenDoPedido } from '../middlewares/sessaoCookie.js'
 import { provaRobo } from '../middlewares/provaRobo.js'
@@ -60,6 +61,8 @@ export function rotasPortal({ servicos, config, privados }) {
     if (req.contexto.conta.deveMudarSenha) throw new SenhaPorMudar()
     next()
   })
+  // avisos instantâneos só para esta conta (notificações e mensagens novas)
+  r.get('/eventos', (req, res) => fluxoEventos(req, res, (enviar) => servicos.tempoReal.ouvir('portal', enviar, { conta: req.contexto.conta.id })))
   // protecção de dados pessoais (Lei n.º 22/11): aviso, os meus dados e pedidos
   r.get('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.avisoConta(ctx(req).conta)))
   r.post('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.aceitarConta(ctx(req).conta)))

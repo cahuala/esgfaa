@@ -10,7 +10,8 @@ const CONTEUDOS = ['noticias', 'artigos', 'eventos', 'cursos', 'pessoas', 'revis
 export const RECURSOS = [
   ...CONTEUDOS.map((r) => ({ id: r, acoes: ['ver', 'criar', 'editar', 'apagar', 'publicar'] })),
   { id: 'paginas', acoes: ['ver', 'editar'] },
-  { id: 'comentarios', acoes: ['ver', 'apagar'] },
+  // aprovar: a equipa de comunicação revê os comentários dos visitantes antes de irem ao Comandante
+  { id: 'comentarios', acoes: ['ver', 'apagar', 'aprovar'] },
   { id: 'contactos', acoes: ['ver', 'gerir'] },
   // conselho: Director de Ensino (juízo ampliativo, proposta, Conselho de Curso); homologar: Comandante
   { id: 'academico', acoes: ['ver', 'gerir', 'notas', 'conselho', 'homologar'] },
@@ -57,7 +58,7 @@ export const PAPEIS_PADRAO = [
     sistema: 0,
     permissoes: [
       ...conteudo(CONTEUDOS, ['ver', 'criar', 'editar', 'apagar', 'publicar']),
-      'paginas.ver', 'paginas.editar', 'comentarios.ver', 'comentarios.apagar', 'contactos.ver', 'contactos.gerir', 'estatisticas.ver',
+      'paginas.ver', 'paginas.editar', 'comentarios.ver', 'comentarios.apagar', 'comentarios.aprovar', 'contactos.ver', 'contactos.gerir', 'estatisticas.ver',
     ],
   },
   {
@@ -73,9 +74,9 @@ export const PAPEIS_PADRAO = [
   {
     id: 'moderador',
     nome: 'Moderador',
-    descricao: 'Acompanha e remove comentários dos visitantes.',
+    descricao: 'Revê os comentários dos visitantes (antes de irem ao Comandante) e remove os que não servem.',
     sistema: 0,
-    permissoes: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'comentarios.ver', 'comentarios.apagar'],
+    permissoes: ['noticias.ver', 'artigos.ver', 'eventos.ver', 'comentarios.ver', 'comentarios.apagar', 'comentarios.aprovar'],
   },
   {
     id: 'secretaria',
@@ -94,7 +95,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'comandante',
     nome: 'Comandante da ESG',
-    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes, aprova o que se publica no site e as contas novas e mudanças de papel do painel.',
+    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes, aprova o que se publica no site (também os comentários já revistos pela equipa de comunicação) e as contas novas e mudanças de papel do painel.',
     sistema: 0,
     permissoes: VER_TUDO_COMANDANTE,
   },
