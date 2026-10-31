@@ -25,6 +25,7 @@ function SalaAula(props) {
   const { conta } = useSessao()
   const topo = useRef(null)
   const [alternados, setAlternados] = useState({}) // capítulos abertos/fechados à mão no índice
+  const [indiceMovel, setIndiceMovel] = useState(false) // no telemóvel o índice abre-se por cima
 
   // só o que o estudante pode ver (os questionários por publicar não contam)
   // (na pré-visualização do docente tiram-se também as atividades e os capítulos escondidos)
@@ -50,6 +51,7 @@ function SalaAula(props) {
 
   // ir para outro sítio da sala e mostrar o topo da sala (não o da página)
   function ir(destino) {
+    setIndiceMovel(false)
     irPara(previsualizar ? { ...destino, ver: 'estudante' } : destino)
     requestAnimationFrame(() => {
       const y = (topo.current?.getBoundingClientRect().top || 0) + window.scrollY - 80
@@ -59,13 +61,12 @@ function SalaAula(props) {
   const abrirItem = (a) => ir({ atividade: a.chave })
   const abrirGrupo = (g) => ir({ capitulo: chaveGrupo(g) })
 
-  // um capítulo está aberto no índice se foi aberto à mão, ou se é o da aula/capítulo à vista (ou o primeiro, à entrada)
-  const primeiro = grupos.find((g) => g.id !== null) || grupos[0]
-  const aberto = (g) => (chaveGrupo(g) in alternados ? alternados[chaveGrupo(g)] : g === (grupoAtual || primeiro))
+  // os itens de um capítulo só aparecem no índice quando se clica nele (ou se é o da aula/capítulo à vista)
+  const aberto = (g) => (chaveGrupo(g) in alternados ? alternados[chaveGrupo(g)] : g === grupoAtual)
   function clicarCapitulo(g) {
     const k = chaveGrupo(g)
-    if (aberto(g)) { setAlternados((x) => ({ ...x, [k]: false })); return }
-    setAlternados((x) => ({ ...x, [k]: true }))
+    if (aberto(g) && g === grupoAtual) { setAlternados((x) => ({ ...x, [k]: false })); return }
+    setAlternados({ [k]: true })
     abrirGrupo(g)
   }
 
@@ -86,8 +87,16 @@ function SalaAula(props) {
           </div>
         </div>
       )}
-      <div className="col-lg-8 col-xxl-9 p-sala-meio">{meio}</div>
-      <aside className="col-lg-4 col-xxl-3" aria-label={tx('Capítulos da cadeira')}>
+      <div className="col-12 d-lg-none mb-3">
+        <button type="button" className="btn btn-white w-100 d-flex align-items-center gap-2 p-sala-abrir-indice" onClick={() => setIndiceMovel((x) => !x)} aria-expanded={indiceMovel} aria-controls="sala-indice">
+          <i className="fa fa-list-ol" />
+          <span className="flex-grow-1 text-start text-truncate">{atual ? atual.titulo : grupoAtual ? grupoAtual.titulo : tx('Índice da cadeira')}</span>
+          {ordem.length > 0 && <span className="small text-muted">{feitas}/{ordem.length}</span>}
+          <i className={`fa fa-chevron-${indiceMovel ? 'up' : 'down'}`} />
+        </button>
+      </div>
+      <div className={`col-lg-8 col-xxl-9 p-sala-meio ${indiceMovel ? 'd-none d-lg-block' : ''}`}>{meio}</div>
+      <aside id="sala-indice" className={`col-lg-4 col-xxl-3 ${indiceMovel ? '' : 'd-none d-lg-block'}`} aria-label={tx('Capítulos da cadeira')}>
         <div className="p-sala-indice">
           <div className="p-sala-indice-topo">
             <button type="button" className={`p-sala-inicio ${!atual && !grupoAtual ? 'ativo' : ''}`} onClick={() => ir({})}>

@@ -113,7 +113,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   // página da cadeira (como no Moodle): capítulo novo e uma ligação lá dentro, no modo de edição
   await page.getByRole('tab', { name: /Cadeira/ }).click()
   await page.getByLabel('Modo de edição').check()
-  await page.getByRole('button', { name: 'Novo capítulo' }).click()
+  await page.getByRole('button', { name: 'Novo capítulo' }).first().click()
   // diálogo do tema (não a janela do navegador)
   await page.getByRole('dialog').getByLabel('Título do novo capítulo').fill('Capítulo 1 — Introdução')
   await page.getByRole('dialog').getByRole('button', { name: 'Criar' }).click()
@@ -129,7 +129,11 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByLabel('Modo de edição').uncheck()
   await page.getByRole('button', { name: 'Ver como estudante' }).click()
   await expect(page.getByText('Está a ver a sala de aula como os estudantes a veem.', { exact: false })).toBeVisible()
-  await expect(page.getByRole('complementary', { name: 'Capítulos da cadeira' }).getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible()
+  // os capítulos do índice só mostram as atividades quando se clica neles
+  const previa = page.getByRole('complementary', { name: 'Capítulos da cadeira' })
+  await expect(previa.getByRole('button', { name: /Leitura obrigatória/ })).toHaveCount(0)
+  await previa.getByRole('button', { name: /Capítulo 1 — Introdução/ }).click()
+  await expect(previa.getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible()
   await page.getByRole('button', { name: 'Voltar ao modo de docente' }).click()
   await expect(page.getByLabel('Modo de edição')).toBeVisible()
 
@@ -197,11 +201,12 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   const indice = page.getByRole('complementary', { name: 'Capítulos da cadeira' })
   const meio = page.locator('.p-sala-meio')
   await expect(indice.getByRole('button', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
-  await expect(indice.getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible() // o primeiro capítulo já está aberto
+  await expect(indice.getByRole('button', { name: /Leitura obrigatória/ })).toHaveCount(0) // os capítulos abrem-se ao clicar
   // o estudante não tem o modo de edição
   await expect(page.getByLabel('Modo de edição')).toHaveCount(0)
-  // o capítulo ao meio: o questionário está fechado até concluir a leitura
-  await meio.getByRole('button', { name: /Capítulo 1 — Introdução/ }).click()
+  // o capítulo escolhido no índice aparece ao meio: o questionário está fechado até concluir a leitura
+  await indice.getByRole('button', { name: /Capítulo 1 — Introdução/ }).click()
+  await expect(indice.getByRole('button', { name: /Leitura obrigatória/ })).toBeVisible()
   await expect(meio.getByText('Precisa de concluir "Leitura obrigatória"')).toBeVisible()
   // abrir a leitura na sala conta como feita e abre o questionário
   await meio.getByRole('button', { name: /Leitura obrigatória/ }).first().click()

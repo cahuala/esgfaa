@@ -128,6 +128,25 @@ export async function abrirCaminho(caminho, { nome = 'ficheiro', ver = false } =
 }
 
 /*
+  Abre o ficheiro no leitor do próprio aparelho (no telemóvel, o leitor de PDF do sistema), num separador novo.
+  A janela abre-se logo no clique (senão o Safari bloqueia-a) e recebe o ficheiro quando chegar.
+*/
+export async function abrirNoAparelho(id) {
+  const janela = window.open('', '_blank')
+  try {
+    const url = await urlFicheiro(`/ficheiros/${id}`)
+    if (janela) {
+      janela.opener = null
+      janela.location.href = url
+    } else window.location.href = url
+    setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
+  } catch (e) {
+    janela?.close()
+    throw e
+  }
+}
+
+/*
   Envio de ficheiros com progresso (XMLHttpRequest dá o avanço do envio, o fetch não).
   aoProgresso(0..100) é chamado durante o envio.
 */

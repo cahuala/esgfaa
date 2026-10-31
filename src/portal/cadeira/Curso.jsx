@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { Bloqueio, Vazio } from '../componentes'
@@ -31,8 +31,10 @@ const SESSAO = { em_breve: ['bg-light text-dark border', tx('Em breve')], abre: 
   Página da cadeira como no Moodle: secção geral (avisos, fórum, programa) e os capítulos com
   os materiais, trabalhos e questionários. À direita: índice dos capítulos e blocos
   (progresso, próximas datas, docentes, fórum). O docente organiza no "modo de edição".
+  O índice abre um capítulo de cada vez (?capitulo=ID ou "geral"); sem capítulo escolhido vê-se a visão geral
+  (a secção geral e os capítulos em cartões; no modo de edição, todos abertos para arrastar entre eles).
 */
-function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPara }) {
+function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPara, capitulo = null }) {
   const [edicao, setEdicao] = useState(false)
   const [nova, setNova] = useState(null) // capítulo onde se junta uma atividade (null = geral)
   const [importar, setImportar] = useState(false)
@@ -51,8 +53,8 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     // a prova escrita vai para a Repartição imprimir: envia-se no separador Notas
     if (tipo === 'prova_escrita') return irPara({ separador: 'avaliacoes' })
     setEdicao(true)
-    if (tipo === 'inquerito') abrirInquerito(null)
-    else setNova({ secaoId: null, tipo })
+    if (tipo === 'inquerito') abrirInquerito(secaoAtual)
+    else setNova({ secaoId: secaoAtual, tipo })
   }
   const [alvo, setAlvo] = useState(null)
   const falhou = (e) => avisar({ tipo: 'erro', texto: e.message })
@@ -147,6 +149,18 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
 
   const alternar = (id) => setFechados((f) => { const n = new Set(f); if (n.has(id)) n.delete(id); else n.add(id); return n })
 
+  // o que está à vista: um capítulo, a secção geral ou (null) a visão geral
+  const escolhido = capitulo === 'geral' ? 'geral' : c.secoes.find((x) => String(x.id) === capitulo) || null
+  // depois de escolher no índice, a página desce até ao capítulo (e não fica no topo da cadeira)
+  const descer = () => requestAnimationFrame(() => {
+    const y = (document.getElementById('cadeira-conteudo')?.getBoundingClientRect().top || 0) + window.scrollY - 80
+    window.scrollTo({ top: Math.max(0, y) })
+  })
+  const verCapitulo = (id) => { irPara({ capitulo: id === null ? 'geral' : String(id) }); descer() }
+  const verTudo = () => { irPara({}); descer() }
+  // onde se cria a partir da barra: no capítulo à vista (ou no Geral)
+  const secaoAtual = escolhido && escolhido !== 'geral' ? escolhido.id : null
+
   // ---------- desenho ----------
   const linhaAtividade = (a) => {
     const t = tipoVisual(a)
@@ -239,36 +253,163 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     ...c.materiais.filter((m) => m.tipo === 'videoconferencia' && estadoSessao(m) !== 'terminou' && !m.bloqueio).map((m) => ({ id: `v${m.id}`, quando: m.inicio, titulo: tx('Videoconferência: {0}', { 0: m.titulo }), tipo: 'sessao', sub: tx('{0} · {1} min', { 0: new Date(m.inicio).toLocaleTimeString(localAtual(), { hour: '2-digit', minute: '2-digit' }), 1: m.duracao }) })),
   ].sort((a, b) => a.quando.localeCompare(b.quando)).slice(0, 5)
 
+  // ---------- secções ----------
+  const painelGeral = () => (
+    <div className={`panel panel-inverse ${alvo === 'geral' && arrasto?.tipo === 'atividade' ? 'p-alvo' : ''}`} id="cap-geral" {...zona(null)}>
+      <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-home me-2" />{tx('Geral')}</h2></div>
+      <div className="list-group list-group-flush">
+        <div className="list-group-item d-flex align-items-center gap-3 py-3">
+          <span className="p-atividade-icone bg-dark"><i className="fa fa-bullhorn" /></span>
+          <div className="flex-grow-1">
+            <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'avisos' })}>{tx('Avisos')}</button>
+            <div className="small text-muted">{c.avisos.length ? `Último: ${c.avisos[0].titulo} · ${dataHora(c.avisos[0].criadoEm)}` : tx('Sem avisos')}</div>
+          </div>
+        </div>
+        <div className="list-group-item d-flex align-items-center gap-3 py-3">
+          <span className="p-atividade-icone bg-teal"><i className="fa fa-comments" /></span>
+          <div className="flex-grow-1">
+            <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'forum' })}>{tx('Fórum da cadeira')}</button>
+            <div className="small text-muted">{c.forum.topicos} {tx('tópico(s) de discussão')}</div>
+          </div>
+        </div>
+        {(c.programa || c.programaFicheiroId) && (
+          <div className="list-group-item d-flex align-items-center gap-3 py-3">
+            <span className="p-atividade-icone bg-gray-600"><i className="fa fa-book-open" /></span>
+            <div className="flex-grow-1">
+              <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'programa' })}>{tx('Programa da cadeira')}</button>
+              <div className="small text-muted">{tx('Objetivos, conteúdos, avaliação e bibliografia')}</div>
+            </div>
+          </div>
+        )}
+        {doCapitulo(null).map(linhaAtividade)}
+        {botaoNova(null)}
+      </div>
+    </div>
+  )
+
+  // um capítulo; unico = aberto sozinho a partir do índice (sem dobrar)
+  const painelCapitulo = (s, unico = false) => {
+    const i = capitulos.indexOf(s)
+    const lista = doCapitulo(s.id)
+    const n = contagem(s.id)
+    const fechado = !unico && fechados.has(s.id)
+    return (
+      <div key={s.id} className={`panel panel-inverse ${!s.visivel ? 'p-capitulo-escondido' : ''} ${alvo === s.id ? 'p-alvo' : ''} ${arrasto?.id === s.id ? 'p-a-arrastar' : ''}`} id={`cap-${s.id}`} {...zona(s.id)}>
+        <div className={`panel-heading ${edicao && !unico ? 'p-arrastavel' : ''}`} {...(unico ? {} : arrastavel({ tipo: 'capitulo', id: s.id }))} title={edicao && !unico ? tx('Arraste para mudar a ordem dos capítulos') : undefined}>
+          <h2 className="panel-title">
+            {unico
+              ? <span className="fw-bold"><span className="p-capitulo-num">{i + 1}</span>{s.titulo}</span>
+              : (
+                <button type="button" className="btn btn-link p-0 text-white text-decoration-none fw-bold" onClick={() => alternar(s.id)} aria-expanded={!fechado}>
+                  <i className={`fa fa-chevron-${fechado ? 'right' : 'down'} me-2 fs-11px`} />{s.titulo}
+                </button>
+              )}
+            {!s.visivel && <span className="badge bg-warning text-dark ms-2">{tx('Escondido dos estudantes')}</span>}
+            {s.disponivelDe && (eDocente || s.fechado) && <span className="badge bg-light text-dark ms-2"><i className="far fa-clock me-1" />{tx('Abre')} {dataHora(s.disponivelDe)}</span>}
+          </h2>
+          <div className="panel-heading-btn">
+            {edicao ? (
+              <>
+                <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === 0} onClick={() => moverCapitulo(i, -1)} aria-label={tx('Subir capítulo')}><i className="fa fa-arrow-up" /></button>
+                <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === capitulos.length - 1} onClick={() => moverCapitulo(i, 1)} aria-label={tx('Descer capítulo')}><i className="fa fa-arrow-down" /></button>
+                <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => secao(s.id, { visivel: !s.visivel })} aria-label={s.visivel ? tx('Esconder capítulo') : tx('Mostrar capítulo')}><i className={`fa ${s.visivel ? 'fa-eye' : 'fa-eye-slash'}`} /></button>
+                <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => setRestringir({ secao: s })} aria-label={tx('Acesso ao capítulo')} title={tx('Data de abertura')}><i className="fa fa-lock" /></button>
+                <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => editarCapitulo(s)} aria-label={tx('Editar capítulo')}><i className="fa fa-pen" /></button>
+                <button type="button" className="btn btn-xs btn-icon btn-danger" onClick={() => apagarCapitulo(s)} aria-label={tx('Apagar capítulo')}><i className="fa fa-trash-alt" /></button>
+              </>
+            ) : <span className="text-white small">{eDocente ? tx('{0} atividade(s)', { 0: lista.length }) : n.total > 0 && `${n.feitas}/${n.total} ${tx('concluídas')}`}</span>}
+          </div>
+        </div>
+        {!fechado && (
+          <>
+            {s.resumo && <div className="panel-body pb-0 text-muted">{s.resumo}</div>}
+            <div className="list-group list-group-flush">
+              {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem atividades neste capítulo.')}{eDocente && <> {tx('Ligue o modo de edição para juntar materiais, trabalhos e provas.')}</>}</div>}
+              {lista.map(linhaAtividade)}
+              {botaoNova(s.id)}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
+  // anterior / seguinte entre a secção geral e os capítulos
+  const sequencia = [null, ...capitulos.map((s) => s.id)]
+  const posicao = escolhido === 'geral' ? 0 : escolhido ? sequencia.indexOf(escolhido.id) : -1
+  const nomeDe = (id) => (id === null ? tx('Geral') : capitulos.find((s) => s.id === id)?.titulo)
+  const navegarCapitulos = posicao >= 0 && (
+    <div className="p-sala-navegar mb-4">
+      {posicao > 0 ? (
+        <button type="button" className="btn btn-white" onClick={() => verCapitulo(sequencia[posicao - 1])}>
+          <i className="fa fa-arrow-left me-2" /><span className="text-start"><small className="d-block text-muted">{tx('Anterior')}</small><span className="d-block text-truncate">{nomeDe(sequencia[posicao - 1])}</span></span>
+        </button>
+      ) : <span />}
+      {posicao < sequencia.length - 1 && (
+        <button type="button" className="btn btn-theme" onClick={() => verCapitulo(sequencia[posicao + 1])}>
+          <span className="text-end"><small className="d-block opacity-75">{tx('Seguinte')}</small><span className="d-block text-truncate">{nomeDe(sequencia[posicao + 1])}</span></span><i className="fa fa-arrow-right ms-2" />
+        </button>
+      )}
+    </div>
+  )
+
+  // visão geral sem modo de edição: os capítulos em cartões (abre-se um de cada vez)
+  const cartoesCapitulos = () => (
+    <>
+      <h3 className="h5 mb-3">{tx('Capítulos')}</h3>
+      <div className="row g-3 mb-4">
+        {capitulos.map((s, i) => {
+          const n = contagem(s.id)
+          return (
+            <div key={s.id} className="col-md-6">
+              <button type="button" className="p-sala-cartao" onClick={() => verCapitulo(s.id)}>
+                <span className="p-sala-cartao-num">{i + 1}</span>
+                <span className="flex-grow-1 min-w-0 text-start">
+                  <span className="d-block fw-bold text-body">{s.titulo}{!s.visivel && <i className="fa fa-eye-slash text-warning ms-2" title={tx('Escondido dos estudantes')} />}</span>
+                  {s.resumo && <span className="d-block small text-muted p-recorte">{s.resumo}</span>}
+                  <span className="d-block small text-muted mt-1">
+                    {eDocente ? tx('{0} atividade(s)', { 0: n.total }) : tx('{0}/{1} concluídas', { 0: n.feitas, 1: n.total })}
+                    {s.disponivelDe && <> · <i className="far fa-clock me-1" />{tx('Abre')} {dataHora(s.disponivelDe)}</>}
+                  </span>
+                </span>
+                <i className="fa fa-chevron-right text-muted" aria-hidden="true" />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+
   return (
     <div className="row">
       <div className="col-xl-9">
         <VideosDaCadeira c={c} eDocente={eDocente} avisar={avisar} />
         {eDocente && (
-          <div className="d-flex align-items-center gap-2 mb-3">
+          <div className="p-barra-cadeira">
             <div className="form-check form-switch mb-0">
               <input id="modo-edicao" className="form-check-input" type="checkbox" checked={edicao} onChange={(e) => setEdicao(e.target.checked)} />
               <label className="form-check-label fw-bold" htmlFor="modo-edicao">{tx('Modo de edição')}</label>
             </div>
-            {edicao && <span className="small text-muted d-none d-xl-inline"><i className="fa fa-grip-vertical me-1" />{tx('Arraste as atividades entre capítulos e os capítulos para mudar a ordem.')}</span>}
-            <div className="ms-auto d-flex gap-2">
+            <MenuCriar criar={criar} outros={() => { setEdicao(true); setNova({ secaoId: secaoAtual }) }} onde={secaoAtual ? nomeDe(secaoAtual) : tx('Geral')} />
+            <div className="ms-auto d-flex flex-wrap gap-2">
+              {edicao && <button type="button" className="btn btn-sm btn-white" onClick={novoCapitulo}><i className="fa fa-plus me-1" />{tx('Novo capítulo')}</button>}
               {edicao && <button type="button" className="btn btn-sm btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />{tx('Importar e cópias')}</button>}
               <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({ ver: 'estudante' })}><i className="fa fa-user-graduate me-1" />{tx('Ver como estudante')}</button>
             </div>
+            {edicao && !escolhido && <div className="w-100 small text-muted"><i className="fa fa-grip-vertical me-1" />{tx('Arraste as atividades entre capítulos e os capítulos para mudar a ordem.')}</div>}
           </div>
         )}
 
-        {eDocente && !inquerito && (
-          <div className="panel panel-inverse mb-3">
-            <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-plus-circle me-2" />{tx('Criar na cadeira')}</h2></div>
-            <div className="panel-body">
-              <div className="d-flex flex-wrap gap-2">
-                {ATALHOS.map(([tipo, icone, nome]) => (
-                  <button key={tipo} type="button" className="btn btn-white" onClick={() => criar(tipo)}><i className={`fa ${icone} me-1 text-theme`} />{nome}</button>
-                ))}
-                <button type="button" className="btn btn-white" onClick={() => { setEdicao(true); setNova({ secaoId: null }) }}><i className="fa fa-ellipsis-h me-1" />{tx('Outros (página, pasta, livro, sondagem…)')}</button>
-              </div>
-              <div className="small text-muted mt-2">{tx('O que criar aqui fica no capítulo «Geral». Para o pôr num capítulo, use «Adicionar atividade ou recurso» no fim desse capítulo, ou arraste-o no modo de edição.')}</div>
-            </div>
+        {/* no telemóvel e no tablet o índice fica por cima */}
+        {(capitulos.length > 0) && (
+          <div className="d-xl-none mb-3">
+            <label className="form-label small fw-bold text-muted mb-1" htmlFor="ir-capitulo">{tx('Índice da cadeira')}</label>
+            <select id="ir-capitulo" className="form-select" value={escolhido === 'geral' ? 'geral' : escolhido ? String(escolhido.id) : ''} onChange={(e) => (e.target.value ? verCapitulo(e.target.value === 'geral' ? null : e.target.value) : verTudo())}>
+              <option value="">{tx('Visão geral da cadeira')}</option>
+              <option value="geral">{tx('Geral')}</option>
+              {capitulos.map((s, i) => <option key={s.id} value={String(s.id)}>{i + 1}. {s.titulo}</option>)}
+            </select>
           </div>
         )}
 
@@ -285,99 +426,47 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
           />
         )}
 
-        {/* secção geral */}
-        <div className={`panel panel-inverse ${alvo === 'geral' && arrasto?.tipo === 'atividade' ? 'p-alvo' : ''}`} id="cap-geral" {...zona(null)}>
-          <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-home me-2" />{tx('Geral')}</h2></div>
-          <div className="list-group list-group-flush">
-            <div className="list-group-item d-flex align-items-center gap-3 py-3">
-              <span className="p-atividade-icone bg-dark"><i className="fa fa-bullhorn" /></span>
-              <div className="flex-grow-1">
-                <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'avisos' })}>{tx('Avisos')}</button>
-                <div className="small text-muted">{c.avisos.length ? `Último: ${c.avisos[0].titulo} · ${dataHora(c.avisos[0].criadoEm)}` : tx('Sem avisos')}</div>
-              </div>
-            </div>
-            <div className="list-group-item d-flex align-items-center gap-3 py-3">
-              <span className="p-atividade-icone bg-teal"><i className="fa fa-comments" /></span>
-              <div className="flex-grow-1">
-                <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'forum' })}>{tx('Fórum da cadeira')}</button>
-                <div className="small text-muted">{c.forum.topicos} {tx('tópico(s) de discussão')}</div>
-              </div>
-            </div>
-            {(c.programa || c.programaFicheiroId) && (
-              <div className="list-group-item d-flex align-items-center gap-3 py-3">
-                <span className="p-atividade-icone bg-gray-600"><i className="fa fa-book-open" /></span>
-                <div className="flex-grow-1">
-                  <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'programa' })}>{tx('Programa da cadeira')}</button>
-                  <div className="small text-muted">{tx('Objetivos, conteúdos, avaliação e bibliografia')}</div>
-                </div>
-              </div>
-            )}
-            {doCapitulo(null).map(linhaAtividade)}
-            {botaoNova(null)}
-          </div>
-        </div>
+        <div id="cadeira-conteudo" />
+        {escolhido && (
+          <nav className="p-sala-migalhas" aria-label={tx('Localização na cadeira')}>
+            <button type="button" onClick={verTudo}>{tx('Visão geral')}</button>
+            <i className="fa fa-chevron-right" aria-hidden="true" />
+            <span aria-current="page">{escolhido === 'geral' ? tx('Geral') : escolhido.titulo}</span>
+          </nav>
+        )}
 
-        {/* capítulos */}
-        {capitulos.length === 0 && !edicao && <Vazio>{eDocente ? tx('Ainda não há capítulos. Ligue o modo de edição para organizar a cadeira.') : tx('O docente ainda não organizou a matéria em capítulos.')}</Vazio>}
-        {capitulos.map((s, i) => {
-          const lista = doCapitulo(s.id)
-          const n = contagem(s.id)
-          const fechado = fechados.has(s.id)
-          return (
-            <div key={s.id} className={`panel panel-inverse ${!s.visivel ? 'p-capitulo-escondido' : ''} ${alvo === s.id ? 'p-alvo' : ''} ${arrasto?.id === s.id ? 'p-a-arrastar' : ''}`} id={`cap-${s.id}`} {...zona(s.id)}>
-              <div className={`panel-heading ${edicao ? 'p-arrastavel' : ''}`} {...arrastavel({ tipo: 'capitulo', id: s.id })} title={edicao ? tx('Arraste para mudar a ordem dos capítulos') : undefined}>
-                <h2 className="panel-title">
-                  <button type="button" className="btn btn-link p-0 text-white text-decoration-none fw-bold" onClick={() => alternar(s.id)} aria-expanded={!fechado}>
-                    <i className={`fa fa-chevron-${fechado ? 'right' : 'down'} me-2 fs-11px`} />{s.titulo}
-                  </button>
-                  {!s.visivel && <span className="badge bg-warning text-dark ms-2">{tx('Escondido dos estudantes')}</span>}
-                  {s.disponivelDe && (eDocente || s.fechado) && <span className="badge bg-light text-dark ms-2"><i className="far fa-clock me-1" />{tx('Abre')} {dataHora(s.disponivelDe)}</span>}
-                </h2>
-                <div className="panel-heading-btn">
-                  {edicao ? (
-                    <>
-                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === 0} onClick={() => moverCapitulo(i, -1)} aria-label={tx('Subir capítulo')}><i className="fa fa-arrow-up" /></button>
-                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" disabled={i === capitulos.length - 1} onClick={() => moverCapitulo(i, 1)} aria-label={tx('Descer capítulo')}><i className="fa fa-arrow-down" /></button>
-                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => secao(s.id, { visivel: !s.visivel })} aria-label={s.visivel ? tx('Esconder capítulo') : tx('Mostrar capítulo')}><i className={`fa ${s.visivel ? 'fa-eye' : 'fa-eye-slash'}`} /></button>
-                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => setRestringir({ secao: s })} aria-label={tx('Acesso ao capítulo')} title={tx('Data de abertura')}><i className="fa fa-lock" /></button>
-                      <button type="button" className="btn btn-xs btn-icon btn-white me-1" onClick={() => editarCapitulo(s)} aria-label={tx('Editar capítulo')}><i className="fa fa-pen" /></button>
-                      <button type="button" className="btn btn-xs btn-icon btn-danger" onClick={() => apagarCapitulo(s)} aria-label={tx('Apagar capítulo')}><i className="fa fa-trash-alt" /></button>
-                    </>
-                  ) : !eDocente && n.total > 0 && <span className="text-white small">{n.feitas}/{n.total} {tx('concluídas')}</span>}
-                </div>
-              </div>
-              {!fechado && (
-                <>
-                  {s.resumo && <div className="panel-body pb-0 text-muted">{s.resumo}</div>}
-                  <div className="list-group list-group-flush">
-                    {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem atividades neste capítulo.')}</div>}
-                    {lista.map(linhaAtividade)}
-                    {botaoNova(s.id)}
-                  </div>
-                </>
-              )}
-            </div>
-          )
-        })}
-        {edicao && <button type="button" className="btn btn-theme mb-4" onClick={novoCapitulo}><i className="fa fa-plus me-1" /> {tx('Novo capítulo')}</button>}
+        {escolhido === 'geral' && painelGeral()}
+        {escolhido && escolhido !== 'geral' && painelCapitulo(escolhido, true)}
+        {escolhido && navegarCapitulos}
+
+        {!escolhido && (
+          <>
+            {painelGeral()}
+            {capitulos.length === 0 && !edicao && <Vazio>{eDocente ? tx('Ainda não há capítulos. Ligue o modo de edição para organizar a cadeira.') : tx('O docente ainda não organizou a matéria em capítulos.')}</Vazio>}
+            {edicao ? capitulos.map((s) => painelCapitulo(s)) : capitulos.length > 0 && cartoesCapitulos()}
+            {edicao && <button type="button" className="btn btn-theme mb-4" onClick={novoCapitulo}><i className="fa fa-plus me-1" /> {tx('Novo capítulo')}</button>}
+          </>
+        )}
       </div>
 
       {/* coluna direita: índice e blocos */}
       <div className="col-xl-3">
         <div className="p-coluna-direita">
-          <div className="panel panel-inverse">
+          <div className="panel panel-inverse d-none d-xl-block">
             <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-list-ol me-2" />{tx('Índice da cadeira')}</h2></div>
             <div className="list-group list-group-flush p-indice">
-              <a href="#cap-geral" className="list-group-item list-group-item-action"><i className="fa fa-home me-2 text-muted" />{tx('Geral')}</a>
-              {capitulos.map((s) => {
+              <button type="button" className={`list-group-item list-group-item-action ${!escolhido ? 'active' : ''}`} onClick={verTudo} aria-current={!escolhido ? 'page' : undefined}><i className="fa fa-th-large me-2" />{tx('Visão geral')}</button>
+              <button type="button" className={`list-group-item list-group-item-action ${escolhido === 'geral' ? 'active' : ''}`} onClick={() => verCapitulo(null)} aria-current={escolhido === 'geral' ? 'page' : undefined}><i className="fa fa-home me-2" />{tx('Geral')}</button>
+              {capitulos.map((s, i) => {
                 const n = contagem(s.id)
                 const completo = !eDocente && n.total > 0 && n.feitas === n.total
+                const ativo = escolhido && escolhido !== 'geral' && escolhido.id === s.id
                 return (
-                  <a key={s.id} href={`#cap-${s.id}`} className="list-group-item list-group-item-action d-flex gap-2 align-items-start" onClick={() => setFechados((f) => { const x = new Set(f); x.delete(s.id); return x })}>
-                    <i className={`fa ${completo ? 'fa-check-circle text-success' : 'fa-circle text-gray-300'} mt-1 fs-11px`} />
+                  <button key={s.id} type="button" className={`list-group-item list-group-item-action d-flex gap-2 align-items-start text-start ${ativo ? 'active' : ''}`} onClick={() => verCapitulo(s.id)} aria-current={ativo ? 'page' : undefined}>
+                    {completo ? <i className="fa fa-check-circle text-success mt-1 fs-11px" /> : <span className="p-indice-num">{i + 1}</span>}
                     <span className="flex-grow-1">{s.titulo}{!s.visivel && <i className="fa fa-eye-slash text-warning ms-1" />}</span>
-                    {!eDocente && n.total > 0 && <span className="small text-muted">{n.feitas}/{n.total}</span>}
-                  </a>
+                    <span className="small opacity-75">{eDocente ? n.total : `${n.feitas}/${n.total}`}</span>
+                  </button>
                 )
               })}
             </div>
@@ -433,6 +522,38 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
       {restringir && <Restricoes {...restringir} atividades={atividades} fechar={() => setRestringir(null)} avisar={avisar} guardado={() => { setRestringir(null); recarregar() }} />}
       {importar && <Importar c={c} fechar={() => setImportar(false)} avisar={avisar} concluido={recarregar} />}
       {nova && <NovaAtividade c={c} secaoId={nova.secaoId} tipoInicial={nova.tipo ?? null} abrirInquerito={abrirInquerito} fechar={() => setNova(null)} avisar={avisar} criada={(destino) => { setNova(null); recarregar(); if (destino) irPara(destino) }} />}
+    </div>
+  )
+}
+
+// «Criar»: os atalhos do docente num só botão (o que se cria fica no capítulo à vista)
+function MenuCriar({ criar, outros, onde }) {
+  const [aberto, setAberto] = useState(false)
+  const caixa = useRef(null)
+  useEffect(() => {
+    if (!aberto) return undefined
+    const fora = (e) => { if (!caixa.current?.contains(e.target)) setAberto(false) }
+    const esc = (e) => { if (e.key === 'Escape') setAberto(false) }
+    document.addEventListener('mousedown', fora)
+    document.addEventListener('keydown', esc)
+    return () => { document.removeEventListener('mousedown', fora); document.removeEventListener('keydown', esc) }
+  }, [aberto])
+  const escolher = (fn) => { setAberto(false); fn() }
+  return (
+    <div className="dropdown" ref={caixa}>
+      <button type="button" className="btn btn-sm btn-theme dropdown-toggle" aria-expanded={aberto} aria-haspopup="menu" onClick={() => setAberto((x) => !x)}>
+        <i className="fa fa-plus me-1" />{tx('Criar')}
+      </button>
+      {aberto && (
+        <div className="dropdown-menu show p-menu-criar" role="menu">
+          <div className="dropdown-header">{tx('Fica em: {0}', { 0: onde })}</div>
+          {ATALHOS.map(([tipo, icone, nome]) => (
+            <button key={tipo} type="button" role="menuitem" className="dropdown-item" onClick={() => escolher(() => criar(tipo))}><i className={`fa ${icone} fa-fw me-2 text-theme`} />{nome}</button>
+          ))}
+          <div className="dropdown-divider" />
+          <button type="button" role="menuitem" className="dropdown-item" onClick={() => escolher(outros)}><i className="fa fa-ellipsis-h fa-fw me-2" />{tx('Outros (página, pasta, livro, sondagem…)')}</button>
+        </div>
+      )}
     </div>
   )
 }

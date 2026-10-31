@@ -257,4 +257,12 @@ export default [
   ["Aprovou comentário (publicado no site)", "Approved a comment (published on the website)", "A approuvé un commentaire (publié sur le site)", "Aprobó un comentario (publicado en el sitio)"],
   ["Recusou comentário", "Refused a comment", "A refusé un commentaire", "Rechazó un comentario"],
   ["Os comentários são revistos antes de aparecerem. Seja respeitoso: os ofensivos não são publicados.", "Comments are reviewed before they appear. Be respectful: offensive ones are not published.", "Les commentaires sont révisés avant d'apparaître. Soyez respectueux : les commentaires offensants ne sont pas publiés.", "Los comentarios se revisan antes de aparecer. Sea respetuoso: los ofensivos no se publican."],
+  ["Abrir no leitor do telemóvel", "Open in the phone's reader", "Ouvrir dans le lecteur du téléphone", "Abrir en el lector del teléfono"],
+  ["Fica em: {0}", "Goes in: {0}", "Va dans : {0}", "Queda en: {0}"],
+  ["Visão geral", "Overview", "Vue d'ensemble", "Vista general"],
+  ["Visão geral da cadeira", "Course overview", "Vue d'ensemble du cours", "Vista general de la asignatura"],
+  ["Localização na cadeira", "Location in the course", "Emplacement dans le cours", "Ubicación en la asignatura"],
+  ["{0} atividade(s)", "{0} activity(ies)", "{0} activité(s)", "{0} actividad(es)"],
+  ["{0}/{1} concluídas", "{0}/{1} completed", "{0}/{1} terminées", "{0}/{1} completadas"],
+  ["Ligue o modo de edição para juntar materiais, trabalhos e provas.", "Turn on editing mode to add materials, assignments and tests.", "Activez le mode édition pour ajouter des supports, des travaux et des épreuves.", "Active el modo de edición para añadir materiales, trabajos y pruebas."],
 ]

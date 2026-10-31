@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { abrirFicheiro, carregarFicheiro } from './api'
+import { abrirFicheiro, abrirNoAparelho, carregarFicheiro } from './api'
 import { iconeFicheiro, tamanho, tipoVisivel } from './formatar'
 import LeitorPdf from '../leitor/LeitorPdf'
 import { t as tx } from '../i18n/linguas'
@@ -57,7 +57,18 @@ function VerFicheiro({ ficheiro, titulo, falhou }) {
       </div>
     )
   }
-  if (especie === 'pdf') return <LeitorPdf key={url} fonte={url} titulo={titulo || ficheiro.nome} descarregar={descarregar} />
+  if (especie === 'pdf') {
+    return (
+      <>
+        {/* no telemóvel: guardar o PDF no aparelho ou abri-lo no leitor do telemóvel (lê-se também aqui, no leitor do portal) */}
+        <div className="p-pdf-telemovel">
+          <button type="button" className="btn btn-theme" onClick={descarregar}><i className="fa fa-download me-2" />{tx('Descarregar o PDF')}</button>
+          <button type="button" className="btn btn-white" onClick={() => abrirNoAparelho(ficheiro.id).catch(falhou)}><i className="fa fa-mobile-alt me-2" />{tx('Abrir no leitor do telemóvel')}</button>
+        </div>
+        <LeitorPdf key={url} fonte={url} titulo={titulo || ficheiro.nome} descarregar={descarregar} />
+      </>
+    )
+  }
   return (
     <>
       {cabecalho}

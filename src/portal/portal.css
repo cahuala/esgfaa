@@ -383,6 +383,13 @@
 .p-capitulo-escondido .panel-heading { background: repeating-linear-gradient(-45deg, #2d353c 0 10px, #343d45 10px 20px); }
 .p-coluna-direita { position: sticky; top: 76px; }
 .p-indice .list-group-item { font-size: 13px; padding: 8px 14px; }
+.p-indice .list-group-item.active .text-success { color: #fff !important; }
+.p-indice-num { flex: 0 0 auto; min-width: 20px; height: 20px; border-radius: 10px; background: rgba(0, 0, 0, .08); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.p-indice .active .p-indice-num { background: rgba(255, 255, 255, .25); }
+.p-capitulo-num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; margin-right: 8px; border-radius: 11px; background: rgba(255, 255, 255, .2); font-size: 12px; }
+/* barra do docente na página da cadeira: modo de edição, criar, novo capítulo… */
+.p-barra-cadeira { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 16px; padding: 10px 14px; background: var(--bs-component-bg, #fff); border-radius: 6px; box-shadow: 0 1px 2px rgba(0, 0, 0, .06); }
+.p-menu-criar { min-width: 260px; }
 html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 @media (max-width: 1199.98px) { .p-coluna-direita { position: static; } }
 
@@ -662,3 +669,8 @@ html { scroll-padding-top: 80px; scroll-behavior: smooth; }
 .p-pacote iframe { display: block; width: 100%; height: min(78vh, 760px); border: 0; }
 .p-pacote:fullscreen iframe { height: 100vh; }
 .p-pacote-carregar { display: grid; place-items: center; height: 240px; color: var(--bs-secondary-color, #6c757d); }
+
+/* PDF no telemóvel: descarregar ou abrir no leitor do aparelho (no computador basta o botão do leitor) */
+.p-pdf-telemovel { display: none; gap: 8px; margin-bottom: 12px; }
+.p-pdf-telemovel .btn { flex: 1 1 0; white-space: normal; }
+@media (max-width: 767.98px) { .p-pdf-telemovel { display: flex; flex-wrap: wrap; } }

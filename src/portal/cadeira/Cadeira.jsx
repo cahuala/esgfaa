@@ -135,7 +135,7 @@ function Cadeira() {
         {!naSala && especie === 'inquerito' && <><Voltar irPara={irPara} /><Inquerito {...props} so={Number(atividadeId)} /></>}
         {!naSala && especie === 'workshop' && <><Voltar irPara={irPara} /><Workshop {...props} so={Number(atividadeId)} /></>}
         {!naSala && especie === 'questionario' && <Questionarios {...props} so={Number(atividadeId)} voltar={() => irPara({ separador: 'curso' })} />}
-        {!naSala && !especie && separador === 'curso' && <Curso {...props} />}
+        {!naSala && !especie && separador === 'curso' && <Curso {...props} capitulo={capitulo} />}
         {!especie && separador === 'participantes' && <Participantes {...props} />}
         {!especie && separador === 'grupos' && <Grupos {...props} />}
         {!especie && separador === 'programa' && <Programa {...props} />}
