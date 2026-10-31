@@ -53,8 +53,10 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   )
 
   // tudo o que está abaixo exige sessão
-  r.use(limitar(config.limites.admin))
+  r.use(limitar(config.limites.semSessao))
   r.use(autenticar(servicos.sessao))
+  // por conta (o pessoal da Escola sai pelo mesmo IP)
+  r.use(limitar(config.limites.admin, { chave: (req) => req.contexto.actor.id }))
 
   r.get('/eu', async (req, res) => res.json(await servicos.sessao.eu(ctx(req))))
   r.get('/eu/privacidade', async (req, res) => res.json(await servicos.privacidade.avisoUtilizador(ctx(req))))

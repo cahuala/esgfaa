@@ -32,8 +32,8 @@ export function rotas({ servicos: s, config }) {
   r.use(sessaoEmCookie({ nome: COOKIE_PESSOAL, caminho: '/api', caminhos: ['/entrar', '/mudar-senha'], seguro: config.producao }))
   const ip = (req) => req.ip
 
-  // entrar: no máximo 10 tentativas por minuto por endereço (além do bloqueio da conta)
-  const limiteEntrar = rateLimit({ windowMs: 60_000, limit: config.teste ? 1000 : 10, standardHeaders: 'draft-7', legacyHeaders: false, message: { erro: 'Demasiadas tentativas. Aguarde um minuto.', codigo: 'demasiados_pedidos' } })
+  // entrar: no máximo 60 pedidos por minuto por endereço (o pessoal da Escola sai pelo mesmo IP; cada conta bloqueia-se à parte)
+  const limiteEntrar = rateLimit({ windowMs: 60_000, limit: config.teste ? 1000 : 60, standardHeaders: 'draft-7', legacyHeaders: false, message: { erro: 'Demasiadas tentativas. Aguarde um minuto.', codigo: 'demasiados_pedidos' } })
   // «Não sou um robô»: o navegador resolve um desafio antes de entrar (mais difícil para quem já errou)
   const provasUsadas = new ProvasUsadas()
   const falhas = new Map() // ip -> [instantes das palavras-passe erradas]

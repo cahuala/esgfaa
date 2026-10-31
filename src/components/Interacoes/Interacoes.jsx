@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { FaHeart, FaRegHeart, FaRegComment, FaShareAlt, FaEye, FaCheck, FaFacebookF, FaWhatsapp, FaLinkedinIn } from 'react-icons/fa'
+import { useEffect, useRef, useState } from 'react'
+import { FaHeart, FaRegHeart, FaRegComment, FaShareAlt, FaEye, FaCheck, FaFacebookF, FaWhatsapp, FaLinkedinIn, FaPaperPlane, FaUser } from 'react-icons/fa'
 import { useConteudo } from '../../conteudo/contexto'
 import { API_URL, idVisitante, pedido } from '../../conteudo/api'
 import { tempoRelativo } from '../../utils/datas'
@@ -16,11 +16,21 @@ const iniciais = (nome) => {
   return (partes.length > 1 ? partes[0][0] + partes[partes.length - 1][0] : partes[0].slice(0, 2)).toUpperCase()
 }
 
+// o nome fica no navegador para o próximo comentário (só neste dispositivo)
+const CHAVE_NOME = 'esgfaa-nome-comentario'
+const nomeGuardado = () => {
+  try { return localStorage.getItem(CHAVE_NOME) || '' } catch { return '' }
+}
+const guardarNome = (nome) => {
+  try { localStorage.setItem(CHAVE_NOME, nome.trim()) } catch { /* sem armazenamento */ }
+}
+
 function Interacoes({ colecao, id, titulo }) {
   const { atualizarEstatisticas } = useConteudo()
   const [estado, setEstado] = useState(null) // { gostos, gostei, comentarios, visualizacoes }
   const [indisponivel, setIndisponivel] = useState(!API_URL)
-  const [form, setForm] = useState({ nome: '', texto: '', website: '' })
+  const [form, setForm] = useState(() => ({ nome: nomeGuardado(), texto: '', website: '' }))
+  const formRef = useRef(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [copiado, setCopiado] = useState(false)
@@ -76,7 +86,10 @@ function Interacoes({ colecao, id, titulo }) {
         body: JSON.stringify({ ...form, visitante }),
       })
       if (r) aplicar(r)
+      guardarNome(form.nome)
       setForm({ nome: form.nome, texto: '', website: '' })
+      const caixa = formRef.current?.querySelector('textarea')
+      if (caixa) caixa.style.height = ''
     } catch (falha) {
       setErro(falha.message)
     } finally {
@@ -135,39 +148,53 @@ function Interacoes({ colecao, id, titulo }) {
             {t('Comentários')} <span>{total}</span>
           </h2>
 
-          <form className={styles.formulario} onSubmit={comentar}>
-            <div className={styles.linha}>
-              <label>
-                <span>{t('Nome')}</span>
-                <input
-                  value={form.nome}
-                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                  maxLength={80}
-                  autoComplete="name"
-                  required
-                />
-              </label>
+          <form className={styles.formulario} onSubmit={comentar} ref={formRef}>
+            <span className={styles.avatar} aria-hidden="true">{form.nome.trim() ? iniciais(form.nome) : <FaUser />}</span>
+            <div className={styles.campos}>
+              <input
+                className={styles.nome}
+                aria-label={t('Nome')}
+                placeholder={t('O seu nome')}
+                value={form.nome}
+                onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                maxLength={80}
+                autoComplete="name"
+                required
+              />
               {/* campo armadilha para robôs: invisível para pessoas */}
               <label className={styles.armadilha} aria-hidden="true">
                 Website
                 <input tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
               </label>
+              <div className={styles.balaoEscrever}>
+                <textarea
+                  aria-label={t('Comentário')}
+                  placeholder={t('Escreva um comentário…')}
+                  value={form.texto}
+                  onChange={(e) => {
+                    setForm({ ...form, texto: e.target.value })
+                    // cresce com o texto, como no Facebook
+                    e.target.style.height = 'auto'
+                    e.target.style.height = `${e.target.scrollHeight}px`
+                  }}
+                  onKeyDown={(e) => {
+                    // Enter publica; Shift+Enter muda de linha
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault()
+                      formRef.current?.requestSubmit()
+                    }
+                  }}
+                  maxLength={2000}
+                  rows={1}
+                  required
+                />
+                <button type="submit" className={styles.enviarBotao} disabled={enviando || !form.texto.trim()} aria-label={t('Publicar comentário')} title={t('Publicar comentário')}>
+                  <FaPaperPlane aria-hidden="true" />
+                </button>
+              </div>
+              <small className={styles.nota}>{enviando ? t('A publicar…') : t('Os comentários são públicos. Seja respeitoso: comentários ofensivos são removidos.')}</small>
+              {erro && <p className={styles.erro} role="alert">{erro}</p>}
             </div>
-            <label>
-              <span>{t('Comentário')}</span>
-              <textarea
-                value={form.texto}
-                onChange={(e) => setForm({ ...form, texto: e.target.value })}
-                maxLength={2000}
-                rows={4}
-                required
-              />
-            </label>
-            <div className={styles.enviar}>
-              <small>{t('Os comentários são públicos. Seja respeitoso: comentários ofensivos são removidos.')}</small>
-              <button type="submit" disabled={enviando}>{enviando ? t('A publicar…') : t('Publicar comentário')}</button>
-            </div>
-            {erro && <p className={styles.erro} role="alert">{erro}</p>}
           </form>
 
           {total === 0 ? (
@@ -178,11 +205,11 @@ function Interacoes({ colecao, id, titulo }) {
                 <li key={c.id}>
                   <span className={styles.avatar} aria-hidden="true">{iniciais(c.nome)}</span>
                   <div>
-                    <p className={styles.autor}>
-                      <strong>{c.nome}</strong>
-                      <time dateTime={c.data}>{tempoRelativo(c.data)}</time>
-                    </p>
-                    <p className={styles.texto}>{c.texto}</p>
+                    <div className={styles.balao}>
+                      <strong className={styles.autor}>{c.nome}</strong>
+                      <p className={styles.texto}>{c.texto}</p>
+                    </div>
+                    <time className={styles.quando} dateTime={c.data}>{tempoRelativo(c.data)}</time>
                   </div>
                 </li>
               ))}

@@ -29,7 +29,7 @@ export function rotasPortal({ servicos, config, privados }) {
 
   // «Não sou um robô»: o desafio que o navegador resolve antes de entrar
   const robo = provaRobo({ config, servicos })
-  r.get('/desafio', limitar(config.limites.entrarIp), robo.desafio)
+  r.get('/desafio', limitar(L.entrarPortalIp), robo.desafio)
   r.post(
     '/entrar',
     limitar(L.entrarPortalIp, { mensagem: 'Demasiadas tentativas a partir deste endereço. Aguarde 15 minutos.' }),
@@ -40,12 +40,14 @@ export function rotasPortal({ servicos, config, privados }) {
   )
 
   // tudo o resto exige sessão do portal
-  r.use(limitar(L.portal))
+  r.use(limitar(L.semSessao))
   r.use(async (req, res, next) => {
     const { conta, sessao } = await servicos.sessaoPortal.autenticar(tokenDoPedido(req, COOKIE_PORTAL))
     req.contexto = { ...contextoAnonimo(req), conta, sessao }
     next()
   })
+  // o limite conta por conta: uma turma atrás do mesmo IP da Escola não se bloqueia
+  r.use(limitar(L.portal, { chave: (req) => req.contexto.conta.id }))
 
   r.post('/traduzir', validar({ body: E.traduzirTextos }), async (req, res) => res.json(await servicos.traducaoDados.traduzir(ctx(req), req.dados.body)))
   r.get('/eu', async (req, res) => res.json(await servicos.sessaoPortal.eu(ctx(req))))

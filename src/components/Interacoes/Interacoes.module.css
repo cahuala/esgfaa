@@ -133,54 +133,111 @@
   color: var(--marca);
 }
 
+/* Escrever um comentário, como no Facebook: avatar + balão cinzento arredondado com o botão lá dentro */
 .formulario {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 22px;
-  background: var(--superficie);
-  border: 1px solid var(--linha);
-  border-radius: var(--raio);
+  --balao: color-mix(in srgb, var(--texto) 7%, transparent);
+  --balao-foco: color-mix(in srgb, var(--texto) 10%, transparent);
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
 }
 
-.formulario label {
+.campos {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
-.formulario label > span {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--texto);
+.nome,
+.balaoEscrever {
+  background: var(--balao);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.formulario input,
-.formulario textarea {
+.nome {
   width: 100%;
-  padding: 10px 12px;
-  background: var(--superficie);
-  border: 1px solid var(--linha-forte);
-  border-radius: 4px;
+  max-width: 280px;
+  height: 36px;
+  padding: 0 14px;
   color: var(--texto);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.balaoEscrever {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 4px 4px 4px 14px;
+}
+
+.balaoEscrever textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  max-height: 240px;
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  resize: none;
+  overflow-y: auto;
+  color: var(--texto);
+  font: inherit;
   font-size: 15px;
-  line-height: 1.5;
-  transition: border-color 0.2s ease;
+  line-height: 1.35;
 }
 
-.formulario textarea {
-  resize: vertical;
-  min-height: 110px;
+.nome::placeholder,
+.balaoEscrever textarea::placeholder {
+  color: var(--texto-suave);
+  font-weight: 400;
 }
 
-.formulario input:focus,
-.formulario textarea:focus {
+.nome:focus,
+.balaoEscrever:focus-within {
   outline: none;
-  border-color: var(--marca);
+  background: var(--balao-foco);
+  border-color: var(--linha-forte);
 }
 
-.linha {
-  max-width: 360px;
+.balaoEscrever textarea:focus {
+  outline: none;
+}
+
+.enviarBotao {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--marca);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.enviarBotao:hover:not(:disabled) {
+  background: var(--balao-foco);
+}
+
+.enviarBotao:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.nota {
+  padding: 0 14px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--texto-suave);
 }
 
 .armadilha {
@@ -189,41 +246,6 @@
   width: 1px;
   height: 1px;
   overflow: hidden;
-}
-
-.enviar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.enviar small {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--texto-suave);
-}
-
-.enviar button {
-  flex: 0 0 auto;
-  padding: 10px 22px;
-  background: var(--marca);
-  border: none;
-  border-radius: 999px;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: filter 0.2s ease;
-}
-
-.enviar button:hover {
-  filter: brightness(1.1);
-}
-
-.enviar button:disabled {
-  opacity: 0.6;
-  cursor: wait;
 }
 
 .erro {
@@ -242,16 +264,15 @@
 
 .lista {
   list-style: none;
-  margin: 28px 0 0;
+  margin: 18px 0 0;
   padding: 0;
 }
 
 .lista li {
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  gap: 16px;
-  padding: 22px 0;
-  border-bottom: 1px solid var(--filete);
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 0;
   animation: entrar 0.35s ease;
 }
 
@@ -261,42 +282,53 @@
 }
 
 .avatar {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1px solid var(--marca);
   background: var(--tinte-marca);
+  color: var(--texto);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.avatar svg {
+  color: var(--texto-suave);
+  font-size: 16px;
+}
+
+.balao {
+  display: inline-block;
+  max-width: 100%;
+  padding: 8px 14px 9px;
+  background: color-mix(in srgb, var(--texto) 7%, transparent);
+  border-radius: 18px;
 }
 
 .autor {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin: 0 0 6px;
-}
-
-.autor strong {
-  font-size: 15px;
-}
-
-.autor time {
-  font-size: 12.5px;
-  color: var(--texto-suave);
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .texto {
-  margin: 0;
-  font-size: 15.5px;
-  line-height: 1.65;
+  margin: 2px 0 0;
+  font-size: 15px;
+  line-height: 1.4;
   color: var(--texto);
   white-space: pre-line;
   overflow-wrap: anywhere;
+  hyphens: manual;
+}
+
+.quando {
+  display: block;
+  padding: 3px 14px 0;
+  font-size: 12px;
+  color: var(--texto-suave);
 }
 
 /* contagens nas listagens */
@@ -338,12 +370,7 @@
     margin-left: 0;
   }
 
-  .formulario {
-    padding: 20px;
-  }
-
-  .enviar {
-    flex-direction: column;
-    align-items: stretch;
+  .nome {
+    max-width: none;
   }
 }

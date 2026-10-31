@@ -69,6 +69,20 @@ describe('sessão do painel', () => {
     }
   })
 
+  it('o limite de pedidos do painel conta por conta (o pessoal da Escola sai pelo mesmo IP)', async () => {
+    const lim = await criarAmbiente({ limites: { admin: { maximo: 3 } } })
+    try {
+      const a = lim.com(await lim.entrar())
+      const b = lim.com((await lim.criarUtilizador('redator')).token)
+      for (let i = 0; i < 3; i++) assert.equal((await a.get('/api/admin/eu')).status, 200)
+      assert.equal((await a.get('/api/admin/eu')).status, 429)
+      // outra conta, do mesmo IP, continua a trabalhar
+      assert.equal((await b.get('/api/admin/eu')).status, 200)
+    } finally {
+      await lim.fechar()
+    }
+  })
+
   it('rotas protegidas exigem token válido', async () => {
     assert.equal((await amb.http().get('/api/admin/eu')).status, 401)
     assert.equal((await amb.http().get('/api/admin/eu').set('Authorization', 'Bearer lixo')).status, 401)

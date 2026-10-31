@@ -233,4 +233,6 @@ export default [
   ["Últimas 24 horas", "Last 24 hours", "Dernières 24 heures", "Últimas 24 horas"],
   ["Últimos 30 dias", "Last 30 days", "30 derniers jours", "Últimos 30 días"],
   ["Últimos 7 dias", "Last 7 days", "7 derniers jours", "Últimos 7 días"],
+  ["Escreva um comentário…", "Write a comment…", "Écrivez un commentaire…", "Escriba un comentario…"],
+  ["O seu nome", "Your name", "Votre nom", "Su nombre"],
 ]

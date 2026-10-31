@@ -146,8 +146,10 @@ export function criarConfig(env = process.env, extras = {}) {
     // limites de pedidos por janela (os testes podem alterá-los)
     limites: {
       entrar: { janelaMs: 15 * 60_000, maximo: 10 },
-      // tentativas por IP, qualquer que seja o e-mail (contra "password spraying")
-      entrarIp: { janelaMs: 15 * 60_000, maximo: 40 },
+      // tentativas por IP, qualquer que seja o e-mail (contra "password spraying"); alto porque a rede da Escola sai por um só IP
+      entrarIp: { janelaMs: 15 * 60_000, maximo: 150 },
+      // pedidos sem sessão por IP (antes de verificar o token) e, depois de entrar, por conta
+      semSessao: { janelaMs: 60_000, maximo: 10_000 },
       admin: { janelaMs: 60_000, maximo: 600 },
       publico: { janelaMs: 60_000, maximo: 300 },
       gosto: { janelaMs: 60_000, maximo: 30 },
@@ -161,7 +163,8 @@ export function criarConfig(env = process.env, extras = {}) {
       // mensagens privadas por IP e por conta (contra abusos)
       mensagens: { janelaMs: 60_000, maximo: 30 },
       entrarPortal: { janelaMs: 15 * 60_000, maximo: 10 },
-      entrarPortalIp: { janelaMs: 15 * 60_000, maximo: 60 },
+      // uma turma inteira entra ao mesmo tempo a partir da rede da Escola (o limite por e-mail continua a 10)
+      entrarPortalIp: { janelaMs: 15 * 60_000, maximo: 600 },
       portal: { janelaMs: 60_000, maximo: 600 },
     },
     ...extras,
