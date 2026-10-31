@@ -92,6 +92,8 @@ services:
       REDES_INTERNAS: ${REDES_INTERNAS:-0.0.0.0/0}
       PORTAL_API_URL: http://api:3001
       INTEGRACAO_CHAVE: ${INTEGRACAO_CHAVE}
+      # consulta do BI na base de dados do Estado (a chave só está no deploy/teste.env do servidor)
+      BI_API_KEY: ${BI_API_KEY:-}
       DOIS_FATORES_PAPEIS: ${DOIS_FATORES_PAPEIS:-}
     volumes:
       - dados-pessoal:/app/api-pessoal/dados

@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Foto from '../componentes/Foto'
+import Carregar from '../componentes/Carregar'
+import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
@@ -150,6 +152,11 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
   const [d, setD] = useState({ ...VAZIO, tipoDocente: tipo === 'docente' ? 'colaborador' : '' })
   const [erro, setErro] = useState('')
   const [aGravar, setAGravar] = useState(false)
+  const { avisar } = useSessao()
+  // fotografia tipo passe: escolhida aqui e enviada logo a seguir ao registo
+  const [foto, setFoto] = useState(null)
+  const previa = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto])
+  useEffect(() => () => { if (previa) URL.revokeObjectURL(previa) }, [previa])
   const [bi, setBi] = useState({ estado: '', texto: '', visto: '' }) // estado: '' | 'a consultar' | 'ok' | 'erro'
   const militar = d.tipo === 'militar'
   const postos = ref.postos[d.ramo] ?? []
@@ -182,7 +189,13 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
       ...(tipo === 'docente' ? { tipoDocente: d.tipoDocente, funcaoActual: d.funcaoActual } : {}),
     }
     try {
-      aoGuardar(await api('/pessoas', { metodo: 'POST', corpo }))
+      const r = await api('/pessoas', { metodo: 'POST', corpo })
+      if (foto) {
+        const fd = new FormData()
+        fd.append('foto', await reduzirFoto(foto))
+        await api(`/pessoas/${r.id}/foto`, { metodo: 'PUT', formulario: fd }).catch((x) => avisar(`Registado, mas a fotografia não: ${x.message}`, 'erro'))
+      }
+      aoGuardar(r)
     } catch (falha) {
       setErro(falha.message)
     } finally {
@@ -203,21 +216,31 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
 
         <Seccao icone="fa-id-card">Identificação</Seccao>
         <div className="row gx-3">
-          <Campo rotulo="Bilhete de identidade" col="col-md-5" ajuda="Com o BI, os dados vêm da base de dados do Estado.">
-            <div className="input-group input-group-sm">
-              <input {...campo('bi', { onChange: (e) => { const v = e.target.value.toUpperCase(); set('bi')(v); consultarBi(v, true) }, placeholder: '001234567LA041', maxLength: 20 })} aria-label="Bilhete de identidade" />
-              <button type="button" className="btn btn-outline-theme" disabled={bi.estado === 'a consultar' || !d.bi} onClick={() => consultarBi()}><i className={`fa ${bi.estado === 'a consultar' ? 'fa-spinner fa-spin' : 'fa-search'} me-1`} />Consultar</button>
+          <div className="col-md-3 mb-3 text-center">
+            <div className="pes-ficha-foto mb-2">{previa ? <img src={previa} alt="Fotografia" /> : <i className="fa fa-user fa-4x text-muted" />}</div>
+            <Carregar aceitar="image/jpeg,image/png,image/webp" maxMb={30} compacto icone="fa-camera" titulo={previa ? 'Mudar fotografia' : 'Fotografia'} ajuda="JPG, PNG ou WEBP · tipo passe" ficheiros={foto ? [foto] : []} aoMudar={(l) => setFoto(l[0] ?? null)} />
+          </div>
+          <div className="col-md-9">
+            <div className="row gx-3">
+              <Campo rotulo="Bilhete de identidade" col="col-md-12" ajuda="Com o BI, os dados vêm da base de dados do Estado.">
+                <div className="input-group input-group-sm">
+                  <input {...campo('bi', { onChange: (e) => { const v = e.target.value.toUpperCase(); set('bi')(v); consultarBi(v, true) }, placeholder: '001234567LA041', maxLength: 20 })} aria-label="Bilhete de identidade" />
+                  <button type="button" className="btn btn-outline-theme" disabled={bi.estado === 'a consultar' || !d.bi} onClick={() => consultarBi()}><i className={`fa ${bi.estado === 'a consultar' ? 'fa-spinner fa-spin' : 'fa-search'} me-1`} />Consultar</button>
+                </div>
+                {bi.texto && <div className={`small mt-1 ${bi.estado === 'ok' ? 'text-success' : 'text-danger'}`}><i className={`fa ${bi.estado === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-1`} />{bi.texto}</div>}
+              </Campo>
+              <Campo rotulo="Nome completo" obrigatorio col="col-md-12"><input {...campo('nome')} required minLength={5} /></Campo>
+              <Campo rotulo="Data de nascimento" col="col-md-4"><input {...campo('dataNascimento', { type: 'date' })} /></Campo>
+              <Campo rotulo="Género" col="col-md-4"><Escolha valor={d.genero} aoMudar={set('genero')} opcoes={ref.generos} /></Campo>
+              <Campo rotulo="Estado civil" col="col-md-4"><Escolha valor={d.estadoCivil} aoMudar={set('estadoCivil')} opcoes={ref.estadosCivis} /></Campo>
             </div>
-            {bi.texto && <div className={`small mt-1 ${bi.estado === 'ok' ? 'text-success' : 'text-danger'}`}><i className={`fa ${bi.estado === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-1`} />{bi.texto}</div>}
-          </Campo>
-          <Campo rotulo="Nome completo" obrigatorio col="col-md-7"><input {...campo('nome')} required minLength={5} /></Campo>
-          <Campo rotulo="Data de nascimento" col="col-md-3"><input {...campo('dataNascimento', { type: 'date' })} /></Campo>
-          <Campo rotulo="Género" col="col-md-3"><Escolha valor={d.genero} aoMudar={set('genero')} opcoes={ref.generos} /></Campo>
-          <Campo rotulo="Estado civil" col="col-md-3"><Escolha valor={d.estadoCivil} aoMudar={set('estadoCivil')} opcoes={ref.estadosCivis} /></Campo>
+          </div>
+        </div>
+        <div className="row gx-3">
           <Campo rotulo="Nacionalidade" col="col-md-3"><input {...campo('nacionalidade')} /></Campo>
-          <Campo rotulo="Naturalidade (município)" col="col-md-4"><input {...campo('naturalidade')} /></Campo>
-          <Campo rotulo="Província" col="col-md-4"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
-          <Campo rotulo="Habilitações literárias" col="col-md-4"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
+          <Campo rotulo="Naturalidade (município)" col="col-md-3"><input {...campo('naturalidade')} /></Campo>
+          <Campo rotulo="Província" col="col-md-3"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
+          <Campo rotulo="Habilitações literárias" col="col-md-3"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
           <Campo rotulo="Nome do pai" col="col-md-6"><input {...campo('pai')} /></Campo>
           <Campo rotulo="Nome da mãe" col="col-md-6"><input {...campo('mae')} /></Campo>
           <Campo rotulo="Área de formação" col="col-md-12"><input {...campo('areaFormacao', { placeholder: 'ex.: Ciências Militares, Engenharia Informática…' })} /></Campo>
