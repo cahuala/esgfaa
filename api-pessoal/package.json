@@ -11,6 +11,7 @@
     "migrar": "prisma migrate deploy",
     "semear": "node --env-file-if-exists=.env scripts/semear.js",
     "preencher": "node --env-file-if-exists=.env scripts/preencher.js",
+    "simular-ponto": "node scripts/simularAparelhoPonto.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

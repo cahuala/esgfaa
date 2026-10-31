@@ -350,3 +350,9 @@
 .pes-ficha-acesso-senha code { display: block; font-size: 1.35rem; font-weight: 700; color: inherit; margin: .35rem 0; }
 .pes-ficha-acesso-senha small { color: var(--bs-secondary-color, #6c757d); }
 .pes-ficha-acesso-aviso { font-size: .8rem; color: var(--bs-secondary-color, #6c757d); border-top: 1px solid var(--bs-border-color, #dee2e6); padding: .6rem 1rem; }
+/* livro de ponto */
+.pes-ponto-cartao { display: flex; align-items: center; gap: .85rem; background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color, #dee2e6); border-left-width: 4px !important; border-radius: 8px; padding: .8rem 1rem; height: 100%; }
+.pes-ponto-cartao > i { font-size: 1.4rem; }
+.pes-ponto-numero { font-size: 1.35rem; font-weight: 700; line-height: 1.1; }
+.pes-aparelho { background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: .9rem; }
+.pes-aparelho-novo { border-color: #f0ad4e; box-shadow: 0 0 0 3px rgba(240, 173, 78, .15); }

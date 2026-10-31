@@ -23,6 +23,7 @@ import { ServicoExpediente } from './aplicacao/expediente.js'
 import { ServicoMensagens } from './aplicacao/mensagens.js'
 import { Ficheiros } from './infraestrutura/ficheiros.js'
 import { ServicoPrivacidade } from './aplicacao/privacidade.js'
+import { ServicoPonto } from './aplicacao/ponto.js'
 
 // liga as peças: base de dados, segurança e serviços (os testes passam outro esquema, relógio e envio)
 export function criarContentor(config, { esquema = null, agora, enviar, enviarBi } = {}) {
@@ -36,6 +37,8 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const tabelaSalarial = new ServicoTabelaSalarial({ bd, auditoria })
   const pessoas = new ServicoPessoas({ bd, auditoria, config, tabelaSalarial, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
   const ficheiros = new Ficheiros(config.pastaFicheiros)
+  const ausencias = new ServicoAusencias({ bd, auditoria, ...relogio })
+  const tempoReal = new TempoReal()
   const servicos = {
     auditoria,
     sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), doisFatores, ...relogio }),
@@ -46,10 +49,11 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     planoFerias: new ServicoPlanoFerias({ bd, auditoria, pessoas, ...relogio }),
     propostas: new ServicoPropostas({ bd, auditoria, ficheiros, ...relogio }),
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),
-    ausencias: new ServicoAusencias({ bd, auditoria, ...relogio }),
+    ausencias,
+    ponto: new ServicoPonto({ bd, auditoria, ausencias, tempoReal, ...relogio }),
     organica: new ServicoOrganica({ bd, auditoria }),
     painel: new ServicoPainel({ bd, pessoas, ...relogio }),
-    tempoReal: new TempoReal(),
+    tempoReal,
     importacao: new ServicoImportacao({ bd, pessoas, auditoria }),
     processos: new ServicoProcessos({ bd, auditoria, ficheiros }),
     extractos: new ServicoExtractos({ bd, auditoria, ficheiros, ...relogio }),

@@ -13,3 +13,11 @@
 	}
 	reverse_proxy pessoal:3002
 }
+
+# aparelhos de ponto (impressão digital): falam HTTP simples, só para /iclock (o resto não responde).
+# Na firewall: a porta 8085 só a partir dos endereços dos aparelhos.
+:8085 {
+	@ponto path /iclock/*
+	reverse_proxy @ponto pessoal:3002
+	respond 404
+}

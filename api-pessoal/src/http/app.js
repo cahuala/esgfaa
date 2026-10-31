@@ -6,6 +6,7 @@ import helmet from 'helmet'
 import { criarVerificadorRedes } from '../infraestrutura/redes.js'
 import { idPedido, semCache, tratarErros } from './middlewares.js'
 import { rotas } from './rotas.js'
+import { rotasAparelhos } from './aparelhosPonto.js'
 
 /*
   Aplicação do Sistema de Gestão de Pessoal (rede interna). Antes de tudo, recusa quem não vem das redes
@@ -30,6 +31,8 @@ export function criarApp(contentor, { registarErro } = {}) {
     strictTransportSecurity: false,
   }))
   app.use(cors({ origin: (o, cb) => cb(null, !o || config.origens.includes(o)), methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Sessao'], credentials: true, maxAge: 600 }))
+  // os aparelhos de ponto (impressão digital) falam em texto simples, sem sessão: só contam os aprovados
+  app.use('/iclock', express.text({ type: () => true, limit: '2mb' }), rotasAparelhos(servicos.ponto))
   app.use(express.json({ limit: '2mb', strict: true }))
 
   app.get('/api/saude', (req, res) => res.json({ ok: true }))

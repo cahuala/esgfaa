@@ -1,7 +1,7 @@
 # Servidor INTERNO (rede da Escola, NUNCA exposto à internet): sistema de gestão de pessoal e a sua base de dados.
 #   1. cp deploy/pessoal.env.example deploy/pessoal.env   e preencha
 #   2. docker compose -f deploy/docker-compose.pessoal.yml --env-file deploy/pessoal.env up -d --build
-# Na firewall: entradas 443 só da rede interna; saídas só para a API do portal e para a API do BI.
+# Na firewall: entradas 443 só da rede interna (8085 só dos aparelhos de ponto); saídas só para a API do portal e para a API do BI.
 name: esgfaa-pessoal
 services:
   bd:
@@ -44,6 +44,8 @@ services:
       ENDERECO: ${ENDERECO:?defina ENDERECO}
     ports:
       - "443:443"
+      # aparelhos de ponto (impressão digital), só /iclock — na firewall, só dos aparelhos
+      - "8085:8085"
     volumes:
       - ./Caddyfile.pessoal:/etc/caddy/Caddyfile:ro
       - caddy-dados:/data

@@ -104,6 +104,7 @@ export default function Layout({ children }) {
               <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
               <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
               <Item para="/ausencias" icone="fa-user-clock" texto="Faltas e ausências" />
+              <Item para="/ponto" icone="fa-fingerprint" texto="Livro de ponto (civis)" />
               <Item para="/faltas-civis" icone="fa-calendar-check" texto="Controlo de faltas (civis)" />
               <Item para="/plano-ferias" icone="fa-umbrella-beach" texto="Plano de férias" />
               <Item para="/tabela-salarial" icone="fa-coins" texto="Tabela salarial (militares)" />

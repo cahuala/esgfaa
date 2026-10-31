@@ -197,6 +197,8 @@ model Pessoa {
   graduacoes         Graduacao[]
   licencas           Licenca[]
   ausencias          Ausencia[]
+  marcacoes          Marcacao[]
+  digitais           DigitalPonto[]
   planoFerias        PlanoFerias[]
   documentosEmitidos DocumentoEmitido[]
   itens              ItemProposta[]
@@ -634,4 +636,72 @@ model Definicao {
   valor Json
 
   @@map("definicoes")
+}
+
+/**
+ * Livro de ponto: os aparelhos de impressão digital (protocolo «push» dos aparelhos ZKTeco e compatíveis)
+ * enviam as marcações sozinhos. Cada aparelho tem de ser aprovado antes de contar. As impressões digitais
+ * ficam só no aparelho: aqui guarda-se apenas que dedo de quem está registado (para saber quem falta registar).
+ */
+model AparelhoPonto {
+  id             Int            @id @default(autoincrement())
+  numeroSerie    String         @unique @map("numero_serie")
+  nome           String         @default("")
+  local          String         @default("")
+  aprovado       Boolean        @default(false)
+  modelo         String         @default("")
+  ip             String         @default("")
+  ultimoContacto DateTime?      @map("ultimo_contacto") @db.Timestamptz(3)
+  criadoEm       DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  comandos       ComandoPonto[]
+  marcacoes      Marcacao[]
+  digitais       DigitalPonto[]
+
+  @@map("aparelhos_ponto")
+}
+
+// ordens para o aparelho (enviar a lista do pessoal, registar uma digital…): o aparelho vem buscá-las
+model ComandoPonto {
+  id         Int           @id @default(autoincrement())
+  aparelhoId Int           @map("aparelho_id")
+  texto      String
+  estado     String        @default("pendente") // pendente | enviado | feito | erro
+  resposta   String        @default("")
+  criadoEm   DateTime      @default(now()) @map("criado_em") @db.Timestamptz(3)
+  enviadoEm  DateTime?     @map("enviado_em") @db.Timestamptz(3)
+  aparelho   AparelhoPonto @relation(fields: [aparelhoId], references: [id], onDelete: Cascade)
+
+  @@index([aparelhoId, estado])
+  @@map("comandos_ponto")
+}
+
+// cada marcação (entrada ou saída: a ordem do dia diz qual é); manual = registada na Repartição, com justificação
+model Marcacao {
+  id           Int            @id @default(autoincrement())
+  pessoaId     Int            @map("pessoa_id")
+  quando       DateTime       @db.Timestamptz(0)
+  origem       String         @default("aparelho") // aparelho | manual
+  verificacao  String         @default("") // digital | cartao | codigo | rosto | manual
+  aparelhoId   Int?           @map("aparelho_id")
+  justificacao String         @default("")
+  criadoPor    String         @default("") @map("criado_por")
+  criadoEm     DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa       Pessoa         @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  aparelho     AparelhoPonto? @relation(fields: [aparelhoId], references: [id], onDelete: SetNull)
+
+  @@unique([pessoaId, quando])
+  @@index([quando])
+  @@map("marcacoes")
+}
+
+model DigitalPonto {
+  pessoaId   Int           @map("pessoa_id")
+  aparelhoId Int           @map("aparelho_id")
+  dedo       Int
+  criadoEm   DateTime      @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa     Pessoa        @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  aparelho   AparelhoPonto @relation(fields: [aparelhoId], references: [id], onDelete: Cascade)
+
+  @@id([pessoaId, aparelhoId, dedo])
+  @@map("digitais_ponto")
 }
