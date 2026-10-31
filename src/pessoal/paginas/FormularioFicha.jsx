@@ -17,7 +17,7 @@ const VAZIA = {
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
   municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
-  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '', funcaoActual: '', paisNascimento: 'Angola',
+  conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '', funcaoActual: '', unidadeOrigem: '', paisNascimento: 'Angola',
   outrosVinculos: [], dataEntradaEscola: '', dataSaidaEscola: '', motivoSaida: '', destinoSaida: '',
 }
 const CAMPOS = Object.keys(VAZIA)
@@ -73,6 +73,8 @@ export default function FormularioFicha() {
   if (!d) return erro ? <div className="alert alert-danger">{erro.texto}</div> : <Carregando />
 
   const militar = d.tipo === 'militar'
+  // estudantes e docentes podem vir de fora da ESG (outra unidade das FAA, ou civis sem unidade)
+  const deFora = ['docente', 'estudante'].some((v) => d.vinculo === v || (d.outrosVinculos ?? []).includes(v))
   const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? (v.target.type === 'checkbox' ? v.target.checked : v.target.value) : v }))
   const txt = (k, extra = {}) => <input className={`form-control form-control-sm ${erro?.campo === k ? 'is-invalid' : ''}`} value={d[k] ?? ''} onChange={set(k)} {...extra} />
   const data = (k) => txt(k, { type: 'date' })
@@ -340,7 +342,8 @@ export default function FormularioFicha() {
       {atual === 'escola' && (
         <Seccao titulo="Na Escola" icone="fa-building">
           <div className="row">
-            <Campo rotulo="Unidade (orgânica)" col="col-md-4"><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={arvore.opcoes} vazio="Sem unidade" /></Campo>
+            <Campo rotulo="Unidade (orgânica)" col="col-md-4" ajuda={deFora ? 'Quem não é da ESG fica «Sem unidade».' : undefined}><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={arvore.opcoes} vazio="Sem unidade" /></Campo>
+            {deFora && militar && <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="O estudante ou o docente colaborador militar que vem de outra unidade das FAA: ex.: Regimento de Infantaria n.º 10, Base Aérea do Lubango. Os civis não têm unidade.">{txt('unidadeOrigem')}</Campo>}
             {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, o cargo muda por proposta de nomeação."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])} vazio="Sem cargo" /></Campo>}
             {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
             <Campo rotulo="Na Escola desde" col="col-md-4" ajuda="Data de apresentação na ESG (para o histórico dos efectivos).">{data('dataEntradaEscola')}</Campo>
@@ -381,6 +384,7 @@ export default function FormularioFicha() {
             <R r="Pai" v={d.pai} /><R r="Mãe" v={d.mae} /><R r="Cônjuge" v={d.conjuge} />
             <R r="Familiares" v={(d.agregado ?? []).filter((a) => a.nome?.trim()).length ? `${d.agregado.filter((a) => a.nome?.trim()).length}` : ''} /><R r="Banco · IBAN" v={[d.banco, d.iban].filter(Boolean).join(' · ')} />
             <R r="Unidade" v={arvore.lista.find((u) => String(u.id) === String(d.unidadeId))?.nome} />
+            {d.unidadeOrigem && <R r="Unidade de origem" v={d.unidadeOrigem} />}
             {!id && <R r="Cargo" v={cargos.find((c) => String(c.id) === String(d.cargoId))?.nome} />}
             <R r="Fotografia" v={foto ? foto.name : fotoAtual ? 'A actual' : ''} />
           </div>

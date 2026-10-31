@@ -14,7 +14,7 @@ export const assinar = (chave, data, corpo) => crypto.createHmac('sha256', chave
 
 /*
   Envio, num só sentido, dos docentes e estudantes para as contas do Portal Académico. Só sai o necessário
-  para a conta (nome, e-mail, posto, ramo, NIP, telefone, unidade e a fotografia, só quando muda); o resto da
+  para a conta (nome, e-mail, posto, ramo, NIP, telefone, unidade — da ESG ou a de origem — e a fotografia, só quando muda); o resto da
   ficha nunca sai daqui.
   Quem deixa de ser docente/estudante ou sai da Escola é enviado como inativo (o portal desativa a conta).
 */
@@ -45,7 +45,7 @@ export class ServicoSincronizacao {
     const foto = ativo ? this.#foto(p, fotoEnviada) : undefined
     return {
       ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'docente' ? 'docente' : vs.includes('estudante') ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
-      dados: { posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : '', ramo: p.ramo ?? '', nip: p.nip ?? '', telefone: p.telefone ?? '', departamento: p.unidade?.nome ?? '' },
+      dados: { posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : '', ramo: p.ramo ?? '', nip: p.nip ?? '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '' },
       ...(foto !== undefined ? { foto } : {}),
     }
   }

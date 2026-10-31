@@ -149,6 +149,8 @@ model Pessoa {
   categoriaDocente     String    @default("") @map("categoria_docente")
   // docente colaborador (militar ou civil de fora da Escola): a função ou o cargo que tem lá fora
   funcaoActual         String    @default("") @map("funcao_actual")
+  // estudante ou docente colaborador militar de fora da ESG: a unidade das FAA de onde vem (os civis não têm)
+  unidadeOrigem        String    @default("") @map("unidade_origem")
   paisNascimento       String    @default("Angola") @map("pais_nascimento")
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")

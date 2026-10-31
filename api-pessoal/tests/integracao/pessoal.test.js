@@ -339,6 +339,16 @@ describe('Envio para o Portal Académico', () => {
       // as assinaturas foram uma só vez (não mudaram) e com o cargo do Comandante
       assert.equal(assinaturas.length, 1)
       assert.equal(assinaturas[0].comandante.cargo, 'O COMANDANTE DA ESG')
+
+      // estudante militar de outra unidade (fora da orgânica da ESG) e docente civil colaborador, sem unidade
+      await adm.post('/api/pessoas').send(militar({ nip: 'NIP0102', vinculo: 'estudante', email: 'aluno.fora@esgfaa.gov.ao', unidadeOrigem: 'Regimento de Infantaria n.º 10' })).expect(201)
+      await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Maria da Conceição Neto', email: 'civil.colab@esgfaa.gov.ao', tipoDocente: 'colaborador', funcaoActual: 'Professora na Universidade Agostinho Neto' }).expect(201)
+      await amb.contentor.servicos.sincronizacao.enviarPendentes()
+      const fora = JSON.parse(pedidos.at(-1).op.body).pessoas
+      const aluno = fora.find((p) => p.email === 'aluno.fora@esgfaa.gov.ao')
+      const civil = fora.find((p) => p.email === 'civil.colab@esgfaa.gov.ao')
+      assert.deepEqual([aluno.tipo, aluno.ativo, aluno.dados.departamento], ['estudante', true, 'Regimento de Infantaria n.º 10'])
+      assert.deepEqual([civil.tipo, civil.ativo, civil.dados.departamento], ['docente', true, ''])
     } finally { await amb.fechar() }
   })
 })

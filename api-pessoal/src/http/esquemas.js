@@ -54,7 +54,7 @@ export const pessoa = z.object({
   agregado: z.array(z.object({ nome: txt(150, 1), parentesco: opc(40), dataNascimento: dataOpc, nacionalidade: opc(40), profissao: opc(80), bi: opc(20), genero: z.union([z.enum(['M', 'F']), z.literal('')]).optional(), estadoCivil: opc(20), naturalidade: opc(80), provincia: opc(40), localTrabalho: opc(150), telefone: opc(40), pai: opc(150), mae: opc(150) }).strict()).max(30).optional(),
   vencimento: z.union([z.coerce.number().min(0).max(1e9), z.literal(''), z.null()]).optional(), inss: opc(30), banco: opc(80), iban: opc(40), numeroConta: opc(40),
   localIncorporacao: opc(120), voluntario: z.union([z.boolean(), z.null()]).optional(),
-  tipoDocente: z.union([z.enum(['efectivo', 'colaborador']), z.literal(''), z.null()]).optional(), categoriaDocente: opc(60), funcaoActual: opc(200), paisNascimento: opc(60),
+  tipoDocente: z.union([z.enum(['efectivo', 'colaborador']), z.literal(''), z.null()]).optional(), categoriaDocente: opc(60), funcaoActual: opc(200), unidadeOrigem: opc(200), paisNascimento: opc(60),
 }).strict()
 export const editarPessoa = pessoa.partial().strict()
 

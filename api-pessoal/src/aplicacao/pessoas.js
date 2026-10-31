@@ -117,7 +117,8 @@ export class ServicoPessoas {
     if (f.semCurso) lista = lista.filter((p) => !temCurso(p, f.semCurso))
     if (f.funcaoCargo) lista = lista.filter((p) => p.funcao === f.funcaoCargo)
     if (f.cargoAcima) lista = lista.filter((p) => p.tipo === 'militar' && p.cargoPostoRequerido && (POSTOS[p.cargoPostoRequerido]?.grau ?? 0) > (p.grau ?? 0))
-    if (f.incompleta) lista = lista.filter((p) => !p.fotoId || !p.bi || !p.dataNascimento || !p.telefone || !p.unidadeId)
+    // sem unidade da ESG não é falta para quem vem de fora (estudantes e docentes de outras unidades, civis colaboradores)
+    if (f.incompleta) lista = lista.filter((p) => !p.fotoId || !p.bi || !p.dataNascimento || !p.telefone || (!p.unidadeId && !['docente', 'estudante'].includes(p.vinculo)))
     if (f.mesNascimento) lista = lista.filter((p) => p.dataNascimento && Number(String(p.dataNascimento).slice(5, 7)) === Number(f.mesNascimento))
     if (f.hoje) {
       const d = new Date(hoje.toISOString().slice(0, 10))
@@ -194,7 +195,7 @@ export class ServicoPessoas {
       x.efectividade ??= 'comissao_normal'
     }
     for (const k of Object.keys(x)) if (k.startsWith('data') && x[k]) x[k] = new Date(x[k])
-    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente', 'funcaoActual', 'paisNascimento']) if (k in x) x[k] ??= ''
+    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente', 'funcaoActual', 'unidadeOrigem', 'paisNascimento']) if (k in x) x[k] ??= ''
     if (x.tipoDocente === '') x.tipoDocente = null
     // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
     if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''
@@ -279,7 +280,7 @@ export class ServicoPessoas {
       if (antes.posto && n.posto !== antes.posto) await evento('correcao', 'Posto corrigido na ficha (sem proposta).', { postoAnterior: antes.posto, postoNovo: n.posto })
       if (antes.ativo && !n.ativo) await evento('saida', [n.motivoSaida, n.destinoSaida && `Destino: ${n.destinoSaida}`].filter(Boolean).join(' · ') || d.observacoes || 'Deixou de servir na Escola.')
       if (!antes.ativo && n.ativo) await evento('colocacao', 'Voltou a servir na Escola.')
-      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
+      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'unidadeOrigem', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
       if (vaiParaPortal(antes) && !vaiParaPortal(n)) {
         await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
