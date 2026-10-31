@@ -233,6 +233,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
 
   // questionário: responde e recebe a nota logo
   await page.getByRole('tab', { name: /Sala de aula/ }).click()
+  await indice.getByRole('button', { name: /Capítulo 1 — Introdução/ }).click() // abre o capítulo no índice
   await indice.getByRole('button', { name: /Teste rápido/ }).click()
   await meio.getByRole('button', { name: 'Começar', exact: true }).click()
   await page.getByLabel('Verdadeiro').check()
