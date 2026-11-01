@@ -137,7 +137,7 @@ export default function Academicos({ tipo }) {
           )}
         </div>
       </Painel>
-      {novo && <RegistoRapido tipo={tipo} aoFechar={() => setNovo(false)} aoGuardar={(p) => { setNovo(false); avisar(`${p.nome} registado(a). ${ligado ? 'A conta do portal cria-se dentro de momentos; depois imprima a ficha de acesso.' : ''}`); recarregar() }} />}
+      {novo && <RegistoRapido tipo={tipo} aoFechar={() => setNovo(false)} aoGuardar={(p) => { setNovo(false); avisar(`${p.nome} está na lista dos ${t.titulo.toLowerCase()}. ${ligado ? 'A conta do portal cria-se dentro de momentos; depois imprima a ficha de acesso.' : ''}`); recarregar() }} />}
     </>
   )
 }
@@ -147,8 +147,75 @@ const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '
 const BI_VALIDO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
 const Seccao = ({ icone, children }) => <h6 className="pes-registo-seccao"><i className={`fa ${icone} me-2`} />{children}</h6>
 
+/*
+  Docente efectivo: já serve na Escola e já tem ficha (militar ou civil). Não se regista outra vez:
+  escolhe-se da lista do pessoal e passa a ser também docente (com a categoria e a função).
+*/
+function EscolherEfectivo({ aoGuardar }) {
+  const { ref } = useSessao()
+  const { dados } = useDados('/pessoas', {})
+  const [q, setQ] = useState('')
+  const [p, setP] = useState(null)
+  const [d, setD] = useState({ categoriaDocente: '', funcaoActual: '', email: '' })
+  const [erro, setErro] = useState('')
+  const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? v.target.value : v }))
+  const docente = (x) => x.vinculo === 'docente' || (x.outrosVinculos ?? []).includes('docente')
+  const termo = q.trim().toLowerCase()
+  const lista = (dados ?? []).filter((x) => !docente(x) && x.vinculo !== 'domiciliar')
+    .filter((x) => !termo || [x.nome, x.nomeGuerra, x.nip, x.numeroAgente, x.postoNome, x.unidadeNome].filter(Boolean).join(' ').toLowerCase().includes(termo))
+  const escolher = (x) => { setP(x); setD({ categoriaDocente: '', funcaoActual: x.cargoNome ?? '', email: x.email ?? '' }) }
+
+  async function guardar(e) {
+    e.preventDefault()
+    if (!p) return setErro('Escolha a pessoa da lista.')
+    setErro('')
+    try {
+      const r = await api(`/pessoas/${p.id}`, { metodo: 'PUT', corpo: { outrosVinculos: [...(p.outrosVinculos ?? []), 'docente'], tipoDocente: 'efectivo', categoriaDocente: d.categoriaDocente, funcaoActual: d.funcaoActual, ...(d.email && !p.email ? { email: d.email } : {}) } })
+      aoGuardar(r)
+    } catch (falha) {
+      setErro(falha.message)
+    }
+  }
+
+  return (
+    <form id="registo-rapido" onSubmit={guardar} className="pes-registo">
+      {erro && <div className="alert alert-danger py-2">{erro}</div>}
+      {!p ? <>
+        <input className="form-control mb-2" autoFocus placeholder="Procurar por nome, NIP, n.º de agente, posto ou unidade…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Procurar no pessoal da Escola" />
+        {!dados ? <Carregando /> : (
+          <div className="list-group pes-escolher-efectivo">
+            {lista.slice(0, 30).map((x) => (
+              <button key={x.id} type="button" className="list-group-item list-group-item-action d-flex align-items-center gap-2" onClick={() => escolher(x)}>
+                <Foto pessoaId={x.id} fotoId={x.fotoId} nome={x.nome} />
+                <span className="flex-grow-1 text-truncate"><strong>{x.postoAbreviatura ? `${x.postoAbreviatura} ` : ''}{x.nome}</strong><div className="small text-muted text-truncate">{[x.nip ? `NIP ${x.nip}` : x.numeroAgente && `Agente ${x.numeroAgente}`, x.cargoNome, x.unidadeNome].filter(Boolean).join(' · ')}</div></span>
+                <i className="fa fa-chevron-right text-muted" />
+              </button>
+            ))}
+            {!lista.length && <div className="text-muted small p-2">Ninguém encontrado. Se ainda não tem ficha na Escola, registe-o primeiro em Pessoal, ou é colaborador.</div>}
+            {lista.length > 30 && <div className="text-muted small p-2">Mais {lista.length - 30}: escreva mais para encontrar.</div>}
+          </div>
+        )}
+      </> : <>
+        <div className="d-flex align-items-center gap-3 p-2 mb-3 border rounded">
+          <Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} />
+          <div className="flex-grow-1"><strong>{p.postoNome ? `${p.postoNome} ` : ''}{p.nome}</strong><div className="small text-muted">{[p.nip ? `NIP ${p.nip}` : p.numeroAgente && `Agente ${p.numeroAgente}`, p.unidadeNome].filter(Boolean).join(' · ')}</div></div>
+          <button type="button" className="btn btn-sm btn-white" onClick={() => setP(null)}>Mudar</button>
+        </div>
+        <div className="row gx-3">
+          <Campo rotulo="Categoria do docente" col="col-md-6" ajuda="Decreto Presidencial n.º 191/18."><EscolhaCategoriaDocente valor={d.categoriaDocente} aoMudar={set('categoriaDocente')} referencias={ref} /></Campo>
+          <Campo rotulo="Função ou cargo actual" col="col-md-6"><input className="form-control form-control-sm" value={d.funcaoActual} onChange={set('funcaoActual')} /></Campo>
+          {!p.email && <Campo rotulo="E-mail da Escola" col="col-md-12" ajuda="Ainda não tem: com e-mail, o portal cria a conta sozinho."><input type="email" className="form-control form-control-sm" placeholder="nome.apelido@esgfaa.gov.ao" value={d.email} onChange={set('email')} /></Campo>}
+        </div>
+        <div className="small text-muted">Os dados pessoais e militares já estão na ficha: não se escrevem outra vez.</div>
+      </>}
+    </form>
+  )
+}
+
 function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
   const { ref } = useSessao()
+  // o docente efectivo já é da Escola (escolhe-se); o colaborador vem de fora (regista-se)
+  const [efectivo, setEfectivo] = useState(tipo === 'docente')
   const [d, setD] = useState({ ...VAZIO, tipoDocente: tipo === 'docente' ? 'colaborador' : '' })
   const [erro, setErro] = useState('')
   const [aGravar, setAGravar] = useState(false)
@@ -205,8 +272,15 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
 
   return (
     <Modal titulo={`Registar ${tipo === 'docente' ? 'docente' : 'estudante'}`} aoFechar={aoFechar} largo
-      rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="submit" form="registo-rapido" className="btn btn-theme" disabled={aGravar}><i className="fa fa-save me-1" />{aGravar ? 'A registar…' : 'Registar'}</button></>}>
-      <form id="registo-rapido" onSubmit={guardar} className="pes-registo">
+      rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="submit" form="registo-rapido" className="btn btn-theme" disabled={aGravar}><i className={`fa ${efectivo ? 'fa-check' : 'fa-save'} me-1`} />{aGravar ? 'A registar…' : efectivo ? 'Juntar aos docentes' : 'Registar'}</button></>}>
+      {tipo === 'docente' && (
+        <div className="btn-group w-100 mb-3" role="group" aria-label="Efectivo ou colaborador">
+          {[[true, 'Efectivo — já é da Escola', 'fa-school'], [false, 'Colaborador — vem de fora', 'fa-user-plus']].map(([k, r, i]) => (
+            <button key={r} type="button" className={`btn ${efectivo === k ? 'btn-dark' : 'btn-white'}`} aria-pressed={efectivo === k} onClick={() => setEfectivo(k)}><i className={`fa ${i} me-1`} />{r}</button>
+          ))}
+        </div>
+      )}
+      {efectivo ? <EscolherEfectivo aoGuardar={aoGuardar} /> : <form id="registo-rapido" onSubmit={guardar} className="pes-registo">
         {erro && <div className="alert alert-danger py-2">{erro}</div>}
         <div className="btn-group w-100 mb-3" role="group" aria-label="Militar ou civil">
           {[['militar', 'Militar', 'fa-shield-alt'], ['civil', 'Civil', 'fa-user-tie']].map(([k, r, i]) => (
@@ -268,9 +342,8 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
         {tipo === 'docente' && <>
           <Seccao icone="fa-chalkboard-teacher">Docência</Seccao>
           <div className="row gx-3">
-            <Campo rotulo="Tipo de docente" col="col-md-6"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
             <Campo rotulo="Categoria do docente" col="col-md-6" ajuda="Decreto Presidencial n.º 191/18."><EscolhaCategoriaDocente valor={d.categoriaDocente} aoMudar={set('categoriaDocente')} referencias={ref} /></Campo>
-            <Campo rotulo="Função ou cargo actual" col="col-md-12" ajuda={d.tipoDocente === 'colaborador' ? 'O colaborador serve fora da Escola: onde e em que função.' : null}><input {...campo('funcaoActual')} /></Campo>
+            <Campo rotulo="Função ou cargo actual" col="col-md-6" ajuda="O colaborador serve fora da Escola: onde e em que função."><input {...campo('funcaoActual')} /></Campo>
           </div>
         </>}
 
@@ -283,7 +356,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
           <Campo rotulo="Residência (morada)" col="col-md-12"><input {...campo('morada')} /></Campo>
         </div>
         <div className="small text-muted mt-2">O resto da ficha (documentos, família, carreira…) preenche-se depois no perfil, em <Link to="/pessoas">Pessoal</Link>.</div>
-      </form>
+      </form>}
     </Modal>
   )
 }

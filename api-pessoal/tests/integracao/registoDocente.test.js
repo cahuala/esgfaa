@@ -26,6 +26,16 @@ describe('registo do docente com os campos da ficha de cadastramento', () => {
     assert.notEqual(cru[0].email_pessoal, corpo.emailPessoal)
   })
 
+  it('o docente efectivo já é da Escola: junta-se aos docentes sem novo registo', async () => {
+    const m = (await adm.post('/api/pessoas').send({ tipo: 'militar', vinculo: 'funcionario', nome: 'Efectivo Teste Escola', ramo: 'EXE', posto: 'major', fps: 'QP', nip: 'NIP9902' }).expect(201)).body
+    await adm.put(`/api/pessoas/${m.id}`).send({ outrosVinculos: ['docente'], tipoDocente: 'efectivo', categoriaDocente: 'Assistente estagiário', funcaoActual: 'Chefe de secção' }).expect(200)
+    const l = (await adm.get('/api/academicos?tipo=docente').expect(200)).body.pessoas
+    const d = l.find((x) => x.id === m.id)
+    assert.deepEqual([d.vinculo, d.tipoDocente, d.categoriaDocente], ['funcionario', 'efectivo', 'Assistente estagiário'])
+    // continua a ser uma só ficha
+    assert.equal((await adm.get('/api/pessoas?q=NIP9902').expect(200)).body.filter((x) => x.nip === 'NIP9902').length, 1)
+  })
+
   it('as categorias do docente seguem o Decreto Presidencial n.º 191/18', async () => {
     const ref = (await adm.get('/api/referencias').expect(200)).body
     assert.deepEqual(ref.categoriasDocente, ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático'])

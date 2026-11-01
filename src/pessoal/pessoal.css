@@ -332,6 +332,7 @@
 /* registo de estudantes e docentes: secções */
 .pes-registo .pes-registo-seccao { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--bs-theme, #e5391b); border-bottom: 1px solid var(--bs-border-color, #e2e7eb); padding-bottom: .4rem; margin: 1.25rem 0 .75rem; }
 .pes-registo .pes-registo-seccao:first-of-type { margin-top: .25rem; }
+.pes-escolher-efectivo { max-height: 50vh; overflow-y: auto; }
 .pes-registo .form-control-sm, .pes-registo .form-select-sm { min-height: 36px; }
 /* ficha de acesso ao portal (a mesma cara do PDF) */
 .pes-ficha-acesso { border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 10px; overflow: hidden; }
