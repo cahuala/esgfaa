@@ -3,6 +3,8 @@ import { z } from 'zod'
 const txt = (max, min = 0) => z.string().trim().min(min).max(max)
 const opc = (max) => txt(max).optional()
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data no formato AAAA-MM-DD.')
+  // uma data que existe (não 31 de Fevereiro)
+  .refine((v) => { const x = new Date(`${v}T00:00:00Z`); return !Number.isNaN(x.getTime()) && x.toISOString().slice(0, 10) === v }, 'Essa data não existe.')
 const dataOpc = z.union([data, z.literal(''), z.null()]).optional()
 const id = z.coerce.number().int().positive()
 const idOpc = z.union([id, z.literal(''), z.null()]).optional().transform((v) => (v === '' ? null : v))

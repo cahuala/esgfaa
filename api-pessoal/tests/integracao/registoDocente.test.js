@@ -36,6 +36,32 @@ describe('registo do docente com os campos da ficha de cadastramento', () => {
     assert.equal((await adm.get('/api/pessoas?q=NIP9902').expect(200)).body.filter((x) => x.nip === 'NIP9902').length, 1)
   })
 
+  it('o servidor recusa dados errados, mesmo sem passar pelo formulário', async () => {
+    const base = { tipo: 'civil', vinculo: 'docente', nome: 'Validacao Teste Servidor', tipoDocente: 'colaborador' }
+    const recusa = async (extra, campo) => {
+      const r = await adm.post('/api/pessoas').send({ ...base, ...extra }).expect(400)
+      assert.equal(r.body.campo, campo, JSON.stringify(r.body))
+    }
+    await recusa({ bi: '12345' }, 'bi')
+    await recusa({ biEmitidoEm: '2023-02-31' }, 'biEmitidoEm') // não existe
+    await recusa({ biEmitidoEm: '2023-04-14', biValidade: '2020-01-01' }, 'biValidade')
+    await recusa({ biEmitidoEm: '2099-01-01' }, 'biEmitidoEm')
+    await recusa({ dataNascimento: '1980-01-01', biEmitidoEm: '1975-01-01' }, 'biEmitidoEm')
+    await recusa({ categoriaDocente: 'Professor titular' }, 'categoriaDocente')
+    await recusa({ telefone: 'abc123' }, 'telefone')
+    await recusa({ telefoneAlternativo: '92' }, 'telefoneAlternativo')
+    await recusa({ grupoSanguineo: 'C+' }, 'grupoSanguineo')
+    await recusa({ tipoDocente: 'efectivo-x' }, 'tipoDocente')
+    await recusa({ email: 'igual@esgfaa.gov.ao', emailPessoal: 'Igual@esgfaa.gov.ao' }, 'emailPessoal')
+    await recusa({ tipo: 'militar', ramo: 'EXE', posto: 'major', fps: 'QP', nip: 'NIP9903', dataIngresso: '2099-01-01' }, 'dataIngresso')
+  })
+
+  it('uma ficha antiga (categoria fora da lista) continua a gravar-se', async () => {
+    const p = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Ficha Antiga Teste', tipoDocente: 'efectivo' }).expect(201)).body
+    await amb.contentor.bd.pessoa.update({ where: { id: p.id }, data: { categoriaDocente: 'Instrutor', telefone: 'ver secretaria' } })
+    await adm.put(`/api/pessoas/${p.id}`).send({ funcaoActual: 'Docente de Estratégia', categoriaDocente: 'Instrutor', telefone: 'ver secretaria' }).expect(200)
+  })
+
   it('as categorias do docente seguem o Decreto Presidencial n.º 191/18', async () => {
     const ref = (await adm.get('/api/referencias').expect(200)).body
     assert.deepEqual(ref.categoriasDocente, ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático'])

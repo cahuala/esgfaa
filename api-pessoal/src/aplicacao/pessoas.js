@@ -264,7 +264,7 @@ export class ServicoPessoas {
     const antes = await this.bd.pessoa.findUnique({ where: { id } })
     if (!antes) throw naoEncontrado('Ficha não encontrada.')
     const d = this.#dados({ ...dados, tipo: dados.tipo ?? antes.tipo })
-    const problema = problemaNaFicha({ ...antes, ...d })
+    const problema = problemaNaFicha({ ...antes, ...d }, antes)
     if (problema) throw invalido(problema[1], problema[0])
     if ((d.tipo ?? antes.tipo) === 'civil' && ('vinculo' in d || 'militarAlocadoId' in d)) {
       const junto = { ...antes, ...d }

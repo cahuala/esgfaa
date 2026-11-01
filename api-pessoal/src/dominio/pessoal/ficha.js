@@ -121,7 +121,13 @@ export function comDerivados(p, hoje = new Date()) {
 }
 
 // verifica a coerência dos dados de uma ficha (já validados no formato); devolve a mensagem do 1.º problema
-export function problemaNaFicha(p) {
+// o BI angolano: 9 algarismos, 2 letras (a província) e 3 algarismos — ex.: 001234567LA041
+export const BI_ANGOLANO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
+
+// antes: a ficha como estava (ao editar). As regras novas só se aplicam ao que muda, para não
+// impedir de gravar fichas antigas (BI noutro formato, categorias que já não estão na lista).
+export function problemaNaFicha(p, antes = null) {
+  const mudou = (k) => !antes || String(antes[k] ?? '') !== String(p[k] ?? '')
   if (p.tipo === 'militar') {
     if (p.vinculo === 'domiciliar') return ['vinculo', 'Empregados domiciliares são pessoal civil.']
     if (!RAMOS[p.ramo]) return ['ramo', 'Indique o ramo (Exército, Força Aérea ou Marinha).']
@@ -140,8 +146,20 @@ export function problemaNaFicha(p) {
     if (p.carreiraCivil && p.categoriaCivil && !CARREIRAS_CIVIS[p.carreiraCivil].categorias.includes(p.categoriaCivil)) return ['categoriaCivil', 'A categoria não é dessa carreira.']
   }
   const d = (k) => (p[k] ? new Date(p[k]) : null)
+  const hoje = new Date()
   if (d('dataNascimento') && d('dataIngresso') && d('dataIngresso') < d('dataNascimento')) return ['dataIngresso', 'A data de ingresso é anterior ao nascimento.']
-  if (d('dataNascimento') && d('dataNascimento') > new Date()) return ['dataNascimento', 'A data de nascimento está no futuro.']
+  if (d('dataNascimento') && d('dataNascimento') > hoje) return ['dataNascimento', 'A data de nascimento está no futuro.']
+  if (d('dataIngresso') && d('dataIngresso') > hoje) return ['dataIngresso', 'A data de incorporação está no futuro.']
+  // bilhete de identidade
+  if (p.bi && mudou('bi') && !BI_ANGOLANO.test(String(p.bi).toUpperCase())) return ['bi', 'Número de BI inválido (ex.: 001234567LA041).']
+  if (d('biEmitidoEm') && d('biEmitidoEm') > hoje) return ['biEmitidoEm', 'A data de emissão do BI está no futuro.']
+  if (d('biEmitidoEm') && d('dataNascimento') && d('biEmitidoEm') < d('dataNascimento')) return ['biEmitidoEm', 'O BI foi emitido antes do nascimento.']
+  if (d('biEmitidoEm') && d('biValidade') && d('biValidade') <= d('biEmitidoEm')) return ['biValidade', 'A validade do BI tem de ser depois da emissão.']
+  // contactos
+  for (const [k, r] of [['telefone', 'O telefone'], ['telefoneAlternativo', 'O telefone alternativo']]) if (p[k] && mudou(k) && !/^\+?[0-9 ()./-]{9,20}$/.test(p[k])) return [k, `${r} só tem algarismos (pelo menos 9; pode ter +, espaços ou hífenes).`]
+  // docente: a categoria é a do Decreto Presidencial n.º 191/18
+  if (p.categoriaDocente && mudou('categoriaDocente') && ![...CATEGORIAS_DOCENTE, ...CATEGORIAS_DOCENTE_CONTRATADO].includes(p.categoriaDocente)) return ['categoriaDocente', 'Categoria do docente desconhecida (Decreto Presidencial n.º 191/18).']
+  if (p.emailPessoal && p.email && mudou('emailPessoal') && p.emailPessoal.toLowerCase() === String(p.email).toLowerCase()) return ['emailPessoal', 'O e-mail pessoal é o mesmo que o da Escola.']
   return null
 }
 
