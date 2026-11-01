@@ -10,7 +10,10 @@ export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionari
 // do mais baixo ao mais alto, com os níveis do Mod. 5/DPQ («base» fica para as fichas antigas, sem o pormenor)
 export const HABILITACOES = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Técnico médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }
-export const CATEGORIAS_DOCENTE = ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático', 'Instrutor', 'Formador']
+// categorias da carreira docente do ensino superior (Decreto Presidencial n.º 191/18, art. 4.º), da mais baixa à mais alta,
+// e o pessoal especialmente contratado (art. 5.º), que não entra na carreira
+export const CATEGORIAS_DOCENTE = ['Assistente estagiário', 'Assistente', 'Professor auxiliar', 'Professor associado', 'Professor catedrático']
+export const CATEGORIAS_DOCENTE_CONTRATADO = ['Assistente convidado', 'Professor convidado', 'Professor visitante', 'Leitor', 'Monitor']
 export const GENEROS = { M: 'Masculino', F: 'Feminino' }
 // motivos de saída da Escola (o texto é o que fica na ficha; «Outro» escreve-se à mão). Os mapas de ausências
 // contam por eles os transferidos, os mortos e os condenados.

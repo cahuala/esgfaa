@@ -895,7 +895,7 @@ export function fichaDocente(d, p) {
   T(doc, 10.5).text('E-MAIL', x, 169)
   doc.setLineWidth(0.2).setDrawColor(60).line(x + doc.getTextWidth('E-MAIL') + 1, 169.8, xf, 169.8).setDrawColor(0)
   // o e-mail vai em minúsculas
-  if (p.email) T(doc, 10.5, 'bold').text(p.email, x + doc.setFont('times', 'normal').getTextWidth('E-MAIL') + 2, 168.7)
+  if (p.emailPessoal || p.email) T(doc, 10.5, 'bold').text(p.emailPessoal || p.email, x + doc.setFont('times', 'normal').getTextWidth('E-MAIL') + 2, 168.7)
   const marca = (t, xx, y, sim) => { T(doc, 10.5).text(t, xx, y); const bx = xx + doc.getTextWidth(t) + 1.5; traco(doc, 0.25).rect(bx, y - 3.2, 3.6, 3.6); if (sim) T(doc, 10, 'bold').text('X', bx + 1.8, y - 0.2, { align: 'center' }) }
   T(doc, 10.5).text('CONDIÇÃO:', x, 177.3)
   marca('MILITAR', x + 21, 177.3, mil); marca('CIVIL', x + 47, 177.3, !mil)

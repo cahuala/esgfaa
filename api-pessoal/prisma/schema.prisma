@@ -119,6 +119,7 @@ model Pessoa {
   casa                 String    @default("") // cifrado
   caixaPostal          String    @default("") @map("caixa_postal")
   telefoneAlternativo  String    @default("") @map("telefone_alternativo") // cifrado
+  emailPessoal         String    @default("") @map("email_pessoal")
   // bilhete de identidade: emissão e validade
   biEmitidoEm          DateTime? @map("bi_emitido_em") @db.Date
   biValidade           DateTime? @map("bi_validade") @db.Date

@@ -37,7 +37,7 @@ export const pessoa = z.object({
   outrosVinculos: z.array(z.enum(['docente', 'estudante', 'funcionario'])).max(3).optional(),
   dataEntradaEscola: dataOpc, dataSaidaEscola: dataOpc, motivoSaida: opc(300), destinoSaida: opc(200),
   // ficha individual (modelos da ESG)
-  municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40),
+  municipio: opc(80), bairro: opc(120), rua: opc(150), casa: opc(30), caixaPostal: opc(30), telefoneAlternativo: opc(40), emailPessoal: z.union([z.email().max(200), z.literal('')]).optional(),
   biEmitidoEm: dataOpc, biValidade: dataOpc, biLocalEmissao: opc(80), grupoSanguineo: z.union([z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']), z.literal('')]).optional(),
   conjuge: opc(150), conjugeLocalServico: opc(150),
   registo: z.object({

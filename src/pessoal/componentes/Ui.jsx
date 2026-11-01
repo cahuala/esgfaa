@@ -146,3 +146,17 @@ export function Escolha({ valor, aoMudar, opcoes, vazio = '—', ...resto }) {
     </select>
   )
 }
+
+// categoria do docente (Decreto Presidencial n.º 191/18): a carreira e o pessoal especialmente contratado.
+// Uma categoria antiga, que já não está nas listas, continua a aparecer.
+export function EscolhaCategoriaDocente({ valor, aoMudar, referencias: ref, ...resto }) {
+  const conhecida = [...ref.categoriasDocente, ...(ref.categoriasDocenteContratado ?? [])].includes(valor)
+  return (
+    <select className="form-select form-select-sm" value={valor ?? ''} onChange={(e) => aoMudar(e.target.value)} {...resto}>
+      <option value="">—</option>
+      <optgroup label="Carreira docente">{ref.categoriasDocente.map((c) => <option key={c} value={c}>{c}</option>)}</optgroup>
+      {ref.categoriasDocenteContratado && <optgroup label="Especialmente contratado">{ref.categoriasDocenteContratado.map((c) => <option key={c} value={c}>{c}</option>)}</optgroup>}
+      {valor && !conhecida && <option value={valor}>{valor}</option>}
+    </select>
+  )
+}

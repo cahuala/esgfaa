@@ -200,7 +200,7 @@ export default function Perfil() {
                 </Grelha>
               </Bloco>
             )}
-            {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} />{p.tipoDocente === 'colaborador' && <Dado r="Função ou cargo actual (fora da Escola)" cheio v={p.funcaoActual} />}</Grelha></Bloco>}
+            {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /><Dado r="Função ou cargo actual" cheio v={p.funcaoActual} /></Grelha></Bloco>}
             {p.limiteDomiciliares > 0 && (
               <Bloco titulo="Trabalhadores domiciliares" icone="fa-house-user" acoes={<span className="pes-ftab-n">{p.domiciliares.length}/{p.limiteDomiciliares}</span>}>
                 {p.domiciliares.length ? (
@@ -244,7 +244,7 @@ export default function Perfil() {
           </Bloco>
           <Bloco titulo="Contactos e residência" icone="fa-map-marker-alt">
             <Grelha>
-              <Dado r="Telefone" v={p.telefone} /><Dado r="Telefone alternativo" v={p.telefoneAlternativo} /><Dado r="E-mail" v={p.email} />
+              <Dado r="Telefone" v={p.telefone} /><Dado r="Telefone alternativo" v={p.telefoneAlternativo} /><Dado r="E-mail da Escola" v={p.email} /><Dado r="E-mail pessoal" v={p.emailPessoal} />
               <Dado r="Morada" v={p.morada} /><Dado r="Município" v={p.municipio} /><Dado r="Bairro" v={p.bairro} />
               <Dado r="Rua" v={p.rua} /><Dado r="Casa n.º" v={p.casa} /><Dado r="Caixa postal" v={p.caixaPostal} />
             </Grelha>

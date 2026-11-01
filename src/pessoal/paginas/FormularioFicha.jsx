@@ -6,7 +6,7 @@ import Carregar from '../componentes/Carregar'
 import Familiares from '../componentes/Familiares'
 import { useSessao } from '../sessao'
 import { useArvore } from '../arvore'
-import { Cabecalho, Campo, Carregando, Escolha, NaoEncontrado } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Escolha, EscolhaCategoriaDocente, NaoEncontrado } from '../componentes/Ui'
 import { EscolhaSituacao } from '../componentes/Situacao'
 import { BANCOS } from '../bancos'
 
@@ -16,7 +16,7 @@ const VAZIA = {
   ramo: 'EXE', posto: '', fps: 'QP', quadroEspecial: '', especialidade: '', situacao: 'activo', efectividade: 'comissao_normal', estado: '', dataIngresso: '', dataIngressoQP: '', dataAntiguidadePosto: '', dataSituacao: '',
   avaliacaoFavoravel: true, aptidaoFisica: true, processoPendente: false,
   carreiraCivil: '', categoriaCivil: '', vinculoCivil: '', dataAdmissao: '', dataCategoria: '', ativo: true, observacoes: '', militarAlocadoId: '',
-  municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
+  municipio: '', bairro: '', rua: '', casa: '', caixaPostal: '', telefoneAlternativo: '', emailPessoal: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '',
   conjuge: '', conjugeLocalServico: '', agregado: [], vencimento: '', inss: '', banco: '', iban: '', numeroConta: '', localIncorporacao: '', voluntario: '', tipoDocente: '', categoriaDocente: '', funcaoActual: '', unidadeOrigem: '', paisNascimento: 'Angola',
   outrosVinculos: [], dataEntradaEscola: '', dataSaidaEscola: '', motivoSaida: '', destinoSaida: '',
 }
@@ -276,8 +276,8 @@ export default function FormularioFicha() {
         <Seccao titulo="Docente" icone="fa-chalkboard-teacher">
           <div className="row">
             <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
-            <Campo rotulo="Categoria do docente" col="col-md-4"><input className="form-control form-control-sm" list="categorias-docente" value={d.categoriaDocente ?? ''} onChange={set('categoriaDocente')} /><datalist id="categorias-docente">{ref.categoriasDocente.map((c) => <option key={c} value={c} />)}</datalist></Campo>
-            {d.tipoDocente === 'colaborador' && <Campo rotulo="Função ou cargo actual (fora da Escola)" col="col-md-5" ajuda="O colaborador (militar ou civil) dá aulas na Escola mas serve noutro lado: ex.: Chefe do Departamento de Ensino da Força Aérea.">{txt('funcaoActual')}</Campo>}
+            <Campo rotulo="Categoria do docente" col="col-md-4"><EscolhaCategoriaDocente valor={d.categoriaDocente} aoMudar={set('categoriaDocente')} referencias={ref} /></Campo>
+            <Campo rotulo="Função ou cargo actual" col="col-md-5" ajuda="Onde serve, como na ficha de cadastramento (o colaborador serve fora da Escola): ex.: Chefe do Departamento de Ensino da Força Aérea.">{txt('funcaoActual')}</Campo>
           </div>
         </Seccao>
       )}
@@ -310,6 +310,7 @@ export default function FormularioFicha() {
           <div className="row">
             <Campo rotulo="Telefone" col="col-md-3">{txt('telefone')}</Campo>
             <Campo rotulo="Telefone alternativo" col="col-md-3">{txt('telefoneAlternativo')}</Campo>
+            <Campo rotulo="E-mail pessoal" col="col-md-6">{txt('emailPessoal', { type: 'email' })}</Campo>
             <Campo rotulo="Morada (localidade)" col="col-md-3">{txt('morada')}</Campo>
             <Campo rotulo="Município" col="col-md-3">{txt('municipio')}</Campo>
             <Campo rotulo="Bairro" col="col-md-3">{txt('bairro')}</Campo>

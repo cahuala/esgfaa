@@ -7,7 +7,7 @@ import Foto from '../componentes/Foto'
 import Carregar from '../componentes/Carregar'
 import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
-import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Erro, Escolha, EscolhaCategoriaDocente, Modal, Painel } from '../componentes/Ui'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
 
 const TEXTOS = {
@@ -143,7 +143,7 @@ export default function Academicos({ tipo }) {
 }
 
 // registo: o essencial, com o BI a vir da base de dados do Estado (o resto da ficha preenche-se depois, se for preciso)
-const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', pai: '', mae: '', email: '', telefone: '', morada: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
+const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', paisNascimento: 'Angola', pai: '', mae: '', email: '', emailPessoal: '', telefone: '', telefoneAlternativo: '', morada: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '', dataIngresso: '', categoriaDocente: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
 const BI_VALIDO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
 const Seccao = ({ icone, children }) => <h6 className="pes-registo-seccao"><i className={`fa ${icone} me-2`} />{children}</h6>
 
@@ -181,12 +181,12 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
     e.preventDefault()
     setErro('')
     setAGravar(true)
-    const comuns = ['bi', 'nome', 'dataNascimento', 'genero', 'estadoCivil', 'nacionalidade', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'unidadeOrigem', 'habilitacao', 'areaFormacao']
+    const comuns = ['bi', 'nome', 'dataNascimento', 'genero', 'estadoCivil', 'nacionalidade', 'paisNascimento', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'telefoneAlternativo', 'emailPessoal', 'morada', 'unidadeOrigem', 'habilitacao', 'areaFormacao', 'biLocalEmissao', 'biEmitidoEm', 'biValidade', 'grupoSanguineo']
     const corpo = {
       tipo: d.tipo, vinculo: tipo, email: d.email || null,
       ...Object.fromEntries(comuns.map((k) => [k, d[k] ?? ''])),
-      ...(militar ? { ramo: d.ramo, posto: d.posto, fps: d.fps, nip: d.nip, nomeGuerra: d.nomeGuerra, especialidade: d.especialidade } : {}),
-      ...(tipo === 'docente' ? { tipoDocente: d.tipoDocente, funcaoActual: d.funcaoActual } : {}),
+      ...(militar ? { ramo: d.ramo, posto: d.posto, fps: d.fps, nip: d.nip, nomeGuerra: d.nomeGuerra, especialidade: d.especialidade, dataIngresso: d.dataIngresso } : {}),
+      ...(tipo === 'docente' ? { tipoDocente: d.tipoDocente, categoriaDocente: d.categoriaDocente, funcaoActual: d.funcaoActual } : {}),
     }
     try {
       const r = await api('/pessoas', { metodo: 'POST', corpo })
@@ -237,13 +237,18 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
           </div>
         </div>
         <div className="row gx-3">
-          <Campo rotulo="Nacionalidade" col="col-md-3"><input {...campo('nacionalidade')} /></Campo>
-          <Campo rotulo="Naturalidade (município)" col="col-md-3"><input {...campo('naturalidade')} /></Campo>
+          <Campo rotulo="Data de emissão do BI" col="col-md-4"><input {...campo('biEmitidoEm', { type: 'date' })} /></Campo>
+          <Campo rotulo="Validade do BI" col="col-md-4"><input {...campo('biValidade', { type: 'date' })} /></Campo>
+          <Campo rotulo="Local de emissão do BI" col="col-md-4"><input {...campo('biLocalEmissao', { placeholder: 'ex.: Luanda' })} /></Campo>
+          <Campo rotulo="País de nascimento" col="col-md-3"><input {...campo('paisNascimento')} /></Campo>
           <Campo rotulo="Província" col="col-md-3"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
+          <Campo rotulo="Município" col="col-md-3"><input {...campo('naturalidade')} /></Campo>
+          <Campo rotulo="Nacionalidade" col="col-md-3"><input {...campo('nacionalidade')} /></Campo>
+          <Campo rotulo="Grupo sanguíneo" col="col-md-3"><Escolha valor={d.grupoSanguineo} aoMudar={set('grupoSanguineo')} opcoes={['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']} /></Campo>
           <Campo rotulo="Habilitações literárias" col="col-md-3"><Escolha valor={d.habilitacao} aoMudar={set('habilitacao')} opcoes={ref.habilitacoes} /></Campo>
+          <Campo rotulo="Área de formação" col="col-md-6"><input {...campo('areaFormacao', { placeholder: 'ex.: Ciências Militares, Engenharia Informática…' })} /></Campo>
           <Campo rotulo="Nome do pai" col="col-md-6"><input {...campo('pai')} /></Campo>
           <Campo rotulo="Nome da mãe" col="col-md-6"><input {...campo('mae')} /></Campo>
-          <Campo rotulo="Área de formação" col="col-md-12"><input {...campo('areaFormacao', { placeholder: 'ex.: Ciências Militares, Engenharia Informática…' })} /></Campo>
         </div>
 
         {militar && <>
@@ -255,23 +260,27 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
             <Campo rotulo="NIP" obrigatorio col="col-md-4"><input {...campo('nip')} required /></Campo>
             <Campo rotulo="Nome de guerra" col="col-md-4"><input {...campo('nomeGuerra')} /></Campo>
             <Campo rotulo="Especialidade" col="col-md-4"><input {...campo('especialidade')} /></Campo>
-            <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-12" ajuda="Se vem de outra unidade das FAA (ex.: Regimento de Infantaria n.º 10). Se é da ESG, ponha a unidade depois, na ficha."><input {...campo('unidadeOrigem')} /></Campo>
+            <Campo rotulo="Data de incorporação" col="col-md-4"><input {...campo('dataIngresso', { type: 'date' })} /></Campo>
+            <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="Se vem de outra unidade das FAA (ex.: Regimento de Infantaria n.º 10). Se é da ESG, ponha a unidade depois, na ficha."><input {...campo('unidadeOrigem')} /></Campo>
           </div>
         </>}
 
         {tipo === 'docente' && <>
           <Seccao icone="fa-chalkboard-teacher">Docência</Seccao>
           <div className="row gx-3">
-            <Campo rotulo="Tipo de docente" col="col-md-4"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
-            {d.tipoDocente === 'colaborador' && <Campo rotulo="Função ou cargo actual (fora da Escola)" col="col-md-8"><input {...campo('funcaoActual')} /></Campo>}
+            <Campo rotulo="Tipo de docente" col="col-md-6"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
+            <Campo rotulo="Categoria do docente" col="col-md-6" ajuda="Decreto Presidencial n.º 191/18."><EscolhaCategoriaDocente valor={d.categoriaDocente} aoMudar={set('categoriaDocente')} referencias={ref} /></Campo>
+            <Campo rotulo="Função ou cargo actual" col="col-md-12" ajuda={d.tipoDocente === 'colaborador' ? 'O colaborador serve fora da Escola: onde e em que função.' : null}><input {...campo('funcaoActual')} /></Campo>
           </div>
         </>}
 
         <Seccao icone="fa-address-book">Contactos</Seccao>
         <div className="row gx-3">
           <Campo rotulo="E-mail da Escola" col="col-md-6" ajuda="Com e-mail, o portal cria a conta sozinho (depois imprime-se a ficha de acesso)."><input {...campo('email', { type: 'email', placeholder: 'nome.apelido@esgfaa.gov.ao' })} /></Campo>
-          <Campo rotulo="Telefone" col="col-md-6"><input {...campo('telefone', { type: 'tel', placeholder: '9XX XXX XXX' })} /></Campo>
-          <Campo rotulo="Morada" col="col-md-12"><input {...campo('morada')} /></Campo>
+          <Campo rotulo="E-mail pessoal" col="col-md-6"><input {...campo('emailPessoal', { type: 'email' })} /></Campo>
+          <Campo rotulo="Telefone principal" col="col-md-6"><input {...campo('telefone', { type: 'tel', placeholder: '9XX XXX XXX' })} /></Campo>
+          <Campo rotulo="Telefone alternativo" col="col-md-6"><input {...campo('telefoneAlternativo', { type: 'tel', placeholder: '9XX XXX XXX' })} /></Campo>
+          <Campo rotulo="Residência (morada)" col="col-md-12"><input {...campo('morada')} /></Campo>
         </div>
         <div className="small text-muted mt-2">O resto da ficha (documentos, família, carreira…) preenche-se depois no perfil, em <Link to="/pessoas">Pessoal</Link>.</div>
       </form>
