@@ -64,13 +64,13 @@
 .pes-percurso li.pendente::before { background: #c9a227; }
 @media (max-width: 768px) { .pes-chat { grid-template-columns: 1fr; height: auto; } .pes-chat-lista { max-height: 260px; border-right: 0; } .pes-chat-mensagens { min-height: 50vh; } }
 /* estante dos processos individuais : madeira clara, pastas pretas com o número */
-.pes-estantes { display: grid; gap: 1.25rem; }
-.pes-estante { background: linear-gradient(180deg, #f5f0e6 0%, #e8dcc8 100%); border: 1px solid #d4c9b0; border-radius: 12px; padding: 12px 14px 18px; position: relative; box-shadow: inset 0 -4px 8px rgba(0, 0, 0, .05); }
+.pes-estantes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.pes-estante { min-width: 0; background: linear-gradient(180deg, #f5f0e6 0%, #e8dcc8 100%); border: 1px solid #d4c9b0; border-radius: 12px; padding: 12px 14px 18px; position: relative; box-shadow: inset 0 -4px 8px rgba(0, 0, 0, .05); }
 .pes-estante::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 10px; background: linear-gradient(180deg, #8b6914, #6b4f0f); border-radius: 0 0 12px 12px; }
-.pes-estante-titulo { display: flex; align-items: center; font-weight: 700; color: #5a4310; margin-bottom: 8px; }
+.pes-estante-titulo { display: flex; flex-wrap: wrap; gap: 0 .5rem; align-items: center; font-weight: 700; color: #5a4310; margin-bottom: 8px; }
 .pes-prateleira { display: flex; align-items: flex-end; gap: 6px; padding: 6px 0 4px; border-bottom: 6px solid #a07a2c; margin-bottom: 8px; box-shadow: 0 3px 0 rgba(0, 0, 0, .08); }
 .pes-prateleira-n { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; font-weight: 700; color: #7a5c1c; }
-.pes-pastas { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
+.pes-pastas { display: flex; min-width: 0; gap: 3px; overflow-x: auto; padding-bottom: 2px; }
 .pes-pasta { width: 38px; height: 118px; flex: 0 0 auto; border-radius: 3px 3px 2px 2px; position: relative; display: flex; flex-direction: column; align-items: center; padding: 6px 0 4px; border: 0; }
 .pes-pasta.ocupada { background: linear-gradient(90deg, #111 0%, #2b2b2b 45%, #151515 100%); color: #fff; box-shadow: 2px 2px 5px rgba(0, 0, 0, .35); cursor: pointer; transition: transform .15s; }
 .pes-pasta.ocupada:hover, .pes-pasta.ocupada:focus { transform: translateY(-6px); outline: none; }

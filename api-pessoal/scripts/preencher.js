@@ -77,8 +77,9 @@ async function main() {
   const ultimo = await bd.processo.findFirst({ orderBy: { numero: 'desc' } })
   if (ultimo) processo = Number(ultimo.numero.replace(/\D/g, '')) + 1
   const arrumar = async (pessoaId, estado = um(['encapado', 'encapado', 'activo'])) => {
-    const k = 400 + lugar++
-    await bd.processo.create({ data: { pessoaId, numero: `PI-${String(processo++).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(k / 40) % 26), prateleira: String(1 + Math.floor((k % 40) / 10)), posicao: String(1 + (k % 10)), estado } })
+    // depois das estantes da semente (30 por prateleira, 5 prateleiras por estante)
+    const k = 900 + lugar++
+    await bd.processo.create({ data: { pessoaId, numero: `PI-${String(processo++).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(k / 150) % 26), prateleira: String(1 + Math.floor((k % 150) / 30)), posicao: String(1 + (k % 30)), estado } })
   }
   // a ficha completa (residência, BI, agregado, vencimento, banco): tudo inventado
   const ficha = (tipo, genero, posto, nasc) => ({

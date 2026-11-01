@@ -215,11 +215,11 @@ async function main() {
   }
   // processos individuais numerados, com a localização no arquivo
   const todas = await bd.pessoa.findMany({ where: { vinculo: { not: 'domiciliar' } }, orderBy: { id: 'asc' } })
-  // arrumados nas estantes (10 posições por prateleira, 4 prateleiras por estante), com alguns lugares livres
+  // arrumados nas estantes (30 posições por prateleira, 5 prateleiras por estante), com alguns lugares livres
   let lugar = 0
   for (const [i, p] of todas.entries()) {
     if (aleatorio() < 0.12) lugar++
-    await bd.processo.create({ data: { pessoaId: p.id, numero: `PI-${String(i + 1).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(lugar / 40)), prateleira: String(1 + Math.floor((lugar % 40) / 10)), posicao: String(1 + (lugar % 10)), estado: aleatorio() < 0.85 ? 'encapado' : 'activo' } })
+    await bd.processo.create({ data: { pessoaId: p.id, numero: `PI-${String(i + 1).padStart(5, '0')}`, estante: String.fromCharCode(65 + Math.floor(lugar / 150)), prateleira: String(1 + Math.floor((lugar % 150) / 30)), posicao: String(1 + (lugar % 30)), estado: aleatorio() < 0.85 ? 'encapado' : 'activo' } })
     lugar++
   }
 
