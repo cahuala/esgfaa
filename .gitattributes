@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# o instalador do Windows precisa de CRLF; os scripts do Linux de LF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+instalador/LEIA-ME.txt text eol=crlf
+*.sh text eol=lf
+*.desktop text eol=lf
