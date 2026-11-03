@@ -189,6 +189,47 @@ export class ServicoOrganica {
     return r
   }
 
+  /*
+    Pessoal civil nos cargos civis (a Repartição coloca e retira; não passa por proposta de nomeação, que é o
+    regime dos militares). O cargo tem de ser para civis (ou para ambos) e ter lugar livre; a pessoa fica na
+    unidade do cargo e o histórico regista a nomeação (ou a exoneração).
+  */
+  async colocarCivil(u, cargoId, { pessoaId, data = null }) {
+    exigir(u, 'editar')
+    const c = await this.bd.cargo.findUnique({ where: { id: cargoId }, include: { pessoas: { where: { ativo: true }, select: { id: true } } } })
+    if (!c) throw naoEncontrado('Cargo não encontrado.')
+    if (c.tipo === 'militar') throw invalido('Este cargo é para militares: a colocação faz-se por proposta de nomeação.', 'cargo')
+    const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId } })
+    if (!p || !p.ativo) throw naoEncontrado('Ficha não encontrada (ou a pessoa já não está na Escola).')
+    if (p.tipo !== 'civil') throw invalido('Só o pessoal civil se coloca aqui; os militares vão por proposta de nomeação.', 'pessoaId')
+    if (p.vinculo === 'domiciliar') throw invalido('As empregadas(os) domiciliares não ocupam cargos da orgânica.', 'pessoaId')
+    if (p.cargoId === cargoId) throw conflito(`${p.nome} já ocupa este cargo.`)
+    if (c.pessoas.length >= c.vagas) throw conflito('O cargo não tem lugar livre: aumente o efectivo do cargo ou retire primeiro quem lá está.')
+    const quando = data ? new Date(data) : new Date()
+    const antes = p.cargoId ? await this.bd.cargo.findUnique({ where: { id: p.cargoId }, select: { nome: true } }) : null
+    await this.bd.$transaction([
+      this.bd.pessoa.update({ where: { id: pessoaId }, data: { cargoId, unidadeId: c.unidadeId ?? p.unidadeId, dataCargo: quando } }),
+      this.bd.evento.create({ data: { pessoaId, tipo: 'nomeacao', data: quando, descricao: `Colocado(a) no cargo de ${c.nome}${antes ? ` (deixa ${antes.nome})` : ''}.`, criadoPor: u.email } }),
+    ])
+    await this.auditoria.registar(u, 'colocar_civil', `${p.nome} → ${c.nome}`)
+    return { ok: true }
+  }
+
+  async retirarCivil(u, cargoId, { pessoaId, data = null }) {
+    exigir(u, 'editar')
+    const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId } })
+    if (!p || p.cargoId !== cargoId) throw naoEncontrado('Essa pessoa não ocupa este cargo.')
+    if (p.tipo !== 'civil') throw invalido('Os militares saem do cargo por proposta de exoneração.', 'pessoaId')
+    const c = await this.bd.cargo.findUnique({ where: { id: cargoId }, select: { nome: true } })
+    const quando = data ? new Date(data) : new Date()
+    await this.bd.$transaction([
+      this.bd.pessoa.update({ where: { id: pessoaId }, data: { cargoId: null, dataCargo: null } }),
+      this.bd.evento.create({ data: { pessoaId, tipo: 'exoneracao', data: quando, descricao: `Deixa o cargo de ${c?.nome ?? 'cargo'}.`, criadoPor: u.email } }),
+    ])
+    await this.auditoria.registar(u, 'retirar_civil', `${p.nome} ← ${c?.nome ?? ''}`)
+    return { ok: true }
+  }
+
   async removerCargo(u, id) {
     exigir(u, 'administrar')
     if (await this.bd.pessoa.count({ where: { cargoId: id, ativo: true } })) throw conflito('O cargo está ocupado: faça primeiro a exoneração.')

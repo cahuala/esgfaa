@@ -283,6 +283,9 @@ export function rotas({ servicos: s, config }) {
   r.get('/cargos', validar({ query: z.object({ unidadeId: z.string().max(10).optional() }) }), async (req, res) => res.json(await s.organica.cargos(u(req), req.dados.query)))
   r.post('/cargos', validar({ body: E.cargo }), async (req, res) => res.status(201).json(await s.organica.guardarCargo(u(req), null, req.dados.body)))
   r.put('/cargos/:id', validar({ params: E.pId, body: E.cargo }), async (req, res) => res.json(await s.organica.guardarCargo(u(req), req.dados.params.id, req.dados.body)))
+  // pessoal civil nos cargos civis (sem proposta)
+  r.post('/cargos/:id/colocar', validar({ params: E.pId, body: z.object({ pessoaId: z.coerce.number().int().positive(), data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }) }), async (req, res) => res.json(await s.organica.colocarCivil(u(req), req.dados.params.id, req.dados.body)))
+  r.post('/cargos/:id/retirar', validar({ params: E.pId, body: z.object({ pessoaId: z.coerce.number().int().positive(), data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }) }), async (req, res) => res.json(await s.organica.retirarCivil(u(req), req.dados.params.id, req.dados.body)))
   r.delete('/cargos/:id', validar({ params: E.pId }), async (req, res) => { await s.organica.removerCargo(u(req), req.dados.params.id); res.status(204).end() })
 
   // administração

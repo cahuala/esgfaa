@@ -81,6 +81,7 @@ export default function Organica() {
   const [pesquisa, setPesquisa] = useState('')
   const [verMapa, setVerMapa] = useState(false)
   const gerir = pode('administrar')
+  const editar = pode('editar')
 
   const todas = useMemo(() => {
     const l = []
@@ -105,6 +106,11 @@ export default function Organica() {
 
   const alternar = (k) => setAbertos((a) => { const n = new Set(a); if (n.has(k)) n.delete(k); else n.add(k); return n })
   const depois = (m) => { setModal(null); avisar(m); recarregar(); detalhe.recarregar() }
+  // o civil sai do cargo (sem proposta; fica no histórico como exoneração)
+  const retirar = (c, o) => {
+    if (!window.confirm(`Retirar ${o.nome} do cargo «${c.nome}»?`)) return
+    api(`/cargos/${c.id}/retirar`, { metodo: 'POST', corpo: { pessoaId: o.id } }).then(() => depois(`${o.nome} deixou o cargo.`)).catch((e) => avisar(e.message, 'erro'))
+  }
   const aoAcao = (acao, n) => {
     if (acao === 'nova') setModal({ unidade: { paiId: n.id } })
     if (acao === 'cargo') setModal({ cargo: { unidadeId: n.id } })
@@ -119,6 +125,7 @@ export default function Organica() {
     <>
       {modal?.unidade && <FormUnidade u={modal.unidade} unidades={unidades} aoFechar={() => setModal(null)} aoGuardar={depois} />}
       {modal?.imprimir && <ImprimirCargos escola={escola} inicial={modal.imprimir.id} aoFechar={() => setModal(null)} />}
+      {modal?.colocar && <ColocarCivil c={modal.colocar} aoFechar={() => setModal(null)} aoGuardar={depois} />}
       {modal?.cargo && <FormCargo c={modal.cargo} unidades={unidades} refs={ref} aoFechar={() => setModal(null)} aoGuardar={depois} />}
     </>
   )
@@ -174,7 +181,13 @@ export default function Organica() {
                       <td className="small">{c.postoRequeridoNome}</td>
                       <td className="text-center">{c.vagas}</td>
                       <td className="text-center"><span className={`badge ${c.ocupados >= c.vagas ? 'bg-success' : c.ocupados ? 'bg-warning text-dark' : 'bg-danger'}`}>{c.ocupados ? c.ocupados : 'VAGO'}</span>{c.excesso > 0 && <div className="small text-danger">+{c.excesso}</div>}</td>
-                      <td>{c.ocupantes.map((o) => <Link key={o.id} to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none mb-1"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>)}{!c.ocupantes.length && <span className="text-muted small">—</span>}</td>
+                      <td>{c.ocupantes.map((o) => (
+                        <div key={o.id} className="d-flex align-items-center gap-1 mb-1">
+                          <Link to={`/pessoas/${o.id}`} className="pes-pessoa text-decoration-none"><Foto pessoaId={o.id} fotoId={o.fotoId} nome={o.nome} tamanho={30} /><span><span className="small fw-semibold">{o.abreviatura} {o.nome}</span><div className="small text-muted">{o.ident}</div></span></Link>
+                          {editar && o.tipo === 'civil' && <button type="button" className="btn btn-xs btn-link text-danger" title="Retirar do cargo" aria-label={`Retirar ${o.nome} do cargo`} onClick={() => retirar(c, o)}><i className="fa fa-times" /></button>}
+                        </div>
+                      ))}{!c.ocupantes.length && <span className="text-muted small">—</span>}
+                      {editar && c.tipo !== 'militar' && c.livres > 0 && <button type="button" className="btn btn-xs btn-outline-theme mt-1" onClick={() => setModal({ colocar: c })}><i className="fa fa-user-plus me-1" />Colocar civil</button>}</td>
                       {gerir && <td className="text-end"><button type="button" className="btn btn-xs btn-outline-secondary" onClick={() => setModal({ cargo: c })} title="Editar cargo"><i className="fa fa-pencil-alt" /></button></td>}
                     </tr>
                   ))}
@@ -386,6 +399,49 @@ function FormCargo({ c, unidades, refs, aoFechar, aoGuardar }) {
         {d.tipo !== 'militar' && <Campo rotulo="Categoria (civis)" col="col-md-4"><Escolha valor={d.categoriaCivil} aoMudar={(v) => setD({ ...d, categoriaCivil: v })} opcoes={Object.values(refs.carreirasCivis).filter((v) => !v.domiciliar).sort((a, b) => a.nivel - b.nivel).map((v) => [v.nome, v.nome])} vazio="Qualquer" /></Campo>}
         <Campo rotulo="Lugares" col="col-md-4"><input type="number" min="1" className="form-control form-control-sm" value={d.vagas} onChange={(e) => setD({ ...d, vagas: e.target.value })} /></Campo>
       </div>
+    </Modal>
+  )
+}
+
+// colocar um civil num cargo civil: escolhe-se do pessoal civil da Escola (quem já tem cargo muda para este)
+function ColocarCivil({ c, aoFechar, aoGuardar }) {
+  const { avisar } = useSessao()
+  const { dados } = useDados('/pessoas', { tipo: 'civil' })
+  const [q, setQ] = useState('')
+  const [escolhido, setEscolhido] = useState(null)
+  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10))
+  const termo = norm(q).trim()
+  const lista = (dados ?? []).filter((p) => p.vinculo !== 'domiciliar' && p.cargoId !== c.id)
+    .filter((p) => !termo || norm(`${p.nome} ${p.numeroAgente ?? ''} ${p.categoriaCivil ?? ''} ${p.unidadeNome ?? ''}`).includes(termo))
+  const guardar = () => api(`/cargos/${c.id}/colocar`, { metodo: 'POST', corpo: { pessoaId: escolhido.id, data } })
+    .then(() => aoGuardar(`${escolhido.nome} colocado(a) no cargo «${c.nome}».`)).catch((e) => avisar(e.message, 'erro'))
+  return (
+    <Modal titulo={`Colocar no cargo: ${c.nome}`} aoFechar={aoFechar} largo
+      rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={!escolhido} onClick={guardar}><i className="fa fa-user-check me-1" />Colocar</button></>}>
+      <p className="small text-muted">Cargo para civis{c.postoRequeridoNome && c.postoRequeridoNome !== 'Civil' ? ` (${c.postoRequeridoNome})` : ''} · {c.livres} lugar(es) livre(s). Quem já tem outro cargo passa para este.</p>
+      {escolhido ? (
+        <div className="d-flex align-items-center gap-3 p-2 mb-3 border rounded">
+          <Foto pessoaId={escolhido.id} fotoId={escolhido.fotoId} nome={escolhido.nome} />
+          <div className="flex-grow-1"><strong>{escolhido.nome}</strong><div className="small text-muted">{[escolhido.categoriaCivil, escolhido.cargoNome && `cargo actual: ${escolhido.cargoNome}`].filter(Boolean).join(' · ')}</div></div>
+          <button type="button" className="btn btn-sm btn-white" onClick={() => setEscolhido(null)}>Mudar</button>
+        </div>
+      ) : (
+        <>
+          <input className="form-control mb-2" autoFocus placeholder="Procurar por nome, n.º de agente, categoria ou unidade…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Procurar no pessoal civil" />
+          {!dados ? <Carregando /> : (
+            <div className="list-group" style={{ maxHeight: '45vh', overflowY: 'auto' }}>
+              {lista.slice(0, 40).map((p) => (
+                <button key={p.id} type="button" className="list-group-item list-group-item-action d-flex align-items-center gap-2" onClick={() => setEscolhido(p)}>
+                  <Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} />
+                  <span className="flex-grow-1 text-truncate"><strong>{p.nome}</strong><div className="small text-muted text-truncate">{[p.numeroAgente && `Agente ${p.numeroAgente}`, p.categoriaCivil, p.cargoNome ? `cargo: ${p.cargoNome}` : 'sem cargo'].filter(Boolean).join(' · ')}</div></span>
+                </button>
+              ))}
+              {!lista.length && <div className="text-muted small p-2">Ninguém encontrado no pessoal civil.</div>}
+            </div>
+          )}
+        </>
+      )}
+      <Campo rotulo="No cargo desde" col="col-md-4"><input type="date" className="form-control form-control-sm" value={data} onChange={(e) => setData(e.target.value)} /></Campo>
     </Modal>
   )
 }
