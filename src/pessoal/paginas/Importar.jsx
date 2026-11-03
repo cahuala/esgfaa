@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessao'
-import { lerCsv, lerXlsx } from '../../admin/paginas/academico/lerFolha'
+import { folhasXlsx, lerCsv, lerXlsx } from '../../admin/paginas/academico/lerFolha'
 import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
 import Carregar from '../componentes/Carregar'
@@ -24,17 +24,39 @@ const COLUNAS = [
   ['dataIngressoQP', 'Ingresso no QP', ['ingresso no qp', 'data de ingresso no qp']], ['dataAntiguidadePosto', 'Antiguidade no posto', ['antiguidade no posto', 'data do posto', 'data de promocao', 'antiguidade']],
   ['dataCargo', 'No cargo desde', ['no cargo desde', 'data do cargo', 'data de nomeacao']],
   ['carreiraCivil', 'Categoria (civis)', ['categoria', 'carreira', 'categoria civil']], ['categoriaCivil', 'Classe (civis)', ['classe', 'categoria e classe']], ['vinculoCivil', 'Vínculo (civis)', ['vinculo civil']], ['dataAdmissao', 'Admissão (civis)', ['admissao', 'data de admissao']],
+  // os da ficha de cadastramento
+  ['nacionalidade', 'Nacionalidade', ['nacionalidade']], ['paisNascimento', 'País de nascimento', ['pais de nascimento', 'pais']],
+  ['biEmitidoEm', 'Data de emissão do BI', ['data de emissao', 'emissao do bi', 'data de emissao do bi']], ['biValidade', 'Validade do BI', ['data de validacao', 'data de validade', 'validade', 'validade do bi']],
+  ['biLocalEmissao', 'Local de emissão do BI', ['local de emissao', 'emitido em']], ['grupoSanguineo', 'Grupo sanguíneo', ['grupo sanguineo', 'grupo sangue', 'tipo sanguineo']],
+  ['telefoneAlternativo', 'Telefone alternativo', ['tel alternativo', 'telefone alternativo', 'telefone 2', 'outro telefone']], ['emailPessoal', 'E-mail pessoal', ['email pessoal', 'e mail pessoal']],
+  ['municipio', 'Município (residência)', ['municipio de residencia']], ['bairro', 'Bairro', ['bairro']],
+  ['tipoDocente', 'Tipo de docente (efectivo/colaborador)', ['tipo de docente']], ['categoriaDocente', 'Categoria do docente', ['categoria do docente', 'categoria docente']],
+  ['funcaoActual', 'Função ou cargo actual', ['funcao ou cargo actual', 'funcao actual', 'cargo actual', 'funcao ou cargo atual']], ['unidadeOrigem', 'Unidade de origem', ['unidade de origem']],
+  ['observacoes', 'Observações', ['observacoes', 'obs']],
 ]
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 
-function mapear(tabela) {
-  const [cab = [], ...resto] = tabela
-  const idx = {}
-  cab.forEach((h, i) => {
-    const c = COLUNAS.find(([, , nomes]) => nomes.includes(sem(h)))
-    if (c && idx[c[0]] === undefined) idx[c[0]] = i
-  })
-  return { campos: Object.keys(idx), ignoradas: cab.filter((h) => h && !COLUNAS.some(([, , n]) => n.includes(sem(h)))), linhas: resto.map((l) => Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, String(l[i] ?? '').trim()]))) }
+// a coluna da folha («A», «B»… «AA») pelo índice
+const letra = (i) => (i < 26 ? String.fromCharCode(65 + i) : letra(Math.floor(i / 26) - 1) + String.fromCharCode(65 + (i % 26)))
+const reconhecer = (h) => COLUNAS.find(([, , nomes]) => nomes.includes(sem(h)))?.[0] ?? ''
+// a linha dos títulos: a primeira (das 10 primeiras) com mais colunas reconhecidas
+const linhaDosTitulos = (tabela) => tabela.slice(0, 10).map((l, i) => [i, l.filter((h) => reconhecer(h)).length]).sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]?.[0] ?? 0
+// as ligações sugeridas: pelo título; as que a pessoa escolheu da última vez para os mesmos títulos (guardadas no navegador)
+const chaveLigacoes = (cab) => `pes-importar:${cab.map(sem).join('|')}`
+function sugerir(cab) {
+  try {
+    const guardadas = JSON.parse(localStorage.getItem(chaveLigacoes(cab)) ?? 'null')
+    if (Array.isArray(guardadas) && guardadas.length === cab.length) return guardadas
+  } catch { /* sem armazenamento: só as sugestões */ }
+  const usados = new Set()
+  return cab.map((h) => { const c = reconhecer(h); if (!c || usados.has(c)) return ''; usados.add(c); return c })
+}
+// as linhas da folha com as colunas ligadas aos campos da ficha
+function aplicarLigacoes(tabela, titulos, ligacoes) {
+  const linhas = tabela.slice(titulos + 1)
+    .map((l) => Object.fromEntries(ligacoes.map((c, i) => (c ? [c, String(l[i] ?? '').trim()] : null)).filter(Boolean)))
+    .filter((l) => Object.values(l).some(Boolean))
+  return { linhas, campos: ligacoes.filter(Boolean) }
 }
 
 export default function Importar() {
@@ -45,30 +67,66 @@ export default function Importar() {
   // como no SIGP: cada BI da folha verifica-se na base de dados do Estado (preenche o que falta e avisa das diferenças)
   const [verificarBi, setVerificarBi] = useState(true)
   const [folha, setFolha] = useState(null)
+  // a folha aberta, como no Navicat: o livro (as folhas), a linha dos títulos e para onde vai cada coluna
+  const [fonte, setFonte] = useState(null) // { nome, ficheiro, folhas, folha, tabela, titulos, ligacoes }
   const [resultado, setResultado] = useState(null)
   const [aTrabalhar, setATrabalhar] = useState(false)
   const [fotos, setFotos] = useState(null)
 
   async function escolher(f) {
     if (!f) return
-    setResultado(null)
     try {
-      const tabela = /\.xlsx$/i.test(f.name) ? await lerXlsx(await f.arrayBuffer()) : /\.(csv|txt)$/i.test(f.name) ? lerCsv(await f.text()) : null
-      if (!tabela) throw new Error('Use um Excel (.xlsx) ou CSV. Os .xls antigos: grave primeiro como .xlsx.')
-      const m = mapear(tabela)
-      if (!m.campos.includes('nip') && !m.campos.includes('numeroAgente')) throw new Error('A folha tem de ter a coluna NIP (ou N.º de agente, para civis).')
-      setFolha({ nome: f.name, ...m })
-      await simular({ ...m }, modo)
+      const xlsx = /\.xlsx$/i.test(f.name)
+      if (!xlsx && !/\.(csv|txt)$/i.test(f.name)) throw new Error('Use um Excel (.xlsx) ou CSV. Os .xls antigos: grave primeiro como .xlsx.')
+      const folhas = xlsx ? await folhasXlsx(await f.arrayBuffer()) : []
+      await abrirFolha({ nome: f.name, ficheiro: f, folhas }, 0)
     } catch (e) {
       avisar(e.message, 'erro')
     }
+  }
+
+  // abre uma folha do livro e sugere as ligações das colunas (a pessoa confirma ou muda antes de verificar)
+  async function abrirFolha(base, indice) {
+    setResultado(null)
+    setFolha(null)
+    try {
+      const f = base.ficheiro
+      const tabela = /\.xlsx$/i.test(f.name) ? await lerXlsx(await f.arrayBuffer(), { folha: indice }) : lerCsv(await f.text())
+      if (!tabela.length) throw new Error('Essa folha está vazia.')
+      const titulos = linhaDosTitulos(tabela)
+      setFonte({ ...base, folha: indice, tabela, titulos, ligacoes: sugerir(tabela[titulos] ?? []) })
+    } catch (e) {
+      avisar(e.message, 'erro')
+    }
+  }
+
+  function mudarTitulos(t) {
+    setResultado(null)
+    setFonte((x) => ({ ...x, titulos: t, ligacoes: sugerir(x.tabela[t] ?? []) }))
+  }
+
+  // cada campo da ficha só recebe uma coluna: escolhê-lo noutra coluna tira-o da anterior
+  function ligar(i, campo) {
+    setResultado(null)
+    setFonte((x) => ({ ...x, ligacoes: x.ligacoes.map((c, j) => (j === i ? campo : campo && c === campo ? '' : c)) }))
+  }
+
+  async function verificar() {
+    const m = aplicarLigacoes(fonte.tabela, fonte.titulos, fonte.ligacoes)
+    if (!m.campos.includes('nip') && !m.campos.includes('numeroAgente')) return avisar('Ligue a coluna do NIP (ou do N.º de agente, para civis): é por ela que se encontra cada pessoa.', 'erro')
+    if (!m.linhas.length) return avisar('Não há linhas com dados nas colunas ligadas.', 'erro')
+    try { localStorage.setItem(chaveLigacoes(fonte.tabela[fonte.titulos] ?? []), JSON.stringify(fonte.ligacoes)) } catch { /* sem armazenamento */ }
+    // desvio: os títulos podem não estar na primeira linha (o número da linha é o da folha)
+    const f = { nome: fonte.nome, desvio: fonte.titulos, ...m }
+    setFolha(f)
+    await simular(f, modo)
   }
 
   async function simular(f = folha, m = modo, gravar = false, vb = verificarBi) {
     setATrabalhar(true)
     try {
       const r = await api('/pessoas/importar', { metodo: 'POST', corpo: { modo: m, simular: !gravar, verificarBi: vb, linhas: f.linhas } })
-      setResultado(r)
+      setResultado({ ...r, linhas: r.linhas.map((l) => ({ ...l, linha: l.linha + (f.desvio ?? 0) })) })
       if (gravar) avisar(`${r.resumo.validas} ficha(s) ${m === 'novos' ? 'criadas' : 'actualizadas'}; ${r.resumo.erros} linha(s) com erro.`)
     } catch (e) {
       avisar(e.message, 'erro')
@@ -135,11 +193,11 @@ export default function Importar() {
               <div className="col-12 mb-2"><label className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={verificarBi} onChange={(e) => { setVerificarBi(e.target.checked); if (folha) simular(folha, modo, false, e.target.checked) }} /> <span className="form-check-label">Verificar cada BI na base de dados do Estado <span className="text-muted small">(preenche o nome, a filiação e o nascimento que faltarem e avisa do que não bater certo)</span></span></label></div>
               <div className="col-md-3 mb-2"><button type="button" className="btn btn-sm btn-outline-success w-100" onClick={modelo}><i className="fa fa-download me-1" />Descarregar o modelo</button></div>
             </div>
-            <p className="small text-muted mb-0">A primeira linha tem os títulos das colunas (como no modelo). As correspondências são <strong>exactas</strong>: posto, ramo, forma de serviço, quadro especial, unidade (nome ou sigla) e cargo têm de existir; o que não corresponder fica a vermelho e não é gravado. Os nomes ficam em «Primeira Letra Maiúscula». Datas em dd/mm/aaaa. Primeiro o sistema simula; só grava quando confirmar.</p>
-            {folha && <div className="small mt-2"><strong>{folha.nome}</strong>: {folha.linhas.length} linha(s) · colunas reconhecidas: {folha.campos.map((c) => COLUNAS.find((x) => x[0] === c)[1]).join(', ')}{folha.ignoradas.length > 0 && <span className="text-warning"> · ignoradas: {folha.ignoradas.join(', ')}</span>}</div>}
+            <p className="small text-muted mb-0">Depois de escolher, liga-se cada coluna da folha ao campo da ficha (o sistema sugere pelos títulos; pode mudar). As correspondências são <strong>exactas</strong>: posto, ramo, forma de serviço, quadro especial, unidade (nome ou sigla) e cargo têm de existir; o que não corresponder fica a vermelho e não é gravado. Os nomes ficam em «Primeira Letra Maiúscula». Datas em dd/mm/aaaa. Primeiro o sistema simula; só grava quando confirmar.</p>
           </Painel>
+          {fonte && <LigarColunas fonte={fonte} aoMudarFolha={(i) => abrirFolha(fonte, i)} aoMudarTitulos={mudarTitulos} aoLigar={ligar} aoVerificar={verificar} aTrabalhar={aTrabalhar} />}
           {resultado && (
-            <Painel titulo={resultado.simulacao ? '2. Verificação (nada foi gravado ainda)' : 'Resultado'} icone="fa-clipboard-check" acoes={resultado.simulacao && resultado.resumo.validas > 0 && <button type="button" className="btn btn-xs btn-theme" disabled={aTrabalhar} onClick={() => simular(folha, modo, true)}><i className="fa fa-check me-1" />{modo === 'novos' ? 'Criar' : 'Actualizar'} {resultado.resumo.validas} ficha(s)</button>}>
+            <Painel titulo={resultado.simulacao ? '3. Verificação (nada foi gravado ainda)' : 'Resultado'} icone="fa-clipboard-check" acoes={resultado.simulacao && resultado.resumo.validas > 0 && <button type="button" className="btn btn-xs btn-theme" disabled={aTrabalhar} onClick={() => simular(folha, modo, true)}><i className="fa fa-check me-1" />{modo === 'novos' ? 'Criar' : 'Actualizar'} {resultado.resumo.validas} ficha(s)</button>}>
               <div className="d-flex gap-2 mb-2"><span className="badge bg-success fs-6">{resultado.resumo.validas} válida(s)</span><span className="badge bg-danger fs-6">{resultado.resumo.erros} com erro</span>{resultado.resumo.avisos > 0 && <span className="badge bg-warning text-dark fs-6">{resultado.resumo.avisos} com aviso do BI</span>}{resultado.resumo.biConferidos > 0 && <span className="badge bg-light text-dark border fs-6">{resultado.resumo.biConferidos} BI conferido(s)</span>}{resultado.resumo.biIndisponivel && <span className="small text-danger align-self-center">O serviço do BI não respondeu: as restantes linhas não foram verificadas.</span>}{!resultado.simulacao && <button type="button" className="btn btn-sm btn-link" onClick={() => navegar('/pessoas')}>Ver o pessoal</button>}</div>
               <Tabela titulo="Importação de pessoal" colunas={colunasResultado} linhas={resultado.linhas} chave={(l) => l.linha} porPagina={50} aoClicar={(l) => l.id && navegar(`/pessoas/${l.id}`)} />
             </Painel>
@@ -160,5 +218,59 @@ export default function Importar() {
         </Painel>
       )}
     </>
+  )
+}
+
+/*
+  2.º passo da importação, como no Navicat: a folha do livro, a linha dos títulos e, para cada coluna da folha,
+  o campo da ficha para onde vai (ou «não importar»). Mostra exemplos dos valores de cada coluna.
+*/
+function LigarColunas({ fonte, aoMudarFolha, aoMudarTitulos, aoLigar, aoVerificar, aTrabalhar }) {
+  const cab = fonte.tabela[fonte.titulos] ?? []
+  const dados = fonte.tabela.slice(fonte.titulos + 1)
+  const largura = Math.max(cab.length, ...dados.slice(0, 50).map((l) => l.length))
+  const colunas = Array.from({ length: largura }, (_, i) => i).filter((i) => String(cab[i] ?? '').trim() || dados.some((l) => String(l[i] ?? '').trim()))
+  const exemplos = (i) => [...new Set(dados.map((l) => String(l[i] ?? '').trim()).filter(Boolean))].slice(0, 3)
+  const ligadas = fonte.ligacoes.filter(Boolean).length
+  const temIdent = fonte.ligacoes.includes('nip') || fonte.ligacoes.includes('numeroAgente')
+  const opcoes = [...COLUNAS].sort((a, b) => a[1].localeCompare(b[1], 'pt'))
+  return (
+    <Painel titulo="2. Ligar as colunas da folha aos campos da ficha" icone="fa-random"
+      acoes={<button type="button" className="btn btn-xs btn-theme" disabled={aTrabalhar || !ligadas} onClick={aoVerificar}><i className="fa fa-clipboard-check me-1" />Verificar ({dados.length} linha(s))</button>}>
+      <div className="row g-2 align-items-end mb-2">
+        {fonte.folhas.length > 1 && (
+          <div className="col-md-4">
+            <label className="form-label small fw-semibold">Folha do livro</label>
+            <Escolha valor={String(fonte.folha)} aoMudar={(v) => aoMudarFolha(Number(v))} opcoes={fonte.folhas.map((n, i) => [String(i), n])} vazio={null} aria-label="Folha do livro" />
+          </div>
+        )}
+        <div className="col-md-5">
+          <label className="form-label small fw-semibold">Os títulos estão na linha</label>
+          <Escolha valor={String(fonte.titulos)} aoMudar={(v) => aoMudarTitulos(Number(v))} opcoes={fonte.tabela.slice(0, 10).map((l, i) => [String(i), `${i + 1}: ${l.filter(Boolean).slice(0, 4).join(' · ').slice(0, 70)}`])} vazio={null} aria-label="Linha dos títulos" />
+        </div>
+        <div className="col-md-3 small text-muted"><strong>{ligadas}</strong> de {colunas.length} coluna(s) ligada(s){!temIdent && <div className="text-danger"><i className="fa fa-exclamation-circle me-1" />Falta ligar o NIP (ou o N.º de agente)</div>}</div>
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm align-middle mb-0">
+          <thead><tr><th style={{ width: 60 }}>Coluna</th><th>Título na folha</th><th>Exemplos</th><th style={{ width: 300 }}>Vai para</th></tr></thead>
+          <tbody>
+            {colunas.map((i) => (
+              <tr key={i} className={fonte.ligacoes[i] ? '' : 'text-muted'}>
+                <td><code>{letra(i)}</code></td>
+                <td className="fw-semibold">{cab[i] || <i className="text-muted">(sem título)</i>}</td>
+                <td className="small text-truncate" style={{ maxWidth: 260 }}>{exemplos(i).join(' · ') || '—'}</td>
+                <td>
+                  <select className={`form-select form-select-sm ${fonte.ligacoes[i] ? 'border-success' : ''}`} value={fonte.ligacoes[i] ?? ''} onChange={(e) => aoLigar(i, e.target.value)} aria-label={`Coluna ${letra(i)} vai para`}>
+                    <option value="">— não importar —</option>
+                    {opcoes.map(([k, t]) => <option key={k} value={k}>{t}</option>)}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="small text-muted mt-2 mb-0">As ligações que escolher ficam lembradas neste computador para as folhas com os mesmos títulos.</p>
+    </Painel>
   )
 }

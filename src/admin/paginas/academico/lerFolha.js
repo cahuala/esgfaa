@@ -70,7 +70,15 @@ async function abrirZip(buffer, querer) {
 // "B3" -> 1 (coluna, a contar de 0)
 const coluna = (ref) => [...ref.replace(/\d+$/, '')].reduce((n, c) => n * 26 + c.charCodeAt(0) - 64, 0) - 1
 
-export async function lerXlsx(buffer) {
+// os nomes das folhas (separadores) do livro, pela ordem (folha: o índice para lerXlsx)
+export async function folhasXlsx(buffer) {
+  const zip = await abrirZip(buffer, (n) => n === 'xl/workbook.xml')
+  if (!zip['xl/workbook.xml']) return []
+  const doc = new DOMParser().parseFromString(new TextDecoder().decode(zip['xl/workbook.xml']), 'application/xml')
+  return [...doc.getElementsByTagName('sheet')].map((f) => f.getAttribute('name'))
+}
+
+export async function lerXlsx(buffer, { folha = 0 } = {}) {
   const zip = await abrirZip(buffer, (n) => n === 'xl/sharedStrings.xml' || /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
   const dec = new TextDecoder()
   const xml = (bytes) => new DOMParser().parseFromString(dec.decode(bytes), 'application/xml')
@@ -80,7 +88,7 @@ export async function lerXlsx(buffer) {
     ? [...xml(zip['xl/sharedStrings.xml']).getElementsByTagName('si')].map((si) => [...si.getElementsByTagName('t')].map((t) => t.textContent).join(''))
     : []
   const linhas = []
-  for (const row of xml(zip[folhas[0]]).getElementsByTagName('row')) {
+  for (const row of xml(zip[folhas[Math.min(folha, folhas.length - 1)]]).getElementsByTagName('row')) {
     const l = []
     for (const c of row.getElementsByTagName('c')) {
       const tipo = c.getAttribute('t')

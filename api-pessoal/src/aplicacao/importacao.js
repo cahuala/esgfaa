@@ -1,7 +1,7 @@
 import { invalido } from '../erros.js'
 import { ABREVIATURAS, EFECTIVIDADES, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, quadrosDoRamo } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS, CATEGORIA_ANTIGA, VINCULOS_CIVIS } from '../dominio/pessoal/civis.js'
-import { ESTADOS_CIVIS, HABILITACOES, PROVINCIAS, VINCULOS, diferencasDoBi, problemaNaFicha } from '../dominio/pessoal/ficha.js'
+import { CATEGORIAS_DOCENTE, CATEGORIAS_DOCENTE_CONTRATADO, ESTADOS_CIVIS, HABILITACOES, PROVINCIAS, VINCULOS, diferencasDoBi, problemaNaFicha } from '../dominio/pessoal/ficha.js'
 import { exigir } from './sessao.js'
 
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.\s]+/g, ' ').trim()
@@ -140,9 +140,13 @@ export class ServicoImportacao {
     if (tem('nomeGuerra')) d.nomeGuerra = nomeProprio(l.nomeGuerra)
     if (tem('bi')) d.bi = String(l.bi).trim().toUpperCase().replace(/\s/g, '')
     if (tem('email')) d.email = String(l.email).trim().toLowerCase()
-    for (const k of ['telefone', 'morada', 'naturalidade', 'nacionalidade', 'areaFormacao', 'especialidade', 'observacoes']) if (tem(k)) d[k] = String(l[k]).trim()
+    for (const k of ['telefone', 'telefoneAlternativo', 'morada', 'municipio', 'bairro', 'naturalidade', 'nacionalidade', 'paisNascimento', 'biLocalEmissao', 'areaFormacao', 'especialidade', 'funcaoActual', 'unidadeOrigem', 'observacoes']) if (tem(k)) d[k] = String(l[k]).trim()
+    if (tem('emailPessoal')) d.emailPessoal = String(l.emailPessoal).trim().toLowerCase()
+    if (tem('grupoSanguineo')) d.grupoSanguineo = corresponder(String(l.grupoSanguineo).replace(/\s/g, '').toUpperCase().replace('−', '-'), ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => [g, g, g.replace('O', '0')]), 'Grupo sanguíneo')
+    if (tem('tipoDocente')) d.tipoDocente = corresponder(l.tipoDocente, [['efectivo', 'efectivo', 'efetivo'], ['colaborador', 'colaborador']], 'Tipo de docente')
+    if (tem('categoriaDocente')) d.categoriaDocente = corresponder(l.categoriaDocente, [...CATEGORIAS_DOCENTE, ...CATEGORIAS_DOCENTE_CONTRATADO].map((c) => [c, c]), 'Categoria do docente')
     for (const k of ['pai', 'mae']) if (tem(k)) d[k] = nomeProprio(l[k])
-    for (const k of ['dataNascimento', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataCargo', 'dataAdmissao', 'dataCategoria']) if (tem(k)) d[k] = data(l[k])
+    for (const k of ['dataNascimento', 'dataIngresso', 'dataIngressoQP', 'dataAntiguidadePosto', 'dataCargo', 'dataAdmissao', 'dataCategoria', 'biEmitidoEm', 'biValidade']) if (tem(k)) d[k] = data(l[k])
     if (tem('genero')) d.genero = corresponder(l.genero, [['M', 'M', 'masculino', 'homem'], ['F', 'F', 'feminino', 'mulher']], 'Género')
     if (tem('estadoCivil')) d.estadoCivil = corresponder(l.estadoCivil, [...daLista(ESTADOS_CIVIS), ['solteiro', 'solteira'], ['casado', 'casada'], ['viuvo', 'viuva'], ['divorciado', 'divorciada']], 'Estado civil')
     if (tem('provincia')) d.provincia = corresponder(l.provincia, PROVINCIAS.map((p) => [p, p]), 'Província')

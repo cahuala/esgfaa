@@ -44,6 +44,17 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
     assert.deepEqual(a.linhas.map((l) => l.acao), ['actualizado', 'erro'])
   })
 
+  it('Excel: os campos da ficha de cadastramento (sangue, BI, contactos, docente) também se importam', async () => {
+    const linhas = [{ nip: 'IMP010', nome: 'Importado Cadastro Teste', ramo: 'EXE', posto: 'Major', fps: 'QP', grupoSanguineo: 'o+', biEmitidoEm: '14/04/2023', biValidade: '13/04/2033', biLocalEmissao: 'Luanda', telefoneAlternativo: '955000111', emailPessoal: 'Importado@Exemplo.ao', paisNascimento: 'Angola', categoriaDocente: 'assistente', tipoDocente: 'Efectivo', funcaoActual: 'Chefe de secção' }]
+    const r = (await adm.post('/api/pessoas/importar').send({ modo: 'novos', linhas, simular: false }).expect(200)).body
+    assert.equal(r.linhas[0].acao, 'criado', JSON.stringify(r.linhas[0]))
+    const f = (await adm.get(`/api/pessoas/${r.linhas[0].id}`).expect(200)).body
+    assert.deepEqual([f.grupoSanguineo, String(f.biEmitidoEm).slice(0, 10), f.biLocalEmissao, f.telefoneAlternativo, f.emailPessoal, f.categoriaDocente, f.tipoDocente, f.funcaoActual],
+      ['O+', '2023-04-14', 'Luanda', '955000111', 'importado@exemplo.ao', 'Assistente', 'efectivo', 'Chefe de secção'])
+    const e = (await adm.post('/api/pessoas/importar').send({ modo: 'novos', simular: true, linhas: [{ nip: 'IMP011', nome: 'Grupo Errado Teste', ramo: 'EXE', posto: 'Major', fps: 'QP', grupoSanguineo: 'C+' }] }).expect(200)).body
+    assert.match(e.linhas[0].erro, /Grupo sanguíneo/)
+  })
+
   it('BI: consulta a API do Estado e devolve os dados para a ficha', async () => {
     const b = (await adm.get('/api/bi/001234567LA041').expect(200)).body
     assert.equal(b.nome, 'João Manuel dos Santos Kiala')
