@@ -30,7 +30,7 @@ export function exigir(u, permissao) {
   if (!pode(u, permissao)) throw semPermissao()
 }
 
-const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: PAPEIS[u.papel]?.permissoes ?? [], pessoaId: u.pessoaId ?? null, unidadeId: u.unidadeId ?? null, unidadeNome: u.unidade?.nome ?? '' })
+const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, aguardaDespacho: Boolean(u.aguardaDespacho), deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: PAPEIS[u.papel]?.permissoes ?? [], pessoaId: u.pessoaId ?? null, unidadeId: u.unidadeId ?? null, unidadeNome: u.unidade?.nome ?? '' })
 // palavra-passe inicial: 10 caracteres sem os que se confundem (0/O, 1/l), com letras e números
 const ALFABETO = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 export function senhaInicial() {
@@ -49,8 +49,8 @@ export function validarSenha(senha, email = '') {
 }
 
 export class ServicoSessao {
-  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, agora = () => new Date() }) {
-    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, agora })
+  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, despachos = null, agora = () => new Date() }) {
+    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, despachos, agora })
   }
 
   // entra-se com o e-mail, o NIP ou o n.º de agente
@@ -65,6 +65,8 @@ export class ServicoSessao {
       throw erro
     }
     if (u.bloqueadoAte && u.bloqueadoAte > this.agora()) throw new ErroDominio(`Conta bloqueada por tentativas falhadas. Tente depois das ${u.bloqueadoAte.toTimeString().slice(0, 5)}.`, 'conta_bloqueada', { ate: u.bloqueadoAte.toISOString() })
+    // a conta nova só entra depois do despacho do Comandante
+    if (u.aguardaDespacho && (await this.cifra.verificar(senha, u.senha))) throw new ErroDominio('A sua conta ainda aguarda o despacho do Comandante. Tente depois de ser deferida.', 'aguarda_despacho')
     if (!(await this.cifra.verificar(senha, u.senha)) || !u.ativo) {
       const falhas = u.falhas + 1
       await this.bd.utilizador.update({ where: { id: u.id }, data: falhas >= MAX_FALHAS ? { falhas: 0, bloqueadoAte: new Date(this.agora().getTime() + BLOQUEIO_MIN * 60_000) } : { falhas } })
@@ -117,17 +119,38 @@ export class ServicoSessao {
   // gestão de utilizadores (só o administrador)
   async listar(u) {
     exigir(u, 'supervisionar')
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map(publico)
+    // a mudança de papel pedida e ainda por despachar
+    const pedidos = new Map((await this.bd.pedidoDespacho.findMany({ where: { tipo: 'utilizador_papel', estado: 'pendente' } })).map((x) => [x.utilizadorId, x.dados?.papel]))
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map((x) => ({ ...publico(x), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null }))
+  }
+
+  // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não
+  // (sem ela ninguém despacharia)
+  async #precisaDespacho(papel) {
+    if (!this.despachos || papel === 'utente') return false
+    if (papel === 'comandante' && !(await this.bd.utilizador.count({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false } }))) return false
+    return true
+  }
+
+  // o que o Comandante deferiu
+  async aplicarDespacho(id, data) {
+    const g = await this.bd.utilizador.update({ where: { id }, data: { ...data, versaoToken: { increment: 1 } } })
+    return publico(g)
   }
 
   async criar(u, { nome, email, papel, senha, unidadeId = null }) {
     exigir(u, 'administrar')
     if (!PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
     validarSenha(senha, email)
+    const despacho = await this.#precisaDespacho(papel)
     try {
-      const n = await this.bd.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, unidadeId, senha: await this.cifra.cifrar(senha) }, include: COM_UNIDADE })
+      const n = await this.bd.$transaction(async (tx) => {
+        const c = await tx.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, unidadeId, senha: await this.cifra.cifrar(senha), ...(despacho ? { ativo: false, aguardaDespacho: true } : {}) }, include: COM_UNIDADE })
+        if (despacho) await this.despachos.pedir(tx, u, { tipo: 'utilizador_novo', utilizadorId: c.id, resumo: `${c.nome} (${c.email}) — ${PAPEIS[papel].nome}`, dados: { papel } })
+        return c
+      })
       await this.auditoria.registar(u, 'criar_utilizador', n.email, { papel })
-      return publico(n)
+      return { ...publico(n), ...(despacho ? { aDespacho: ['utilizador_novo'] } : {}) }
     } catch (e) {
       if (eDuplicado(e)) throw conflito('Já existe um utilizador com esse e-mail.')
       throw e
@@ -142,7 +165,16 @@ export class ServicoSessao {
     if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desativar a sua conta.')
     const data = {}
     if (nome !== undefined) data.nome = nome
-    if (papel !== undefined) data.papel = papel
+    // a mudança de papel espera pelo despacho do Comandante (a conta fica com o papel que tem)
+    let pedirPapel = false
+    if (papel !== undefined && papel !== alvo.papel) {
+      if (alvo.aguardaDespacho) {
+        // conta ainda por despachar: muda o papel pedido
+        data.papel = papel
+        await this.bd.pedidoDespacho.updateMany({ where: { tipo: 'utilizador_novo', estado: 'pendente', utilizadorId: id }, data: { dados: { papel }, resumo: `${alvo.nome} (${alvo.email}) — ${PAPEIS[papel].nome}` } })
+      } else if (await this.#precisaDespacho(papel)) pedirPapel = true
+      else data.papel = papel
+    }
     if (ativo !== undefined) data.ativo = ativo
     if (unidadeId !== undefined) data.unidadeId = unidadeId
     if (senha) {
@@ -150,9 +182,11 @@ export class ServicoSessao {
       Object.assign(data, { senha: await this.cifra.cifrar(senha), deveMudar: true, falhas: 0, bloqueadoAte: null })
     }
     if (data.papel !== undefined || data.ativo !== undefined || data.senha) data.versaoToken = { increment: 1 }
+    if (alvo.aguardaDespacho && data.ativo === true) delete data.ativo // só o despacho a abre
     const g = await this.bd.utilizador.update({ where: { id }, data, include: COM_UNIDADE })
+    if (pedirPapel) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_papel', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${PAPEIS[alvo.papel]?.nome ?? alvo.papel} → ${PAPEIS[papel].nome}`, dados: { papel, anterior: alvo.papel } })
     await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha) })
-    return publico(g)
+    return { ...publico(g), ...(pedirPapel ? { aDespacho: ['utilizador_papel'] } : {}) }
   }
 
   /*

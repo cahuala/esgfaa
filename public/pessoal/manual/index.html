@@ -154,7 +154,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
   </div>
 </header>
 
-<section class="indice-impresso" aria-label="Índice"><h2>Índice</h2><ol><li><a href="#inicio"><b>Parte 1 · Entrar no sistema</b></a><ol><li><a href="#pes-entrar">Entrar e o painel</a></li><li><a href="#dois-passos">Verificação em dois passos</a></li></ol></li><li><a href="#pessoal"><b>Parte 2 · O trabalho da Repartição</b></a><ol><li><a href="#pes-fichas">Fichas de militares e civis</a></li><li><a href="#pes-pesquisa">Pesquisar, cruzar dados e relatórios</a></li><li><a href="#pes-propostas">Propostas: promoção, nomeação, curso…</a></li><li><a href="#pes-carreiras">Licenças, faltas, férias, antiguidade e reserva</a></li><li><a href="#pes-anexos">Documentos digitalizados</a></li><li><a href="#pes-organica">Orgânica, quadro orgânico e processos</a></li><li><a href="#pes-doc-ficha">Declarações, guias e fichas de uma pessoa</a></li><li><a href="#pes-documentos">Documentos colectivos e mapas estatísticos</a></li><li><a href="#pes-expediente">Expediente e mensagens</a></li></ol></li><li><a href="#administracao"><b>Parte 3 · Administração do sistema</b></a><ol><li><a href="#pes-utilizadores">Utilizadores e papéis</a></li><li><a href="#pes-assinaturas">Assinaturas dos documentos</a></li><li><a href="#pes-auditoria">Auditoria, portal e dados pessoais</a></li><li><a href="#pes-copias">Cópias de segurança</a></li></ol></li><li><a href="#problemas"><b>Parte 4 · Problemas frequentes</b></a></li></ol></section>
+<section class="indice-impresso" aria-label="Índice"><h2>Índice</h2><ol><li><a href="#inicio"><b>Parte 1 · Entrar no sistema</b></a><ol><li><a href="#pes-entrar">Entrar e o painel</a></li><li><a href="#dois-passos">Verificação em dois passos</a></li></ol></li><li><a href="#pessoal"><b>Parte 2 · O trabalho da Repartição</b></a><ol><li><a href="#pes-fichas">Fichas de militares e civis</a></li><li><a href="#pes-pesquisa">Pesquisar, cruzar dados e relatórios</a></li><li><a href="#pes-propostas">Propostas: promoção, nomeação, curso…</a></li><li><a href="#pes-carreiras">Licenças, faltas, férias, antiguidade e reserva</a></li><li><a href="#pes-anexos">Documentos digitalizados</a></li><li><a href="#pes-organica">Orgânica, quadro orgânico e processos</a></li><li><a href="#pes-doc-ficha">Declarações, guias e fichas de uma pessoa</a></li><li><a href="#pes-documentos">Documentos colectivos e mapas estatísticos</a></li><li><a href="#pes-expediente">Expediente e mensagens</a></li></ol></li><li><a href="#administracao"><b>Parte 3 · Administração do sistema</b></a><ol><li><a href="#pes-utilizadores">Utilizadores e papéis</a></li><li><a href="#pes-listas">Listas do sistema</a></li><li><a href="#pes-assinaturas">Assinaturas dos documentos</a></li><li><a href="#pes-auditoria">Auditoria, portal e dados pessoais</a></li><li><a href="#pes-copias">Cópias de segurança</a></li></ol></li><li><a href="#problemas"><b>Parte 4 · Problemas frequentes</b></a></li></ol></section>
 
 <div class="corpo">
   <aside class="indice" aria-label="Índice">
@@ -353,6 +353,13 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           <li>Ao <b>arquivar</b>, escreva onde fica o original: <b>armário</b> (ex.: A1), <b>prateleira</b> e <b>pasta / dossier</b> (ex.: Ofícios recebidos 2026). Daí em diante encontra-o pelo filtro <b>Armário</b>; <span class="botao">Reabrir</span> volta a pô-lo em curso.</li>
           <li>O <b>Livro de expediente</b> (administrador, Chefe de Pessoal e Quadros e Comandante) tem todos os documentos da Escola, filtráveis por datas, sentido e armário, e tira-se em Excel ou PDF.</li>
           <li><b>Secretária digital — despacho do Comandante:</b> a unidade que tem o documento carrega em <span class="botao">Submeter a despacho do Comandante</span> (com uma nota, se quiser). O documento aparece na <b>Secretária digital</b> do Comandante (com o contador no menu), os urgentes primeiro. Ele abre-o, lê os anexos, escolhe o despacho — Visto, Concordo, Autorizo, Não concordo, Indefiro, Tomei conhecimento, Informe / ver comigo, Arquive-se — escreve o texto e carrega em <span class="botao">Despachar</span>. O despacho fica no documento, à vista da unidade, e no registo de auditoria. Na mesma Secretária aparecem as <b>propostas por despachar</b> (ver <a href="#pes-propostas">Propostas</a>).</li>
+          <li><b>Pedidos a despacho do Comandante:</b> alguns casos só valem depois do despacho do Comandante, na <b>Secretária digital</b> (em <i>Pedidos a despacho</i>):
+            <ul>
+              <li><b>Docente novo</b> — o colaborador registado ou o efectivo juntado aos docentes fica «<i>A aguardar despacho</i>» na lista dos Docentes: ainda não conta como docente nem recebe conta no portal. Deferido, passa a docente; indeferido, o colaborador fica fora da Escola e o efectivo continua só nas funções que tinha.</li>
+              <li><b>Mudança de categoria</b> do docente e <b>saída da lista dos docentes</b> — o resto da ficha grava-se logo; a categoria (ou a saída) só muda quando for deferida.</li>
+              <li><b>Contas do sistema</b> com papel acima de utente (operador, consulta, chefe, administrador) — a conta não entra até ser deferida; indeferida, apaga-se. A <b>mudança de papel</b> também espera: a conta continua com o papel que tem. As contas de utente (só expediente e mensagens) não esperam, e a primeira conta de Comandante também não (senão ninguém despachava).</li>
+            </ul>
+            O Comandante carrega em <span class="botao">Despachar</span>, escreve o despacho e escolhe <span class="botao">Deferir</span> ou <span class="botao">Indeferir</span> (ao indeferir, o motivo é obrigatório). Quem gravou vê o aviso «Enviado a despacho do Comandante»; o estado aparece na lista dos Docentes e em Utilizadores, e fica na auditoria.</li>
         </ol>
         <p>As declarações e as guias emitidas entram sozinhas no expediente, como saídas já arquivadas.</p>
         <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-expediente-livro.jpg" alt="Livro de expediente"></button><figcaption>O livro de expediente: protocolo, assunto, origem, onde está, original em papel e sentido.</figcaption></figure>
@@ -382,6 +389,18 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           </tbody>
         </table></div>
         <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-utilizadores.jpg" alt="Utilizadores do sistema de Pessoal"></button><figcaption>Os utilizadores, com o papel e a unidade de cada um.</figcaption></figure>
+      </section>
+
+      <section class="tema" id="pes-listas">
+        <h3>Listas do sistema</h3>
+        <p>Em <b>Administração › Listas do sistema</b> o administrador muda as escolhas dos formulários sem precisar de programador: <i>categorias do docente</i> (carreira e especialmente contratado, como no Decreto Presidencial n.º 191/18), <i>províncias</i>, <i>motivos de saída da Escola</i>, <i>bancos</i>, <i>tipos de documento do processo</i>, <i>tipos de expediente</i> e <i>tipos de unidade</i>.</p>
+        <ul>
+          <li>Escolha a lista à esquerda; à direita mude os nomes, a ordem (setas), tire (×) ou acrescente, e carregue em <span class="botao">Guardar</span>. Os formulários passam logo a usar a lista nova, e o servidor só aceita o que está nela.</li>
+          <li>Nas listas de texto, o nome fica escrito na ficha: tirar uma entrada não muda as fichas que já a têm.</li>
+          <li>Nas listas com código (bancos e tipos), as entradas de origem <i class="fa fa-lock"></i> mudam de nome mas não se tiram, porque o sistema as usa.</li>
+          <li><span class="botao">Repor a de origem</span> volta à lista com que o sistema veio.</li>
+          <li>Postos, ramos, formas de prestação de serviço, situações e licenças vêm da lei e têm regras: não se mudam aqui.</li>
+        </ul>
       </section>
 
       <section class="tema" id="pes-assinaturas">

@@ -32,6 +32,7 @@ import Extracto from './paginas/Extracto'
 import Domiciliares from './paginas/Domiciliares'
 import Documentos from './paginas/Documentos'
 import Assinaturas from './paginas/Assinaturas'
+import ListasSistema from './paginas/ListasSistema'
 import TabelaSalarial from './paginas/TabelaSalarial'
 import TabelaSalarialCivis from './paginas/TabelaSalarialCivis'
 import PlanoFerias from './paginas/PlanoFerias'
@@ -131,6 +132,7 @@ export default function App() {
           <Route path="/extractos/:id" element={<Extracto />} />
           <Route path="/domiciliares" element={<Domiciliares />} />
           <Route path="/assinaturas" element={<Assinaturas />} />
+          <Route path="/listas" element={<ListasSistema />} />
           <Route path="/tabela-salarial" element={<TabelaSalarial />} />
           <Route path="/tabela-salarial-civis" element={<TabelaSalarialCivis />} />
           <Route path="/plano-ferias" element={<PlanoFerias />} />

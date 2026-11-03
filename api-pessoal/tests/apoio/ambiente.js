@@ -45,7 +45,29 @@ export async function criarAmbiente({ env = {}, enviar, enviarBi, hoje = '2026-1
     await sql((c) => c.query(`DROP SCHEMA IF EXISTS "${esquema}" CASCADE`))
     fs.rmSync(dados, { recursive: true, force: true })
   }
-  return { app, http, entrar, com, contentor, erros, fechar }
+  // o despacho do Comandante nos testes: uma conta de Comandante (a primeira não precisa de despacho) defere tudo
+  let comandante = null
+  async function deferirTudo() {
+    if (!comandante) {
+      const adm = com(await entrar())
+      const dados = { nome: 'Comandante dos Testes', email: 'comandante.testes@pessoal.ao', papel: 'comandante', senha: 'Comandante2026x' }
+      const r = await adm.post('/api/utilizadores').send(dados)
+      if (r.status !== 201) throw new Error(`Não criou o Comandante dos testes (${r.status}): ${r.body.erro}`)
+      const t = await entrar(dados.email, dados.senha)
+      const m = await com(t).post('/api/mudar-senha').send({ atual: dados.senha, nova: 'Comandante2027y' })
+      comandante = com(m.body.token)
+    }
+    const l = (await comandante.get('/api/pedidos-despacho?estado=pendente')).body
+    for (const x of l) await comandante.post(`/api/pedidos-despacho/${x.id}/decidir`).send({ decisao: 'deferido' })
+    return l.length
+  }
+  // cria uma conta do sistema e, se ficar à espera do despacho, defere-a
+  async function criarConta(cliente, dados) {
+    const r = await cliente.post('/api/utilizadores').send(dados).expect(201)
+    if (r.body.aDespacho) await deferirTudo()
+    return r
+  }
+  return { app, http, entrar, com, contentor, erros, fechar, deferirTudo, criarConta }
 }
 
 export const militar = (extra = {}) => ({

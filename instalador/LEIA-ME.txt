@@ -1,0 +1,48 @@
+﻿SISTEMA DE GESTÃO DE PESSOAL E QUADROS — ESCOLA SUPERIOR DE GUERRA
+Pendrive de instalação (não precisa de internet)
+
+COMO INSTALAR
+  Windows 10/11 ou Windows Server (64 bits):
+     duplo clique em  INSTALAR-WINDOWS.bat  e aceite o pedido do Windows («Sim»).
+  Linux x64 (Ubuntu 22.04+, Debian 12+, Rocky/Alma 9+):
+     duplo clique em  INSTALAR-LINUX.desktop  (ou em INSTALAR-LINUX.sh, «Executar no terminal»),
+     ou num terminal:  bash INSTALAR-LINUX.sh
+     Se o gestor de ficheiros não deixar, clique com o botão direito no .desktop › «Permitir executar».
+
+  O instalador pergunta só duas coisas: o endereço do sistema na rede da Escola (nome ou IP;
+  por omissão o IP deste computador) e o e-mail do administrador (por omissão pessoal@esgfaa.gov.ao).
+  Demora uns minutos. No fim mostra o endereço e a palavra-passe inicial do administrador.
+
+O QUE FICA INSTALADO
+  - O sistema (só na rede da Escola), a base de dados PostgreSQL (só nesta máquina) e o HTTPS (Caddy).
+  - Tudo arranca sozinho com o computador e volta a arrancar se falhar.
+  - Cópias de segurança cifradas todos os dias às 2h.
+  - O Quadro Orgânico da Escola (unidades e cargos). Não há pessoas nem dados de demonstração:
+    o pessoal regista-se (ou importa-se do Excel) depois de entrar.
+  - Os postos, ramos, formas de prestação de serviço e categorias dos docentes já vêm no sistema.
+  Windows: C:\ESG-Pessoal        Linux: /opt/esg-pessoal (programa), /var/lib/esg-pessoal (dados), /etc/esg-pessoal (configuração)
+
+DEPOIS DE INSTALAR
+  1. GUARDE NUM COFRE (fora do computador) uma cópia do ficheiro de configuração:
+       Windows: C:\ESG-Pessoal\config\pessoal.env     Linux: /etc/esg-pessoal/pessoal.env
+     Sem a DADOS_CHAVE os dados pessoais não se lêem; sem a COPIAS_CHAVE as cópias não abrem.
+  2. Entre em https://<endereço> com o e-mail do administrador e a palavra-passe inicial.
+     Na primeira entrada o sistema pede a verificação em dois passos (aplicação no telemóvel,
+     p. ex. Google Authenticator ou Microsoft Authenticator).
+  3. Nos outros computadores da Repartição, instale o certificado esg-pessoal-raiz.crt
+     (fica na pasta «registos» deste pendrive) em «Autoridades de certificação de raiz fidedignas»,
+     para o navegador não avisar.
+  4. Em Configurações (menu Administração › Listas do sistema) ajuste as listas: categorias do docente,
+     províncias, motivos de saída, bancos, tipos de documento, de expediente e de unidade.
+
+SE A INSTALAÇÃO FALHAR
+  Abre-se o ficheiro  registos\ERRO-INSTALACAO-<data>.txt  (neste pendrive) com o passo que falhou,
+  as causas prováveis e o que fazer. O registo completo está em  registos\instalacao-<data>.log.
+  Depois de corrigir, corra outra vez o instalador: continua e não apaga dados.
+
+ACTUALIZAR
+  Um pendrive com uma versão nova do sistema instala-se da mesma forma: o instalador vê que já está
+  instalado e só actualiza o programa (os dados, as chaves e a configuração ficam).
+  Antes, convém fazer uma cópia de segurança (é automática todos os dias às 2h).
+
+O pendrive tem o Quadro Orgânico da Escola: guarde-o em lugar seguro.

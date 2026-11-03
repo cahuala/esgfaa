@@ -41,7 +41,8 @@ export class ServicoSincronizacao {
 
   #conteudo(p, contaId, fotoEnviada = '') {
     // o militar que é funcionário e também docente ou aluno tem conta no portal (aluno, se estiver num curso)
-    const vs = [p.vinculo, ...(p.outrosVinculos ?? [])]
+    // o docente novo à espera do despacho do Comandante ainda não conta
+    const vs = [p.vinculo, ...(p.outrosVinculos ?? [])].filter((v) => !(v === 'docente' && p.docentePendente))
     const ativo = p.ativo && vs.some((v) => ['docente', 'estudante'].includes(v)) && Boolean(p.email)
     const foto = ativo ? this.#foto(p, fotoEnviada) : undefined
     return {

@@ -24,6 +24,8 @@ import { ServicoMensagens } from './aplicacao/mensagens.js'
 import { Ficheiros } from './infraestrutura/ficheiros.js'
 import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { ServicoPonto } from './aplicacao/ponto.js'
+import { ServicoListas } from './aplicacao/listas.js'
+import { ServicoDespachos } from './aplicacao/despachos.js'
 
 // liga as peças: base de dados, segurança e serviços (os testes passam outro esquema, relógio e envio)
 export function criarContentor(config, { esquema = null, agora, enviar, enviarBi } = {}) {
@@ -35,14 +37,20 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const auditoria = new ServicoAuditoria({ bd })
   const doisFatores = new ServicoDoisFatores({ bd, auditoria, papeis: config.doisFatoresPapeis, ...relogio })
   const tabelaSalarial = new ServicoTabelaSalarial({ bd, auditoria })
-  const pessoas = new ServicoPessoas({ bd, auditoria, config, tabelaSalarial, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
+  // listas do sistema que a Repartição muda em Configurações (categorias do docente, províncias, tipos…)
+  const listas = new ServicoListas({ bd, auditoria })
+  const tempoReal = new TempoReal()
+  // o que só vale depois do despacho do Comandante (docentes, contas e papéis)
+  const despachos = new ServicoDespachos({ bd, auditoria, tempoReal, ...relogio })
+  const pessoas = new ServicoPessoas({ bd, auditoria, config, tabelaSalarial, listas, despachos, ...(enviarBi ? { enviar: enviarBi } : {}), ...relogio })
   const ficheiros = new Ficheiros(config.pastaFicheiros)
   const ausencias = new ServicoAusencias({ bd, auditoria, ...relogio })
-  const tempoReal = new TempoReal()
   const servicos = {
     auditoria,
-    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), doisFatores, ...relogio }),
+    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), doisFatores, despachos, ...relogio }),
+    despachos,
     doisFatores,
+    listas,
     documentosEmitidos: new ServicoDocumentosEmitidos({ bd, auditoria, ...relogio }),
     pessoas,
     tabelaSalarial,
@@ -51,17 +59,19 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     licencas: new ServicoLicencas({ bd, auditoria, ...relogio }),
     ausencias,
     ponto: new ServicoPonto({ bd, auditoria, ausencias, tempoReal, ...relogio }),
-    organica: new ServicoOrganica({ bd, auditoria }),
+    organica: new ServicoOrganica({ bd, auditoria, listas }),
     painel: new ServicoPainel({ bd, pessoas, ...relogio }),
     tempoReal,
     importacao: new ServicoImportacao({ bd, pessoas, auditoria }),
-    processos: new ServicoProcessos({ bd, auditoria, ficheiros }),
+    processos: new ServicoProcessos({ bd, auditoria, ficheiros, listas }),
     extractos: new ServicoExtractos({ bd, auditoria, ficheiros, ...relogio }),
-    expediente: new ServicoExpediente({ bd, auditoria, ficheiros, ...relogio }),
+    expediente: new ServicoExpediente({ bd, auditoria, ficheiros, listas, ...relogio }),
     mensagens: new ServicoMensagens({ bd, ficheiros, ...relogio }),
     privacidade: new ServicoPrivacidade({ bd, pessoas, auditoria, ...relogio }),
     sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, ...(enviar ? { enviar } : {}), ...relogio }),
   }
+  despachos.pessoas = pessoas
+  despachos.sessao = servicos.sessao
   // um docente ou estudante alterado vai para o portal daí a poucos segundos (não espera pelo minuto)
   if (!config.teste) pessoas.aoMudarPortal = () => servicos.sincronizacao.agendar()
   return { config, bd, base, cifraDados, servicos, fechar: () => base.$disconnect() }

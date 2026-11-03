@@ -34,8 +34,13 @@ export function dadosEmFalta(p, docs = []) {
   (estante > prateleira > posição), o estado, os documentos digitalizados e o que falta actualizar.
 */
 export class ServicoProcessos {
-  constructor({ bd, auditoria, ficheiros }) {
-    Object.assign(this, { bd, auditoria, ficheiros })
+  constructor({ bd, auditoria, ficheiros, listas = null }) {
+    Object.assign(this, { bd, auditoria, ficheiros, listas })
+  }
+
+  // os tipos de documento em uso (Configurações › Listas do sistema)
+  async #tipos() {
+    return this.listas ? (await this.listas.todas()).tiposDocumento : TIPOS_DOCUMENTO
   }
 
   async catalogo(u, { incompletos } = {}) {
@@ -81,17 +86,19 @@ export class ServicoProcessos {
 
   async documentos(u, pessoaId) {
     exigir(u, 'ver')
-    return (await this.bd.documentoPessoal.findMany({ where: { pessoaId }, orderBy: [{ data: 'desc' }, { id: 'desc' }] })).map((d) => ({ ...d, data: dia(d.data), tipoNome: TIPOS_DOCUMENTO[d.tipo] ?? d.tipo }))
+    const tipos = await this.#tipos()
+    return (await this.bd.documentoPessoal.findMany({ where: { pessoaId }, orderBy: [{ data: 'desc' }, { id: 'desc' }] })).map((d) => ({ ...d, data: dia(d.data), tipoNome: tipos[d.tipo] ?? d.tipo }))
   }
 
   async adicionarDocumento(u, pessoaId, { tipo, titulo, data }, ficheiro) {
     exigir(u, 'editar')
-    if (!TIPOS_DOCUMENTO[tipo]) throw invalido('Tipo de documento desconhecido.', 'tipo')
+    const tipos = await this.#tipos()
+    if (!tipos[tipo]) throw invalido('Tipo de documento desconhecido.', 'tipo')
     if (!(await this.bd.pessoa.count({ where: { id: pessoaId } }))) throw naoEncontrado('Ficha não encontrada.')
     const f = await this.ficheiros.guardar(ficheiro)
-    const d = await this.bd.documentoPessoal.create({ data: { pessoaId, tipo, titulo: titulo || TIPOS_DOCUMENTO[tipo], data: data ? new Date(data) : null, ...f, criadoPor: u.email } })
+    const d = await this.bd.documentoPessoal.create({ data: { pessoaId, tipo, titulo: titulo || tipos[tipo], data: data ? new Date(data) : null, ...f, criadoPor: u.email } })
     await this.auditoria.registar(u, 'anexar_documento', `${d.titulo} (ficha #${pessoaId})`)
-    return { ...d, data: dia(d.data), tipoNome: TIPOS_DOCUMENTO[d.tipo] }
+    return { ...d, data: dia(d.data), tipoNome: tipos[d.tipo] }
   }
 
   async ficheiro(u, id) {

@@ -9,6 +9,7 @@ import { useArvore } from '../arvore'
 import { Cabecalho, Campo, Carregando, Escolha, EscolhaCategoriaDocente, NaoEncontrado } from '../componentes/Ui'
 import { EscolhaSituacao } from '../componentes/Situacao'
 import { BANCOS } from '../bancos'
+import { textoDespacho } from '../despacho'
 
 const VAZIA = {
   tipo: 'militar', vinculo: 'funcionario', nome: '', nomeGuerra: '', nip: '', numeroAgente: '', bi: '', dataNascimento: '', genero: '', estadoCivil: '', naturalidade: '', provincia: '', nacionalidade: 'Angolana', pai: '', mae: '',
@@ -149,7 +150,7 @@ export default function FormularioFicha() {
         fd.append('foto', await reduzirFoto(foto))
         await api(`/pessoas/${r.id}/foto`, { metodo: 'PUT', formulario: fd }).catch((x) => avisar(`Ficha guardada, mas a fotografia não: ${x.message}`, 'erro'))
       }
-      avisar(id ? 'Ficha guardada.' : 'Ficha criada.')
+      avisar(`${id ? 'Ficha guardada.' : 'Ficha criada.'} ${textoDespacho(r)}`.trim())
       navegar(`/pessoas/${r.id}`)
     } catch (x) {
       setErro({ texto: x.message, campo: x.campo })
@@ -331,7 +332,7 @@ export default function FormularioFicha() {
         <Familiares lista={d.agregado ?? []} aoMudar={(agregado) => setD({ ...d, agregado })} />
         <Seccao titulo="Dados bancários e vencimento" icone="fa-university">
           <div className="row">
-            <Campo rotulo="Banco" col="col-md-3">{txt('banco', { list: 'bancos-angola', placeholder: 'BAI, BPC, BFA…' })}<datalist id="bancos-angola">{Object.entries(BANCOS).map(([k, b]) => <option key={k} value={k}>{b.nome}</option>)}</datalist></Campo>
+            <Campo rotulo="Banco" col="col-md-3">{txt('banco', { list: 'bancos-angola', placeholder: 'BAI, BPC, BFA…' })}<datalist id="bancos-angola">{Object.entries(ref.bancos ?? BANCOS).map(([k, b]) => <option key={k} value={k}>{b.nome ?? b}</option>)}</datalist></Campo>
             <Campo rotulo="IBAN" col="col-md-5" ajuda="Fica cifrado.">{txt('iban')}</Campo>
             <Campo rotulo="Número de conta" col="col-md-4" ajuda="Fica cifrado.">{txt('numeroConta')}</Campo>
             <Campo rotulo="Vencimento mensal (Kz)" col="col-md-4" ajuda={militar ? 'Vazio = as declarações usam a tabela salarial do posto. Fica cifrado.' : 'Vazio = as declarações usam a tabela salarial dos civis. Fica cifrado.'}>{txt('vencimento', { type: 'number', step: '0.01', min: 0 })}</Campo>

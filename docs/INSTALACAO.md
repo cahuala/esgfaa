@@ -68,6 +68,26 @@ docker compose -f deploy/docker-compose.pessoal.yml --env-file deploy/pessoal.en
 - Primeira entrada: muda a palavra-passe inicial e liga a verificação em dois passos (obrigatória para quem vê fichas).
 - **Quadro orgânico:** em *Orgânica → Carregar o quadro orgânico*, escolha o Excel do quadro no formato do modelo (o ficheiro «QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx», entregue à parte: é interno e não está no repositório). O sistema simula primeiro e só grava se nenhuma linha tiver erro. Depois, as fichas do pessoal entram por *Importar* (Excel).
 
+### 5.1 Instalação a partir do pendrive (sem internet, Windows ou Linux)
+
+Para um servidor da Escola sem Docker nem internet: o pendrive leva o Node.js, o PostgreSQL, o Caddy (HTTPS)
+e o sistema já construído, mais o Quadro Orgânico real (unidades e cargos). Não leva pessoas nem dados de demonstração.
+
+1. Num computador com internet, na pasta do projecto:
+   ```bash
+   node instalador/preparar-pendrive.mjs --destino /Volumes/PENDRIVE
+   ```
+   (descarrega os componentes uma vez para `instalador/.cache`, confere os resumos SHA, constrói e escreve o
+   `MANIFESTO.txt`; o Quadro Orgânico vem de `docs/QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx`, ou `--organica <ficheiro>`).
+2. No servidor: duplo clique em **`INSTALAR-WINDOWS.bat`** (Windows 10/11, Server 2016+, 64 bits) ou em
+   **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pergunta o endereço e o e-mail
+   do administrador; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
+   a firewall (443 e 8085) e as cópias diárias. No fim mostra a palavra-passe inicial.
+3. Se falhar: `registos/ERRO-INSTALACAO-<data>.txt` no pendrive (passo, causas prováveis, o que fazer e o fim do registo).
+   Corrigido, corre-se outra vez: continua e não apaga dados.
+4. **Guarde num cofre** o `pessoal.env` (Windows `C:\ESG-Pessoal\config`, Linux `/etc/esg-pessoal`).
+5. Actualizar: um pendrive novo instala-se da mesma forma (detecta a instalação e só troca o programa e aplica as migrações).
+
 ## 6. Cópias de segurança
 
 São **automáticas**: cada docker-compose tem o serviço `copias`, que arranca com o resto e faz todos os dias às 2h (hora de Luanda) uma cópia **cifrada** da base de dados e dos ficheiros carregados desse servidor. Basta pôr a `COPIAS_CHAVE` no `deploy/*.env` (sem ela o sistema não arranca).

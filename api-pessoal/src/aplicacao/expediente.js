@@ -18,8 +18,13 @@ const FISICO = { nao_aplica: 'Sem original físico', a_enviar: 'Original por ent
   chegou (o físico segue depois do digital).
 */
 export class ServicoExpediente {
-  constructor({ bd, auditoria, ficheiros, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, ficheiros, agora })
+  constructor({ bd, auditoria, ficheiros, listas = null, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, ficheiros, listas, agora })
+  }
+
+  // os tipos de expediente em uso (Configurações › Listas do sistema)
+  async #tipos() {
+    return this.listas ? (await this.listas.todas()).tiposExpediente : TIPOS_EXPEDIENTE
   }
 
   #unidade(u) {
@@ -33,13 +38,13 @@ export class ServicoExpediente {
     return x.origemUnidadeId === u.unidadeId || x.movimentos.some((m) => m.paraUnidadeId === u.unidadeId || m.deUnidadeId === u.unidadeId)
   }
 
-  #resumo(x, u, unidades) {
+  #resumo(x, u, unidades, tipos = TIPOS_EXPEDIENTE) {
     const ultimo = x.movimentos.at(-1)
     const meus = x.movimentos.filter((m) => m.paraUnidadeId === u.unidadeId)
     const porReceber = meus.some((m) => !m.recebidoEm)
     const nome = (id) => unidades.get(id) ?? (id ? `#${id}` : '')
     return {
-      id: x.id, protocolo: x.protocolo, sentido: x.sentido, tipo: x.tipo, tipoNome: TIPOS_EXPEDIENTE[x.tipo] ?? x.tipo, numero: x.numero, assunto: x.assunto, classificacao: x.classificacao,
+      id: x.id, protocolo: x.protocolo, sentido: x.sentido, tipo: x.tipo, tipoNome: tipos[x.tipo] ?? x.tipo, numero: x.numero, assunto: x.assunto, classificacao: x.classificacao,
       estado: x.estado, armario: x.armario, prateleira: x.prateleira, pasta: x.pasta, arquivadoEm: x.arquivadoEm, criadoEm: x.criadoEm, prazo: x.prazo?.toISOString().slice(0, 10) ?? null, temFisico: x.temFisico, anexos: x.anexos?.length ?? x._count?.anexos ?? 0,
       origem: x.entidadeExterna || nome(x.origemUnidadeId), localAtual: ultimo ? nome(ultimo.paraUnidadeId) : nome(x.origemUnidadeId),
       porReceber, fisicoPendente: x.movimentos.some((m) => m.paraUnidadeId === u.unidadeId && ['a_enviar', 'entregue'].includes(m.fisico)),
@@ -65,7 +70,8 @@ export class ServicoExpediente {
     if (armario) where.armario = armario
     const l = await this.bd.expediente.findMany({ where, include: { movimentos: { orderBy: { id: 'asc' } }, _count: { select: { anexos: true } } }, orderBy: { criadoEm: 'desc' }, take: 3000 })
     const unidades = await this.#unidades()
-    const r = l.map((x) => this.#resumo(x, u, unidades))
+    const tipos = await this.#tipos()
+    const r = l.map((x) => this.#resumo(x, u, unidades, tipos))
     if (caixa === 'por_receber') return r.filter((x) => x.porReceber || x.fisicoPendente)
     if (caixa === 'na_unidade') return r.filter((x) => x.estado === 'em_curso' && x.naMinhaUnidade && !x.porReceber)
     if (caixa === 'enviados') return r.filter((x) => x.enviadoPorMim)
@@ -99,7 +105,8 @@ export class ServicoExpediente {
     exigir(u, 'despachar')
     const l = await this.bd.expediente.findMany({ where: { despacho: { not: Prisma.DbNull } }, include: { movimentos: { orderBy: { id: 'asc' } }, _count: { select: { anexos: true } } }, orderBy: { criadoEm: 'desc' }, take: 500 })
     const unidades = await this.#unidades()
-    const linha = (x) => ({ ...this.#resumo(x, u, unidades), despacho: { ...x.despacho, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null, pedidoUnidade: unidades.get(x.despacho.pedidoUnidadeId) ?? '' } })
+    const tipos = await this.#tipos()
+    const linha = (x) => ({ ...this.#resumo(x, u, unidades, tipos), despacho: { ...x.despacho, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null, pedidoUnidade: unidades.get(x.despacho.pedidoUnidadeId) ?? '' } })
     const pendentes = l.filter((x) => x.despacho.estado === 'pendente').map(linha)
       .sort((a, b) => Number(b.classificacao === 'urgente') - Number(a.classificacao === 'urgente') || String(a.despacho.pedidoEm).localeCompare(String(b.despacho.pedidoEm)))
     const despachados = l.filter((x) => x.despacho.estado === 'despachado').map(linha)
@@ -124,10 +131,11 @@ export class ServicoExpediente {
     if (!x) throw naoEncontrado('Documento não encontrado.')
     if (!this.#podeVer(u, x)) throw semPermissao('Este documento não passou pela sua unidade.')
     const unidades = await this.#unidades()
+    const tipos = await this.#tipos()
     const ids = [...new Set([x.criadoPorId, ...x.movimentos.flatMap((m) => [m.enviadoPorId, m.recebidoPorId]), ...x.anexos.map((a) => a.criadoPorId)].filter(Boolean))]
     const pessoas = new Map((await this.bd.utilizador.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true } })).map((p) => [p.id, p.nome]))
     return {
-      ...this.#resumo(x, u, unidades), resumo: x.resumo, entidadeExterna: x.entidadeExterna,
+      ...this.#resumo(x, u, unidades, tipos), resumo: x.resumo, entidadeExterna: x.entidadeExterna,
       despacho: x.despacho ? { ...x.despacho, decisaoNome: DECISOES_DESPACHO[x.despacho.decisao] ?? null, pedidoUnidade: unidades.get(x.despacho.pedidoUnidadeId) ?? '' } : null, criadoPor: pessoas.get(x.criadoPorId) ?? '', origemUnidadeId: x.origemUnidadeId,
       anexos: x.anexos.map((a) => ({ id: a.id, nome: a.nomeOriginal, mime: a.mime, tamanho: a.tamanho, criadoEm: a.criadoEm, por: pessoas.get(a.criadoPorId) ?? '' })),
       movimentos: x.movimentos.map((m) => ({ ...m, de: unidades.get(m.deUnidadeId) ?? (x.entidadeExterna || ''), para: unidades.get(m.paraUnidadeId) ?? '', enviadoPor: pessoas.get(m.enviadoPorId) ?? '', recebidoPor: pessoas.get(m.recebidoPorId) ?? '', fisicoNome: FISICO[m.fisico] })),

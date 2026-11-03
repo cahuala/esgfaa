@@ -40,13 +40,13 @@ describe('Sistema de Gestão de Pessoal', () => {
 
   it('sem sessão não dá nada; palavra-passe errada bloqueia a conta à 5.ª tentativa', async () => {
     assert.equal((await amb.http().get('/api/pessoas')).status, 401)
-    await adm.post('/api/utilizadores').send({ nome: 'Operador Teste', email: 'joao.op@pessoal.ao', papel: 'operador', senha: 'Operador2026x' }).expect(201)
+    await amb.criarConta(adm, { nome: 'Operador Teste', email: 'joao.op@pessoal.ao', papel: 'operador', senha: 'Operador2026x' })
     for (let i = 0; i < 5; i++) assert.equal((await amb.http().post('/api/entrar').send({ email: 'joao.op@pessoal.ao', senha: 'errada' })).status, 401)
     assert.equal((await amb.http().post('/api/entrar').send({ email: 'joao.op@pessoal.ao', senha: 'Operador2026x' })).status, 423)
   })
 
   it('o utilizador novo tem de mudar a palavra-passe; a consulta não edita', async () => {
-    await adm.post('/api/utilizadores').send({ nome: 'Consulta Teste', email: 'ver@pessoal.ao', papel: 'consulta', senha: 'Consulta2026x' }).expect(201)
+    await amb.criarConta(adm, { nome: 'Consulta Teste', email: 'ver@pessoal.ao', papel: 'consulta', senha: 'Consulta2026x' })
     const t = await amb.entrar('ver@pessoal.ao', 'Consulta2026x')
     assert.equal((await amb.com(t).get('/api/pessoas')).body.codigo, 'mudar_senha')
     const m = await amb.com(t).post('/api/mudar-senha').send({ atual: 'Consulta2026x', nova: 'NovaSenha2026y' }).expect(200)
@@ -57,7 +57,7 @@ describe('Sistema de Gestão de Pessoal', () => {
 
   it('o Comandante e o Chefe de Pessoal veem tudo (utilizadores, auditoria, livro de expediente); o Comandante não altera', async () => {
     const conta = async (email, papel) => {
-      await adm.post('/api/utilizadores').send({ nome: `${papel} Teste`, email, papel, senha: 'Inicial2026x' }).expect(201)
+      await amb.criarConta(adm, { nome: `${papel} Teste`, email, papel, senha: 'Inicial2026x' })
       const t = await amb.entrar(email, 'Inicial2026x')
       return amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' }).expect(200)).body.token)
     }
@@ -93,7 +93,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     // um militar não entra no mapa dos civis
     const mil = (await adm.post('/api/pessoas').send(militar())).body
     assert.equal((await adm.put('/api/faltas-civis').send({ pessoaId: mil.id, data: '2027-03-15', falta: true })).status, 400)
-    await adm.post('/api/utilizadores').send({ nome: 'So Consulta Faltas', email: 'faltas.ver@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' }).expect(201)
+    await amb.criarConta(adm, { nome: 'So Consulta Faltas', email: 'faltas.ver@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })
     const t = await amb.entrar('faltas.ver@pessoal.ao', 'Inicial2026x')
     const v = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' })).body.token)
     assert.equal((await v.get('/api/faltas-civis?mes=2027-03')).status, 200)
@@ -317,6 +317,7 @@ describe('Envio para o Portal Académico', () => {
       const adm = amb.com(await amb.entrar())
       const d = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0100', vinculo: 'docente', email: 'kiala@esgfaa.gov.ao' })).expect(201)).body
       await adm.post('/api/pessoas').send(militar({ nip: 'NIP0101', email: 'func@esgfaa.gov.ao' })).expect(201) // funcionário: não vai
+      await amb.deferirTudo() // o docente novo só vai para o portal depois do despacho do Comandante
       const r = await amb.contentor.servicos.sincronizacao.enviarPendentes()
       assert.deepEqual([r.enviados, r.erros], [1, 0])
       const { url, op } = pedidos[0]
@@ -345,6 +346,7 @@ describe('Envio para o Portal Académico', () => {
       // estudante militar de outra unidade (fora da orgânica da ESG) e docente civil colaborador, sem unidade
       const alunoFora = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0102', vinculo: 'estudante', email: 'aluno.fora@esgfaa.gov.ao', unidadeOrigem: 'Regimento de Infantaria n.º 10' })).expect(201)).body
       const civilColab = await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', nome: 'Maria da Conceição Neto', email: 'civil.colab@esgfaa.gov.ao', tipoDocente: 'colaborador', funcaoActual: 'Professora na Universidade Agostinho Neto' }).expect(201)
+      await amb.deferirTudo()
       await amb.contentor.servicos.sincronizacao.enviarPendentes()
       const fora = JSON.parse(pedidos.at(-1).op.body).pessoas
       const aluno = fora.find((p) => p.email === 'aluno.fora@esgfaa.gov.ao')

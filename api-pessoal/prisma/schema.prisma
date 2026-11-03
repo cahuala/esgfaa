@@ -24,6 +24,8 @@ model Utilizador {
   bloqueadoAte  DateTime?      @map("bloqueado_ate") @db.Timestamptz(3)
   ultimoAcesso  DateTime?      @map("ultimo_acesso") @db.Timestamptz(3)
   deveMudar     Boolean        @default(true) @map("deve_mudar")
+  // conta nova (com papel acima de utente) à espera do despacho do Comandante: ainda não entra
+  aguardaDespacho Boolean      @default(false) @map("aguarda_despacho")
   // quando tomou conhecimento do aviso de privacidade (Lei n.º 22/11)
   privacidadeEm DateTime?      @map("privacidade_em") @db.Timestamptz(3)
   criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
@@ -32,6 +34,7 @@ model Utilizador {
   participacoes Participante[]
   mensagens     Mensagem[]
   doisFatores   DoisFatores?
+  pedidosDespacho PedidoDespacho[]
 
   @@map("utilizadores")
 }
@@ -182,6 +185,8 @@ model Pessoa {
   dataAdmissao         DateTime? @map("data_admissao") @db.Date
   dataCategoria        DateTime? @map("data_categoria") @db.Date
   ativo                Boolean   @default(true) // continua na Escola
+  // docente novo à espera do despacho do Comandante: ainda não conta como docente nem vai para o portal
+  docentePendente      Boolean   @default(false) @map("docente_pendente")
   // histórico dos efectivos da Escola: quando entrou e, se já saiu, quando, porquê e para onde
   dataEntradaEscola    DateTime? @map("data_entrada_escola") @db.Date
   dataSaidaEscola      DateTime? @map("data_saida_escola") @db.Date
@@ -211,6 +216,7 @@ model Pessoa {
   itensExtracto      ItemExtracto[]
   utilizador         Utilizador?
   pedidosDados       PedidoDados[]
+  pedidosDespacho    PedidoDespacho[]
 
   @@index([tipo, ativo])
   @@map("pessoas")
@@ -705,4 +711,26 @@ model DigitalPonto {
 
   @@id([pessoaId, aparelhoId, dedo])
   @@map("digitais_ponto")
+}
+
+// casos que só valem depois do despacho do Comandante (Secretária digital): docente novo, mudança de categoria,
+// saída da lista dos docentes, contas do sistema e mudanças de papel. «dados» é o que se aplica ao deferir.
+model PedidoDespacho {
+  id           Int         @id @default(autoincrement())
+  tipo         String // docente_novo | docente_categoria | docente_saida | utilizador_novo | utilizador_papel
+  estado       String      @default("pendente") // pendente | deferido | indeferido | anulado
+  pessoaId     Int?        @map("pessoa_id")
+  utilizadorId Int?        @map("utilizador_id")
+  dados        Json        @default("{}")
+  resumo       String
+  pedidoPor    String      @map("pedido_por")
+  pedidoEm     DateTime    @default(now()) @map("pedido_em") @db.Timestamptz(3)
+  decididoPor  String?     @map("decidido_por")
+  decididoEm   DateTime?   @map("decidido_em") @db.Timestamptz(3)
+  despacho     String      @default("")
+  pessoa       Pessoa?     @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  utilizador   Utilizador? @relation(fields: [utilizadorId], references: [id], onDelete: SetNull)
+
+  @@index([estado])
+  @@map("pedidos_despacho")
 }

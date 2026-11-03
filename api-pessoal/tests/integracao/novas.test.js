@@ -330,7 +330,7 @@ describe('Expediente, mensagens e contas de utente', () => {
     const sub = (await rui.post(`/api/expediente/${d.id}/despacho`).send({ nota: 'Para autorização da saída' }).expect(200)).body
     assert.equal(sub.despacho.estado, 'pendente')
     assert.equal((await rui.post(`/api/expediente/${d.id}/despacho`).send({})).status, 400) // já está à espera
-    await adm.post('/api/utilizadores').send({ nome: 'Comandante Teste', email: 'cmd.desp@pessoal.ao', papel: 'comandante', senha: 'Inicial2026x' }).expect(201)
+    await amb.criarConta(adm, { nome: 'Comandante Teste', email: 'cmd.desp@pessoal.ao', papel: 'comandante', senha: 'Inicial2026x' })
     const t = await amb.entrar('cmd.desp@pessoal.ao', 'Inicial2026x')
     const cmd = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Inicial2026x', nova: 'Segura2026xyz' }).expect(200)).body.token)
     assert.equal((await cmd.get('/api/avisos')).body.porDespachar, 1)

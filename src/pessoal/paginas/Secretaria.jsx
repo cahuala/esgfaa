@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDados } from '../useDados'
 import { Cabecalho, Carregando, Erro, Painel } from '../componentes/Ui'
 import { dataHoraPt } from '../formatar'
+import PedidosDespacho from '../componentes/PedidosDespacho'
 
 const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light text-dark border' }
 
@@ -9,7 +10,8 @@ const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light t
   Secretária digital do Comandante: os documentos do Expediente que as unidades lhe submetem a despacho
   (os urgentes primeiro, depois do mais antigo). Abre-se o documento (com os anexos) e despacha-se lá:
   Visto, Concordo, Autorizo, Indefiro… com o texto. Também as propostas (promoções, nomeações…) antes de seguirem para o
-  escalão superior: abre-se a proposta e despacha-se «Autorizo o envio» ou «Devolvo para correção». Em baixo, os últimos despachados.
+  escalão superior: abre-se a proposta e despacha-se «Autorizo o envio» ou «Devolvo para correção». E os pedidos que só valem
+  com o seu despacho: docentes novos, categorias, saídas de docentes, contas e papéis do sistema. Em baixo, os últimos despachados.
 */
 function Secretaria() {
   const navegar = useNavigate()
@@ -38,6 +40,7 @@ function Secretaria() {
           {!dados.pendentes.length && <div className="list-group-item text-muted">Não há documentos à espera de despacho.</div>}
         </div>
       </Painel>
+      <PedidosDespacho />
       <Painel titulo={`Propostas por despachar (${dados.propostas.pendentes.length})`} icone="fa-file-signature" corpo={false}>
         <div className="list-group list-group-flush">
           {dados.propostas.pendentes.map((x) => (

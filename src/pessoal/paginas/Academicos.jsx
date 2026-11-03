@@ -9,6 +9,7 @@ import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, EscolhaCategoriaDocente, Modal, Painel } from '../componentes/Ui'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
+import { textoDespacho } from '../despacho'
 
 const TEXTOS = {
   estudante: { titulo: 'Estudantes', um: 'estudante', icone: 'fa-user-graduate', sub: 'quem frequenta os cursos da Escola — também os que vêm de outras unidades' },
@@ -101,7 +102,7 @@ export default function Academicos({ tipo }) {
     { chave: 'genero', titulo: 'Género', valor: (p) => (p.genero === 'F' ? 'Feminino' : p.genero === 'M' ? 'Masculino' : ''), oculta: true },
     { chave: 'idade', titulo: 'Idade', valor: (p) => p.idade ?? '', alinhar: 'end', oculta: true },
     { chave: 'habilitacao', titulo: 'Habilitações', valor: (p) => ref.habilitacoes?.[p.habilitacao] ?? p.habilitacao ?? '', oculta: true },
-    { chave: 'portal', titulo: 'Portal', valor: (p) => nomeEstado[estadoPortal(p.portal)], mostrar: (p) => <EstadoPortal e={p.portal} ligado={ligado} /> },
+    { chave: 'portal', titulo: 'Portal', valor: (p) => (p.docentePendente ? 'A aguardar despacho' : nomeEstado[estadoPortal(p.portal)]), mostrar: (p) => (p.docentePendente ? <span className="badge bg-warning text-dark" title="Só conta como docente (e só tem conta no portal) depois do despacho do Comandante"><i className="fa fa-stamp me-1" />A aguardar despacho</span> : <EstadoPortal e={p.portal} ligado={ligado} />) },
   ]
   const porEntregar = lista.filter((p) => comConta(p) && !p.portal.conta.ultimoAcesso)
 
@@ -137,7 +138,7 @@ export default function Academicos({ tipo }) {
           )}
         </div>
       </Painel>
-      {novo && <RegistoRapido tipo={tipo} aoFechar={() => setNovo(false)} aoGuardar={(p) => { setNovo(false); avisar(`${p.nome} está na lista dos ${t.titulo.toLowerCase()}. ${ligado ? 'A conta do portal cria-se dentro de momentos; depois imprima a ficha de acesso.' : ''}`); recarregar() }} />}
+      {novo && <RegistoRapido tipo={tipo} aoFechar={() => setNovo(false)} aoGuardar={(p) => { setNovo(false); avisar(textoDespacho(p) ? `${p.nome}: ${textoDespacho(p)}` : `${p.nome} está na lista dos ${t.titulo.toLowerCase()}. ${ligado ? 'A conta do portal cria-se dentro de momentos; depois imprima a ficha de acesso.' : ''}`); recarregar() }} />}
     </>
   )
 }

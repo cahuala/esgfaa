@@ -16,7 +16,8 @@ describe('Pessoal: avisos instantâneos às páginas abertas', () => {
     const ev = await abrirEventos(amb.app, '/api/eventos', token)
     try {
       assert.equal(ev.estado, 200)
-      await amb.com(token).post('/api/utilizadores').send({ nome: 'Operador Teste', email: 'op.tempo@pessoal.ao', papel: 'operador', senha: 'Operador2026x' }).expect(201)
+      // uma conta de utente (não espera pelo despacho do Comandante): uma só gravação
+      await amb.com(token).post('/api/utilizadores').send({ nome: 'Utente Teste', email: 'op.tempo@pessoal.ao', papel: 'utente', senha: 'Operador2026x' }).expect(201)
       assert.equal((await ev.esperar('atualizar')).length, 1)
     } finally {
       ev.fechar()

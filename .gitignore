@@ -52,3 +52,7 @@ docs/~$*
 
 # contas do servidor de testes (deploy/teste-contas.mjs)
 CONTAS-SERVIDOR-TESTE.md
+
+# instalador em pendrive: componentes descarregados e a pasta pronta (leva o Quadro Orgânico real)
+instalador/.cache/
+instalador/pendrive/

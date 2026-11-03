@@ -81,7 +81,12 @@ export function rotas({ servicos: s, config }) {
   r.post('/eu/pedidos-dados', validar({ body: z.object({ tipo: z.string().max(20), texto: z.string().max(3000) }) }), async (req, res) => res.status(201).json(await s.privacidade.pedir(u(req), req.dados.body)))
   r.get('/privacidade/pedidos', async (req, res) => res.json(await s.privacidade.listar(u(req))))
   r.put('/privacidade/pedidos/:id', validar({ params: E.pId, body: z.object({ estado: z.string().max(20), resposta: z.string().max(3000) }) }), async (req, res) => res.json(await s.privacidade.responder(u(req), req.dados.params.id, req.dados.body)))
-  r.get('/referencias', (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS }))
+  // as tabelas fixas e, por cima, as listas que se mudam em Configurações
+  r.get('/referencias', async (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS , ...(await s.listas.todas()) }))
+  // Configurações › Listas do sistema
+  r.get('/listas', async (req, res) => res.json(await s.listas.listar(u(req))))
+  r.put('/listas/:id', validar({ params: z.object({ id: z.string().max(40) }), body: z.object({ valor: z.union([z.array(z.string().max(200)).max(300), z.record(z.string().max(40), z.string().max(200))]) }) }), async (req, res) => res.json(await s.listas.guardar(u(req), req.dados.params.id, req.dados.body.valor)))
+  r.post('/listas/:id/repor', validar({ params: z.object({ id: z.string().max(40) }) }), async (req, res) => res.json(await s.listas.repor(u(req), req.dados.params.id)))
 
   r.get('/painel', async (req, res) => res.json(await s.painel.resumo(u(req))))
 
@@ -196,6 +201,9 @@ export function rotas({ servicos: s, config }) {
   r.post('/expediente/:id/anexos', validar({ params: E.pId }), anexos.array('anexos', 20), async (req, res) => res.json(await s.expediente.anexar(u(req), req.dados.params.id, req.files ?? [])))
   r.get('/anexos/:id', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.expediente.anexo(u(req), req.dados.params.id)))
   // Secretária digital: documentos submetidos a despacho do Comandante
+  // pedidos que só valem depois do despacho do Comandante (docentes, contas e papéis)
+  r.get('/pedidos-despacho', validar({ query: z.object({ estado: z.enum(['pendente', 'deferido', 'indeferido', 'anulado']).optional() }) }), async (req, res) => res.json(await s.despachos.listar(u(req), req.dados.query)))
+  r.post('/pedidos-despacho/:id/decidir', validar({ params: E.pId, body: z.object({ decisao: z.enum(['deferido', 'indeferido']), despacho: z.string().max(2000).default('') }) }), async (req, res) => res.json(await s.despachos.decidir(u(req), req.dados.params.id, req.dados.body)))
   r.get('/secretaria', async (req, res) => res.json({ ...(await s.expediente.secretaria(u(req))), propostas: await s.propostas.aDespacho(u(req)), despachosProposta: DESPACHOS_PROPOSTA }))
   r.post('/propostas/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.propostas.despachar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/despacho', validar({ params: E.pId, body: z.object({ nota: z.string().max(1000).default('') }) }), async (req, res) => res.json(await s.expediente.submeterDespacho(u(req), req.dados.params.id, req.dados.body)))
@@ -214,7 +222,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/avisos', async (req, res) => {
     const c = await s.expediente.contadores(u(req))
     // na Secretária digital: os documentos e as propostas à espera do Comandante
-    res.json({ ...c, porDespachar: c.porDespachar + (await s.propostas.contarADespacho(u(req))), mensagens: await s.mensagens.naoLidas(u(req)) })
+    res.json({ ...c, porDespachar: c.porDespachar + (await s.propostas.contarADespacho(u(req))) + (await s.despachos.contarPendentes(u(req))), mensagens: await s.mensagens.naoLidas(u(req)) })
   })
 
   // carreiras
@@ -317,7 +325,7 @@ export function rotas({ servicos: s, config }) {
       pessoas: lista.map((p) => ({
         id: p.id, nome: p.nome, fotoId: p.fotoId, tipo: p.tipo, vinculo: p.vinculo, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, ramo: p.ramo,
         nip: p.nip, numeroAgente: p.numeroAgente, email: p.email, ativo: p.ativo, unidadeNome: p.unidadeNome, unidadeOrigem: p.unidadeOrigem,
-        tipoDocente: p.tipoDocente, categoriaDocente: p.categoriaDocente, funcaoActual: p.funcaoActual, portal: estado.get(p.id) ?? null,
+        tipoDocente: p.tipoDocente, categoriaDocente: p.categoriaDocente, funcaoActual: p.funcaoActual, docentePendente: p.docentePendente, portal: estado.get(p.id) ?? null,
         // para a pesquisa e as colunas que se escolhem
         bi: p.bi, telefone: p.telefone, nomeGuerra: p.nomeGuerra, genero: p.genero, idade: p.idade, dataNascimento: p.dataNascimento, naturalidade: p.naturalidade, provincia: p.provincia,
         nacionalidade: p.nacionalidade, habilitacao: p.habilitacao, areaFormacao: p.areaFormacao, especialidade: p.especialidade,

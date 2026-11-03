@@ -126,7 +126,7 @@ export const BI_ANGOLANO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
 
 // antes: a ficha como estava (ao editar). As regras novas só se aplicam ao que muda, para não
 // impedir de gravar fichas antigas (BI noutro formato, categorias que já não estão na lista).
-export function problemaNaFicha(p, antes = null) {
+export function problemaNaFicha(p, antes = null, listas = {}) {
   const mudou = (k) => !antes || String(antes[k] ?? '') !== String(p[k] ?? '')
   if (p.tipo === 'militar') {
     if (p.vinculo === 'domiciliar') return ['vinculo', 'Empregados domiciliares são pessoal civil.']
@@ -158,7 +158,7 @@ export function problemaNaFicha(p, antes = null) {
   // contactos
   for (const [k, r] of [['telefone', 'O telefone'], ['telefoneAlternativo', 'O telefone alternativo']]) if (p[k] && mudou(k) && !/^\+?[0-9 ()./-]{9,20}$/.test(p[k])) return [k, `${r} só tem algarismos (pelo menos 9; pode ter +, espaços ou hífenes).`]
   // docente: a categoria é a do Decreto Presidencial n.º 191/18
-  if (p.categoriaDocente && mudou('categoriaDocente') && ![...CATEGORIAS_DOCENTE, ...CATEGORIAS_DOCENTE_CONTRATADO].includes(p.categoriaDocente)) return ['categoriaDocente', 'Categoria do docente desconhecida (Decreto Presidencial n.º 191/18).']
+  if (p.categoriaDocente && mudou('categoriaDocente') && ![...(listas.categoriasDocente ?? CATEGORIAS_DOCENTE), ...(listas.categoriasDocenteContratado ?? CATEGORIAS_DOCENTE_CONTRATADO)].includes(p.categoriaDocente)) return ['categoriaDocente', 'Categoria do docente desconhecida (Decreto Presidencial n.º 191/18).']
   if (p.emailPessoal && p.email && mudou('emailPessoal') && p.emailPessoal.toLowerCase() === String(p.email).toLowerCase()) return ['emailPessoal', 'O e-mail pessoal é o mesmo que o da Escola.']
   return null
 }

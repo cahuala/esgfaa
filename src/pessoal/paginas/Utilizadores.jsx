@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { textoDespacho } from '../despacho'
 import { api } from '../api'
 import { credenciaisPdf } from '../documentos'
 import { useDados } from '../useDados'
@@ -18,9 +19,9 @@ export default function Utilizadores() {
   const colunas = useMemo(() => [
     { chave: 'nome', titulo: 'Nome', valor: (u) => u.nome, mostrar: (u) => <strong>{u.nome}</strong> },
     { chave: 'email', titulo: 'E-mail', valor: (u) => u.email },
-    { chave: 'papel', titulo: 'Papel', valor: (u) => u.papelNome },
+    { chave: 'papel', titulo: 'Papel', valor: (u) => u.papelNome, mostrar: (u) => <>{u.papelNome}{u.papelPedido && <div className="small text-warning-emphasis"><i className="fa fa-stamp me-1" />Pedido: {u.papelPedidoNome} (a despacho)</div>}</> },
     { chave: 'unidade', titulo: 'Unidade', valor: (u) => u.unidadeNome },
-    { chave: 'estado', titulo: 'Estado', valor: (u) => (u.ativo ? 'Ativo' : 'Desativado'), mostrar: (u) => <span className={`badge ${u.ativo ? 'bg-success' : 'bg-secondary'}`}>{u.ativo ? 'Ativo' : 'Desativado'}</span> },
+    { chave: 'estado', titulo: 'Estado', valor: (u) => (u.aguardaDespacho ? 'A aguardar despacho' : u.ativo ? 'Ativo' : 'Desativado'), mostrar: (u) => (u.aguardaDespacho ? <span className="badge bg-warning text-dark" title="Não entra até o Comandante deferir"><i className="fa fa-stamp me-1" />A aguardar despacho</span> : <span className={`badge ${u.ativo ? 'bg-success' : 'bg-secondary'}`}>{u.ativo ? 'Ativo' : 'Desativado'}</span>) },
     { chave: 'acesso', titulo: 'Último acesso', valor: (u) => u.ultimoAcesso ?? '', mostrar: (u) => dataHoraPt(u.ultimoAcesso) },
   ], [])
   // uma conta de utente para cada militar e civil que ainda não tem (expediente e mensagens)
@@ -61,7 +62,7 @@ function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
   const guardar = () => {
     const unidadeId = d.unidadeId ? Number(d.unidadeId) : null
     const corpo = u.id ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}) } : { ...d, unidadeId }
-    api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar('Utilizador guardado.')).catch((e) => setErro(e.message))
+    api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then((r) => aoGuardar(`Utilizador guardado. ${textoDespacho(r)}`.trim())).catch((e) => setErro(e.message))
   }
   // perdeu o telemóvel e os códigos de recuperação: volta a ligar a verificação ao entrar
   const repor2fa = () => {

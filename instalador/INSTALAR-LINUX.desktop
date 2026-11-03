@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Instalar Sistema de Pessoal (Linux)
+Comment=Instala o Sistema de Gestão de Pessoal e Quadros da ESG neste computador
+Exec=bash -c 'cd "$(dirname "%k")" && bash ./INSTALAR-LINUX.sh'
+Icon=system-software-install
+Terminal=true

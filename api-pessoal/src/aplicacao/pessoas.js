@@ -48,11 +48,19 @@ const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
 // precisa de conta no portal: docentes e estudantes com e-mail
-const vaiParaPortal = (p) => p.ativo && vinculosDe(p).some((v) => ['docente', 'estudante'].includes(v)) && Boolean(p.email)
+// o que o Comandante lê na Secretária digital
+function resumoDocente(p) {
+  const posto = p.posto ? `${nomeDoPosto(p.posto, p.ramo)} ` : ''
+  const tipo = p.tipoDocente === 'efectivo' ? 'efectivo' : p.tipoDocente === 'colaborador' ? 'colaborador' : ''
+  return `${posto}${p.nome}${tipo ? ` — docente ${tipo}` : ''}${p.categoriaDocente ? ` (${p.categoriaDocente})` : ''}${p.funcaoActual ? ` · ${p.funcaoActual}` : ''}`
+}
+// o docente novo à espera do despacho do Comandante ainda não vai para o portal
+const vaiParaPortal = (p) => p.ativo && vinculosDe(p).some((v) => (v === 'docente' && !p.docentePendente) || v === 'estudante') && Boolean(p.email)
+const eDocente = (p) => vinculosDe(p).includes('docente')
 
 export class ServicoPessoas {
-  constructor({ bd, auditoria, config, tabelaSalarial, enviar = pedirJson, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, config, tabelaSalarial, enviar, agora })
+  constructor({ bd, auditoria, config, tabelaSalarial, listas = null, despachos = null, enviar = pedirJson, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, config, tabelaSalarial, listas, despachos, enviar, agora })
   }
 
   async #todas(where) {
@@ -246,25 +254,58 @@ export class ServicoPessoas {
   async criar(u, dados, { silencioso = false } = {}) {
     exigir(u, 'editar')
     const d = this.#dados(dados)
-    const problema = problemaNaFicha(d)
+    // um docente novo só vale depois do despacho do Comandante
+    const pedirDocente = Boolean(this.despachos) && eDocente(d)
+    if (pedirDocente) d.docentePendente = true
+    const problema = problemaNaFicha(d, null, await this.listas?.todas())
     if (problema) throw invalido(problema[1], problema[0])
     if (d.tipo === 'civil') await this.#verificarDomiciliar(d)
     const p = await this.#gravar(() => this.bd.$transaction(async (tx) => {
       const n = await tx.pessoa.create({ data: d })
       await tx.evento.create({ data: { pessoaId: n.id, tipo: 'registo', data: this.agora(), descricao: 'Ficha criada no sistema.', criadoPor: u.email } })
+      if (pedirDocente) await this.despachos.pedir(tx, u, { tipo: 'docente_novo', pessoaId: n.id, resumo: resumoDocente(n), dados: { categoriaDocente: n.categoriaDocente, tipoDocente: n.tipoDocente } })
       await this.#marcarSincronizacao(tx, n)
       return n
     }))
     if (!silencioso) await this.auditoria.registar(u, 'criar_ficha', `${p.nome} (#${p.id})`)
-    return comDerivados(p, this.agora())
+    return { ...comDerivados(p, this.agora()), ...(pedirDocente ? { aDespacho: ['docente_novo'] } : {}) }
   }
 
-  async editar(u, id, dados, { silencioso = false } = {}) {
+  // o que o Comandante deferiu (ou indeferiu) aplica-se aqui, sem voltar a pedir despacho
+  async aplicarDespacho(u, id, dados) {
+    return this.editar(u, id, dados, { despachado: true })
+  }
+
+  async editar(u, id, dados, { silencioso = false, despachado = false } = {}) {
     exigir(u, 'editar')
     const antes = await this.bd.pessoa.findUnique({ where: { id } })
     if (!antes) throw naoEncontrado('Ficha não encontrada.')
     const d = this.#dados({ ...dados, tipo: dados.tipo ?? antes.tipo })
-    const problema = problemaNaFicha({ ...antes, ...d }, antes)
+    // o que precisa do despacho do Comandante não se aplica já: fica num pedido (Secretária digital)
+    const pedidos = []
+    if (this.despachos && !despachado) {
+      const depois = { ...antes, ...d }
+      const antesDoc = eDocente(antes)
+      const depoisDoc = eDocente(depois)
+      if (!antesDoc && depoisDoc) {
+        d.docentePendente = true
+        pedidos.push({ tipo: 'docente_novo', resumo: resumoDocente(depois), dados: { categoriaDocente: depois.categoriaDocente, tipoDocente: depois.tipoDocente } })
+      } else if (antesDoc && !depoisDoc) {
+        if (antes.docentePendente) {
+          // ainda não era docente (pedido por despachar): o pedido anula-se e fica como se pede
+          d.docentePendente = false
+          pedidos.push({ anular: 'docente_novo' })
+        } else {
+          const pedido = Object.fromEntries(['vinculo', 'outrosVinculos'].filter((k) => k in d).map((k) => [k, d[k]]))
+          for (const k of Object.keys(pedido)) delete d[k]
+          pedidos.push({ tipo: 'docente_saida', resumo: `${depois.nome} deixa de ser docente`, dados: pedido })
+        }
+      } else if (antesDoc && !antes.docentePendente && 'categoriaDocente' in d && (d.categoriaDocente ?? '') !== (antes.categoriaDocente ?? '')) {
+        pedidos.push({ tipo: 'docente_categoria', resumo: `${depois.nome}: ${antes.categoriaDocente || 'sem categoria'} → ${d.categoriaDocente || 'sem categoria'}`, dados: { categoriaDocente: d.categoriaDocente ?? '', anterior: antes.categoriaDocente ?? '' } })
+        delete d.categoriaDocente
+      }
+    }
+    const problema = problemaNaFicha({ ...antes, ...d }, antes, await this.listas?.todas())
     if (problema) throw invalido(problema[1], problema[0])
     if ((d.tipo ?? antes.tipo) === 'civil' && ('vinculo' in d || 'militarAlocadoId' in d)) {
       const junto = { ...antes, ...d }
@@ -273,6 +314,10 @@ export class ServicoPessoas {
     }
     const p = await this.#gravar(() => this.bd.$transaction(async (tx) => {
       const n = await tx.pessoa.update({ where: { id }, data: d })
+      for (const x of pedidos) {
+        if (x.anular) await this.despachos.anular(tx, { tipo: x.anular, pessoaId: id })
+        else await this.despachos.pedir(tx, u, { ...x, pessoaId: id })
+      }
       const evento = (tipo, descricao, extra = {}) => tx.evento.create({ data: { pessoaId: id, tipo, data: this.agora(), descricao, criadoPor: u.email, ...extra } })
       if (antes.situacao && n.situacao !== antes.situacao) await evento('situacao', `${SITUACOES[antes.situacao]} → ${SITUACOES[n.situacao]}`)
       else if (n.situacao === 'activo' && antes.efectividade && n.efectividade !== antes.efectividade) await evento('situacao', `${EFECTIVIDADES[antes.efectividade]?.nome} → ${EFECTIVIDADES[n.efectividade]?.nome}`)
@@ -280,7 +325,7 @@ export class ServicoPessoas {
       if (antes.posto && n.posto !== antes.posto) await evento('correcao', 'Posto corrigido na ficha (sem proposta).', { postoAnterior: antes.posto, postoNovo: n.posto })
       if (antes.ativo && !n.ativo) await evento('saida', [n.motivoSaida, n.destinoSaida && `Destino: ${n.destinoSaida}`].filter(Boolean).join(' · ') || d.observacoes || 'Deixou de servir na Escola.')
       if (!antes.ativo && n.ativo) await evento('colocacao', 'Voltou a servir na Escola.')
-      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'unidadeOrigem', 'ativo'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
+      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'unidadeOrigem', 'ativo', 'docentePendente'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
       if (vaiParaPortal(antes) && !vaiParaPortal(n)) {
         await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
@@ -291,7 +336,8 @@ export class ServicoPessoas {
       return n
     }))
     if (!silencioso) await this.auditoria.registar(u, 'editar_ficha', `${p.nome} (#${p.id})`, { campos: Object.keys(dados) })
-    return comDerivados(p, this.agora())
+    const aDespacho = pedidos.filter((x) => x.tipo).map((x) => x.tipo)
+    return { ...comDerivados(p, this.agora()), ...(aDespacho.length ? { aDespacho } : {}) }
   }
 
   /*

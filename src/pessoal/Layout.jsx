@@ -131,6 +131,7 @@ export default function Layout({ children }) {
 
             {pode('supervisionar') && <div className="menu-header">Administração</div>}
             {pode('supervisionar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
+            {pode('administrar') && <Item para="/listas" icone="fa-list-alt" texto="Listas do sistema" />}
             {pode('administrar') && <Item para="/assinaturas" icone="fa-signature" texto="Assinaturas dos documentos" />}
             {pode('supervisionar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}

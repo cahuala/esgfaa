@@ -21,8 +21,13 @@ import { comparadorHierarquico, posicoesDasUnidades } from '../dominio/pessoal/o
 
 // quadro orgânico da Escola: unidades (órgãos e serviços) e os cargos de cada uma, com os lugares
 export class ServicoOrganica {
-  constructor({ bd, auditoria }) {
-    Object.assign(this, { bd, auditoria })
+  constructor({ bd, auditoria, listas = null }) {
+    Object.assign(this, { bd, auditoria, listas })
+  }
+
+  // os tipos de unidade em uso (Configurações › Listas do sistema)
+  async #tipos() {
+    return this.listas ? (await this.listas.todas()).tiposUnidade : TIPOS_UNIDADE
   }
 
   async unidades(u) {
@@ -43,7 +48,8 @@ export class ServicoOrganica {
       this.bd.cargo.findMany({ select: { id: true, unidadeId: true, vagas: true, tipo: true, postoRequerido: true } }),
       this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, select: { unidadeId: true, cargoId: true, tipo: true, posto: true, genero: true, vinculo: true } }),
     ])
-    const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: TIPOS_UNIDADE[x.tipo] ?? '', paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), previstoGraus: grausVazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
+    const tipos = await this.#tipos()
+    const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: tipos[x.tipo] ?? '', paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), previstoGraus: grausVazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
     const somar = (n, campo, cat, q = 1) => { if (n && cat) n[campo][cat] += q }
     for (const c of cargos) {
       const n = no.get(c.unidadeId)
@@ -103,7 +109,8 @@ export class ServicoOrganica {
     for (let x = atual; x; x = unidades.find((y) => y.id === x.paiId)) caminho.unshift({ id: x.id, nome: x.nome, sigla: x.sigla })
     // a unidade e as subunidades, pela ordem da árvore (com o nível, para o recuo)
     const ramo = []
-    const andar = (uid, nivel) => { const x = unidades.find((y) => y.id === uid); ramo.push({ id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: TIPOS_UNIDADE[x.tipo] ?? '', nivel }); for (const f of unidades.filter((y) => y.paiId === uid)) andar(f.id, nivel + 1) }
+    const tipos = await this.#tipos()
+    const andar = (uid, nivel) => { const x = unidades.find((y) => y.id === uid); ramo.push({ id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: tipos[x.tipo] ?? '', nivel }); for (const f of unidades.filter((y) => y.paiId === uid)) andar(f.id, nivel + 1) }
     andar(id, 0)
     const ids = ramo.map((x) => x.id)
     const SELECT = { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } }
@@ -121,7 +128,7 @@ export class ServicoOrganica {
     const cargo = (c) => ({ id: c.id, nome: c.nome, unidadeId: c.unidadeId, funcao: c.funcao, funcaoNome: FUNCOES[c.funcao] ?? '', tipo: c.tipo, postoRequeridoNome: c.postoRequerido ? nomeDoPosto(c.postoRequerido) : c.categoriaCivil || 'Civil', categoria: CATEGORIAS[categoriaDoCargo(c)]?.nome ?? 'Civil', vagas: c.vagas, ocupados: c.pessoas.length, livres: Math.max(0, c.vagas - c.pessoas.length), excesso: Math.max(0, c.pessoas.length - c.vagas), ocupantes: c.pessoas.map(pessoa) })
     const nomeUnidade = new Map(ramo.map((x) => [x.id, x.sigla || x.nome]))
     return {
-      ...atual, caminho, tipoNome: TIPOS_UNIDADE[atual.tipo] ?? '',
+      ...atual, caminho, tipoNome: tipos[atual.tipo] ?? '',
       // só os desta unidade (compatível) e os de todo o ramo, agrupados por unidade
       cargos: cargos.filter((c) => c.unidadeId === id).map(cargo),
       grupos: ramo.map((x) => ({ ...x, cargos: cargos.filter((c) => c.unidadeId === x.id).map(cargo) })).filter((g) => g.cargos.length),
@@ -132,7 +139,7 @@ export class ServicoOrganica {
 
   async guardarUnidade(u, id, { nome, sigla = '', tipo = 'outro', paiId = null, ordem = 0 }) {
     exigir(u, 'administrar')
-    if (!TIPOS_UNIDADE[tipo]) throw invalido('Tipo de unidade desconhecido.', 'tipo')
+    if (!(await this.#tipos())[tipo]) throw invalido('Tipo de unidade desconhecido.', 'tipo')
     if (id && paiId) {
       // não pode ficar dentro de si própria nem de uma das suas subunidades (a árvore não pode ter voltas)
       const todas = await this.bd.unidade.findMany({ select: { id: true, paiId: true } })
@@ -213,7 +220,7 @@ export class ServicoOrganica {
       if (!k) throw invalido(`${campo} «${v}» não corresponde a nenhum da lista.`)
       return k[0]
     }
-    const TIPOS = Object.entries(TIPOS_UNIDADE).map(([k, v]) => [k, k, v])
+    const TIPOS = Object.entries(await this.#tipos()).map(([k, v]) => [k, k, v])
     const POSTOS_OP = Object.values(POSTOS).map((p) => [p.id, ...new Set([...Object.values(p.nomes), ...Object.values(p.nomes).map((n) => ABREVIATURAS[n]).filter(Boolean)])])
     const FUNCOES_OP = Object.entries(FUNCOES).map(([k, v]) => [k, k, v, v.split(' ')[0]])
     const CIVIS_OP = Object.values(CARREIRAS_CIVIS).map((c) => [c.nome, c.nome])
