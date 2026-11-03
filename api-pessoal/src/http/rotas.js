@@ -312,6 +312,8 @@ export function rotas({ servicos: s, config }) {
   r.get('/pessoas/:id/documentos-emitidos', validar({ params: E.pId }), async (req, res) => res.json(await s.documentosEmitidos.historico(u(req), req.dados.params.id)))
   r.post('/pessoas/:id/documentos-emitidos', validar({ params: E.pId, body: E.emitirDocumentos }), async (req, res) => res.status(201).json(await s.documentosEmitidos.emitir(u(req), req.dados.params.id, req.dados.body.documentos)))
   r.post('/utilizadores/:id/2fa/repor', validar({ params: E.pId }), async (req, res) => res.json(await s.doisFatores.repor(u(req), req.dados.params.id)))
+  // o Comandante escolhe o que a conta pode fazer (vale logo)
+  r.put('/utilizadores/:id/permissoes', validar({ params: E.pId, body: z.object({ permissoes: z.union([z.record(z.string().max(40), z.enum(['ver', 'alterar'])), z.null()]) }) }), async (req, res) => res.json(await s.sessao.definirPermissoes(u(req), req.dados.params.id, req.dados.body.permissoes)))
   r.put('/utilizadores/:id', validar({ params: E.pId, body: E.editarUtilizador }), async (req, res) => res.json(await s.sessao.editar(u(req), req.dados.params.id, req.dados.body)))
   r.get('/auditoria', validar({ query: z.object({ de: z.string().max(10).optional(), ate: z.string().max(10).optional(), utilizador: z.string().max(200).optional(), acao: z.string().max(40).optional() }) }), async (req, res) => res.json(await s.auditoria.listar(u(req), req.dados.query)))
   // cada exportação para Excel ou PDF fica registada (quem levou que dados)

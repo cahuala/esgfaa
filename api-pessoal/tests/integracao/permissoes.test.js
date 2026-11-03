@@ -57,6 +57,23 @@ describe('dar e tirar tarefas a uma conta (ecrã a ecrã), com o despacho do Com
     assert.deepEqual([eu.permissoesProprias, eu.areas.licencas], [false, 'ver'])
   })
 
+  it('o Comandante escolhe ele próprio o que a conta pode fazer (vale logo; o pedido pendente fica sem efeito)', async () => {
+    await adm.put(`/api/utilizadores/${conta.id}`).send({ permissoes: { fichas: 'ver', auditoria: 'ver' } }).expect(200)
+    const comandante = await entrarComoComandante()
+    // o administrador não usa o ecrã do Comandante
+    await adm.put(`/api/utilizadores/${conta.id}/permissoes`).send({ permissoes: { fichas: 'ver' } }).expect(403)
+    const r = (await comandante.put(`/api/utilizadores/${conta.id}/permissoes`).send({ permissoes: { fichas: 'ver', ausencias: 'alterar' } }).expect(200)).body
+    assert.deepEqual(r.areas, { fichas: 'ver', ausencias: 'alterar' })
+    assert.equal((await op.get('/api/eu')).body.areas.ausencias, 'alterar')
+    await op.get('/api/ausencias').expect(200)
+    await op.get('/api/licencas').expect(403)
+    assert.equal((await adm.get('/api/pedidos-despacho?estado=pendente')).body.filter((x) => x.utilizadorId === conta.id).length, 0)
+    // o Comandante vê a lista das contas e não tira a si próprio a Secretária digital
+    const contas = (await comandante.get('/api/utilizadores').expect(200)).body
+    const eu = contas.find((x) => x.email === 'comandante.testes@pessoal.ao')
+    await comandante.put(`/api/utilizadores/${eu.id}/permissoes`).send({ permissoes: { fichas: 'ver' } }).expect(400)
+  })
+
   it('o administrador não tira a si próprio a gestão dos utilizadores', async () => {
     const eu = (await adm.get('/api/eu')).body
     await adm.put(`/api/utilizadores/${eu.id}`).send({ permissoes: { fichas: 'alterar' } }).expect(400)

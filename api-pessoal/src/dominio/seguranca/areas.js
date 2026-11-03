@@ -125,8 +125,10 @@ export const ROTAS = [
   // Comandante
   R('GET', '/secretaria', 'secretaria'), R('POST', '/pedidos-despacho/:id/decidir', 'secretaria'), R('POST', '/propostas/:id/despachar', 'secretaria'),
   // administração
-  R('GET', '/utilizadores', 'utilizadores'), R('POST', '/utilizadores', 'utilizadores'), R('PUT', '/utilizadores/:id', 'utilizadores'), R('POST', '/utilizadores/contas-pessoas', 'utilizadores'),
+  R('GET', '/utilizadores', ['utilizadores', 'secretaria']), R('POST', '/utilizadores', 'utilizadores'), R('PUT', '/utilizadores/:id', 'utilizadores'), R('POST', '/utilizadores/contas-pessoas', 'utilizadores'),
   R('POST', '/utilizadores/:id/2fa/repor', 'utilizadores'),
+  // o Comandante escolhe o que cada conta pode fazer (e vê a lista das contas)
+  R('PUT', '/utilizadores/:id/permissoes', 'secretaria'),
   R('GET', '/auditoria', 'auditoria'),
   // o registo de cada exportação para Excel/PDF (de qualquer tabela, de qualquer ecrã)
   R('POST', '/auditoria/exportacao', null),

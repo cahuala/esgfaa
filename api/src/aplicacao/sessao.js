@@ -1,5 +1,6 @@
 import { NaoAutenticado, SemPermissao, ContaBloqueada, ErroValidacao, CodigoEmFalta } from '../dominio/comum/erros.js'
 import { Actor } from '../dominio/identidade/actor.js'
+import { limparPermissoes } from '../dominio/identidade/permissoes.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../dominio/identidade/utilizador.js'
 import { motivoSenhaFraca, validarSenha } from '../dominio/identidade/politicaSenha.js'
 
@@ -76,9 +77,10 @@ export class ServicoSessao {
     const u = await this.utilizadores.porId(sessao.utilizadorId)
     if (!u || !u.ativo) throw new NaoAutenticado('Conta inexistente ou desativada.')
     if (u.versaoToken !== sessao.versao) throw new NaoAutenticado('A sessão foi terminada. Entre novamente.')
-    // as permissões leem-se sempre da base: mudar um papel tem efeito imediato
+    // as permissões leem-se sempre da base: mudar um papel (ou as da conta) tem efeito imediato;
+    // as escolhidas pelo Comandante para esta conta mandam sobre as do papel
     const papel = await this.papeis.porId(u.papel)
-    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, permissoes: papel?.permissoes || [] })
+    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, permissoes: u.permissoes ? limparPermissoes(u.permissoes) : papel?.permissoes || [] })
     return { actor, sessao }
   }
 

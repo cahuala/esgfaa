@@ -129,7 +129,8 @@ export class ServicoSessao {
 
   // gestão de utilizadores (só o administrador)
   async listar(u) {
-    exigir(u, 'supervisionar')
+    // quem supervisiona e o Comandante (que escolhe o que cada conta pode fazer)
+    if (!pode(u, 'supervisionar') && !pode(u, 'despachar')) throw semPermissao()
     // a mudança de papel pedida e ainda por despachar
     const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
     const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
@@ -143,6 +144,25 @@ export class ServicoSessao {
     if (!this.despachos || papel === 'utente') return false
     if (papel === 'comandante' && !(await this.bd.utilizador.count({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false } }))) return false
     return true
+  }
+
+  /*
+    O Comandante escolhe ele próprio o que a conta pode fazer, ecrã a ecrã (vale logo: a decisão é dele).
+    Um pedido do administrador para a mesma conta, ainda por despachar, fica sem efeito.
+  */
+  async definirPermissoes(u, id, permissoes) {
+    exigir(u, 'despachar')
+    const alvo = await this.bd.utilizador.findUnique({ where: { id } })
+    if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
+    const novas = permissoes === null ? null : limparAreas(permissoes)
+    if (alvo.id === u.id && !(novas ?? MODELOS[alvo.papel] ?? {}).secretaria) throw invalido('Não pode tirar a si próprio a Secretária digital (é por ela que decide).')
+    const antes = areasDe(alvo)
+    const g = await this.bd.$transaction(async (tx) => {
+      await tx.pedidoDespacho.updateMany({ where: { tipo: 'utilizador_permissoes', estado: 'pendente', utilizadorId: id }, data: { estado: 'anulado', decididoPor: u.email, decididoEm: this.agora(), despacho: 'Substituído pela escolha do Comandante.' } })
+      return tx.utilizador.update({ where: { id }, data: { permissoes: novas ?? Prisma.DbNull }, include: COM_UNIDADE })
+    })
+    await this.auditoria.registar(u, 'definir_permissoes', `${g.nome} (${g.email}): ${resumoAreas(antes, areasDe(g))}`)
+    return publico(g)
   }
 
   async #haComandante() {

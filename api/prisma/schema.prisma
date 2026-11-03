@@ -55,6 +55,8 @@ model Utilizador {
   deveMudarSenha     Boolean      @default(false) @map("deve_mudar_senha")
   // conta nova ou mudança de papel à espera do Comandante: { tipo: 'criar'|'papel', papel, de?, pedidoPor, pedidoEm }
   aprovacao          Json?
+  // o que esta conta pode fazer, escolhido pelo Comandante (lista de «recurso.acao»); vazio = as do papel
+  permissoes         Json?
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 

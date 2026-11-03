@@ -16,6 +16,7 @@ export class Utilizador {
       versaoToken: 0,
       deveMudarSenha: false,
       aprovacao: null,
+      permissoes: null,
       ultimoAcesso: null,
       criadoEm: null,
       ...props,
@@ -83,6 +84,8 @@ export class Utilizador {
       criadoEm: this.criadoEm,
       ultimoAcesso: this.ultimoAcesso,
       aprovacao: this.aprovacao,
+      // as permissões próprias (escolhidas pelo Comandante); null = as do papel
+      permissoes: this.permissoes ?? null,
     }
   }
 }

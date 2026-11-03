@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import PermissoesConta from './PermissoesConta'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
@@ -28,6 +29,8 @@ function Utilizadores() {
   const [erroForm, setErroForm] = useState('')
   const [confirmar, setConfirmar] = useState(null)
   const [aviso, setAviso] = useState(null)
+  // o Comandante escolhe o que a conta pode fazer
+  const [permissoes, setPermissoes] = useState(null)
 
   const carregar = useCallback(() => {
     api('/utilizadores').then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message))
@@ -141,6 +144,9 @@ function Utilizadores() {
                         <td className="text-nowrap">{u.ultimoAcesso ? dataHora(u.ultimoAcesso) : tx('Nunca entrou')}</td>
                         <td className="text-center"><Link to={`/atividades?utilizador=${u.id}`}>{u.atividades}</Link></td>
                         <td className="text-end text-nowrap">
+                          {pode('utilizadores.aprovar') && (
+                            <button className="btn btn-sm btn-default me-1" onClick={() => setPermissoes(u)} title={tx('O que pode fazer')}><i className="fa fa-user-shield" /></button>
+                          )}
                           {pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className="btn btn-sm btn-primary me-1" onClick={() => { setErroForm(''); setForm({ ...u, senha: '' }) }} title={tx('Editar')}><i className="fa fa-pencil-alt" /></button>
                           )}
@@ -203,6 +209,7 @@ function Utilizadores() {
         )}
       </div>
 
+      {permissoes && <div className="mt-3"><PermissoesConta u={permissoes} eu={eu} aoFechar={() => setPermissoes(null)} aoGuardar={(m) => { setPermissoes(null); setAviso({ texto: m }); carregar() }} /></div>}
       <Confirmar pedido={confirmar} onCancelar={() => setConfirmar(null)} />
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>

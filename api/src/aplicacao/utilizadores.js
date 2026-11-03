@@ -1,6 +1,6 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../dominio/comum/erros.js'
 import { normalizarEmail } from '../dominio/identidade/email.js'
-import { ADMINISTRADOR } from '../dominio/identidade/permissoes.js'
+import { ADMINISTRADOR, limparPermissoes } from '../dominio/identidade/permissoes.js'
 import { validarSenha } from '../dominio/identidade/politicaSenha.js'
 import { Utilizador } from '../dominio/identidade/utilizador.js'
 
@@ -27,8 +27,10 @@ export class ServicoUtilizadores {
 
   async listar(ctx) {
     ctx.actor.exigir('utilizadores.ver')
-    const [lista, porId] = await Promise.all([this.utilizadores.listar(), this.atividades.contarPorUtilizador()])
-    return lista.map((u) => ({ ...u.publico(), atividades: porId[u.id] || 0 }))
+    const [lista, porId, papeis] = await Promise.all([this.utilizadores.listar(), this.atividades.contarPorUtilizador(), this.papeis.listar()])
+    const doPapel = new Map(papeis.map((p) => [p.id, p.permissoes]))
+    // as efectivas: as próprias (escolhidas pelo Comandante) ou as do papel
+    return lista.map((u) => ({ ...u.publico(), atividades: porId[u.id] || 0, permissoesEfectivas: u.permissoes ?? doPapel.get(u.papel) ?? [] }))
   }
 
   // só quem gere papéis pode atribuir o papel de Administrador
@@ -110,6 +112,25 @@ export class ServicoUtilizadores {
     if (mudancas.length || !pedePapel) await this.auditoria.registar(ctx, { acao: 'editar_utilizador', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { campos: mudancas } })
     if (pedePapel) await this.auditoria.registar(ctx, { acao: 'pedir_mudanca_papel', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { de: antes.papel, para: pedePapel } })
     return guardado.publico()
+  }
+
+  /*
+    O Comandante escolhe o que a conta pode fazer, permissão a permissão (lista de «recurso.acao»; null = as
+    do papel). Vale logo: as permissões leem-se da base em cada pedido. Fica no registo de atividades.
+  */
+  async definirPermissoes(ctx, id, permissoes) {
+    ctx.actor.exigir('utilizadores.aprovar')
+    const u = await this.utilizadores.porId(id)
+    if (!u) throw new NaoEncontrado('Utilizador não encontrado.')
+    const novas = permissoes === null ? null : limparPermissoes(permissoes)
+    if (u.id === ctx.actor.id && novas && !novas.includes('utilizadores.aprovar')) throw new ErroValidacao('Não pode tirar a si próprio a escolha do que cada conta pode fazer.')
+    const papel = await this.papeis.porId(u.papel)
+    const antes = u.permissoes ?? papel?.permissoes ?? []
+    const depois = novas ?? papel?.permissoes ?? []
+    u.permissoes = novas
+    await this.utilizadores.guardar(u)
+    await this.auditoria.registar(ctx, { acao: 'definir_permissoes', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { da: depois.filter((p) => !antes.includes(p)), tira: antes.filter((p) => !depois.includes(p)), doPapel: novas === null } })
+    return { ...u.publico(), permissoesEfectivas: depois }
   }
 
   // o Comandante aprova ou recusa a conta nova ou a mudança de papel

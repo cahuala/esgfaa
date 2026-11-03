@@ -7,14 +7,14 @@ const iso = (d) => (d ? new Date(d).toISOString() : null)
 const paraEntidade = (l) => l && new Utilizador({
   id: l.id, nome: l.nome, email: l.email, senha: l.senha, papel: l.papel, ativo: l.ativo,
   criadoEm: iso(l.criadoEm), ultimoAcesso: iso(l.ultimoAcesso), tentativasFalhadas: l.tentativasFalhadas,
-  bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha, aprovacao: l.aprovacao ?? null,
+  bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha, aprovacao: l.aprovacao ?? null, permissoes: Array.isArray(l.permissoes) ? l.permissoes : null,
 })
 
 const colunas = (u) => ({
   nome: u.nome, email: u.email, senha: u.senha, papel: u.papel, ativo: Boolean(u.ativo),
   ultimoAcesso: u.ultimoAcesso ? new Date(u.ultimoAcesso) : null,
   tentativasFalhadas: u.tentativasFalhadas, bloqueadoAte: u.bloqueadoAte ? new Date(u.bloqueadoAte) : null,
-  versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha), aprovacao: u.aprovacao ?? Prisma.DbNull,
+  versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha), aprovacao: u.aprovacao ?? Prisma.DbNull, permissoes: Array.isArray(u.permissoes) ? u.permissoes : Prisma.DbNull,
 })
 
 export class RepositorioUtilizadores {

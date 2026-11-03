@@ -292,6 +292,11 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
     res.status(201).json(await servicos.utilizadores.criar(ctx(req), req.dados.body))
   })
 
+  // o Comandante escolhe o que a conta pode fazer (null = as do papel); vale logo
+  r.put('/utilizadores/:id/permissoes', validar({ params: pNumero, body: z.object({ permissoes: z.union([z.array(z.string().max(60)).max(200), z.null()]) }) }), async (req, res) => {
+    res.json(await servicos.utilizadores.definirPermissoes(ctx(req), req.dados.params.id, req.dados.body.permissoes))
+  })
+
   r.put('/utilizadores/:id', validar({ params: pNumero, body: E.editarUtilizador }), async (req, res) => {
     res.json(await servicos.utilizadores.editar(ctx(req), req.dados.params.id, req.dados.body))
   })

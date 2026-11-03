@@ -33,6 +33,7 @@ import Domiciliares from './paginas/Domiciliares'
 import Documentos from './paginas/Documentos'
 import Assinaturas from './paginas/Assinaturas'
 import ListasSistema from './paginas/ListasSistema'
+import PermissoesContas from './paginas/PermissoesContas'
 import TabelaSalarial from './paginas/TabelaSalarial'
 import TabelaSalarialCivis from './paginas/TabelaSalarialCivis'
 import PlanoFerias from './paginas/PlanoFerias'
@@ -133,6 +134,7 @@ export default function App() {
           <Route path="/domiciliares" element={<Area id="fichas"><Domiciliares /></Area>} />
           <Route path="/assinaturas" element={<Area id="configuracoes"><Assinaturas /></Area>} />
           <Route path="/listas" element={<Area id="configuracoes"><ListasSistema /></Area>} />
+          <Route path="/permissoes" element={<Area id="secretaria"><PermissoesContas /></Area>} />
           <Route path="/tabela-salarial" element={<Area id="salarios"><TabelaSalarial /></Area>} />
           <Route path="/tabela-salarial-civis" element={<Area id="salarios"><TabelaSalarialCivis /></Area>} />
           <Route path="/plano-ferias" element={<Area id="licencas"><PlanoFerias /></Area>} />

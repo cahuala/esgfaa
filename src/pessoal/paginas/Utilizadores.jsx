@@ -97,26 +97,27 @@ function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
   O que a conta pode fazer, ecrã a ecrã: nada, ver, ou ver e alterar. Parte das do papel; o que se mudar
   só vale depois do despacho do Comandante (Secretária digital).
 */
-function FormPermissoes({ u, eu, refs, aoFechar, aoGuardar }) {
+// comandante: o próprio Comandante escolhe e vale logo; senão, é um pedido que vai a despacho dele
+export function FormPermissoes({ u, eu, refs, aoFechar, aoGuardar, comandante = false }) {
   const modelo = refs.modelosAreas?.[u.papel] ?? {}
   const [d, setD] = useState(() => ({ ...(u.areas ?? modelo) }))
   const [erro, setErro] = useState('')
   const grupos = [...new Set(Object.values(refs.areas).map((a) => a.grupo))]
   const igualModelo = JSON.stringify(Object.entries(d).sort()) === JSON.stringify(Object.entries(modelo).sort())
   const mudar = (k, nivel) => setD((x) => { const n = { ...x }; if (nivel) n[k] = nivel; else delete n[k]; return n })
-  const guardar = (repor = false) => api(`/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { permissoes: repor || igualModelo ? null : d } })
-    .then((r) => aoGuardar(`${u.nome}: ${textoDespacho(r) || 'permissões guardadas.'}`)).catch((e) => setErro(e.message))
+  const guardar = (repor = false) => api(comandante ? `/utilizadores/${u.id}/permissoes` : `/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { permissoes: repor || igualModelo ? null : d } })
+    .then((r) => aoGuardar(`${u.nome}: ${comandante ? 'o que a conta pode fazer foi definido (já vale).' : textoDespacho(r) || 'permissões guardadas.'}`)).catch((e) => setErro(e.message))
   return (
     <Modal titulo={`O que ${u.nome} pode fazer`} aoFechar={aoFechar} largo
       rodape={<>
         {u.permissoesProprias && <button type="button" className="btn btn-outline-secondary me-auto" onClick={() => guardar(true)}><i className="fa fa-undo me-1" />Voltar às do papel</button>}
         <button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button>
-        <button type="button" className="btn btn-theme" onClick={() => guardar(false)}><i className="fa fa-stamp me-1" />Pedir ao Comandante</button>
+        <button type="button" className="btn btn-theme" onClick={() => guardar(false)}><i className="fa fa-stamp me-1" />{comandante ? 'Decidir (vale já)' : 'Pedir ao Comandante'}</button>
       </>}>
       {erro && <div className="alert alert-danger py-2">{erro}</div>}
-      <p className="small text-muted">Papel: <strong>{u.papelNome}</strong>{u.permissoesProprias ? ' · com permissões próprias' : ' · com as permissões do papel'}. Escolha, ecrã a ecrã, se a conta <b>não vê</b>, <b>só vê</b> ou <b>vê e altera</b>. O expediente, as mensagens e a própria conta ficam sempre. A mudança vai a despacho do Comandante e só vale depois de deferida.</p>
+      <p className="small text-muted">Papel: <strong>{u.papelNome}</strong>{u.permissoesProprias ? ' · com permissões próprias' : ' · com as permissões do papel'}. Escolha, ecrã a ecrã, se a conta <b>não vê</b>, <b>só vê</b> ou <b>vê e altera</b>. O expediente, as mensagens e a própria conta ficam sempre. {comandante ? 'Como Comandante, a sua escolha vale logo (e substitui um pedido do administrador ainda por despachar).' : 'A mudança vai a despacho do Comandante e só vale depois de deferida.'}</p>
       {u.permissoesPedido && <div className="alert alert-warning py-2 small"><i className="fa fa-stamp me-1" />Já há uma mudança à espera do despacho: {u.permissoesPedido}. Pedir de novo substitui-a.</div>}
-      {u.id === eu.id && <div className="alert alert-info py-2 small">É a sua conta: não pode tirar a si próprio a gestão dos utilizadores.</div>}
+      {u.id === eu.id && <div className="alert alert-info py-2 small">É a sua conta: não pode tirar a si próprio {comandante ? 'a Secretária digital' : 'a gestão dos utilizadores'}.</div>}
       {grupos.map((g) => (
         <div key={g} className="mb-3">
           <div className="small text-muted text-uppercase fw-bold mb-1">{g}</div>

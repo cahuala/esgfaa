@@ -131,6 +131,7 @@ export default function Layout({ children }) {
 
             <div className="menu-header">Comunicação</div>
             {<Item para="/secretaria" area="secretaria" icone="fa-stamp" texto="Secretária digital" contador={avisos.porDespachar} />}
+            {<Item para="/permissoes" area="secretaria" icone="fa-user-shield" texto="O que cada conta pode fazer" />}
             <Item para="/expediente" icone="fa-inbox" texto="Expediente" contador={avisos.porReceber} />
             <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
             {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
