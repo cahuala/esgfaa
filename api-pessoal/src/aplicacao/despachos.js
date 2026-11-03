@@ -8,6 +8,7 @@ import { exigir, pode } from './sessao.js'
     docente_saida      — deixa de ser docente
     utilizador_novo    — conta do sistema com papel acima de utente (não entra até ser deferida)
     utilizador_papel   — muda o papel de uma conta
+    utilizador_permissoes — muda o que a conta pode fazer, ecrã a ecrã (dar ou tirar tarefas)
   O que se aplica ao deferir está em «dados». Quem pede é a Repartição; decide quem tem «despachar».
 */
 export const TIPOS_PEDIDO = {
@@ -16,6 +17,7 @@ export const TIPOS_PEDIDO = {
   docente_saida: 'Deixa de ser docente',
   utilizador_novo: 'Nova conta do sistema',
   utilizador_papel: 'Mudança de papel no sistema',
+  utilizador_permissoes: 'Mudança do que a conta pode fazer',
 }
 export const ESTADOS_PEDIDO = { pendente: 'A aguardar despacho', deferido: 'Deferido', indeferido: 'Indeferido', anulado: 'Anulado' }
 // quem decide: o Comandante (e só ele), sem passar pela conta de quem pediu
@@ -101,6 +103,9 @@ export class ServicoDespachos {
         break
       case 'utilizador_papel':
         await this.sessao.aplicarDespacho(x.utilizadorId, { papel: d.papel })
+        break
+      case 'utilizador_permissoes':
+        await this.sessao.aplicarDespacho(x.utilizadorId, { permissoes: d.permissoes ?? null })
         break
       default:
         throw invalido('Tipo de pedido desconhecido.')

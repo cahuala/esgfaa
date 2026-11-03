@@ -8,7 +8,8 @@ import { rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
 import * as E from './esquemas.js'
 import { autenticar, validar } from './middlewares.js'
-import { invalido } from '../erros.js'
+import { invalido, semPermissao } from '../erros.js'
+import { AREAS, MODELOS, podeNaRota } from '../dominio/seguranca/areas.js'
 import { exigir, PAPEIS } from '../aplicacao/sessao.js'
 import { referencias } from '../dominio/pessoal/referencias.js'
 import { TIPOS_DOCUMENTO, ESTADOS_PROCESSO } from '../aplicacao/processos.js'
@@ -51,6 +52,8 @@ export function rotas({ servicos: s, config }) {
   })
 
   r.use(autenticar(s.sessao))
+  // cada pedido só passa se a conta tiver o ecrã (área) dele: ver nas leituras, alterar nas escritas
+  r.use((req, res, next) => (podeNaRota(u(req), req.method, req.path) ? next() : next(semPermissao())))
   // depois de uma gravação bem-sucedida, o painel volta a calcular os números e as páginas abertas atualizam-se
   r.use((req, res, next) => {
     if (req.method !== 'GET') {
@@ -82,7 +85,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/privacidade/pedidos', async (req, res) => res.json(await s.privacidade.listar(u(req))))
   r.put('/privacidade/pedidos/:id', validar({ params: E.pId, body: z.object({ estado: z.string().max(20), resposta: z.string().max(3000) }) }), async (req, res) => res.json(await s.privacidade.responder(u(req), req.dados.params.id, req.dados.body)))
   // as tabelas fixas e, por cima, as listas que se mudam em Configurações
-  r.get('/referencias', async (req, res) => res.json({ ...referencias(), papeis: PAPEIS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS , ...(await s.listas.todas()) }))
+  r.get('/referencias', async (req, res) => res.json({ ...referencias(), papeis: PAPEIS, areas: AREAS, modelosAreas: MODELOS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS , ...(await s.listas.todas()) }))
   // Configurações › Listas do sistema
   r.get('/listas', async (req, res) => res.json(await s.listas.listar(u(req))))
   r.put('/listas/:id', validar({ params: z.object({ id: z.string().max(40) }), body: z.object({ valor: z.union([z.array(z.string().max(200)).max(300), z.record(z.string().max(40), z.string().max(200))]) }) }), async (req, res) => res.json(await s.listas.guardar(u(req), req.dados.params.id, req.dados.body.valor)))

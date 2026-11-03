@@ -29,7 +29,7 @@ export const autenticar = (sessao) => async (req, res, next) => {
     if (req.utilizador.deveMudar && !['/eu', '/mudar-senha', '/sair'].includes(req.path)) throw new ErroDominio('Mude a palavra-passe inicial antes de continuar.', 'mudar_senha')
     // o papel exige a verificação em dois passos: até a ligar, só o perfil, a ligação dela e sair
     const df = sessao.doisFatores
-    if (df?.obrigatorio(req.utilizador.papel) && !LIVRES_2FA.has(req.path) && !(await df.ativo(req.utilizador.id))) throw new ErroDominio('Ligue a verificação em dois passos antes de continuar (Mudar palavra-passe → Verificação em dois passos).', 'ativar_2fa')
+    if (df?.obrigatorio(req.utilizador) && !LIVRES_2FA.has(req.path) && !(await df.ativo(req.utilizador.id))) throw new ErroDominio('Ligue a verificação em dois passos antes de continuar (Mudar palavra-passe → Verificação em dois passos).', 'ativar_2fa')
     next()
   } catch (e) {
     next(e)

@@ -8,8 +8,11 @@ import { useSessao } from './sessao'
 import Brasao from '../assets/Logo-ecra.webp'
 import Sede from '../assets/Escola De Guerra-ecra.webp'
 
-function Item({ para, icone, texto, fim, contador = 0 }) {
+// area: o ecrã do item; a conta que não o pode ver não o vê no menu
+function Item({ para, icone, texto, fim, contador = 0, area }) {
   const ativo = useMatch({ path: para, end: Boolean(fim) })
+  const { ve } = useSessao()
+  if (area && !ve(area)) return null
   return (
     <div className={`menu-item ${ativo ? 'active' : ''}`}>
       <NavLink to={para} end={fim} className="menu-link">
@@ -45,6 +48,9 @@ export default function Layout({ children }) {
     window.dispatchEvent(new Event('pes-tempo-real'))
   }), [])
   const gestao = pode('ver')
+  const { ve, alteraEm } = useSessao()
+  // o título de um grupo do menu só aparece se a conta vir algum ecrã dele
+  const algum = (...areas) => areas.some(ve)
   const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 
   return (
@@ -89,53 +95,53 @@ export default function Layout({ children }) {
             {gestao && <>
               <div className="menu-header">Geral</div>
               <Item para="/" fim icone="fa-chart-pie" texto="Painel" />
-              <Item para="/pessoas" icone="fa-users" texto="Pessoal" />
-              <Item para="/estudantes" icone="fa-user-graduate" texto="Estudantes" />
-              <Item para="/docentes" icone="fa-chalkboard-teacher" texto="Docentes" />
-              {pode('editar') && <Item para="/pessoas/nova" icone="fa-user-plus" texto="Nova ficha" />}
-              {pode('editar') && <Item para="/importar" icone="fa-file-import" texto="Importar Excel e fotos" />}
-              <Item para="/processos" icone="fa-folder-open" texto="Processos individuais" />
+              <Item para="/pessoas" area="fichas" icone="fa-users" texto="Pessoal" />
+              <Item para="/estudantes" area="academicos" icone="fa-user-graduate" texto="Estudantes" />
+              <Item para="/docentes" area="academicos" icone="fa-chalkboard-teacher" texto="Docentes" />
+              {alteraEm('fichas') && <Item para="/pessoas/nova" area="fichas" icone="fa-user-plus" texto="Nova ficha" />}
+              {<Item para="/importar" area="importar" icone="fa-file-import" texto="Importar Excel e fotos" />}
+              <Item para="/processos" area="processos" icone="fa-folder-open" texto="Processos individuais" />
 
-              <div className="menu-header">Carreiras</div>
-              <Item para="/propostas" icone="fa-file-signature" texto="Propostas" />
-              <Item para="/extractos" icone="fa-file-contract" texto="Extractos" />
-              <Item para="/elegiveis" icone="fa-medal" texto="Em condições de promoção" />
-              <Item para="/antiguidade" icone="fa-list-ol" texto="Listas de antiguidade" />
-              <Item para="/reserva" icone="fa-hourglass-half" texto="Reserva e reforma" />
-              <Item para="/licencas" icone="fa-plane-departure" texto="Licenças" />
-              <Item para="/ausencias" icone="fa-user-clock" texto="Faltas e ausências" />
-              <Item para="/ponto" icone="fa-fingerprint" texto="Livro de ponto (civis)" />
-              <Item para="/faltas-civis" icone="fa-calendar-check" texto="Controlo de faltas (civis)" />
-              <Item para="/plano-ferias" icone="fa-umbrella-beach" texto="Plano de férias" />
-              <Item para="/tabela-salarial" icone="fa-coins" texto="Tabela salarial (militares)" />
-              <Item para="/tabela-salarial-civis" icone="fa-coins" texto="Tabela salarial (civis)" />
+              {algum('propostas', 'decidirPropostas', 'carreiras', 'licencas', 'ausencias', 'ponto', 'salarios') && <div className="menu-header">Carreiras</div>}
+              <Item para="/propostas" area="propostas" icone="fa-file-signature" texto="Propostas" />
+              <Item para="/extractos" area="propostas" icone="fa-file-contract" texto="Extractos" />
+              <Item para="/elegiveis" area="carreiras" icone="fa-medal" texto="Em condições de promoção" />
+              <Item para="/antiguidade" area="carreiras" icone="fa-list-ol" texto="Listas de antiguidade" />
+              <Item para="/reserva" area="carreiras" icone="fa-hourglass-half" texto="Reserva e reforma" />
+              <Item para="/licencas" area="licencas" icone="fa-plane-departure" texto="Licenças" />
+              <Item para="/ausencias" area="ausencias" icone="fa-user-clock" texto="Faltas e ausências" />
+              <Item para="/ponto" area="ponto" icone="fa-fingerprint" texto="Livro de ponto (civis)" />
+              <Item para="/faltas-civis" area="ausencias" icone="fa-calendar-check" texto="Controlo de faltas (civis)" />
+              <Item para="/plano-ferias" area="licencas" icone="fa-umbrella-beach" texto="Plano de férias" />
+              <Item para="/tabela-salarial" area="salarios" icone="fa-coins" texto="Tabela salarial (militares)" />
+              <Item para="/tabela-salarial-civis" area="salarios" icone="fa-coins" texto="Tabela salarial (civis)" />
 
-              <div className="menu-header">Documentos</div>
-              <Item para="/declaracoes" icone="fa-file-signature" texto="Declarações" />
-              <Item para="/historico-efectivos" icone="fa-archive" texto="Histórico dos efectivos" />
-              <Item para="/documentos/efectividade" icone="fa-table" texto="Efectividade" />
-              <Item para="/documentos/mapas" icone="fa-chart-bar" texto="Mapas estatísticos" />
-              <Item para="/documentos/propostas" icone="fa-file-signature" texto="Pessoal proposto" />
-              <Item para="/documentos/listas" icone="fa-list" texto="Listas" />
+              {algum('documentos') && <div className="menu-header">Documentos</div>}
+              <Item para="/declaracoes" area="documentos" icone="fa-file-signature" texto="Declarações" />
+              <Item para="/historico-efectivos" area="documentos" icone="fa-archive" texto="Histórico dos efectivos" />
+              <Item para="/documentos/efectividade" area="documentos" icone="fa-table" texto="Efectividade" />
+              <Item para="/documentos/mapas" area="documentos" icone="fa-chart-bar" texto="Mapas estatísticos" />
+              <Item para="/documentos/propostas" area="documentos" icone="fa-file-signature" texto="Pessoal proposto" />
+              <Item para="/documentos/listas" area="documentos" icone="fa-list" texto="Listas" />
 
-              <div className="menu-header">Organização</div>
-              <Item para="/organica" icone="fa-sitemap" texto="Orgânica e planeamento" />
-              <Item para="/domiciliares" icone="fa-house-user" texto="Empregados domiciliares" />
+              {algum('organica', 'fichas') && <div className="menu-header">Organização</div>}
+              <Item para="/organica" area="organica" icone="fa-sitemap" texto="Orgânica e planeamento" />
+              <Item para="/domiciliares" area="fichas" icone="fa-house-user" texto="Empregados domiciliares" />
             </>}
 
             <div className="menu-header">Comunicação</div>
-            {pode('despachar') && <Item para="/secretaria" icone="fa-stamp" texto="Secretária digital" contador={avisos.porDespachar} />}
+            {<Item para="/secretaria" area="secretaria" icone="fa-stamp" texto="Secretária digital" contador={avisos.porDespachar} />}
             <Item para="/expediente" icone="fa-inbox" texto="Expediente" contador={avisos.porReceber} />
             <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
             {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
 
-            {pode('supervisionar') && <div className="menu-header">Administração</div>}
-            {pode('supervisionar') && <Item para="/utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
-            {pode('administrar') && <Item para="/listas" icone="fa-list-alt" texto="Listas do sistema" />}
-            {pode('administrar') && <Item para="/assinaturas" icone="fa-signature" texto="Assinaturas dos documentos" />}
-            {pode('supervisionar') && <Item para="/auditoria" icone="fa-shield-alt" texto="Auditoria" />}
-            {gestao && <Item para="/portal" icone="fa-exchange-alt" texto="Ligação ao portal" />}
-            {pode('editar') && <Item para="/pedidos-dados" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
+            {algum('utilizadores', 'configuracoes', 'auditoria', 'privacidade') && <div className="menu-header">Administração</div>}
+            {<Item para="/utilizadores" area="utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
+            {<Item para="/listas" area="configuracoes" icone="fa-list-alt" texto="Listas do sistema" />}
+            {<Item para="/assinaturas" area="configuracoes" icone="fa-signature" texto="Assinaturas dos documentos" />}
+            {<Item para="/auditoria" area="auditoria" icone="fa-shield-alt" texto="Auditoria" />}
+            {<Item para="/portal" area="configuracoes" icone="fa-exchange-alt" texto="Ligação ao portal" />}
+            {<Item para="/pedidos-dados" area="privacidade" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
             <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
             <Item para="/senha" icone="fa-key" texto="Segurança da conta" />
             <div className="menu-item"><a href="manual/index.html" target="_blank" rel="noreferrer" className="menu-link"><div className="menu-icon"><i className="fa fa-book" /></div><div className="menu-text">Manual</div></a></div>

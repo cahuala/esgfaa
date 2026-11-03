@@ -7,7 +7,7 @@ import { dataHoraPt } from '../formatar'
 import Foto from './Foto'
 import { Painel } from './Ui'
 
-const ICONE = { docente_novo: 'fa-chalkboard-teacher', docente_categoria: 'fa-layer-group', docente_saida: 'fa-user-minus', utilizador_novo: 'fa-user-shield', utilizador_papel: 'fa-user-tag' }
+const ICONE = { docente_novo: 'fa-chalkboard-teacher', docente_categoria: 'fa-layer-group', docente_saida: 'fa-user-minus', utilizador_novo: 'fa-user-shield', utilizador_papel: 'fa-user-tag', utilizador_permissoes: 'fa-user-shield' }
 const COR = { deferido: 'text-success', indeferido: 'text-danger', anulado: 'text-muted' }
 
 /*

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { api, definirAoExpirar, marcarSessao, temSessao } from './api'
-import { ContextoSessao } from './sessao'
+import { Area, ContextoSessao } from './sessao'
 import { Aviso, Carregando, NaoEncontrado } from './componentes/Ui'
 import Layout from './Layout'
 import Entrar from './paginas/Entrar'
@@ -105,51 +105,51 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={utilizador.permissoes.includes('ver') ? <PainelInicial /> : <Navigate to="/expediente" replace />} />
-          <Route path="/pessoas" element={<Pessoas />} />
-          <Route path="/estudantes" element={<Academicos key="estudante" tipo="estudante" />} />
-          <Route path="/docentes" element={<Academicos key="docente" tipo="docente" />} />
-          <Route path="/pessoas/nova" element={<FormularioFicha />} />
-          <Route path="/pessoas/:id" element={<Perfil />} />
-          <Route path="/pessoas/:id/editar" element={<FichaPorId />} />
-          <Route path="/propostas" element={<Propostas />} />
-          <Route path="/propostas/nova" element={<NovaProposta />} />
-          <Route path="/propostas/:id" element={<Proposta />} />
-          <Route path="/elegiveis" element={<Elegiveis />} />
-          <Route path="/antiguidade" element={<Antiguidade />} />
-          <Route path="/reserva" element={<Reserva />} />
-          <Route path="/licencas" element={<Licencas />} />
-          <Route path="/ausencias" element={<Ausencias />} />
-          <Route path="/faltas-civis" element={<FaltasCivis />} />
-          <Route path="/ponto" element={<LivroPonto />} />
-          <Route path="/secretaria" element={<Secretaria />} />
+          <Route path="/pessoas" element={<Area id="fichas"><Pessoas /></Area>} />
+          <Route path="/estudantes" element={<Area id="academicos"><Academicos key="estudante" tipo="estudante" /></Area>} />
+          <Route path="/docentes" element={<Area id="academicos"><Academicos key="docente" tipo="docente" /></Area>} />
+          <Route path="/pessoas/nova" element={<Area id="fichas"><FormularioFicha /></Area>} />
+          <Route path="/pessoas/:id" element={<Area id="fichas"><Perfil /></Area>} />
+          <Route path="/pessoas/:id/editar" element={<Area id="fichas"><FichaPorId /></Area>} />
+          <Route path="/propostas" element={<Area id="propostas"><Propostas /></Area>} />
+          <Route path="/propostas/nova" element={<Area id="propostas"><NovaProposta /></Area>} />
+          <Route path="/propostas/:id" element={<Area id="propostas"><Proposta /></Area>} />
+          <Route path="/elegiveis" element={<Area id="carreiras"><Elegiveis /></Area>} />
+          <Route path="/antiguidade" element={<Area id="carreiras"><Antiguidade /></Area>} />
+          <Route path="/reserva" element={<Area id="carreiras"><Reserva /></Area>} />
+          <Route path="/licencas" element={<Area id="licencas"><Licencas /></Area>} />
+          <Route path="/ausencias" element={<Area id="ausencias"><Ausencias /></Area>} />
+          <Route path="/faltas-civis" element={<Area id="ausencias"><FaltasCivis /></Area>} />
+          <Route path="/ponto" element={<Area id="ponto"><LivroPonto /></Area>} />
+          <Route path="/secretaria" element={<Area id="secretaria"><Secretaria /></Area>} />
           <Route path="/quadro" element={<Navigate to="/organica" replace />} />
-          <Route path="/organica/importar" element={<ImportarOrganica />} />
-          <Route path="/organica" element={<Organica />} />
-          <Route path="/organica/:id" element={<Organica />} />
-          <Route path="/importar" element={<Importar />} />
-          <Route path="/processos" element={<Processos />} />
-          <Route path="/extractos" element={<Extractos />} />
-          <Route path="/extractos/:id" element={<Extracto />} />
-          <Route path="/domiciliares" element={<Domiciliares />} />
-          <Route path="/assinaturas" element={<Assinaturas />} />
-          <Route path="/listas" element={<ListasSistema />} />
-          <Route path="/tabela-salarial" element={<TabelaSalarial />} />
-          <Route path="/tabela-salarial-civis" element={<TabelaSalarialCivis />} />
-          <Route path="/plano-ferias" element={<PlanoFerias />} />
-          <Route path="/declaracoes" element={<Declaracoes />} />
-          <Route path="/historico-efectivos" element={<HistoricoEfectivos />} />
-          <Route path="/documentos" element={<Documentos />} />
-          <Route path="/documentos/:grupo" element={<Documentos />} />
+          <Route path="/organica/importar" element={<Area id="organica"><ImportarOrganica /></Area>} />
+          <Route path="/organica" element={<Area id="organica"><Organica /></Area>} />
+          <Route path="/organica/:id" element={<Area id="organica"><Organica /></Area>} />
+          <Route path="/importar" element={<Area id="importar"><Importar /></Area>} />
+          <Route path="/processos" element={<Area id="processos"><Processos /></Area>} />
+          <Route path="/extractos" element={<Area id="propostas"><Extractos /></Area>} />
+          <Route path="/extractos/:id" element={<Area id="propostas"><Extracto /></Area>} />
+          <Route path="/domiciliares" element={<Area id="fichas"><Domiciliares /></Area>} />
+          <Route path="/assinaturas" element={<Area id="configuracoes"><Assinaturas /></Area>} />
+          <Route path="/listas" element={<Area id="configuracoes"><ListasSistema /></Area>} />
+          <Route path="/tabela-salarial" element={<Area id="salarios"><TabelaSalarial /></Area>} />
+          <Route path="/tabela-salarial-civis" element={<Area id="salarios"><TabelaSalarialCivis /></Area>} />
+          <Route path="/plano-ferias" element={<Area id="licencas"><PlanoFerias /></Area>} />
+          <Route path="/declaracoes" element={<Area id="documentos"><Declaracoes /></Area>} />
+          <Route path="/historico-efectivos" element={<Area id="documentos"><HistoricoEfectivos /></Area>} />
+          <Route path="/documentos" element={<Area id="documentos"><Documentos /></Area>} />
+          <Route path="/documentos/:grupo" element={<Area id="documentos"><Documentos /></Area>} />
           <Route path="/expediente" element={<Expediente />} />
           <Route path="/expediente/:id" element={<Expediente />} />
           <Route path="/mensagens" element={<Mensagens />} />
           <Route path="/mensagens/:id" element={<Mensagens />} />
-          <Route path="/utilizadores" element={<Utilizadores />} />
-          <Route path="/auditoria" element={<Auditoria />} />
-          <Route path="/portal" element={<Portal />} />
+          <Route path="/utilizadores" element={<Area id="utilizadores"><Utilizadores /></Area>} />
+          <Route path="/auditoria" element={<Area id="auditoria"><Auditoria /></Area>} />
+          <Route path="/portal" element={<Area id="configuracoes"><Portal /></Area>} />
           <Route path="/senha" element={<MudarSenha />} />
           <Route path="/privacidade" element={<Privacidade />} />
-          <Route path="/pedidos-dados" element={<PedidosDados />} />
+          <Route path="/pedidos-dados" element={<Area id="privacidade"><PedidosDados /></Area>} />
           <Route path="*" element={<NaoEncontrado />} />
         </Routes>
       </Layout>

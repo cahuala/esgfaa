@@ -26,6 +26,8 @@ model Utilizador {
   deveMudar     Boolean        @default(true) @map("deve_mudar")
   // conta nova (com papel acima de utente) à espera do despacho do Comandante: ainda não entra
   aguardaDespacho Boolean      @default(false) @map("aguarda_despacho")
+  // o que esta conta pode fazer, ecrã a ecrã ({ área: 'ver' | 'alterar' }); vazio = as do papel
+  permissoes    Json?
   // quando tomou conhecimento do aviso de privacidade (Lei n.º 22/11)
   privacidadeEm DateTime?      @map("privacidade_em") @db.Timestamptz(3)
   criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)

@@ -1,6 +1,8 @@
 import crypto from 'node:crypto'
+import { Prisma } from '@prisma/client'
 import { ErroDominio, conflito, invalido, naoAutenticado, naoEncontrado, semPermissao } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
+import { AREAS, MODELOS, areasDe, limparAreas, permissoesDe } from '../dominio/seguranca/areas.js'
 
 /*
   Quem usa o sistema e o que pode fazer:
@@ -22,15 +24,24 @@ export const PAPEIS = {
   consulta: { nome: 'Consulta', permissoes: ['ver', ...COMUNS] },
   utente: { nome: 'Utente (expediente e mensagens)', permissoes: COMUNS },
 }
+// o que muda nas permissões, para o Comandante ler: «Dá: Licenças (alterar) · Tira: Auditoria»
+function resumoAreas(antes, depois) {
+  const nivel = (n) => (n === 'alterar' ? 'ver e alterar' : 'ver')
+  const da = Object.entries(depois).filter(([a, n]) => antes[a] !== n).map(([a, n]) => `${AREAS[a]?.nome.split(' (')[0] ?? a} (${nivel(n)})`)
+  const tira = Object.keys(antes).filter((a) => !depois[a]).map((a) => AREAS[a]?.nome.split(' (')[0] ?? a)
+  return [da.length && `Dá: ${da.join(', ')}`, tira.length && `Tira: ${tira.join(', ')}`].filter(Boolean).join(' · ') || 'Volta às permissões do papel'
+}
+
 const MAX_FALHAS = 5
 const BLOQUEIO_MIN = 15
 
-export const pode = (u, permissao) => Boolean(PAPEIS[u?.papel]?.permissoes.includes(permissao))
+// as permissões vêm das áreas da conta (as do papel, ou as escolhidas para ela com o despacho do Comandante)
+export const pode = (u, permissao) => Boolean(u?.papel && permissoesDe(u).includes(permissao))
 export function exigir(u, permissao) {
   if (!pode(u, permissao)) throw semPermissao()
 }
 
-const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, aguardaDespacho: Boolean(u.aguardaDespacho), deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: PAPEIS[u.papel]?.permissoes ?? [], pessoaId: u.pessoaId ?? null, unidadeId: u.unidadeId ?? null, unidadeNome: u.unidade?.nome ?? '' })
+const publico = (u) => ({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, papelNome: PAPEIS[u.papel]?.nome, ativo: u.ativo, aguardaDespacho: Boolean(u.aguardaDespacho), areas: areasDe(u), permissoesProprias: Boolean(u.permissoes), deveMudar: u.deveMudar, ultimoAcesso: u.ultimoAcesso, permissoes: u.papel ? permissoesDe(u) : [], pessoaId: u.pessoaId ?? null, unidadeId: u.unidadeId ?? null, unidadeNome: u.unidade?.nome ?? '' })
 // palavra-passe inicial: 10 caracteres sem os que se confundem (0/O, 1/l), com letras e números
 const ALFABETO = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 export function senhaInicial() {
@@ -99,7 +110,7 @@ export class ServicoSessao {
 
   async eu(u) {
     const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
-    return { ...publico(u), doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
+    return { ...publico(u), doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u) && !doisFatores) }
   }
 
   async mudarSenha(u, { atual, nova }) {
@@ -120,8 +131,10 @@ export class ServicoSessao {
   async listar(u) {
     exigir(u, 'supervisionar')
     // a mudança de papel pedida e ainda por despachar
-    const pedidos = new Map((await this.bd.pedidoDespacho.findMany({ where: { tipo: 'utilizador_papel', estado: 'pendente' } })).map((x) => [x.utilizadorId, x.dados?.papel]))
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map((x) => ({ ...publico(x), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null }))
+    const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
+    const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
+    const permissoes = new Map(pendentes.filter((x) => x.tipo === 'utilizador_permissoes').map((x) => [x.utilizadorId, x.resumo]))
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map((x) => ({ ...publico(x), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
   }
 
   // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não
@@ -132,9 +145,17 @@ export class ServicoSessao {
     return true
   }
 
-  // o que o Comandante deferiu
+  async #haComandante() {
+    return Boolean(await this.bd.utilizador.count({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false } }))
+  }
+
+  // o que o Comandante deferiu (mudar o papel volta às permissões do papel novo)
   async aplicarDespacho(id, data) {
-    const g = await this.bd.utilizador.update({ where: { id }, data: { ...data, versaoToken: { increment: 1 } } })
+    if ('papel' in data) data = { ...data, permissoes: Prisma.DbNull }
+    if ('permissoes' in data && data.permissoes === null) data = { ...data, permissoes: Prisma.DbNull }
+    // o papel e o estado da conta obrigam a entrar de novo; as permissões valem logo (cada pedido lê a conta)
+    const sair = 'papel' in data || 'ativo' in data
+    const g = await this.bd.utilizador.update({ where: { id }, data: { ...data, ...(sair ? { versaoToken: { increment: 1 } } : {}) } })
     return publico(g)
   }
 
@@ -157,7 +178,7 @@ export class ServicoSessao {
     }
   }
 
-  async editar(u, id, { nome, papel, ativo, senha, unidadeId }) {
+  async editar(u, id, { nome, papel, ativo, senha, unidadeId, permissoes }) {
     exigir(u, 'administrar')
     const alvo = await this.bd.utilizador.findUnique({ where: { id } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
@@ -182,11 +203,26 @@ export class ServicoSessao {
       Object.assign(data, { senha: await this.cifra.cifrar(senha), deveMudar: true, falhas: 0, bloqueadoAte: null })
     }
     if (data.papel !== undefined || data.ativo !== undefined || data.senha) data.versaoToken = { increment: 1 }
+    // o que a conta pode fazer, ecrã a ecrã (null = voltar às do papel): espera pelo despacho do Comandante
+    let pedirPermissoes = null
+    if (permissoes !== undefined) {
+      const novas = permissoes === null ? null : limparAreas(permissoes)
+      const atuais = areasDe(alvo)
+      const finais = novas ?? MODELOS[data.papel ?? alvo.papel] ?? {}
+      if (JSON.stringify(Object.entries(finais).sort()) !== JSON.stringify(Object.entries(atuais).sort()) || (novas === null) !== !alvo.permissoes) {
+        if (alvo.id === u.id && !(finais.utilizadores === 'alterar')) throw invalido('Não pode tirar a si próprio a gestão dos utilizadores.')
+        // sem Comandante ainda (primeira instalação) ou conta por despachar: aplica-se já
+        if (alvo.aguardaDespacho || !this.despachos || !(await this.#haComandante())) data.permissoes = novas ?? Prisma.DbNull
+        else pedirPermissoes = { novas, atuais, finais }
+      }
+    }
     if (alvo.aguardaDespacho && data.ativo === true) delete data.ativo // só o despacho a abre
     const g = await this.bd.utilizador.update({ where: { id }, data, include: COM_UNIDADE })
+    if (pedirPermissoes) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_permissoes', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${resumoAreas(pedirPermissoes.atuais, pedirPermissoes.finais)}`, dados: { permissoes: pedirPermissoes.novas } })
     if (pedirPapel) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_papel', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${PAPEIS[alvo.papel]?.nome ?? alvo.papel} → ${PAPEIS[papel].nome}`, dados: { papel, anterior: alvo.papel } })
     await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha) })
-    return { ...publico(g), ...(pedirPapel ? { aDespacho: ['utilizador_papel'] } : {}) }
+    const aDespacho = [...(pedirPapel ? ['utilizador_papel'] : []), ...(pedirPermissoes ? ['utilizador_permissoes'] : [])]
+    return { ...publico(g), ...(aDespacho.length ? { aDespacho } : {}) }
   }
 
   /*

@@ -1,3 +1,4 @@
+import { permissoesDe } from '../dominio/seguranca/areas.js'
 import { conflito, invalido, naoEncontrado } from '../erros.js'
 import { gerarCodigosRecuperacao, gerarSegredo, resumoCodigo, urlOtpauth, verificarCodigo } from '../dominio/totp.js'
 import { exigir } from './sessao.js'
@@ -14,8 +15,11 @@ export class ServicoDoisFatores {
     Object.assign(this, { bd, auditoria, agora, papeis })
   }
 
-  obrigatorio(papel) {
-    return this.papeis.includes(papel)
+  // obrigatória pelo papel, ou para qualquer conta que veja fichas (as permissões próprias também contam)
+  obrigatorio(u) {
+    const papel = typeof u === 'string' ? u : u?.papel
+    if (this.papeis.includes(papel)) return true
+    return Boolean(this.papeis.length && typeof u === 'object' && u?.permissoes && permissoesDe(u).includes('ver'))
   }
 
   #registo(utilizadorId) {
@@ -28,7 +32,7 @@ export class ServicoDoisFatores {
 
   async estado(u) {
     const r = await this.#registo(u.id)
-    return { ativo: Boolean(r?.ativo), obrigatorio: this.obrigatorio(u.papel), ativadoEm: r?.ativo ? r.ativadoEm : null, codigosRestantes: r?.ativo ? r.recuperacao.length : 0 }
+    return { ativo: Boolean(r?.ativo), obrigatorio: this.obrigatorio(u), ativadoEm: r?.ativo ? r.ativadoEm : null, codigosRestantes: r?.ativo ? r.recuperacao.length : 0 }
   }
 
   async iniciar(u) {
@@ -61,7 +65,7 @@ export class ServicoDoisFatores {
   }
 
   async desligar(u, { senha, codigo }, verificarSenha) {
-    if (this.obrigatorio(u.papel)) throw invalido('O seu papel exige a verificação em dois passos: não pode ser desligada.')
+    if (this.obrigatorio(u)) throw invalido('O seu papel exige a verificação em dois passos: não pode ser desligada.')
     const r = await this.#registo(u.id)
     if (!r?.ativo) throw invalido('A verificação em dois passos não está ligada.')
     if (!(await verificarSenha(senha))) throw invalido('A palavra-passe está errada.', 'senha')
