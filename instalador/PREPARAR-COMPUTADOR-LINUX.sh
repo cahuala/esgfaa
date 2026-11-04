@@ -11,8 +11,7 @@ NOME="${NOME:-esg.emfaa.gov.ao}"
 read -r -p "IP do servidor do sistema [${IP:-}]: " R || true
 IP="${R:-${IP:-}}"
 [[ "$IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "IP inválido: $IP"; exit 1; }
-sed -i '/# esg-pessoal$/d' /etc/hosts
-echo "$IP $NOME # esg-pessoal" >> /etc/hosts
+H="$(grep -v '# esg-pessoal$' /etc/hosts || true)"; printf '%s\n%s %s # esg-pessoal\n' "$H" "$IP" "$NOME" > /etc/hosts
 echo "[ok] $NOME -> $IP (/etc/hosts)"
 if [[ -d /usr/local/share/ca-certificates ]]; then cp "$CRT" /usr/local/share/ca-certificates/esg-pessoal-raiz.crt && update-ca-certificates >/dev/null
 elif [[ -d /etc/pki/ca-trust/source/anchors ]]; then cp "$CRT" /etc/pki/ca-trust/source/anchors/esg-pessoal-raiz.crt && update-ca-trust; fi

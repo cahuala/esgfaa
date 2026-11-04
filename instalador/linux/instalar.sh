@@ -294,8 +294,8 @@ http:// {
 EOF
 chown -R "$UTILIZADOR:$UTILIZADOR" "$DADOS"
 # este computador encontra o nome sem esperar pelo DNS da Escola
-sed -i '/# esg-pessoal$/d' /etc/hosts
-echo "127.0.0.1 $ENDERECO # esg-pessoal" >> /etc/hosts
+# (reescreve-se no lugar: o /etc/hosts pode ser uma ligação ou estar montado)
+H="$(grep -v '# esg-pessoal$' /etc/hosts || true)"; printf '%s\n127.0.0.1 %s # esg-pessoal\n' "$H" "$ENDERECO" > /etc/hosts
 if (( SYSTEMD )); then
   servico esg-pessoal "ESG Pessoal — sistema" "$NODE src/servidor.js" "" esg-pessoal-bd.service
   servico esg-pessoal-web "ESG Pessoal — HTTPS (Caddy)" "$DESTINO/caddy/caddy run --config $CONF/Caddyfile --adapter caddyfile" "AmbientCapabilities=CAP_NET_BIND_SERVICE
@@ -354,7 +354,7 @@ cp "$RESUMO" "$REG/INSTALACAO-CONCLUIDA-$CARIMBO.txt" 2>/dev/null && sed -i '/Pa
 
 echo "Instalação concluída."
 # o resumo vai directo ao ecrã (não para o registo no pendrive): a palavra-passe não fica escrita no pendrive
-SAIDA=/dev/tty; [[ -w /dev/tty ]] || SAIDA=/dev/stderr
+SAIDA=/dev/tty; { : > /dev/tty; } 2>/dev/null || SAIDA=/dev/stderr
 {
   echo
   echo "=============================================================="
