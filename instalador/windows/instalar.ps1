@@ -61,7 +61,7 @@ function Causas {
     'sistema' { '- Este instalador é para Windows 10/11 ou Windows Server 2016+ de 64 bits.' }
     'pendrive' { '- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt).'; '- Volte a copiar a pasta ESG-PESSOAL para o pendrive (no computador onde foi preparada) e repita.' }
     'espaco' { '- Falta espaço no disco C:. São precisos pelo menos 3 GB livres.' }
-    'portas' { "- Outro programa está a usar uma porta de que o sistema precisa (443 HTTPS, 8085 aparelhos de ponto, $PortaBd, $PortaApi)."; '- «System» na porta 443 é o HTTP.sys do Windows: o IIS, o Windows Admin Center, a VPN (SSTP) ou o AD FS. O instalador mostra quais e pergunta se os pode parar; responda S se não forem precisos neste servidor.'; '- Para ver quem usa as portas:  netstat -ano | findstr LISTENING   e   netsh http show servicestate'; '- O sistema deve ficar num servidor sem outros sites na porta 443 (de preferência um servidor só para ele, não o controlador de domínio).' }
+    'portas' { "- Outro programa está a usar uma porta de que o sistema precisa (8085 aparelhos de ponto, $PortaBd, $PortaApi; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."; '- O instalador não pára nenhum serviço do servidor. Veja quem usa as portas com:  netstat -ano | findstr LISTENING   e   netsh http show servicestate'; '- «System» é o HTTP.sys do Windows (VPN SSTP, IIS, Windows Admin Center…).' }
     'copiar' { '- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta C:\ESG-Pessoal) ou o pendrive está estragado.' }
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable (vem no pendrive, componentes\vcredist-windows.exe) não instalou.' }
     'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
@@ -139,62 +139,50 @@ if ($Atualizar) {
 }
 
 Passo 'portas' 'A verificar as portas'
-# o processo «System» (PID 4) na porta é o HTTP.sys do Windows: por trás estão serviços como o IIS, o Windows
-# Admin Center, a VPN (SSTP) ou o AD FS. Descobre-se quais pelo netsh (os PID que registaram URLs nessa porta).
-function ServicosHttpSys($porta) {
-  $pids = @(); $dentro = $false; $pidsGrupo = @(); $urlGrupo = $false
-  $saida = @(& netsh http show servicestate view=requestq verbose=no 2>$null)
-  # fica no registo (no pendrive): o que o Windows diz que está registado no HTTP.sys
-  Write-Host '    netsh http show servicestate (filas e URL registados):'
-  $saida | Where-Object { $_ -match 'Request queue name|Process IDs|^\s+\d+\s*$|://' } | ForEach-Object { Write-Host "      $_" }
+# quem está numa porta (para o registo). O processo «System» é o HTTP.sys do Windows: os serviços que lá
+# registaram endereços (VPN SSTP, IIS, Windows Admin Center…) descobrem-se pelo netsh.
+function Livre($p) { -not (Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue) }
+function QuemUsa($porta) {
+  $uso = Get-NetTCPConnection -State Listen -LocalPort $porta -ErrorAction SilentlyContinue
+  $prog = @($uso | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName } | Select-Object -Unique)
+  if ($prog -notcontains 'System') { return ($prog -join ', ') }
+  $pids = @(); $dentro = $false; $pidsGrupo = @(); $urlGrupo = $false; $urls = @()
   # cada fila começa numa linha sem recuo; dentro dela, os grupos de URL repetem «Request queue name» com recuo
-  foreach ($l in $saida + 'Request queue name:') {
+  foreach ($l in @(& netsh http show servicestate view=requestq verbose=no 2>$null) + 'Request queue name:') {
     if ($l -match '^Request queue name:') { if ($urlGrupo) { $pids += $pidsGrupo }; $pidsGrupo = @(); $urlGrupo = $false; $dentro = $false; continue }
     if ($l -match 'Process IDs:') { $dentro = $true; continue }
     if ($dentro -and $l -match '^\s+(\d+)\s*$') { $pidsGrupo += [int]$Matches[1]; continue }
     $dentro = $false
-    if ($l -match "^\s+https?://[^/]*:$porta/" -or ($porta -eq 443 -and $l -match '^\s+https://[^:/]+/')) { $urlGrupo = $true }
+    if ($l -match "^\s+(https?://[^/]*:$porta/\S*)") { $urlGrupo = $true; $urls += $Matches[1] }
   }
-  $svc = @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Running' -and $pids -contains [int]$_.ProcessId })
-  # serviços conhecidos que usam a 443 pelo HTTP.sys (se o netsh não os mostrar)
-  foreach ($n in 'W3SVC', 'WAS', 'ServerManagementGateway', 'SstpSvc', 'adfssrv') {
-    $x = Get-CimInstance Win32_Service -Filter "Name='$n'" -ErrorAction SilentlyContinue
-    if ($x -and $x.State -eq 'Running' -and -not ($svc | Where-Object Name -eq $n)) { if ($n -ne 'WAS' -or $svc.Count) { $svc += $x } }
-  }
-  $svc | Where-Object { $_.Name -notin 'HTTP', 'WinRM' }
+  $svc = @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Running' -and $pids -contains [int]$_.ProcessId } | ForEach-Object { "$($_.DisplayName) [$($_.Name)]" })
+  $quem = if ($svc.Count) { $svc -join '; ' } else { 'HTTP.sys do Windows' }
+  if ($urls.Count) { "$quem ($($urls -join ', '))" } else { $quem }
 }
-foreach ($p in 443, 8085, $PortaApi, $PortaBd) {
-  $uso = Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue
-  if ($uso) {
+# o HTTPS fica na 443 se estiver livre; senão, na primeira livre destas. Nenhum serviço do servidor é parado.
+$anterior = if ($Atualizar) { (Select-String -Path (Join-Path $Conf 'pessoal.env') -Pattern '^PORTA_WEB=(\d+)' -ErrorAction SilentlyContinue).Matches | ForEach-Object { [int]$_.Groups[1].Value } | Select-Object -First 1 }
+$PortaWeb = $null
+foreach ($c in @(@($anterior) + 443, 8443, 9443, 10443 | Where-Object { $_ } | Select-Object -Unique)) {
+  if (Livre $c) { $PortaWeb = $c; break }
+  Write-Host "    a porta $c está ocupada por: $(QuemUsa $c) — fica como está" -ForegroundColor Yellow
+}
+if (-not $PortaWeb) { Falha 'As portas 443, 8443, 9443 e 10443 estão todas ocupadas: não há porta para o HTTPS.' }
+# a porta 80 (se estiver livre) só serve para levar quem escreve http://… ao endereço certo
+$PortaHttp = if (Livre 80) { 80 } else { $null }
+if (-not $PortaHttp) { Write-Host "    a porta 80 está ocupada por: $(QuemUsa 80) — fica como está (escreve-se o endereço completo)" -ForegroundColor Yellow }
+foreach ($p in 8085, $PortaApi, $PortaBd) {
+  if (-not (Livre $p)) {
     if ($Atualizar -and $p -eq $PortaBd) { continue }
-    $prog = ($uso | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName } | Select-Object -Unique) -join ', '
-    if ($prog -eq 'System') {
-      $svc = @(ServicosHttpSys $p)
-      if (-not $svc.Count) { Falha "A porta $p está ocupada pelo HTTP.sys do Windows (processo System), mas não se descobriu o serviço. Veja com:  netsh http show servicestate" }
-      $lista = ($svc | ForEach-Object { "$($_.DisplayName) [$($_.Name)]" }) -join '; '
-      Write-Host "    A porta $p está a ser usada por: $lista" -ForegroundColor Yellow
-      Write-Host '    O sistema precisa da porta 443 para abrir https://esg.emfaa.gov.ao.' -ForegroundColor Yellow
-      Write-Host '    Se algum destes serviços for preciso neste servidor (p. ex. a VPN ou o AD FS), responda N e fale com o responsável.' -ForegroundColor Yellow
-      $r = if ($env:ESG_LIBERTAR_PORTA) { $env:ESG_LIBERTAR_PORTA } else { Read-Host "    Parar estes serviços e desligar o arranque automático deles? (S/N)" }
-      if ($r -notmatch '^[sS]') { Falha "A porta $p já está ocupada por: $lista (não foram parados)" }
-      foreach ($x in $svc) {
-        Stop-Service -Name $x.Name -Force -ErrorAction SilentlyContinue
-        Set-Service -Name $x.Name -StartupType Disabled -ErrorAction SilentlyContinue
-        Write-Host "    parado e desligado: $($x.DisplayName)"
-      }
-      Start-Sleep 3
-      if (Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue) { Falha "A porta $p continua ocupada depois de parar: $lista. Veja com:  netsh http show servicestate" }
-      Ok "porta $p libertada"
-      continue
-    }
-    Falha "A porta $p já está ocupada por: $prog"
+    Falha "A porta $p já está ocupada por: $(QuemUsa $p)"
   }
 }
-Ok "443, 8085, $PortaApi e $PortaBd livres"
+Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); 8085, $PortaApi e $PortaBd livres\"
 
 # o sistema abre-se só pelo nome (nunca pelo IP)
 $Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao' }
 $Endereco = $Dominio
+$Url = if ($PortaWeb -eq 443) { "https://$Endereco" } else { "https://${Endereco}:$PortaWeb" }
+$Origens = (@("https://$Endereco", $Url) | Select-Object -Unique) -join ','
 $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
 # a conta de administrador do sistema: o nome, o e-mail com que entra e a palavra-passe (escolhida ou gerada)
 $SenhaEscolhida = $false
@@ -258,7 +246,7 @@ if (-not $Atualizar) {
     "# Sistema de Gestão de Pessoal e Quadros — criado pelo instalador em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     '# GUARDE UMA CÓPIA DESTE FICHEIRO NUM COFRE: sem DADOS_CHAVE os dados pessoais não se lêem; sem COPIAS_CHAVE as cópias não abrem.',
     'NODE_ENV=production', 'HOST=127.0.0.1', "PORT=$PortaApi", 'TRUST_PROXY=1',
-    "ENDERECO=$Endereco", "CORS_ORIGINS=https://$Endereco",
+    "ENDERECO=$Endereco", "PORTA_WEB=$PortaWeb", "CORS_ORIGINS=$Origens",
     "DATABASE_URL=postgresql://pessoal:$BdSenha@127.0.0.1:$PortaBd/esgfaa_pessoal", "BD_SENHA=$BdSenha",
     "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(Aleatorio 64)", "COPIAS_CHAVE=$(Aleatorio 64)",
     "ADMIN_NOME=`"$AdminNome`"", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
@@ -270,7 +258,9 @@ if (-not $Atualizar) {
   [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$env_, (New-Object Text.UTF8Encoding $false))
 }
 # numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
-[IO.File]::WriteAllLines($EnvFicheiro, [string[]]((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*', "ENDERECO=$Dominio" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=https://$Dominio"), (New-Object Text.UTF8Encoding $false))
+$linhasEnv = @((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*', "ENDERECO=$Dominio" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=$Origens" -replace '^PORTA_WEB=.*', "PORTA_WEB=$PortaWeb")
+if (-not ($linhasEnv -match '^PORTA_WEB=')) { $linhasEnv += "PORTA_WEB=$PortaWeb" }
+[IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhasEnv, (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }
 $Endereco = $Cfg.ENDERECO; $AdminEmail = $Cfg.ADMIN_EMAIL
@@ -309,10 +299,13 @@ $Caddyfile = Join-Path $Conf 'Caddyfile'
 $storage = ("$Dados\caddy" -replace '\\', '/')
 @"
 # HTTPS com a autoridade interna do Caddy (o certificado da raiz instala-se nos computadores da Repartição)
-# so abre por https://${Endereco}; pelo IP (ou outro nome) a ligacao e recusada
+# so abre por ${Url}; pelo IP (ou outro nome) a ligacao e recusada
 {
 	storage file_system $storage
 	skip_install_trust
+	https_port $PortaWeb
+	# o encaminhamento do http:// faz-se abaixo (para a porta certa do HTTPS)
+	auto_https disable_redirects
 }
 $Endereco {
 	tls internal
@@ -327,9 +320,7 @@ $Endereco {
 	reverse_proxy 127.0.0.1:$PortaApi
 }
 
-http:// {
-	abort
-}
+$(if ($PortaHttp) { "http://$Endereco {`n`tredir $Url{uri} permanent`n}`n`nhttp:// {`n`tabort`n}" })
 
 # aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
 :8085 {
@@ -373,8 +364,12 @@ Servico 'ESG-Pessoal-Copias' 'ESG Pessoal — cópias de segurança diárias' $N
 foreach ($s in 'ESG-Pessoal', 'ESG-Pessoal-Web', 'ESG-Pessoal-Copias') { Restart-Service $s -Force }
 
 # firewall: HTTPS e os aparelhos de ponto, só nas redes do domínio e privadas
-foreach ($r in @(@('ESG Pessoal (HTTPS)', 443), @('ESG Pessoal (aparelhos de ponto)', 8085))) {
-  if (-not (Get-NetFirewallRule -DisplayName $r[0] -ErrorAction SilentlyContinue)) { New-NetFirewallRule -DisplayName $r[0] -Direction Inbound -Protocol TCP -LocalPort $r[1] -Action Allow -Profile Domain, Private | Out-Null }
+$regras = @(@('ESG Pessoal (HTTPS)', $PortaWeb), @('ESG Pessoal (aparelhos de ponto)', 8085))
+if ($PortaHttp) { $regras += , @('ESG Pessoal (HTTP, encaminha)', $PortaHttp) }
+foreach ($r in $regras) {
+  # (re)cria-se: a porta do HTTPS pode ter mudado
+  Remove-NetFirewallRule -DisplayName $r[0] -ErrorAction SilentlyContinue
+  New-NetFirewallRule -DisplayName $r[0] -Direction Inbound -Protocol TCP -LocalPort $r[1] -Action Allow -Profile Domain, Private | Out-Null
 }
 Ok 'serviços ligados (services.msc: «ESG Pessoal»)'
 
@@ -395,7 +390,7 @@ if (Test-Path $raiz) {
   Ok 'certificado HTTPS criado e instalado neste computador'
 }
 # para preparar os outros computadores (PREPARAR-COMPUTADOR-*): o nome e o IP deste servidor
-Set-Content -Path (Join-Path $Reg 'servidor.txt') -Value "$ip $Endereco" -Encoding ASCII -ErrorAction SilentlyContinue
+Set-Content -Path (Join-Path $Reg 'servidor.txt') -Value "$ip $Endereco $Url" -Encoding ASCII -ErrorAction SilentlyContinue
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
 $AdminSenha = $Cfg.ADMIN_PASSWORD
@@ -404,7 +399,7 @@ $AdminSenha = $Cfg.ADMIN_PASSWORD
 $resumo = @(
   "SISTEMA DE GESTÃO DE PESSOAL E QUADROS — instalado em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
   '',
-  "Endereço:              https://$Endereco   (pelo IP não abre)",
+  "Endereço:              $Url   (pelo IP não abre)",
   "No DNS da Escola:      $Endereco  ->  $ip   (registo A; peça ao responsável pela rede)",
   '                       Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat do pendrive.',
   "Administrador:         $AdminEmail"
@@ -431,4 +426,4 @@ Write-Host '==============================================================' -For
 $resumo | ForEach-Object { Write-Host $_ }
 Write-Host '==============================================================' -ForegroundColor Green
 Write-Host "O resumo (com a palavra-passe) fica em $fResumo (só os administradores o lêem)."
-Start-Process "https://$Endereco"
+Start-Process $Url

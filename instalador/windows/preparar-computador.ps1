@@ -6,8 +6,9 @@ $Reg = Join-Path $Pen 'registos'
 try {
   $crt = Join-Path $Reg 'esg-pessoal-raiz.crt'
   if (-not (Test-Path $crt)) { throw 'Falta registos\esg-pessoal-raiz.crt: instale primeiro o sistema no servidor com este pendrive.' }
-  $ip, $nome = (Get-Content (Join-Path $Reg 'servidor.txt') -ErrorAction SilentlyContinue | Select-Object -First 1) -split ' '
+  $ip, $nome, $url = (Get-Content (Join-Path $Reg 'servidor.txt') -ErrorAction SilentlyContinue | Select-Object -First 1) -split ' '
   if (-not $nome) { $nome = 'esg.emfaa.gov.ao' }
+  if (-not $url) { $url = "https://$nome" }
   $r = Read-Host "IP do servidor do sistema [$ip]"
   if ($r) { $ip = $r.Trim() }
   if ($ip -notmatch '^\d{1,3}(\.\d{1,3}){3}$') { throw "IP inválido: $ip" }
@@ -19,8 +20,8 @@ try {
   Write-Host '[ok] certificado instalado (Chrome e Edge passam a confiar; no Firefox: Definições > Certificados > Importar)' -ForegroundColor Green
   ipconfig /flushdns | Out-Null
   Write-Host ''
-  Write-Host "Pronto. Abra https://$nome"
-  Start-Process "https://$nome"
+  Write-Host "Pronto. Abra $url"
+  Start-Process $url
 } catch {
   Write-Host ''
   Write-Host "ERRO: $($_.Exception.Message)" -ForegroundColor Red

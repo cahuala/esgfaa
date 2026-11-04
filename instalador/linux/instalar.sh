@@ -33,8 +33,8 @@ causas() {
     pendrive) echo "- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt)."
               echo "- Volte a copiar a pasta ESG-PESSOAL para o pendrive (no computador onde foi preparada) e repita." ;;
     espaco) echo "- Falta espaço em disco. São precisos pelo menos 3 GB livres em /opt e /var/lib." ;;
-    portas) echo "- Outro programa está a usar uma porta de que o sistema precisa (443 para o HTTPS, 8085 para os aparelhos de ponto, $PORTA_BD, $PORTA_API)."
-            echo "- Veja qual com: ss -ltnp | grep -E ':(443|8085|$PORTA_BD|$PORTA_API) '  e pare-o (ou desinstale), depois repita." ;;
+    portas) echo "- Outro programa está a usar uma porta de que o sistema precisa (8085 para os aparelhos de ponto, $PORTA_BD, $PORTA_API; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."
+            echo "- O instalador não pára nenhum serviço. Veja quem usa as portas com: ss -ltnp" ;;
     copiar) echo "- Não foi possível descompactar os componentes (Node.js, PostgreSQL, Caddy). Pendrive estragado ou disco cheio." ;;
     bd) echo "- O PostgreSQL não arrancou. Veja o fim deste registo e: journalctl -u esg-pessoal-bd -n 50"
         echo "- Causas comuns: biblioteca do sistema em falta (glibc antiga: use Ubuntu 22.04 ou mais recente), porta $PORTA_BD ocupada, disco cheio." ;;
@@ -121,18 +121,30 @@ escuta() {
     return 1
   fi
 }
-for p in 443 8085 $PORTA_API $PORTA_BD; do
+# o HTTPS fica na 443 se estiver livre; senão, na primeira livre destas. Nenhum serviço do servidor é parado.
+ANTERIOR=""; (( ATUALIZAR )) && ANTERIOR="$(sed -n 's/^PORTA_WEB=\([0-9]*\)$/\1/p' "$CONF/pessoal.env" | head -1)"
+PORTA_WEB=""
+for c in $ANTERIOR 443 8443 9443 10443; do
+  if ! escuta "$c"; then PORTA_WEB=$c; break; fi
+  echo "    a porta $c está ocupada — fica como está:"; ss -ltnp 2>/dev/null | grep -E "[:.]$c " | sed 's/^/      /' || true
+done
+[[ -n "$PORTA_WEB" ]] || { echo "As portas 443, 8443, 9443 e 10443 estão todas ocupadas: não há porta para o HTTPS."; false; }
+# a porta 80 (se estiver livre) só serve para levar quem escreve http://… ao endereço certo
+PORTA_HTTP=80; if escuta 80; then PORTA_HTTP=""; echo "    a porta 80 está ocupada — fica como está (escreve-se o endereço completo)"; fi
+for p in 8085 $PORTA_API $PORTA_BD; do
   if escuta "$p"; then
     # numa actualização, o próprio PostgreSQL do sistema pode estar a usar a sua porta
     if (( ATUALIZAR )) && [[ $p == "$PORTA_BD" ]]; then continue; fi
     echo "A porta $p já está ocupada:"; ss -ltnp 2>/dev/null | grep -E "[:.]$p " || true; false
   fi
 done
-ok "443, 8085, $PORTA_API e $PORTA_BD livres"
+ok "HTTPS na porta $PORTA_WEB${PORTA_HTTP:+ (e 80 para encaminhar)}; 8085, $PORTA_API e $PORTA_BD livres"
 
 # o sistema abre-se só pelo nome (nunca pelo IP)
 DOMINIO="${ESG_ENDERECO:-esg.emfaa.gov.ao}"
 ENDERECO="$DOMINIO"
+URL="https://$ENDERECO"; [[ "$PORTA_WEB" == 443 ]] || URL="https://$ENDERECO:$PORTA_WEB"
+ORIGENS="https://$ENDERECO"; [[ "$URL" == "$ORIGENS" ]] || ORIGENS="$ORIGENS,$URL"
 IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 # configuração (só na primeira instalação)
 if (( ! ATUALIZAR )); then
@@ -204,7 +216,8 @@ HOST=127.0.0.1
 PORT=$PORTA_API
 TRUST_PROXY=1
 ENDERECO=$ENDERECO
-CORS_ORIGINS=https://$ENDERECO
+PORTA_WEB=$PORTA_WEB
+CORS_ORIGINS=$ORIGENS
 DATABASE_URL=postgresql://pessoal:$BD_SENHA@127.0.0.1:$PORTA_BD/esgfaa_pessoal
 BD_SENHA=$BD_SENHA
 JWT_SECRET=$(aleatorio 64)
@@ -227,7 +240,8 @@ EOF
   chown root:"$UTILIZADOR" "$CONF/pessoal.env"; chmod 640 "$CONF/pessoal.env"
 fi
 # numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
-sed -i "s|^ENDERECO=.*|ENDERECO=$DOMINIO|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://$DOMINIO|" "$CONF/pessoal.env"
+sed -i "s|^ENDERECO=.*|ENDERECO=$DOMINIO|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=$ORIGENS|; s|^PORTA_WEB=.*|PORTA_WEB=$PORTA_WEB|" "$CONF/pessoal.env"
+grep -q '^PORTA_WEB=' "$CONF/pessoal.env" || echo "PORTA_WEB=$PORTA_WEB" >> "$CONF/pessoal.env"
 # shellcheck disable=SC1091
 set -a; . "$CONF/pessoal.env"; set +a
 
@@ -289,10 +303,13 @@ passo organica "A carregar o Quadro Orgânico (unidades e cargos)"
 passo servicos "A ligar os serviços (sistema, HTTPS e cópias de segurança diárias)"
 cat > "$CONF/Caddyfile" <<EOF
 # HTTPS com a autoridade interna do Caddy (o certificado da raiz instala-se nos computadores da Repartição)
-# só se abre por https://$ENDERECO: pelo IP (ou outro nome) a ligação é recusada
+# só se abre por $URL: pelo IP (ou outro nome) a ligação é recusada
 {
 	storage file_system $DADOS/caddy
 	skip_install_trust
+	https_port $PORTA_WEB
+	# o encaminhamento do http:// faz-se abaixo (para a porta certa do HTTPS)
+	auto_https disable_redirects
 }
 $ENDERECO {
 	tls internal
@@ -307,9 +324,7 @@ $ENDERECO {
 	reverse_proxy 127.0.0.1:$PORTA_API
 }
 
-http:// {
-	abort
-}
+$( [[ -n "$PORTA_HTTP" ]] && printf 'http://%s {\n\tredir %s{uri} permanent\n}\n\nhttp:// {\n\tabort\n}\n' "$ENDERECO" "$URL" )
 
 # aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
 :8085 {
@@ -335,8 +350,8 @@ else
   ( como env HOME="$DADOS" XDG_DATA_HOME="$DADOS" "$DESTINO/caddy/caddy" run --config "$CONF/Caddyfile" --adapter caddyfile >> "$DADOS/caddy.log" 2>&1 & )
 fi
 # a firewall (se houver): HTTPS e os aparelhos de ponto
-if command -v ufw >/dev/null && ufw status | grep -q active; then ufw allow 443/tcp >/dev/null; ufw allow 8085/tcp >/dev/null; ok "firewall (ufw): 443 e 8085 abertas"; fi
-if command -v firewall-cmd >/dev/null && firewall-cmd --state >/dev/null 2>&1; then firewall-cmd --permanent --add-port=443/tcp --add-port=8085/tcp >/dev/null && firewall-cmd --reload >/dev/null; ok "firewall: 443 e 8085 abertas"; fi
+if command -v ufw >/dev/null && ufw status | grep -q active; then ufw allow "$PORTA_WEB/tcp" >/dev/null; ufw allow 8085/tcp >/dev/null; [[ -n "$PORTA_HTTP" ]] && ufw allow 80/tcp >/dev/null; ok "firewall (ufw): $PORTA_WEB e 8085 abertas"; fi
+if command -v firewall-cmd >/dev/null && firewall-cmd --state >/dev/null 2>&1; then firewall-cmd --permanent --add-port="$PORTA_WEB/tcp" --add-port=8085/tcp ${PORTA_HTTP:+--add-port=80/tcp} >/dev/null && firewall-cmd --reload >/dev/null; ok "firewall: $PORTA_WEB e 8085 abertas"; fi
 ok "serviços ligados"
 
 passo verificar "A verificar se o sistema responde"
@@ -352,9 +367,9 @@ for i in $(seq 1 30); do [[ -f "$DADOS/caddy/pki/authorities/local/root.crt" ]] 
 mkdir -p "$DESTINO/certificado"
 cp "$DADOS/caddy/pki/authorities/local/root.crt" "$DESTINO/certificado/esg-pessoal-raiz.crt" 2>/dev/null && cp "$DESTINO/certificado/esg-pessoal-raiz.crt" "$PEN/registos/esg-pessoal-raiz.crt" 2>/dev/null || true
 # para preparar os outros computadores (PREPARAR-COMPUTADOR-*): o nome e o IP deste servidor
-printf '%s %s\n' "$IP" "$ENDERECO" > "$PEN/registos/servidor.txt" 2>/dev/null || true
+printf '%s %s %s\n' "$IP" "$ENDERECO" "$URL" > "$PEN/registos/servidor.txt" 2>/dev/null || true
 # ver o HTTPS de fora do processo
-curl -fsk --resolve "$ENDERECO:443:127.0.0.1" "https://$ENDERECO/api/saude" >/dev/null 2>&1 && ok "HTTPS a responder em https://$ENDERECO" || echo "    (aviso: o HTTPS ainda não respondeu; pode demorar uns segundos a criar o certificado)"
+curl -fsk --resolve "$ENDERECO:$PORTA_WEB:127.0.0.1" "$URL/api/saude" >/dev/null 2>&1 && ok "HTTPS a responder em $URL" || echo "    (aviso: o HTTPS ainda não respondeu; pode demorar uns segundos a criar o certificado)"
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
 sed -i 's/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=/' "$CONF/pessoal.env"
@@ -363,7 +378,7 @@ RESUMO="$DESTINO/INSTALACAO.txt"
 {
   echo "SISTEMA DE GESTÃO DE PESSOAL E QUADROS — instalado em $(date '+%Y-%m-%d %H:%M')"
   echo
-  echo "Endereço:            https://$ENDERECO   (pelo IP não abre)"
+  echo "Endereço:            $URL   (pelo IP não abre)"
   echo "No DNS da Escola:     $ENDERECO  →  ${IP:-<IP deste computador>}   (registo A; peça ao responsável pela rede)"
   echo "                      Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat (ou -LINUX.sh) do pendrive."
   echo "Administrador:       $ADMIN_EMAIL"

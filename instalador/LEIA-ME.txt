@@ -12,11 +12,13 @@ COMO INSTALAR
   O instalador pede a CONTA DE ADMINISTRADOR do sistema: o nome, o e-mail com que entra
   (por omissão pessoal@esgfaa.gov.ao) e a palavra-passe (pelo menos 10 caracteres, com letras e
   números; em branco, o instalador gera uma e mostra-a no fim).
-  Se a porta 443 estiver ocupada por um serviço do Windows (IIS, Windows Admin Center, VPN...),
-  o instalador diz qual e pergunta se o pode parar.
+  O instalador não pára nenhum serviço do servidor. Se a porta 443 estiver ocupada (por exemplo
+  pela VPN do Windows), o sistema fica noutra porta livre (8443, 9443...) e o endereço passa a ser
+  https://esg.emfaa.gov.ao:8443 — o endereço certo aparece no fim da instalação. Se a porta 80
+  estiver livre, quem escrever só  esg.emfaa.gov.ao  é levado para o endereço certo.
   Demora uns minutos. No fim mostra o endereço e a conta do administrador.
 
-ENDEREÇO DO SISTEMA:  https://esg.emfaa.gov.ao
+ENDEREÇO DO SISTEMA:  https://esg.emfaa.gov.ao   (ou com a porta, p. ex. :8443, se a 443 estiver ocupada)
   O sistema abre-se só por este nome; pelo IP do servidor a ligação é recusada.
   Peça ao responsável pela rede da Escola para criar no DNS interno o registo
      esg.emfaa.gov.ao  ->  <IP do servidor>      (o IP aparece no fim da instalação)

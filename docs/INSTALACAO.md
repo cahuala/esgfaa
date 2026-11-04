@@ -81,12 +81,12 @@ e o sistema já construído, mais o Quadro Orgânico real (unidades e cargos). N
    `MANIFESTO.txt`; o Quadro Orgânico vem de `docs/QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx`, ou `--organica <ficheiro>`).
 2. No servidor: duplo clique em **`INSTALAR-WINDOWS.bat`** (Windows 10/11, Server 2016+, 64 bits) ou em
    **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pede a conta de administrador
-   (nome, e-mail e palavra-passe; em branco gera-se uma) e, se a 443 estiver ocupada pelo HTTP.sys do Windows (IIS, Windows Admin
-   Center, VPN SSTP, AD FS), diz qual é e pergunta se o pode parar; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
+   (nome, e-mail e palavra-passe; em branco gera-se uma) e, não pára nenhum serviço do servidor: se a 443 estiver ocupada (p. ex. pela VPN SSTP
+   do Windows), o HTTPS fica na primeira livre de 8443, 9443, 10443 (`PORTA_WEB` no `pessoal.env`) e a 80, se livre, encaminha para lá; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
    a firewall (443 e 8085) e as cópias diárias. No fim mostra a palavra-passe inicial.
 3. Se falhar: `registos/ERRO-INSTALACAO-<data>.txt` no pendrive (passo, causas prováveis, o que fazer e o fim do registo).
    Corrigido, corre-se outra vez: continua e não apaga dados.
-4. **Endereço: `https://esg.emfaa.gov.ao`**, só por este nome (o Caddy recusa a ligação pelo IP ou por outro nome;
+4. **Endereço: `https://esg.emfaa.gov.ao`** (ou `:8443`, se a 443 estiver ocupada), só por este nome (o Caddy recusa a ligação pelo IP ou por outro nome;
    só a porta 8085 dos aparelhos de ponto fica pelo IP). No DNS interno da Escola cria-se o registo A
    `esg.emfaa.gov.ao → IP do servidor` (o servidor já o tem no seu `hosts`). Em cada computador da Repartição,
    **`PREPARAR-COMPUTADOR-WINDOWS.bat`** (ou `sudo bash PREPARAR-COMPUTADOR-LINUX.sh`) do mesmo pendrive põe o nome no
