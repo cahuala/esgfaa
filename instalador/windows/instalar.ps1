@@ -31,6 +31,14 @@ function Correr($exe, [string[]]$argumentos) {
   & $exe @argumentos
   if ($LASTEXITCODE -ne 0) { Falha "$([IO.Path]::GetFileName($exe)) terminou com o código $LASTEXITCODE" }
 }
+# corre um programa sem mostrar nada e sem parar por avisos que ele escreva (no PowerShell 5.1, o stderr de um
+# programa redireccionado com $ErrorActionPreference = 'Stop' pára tudo); devolve o que ele escreveu
+function Calado($exe, [string[]]$argumentos) {
+  $ErrorActionPreference = 'Continue'
+  $saida = & $exe @argumentos 2>&1 | ForEach-Object { "$_" }
+  $global:LASTEXITCODE = 0
+  $saida
+}
 function Aleatorio([int]$n = 64) {
   $b = New-Object byte[] ([Math]::Ceiling($n / 2)); [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b)
   (($b | ForEach-Object { $_.ToString('x2') }) -join '').Substring(0, $n)
@@ -48,8 +56,8 @@ function Senha() {
 function LimparPasta($pasta) {
   if (-not (Test-Path $pasta)) { return }
   try { Remove-Item -Recurse -Force $pasta -ErrorAction Stop; return } catch { Write-Host "    (não se apagou à primeira: $($_.Exception.Message))" }
-  & icacls $pasta /setowner '*S-1-5-32-544' /T /C /Q 2>&1 | Out-Null
-  & icacls $pasta /grant '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-18:(OI)(CI)F' /T /C /Q 2>&1 | Out-Null
+  Calado icacls @($pasta, '/setowner', '*S-1-5-32-544', '/T', '/C', '/Q') | Out-Null
+  Calado icacls @($pasta, '/grant', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F', '/T', '/C', '/Q') | Out-Null
   Get-ChildItem $pasta -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Attributes = 'Normal' } catch { } }
   Start-Sleep 2
   try { Remove-Item -Recurse -Force $pasta -ErrorAction Stop; return } catch { Write-Host "    (ainda presa: $($_.Exception.Message))" }
@@ -149,7 +157,8 @@ $Atualizar = Test-Path (Join-Path $Conf 'pessoal.env')
 # a base também pára: os programas (postgres.exe) vão ser trocados; volta a arrancar no passo da base
 $Servicos = 'ESG-Pessoal-Copias', 'ESG-Pessoal-Web', 'ESG-Pessoal', 'ESG-Pessoal-BD'
 if ($Atualizar) {
-  Write-Host ''; Write-Host '>>> Já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam).' -ForegroundColor Yellow
+  $texto = if (Test-Path (Join-Path $Conf 'INSTALACAO.txt')) { '>>> Já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam).' } else { '>>> Uma instalação anterior ficou a meio: continua-se daí (a configuração e as chaves já criadas ficam).' }
+  Write-Host ''; Write-Host $texto -ForegroundColor Yellow
   foreach ($s in $Servicos) { if (Get-Service $s -ErrorAction SilentlyContinue) { Stop-Service $s -Force -ErrorAction SilentlyContinue } }
 }
 
@@ -163,7 +172,7 @@ function QuemUsa($porta) {
   if ($prog -notcontains 'System') { return ($prog -join ', ') }
   $pids = @(); $dentro = $false; $pidsGrupo = @(); $urlGrupo = $false; $urls = @()
   # cada fila começa numa linha sem recuo; dentro dela, os grupos de URL repetem «Request queue name» com recuo
-  foreach ($l in @(& netsh http show servicestate view=requestq verbose=no 2>$null) + 'Request queue name:') {
+  foreach ($l in @(Calado netsh @('http', 'show', 'servicestate', 'view=requestq', 'verbose=no')) + 'Request queue name:') {
     if ($l -match '^Request queue name:') { if ($urlGrupo) { $pids += $pidsGrupo }; $pidsGrupo = @(); $urlGrupo = $false; $dentro = $false; continue }
     if ($l -match 'Process IDs:') { $dentro = $true; continue }
     if ($dentro -and $l -match '^\s+(\d+)\s*$') { $pidsGrupo += [int]$Matches[1]; continue }
@@ -198,7 +207,8 @@ $Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao
 $Endereco = $Dominio
 $Url = if ($PortaWeb -eq 443) { "https://$Endereco" } else { "https://${Endereco}:$PortaWeb" }
 $Origens = (@("https://$Endereco", $Url) | Select-Object -Unique) -join ','
-$ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+$ip = (Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1).IPv4Address.IPAddress | Select-Object -First 1
+if (-not $ip) { $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress }
 # a conta de administrador do sistema: o nome, o e-mail com que entra e a palavra-passe (escolhida ou gerada)
 $SenhaEscolhida = $false
 if (-not $Atualizar) {
@@ -243,11 +253,11 @@ if (Test-Path "$Destino\sistema") { try { Rename-Item "$Destino\sistema" 'sistem
 Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema"
 # só o sistema (SYSTEM) e os administradores entram na pasta (SID: os nomes mudam com a língua do Windows);
 # aplica-se depois de copiar, para tudo o que lá está ficar igual
-& icacls $Destino /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /T /C /Q | Out-Null
+Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', '/T', '/C', '/Q') | Out-Null
 # o initdb do PostgreSQL corre sem os direitos de administrador (mesmo lançado pelo administrador): fica só com
 # a conta de quem instala, que precisa de ler o programa (e de escrever na pasta da base, abaixo)
 $EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-& icacls $Destino /grant "*${EuSid}:(OI)(CI)RX" /T /C /Q | Out-Null
+Calado icacls @($Destino, '/grant', "*${EuSid}:(OI)(CI)RX", '*S-1-5-20:(OI)(CI)RX', '/T', '/C', '/Q') | Out-Null
 # o PostgreSQL precisa do Visual C++ 2015-2022 (x64); se faltar, instala-se o que vem no pendrive
 if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -ErrorAction SilentlyContinue).Installed) {
   Write-Host '    a instalar o Visual C++ Redistributable (x64)…'
@@ -291,9 +301,9 @@ Passo 'bd' "A preparar a base de dados (PostgreSQL na porta $PortaBd, só nesta 
 $BdDir = "$Dados\bd"
 if (-not (Test-Path "$BdDir\PG_VERSION")) {
   # restos de uma tentativa falhada (ainda sem base): o initdb quer a pasta vazia
-  if (Test-Path $BdDir) { Remove-Item -Recurse -Force $BdDir }
+  LimparPasta $BdDir
   New-Item -ItemType Directory -Force $BdDir | Out-Null
-  & icacls $BdDir /grant "*${EuSid}:(OI)(CI)F" /Q | Out-Null
+  Calado icacls @($BdDir, '/grant', "*${EuSid}:(OI)(CI)F", '*S-1-5-20:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F', '/T', '/C', '/Q') | Out-Null
   $pw = Join-Path $env:TEMP "esg-pw-$Carimbo.txt"
   [IO.File]::WriteAllText($pw, $Cfg.BD_SENHA)
   try { Correr "$PgBin\initdb.exe" @('-D', $BdDir, '-U', 'pessoal', "--pwfile=$pw", '-E', 'UTF8', '--no-locale', '--auth=scram-sha-256') } finally { Remove-Item $pw -Force -ErrorAction SilentlyContinue }
@@ -303,10 +313,16 @@ if (-not (Test-Path "$BdDir\PG_VERSION")) {
 if (-not (Get-Service 'ESG-Pessoal-BD' -ErrorAction SilentlyContinue)) {
   Correr "$PgBin\pg_ctl.exe" @('register', '-N', 'ESG-Pessoal-BD', '-D', $BdDir, '-S', 'auto')
 }
-Start-Service 'ESG-Pessoal-BD'
+# o que o PostgreSQL escreveu (para o ficheiro de erro, se não arrancar)
+function RegistoBd {
+  Write-Host '    --- fim do registo do PostgreSQL:'
+  Get-ChildItem "$BdDir\log" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1 | ForEach-Object { Get-Content $_.FullName -Tail 25 | ForEach-Object { Write-Host "      $_" } }
+  Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'PostgreSQL'; StartTime = (Get-Date).AddMinutes(-15) } -MaxEvents 5 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "      [eventos] $($_.Message)" }
+}
+try { Start-Service 'ESG-Pessoal-BD' -ErrorAction Stop } catch { RegistoBd; Falha "O serviço da base de dados (ESG-Pessoal-BD) não arrancou: $($_.Exception.Message)" }
 $pronto = $false
 for ($i = 0; $i -lt 60 -and -not $pronto; $i++) { & "$PgBin\pg_isready.exe" -h 127.0.0.1 -p $PortaBd -q; $pronto = ($LASTEXITCODE -eq 0); if (-not $pronto) { Start-Sleep 1 } }
-if (-not $pronto) { Falha 'O PostgreSQL não ficou pronto em 60 segundos.' }
+if (-not $pronto) { RegistoBd; Falha 'O PostgreSQL não ficou pronto em 60 segundos.' }
 $env:PGPASSWORD = $Cfg.BD_SENHA
 $existe = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U pessoal -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='esgfaa_pessoal'"
 if ("$existe".Trim() -ne '1') { Correr "$PgBin\createdb.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', 'pessoal', 'esgfaa_pessoal') }
@@ -329,6 +345,7 @@ $storage = ("$Dados\caddy" -replace '\\', '/')
 {
 	storage file_system $storage
 	skip_install_trust
+	admin off
 	https_port $PortaWeb
 	# o encaminhamento do http:// faz-se abaixo (para a porta certa do HTTPS)
 	auto_https disable_redirects
@@ -359,7 +376,8 @@ $(if ($PortaHttp) { "http://$Endereco {`n`tredir $Url{uri} permanent`n}`n`nhttp:
 # este computador encontra o nome sem esperar pelo DNS da Escola
 $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
 $linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '# esg-pessoal$' }) + "127.0.0.1 $Endereco # esg-pessoal"
-[IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCIIEncoding))
+try { [IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCIIEncoding)) }
+catch { Write-Host "    (aviso: não foi possível escrever em $hosts — $($_.Exception.Message); neste computador use o DNS da Escola)" -ForegroundColor Yellow }
 
 # cada serviço é o WinSW com um .xml ao lado (arranca com o Windows e volta a arrancar se cair)
 function Servico($id, $nome, $exe, $argumentos, $extra = '') {
@@ -387,7 +405,14 @@ $extra
 Servico 'ESG-Pessoal' 'ESG Pessoal — sistema' $Node "--env-file=&quot;$EnvFicheiro&quot; src\servidor.js"
 Servico 'ESG-Pessoal-Web' 'ESG Pessoal — HTTPS (Caddy)' "$Destino\caddy\caddy.exe" "run --config &quot;$Caddyfile&quot; --adapter caddyfile" "  <env name=`"AppData`" value=`"$Dados\caddy`"/>"
 Servico 'ESG-Pessoal-Copias' 'ESG Pessoal — cópias de segurança diárias' $Node "--env-file=&quot;$EnvFicheiro&quot; scripts\copias.mjs agendar --sistema pessoal" "  <env name=`"PATH`" value=`"$PgBin;%PATH%`"/>"
-foreach ($s in 'ESG-Pessoal', 'ESG-Pessoal-Web', 'ESG-Pessoal-Copias') { Restart-Service $s -Force }
+foreach ($s in 'ESG-Pessoal', 'ESG-Pessoal-Web', 'ESG-Pessoal-Copias') {
+  try { Restart-Service $s -Force -ErrorAction Stop }
+  catch {
+    Write-Host "    --- fim do registo de ${s}:"
+    Get-ChildItem "$Destino\servicos" -Filter "$s.*log" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "    [$($_.Name)]"; Get-Content $_.FullName -Tail 20 | ForEach-Object { Write-Host "      $_" } }
+    Falha "O serviço $s não arrancou: $($_.Exception.Message)"
+  }
+}
 
 # firewall: HTTPS e os aparelhos de ponto, só nas redes do domínio e privadas
 $regras = @(@('ESG Pessoal (HTTPS)', $PortaWeb), @('ESG Pessoal (aparelhos de ponto)', 8085))
@@ -404,7 +429,10 @@ $ok = $false
 for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
   try { $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$PortaApi/api/saude" -TimeoutSec 5; $ok = $r.Content -match '"ok":true' } catch { Start-Sleep 2 }
 }
-if (-not $ok) { Falha "O sistema não respondeu em http://127.0.0.1:$PortaApi/api/saude" }
+if (-not $ok) {
+  Get-ChildItem "$Destino\servicos" -Filter 'ESG-Pessoal.*log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "    [$($_.Name)]"; Get-Content $_.FullName -Tail 30 | ForEach-Object { Write-Host "      $_" } }
+  Falha "O sistema não respondeu em http://127.0.0.1:$PortaApi/api/saude"
+}
 Ok 'o sistema responde'
 $raiz = "$Dados\caddy\pki\authorities\local\root.crt"
 for ($i = 0; $i -lt 30 -and -not (Test-Path $raiz); $i++) { Start-Sleep 1 }
