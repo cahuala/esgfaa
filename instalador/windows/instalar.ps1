@@ -61,7 +61,7 @@ function Causas {
     'sistema' { '- Este instalador é para Windows 10/11 ou Windows Server 2016+ de 64 bits.' }
     'pendrive' { '- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt).'; '- Volte a copiar a pasta ESG-PESSOAL para o pendrive (no computador onde foi preparada) e repita.' }
     'espaco' { '- Falta espaço no disco C:. São precisos pelo menos 3 GB livres.' }
-    'portas' { "- Outro programa está a usar uma porta de que o sistema precisa (443 HTTPS, 8085 aparelhos de ponto, $PortaBd, $PortaApi)."; '- Muitas vezes é o IIS, o Skype antigo ou outro servidor web. Veja qual com:  netstat -ano | findstr LISTENING  e pare-o.' }
+    'portas' { "- Outro programa está a usar uma porta de que o sistema precisa (443 HTTPS, 8085 aparelhos de ponto, $PortaBd, $PortaApi)."; '- «System» na porta 443 é o HTTP.sys do Windows: o IIS, o Windows Admin Center, a VPN (SSTP) ou o AD FS. O instalador mostra quais e pergunta se os pode parar; responda S se não forem precisos neste servidor.'; '- Para ver quem usa as portas:  netstat -ano | findstr LISTENING   e   netsh http show servicestate'; '- O sistema deve ficar num servidor sem outros sites na porta 443 (de preferência um servidor só para ele, não o controlador de domínio).' }
     'copiar' { '- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta C:\ESG-Pessoal) ou o pendrive está estragado.' }
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable (vem no pendrive, componentes\vcredist-windows.exe) não instalou.' }
     'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
@@ -101,7 +101,7 @@ trap {
   exit 1
 }
 
-Write-Host "Sistema de Gestão de Pessoal e Quadros — instalação ($((Get-Content (Join-Path $Pen 'VERSAO.txt') -ErrorAction SilentlyContinue) -join ''))"
+Write-Host "Sistema de Gestão de Pessoal e Quadros — instalação ($((Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join ''))"
 Write-Host "Registo: $Log"
 
 Passo 'admin' 'A verificar as permissões'
@@ -139,11 +139,49 @@ if ($Atualizar) {
 }
 
 Passo 'portas' 'A verificar as portas'
+# o processo «System» (PID 4) na porta é o HTTP.sys do Windows: por trás estão serviços como o IIS, o Windows
+# Admin Center, a VPN (SSTP) ou o AD FS. Descobre-se quais pelo netsh (os PID que registaram URLs nessa porta).
+function ServicosHttpSys($porta) {
+  $pids = @(); $dentro = $false; $pidsGrupo = @(); $urlGrupo = $false
+  foreach ($l in (& netsh http show servicestate view=requestq verbose=no 2>$null) + 'Request queue name:') {
+    if ($l -match '^\s*Request queue name:') { if ($urlGrupo) { $pids += $pidsGrupo }; $pidsGrupo = @(); $urlGrupo = $false; $dentro = $false; continue }
+    if ($l -match 'Process IDs:') { $dentro = $true; continue }
+    if ($dentro -and $l -match '^\s+(\d+)\s*$') { $pidsGrupo += [int]$Matches[1]; continue }
+    $dentro = $false
+    if ($l -match "^\s+https?://[^/]*:$porta/" -or ($porta -eq 443 -and $l -match '^\s+https://[^:/]+/')) { $urlGrupo = $true }
+  }
+  $svc = @(Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Running' -and $pids -contains [int]$_.ProcessId })
+  # serviços conhecidos que usam a 443 pelo HTTP.sys (se o netsh não os mostrar)
+  foreach ($n in 'W3SVC', 'WAS', 'ServerManagementGateway', 'SstpSvc', 'adfssrv') {
+    $x = Get-CimInstance Win32_Service -Filter "Name='$n'" -ErrorAction SilentlyContinue
+    if ($x -and $x.State -eq 'Running' -and -not ($svc | Where-Object Name -eq $n)) { if ($n -ne 'WAS' -or $svc.Count) { $svc += $x } }
+  }
+  $svc | Where-Object { $_.Name -notin 'HTTP', 'WinRM' }
+}
 foreach ($p in 443, 8085, $PortaApi, $PortaBd) {
   $uso = Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue
   if ($uso) {
     if ($Atualizar -and $p -eq $PortaBd) { continue }
-    $prog = ($uso | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName }) -join ', '
+    $prog = ($uso | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName } | Select-Object -Unique) -join ', '
+    if ($prog -eq 'System') {
+      $svc = @(ServicosHttpSys $p)
+      if (-not $svc.Count) { Falha "A porta $p está ocupada pelo HTTP.sys do Windows (processo System), mas não se descobriu o serviço. Veja com:  netsh http show servicestate" }
+      $lista = ($svc | ForEach-Object { "$($_.DisplayName) [$($_.Name)]" }) -join '; '
+      Write-Host "    A porta $p está a ser usada por: $lista" -ForegroundColor Yellow
+      Write-Host '    O sistema precisa da porta 443 para abrir https://esg.emfaa.gov.ao.' -ForegroundColor Yellow
+      Write-Host '    Se algum destes serviços for preciso neste servidor (p. ex. a VPN ou o AD FS), responda N e fale com o responsável.' -ForegroundColor Yellow
+      $r = if ($env:ESG_LIBERTAR_PORTA) { $env:ESG_LIBERTAR_PORTA } else { Read-Host "    Parar estes serviços e desligar o arranque automático deles? (S/N)" }
+      if ($r -notmatch '^[sS]') { Falha "A porta $p já está ocupada por: $lista (não foram parados)" }
+      foreach ($x in $svc) {
+        Stop-Service -Name $x.Name -Force -ErrorAction SilentlyContinue
+        Set-Service -Name $x.Name -StartupType Disabled -ErrorAction SilentlyContinue
+        Write-Host "    parado e desligado: $($x.DisplayName)"
+      }
+      Start-Sleep 3
+      if (Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue) { Falha "A porta $p continua ocupada depois de parar: $lista. Veja com:  netsh http show servicestate" }
+      Ok "porta $p libertada"
+      continue
+    }
     Falha "A porta $p já está ocupada por: $prog"
   }
 }
@@ -153,9 +191,35 @@ Ok "443, 8085, $PortaApi e $PortaBd livres"
 $Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao' }
 $Endereco = $Dominio
 $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
+# a conta de administrador do sistema: o nome, o e-mail com que entra e a palavra-passe (escolhida ou gerada)
+$SenhaEscolhida = $false
 if (-not $Atualizar) {
-  $AdminEmail = if ($env:ESG_ADMIN_EMAIL) { $env:ESG_ADMIN_EMAIL } else { Read-Host 'E-mail do administrador do sistema [pessoal@esgfaa.gov.ao]' }
-  if (-not $AdminEmail) { $AdminEmail = 'pessoal@esgfaa.gov.ao' }
+  Write-Host ''
+  Write-Host 'CONTA DE ADMINISTRADOR DO SISTEMA (entra com o e-mail e a palavra-passe)' -ForegroundColor Cyan
+  $AdminNome = if ($env:ESG_ADMIN_NOME) { $env:ESG_ADMIN_NOME } else { Read-Host '  Nome [Administrador do Pessoal]' }
+  if (-not $AdminNome) { $AdminNome = 'Administrador do Pessoal' }
+  $AdminNome = $AdminNome -replace '"', ''
+  do {
+    $AdminEmail = if ($env:ESG_ADMIN_EMAIL) { $env:ESG_ADMIN_EMAIL } else { Read-Host '  E-mail [pessoal@esgfaa.gov.ao]' }
+    if (-not $AdminEmail) { $AdminEmail = 'pessoal@esgfaa.gov.ao' }
+    $AdminEmail = $AdminEmail.Trim().ToLower()
+    $bom = $AdminEmail -match '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+    if (-not $bom) { if ($env:ESG_ADMIN_EMAIL) { Falha "E-mail inválido: $AdminEmail" }; Write-Host '  E-mail inválido.' -ForegroundColor Red }
+  } until ($bom)
+  $AdminSenha = $null
+  if (-not $env:ESG_ADMIN_EMAIL) {
+    Write-Host '  Palavra-passe: pelo menos 10 caracteres, com letras e números (sem espaços, aspas nem #).'
+    Write-Host '  Deixe em branco para o instalador gerar uma (mostrada no fim).'
+    while ($true) {
+      $a = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Read-Host '  Palavra-passe' -AsSecureString)))
+      if (-not $a) { break }
+      $erroSenha = if ($a.Length -lt 10) { 'Tem de ter pelo menos 10 caracteres.' } elseif ($a -notmatch '[a-zA-Z]' -or $a -notmatch '\d') { 'Tem de ter letras e números.' } elseif ($a -match '[\s"''#\\]') { 'Sem espaços, aspas, # nem \.' } elseif ($a.ToLower().Contains($AdminEmail.Split('@')[0])) { 'Não pode conter o nome do e-mail.' } else { $null }
+      if ($erroSenha) { Write-Host "  $erroSenha" -ForegroundColor Red; continue }
+      $b = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Read-Host '  Repita a palavra-passe' -AsSecureString)))
+      if ($a -ne $b) { Write-Host '  Não são iguais. Escreva outra vez.' -ForegroundColor Red; continue }
+      $AdminSenha = $a; $SenhaEscolhida = $true; break
+    }
+  }
 }
 
 Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Destino"
@@ -184,7 +248,7 @@ Ok 'componentes no lugar'
 $EnvFicheiro = Join-Path $Conf 'pessoal.env'
 if (-not $Atualizar) {
   $BdSenha = Aleatorio 40
-  $AdminSenha = Senha
+  if (-not $AdminSenha) { $AdminSenha = Senha }
   $env_ = @(
     "# Sistema de Gestão de Pessoal e Quadros — criado pelo instalador em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     '# GUARDE UMA CÓPIA DESTE FICHEIRO NUM COFRE: sem DADOS_CHAVE os dados pessoais não se lêem; sem COPIAS_CHAVE as cópias não abrem.',
@@ -192,7 +256,7 @@ if (-not $Atualizar) {
     "ENDERECO=$Endereco", "CORS_ORIGINS=https://$Endereco",
     "DATABASE_URL=postgresql://pessoal:$BdSenha@127.0.0.1:$PortaBd/esgfaa_pessoal", "BD_SENHA=$BdSenha",
     "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(Aleatorio 64)", "COPIAS_CHAVE=$(Aleatorio 64)",
-    "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
+    "ADMIN_NOME=`"$AdminNome`"", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
     'REDES_INTERNAS=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16',
     "APP_DIR=$Destino\sistema\app", "DATA_DIR=$Dados\ficheiros",
     "PESSOAL_DATABASE_URL=postgresql://pessoal:$BdSenha@127.0.0.1:$PortaBd/esgfaa_pessoal", "PESSOAL_DADOS=$Dados\ficheiros", "COPIAS_DIR=$Dados\copias",
@@ -340,7 +404,8 @@ $resumo = @(
   '                       Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat do pendrive.',
   "Administrador:         $AdminEmail"
 )
-if (-not $Atualizar -and $AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (na primeira entrada pede a verificação em dois passos)" }
+if ($SenhaEscolhida) { $resumo += 'Palavra-passe:         a que escolheu na instalação   (na primeira entrada pede a verificação em dois passos)' }
+elseif ($AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (na primeira entrada pede a verificação em dois passos)" }
 $resumo += @(
   '',
   'Certificado (instale nos outros computadores da Repartição para o navegador confiar):',

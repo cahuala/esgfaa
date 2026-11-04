@@ -136,10 +136,35 @@ ENDERECO="$DOMINIO"
 IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 # configuração (só na primeira instalação)
 if (( ! ATUALIZAR )); then
-  ADMIN_EMAIL="${ESG_ADMIN_EMAIL:-}"
-  if [[ -z "$ADMIN_EMAIL" && -t 0 ]]; then
-    read -r -p "E-mail do administrador do sistema [pessoal@esgfaa.gov.ao]: " ADMIN_EMAIL || true
+  # a conta de administrador do sistema: o nome, o e-mail com que entra e a palavra-passe (escolhida ou gerada)
+  ADMIN_NOME="${ESG_ADMIN_NOME:-}"; ADMIN_EMAIL="${ESG_ADMIN_EMAIL:-}"; ADMIN_SENHA=""; SENHA_ESCOLHIDA=0
+  if [[ -t 0 ]]; then
+    echo; echo "CONTA DE ADMINISTRADOR DO SISTEMA (entra com o e-mail e a palavra-passe)"
+    [[ -n "$ADMIN_NOME" ]] || read -r -p "  Nome [Administrador do Pessoal]: " ADMIN_NOME || true
+    if [[ -z "$ADMIN_EMAIL" ]]; then
+      while :; do
+        read -r -p "  E-mail [pessoal@esgfaa.gov.ao]: " ADMIN_EMAIL || true
+        ADMIN_EMAIL="$(echo "${ADMIN_EMAIL:-pessoal@esgfaa.gov.ao}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')"
+        [[ "$ADMIN_EMAIL" =~ ^[^@]+@[^@]+\.[^@]+$ ]] && break
+        echo "  E-mail inválido."
+      done
+      echo "  Palavra-passe: pelo menos 10 caracteres, com letras e números (sem espaços, aspas nem #)."
+      echo "  Deixe em branco para o instalador gerar uma (mostrada no fim)."
+      while :; do
+        read -r -s -p "  Palavra-passe: " A || true; echo
+        [[ -z "$A" ]] && break
+        if (( ${#A} < 10 )); then echo "  Tem de ter pelo menos 10 caracteres."; continue; fi
+        if ! [[ "$A" =~ [a-zA-Z] && "$A" =~ [0-9] ]]; then echo "  Tem de ter letras e números."; continue; fi
+        if [[ "$A" =~ [[:space:]\"\'#\\\$\`] ]]; then echo "  Sem espaços, aspas, #, \$, \` nem \\."; continue; fi
+        if [[ "${A,,}" == *"${ADMIN_EMAIL%%@*}"* ]]; then echo "  Não pode conter o nome do e-mail."; continue; fi
+        read -r -s -p "  Repita a palavra-passe: " B || true; echo
+        [[ "$A" == "$B" ]] || { echo "  Não são iguais. Escreva outra vez."; continue; }
+        ADMIN_SENHA="$A"; SENHA_ESCOLHIDA=1; break
+      done
+      unset A B
+    fi
   fi
+  ADMIN_NOME="$(echo "${ADMIN_NOME:-Administrador do Pessoal}" | tr -d '"\\$`')"
   ADMIN_EMAIL="${ADMIN_EMAIL:-pessoal@esgfaa.gov.ao}"
   BI_API_KEY="${ESG_BI_API_KEY:-}"
 fi
@@ -185,8 +210,9 @@ BD_SENHA=$BD_SENHA
 JWT_SECRET=$(aleatorio 64)
 DADOS_CHAVE=$(aleatorio 64)
 COPIAS_CHAVE=$(aleatorio 64)
+ADMIN_NOME="$ADMIN_NOME"
 ADMIN_EMAIL=$ADMIN_EMAIL
-ADMIN_PASSWORD=$(senha)
+ADMIN_PASSWORD=${ADMIN_SENHA:-$(senha)}
 REDES_INTERNAS=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 APP_DIR=$DESTINO/sistema/app
 DATA_DIR=$DADOS/dados
@@ -305,7 +331,7 @@ Environment=HOME=$DADOS XDG_DATA_HOME=$DADOS XDG_CONFIG_HOME=$DADOS" esg-pessoal
   systemctl enable esg-pessoal esg-pessoal-web esg-pessoal-copias
   systemctl restart esg-pessoal esg-pessoal-web esg-pessoal-copias
 else
-  ( cd "$DESTINO/sistema" && como env PATH="$PGBIN:$PATH" $(grep -E '^[A-Z_]+=' "$CONF/pessoal.env" | tr '\n' ' ') "$NODE" src/servidor.js >> "$DADOS/sistema.log" 2>&1 & )
+  ( cd "$DESTINO/sistema" && como env PATH="$PGBIN:$PATH" "$NODE" --env-file="$CONF/pessoal.env" src/servidor.js >> "$DADOS/sistema.log" 2>&1 & )
   ( como env HOME="$DADOS" XDG_DATA_HOME="$DADOS" "$DESTINO/caddy/caddy" run --config "$CONF/Caddyfile" --adapter caddyfile >> "$DADOS/caddy.log" 2>&1 & )
 fi
 # a firewall (se houver): HTTPS e os aparelhos de ponto
@@ -341,7 +367,8 @@ RESUMO="$DESTINO/INSTALACAO.txt"
   echo "No DNS da Escola:     $ENDERECO  →  ${IP:-<IP deste computador>}   (registo A; peça ao responsável pela rede)"
   echo "                      Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat (ou -LINUX.sh) do pendrive."
   echo "Administrador:       $ADMIN_EMAIL"
-  if (( ! ATUALIZAR )); then echo "Palavra-passe inicial: $ADMIN_PASSWORD   (na primeira entrada pede a verificação em dois passos)"; fi
+  if (( ${SENHA_ESCOLHIDA:-0} )); then echo "Palavra-passe:       a que escolheu na instalação   (na primeira entrada pede a verificação em dois passos)"
+  elif [[ -n "${ADMIN_PASSWORD:-}" ]]; then echo "Palavra-passe inicial: $ADMIN_PASSWORD   (na primeira entrada pede a verificação em dois passos)"; fi
   echo
   echo "Certificado (instale nos computadores da Repartição para o navegador confiar):"
   echo "   $DESTINO/certificado/esg-pessoal-raiz.crt   (cópia no pendrive: registos/esg-pessoal-raiz.crt)"

@@ -80,8 +80,9 @@ e o sistema já construído, mais o Quadro Orgânico real (unidades e cargos). N
    (descarrega os componentes uma vez para `instalador/.cache`, confere os resumos SHA, constrói e escreve o
    `MANIFESTO.txt`; o Quadro Orgânico vem de `docs/QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx`, ou `--organica <ficheiro>`).
 2. No servidor: duplo clique em **`INSTALAR-WINDOWS.bat`** (Windows 10/11, Server 2016+, 64 bits) ou em
-   **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pergunta só o e-mail
-   do administrador; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
+   **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pede a conta de administrador
+   (nome, e-mail e palavra-passe; em branco gera-se uma) e, se a 443 estiver ocupada pelo HTTP.sys do Windows (IIS, Windows Admin
+   Center, VPN SSTP, AD FS), diz qual é e pergunta se o pode parar; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
    a firewall (443 e 8085) e as cópias diárias. No fim mostra a palavra-passe inicial.
 3. Se falhar: `registos/ERRO-INSTALACAO-<data>.txt` no pendrive (passo, causas prováveis, o que fazer e o fim do registo).
    Corrigido, corre-se outra vez: continua e não apaga dados.

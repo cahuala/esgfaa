@@ -9,8 +9,12 @@ COMO INSTALAR
      ou num terminal:  bash INSTALAR-LINUX.sh
      Se o gestor de ficheiros não deixar, clique com o botão direito no .desktop › «Permitir executar».
 
-  O instalador pergunta só o e-mail do administrador (por omissão pessoal@esgfaa.gov.ao).
-  Demora uns minutos. No fim mostra o endereço e a palavra-passe inicial do administrador.
+  O instalador pede a CONTA DE ADMINISTRADOR do sistema: o nome, o e-mail com que entra
+  (por omissão pessoal@esgfaa.gov.ao) e a palavra-passe (pelo menos 10 caracteres, com letras e
+  números; em branco, o instalador gera uma e mostra-a no fim).
+  Se a porta 443 estiver ocupada por um serviço do Windows (IIS, Windows Admin Center, VPN...),
+  o instalador diz qual e pergunta se o pode parar.
+  Demora uns minutos. No fim mostra o endereço e a conta do administrador.
 
 ENDEREÇO DO SISTEMA:  https://esg.emfaa.gov.ao
   O sistema abre-se só por este nome; pelo IP do servidor a ligação é recusada.
