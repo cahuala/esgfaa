@@ -183,16 +183,91 @@ function QuemUsa($porta) {
   $quem = if ($svc.Count) { $svc -join '; ' } else { 'HTTP.sys do Windows' }
   if ($urls.Count) { "$quem ($($urls -join ', '))" } else { $quem }
 }
-# o HTTPS fica na 443 se estiver livre; senão, na primeira livre destas. Nenhum serviço do servidor é parado.
-$anterior = if ($Atualizar) { (Select-String -Path (Join-Path $Conf 'pessoal.env') -Pattern '^PORTA_WEB=(\d+)' -ErrorAction SilentlyContinue).Matches | ForEach-Object { [int]$_.Groups[1].Value } | Select-Object -First 1 }
+# valor guardado na configuração de uma instalação anterior
+function Guardado($nome) { if ($Atualizar) { (Select-String -Path (Join-Path $Conf 'pessoal.env') -Pattern "^$nome=(.+)$" -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1 } }
+function EmNumero($x) { $b = ([Net.IPAddress]$x).GetAddressBytes(); [Array]::Reverse($b); [BitConverter]::ToUInt32($b, 0) }
+# alguém está na porta neste IP (ou em todos os IP)?
+function OcupadaEm($porta, $ipx) { [bool](Get-NetTCPConnection -State Listen -LocalPort $porta -ErrorAction SilentlyContinue | Where-Object { $_.LocalAddress -in @($ipx, '0.0.0.0', '::') }) }
+<#
+  Segundo IP para o sistema: a 443 do IP do servidor é de outro serviço (no servidor da Escola, a VPN SSTP, pelo
+  HTTP.sys). Dá-se à mesma placa um IP livre só para o sistema (sem ser usado para as ligações de saída: o servidor
+  continua a falar com a rede e com o DNS pelo IP de sempre) e o HTTP.sys (VPN, IIS, WinRM) passa a escutar só nos
+  outros IP. Devolve $true se o sistema pode ficar na 443 desse IP. Nenhum serviço é desligado.
+#>
+function PrepararIpSistema($novo) {
+  if ($novo -notmatch '^\d{1,3}(\.\d{1,3}){3}$') { Write-Host "    IP inválido: $novo" -ForegroundColor Yellow; return $false }
+  $placa = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1
+  if (-not $placa) { Write-Host '    não se encontrou a placa de rede ligada (com gateway)' -ForegroundColor Yellow; return $false }
+  $principal = Get-NetIPAddress -InterfaceIndex $placa.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -ne $novo -and -not $_.SkipAsSource } | Select-Object -First 1
+  if (-not (Get-NetIPAddress -IPAddress $novo -ErrorAction SilentlyContinue)) {
+    if ((Get-NetIPInterface -InterfaceIndex $placa.InterfaceIndex -AddressFamily IPv4).Dhcp -eq 'Enabled') { Write-Host "    a placa «$($placa.InterfaceAlias)» recebe o IP por DHCP: só se acrescenta um IP a uma placa com IP fixo" -ForegroundColor Yellow; return $false }
+    $mascara = [uint32]([Math]::Pow(2, 32) - [Math]::Pow(2, 32 - $principal.PrefixLength))
+    if (((EmNumero $novo) -band $mascara) -ne ((EmNumero $principal.IPAddress) -band $mascara)) { Write-Host "    $novo não é da mesma rede que $($principal.IPAddress)/$($principal.PrefixLength)" -ForegroundColor Yellow; return $false }
+    if (Test-Connection -ComputerName $novo -Count 2 -Quiet -ErrorAction SilentlyContinue) { Write-Host "    $novo já responde na rede (está a ser usado por outro equipamento)" -ForegroundColor Yellow; return $false }
+    try { New-NetIPAddress -InterfaceIndex $placa.InterfaceIndex -IPAddress $novo -PrefixLength $principal.PrefixLength -SkipAsSource $true -ErrorAction Stop | Out-Null }
+    catch { Write-Host "    não foi possível acrescentar o IP: $($_.Exception.Message)" -ForegroundColor Yellow; return $false }
+    Ok "IP $novo acrescentado à placa «$($placa.InterfaceAlias)» (não é usado nas ligações de saída)"
+  }
+  # o HTTP.sys (VPN SSTP, IIS, WinRM) passa a escutar só nos outros IP deste servidor
+  $lista = @(Calado netsh @('http', 'show', 'iplisten') | Where-Object { $_ -match '^\s+([0-9a-fA-F:.]+)\s*$' } | ForEach-Object { $_.Trim() })
+  $mudou = $false
+  if (-not $lista.Count) {
+    $outros = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -ne $novo -and $_.IPAddress -notlike '169.254.*' } | ForEach-Object { $_.IPAddress }) + '::1' | Select-Object -Unique
+    foreach ($x in $outros) { Calado netsh @('http', 'add', 'iplisten', "ipaddress=$x") | Out-Null }
+    Write-Host "    HTTP.sys (VPN, IIS, WinRM) passa a escutar só em: $($outros -join ', ')"
+    $mudou = $true
+  } elseif ($lista -contains $novo) {
+    Calado netsh @('http', 'delete', 'iplisten', "ipaddress=$novo") | Out-Null
+    $mudou = $true
+  }
+  if ($mudou -or (OcupadaEm 443 $novo)) {
+    # o HTTP.sys só larga o IP novo quando reinicia: os serviços que o usam param uns segundos e voltam
+    # os serviços a correr que dependem do HTTP.sys, directa ou indirectamente (ex.: VPN -> RasMan -> SSTP -> HTTP)
+    $todos = @(Get-Service -ErrorAction SilentlyContinue)
+    $cadeia = @('HTTP')
+    do {
+      $novos = @($todos | Where-Object { $_.Status -eq 'Running' -and $cadeia -notcontains $_.Name -and (@($_.ServicesDependedOn | ForEach-Object { $_.Name }) | Where-Object { $cadeia -contains $_ }) })
+      $cadeia += @($novos | ForEach-Object { $_.Name })
+    } while ($novos.Count)
+    $dependentes = @($todos | Where-Object { $cadeia -contains $_.Name -and $_.Name -ne 'HTTP' })
+    $nomes = ($dependentes | ForEach-Object { $_.DisplayName }) -join ', '
+    Write-Host "    Para valer já, os serviços web do Windows reiniciam uns segundos (voltam sozinhos): $nomes" -ForegroundColor Yellow
+    $r = if ($env:ESG_REINICIAR_HTTP) { $env:ESG_REINICIAR_HTTP } else { Read-Host '    Reiniciar agora? (S = agora; N = só depois de reiniciar o servidor)' }
+    if ($r -match '^[sS]') {
+      Calado net @('stop', 'http', '/y') | Out-Null
+      Calado net @('start', 'http') | Out-Null
+      foreach ($d in $dependentes) { Start-Service -Name $d.Name -ErrorAction SilentlyContinue }
+      Start-Sleep 2
+      $parados = @($dependentes | ForEach-Object { Get-Service $_.Name } | Where-Object { $_.Status -ne 'Running' } | ForEach-Object { $_.DisplayName })
+      if ($parados.Count) { Write-Host "    (aviso: não voltaram a arrancar: $($parados -join ', ') — arranque-os em services.msc)" -ForegroundColor Yellow } else { Ok 'serviços web do Windows de volta' }
+    } else { $script:ReiniciarServidor = $true }
+  }
+  if ((OcupadaEm 443 $novo) -and -not $script:ReiniciarServidor) { Write-Host "    a 443 continua ocupada em $novo" -ForegroundColor Yellow; return $false }
+  $true
+}
+# o HTTPS fica na 443; se lá estiver outro serviço, num segundo IP só para o sistema (ou, sem ele, na primeira porta
+# livre de 8443, 9443, 10443). Nenhum serviço do servidor é desligado.
+$script:ReiniciarServidor = $false
+$IpSistema = if ($env:ESG_IP_SISTEMA) { $env:ESG_IP_SISTEMA } else { Guardado 'IP_SISTEMA' }
 $PortaWeb = $null
-foreach ($c in @(@($anterior) + 443, 8443, 9443, 10443 | Where-Object { $_ } | Select-Object -Unique)) {
+if (-not $IpSistema -and -not (Livre 443)) {
+  Write-Host "    a porta 443 está ocupada por: $(QuemUsa 443)" -ForegroundColor Yellow
+  Write-Host '    Para abrir só com https://esg.emfaa.gov.ao (sem porta), o sistema fica num segundo IP deste servidor.'
+  Write-Host '    Indique um IP livre da mesma rede (confirme com o responsável pela rede), ou Enter para usar outra porta (8443).'
+  $IpSistema = "$(Read-Host '    IP para o sistema')".Trim()
+}
+if ($IpSistema) {
+  if (PrepararIpSistema $IpSistema) { $PortaWeb = 443 } else { Write-Host '    fica noutra porta (veja acima porquê)' -ForegroundColor Yellow; $IpSistema = $null }
+}
+$anterior = Guardado 'PORTA_WEB'
+if (-not $PortaWeb) { foreach ($c in @(@($anterior) + 443, 8443, 9443, 10443 | Where-Object { $_ } | Select-Object -Unique)) {
   if (Livre $c) { $PortaWeb = $c; break }
   Write-Host "    a porta $c está ocupada por: $(QuemUsa $c) — fica como está" -ForegroundColor Yellow
 }
+}
 if (-not $PortaWeb) { Falha 'As portas 443, 8443, 9443 e 10443 estão todas ocupadas: não há porta para o HTTPS.' }
 # a porta 80 (se estiver livre) só serve para levar quem escreve http://… ao endereço certo
-$PortaHttp = if (Livre 80) { 80 } else { $null }
+$PortaHttp = if ($IpSistema) { if (-not (OcupadaEm 80 $IpSistema)) { 80 } } elseif (Livre 80) { 80 } else { $null }
 if (-not $PortaHttp) { Write-Host "    a porta 80 está ocupada por: $(QuemUsa 80) — fica como está (escreve-se o endereço completo)" -ForegroundColor Yellow }
 foreach ($p in 8085, $PortaApi, $PortaBd) {
   if (-not (Livre $p)) {
@@ -200,7 +275,7 @@ foreach ($p in 8085, $PortaApi, $PortaBd) {
     Falha "A porta $p já está ocupada por: $(QuemUsa $p)"
   }
 }
-Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); 8085, $PortaApi e $PortaBd livres"
+Ok "HTTPS na porta $PortaWeb$(if ($IpSistema) { " do IP $IpSistema" })$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); 8085, $PortaApi e $PortaBd livres"
 
 # o sistema abre-se só pelo nome (nunca pelo IP)
 $Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao' }
@@ -209,6 +284,8 @@ $Url = if ($PortaWeb -eq 443) { "https://$Endereco" } else { "https://${Endereco
 $Origens = (@("https://$Endereco", $Url) | Select-Object -Unique) -join ','
 $ip = (Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1).IPv4Address.IPAddress | Select-Object -First 1
 if (-not $ip) { $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress }
+# o DNS aponta para o IP do sistema, se tiver um só para ele
+if ($IpSistema) { $ip = $IpSistema }
 # a conta de administrador do sistema: o nome, o e-mail com que entra e a palavra-passe (escolhida ou gerada)
 $SenhaEscolhida = $false
 if (-not $Atualizar) {
@@ -278,7 +355,7 @@ if (-not $Atualizar) {
     "# Sistema de Gestão de Pessoal e Quadros — criado pelo instalador em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     '# GUARDE UMA CÓPIA DESTE FICHEIRO NUM COFRE: sem DADOS_CHAVE os dados pessoais não se lêem; sem COPIAS_CHAVE as cópias não abrem.',
     'NODE_ENV=production', 'HOST=127.0.0.1', "PORT=$PortaApi", 'TRUST_PROXY=1',
-    "ENDERECO=$Endereco", "PORTA_WEB=$PortaWeb", "CORS_ORIGINS=$Origens",
+    "ENDERECO=$Endereco", "PORTA_WEB=$PortaWeb", "IP_SISTEMA=$IpSistema", "CORS_ORIGINS=$Origens",
     "DATABASE_URL=postgresql://pessoal:$BdSenha@127.0.0.1:$PortaBd/esgfaa_pessoal", "BD_SENHA=$BdSenha",
     "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(Aleatorio 64)", "COPIAS_CHAVE=$(Aleatorio 64)",
     "ADMIN_NOME=`"$AdminNome`"", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
@@ -291,7 +368,9 @@ if (-not $Atualizar) {
 }
 # numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
 $linhasEnv = @((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*', "ENDERECO=$Dominio" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=$Origens" -replace '^PORTA_WEB=.*', "PORTA_WEB=$PortaWeb")
+$linhasEnv = @($linhasEnv -replace '^IP_SISTEMA=.*', "IP_SISTEMA=$IpSistema")
 if (-not ($linhasEnv -match '^PORTA_WEB=')) { $linhasEnv += "PORTA_WEB=$PortaWeb" }
+if (-not ($linhasEnv -match '^IP_SISTEMA=')) { $linhasEnv += "IP_SISTEMA=$IpSistema" }
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhasEnv, (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }
@@ -351,6 +430,7 @@ $storage = ("$Dados\caddy" -replace '\\', '/')
 	auto_https disable_redirects
 }
 $Endereco {
+$(if ($IpSistema) { "	bind $IpSistema" })
 	tls internal
 	encode zstd gzip
 	header {
@@ -363,7 +443,7 @@ $Endereco {
 	reverse_proxy 127.0.0.1:$PortaApi
 }
 
-$(if ($PortaHttp) { "http://$Endereco {`n`tredir $Url{uri} permanent`n}`n`nhttp:// {`n`tabort`n}" })
+$(if ($PortaHttp) { $b = if ($IpSistema) { "`n`tbind $IpSistema" } else { '' }; "http://$Endereco {$b`n`tredir $Url{uri} permanent`n}`n`nhttp:// {$b`n`tabort`n}" })
 
 # aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
 :8085 {
@@ -375,7 +455,7 @@ $(if ($PortaHttp) { "http://$Endereco {`n`tredir $Url{uri} permanent`n}`n`nhttp:
 
 # este computador encontra o nome sem esperar pelo DNS da Escola
 $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
-$linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '# esg-pessoal$' }) + "127.0.0.1 $Endereco # esg-pessoal"
+$linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '# esg-pessoal$' }) + "$(if ($IpSistema) { $IpSistema } else { '127.0.0.1' }) $Endereco # esg-pessoal"
 try { [IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCIIEncoding)) }
 catch { Write-Host "    (aviso: não foi possível escrever em $hosts — $($_.Exception.Message); neste computador use o DNS da Escola)" -ForegroundColor Yellow }
 
@@ -458,6 +538,7 @@ $resumo = @(
   '                       Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat do pendrive.',
   "Administrador:         $AdminEmail"
 )
+if ($script:ReiniciarServidor) { $resumo += @('', "ATENÇÃO: reinicie o servidor para $Url começar a funcionar (o IP $IpSistema só fica livre para o sistema depois disso).") }
 if ($SenhaEscolhida) { $resumo += 'Palavra-passe:         a que escolheu na instalação   (na primeira entrada pede a verificação em dois passos)' }
 elseif ($AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (na primeira entrada pede a verificação em dois passos)" }
 $resumo += @(
