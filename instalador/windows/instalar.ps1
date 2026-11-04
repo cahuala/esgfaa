@@ -43,16 +43,30 @@ function Senha() {
   } until ($s -match '\d' -and $s -match '[a-zA-Z]')
   $s
 }
+# apaga uma pasta do programa; se o Windows recusar (permissões estragadas por uma tentativa interrompida, ou o
+# antivírus a ler um ficheiro), os administradores retomam-na e tenta-se outra vez; se ainda assim não der, põe-se de lado
+function LimparPasta($pasta) {
+  if (-not (Test-Path $pasta)) { return }
+  try { Remove-Item -Recurse -Force $pasta -ErrorAction Stop; return } catch { Write-Host "    (não se apagou à primeira: $($_.Exception.Message))" }
+  & icacls $pasta /setowner '*S-1-5-32-544' /T /C /Q 2>&1 | Out-Null
+  & icacls $pasta /grant '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-18:(OI)(CI)F' /T /C /Q 2>&1 | Out-Null
+  Get-ChildItem $pasta -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Attributes = 'Normal' } catch { } }
+  Start-Sleep 2
+  try { Remove-Item -Recurse -Force $pasta -ErrorAction Stop; return } catch { Write-Host "    (ainda presa: $($_.Exception.Message))" }
+  $lado = "$pasta.velha-$Carimbo"
+  try { Rename-Item $pasta (Split-Path -Leaf $lado) -ErrorAction Stop } catch { Falha "Não foi possível apagar nem pôr de lado $pasta ($($_.Exception.Message)). Reinicie o computador e corra outra vez o instalador." }
+  Write-Host "    a pasta antiga ficou em $lado (pode apagá-la depois de reiniciar)" -ForegroundColor Yellow
+}
 # descompacta um .zip para a pasta (se o .zip tiver uma só pasta lá dentro, tira esse nível)
 function Descompactar($zip, $pasta) {
   $tmp = Join-Path $env:TEMP ("esg-" + [guid]::NewGuid())
   Expand-Archive -Path $zip -DestinationPath $tmp -Force
   $itens = @(Get-ChildItem $tmp)
   $origem = if ($itens.Count -eq 1 -and $itens[0].PSIsContainer) { $itens[0].FullName } else { $tmp }
-  if (Test-Path $pasta) { Remove-Item -Recurse -Force $pasta }
+  LimparPasta $pasta
   New-Item -ItemType Directory -Force $pasta | Out-Null
   Get-ChildItem $origem -Force | Move-Item -Destination $pasta
-  Remove-Item -Recurse -Force $tmp
+  Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
 
 function Causas {
@@ -132,7 +146,8 @@ if ($livre -lt 3000) { Falha "Só há $livre MB livres no disco C:." }
 Ok "$livre MB livres"
 
 $Atualizar = Test-Path (Join-Path $Conf 'pessoal.env')
-$Servicos = 'ESG-Pessoal-Copias', 'ESG-Pessoal-Web', 'ESG-Pessoal'
+# a base também pára: os programas (postgres.exe) vão ser trocados; volta a arrancar no passo da base
+$Servicos = 'ESG-Pessoal-Copias', 'ESG-Pessoal-Web', 'ESG-Pessoal', 'ESG-Pessoal-BD'
 if ($Atualizar) {
   Write-Host ''; Write-Host '>>> Já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam).' -ForegroundColor Yellow
   foreach ($s in $Servicos) { if (Get-Service $s -ErrorAction SilentlyContinue) { Stop-Service $s -Force -ErrorAction SilentlyContinue } }
@@ -217,19 +232,22 @@ if (-not $Atualizar) {
 
 Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Destino"
 foreach ($d in $Destino, $Dados, $Conf, "$Dados\ficheiros", "$Dados\copias", "$Dados\caddy", "$Destino\servicos", "$Destino\certificado") { New-Item -ItemType Directory -Force $d | Out-Null }
-# só o sistema (SYSTEM) e os administradores entram na pasta (SID: os nomes mudam com a língua do Windows)
-& icacls $Destino /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /T /Q | Out-Null
-# o initdb do PostgreSQL corre sem os direitos de administrador (mesmo lançado pelo administrador): fica só com
-# a conta de quem instala, que precisa de ler o programa (e de escrever na pasta da base, abaixo)
-$EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-& icacls $Destino /grant "*${EuSid}:(OI)(CI)RX" /T /Q | Out-Null
+# programas que tenham ficado a correr desta pasta (p. ex. de uma tentativa interrompida) prendem os ficheiros
+Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Write-Host "    a parar $($_.ProcessName) (PID $($_.Id)), que corria de $Destino"; Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
 $C = Join-Path $Pen 'componentes'
 Descompactar "$C\node-windows.zip" "$Destino\node"
 Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql"
 Descompactar "$C\caddy-windows.zip" "$Destino\caddy"
-if (Test-Path "$Destino\sistema.anterior") { Remove-Item -Recurse -Force "$Destino\sistema.anterior" }
-if (Test-Path "$Destino\sistema") { Rename-Item "$Destino\sistema" 'sistema.anterior' }
+LimparPasta "$Destino\sistema.anterior"
+if (Test-Path "$Destino\sistema") { try { Rename-Item "$Destino\sistema" 'sistema.anterior' -ErrorAction Stop } catch { LimparPasta "$Destino\sistema" } }
 Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema"
+# só o sistema (SYSTEM) e os administradores entram na pasta (SID: os nomes mudam com a língua do Windows);
+# aplica-se depois de copiar, para tudo o que lá está ficar igual
+& icacls $Destino /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /T /C /Q | Out-Null
+# o initdb do PostgreSQL corre sem os direitos de administrador (mesmo lançado pelo administrador): fica só com
+# a conta de quem instala, que precisa de ler o programa (e de escrever na pasta da base, abaixo)
+$EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+& icacls $Destino /grant "*${EuSid}:(OI)(CI)RX" /T /C /Q | Out-Null
 # o PostgreSQL precisa do Visual C++ 2015-2022 (x64); se faltar, instala-se o que vem no pendrive
 if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -ErrorAction SilentlyContinue).Installed) {
   Write-Host '    a instalar o Visual C++ Redistributable (x64)…'
