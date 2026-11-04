@@ -143,8 +143,13 @@ Passo 'portas' 'A verificar as portas'
 # Admin Center, a VPN (SSTP) ou o AD FS. Descobre-se quais pelo netsh (os PID que registaram URLs nessa porta).
 function ServicosHttpSys($porta) {
   $pids = @(); $dentro = $false; $pidsGrupo = @(); $urlGrupo = $false
-  foreach ($l in (& netsh http show servicestate view=requestq verbose=no 2>$null) + 'Request queue name:') {
-    if ($l -match '^\s*Request queue name:') { if ($urlGrupo) { $pids += $pidsGrupo }; $pidsGrupo = @(); $urlGrupo = $false; $dentro = $false; continue }
+  $saida = @(& netsh http show servicestate view=requestq verbose=no 2>$null)
+  # fica no registo (no pendrive): o que o Windows diz que está registado no HTTP.sys
+  Write-Host '    netsh http show servicestate (filas e URL registados):'
+  $saida | Where-Object { $_ -match 'Request queue name|Process IDs|^\s+\d+\s*$|://' } | ForEach-Object { Write-Host "      $_" }
+  # cada fila começa numa linha sem recuo; dentro dela, os grupos de URL repetem «Request queue name» com recuo
+  foreach ($l in $saida + 'Request queue name:') {
+    if ($l -match '^Request queue name:') { if ($urlGrupo) { $pids += $pidsGrupo }; $pidsGrupo = @(); $urlGrupo = $false; $dentro = $false; continue }
     if ($l -match 'Process IDs:') { $dentro = $true; continue }
     if ($dentro -and $l -match '^\s+(\d+)\s*$') { $pidsGrupo += [int]$Matches[1]; continue }
     $dentro = $false
