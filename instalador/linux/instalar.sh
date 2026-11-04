@@ -41,7 +41,7 @@ causas() {
     migrar) echo "- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança." ;;
     organica) echo "- O Quadro Orgânico (sistema/organica.json) tem uma linha que o sistema não aceita. O sistema fica instalado; carregue a orgânica depois em Orgânica › Importar." ;;
     servicos) echo "- Um serviço não arrancou. Veja: journalctl -u esg-pessoal -n 80  e  journalctl -u esg-pessoal-web -n 50" ;;
-    verificar) echo "- O sistema não respondeu em https://localhost. Veja: journalctl -u esg-pessoal -n 80"
+    verificar) echo "- O sistema não respondeu em https://esg.emfaa.gov.ao (neste computador). Veja: journalctl -u esg-pessoal -n 80"
                echo "- Se o erro falar de DADOS_CHAVE ou JWT_SECRET: o ficheiro $CONF/pessoal.env foi mexido." ;;
     *) echo "- Veja a mensagem de erro acima e o registo completo: $LOG" ;;
   esac
@@ -130,14 +130,12 @@ for p in 443 8085 $PORTA_API $PORTA_BD; do
 done
 ok "443, 8085, $PORTA_API e $PORTA_BD livres"
 
+# o sistema abre-se só pelo nome (nunca pelo IP)
+DOMINIO="${ESG_ENDERECO:-esg.emfaa.gov.ao}"
+ENDERECO="$DOMINIO"
+IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 # configuração (só na primeira instalação)
 if (( ! ATUALIZAR )); then
-  IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-  ENDERECO="${ESG_ENDERECO:-}"
-  if [[ -z "$ENDERECO" && -t 0 ]]; then
-    read -r -p "Endereço do sistema na rede da Escola (nome ou IP) [${IP:-localhost}]: " ENDERECO || true
-  fi
-  ENDERECO="${ENDERECO:-${IP:-localhost}}"
   ADMIN_EMAIL="${ESG_ADMIN_EMAIL:-}"
   if [[ -z "$ADMIN_EMAIL" && -t 0 ]]; then
     read -r -p "E-mail do administrador do sistema [pessoal@esgfaa.gov.ao]: " ADMIN_EMAIL || true
@@ -202,6 +200,8 @@ EOF
   umask 022
   chown root:"$UTILIZADOR" "$CONF/pessoal.env"; chmod 640 "$CONF/pessoal.env"
 fi
+# numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
+sed -i "s|^ENDERECO=.*|ENDERECO=$DOMINIO|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=https://$DOMINIO|" "$CONF/pessoal.env"
 # shellcheck disable=SC1091
 set -a; . "$CONF/pessoal.env"; set +a
 
@@ -261,14 +261,14 @@ passo organica "A carregar o Quadro Orgânico (unidades e cargos)"
 "$NODE" scripts/instalar-organica.js "$DESTINO/sistema/organica.json"
 
 passo servicos "A ligar os serviços (sistema, HTTPS e cópias de segurança diárias)"
-SITES="$ENDERECO, localhost"; [[ "$ENDERECO" == "localhost" ]] && SITES="localhost"
 cat > "$CONF/Caddyfile" <<EOF
 # HTTPS com a autoridade interna do Caddy (o certificado da raiz instala-se nos computadores da Repartição)
+# só se abre por https://$ENDERECO: pelo IP (ou outro nome) a ligação é recusada
 {
 	storage file_system $DADOS/caddy
 	skip_install_trust
 }
-$SITES {
+$ENDERECO {
 	tls internal
 	encode zstd gzip
 	header {
@@ -281,7 +281,11 @@ $SITES {
 	reverse_proxy 127.0.0.1:$PORTA_API
 }
 
-# aparelhos de ponto (impressão digital): só /iclock
+http:// {
+	abort
+}
+
+# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
 :8085 {
 	@ponto path /iclock/*
 	reverse_proxy @ponto 127.0.0.1:$PORTA_API
@@ -289,6 +293,9 @@ $SITES {
 }
 EOF
 chown -R "$UTILIZADOR:$UTILIZADOR" "$DADOS"
+# este computador encontra o nome sem esperar pelo DNS da Escola
+sed -i '/# esg-pessoal$/d' /etc/hosts
+echo "127.0.0.1 $ENDERECO # esg-pessoal" >> /etc/hosts
 if (( SYSTEMD )); then
   servico esg-pessoal "ESG Pessoal — sistema" "$NODE src/servidor.js" "" esg-pessoal-bd.service
   servico esg-pessoal-web "ESG Pessoal — HTTPS (Caddy)" "$DESTINO/caddy/caddy run --config $CONF/Caddyfile --adapter caddyfile" "AmbientCapabilities=CAP_NET_BIND_SERVICE
@@ -318,8 +325,10 @@ ok "o sistema responde"
 for i in $(seq 1 30); do [[ -f "$DADOS/caddy/pki/authorities/local/root.crt" ]] && break; sleep 1; done
 mkdir -p "$DESTINO/certificado"
 cp "$DADOS/caddy/pki/authorities/local/root.crt" "$DESTINO/certificado/esg-pessoal-raiz.crt" 2>/dev/null && cp "$DESTINO/certificado/esg-pessoal-raiz.crt" "$PEN/registos/esg-pessoal-raiz.crt" 2>/dev/null || true
+# para preparar os outros computadores (PREPARAR-COMPUTADOR-*): o nome e o IP deste servidor
+printf '%s %s\n' "$IP" "$ENDERECO" > "$PEN/registos/servidor.txt" 2>/dev/null || true
 # ver o HTTPS de fora do processo
-curl -fsk "https://localhost/api/saude" >/dev/null 2>&1 && ok "HTTPS a responder" || echo "    (aviso: o HTTPS ainda não respondeu; pode demorar uns segundos a criar o certificado)"
+curl -fsk --resolve "$ENDERECO:443:127.0.0.1" "https://$ENDERECO/api/saude" >/dev/null 2>&1 && ok "HTTPS a responder em https://$ENDERECO" || echo "    (aviso: o HTTPS ainda não respondeu; pode demorar uns segundos a criar o certificado)"
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
 sed -i 's/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=/' "$CONF/pessoal.env"
@@ -328,7 +337,9 @@ RESUMO="$DESTINO/INSTALACAO.txt"
 {
   echo "SISTEMA DE GESTÃO DE PESSOAL E QUADROS — instalado em $(date '+%Y-%m-%d %H:%M')"
   echo
-  echo "Endereço:            https://$ENDERECO"
+  echo "Endereço:            https://$ENDERECO   (pelo IP não abre)"
+  echo "No DNS da Escola:     $ENDERECO  →  ${IP:-<IP deste computador>}   (registo A; peça ao responsável pela rede)"
+  echo "                      Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat (ou -LINUX.sh) do pendrive."
   echo "Administrador:       $ADMIN_EMAIL"
   if (( ! ATUALIZAR )); then echo "Palavra-passe inicial: $ADMIN_PASSWORD   (na primeira entrada pede a verificação em dois passos)"; fi
   echo

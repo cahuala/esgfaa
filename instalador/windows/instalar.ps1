@@ -149,11 +149,11 @@ foreach ($p in 443, 8085, $PortaApi, $PortaBd) {
 }
 Ok "443, 8085, $PortaApi e $PortaBd livres"
 
+# o sistema abre-se só pelo nome (nunca pelo IP)
+$Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao' }
+$Endereco = $Dominio
+$ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
 if (-not $Atualizar) {
-  $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 1).IPAddress
-  if (-not $ip) { $ip = 'localhost' }
-  $Endereco = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { Read-Host "Endereço do sistema na rede da Escola (nome ou IP) [$ip]" }
-  if (-not $Endereco) { $Endereco = $ip }
   $AdminEmail = if ($env:ESG_ADMIN_EMAIL) { $env:ESG_ADMIN_EMAIL } else { Read-Host 'E-mail do administrador do sistema [pessoal@esgfaa.gov.ao]' }
   if (-not $AdminEmail) { $AdminEmail = 'pessoal@esgfaa.gov.ao' }
 }
@@ -200,6 +200,8 @@ if (-not $Atualizar) {
   )
   [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$env_, (New-Object Text.UTF8Encoding $false))
 }
+# numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
+[IO.File]::WriteAllLines($EnvFicheiro, [string[]]((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*', "ENDERECO=$Dominio" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=https://$Dominio"), (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }
 $Endereco = $Cfg.ENDERECO; $AdminEmail = $Cfg.ADMIN_EMAIL
@@ -236,14 +238,14 @@ Pop-Location
 Passo 'servicos' 'A ligar os serviços (sistema, HTTPS e cópias de segurança diárias)'
 $Caddyfile = Join-Path $Conf 'Caddyfile'
 $storage = ("$Dados\caddy" -replace '\\', '/')
-$sites = if ($Endereco -eq 'localhost') { 'localhost' } else { "$Endereco, localhost" }
 @"
 # HTTPS com a autoridade interna do Caddy (o certificado da raiz instala-se nos computadores da Repartição)
+# so abre por https://${Endereco}; pelo IP (ou outro nome) a ligacao e recusada
 {
 	storage file_system $storage
 	skip_install_trust
 }
-$sites {
+$Endereco {
 	tls internal
 	encode zstd gzip
 	header {
@@ -256,13 +258,22 @@ $sites {
 	reverse_proxy 127.0.0.1:$PortaApi
 }
 
-# aparelhos de ponto (impressão digital): só /iclock
+http:// {
+	abort
+}
+
+# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
 :8085 {
 	@ponto path /iclock/*
 	reverse_proxy @ponto 127.0.0.1:$PortaApi
 	respond 404
 }
 "@ | Set-Content -Path $Caddyfile -Encoding ASCII
+
+# este computador encontra o nome sem esperar pelo DNS da Escola
+$hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
+$linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '# esg-pessoal$' }) + "127.0.0.1 $Endereco # esg-pessoal"
+[IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCIIEncoding))
 
 # cada serviço é o WinSW com um .xml ao lado (arranca com o Windows e volta a arrancar se cair)
 function Servico($id, $nome, $exe, $argumentos, $extra = '') {
@@ -314,6 +325,8 @@ if (Test-Path $raiz) {
   Import-Certificate -FilePath $raiz -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
   Ok 'certificado HTTPS criado e instalado neste computador'
 }
+# para preparar os outros computadores (PREPARAR-COMPUTADOR-*): o nome e o IP deste servidor
+Set-Content -Path (Join-Path $Reg 'servidor.txt') -Value "$ip $Endereco" -Encoding ASCII -ErrorAction SilentlyContinue
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
 $AdminSenha = $Cfg.ADMIN_PASSWORD
@@ -322,7 +335,9 @@ $AdminSenha = $Cfg.ADMIN_PASSWORD
 $resumo = @(
   "SISTEMA DE GESTÃO DE PESSOAL E QUADROS — instalado em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
   '',
-  "Endereço:              https://$Endereco",
+  "Endereço:              https://$Endereco   (pelo IP não abre)",
+  "No DNS da Escola:      $Endereco  ->  $ip   (registo A; peça ao responsável pela rede)",
+  '                       Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat do pendrive.',
   "Administrador:         $AdminEmail"
 )
 if (-not $Atualizar -and $AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (na primeira entrada pede a verificação em dois passos)" }
@@ -346,4 +361,4 @@ Write-Host '==============================================================' -For
 $resumo | ForEach-Object { Write-Host $_ }
 Write-Host '==============================================================' -ForegroundColor Green
 Write-Host "O resumo (com a palavra-passe) fica em $fResumo (só os administradores o lêem)."
-Start-Process "https://localhost"
+Start-Process "https://$Endereco"

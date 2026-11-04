@@ -9,9 +9,14 @@ COMO INSTALAR
      ou num terminal:  bash INSTALAR-LINUX.sh
      Se o gestor de ficheiros não deixar, clique com o botão direito no .desktop › «Permitir executar».
 
-  O instalador pergunta só duas coisas: o endereço do sistema na rede da Escola (nome ou IP;
-  por omissão o IP deste computador) e o e-mail do administrador (por omissão pessoal@esgfaa.gov.ao).
+  O instalador pergunta só o e-mail do administrador (por omissão pessoal@esgfaa.gov.ao).
   Demora uns minutos. No fim mostra o endereço e a palavra-passe inicial do administrador.
+
+ENDEREÇO DO SISTEMA:  https://esg.emfaa.gov.ao
+  O sistema abre-se só por este nome; pelo IP do servidor a ligação é recusada.
+  Peça ao responsável pela rede da Escola para criar no DNS interno o registo
+     esg.emfaa.gov.ao  ->  <IP do servidor>      (o IP aparece no fim da instalação)
+  Enquanto não houver, o passo 3 abaixo resolve em cada computador.
 
 O QUE FICA INSTALADO
   - O sistema (só na rede da Escola), a base de dados PostgreSQL (só nesta máquina) e o HTTPS (Caddy).
@@ -26,12 +31,14 @@ DEPOIS DE INSTALAR
   1. GUARDE NUM COFRE (fora do computador) uma cópia do ficheiro de configuração:
        Windows: C:\ESG-Pessoal\config\pessoal.env     Linux: /etc/esg-pessoal/pessoal.env
      Sem a DADOS_CHAVE os dados pessoais não se lêem; sem a COPIAS_CHAVE as cópias não abrem.
-  2. Entre em https://<endereço> com o e-mail do administrador e a palavra-passe inicial.
+  2. Entre em https://esg.emfaa.gov.ao com o e-mail do administrador e a palavra-passe inicial.
      Na primeira entrada o sistema pede a verificação em dois passos (aplicação no telemóvel,
      p. ex. Google Authenticator ou Microsoft Authenticator).
-  3. Nos outros computadores da Repartição, instale o certificado esg-pessoal-raiz.crt
-     (fica na pasta «registos» deste pendrive) em «Autoridades de certificação de raiz fidedignas»,
-     para o navegador não avisar.
+  3. Em cada um dos outros computadores da Repartição, ligue este pendrive e faça duplo clique em
+       PREPARAR-COMPUTADOR-WINDOWS.bat     (Linux:  sudo bash PREPARAR-COMPUTADOR-LINUX.sh)
+     Pede o IP do servidor (já sugerido) e instala o certificado (registos\esg-pessoal-raiz.crt),
+     para o navegador abrir https://esg.emfaa.gov.ao sem avisos.
+  Os militares entram com o NIP; a palavra-passe inicial é o NIP (mudam-na na primeira entrada).
   4. Em Configurações (menu Administração › Listas do sistema) ajuste as listas: categorias do docente,
      províncias, motivos de saída, bancos, tipos de documento, de expediente e de unidade.
 

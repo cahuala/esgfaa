@@ -80,11 +80,16 @@ e o sistema já construído, mais o Quadro Orgânico real (unidades e cargos). N
    (descarrega os componentes uma vez para `instalador/.cache`, confere os resumos SHA, constrói e escreve o
    `MANIFESTO.txt`; o Quadro Orgânico vem de `docs/QUADRO ORGANICO - PARA CARREGAR NO SISTEMA.xlsx`, ou `--organica <ficheiro>`).
 2. No servidor: duplo clique em **`INSTALAR-WINDOWS.bat`** (Windows 10/11, Server 2016+, 64 bits) ou em
-   **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pergunta o endereço e o e-mail
+   **`INSTALAR-LINUX.desktop`** / `bash INSTALAR-LINUX.sh` (Linux x64 com systemd). Pergunta só o e-mail
    do administrador; gera as chaves, cria a base, as tabelas, a orgânica e os serviços (arrancam com o computador),
    a firewall (443 e 8085) e as cópias diárias. No fim mostra a palavra-passe inicial.
 3. Se falhar: `registos/ERRO-INSTALACAO-<data>.txt` no pendrive (passo, causas prováveis, o que fazer e o fim do registo).
    Corrigido, corre-se outra vez: continua e não apaga dados.
+4. **Endereço: `https://esg.emfaa.gov.ao`**, só por este nome (o Caddy recusa a ligação pelo IP ou por outro nome;
+   só a porta 8085 dos aparelhos de ponto fica pelo IP). No DNS interno da Escola cria-se o registo A
+   `esg.emfaa.gov.ao → IP do servidor` (o servidor já o tem no seu `hosts`). Em cada computador da Repartição,
+   **`PREPARAR-COMPUTADOR-WINDOWS.bat`** (ou `sudo bash PREPARAR-COMPUTADOR-LINUX.sh`) do mesmo pendrive põe o nome no
+   `hosts` (enquanto o DNS não o tiver) e instala o certificado da raiz. Outro nome: `ESG_ENDERECO=<nome>` ao instalar.
 4. **Guarde num cofre** o `pessoal.env` (Windows `C:\ESG-Pessoal\config`, Linux `/etc/esg-pessoal`).
 5. Actualizar: um pendrive novo instala-se da mesma forma (detecta a instalação e só troca o programa e aplica as migrações).
 
