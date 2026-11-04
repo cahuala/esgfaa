@@ -176,7 +176,7 @@ foreach ($p in 8085, $PortaApi, $PortaBd) {
     Falha "A porta $p já está ocupada por: $(QuemUsa $p)"
   }
 }
-Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); 8085, $PortaApi e $PortaBd livres\"
+Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); 8085, $PortaApi e $PortaBd livres"
 
 # o sistema abre-se só pelo nome (nunca pelo IP)
 $Dominio = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { 'esg.emfaa.gov.ao' }
@@ -219,6 +219,10 @@ Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Desti
 foreach ($d in $Destino, $Dados, $Conf, "$Dados\ficheiros", "$Dados\copias", "$Dados\caddy", "$Destino\servicos", "$Destino\certificado") { New-Item -ItemType Directory -Force $d | Out-Null }
 # só o sistema (SYSTEM) e os administradores entram na pasta (SID: os nomes mudam com a língua do Windows)
 & icacls $Destino /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' /T /Q | Out-Null
+# o initdb do PostgreSQL corre sem os direitos de administrador (mesmo lançado pelo administrador): fica só com
+# a conta de quem instala, que precisa de ler o programa (e de escrever na pasta da base, abaixo)
+$EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+& icacls $Destino /grant "*${EuSid}:(OI)(CI)RX" /T /Q | Out-Null
 $C = Join-Path $Pen 'componentes'
 Descompactar "$C\node-windows.zip" "$Destino\node"
 Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql"
@@ -268,6 +272,10 @@ $Endereco = $Cfg.ENDERECO; $AdminEmail = $Cfg.ADMIN_EMAIL
 Passo 'bd' "A preparar a base de dados (PostgreSQL na porta $PortaBd, só nesta máquina)"
 $BdDir = "$Dados\bd"
 if (-not (Test-Path "$BdDir\PG_VERSION")) {
+  # restos de uma tentativa falhada (ainda sem base): o initdb quer a pasta vazia
+  if (Test-Path $BdDir) { Remove-Item -Recurse -Force $BdDir }
+  New-Item -ItemType Directory -Force $BdDir | Out-Null
+  & icacls $BdDir /grant "*${EuSid}:(OI)(CI)F" /Q | Out-Null
   $pw = Join-Path $env:TEMP "esg-pw-$Carimbo.txt"
   [IO.File]::WriteAllText($pw, $Cfg.BD_SENHA)
   try { Correr "$PgBin\initdb.exe" @('-D', $BdDir, '-U', 'pessoal', "--pwfile=$pw", '-E', 'UTF8', '--no-locale', '--auth=scram-sha-256') } finally { Remove-Item $pw -Force -ErrorAction SilentlyContinue }
