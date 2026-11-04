@@ -6,6 +6,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Escolha, Modal, Painel } from '../componentes/Ui'
+import Foto from '../componentes/Foto'
 import { dataHoraPt } from '../formatar'
 
 export default function Utilizadores() {
@@ -19,7 +20,7 @@ export default function Utilizadores() {
   useEffect(() => { carregar() }, [carregar])
   const colunas = useMemo(() => [
     { chave: 'nome', titulo: 'Nome', valor: (u) => u.nome, mostrar: (u) => <strong>{u.nome}</strong> },
-    { chave: 'email', titulo: 'E-mail', valor: (u) => u.email },
+    { chave: 'email', titulo: 'Entra com', valor: (u) => u.nip ?? u.email, mostrar: (u) => (u.nip ? <><span className="badge bg-light text-dark border me-1">NIP</span>{u.nip}</> : u.email) },
     { chave: 'papel', titulo: 'Papel', valor: (u) => u.papelNome, mostrar: (u) => <>{u.papelNome}{u.papelPedido && <div className="small text-warning-emphasis"><i className="fa fa-stamp me-1" />Pedido: {u.papelPedidoNome} (a despacho)</div>}</> },
     { chave: 'unidade', titulo: 'Unidade', valor: (u) => u.unidadeNome },
     { chave: 'estado', titulo: 'Estado', valor: (u) => (u.aguardaDespacho ? 'A aguardar despacho' : u.ativo ? 'Ativo' : 'Desativado'), mostrar: (u) => (u.aguardaDespacho ? <span className="badge bg-warning text-dark" title="Não entra até o Comandante deferir"><i className="fa fa-stamp me-1" />A aguardar despacho</span> : <span className={`badge ${u.ativo ? 'bg-success' : 'bg-secondary'}`}>{u.ativo ? 'Ativo' : 'Desativado'}</span>) },
@@ -59,19 +60,30 @@ export default function Utilizadores() {
         <Tabela titulo="Utilizadores do sistema de pessoal" colunas={colunas} linhas={linhas} aoClicar={gere ? setModal : undefined} />
       </Painel>
       {permissoes && <FormPermissoes u={permissoes} eu={utilizador} refs={ref} aoFechar={() => setPermissoes(null)} aoGuardar={(m) => { setPermissoes(null); avisar(m); carregar() }} />}
-      {modal && <FormUtilizador u={modal} eu={utilizador} papeis={ref.papeis} aoFechar={() => setModal(null)} aoGuardar={(m) => { setModal(null); avisar(m); carregar() }} />}
+      {modal && <FormUtilizador u={modal} eu={utilizador} papeis={ref.papeis} comConta={new Set(linhas.map((x) => x.pessoaId).filter(Boolean))} aoFechar={() => setModal(null)} aoGuardar={(m) => { setModal(null); avisar(m); carregar() }} />}
     </>
   )
 }
 
-function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
+// conta nova: de alguém da Escola (o militar entra com o NIP e a palavra-passe inicial é o NIP) ou de fora, com e-mail
+function FormUtilizador({ u, eu, papeis, comConta, aoFechar, aoGuardar }) {
   const [d, setD] = useState({ nome: u.nome ?? '', email: u.email ?? '', papel: u.papel ?? 'operador', ativo: u.ativo ?? true, senha: '', unidadeId: u.unidadeId ?? '' })
+  const [daEscola, setDaEscola] = useState(true)
+  const [pessoa, setPessoa] = useState(null)
   const { dados: unidades } = useDados('/unidades')
   const [erro, setErro] = useState('')
+  const militar = pessoa?.tipo === 'militar' && pessoa.nip
   const guardar = () => {
     const unidadeId = d.unidadeId ? Number(d.unidadeId) : null
-    const corpo = u.id ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}) } : { ...d, unidadeId }
+    if (!u.id && daEscola && !pessoa) return setErro('Escolha a pessoa da Escola.')
+    const corpo = u.id
+      ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}) }
+      : daEscola ? { pessoaId: pessoa.id, papel: d.papel, unidadeId, ...(militar ? {} : { senha: d.senha }) } : { ...d, unidadeId }
     api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then((r) => aoGuardar(`Utilizador guardado. ${textoDespacho(r)}`.trim())).catch((e) => setErro(e.message))
+  }
+  const reporNip = () => {
+    if (!window.confirm(`A palavra-passe de ${u.nome} volta a ser o NIP (${u.nip}) e terá de a mudar ao entrar. Continuar?`)) return
+    api(`/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { reporNip: true } }).then(() => aoGuardar(`${u.nome} entra agora com o NIP ${u.nip} como palavra-passe (muda-a na primeira entrada).`)).catch((e) => setErro(e.message))
   }
   // perdeu o telemóvel e os códigos de recuperação: volta a ligar a verificação ao entrar
   const repor2fa = () => {
@@ -81,16 +93,60 @@ function FormUtilizador({ u, eu, papeis, aoFechar, aoGuardar }) {
   return (
     <Modal titulo={u.id ? `Editar ${u.nome}` : 'Novo utilizador'} aoFechar={aoFechar} rodape={<>{u.id && u.id !== eu.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={repor2fa}><i className="fa fa-mobile-alt me-1" />Repor verificação em dois passos</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
-      <div className="row">
-        <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
-        <Campo rotulo="E-mail" obrigatorio><input type="email" className="form-control form-control-sm" value={d.email} disabled={Boolean(u.id)} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
+      {!u.id && (
+        <div className="btn-group btn-group-sm mb-3" role="group" aria-label="De quem é a conta">
+          <button type="button" className={`btn ${daEscola ? 'btn-theme' : 'btn-white'}`} onClick={() => setDaEscola(true)}><i className="fa fa-id-card me-1" />Militar ou civil da Escola</button>
+          <button type="button" className={`btn ${!daEscola ? 'btn-theme' : 'btn-white'}`} onClick={() => { setDaEscola(false); setPessoa(null) }}><i className="fa fa-envelope me-1" />Outra conta (e-mail)</button>
+        </div>
+      )}
+      {!u.id && daEscola && !pessoa && <EscolherPessoa comConta={comConta} aoEscolher={(x) => { setPessoa(x); setD({ ...d, unidadeId: x.unidadeId ?? '' }) }} />}
+      {(u.id || !daEscola || pessoa) && <div className="row">
+        {!u.id && pessoa ? (
+          <div className="col-12 mb-3 d-flex align-items-center gap-2">
+            <Foto pessoaId={pessoa.id} fotoId={pessoa.fotoId} nome={pessoa.nome} />
+            <span className="flex-grow-1"><strong>{pessoa.postoAbreviatura ? `${pessoa.postoAbreviatura} ` : ''}{pessoa.nome}</strong><div className="small text-muted">{[pessoa.nip ? `NIP ${pessoa.nip}` : pessoa.numeroAgente && `Agente ${pessoa.numeroAgente}`, pessoa.unidadeNome].filter(Boolean).join(' · ')}</div></span>
+            <button type="button" className="btn btn-sm btn-white" onClick={() => setPessoa(null)}>Outra pessoa</button>
+          </div>
+        ) : <>
+          <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
+          <Campo rotulo={u.nip ? 'Entra com o NIP' : 'E-mail'} obrigatorio><input type={u.nip ? 'text' : 'email'} className="form-control form-control-sm" value={u.nip ?? d.email} disabled={Boolean(u.id)} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
+        </>}
         <Campo rotulo="Unidade (expediente e conversa da unidade)"><Escolha valor={String(d.unidadeId ?? '')} aoMudar={(v) => setD({ ...d, unidadeId: v })} opcoes={(unidades ?? []).map((x) => [String(x.id), x.nome])} vazio="Nenhuma" /></Campo>
         <Campo rotulo="Papel"><Escolha valor={d.papel} aoMudar={(v) => setD({ ...d, papel: v })} opcoes={papeis} vazio={null} disabled={u.id === eu.id} /></Campo>
-        <Campo rotulo={u.id ? 'Nova palavra-passe (para repor)' : 'Palavra-passe inicial'} obrigatorio={!u.id} ajuda="Pelo menos 10 caracteres, com letras e números. A pessoa muda-a na primeira entrada."><input type="password" autoComplete="new-password" className="form-control form-control-sm" value={d.senha} onChange={(e) => setD({ ...d, senha: e.target.value })} /></Campo>
+        {militar
+          ? <div className="col-12 mb-3"><div className="alert alert-info py-2 small mb-0"><i className="fa fa-key me-1" />Entra com o NIP <b>{pessoa.nip}</b> e a palavra-passe inicial é também o NIP. Na primeira entrada tem de escolher uma nova.</div></div>
+          : <Campo rotulo={u.id ? 'Nova palavra-passe (para repor)' : 'Palavra-passe inicial'} obrigatorio={!u.id} ajuda="Pelo menos 10 caracteres, com letras e números. A pessoa muda-a na primeira entrada."><input type="password" autoComplete="new-password" className="form-control form-control-sm" value={d.senha} onChange={(e) => setD({ ...d, senha: e.target.value })} /></Campo>}
+        {u.id && u.nip && <div className="col-12 mb-3"><button type="button" className="btn btn-sm btn-outline-theme" onClick={reporNip}><i className="fa fa-key me-1" />Repor a palavra-passe para o NIP</button></div>}
         {u.id && u.id !== eu.id && <div className="col-12"><label className="form-check"><input type="checkbox" className="form-check-input" checked={d.ativo} onChange={(e) => setD({ ...d, ativo: e.target.checked })} /> <span className="form-check-label">Conta ativa</span></label></div>}
-      </div>
+      </div>}
     </Modal>
   )
+}
+
+// quem da Escola ainda não tem conta; primeiro os da Repartição de Pessoal e Quadros
+function EscolherPessoa({ comConta, aoEscolher }) {
+  const { dados } = useDados('/pessoas', {})
+  const [q, setQ] = useState('')
+  const termo = q.trim().toLowerCase()
+  const daReparticao = (x) => /pessoal e quadros/i.test(x.unidadeNome ?? '')
+  const lista = (dados ?? []).filter((x) => !comConta.has(x.id) && x.vinculo !== 'domiciliar')
+    .filter((x) => !termo || [x.nome, x.nomeGuerra, x.nip, x.numeroAgente, x.postoNome, x.unidadeNome].filter(Boolean).join(' ').toLowerCase().includes(termo))
+    .sort((a, b) => daReparticao(b) - daReparticao(a))
+  return <>
+    <input className="form-control mb-2" autoFocus placeholder="Procurar por nome, NIP, n.º de agente, posto ou unidade…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Procurar no pessoal da Escola" />
+    {!dados ? <Carregando /> : (
+      <div className="list-group pes-escolher-efectivo">
+        {lista.slice(0, 30).map((x) => (
+          <button key={x.id} type="button" className="list-group-item list-group-item-action d-flex align-items-center gap-2" onClick={() => aoEscolher(x)}>
+            <Foto pessoaId={x.id} fotoId={x.fotoId} nome={x.nome} />
+            <span className="flex-grow-1 text-truncate"><strong>{x.postoAbreviatura ? `${x.postoAbreviatura} ` : ''}{x.nome}</strong><div className="small text-muted text-truncate">{[x.nip ? `NIP ${x.nip}` : x.numeroAgente && `Agente ${x.numeroAgente}`, x.unidadeNome].filter(Boolean).join(' · ')}</div></span>
+            <i className="fa fa-chevron-right text-muted" />
+          </button>
+        ))}
+        {!lista.length && <div className="text-muted small p-2">Ninguém encontrado sem conta. Se ainda não tem ficha, registe-o primeiro em Pessoal.</div>}
+      </div>
+    )}
+  </>
 }
 
 /*

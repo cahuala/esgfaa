@@ -16,8 +16,8 @@ export const entrar = z.object({ email: txt(200, 3), senha: txt(200, 1), codigo:
 export const codigo2fa = z.object({ codigo: txt(20, 1) }).strict()
 export const desligar2fa = z.object({ senha: txt(200, 1), codigo: txt(20, 1) }).strict()
 export const mudarSenha = z.object({ atual: txt(200, 1), nova: txt(200, 1) })
-export const utilizador = z.object({ nome: txt(150, 3), email: z.email().max(200), papel: txt(20), senha: txt(200, 1), unidadeId: idOpc })
-export const editarUtilizador = z.object({ nome: txt(150, 3).optional(), papel: opc(20), ativo: z.boolean().optional(), senha: opc(200), unidadeId: idOpc, permissoes: z.union([z.record(z.string().max(40), z.enum(['ver', 'alterar'])), z.null()]).optional() })
+export const utilizador = z.object({ nome: opc(150), email: z.email().max(200).optional().or(z.literal('')), papel: txt(20), senha: opc(200), unidadeId: idOpc, pessoaId: idOpc })
+export const editarUtilizador = z.object({ nome: txt(150, 3).optional(), papel: opc(20), ativo: z.boolean().optional(), senha: opc(200), reporNip: z.boolean().optional(), unidadeId: idOpc, permissoes: z.union([z.record(z.string().max(40), z.enum(['ver', 'alterar'])), z.null()]).optional() })
 
 export const pessoa = z.object({
   tipo: z.enum(['militar', 'civil']),

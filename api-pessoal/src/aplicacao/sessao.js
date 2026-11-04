@@ -51,9 +51,13 @@ export function senhaInicial() {
   }
 }
 const COM_UNIDADE = { unidade: { select: { nome: true } } }
+// o militar da Escola entra com o NIP; a palavra-passe inicial é o próprio NIP (muda-a na primeira entrada)
+const senhaDoMilitar = (p) => (p?.tipo === 'militar' && p.nip ? p.nip : null)
+const emailDaPessoa = (p) => (p.email || `${(p.nip || p.numeroAgente || `pessoa${p.id}`).toLowerCase().replace(/[^a-z0-9]/g, '')}@pessoal.interno`).toLowerCase()
 
-export function validarSenha(senha, email = '') {
+export function validarSenha(senha, email = '', nip = '') {
   const s = String(senha ?? '')
+  if (nip && s.trim().toUpperCase() === String(nip).toUpperCase()) throw invalido('A palavra-passe não pode ser o NIP: escolha uma nova.', 'senha')
   if (s.length < 10) throw invalido('A palavra-passe deve ter pelo menos 10 caracteres.', 'senha')
   if (!/[a-zA-Z]/.test(s) || !/\d/.test(s)) throw invalido('A palavra-passe deve ter letras e números.', 'senha')
   if (email && s.toLowerCase().includes(email.split('@')[0].toLowerCase())) throw invalido('A palavra-passe não pode conter o nome do e-mail.', 'senha')
@@ -70,7 +74,7 @@ export class ServicoSessao {
     const u = e.includes('@')
       ? await this.bd.utilizador.findUnique({ where: { email: e } })
       : await this.bd.utilizador.findFirst({ where: { pessoa: { OR: [{ nip: e.toUpperCase() }, { nip: e }, { numeroAgente: e }, { numeroAgente: e.toUpperCase() }] } } })
-    const erro = new ErroDominio('E-mail ou palavra-passe incorretos.', 'nao_autenticado')
+    const erro = new ErroDominio('NIP, e-mail ou palavra-passe incorretos.', 'nao_autenticado')
     if (!u) {
       await this.cifra.verificarFicticio(senha)
       throw erro
@@ -115,7 +119,8 @@ export class ServicoSessao {
 
   async mudarSenha(u, { atual, nova }) {
     if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe atual está errada.', 'atual')
-    validarSenha(nova, u.email)
+    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { nip: true } }) : null
+    validarSenha(nova, u.email, p?.nip)
     if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da atual.', 'nova')
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { senha: await this.cifra.cifrar(nova), deveMudar: false, versaoToken: { increment: 1 } } })
     await this.auditoria.registar(u, 'mudar_senha')
@@ -135,7 +140,7 @@ export class ServicoSessao {
     const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
     const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
     const permissoes = new Map(pendentes.filter((x) => x.tipo === 'utilizador_permissoes').map((x) => [x.utilizadorId, x.resumo]))
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: COM_UNIDADE })).map((x) => ({ ...publico(x), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true } } } })).map((x) => ({ ...publico(x), nip: senhaDoMilitar(x.pessoa), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
   }
 
   // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não
@@ -179,28 +184,42 @@ export class ServicoSessao {
     return publico(g)
   }
 
-  async criar(u, { nome, email, papel, senha, unidadeId = null }) {
+  // conta ligada a uma pessoa da Escola (pessoaId): o militar entra com o NIP e a palavra-passe inicial é o NIP
+  async criar(u, { nome, email, papel, senha, unidadeId = null, pessoaId = null }) {
     exigir(u, 'administrar')
     if (!PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
-    validarSenha(senha, email)
+    if (pessoaId) {
+      const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, include: { utilizador: { select: { id: true } } } })
+      if (!p || !p.ativo) throw naoEncontrado('Pessoa não encontrada na Escola.')
+      if (p.utilizador) throw conflito(`${p.nome} já tem conta no sistema.`)
+      nome = p.nome
+      email = email || emailDaPessoa(p)
+      unidadeId = unidadeId ?? p.unidadeId
+      senha = senhaDoMilitar(p) ?? senha
+      if (!senhaDoMilitar(p)) validarSenha(senha, email)
+    } else {
+      if (!nome || String(nome).trim().length < 3) throw invalido('Indique o nome.', 'nome')
+      if (!email) throw invalido('Indique o e-mail.', 'email')
+      validarSenha(senha, email)
+    }
     const despacho = await this.#precisaDespacho(papel)
     try {
       const n = await this.bd.$transaction(async (tx) => {
-        const c = await tx.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, unidadeId, senha: await this.cifra.cifrar(senha), ...(despacho ? { ativo: false, aguardaDespacho: true } : {}) }, include: COM_UNIDADE })
+        const c = await tx.utilizador.create({ data: { nome, email: email.toLowerCase(), papel, unidadeId, pessoaId, senha: await this.cifra.cifrar(senha), ...(despacho ? { ativo: false, aguardaDespacho: true } : {}) }, include: COM_UNIDADE })
         if (despacho) await this.despachos.pedir(tx, u, { tipo: 'utilizador_novo', utilizadorId: c.id, resumo: `${c.nome} (${c.email}) — ${PAPEIS[papel].nome}`, dados: { papel } })
         return c
       })
       await this.auditoria.registar(u, 'criar_utilizador', n.email, { papel })
       return { ...publico(n), ...(despacho ? { aDespacho: ['utilizador_novo'] } : {}) }
     } catch (e) {
-      if (eDuplicado(e)) throw conflito('Já existe um utilizador com esse e-mail.')
+      if (eDuplicado(e)) throw conflito(pessoaId ? 'Já existe uma conta com esse e-mail ou para essa pessoa.' : 'Já existe um utilizador com esse e-mail.')
       throw e
     }
   }
 
-  async editar(u, id, { nome, papel, ativo, senha, unidadeId, permissoes }) {
+  async editar(u, id, { nome, papel, ativo, senha, reporNip, unidadeId, permissoes }) {
     exigir(u, 'administrar')
-    const alvo = await this.bd.utilizador.findUnique({ where: { id } })
+    const alvo = await this.bd.utilizador.findUnique({ where: { id }, include: { pessoa: { select: { tipo: true, nip: true } } } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
     if (papel !== undefined && !PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
     if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desativar a sua conta.')
@@ -218,8 +237,12 @@ export class ServicoSessao {
     }
     if (ativo !== undefined) data.ativo = ativo
     if (unidadeId !== undefined) data.unidadeId = unidadeId
+    // repor: o militar volta a entrar com o NIP como palavra-passe (e muda-a logo)
+    if (reporNip) {
+      senha = senhaDoMilitar(alvo.pessoa)
+      if (!senha) throw invalido('Só a conta de um militar da Escola (com NIP) volta à palavra-passe do NIP.', 'senha')
+    } else if (senha) validarSenha(senha, alvo.email)
     if (senha) {
-      validarSenha(senha, alvo.email)
       Object.assign(data, { senha: await this.cifra.cifrar(senha), deveMudar: true, falhas: 0, bloqueadoAte: null })
     }
     if (data.papel !== undefined || data.ativo !== undefined || data.senha) data.versaoToken = { increment: 1 }
@@ -247,7 +270,7 @@ export class ServicoSessao {
 
   /*
     Contas de utente para as pessoas da Escola (todas as que ainda não têm, ou as indicadas): entram com o
-    e-mail, o NIP ou o n.º de agente e uma palavra-passe inicial, que têm de mudar. Devolve as palavras-passe
+    e-mail, o NIP ou o n.º de agente e uma palavra-passe inicial, que têm de mudar (a do militar é o NIP). Devolve as palavras-passe
     (só esta vez) para se imprimirem e entregarem em mão.
   */
   async criarContasPessoas(u, { pessoaIds } = {}) {
@@ -255,8 +278,8 @@ export class ServicoSessao {
     const pessoas = await this.bd.pessoa.findMany({ where: { ativo: true, utilizador: null, vinculo: { not: 'domiciliar' }, ...(pessoaIds?.length ? { id: { in: pessoaIds } } : {}) }, orderBy: { nome: 'asc' } })
     const criadas = []
     for (const p of pessoas) {
-      const senha = senhaInicial()
-      const email = (p.email || `${(p.nip || p.numeroAgente || `pessoa${p.id}`).toLowerCase().replace(/[^a-z0-9]/g, '')}@pessoal.interno`).toLowerCase()
+      const senha = senhaDoMilitar(p) ?? senhaInicial()
+      const email = emailDaPessoa(p)
       if (await this.bd.utilizador.findUnique({ where: { email } })) continue
       await this.bd.utilizador.create({ data: { nome: p.nome, email, papel: 'utente', pessoaId: p.id, unidadeId: p.unidadeId, senha: await this.cifra.cifrar(senha) } })
       criadas.push({ pessoaId: p.id, nome: p.nome, identificacao: p.nip || p.numeroAgente || '', entrar: p.email || p.nip || p.numeroAgente || email, senha })
