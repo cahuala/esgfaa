@@ -139,6 +139,9 @@ Ok "$((Get-CimInstance Win32_OperatingSystem).Caption) ($ver)"
 
 Passo 'pendrive' 'A conferir os ficheiros do pendrive (MANIFESTO)'
 $maus = @()
+if (-not (Test-Path (Join-Path $Pen 'MANIFESTO.txt'))) {
+  Falha 'Esta pasta é o código do instalador (do git), não a pasta preparada do pendrive: falta o MANIFESTO.txt, os programas (Node, PostgreSQL, Caddy) e o sistema. Instale a partir da pasta ESG-PESSOAL do pendrive (ou copiada dele para o servidor); para a preparar: node instalador/preparar-pendrive.mjs.'
+}
 foreach ($l in Get-Content (Join-Path $Pen 'MANIFESTO.txt')) {
   if (-not $l.Trim()) { continue }
   $soma = $l.Substring(0, 64); $rel = $l.Substring(66)

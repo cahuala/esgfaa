@@ -96,6 +96,7 @@ fi
 ok "$(. /etc/os-release; echo "$PRETTY_NAME") · $(uname -m) · systemd=$SYSTEMD"
 
 passo pendrive "A conferir os ficheiros do pendrive (MANIFESTO)"
+[ -f "$PEN/MANIFESTO.txt" ] || { echo "!!! Esta pasta é o código do instalador (do git), não a pasta preparada do pendrive: falta o MANIFESTO.txt, os programas e o sistema. Instale a partir da pasta ESG-PESSOAL do pendrive; para a preparar: node instalador/preparar-pendrive.mjs."; false; }
 ( cd "$PEN" && sha256sum --quiet -c MANIFESTO.txt )
 ok "todos os ficheiros conferem"
 
