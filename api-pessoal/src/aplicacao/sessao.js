@@ -34,6 +34,16 @@ function resumoAreas(antes, depois) {
 
 const MAX_FALHAS = 5
 const BLOQUEIO_MIN = 15
+// a sessão aberta há mais de 1 minuto sem uso só se actualiza de minuto a minuto (menos escritas na base)
+const ACTUALIZAR_USO_MS = 60_000
+const navegadorDe = (ua) => String(ua ?? '').slice(0, 300)
+// «Chrome no Windows» a partir do User-Agent, para a lista das sessões
+export function descreverNavegador(ua) {
+  const s = String(ua ?? '')
+  const nav = /Edg\//.test(s) ? 'Edge' : /OPR\//.test(s) ? 'Opera' : /Firefox\//.test(s) ? 'Firefox' : /Chrome\//.test(s) ? 'Chrome' : /Safari\//.test(s) ? 'Safari' : 'Outro programa'
+  const so = /Windows/.test(s) ? 'Windows' : /Android/.test(s) ? 'Android' : /iPhone|iPad/.test(s) ? 'iPhone/iPad' : /Mac OS X/.test(s) ? 'macOS' : /Linux/.test(s) ? 'Linux' : ''
+  return so ? `${nav} no ${so}` : nav
+}
 
 // as permissões vêm das áreas da conta (as do papel, ou as escolhidas para ela com o despacho do Comandante)
 export const pode = (u, permissao) => Boolean(u?.papel && permissoesDe(u).includes(permissao))
@@ -64,12 +74,25 @@ export function validarSenha(senha, email = '', nip = '') {
 }
 
 export class ServicoSessao {
-  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, despachos = null, agora = () => new Date() }) {
-    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, despachos, agora })
+  // inactividadeMin: sem nenhum pedido durante este tempo, a sessão termina (o navegador fechado, o computador deixado)
+  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, despachos = null, inactividadeMin = 30, agora = () => new Date() }) {
+    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, despachos, inactividadeMin, agora })
+  }
+
+  // abre a sessão na base de dados e devolve o token com o id dela
+  async #abrirSessao(u, ip = '', navegador = '') {
+    const id = crypto.randomUUID()
+    const agora = this.agora()
+    await this.bd.sessao.create({ data: { id, utilizadorId: u.id, versao: u.versaoToken, ip: String(ip ?? '').slice(0, 60), navegador: navegadorDe(navegador), criadaEm: agora, usadaEm: agora } })
+    return this.tokens.emitir(u, id)
+  }
+
+  #terminarSessoes(where) {
+    return this.bd.sessao.updateMany({ where: { ...where, terminadaEm: null }, data: { terminadaEm: this.agora() } })
   }
 
   // entra-se com o e-mail, o NIP ou o n.º de agente
-  async entrar({ email, senha, codigo }, ip) {
+  async entrar({ email, senha, codigo }, ip, navegador = '') {
     const e = String(email ?? '').trim().toLowerCase()
     const u = e.includes('@')
       ? await this.bd.utilizador.findUnique({ where: { email: e } })
@@ -99,37 +122,76 @@ export class ServicoSessao {
       }
     }
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { falhas: 0, bloqueadoAte: null, ultimoAcesso: this.agora() }, include: COM_UNIDADE })
-    await this.auditoria.registar(g, 'entrar', '', {}, ip)
-    return { token: this.tokens.emitir(g), utilizador: publico(g) }
+    await this.auditoria.registar(g, 'entrar', descreverNavegador(navegador), {}, ip)
+    return { token: await this.#abrirSessao(g, ip, navegador), utilizador: publico(g) }
   }
 
-  // utilizador do token (ou erro); a conta tem de continuar ativa e com a mesma versão
-  async autenticar(token) {
+  /*
+    Utilizador do token (ou erro). A conta tem de continuar ativa e com a mesma versão, e a sessão tem de estar
+    aberta: termina se ficar sem uso mais do que a inactividade, ou se o token for usado noutro navegador
+    (um cookie copiado deste computador não serve noutro).
+  */
+  async autenticar(token, { navegador = '', ip = '' } = {}) {
     const t = token && this.tokens.verificar(token)
     if (!t) throw naoAutenticado()
     const u = await this.bd.utilizador.findUnique({ where: { id: t.utilizadorId }, include: COM_UNIDADE })
     if (!u || !u.ativo || u.versaoToken !== t.versao) throw naoAutenticado('A sessão terminou. Entre novamente.')
+    const s = t.sessao ? await this.bd.sessao.findUnique({ where: { id: t.sessao } }) : null
+    if (!s || s.utilizadorId !== u.id || s.terminadaEm) throw naoAutenticado('A sessão terminou. Entre novamente.')
+    const agora = this.agora()
+    if (agora - s.usadaEm > this.inactividadeMin * 60_000) {
+      await this.#terminarSessoes({ id: s.id })
+      throw naoAutenticado(`A sessão terminou por estar ${this.inactividadeMin} minutos sem uso. Entre novamente.`)
+    }
+    if (s.navegador && s.navegador !== navegadorDe(navegador)) {
+      await this.#terminarSessoes({ id: s.id })
+      await this.auditoria.registar(u, 'sessao_recusada', `usada noutro navegador (${descreverNavegador(navegador)}); a sessão foi terminada`, {}, ip)
+      throw naoAutenticado('A sessão terminou por segurança. Entre novamente.')
+    }
+    if (agora - s.usadaEm > ACTUALIZAR_USO_MS) await this.bd.sessao.update({ where: { id: s.id }, data: { usadaEm: agora } })
+    u.sessaoId = s.id
     return u
+  }
+
+  // as sessões abertas da conta (a actual marcada), para a página Segurança da conta
+  async sessoes(u) {
+    const limite = new Date(this.agora().getTime() - this.inactividadeMin * 60_000)
+    const l = await this.bd.sessao.findMany({ where: { utilizadorId: u.id, versao: u.versaoToken, terminadaEm: null, usadaEm: { gt: limite } }, orderBy: { usadaEm: 'desc' } })
+    return l.map((x) => ({ id: x.id, navegador: descreverNavegador(x.navegador), ip: x.ip, criadaEm: x.criadaEm, usadaEm: x.usadaEm, atual: x.id === u.sessaoId }))
+  }
+
+  async terminarSessao(u, id) {
+    const r = await this.#terminarSessoes({ id, utilizadorId: u.id })
+    if (!r.count) throw naoEncontrado('Sessão não encontrada.')
+    await this.auditoria.registar(u, 'terminar_sessao', id === u.sessaoId ? 'a actual' : 'noutro computador')
+  }
+
+  async terminarOutras(u) {
+    const r = await this.#terminarSessoes({ utilizadorId: u.id, id: { not: u.sessaoId ?? '' } })
+    await this.auditoria.registar(u, 'terminar_sessao', `as outras (${r.count})`)
+    return { terminadas: r.count }
   }
 
   async eu(u) {
     const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
-    return { ...publico(u), doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u) && !doisFatores) }
+    return { ...publico(u), doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u) && !doisFatores), inactividadeMin: this.inactividadeMin }
   }
 
-  async mudarSenha(u, { atual, nova }) {
+  async mudarSenha(u, { atual, nova }, ip = '', navegador = '') {
     if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe atual está errada.', 'atual')
     const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { nip: true } }) : null
     validarSenha(nova, u.email, p?.nip)
     if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da atual.', 'nova')
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { senha: await this.cifra.cifrar(nova), deveMudar: false, versaoToken: { increment: 1 } } })
+    // a palavra-passe nova termina todas as sessões (também as de outros computadores); esta abre outra
+    await this.#terminarSessoes({ utilizadorId: u.id })
     await this.auditoria.registar(u, 'mudar_senha')
-    return { token: this.tokens.emitir(g), utilizador: publico(g) }
+    return { token: await this.#abrirSessao(g, ip, navegador), utilizador: publico(g) }
   }
 
   async sair(u) {
-    // termina todas as sessões desta conta
-    await this.bd.utilizador.update({ where: { id: u.id }, data: { versaoToken: { increment: 1 } } })
+    // termina esta sessão (as dos outros computadores terminam-se em Segurança da conta)
+    await this.#terminarSessoes({ id: u.sessaoId ?? '', utilizadorId: u.id })
   }
 
   // gestão de utilizadores (só o administrador)

@@ -6,7 +6,7 @@ import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
 import { api } from '../api'
 
 export default function Entrar() {
-  const { entrar } = useSessao()
+  const { entrar, motivoSaida } = useSessao()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -58,6 +58,7 @@ export default function Entrar() {
           </div>
           <div className="login-content">
             <form onSubmit={submeter} className="fs-13px">
+              {!erro && motivoSaida && <div className="alert alert-info d-flex align-items-center py-2 mb-20px" role="status"><i className="fa fa-info-circle me-2" />{motivoSaida}</div>}
               {erro && <div className="alert alert-danger d-flex align-items-center py-2 mb-20px" role="alert"><i className="fa fa-exclamation-circle me-2" />{erro}</div>}
               <label className="entrada-rotulo" htmlFor="email">NIP, n.º de agente ou e-mail</label>
               <div className="entrada-campo mb-20px">

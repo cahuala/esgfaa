@@ -58,9 +58,28 @@ export default function App() {
   const [ref, setRef] = useState(null)
   const [aCarregar, setACarregar] = useState(Boolean(temSessao()))
   const [aviso, setAviso] = useState(null)
+  // porque se voltou ao ecrã de entrada (sessão terminada por inactividade ou pelo servidor)
+  const [motivoSaida, setMotivoSaida] = useState('')
 
   const terminar = useCallback(() => { marcarSessao(null); setUtilizador(null); setRef(null) }, [])
-  useEffect(() => { definirAoExpirar(terminar) }, [terminar])
+  useEffect(() => { definirAoExpirar((motivo) => { if (motivo) setMotivoSaida(motivo); terminar() }) }, [terminar])
+
+  // sem mexer no rato nem no teclado durante o tempo da inactividade, a sessão termina (o computador deixado aberto)
+  const minutos = utilizador?.inactividadeMin
+  useEffect(() => {
+    if (!minutos) return undefined
+    let ultimo = Date.now()
+    const mexeu = () => { ultimo = Date.now() }
+    const eventos = ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart']
+    eventos.forEach((e) => window.addEventListener(e, mexeu, { passive: true }))
+    const id = setInterval(() => {
+      if (Date.now() - ultimo < minutos * 60_000) return
+      api('/sair', { metodo: 'POST' }).catch(() => {})
+      setMotivoSaida(`A sessão terminou por estar ${minutos} minutos sem uso. Entre novamente.`)
+      terminar()
+    }, 15_000)
+    return () => { clearInterval(id); eventos.forEach((e) => window.removeEventListener(e, mexeu)) }
+  }, [minutos, terminar])
 
   // a conta e as tabelas de referência (postos, ramos, carreiras…) — ao abrir e depois de entrar
   const carregar = useCallback(() => api('/eu')
@@ -76,12 +95,14 @@ export default function App() {
   const sessao = useMemo(() => ({
     utilizador,
     ref,
+    motivoSaida,
     pode: (p) => Boolean(utilizador?.permissoes.includes(p)),
     avisar: (texto, tipo = 'ok') => setAviso({ texto, tipo, id: Date.now() }),
     recarregar: carregar,
     async entrar(email, senha, codigo, prova) {
       const r = await api('/entrar', { metodo: 'POST', corpo: { email, senha, ...(codigo ? { codigo } : {}), ...(prova ? { prova } : {}) } })
       marcarSessao(Boolean(r.sessao || r.token))
+      setMotivoSaida('')
       await carregar()
     },
     async mudouSenha() {
@@ -92,7 +113,7 @@ export default function App() {
       await api('/sair', { metodo: 'POST' }).catch(() => {})
       terminar()
     },
-  }), [utilizador, ref, carregar, terminar])
+  }), [utilizador, ref, motivoSaida, carregar, terminar])
 
   if (aCarregar) return <Carregando />
   let conteudo

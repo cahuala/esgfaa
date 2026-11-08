@@ -25,6 +25,8 @@ const ESQUEMA = z.object({
   // papéis que têm de usar a verificação em dois passos (em produção, por omissão, todos os que vêem fichas)
   DOIS_FATORES_PAPEIS: z.string().optional(),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/).default('8h'),
+  // minutos sem uso ao fim dos quais a sessão termina
+  SESSION_IDLE_MIN: inteiro(30, 5, 480),
   // redes de onde se aceitam pedidos (IPv4 em CIDR); tudo o resto é recusado
   REDES_INTERNAS: lista('127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'),
   CORS_ORIGINS: lista('http://localhost:5173,http://localhost:4173,http://localhost:3002'),
@@ -77,6 +79,7 @@ export function criarConfig(env = process.env) {
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('pessoal-desenvolvimento-dados').digest('hex'),
     duracaoSessao: e.SESSION_TTL,
+    inactividadeMin: e.SESSION_IDLE_MIN,
     redesInternas: e.REDES_INTERNAS,
     origens: e.CORS_ORIGINS,
     confiarProxy: proxy(e.TRUST_PROXY),

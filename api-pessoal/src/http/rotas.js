@@ -44,7 +44,7 @@ export function rotas({ servicos: s, config }) {
   const exigirProva = (req, res, next) => (!config.verificarRobo || verificarProva(config.segredoJwt, req.body?.prova, provasUsadas) ? next() : res.status(400).json({ erro: 'Confirme que não é um robô e tente outra vez.', codigo: 'prova_robo' }))
   r.post('/entrar', limiteEntrar, exigirProva, validar({ body: E.entrar }), async (req, res) => {
     try {
-      res.json(await s.sessao.entrar(req.dados.body, ip(req)))
+      res.json(await s.sessao.entrar(req.dados.body, ip(req), req.get('user-agent')))
     } catch (e) {
       if (e.codigo !== 'codigo_2fa') falhas.set(ip(req), [...(falhas.get(ip(req)) || []).slice(-20), Date.now()])
       throw e
@@ -74,8 +74,12 @@ export function rotas({ servicos: s, config }) {
   r.post('/eu/2fa/confirmar', validar({ body: E.codigo2fa }), async (req, res) => res.json(await s.doisFatores.confirmar(u(req), req.dados.body)))
   r.post('/eu/2fa/codigos', validar({ body: E.codigo2fa }), async (req, res) => res.json(await s.doisFatores.novosCodigos(u(req), req.dados.body)))
   r.post('/eu/2fa/desligar', validar({ body: E.desligar2fa }), async (req, res) => res.json(await s.doisFatores.desligar(u(req), req.dados.body, (senha) => s.sessao.cifra.verificar(senha, u(req).senha))))
-  r.post('/mudar-senha', validar({ body: E.mudarSenha }), async (req, res) => res.json(await s.sessao.mudarSenha(u(req), req.dados.body)))
+  r.post('/mudar-senha', validar({ body: E.mudarSenha }), async (req, res) => res.json(await s.sessao.mudarSenha(u(req), req.dados.body, ip(req), req.get('user-agent'))))
   r.post('/sair', async (req, res) => { await s.sessao.sair(u(req)); res.status(204).end() })
+  // as sessões abertas da conta (este e outros computadores)
+  r.get('/eu/sessoes', async (req, res) => res.json(await s.sessao.sessoes(u(req))))
+  r.post('/eu/sessoes/terminar-outras', async (req, res) => res.json(await s.sessao.terminarOutras(u(req))))
+  r.delete('/eu/sessoes/:id', validar({ params: z.object({ id: z.string().uuid() }) }), async (req, res) => { await s.sessao.terminarSessao(u(req), req.dados.params.id); res.status(204).end() })
   // protecção de dados pessoais (Lei n.º 22/11)
   r.get('/eu/privacidade', (req, res) => res.json(s.privacidade.aviso(u(req))))
   r.post('/eu/privacidade', async (req, res) => res.json(await s.privacidade.aceitar(u(req))))

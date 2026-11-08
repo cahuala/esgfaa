@@ -25,7 +25,7 @@ export const validar = (esquemas) => (req, res, next) => {
 export const autenticar = (sessao) => async (req, res, next) => {
   try {
     const t = tokenDoPedido(req, COOKIE_PESSOAL)
-    req.utilizador = await sessao.autenticar(t)
+    req.utilizador = await sessao.autenticar(t, { navegador: req.get('user-agent'), ip: req.ip })
     if (req.utilizador.deveMudar && !['/eu', '/mudar-senha', '/sair'].includes(req.path)) throw new ErroDominio('Mude a palavra-passe inicial antes de continuar.', 'mudar_senha')
     // o papel exige a verificação em dois passos: até a ligar, só o perfil, a ligação dela e sair
     const df = sessao.doisFatores

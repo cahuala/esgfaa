@@ -35,7 +35,7 @@ export async function api(caminho, { metodo = 'GET', corpo, formulario, consulta
   }
   if (r.status === 204) return null
   const d = await r.json().catch(() => ({}))
-  if (r.status === 401 && caminho !== '/entrar') aoExpirar()
+  if (r.status === 401 && caminho !== '/entrar') aoExpirar(d.erro)
   if (!r.ok) {
     const e = new Error(d.erro || `Erro ${r.status}`)
     e.codigo = d.codigo

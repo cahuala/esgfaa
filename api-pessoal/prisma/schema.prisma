@@ -11,37 +11,55 @@ datasource db {
 
 // quem usa o sistema (Repartição de Pessoal e Quadros, chefia, consulta)
 model Utilizador {
-  id            Int            @id @default(autoincrement())
-  nome          String
-  email         String         @unique
-  senha         String
-  papel         String // administrador | chefe | comandante (vê tudo) | operador | consulta | utente (só expediente e mensagens)
-  pessoaId      Int?           @unique @map("pessoa_id")
-  unidadeId     Int?           @map("unidade_id")
-  ativo         Boolean        @default(true)
-  versaoToken   Int            @default(1) @map("versao_token")
-  falhas        Int            @default(0)
-  bloqueadoAte  DateTime?      @map("bloqueado_ate") @db.Timestamptz(3)
-  ultimoAcesso  DateTime?      @map("ultimo_acesso") @db.Timestamptz(3)
-  deveMudar     Boolean        @default(true) @map("deve_mudar")
+  id              Int              @id @default(autoincrement())
+  nome            String
+  email           String           @unique
+  senha           String
+  papel           String // administrador | chefe | comandante (vê tudo) | operador | consulta | utente (só expediente e mensagens)
+  pessoaId        Int?             @unique @map("pessoa_id")
+  unidadeId       Int?             @map("unidade_id")
+  ativo           Boolean          @default(true)
+  versaoToken     Int              @default(1) @map("versao_token")
+  falhas          Int              @default(0)
+  bloqueadoAte    DateTime?        @map("bloqueado_ate") @db.Timestamptz(3)
+  ultimoAcesso    DateTime?        @map("ultimo_acesso") @db.Timestamptz(3)
+  deveMudar       Boolean          @default(true) @map("deve_mudar")
   // conta nova (com papel acima de utente) à espera do despacho do Comandante: ainda não entra
-  aguardaDespacho Boolean      @default(false) @map("aguarda_despacho")
+  aguardaDespacho Boolean          @default(false) @map("aguarda_despacho")
   // o que esta conta pode fazer, ecrã a ecrã ({ área: 'ver' | 'alterar' }); vazio = as do papel
-  permissoes    Json?
+  permissoes      Json?
   // quando tomou conhecimento do aviso de privacidade (Lei n.º 22/11)
-  privacidadeEm DateTime?      @map("privacidade_em") @db.Timestamptz(3)
-  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
-  pessoa        Pessoa?        @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
-  unidade       Unidade?       @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
-  participacoes Participante[]
-  mensagens     Mensagem[]
-  doisFatores   DoisFatores?
+  privacidadeEm   DateTime?        @map("privacidade_em") @db.Timestamptz(3)
+  criadoEm        DateTime         @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa          Pessoa?          @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  unidade         Unidade?         @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  participacoes   Participante[]
+  mensagens       Mensagem[]
+  doisFatores     DoisFatores?
   pedidosDespacho PedidoDespacho[]
+  sessoes         Sessao[]
 
   @@map("utilizadores")
 }
 
 // verificação em dois passos (TOTP); o segredo fica cifrado (DADOS_CHAVE)
+// cada entrada abre uma sessão (o id vai no token): termina ao sair, por inactividade, se for usada noutro
+// navegador, ou quando o dono ou o administrador a termina
+model Sessao {
+  id           String     @id
+  utilizadorId Int        @map("utilizador_id")
+  versao       Int
+  ip           String     @default("")
+  navegador    String     @default("")
+  criadaEm     DateTime   @map("criada_em") @db.Timestamptz(3)
+  usadaEm      DateTime   @map("usada_em") @db.Timestamptz(3)
+  terminadaEm  DateTime?  @map("terminada_em") @db.Timestamptz(3)
+  utilizador   Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  @@index([utilizadorId])
+  @@map("sessoes")
+}
+
 model DoisFatores {
   id             Int        @id @default(autoincrement())
   utilizadorId   Int        @unique @map("utilizador_id")

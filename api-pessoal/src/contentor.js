@@ -47,7 +47,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const ausencias = new ServicoAusencias({ bd, auditoria, ...relogio })
   const servicos = {
     auditoria,
-    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), doisFatores, despachos, ...relogio }),
+    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), inactividadeMin: config.inactividadeMin, doisFatores, despachos, ...relogio }),
     despachos,
     doisFatores,
     listas,
