@@ -11,7 +11,8 @@ export class ServicoCalendario {
   }
 
   /*
-    Calendário de quem pede, entre duas datas: eventos (provas, exames, eventos gerais e da turma),
+    Calendário de quem pede, entre duas datas: eventos (provas, exames, eventos gerais e da turma), datas das
+    provas TAI/TAG do plano de curso,
     aulas do horário (sem os feriados), prazos dos trabalhos e fecho dos questionários.
   */
   async calendario(ctx, { de, ate }) {
@@ -27,6 +28,7 @@ export class ServicoCalendario {
       Promise.all(ids.map((id) => this.academico.materiais(id))).then((l) => l.flat().filter((m) => m.tipo === 'videoconferencia')),
       this.workshops ? Promise.all(ids.map((id) => this.workshops.workshops(id))).then((l) => l.flat()) : [],
     ])
+    const provasEsg = (await Promise.all(ids.map((id) => this.planosCurso.avaliacoes(id)))).flat()
     // o estudante não vê no calendário o que está escondido
     let visivel
     if (ctx.conta.tipo === 'estudante' && this.disponibilidade) {
@@ -46,6 +48,9 @@ export class ServicoCalendario {
       ...eventos.map((e) => ({
         tipo: e.tipo, id: `e${e.id}`, eventoId: e.id, data: e.data, inicio: e.inicio, fim: e.fim, titulo: e.titulo, local: e.local, descricao: e.descricao,
         cadeiraId: e.cadeiraId, cadeira: e.cadeira?.nome || null, turma: e.turma?.nome || null,
+      })),
+      ...provasEsg.filter((a) => dentro(a.data)).map((a) => ({
+        tipo: 'exame', id: `pe${a.id}`, data: a.data, inicio: '', fim: '', titulo: `${a.tipo}: ${a.titulo}`, local: '', descricao: '', cadeiraId: a.cadeiraId, cadeira: nomeDe[a.cadeiraId],
       })),
       ...expandirAulas(horarios, intervalo.de, intervalo.ate, feriados).map((a) => ({
         tipo: 'aula', id: `a${a.id}-${a.data}`, data: a.data, inicio: a.inicio, fim: a.fim, titulo: a.cadeira, local: a.sala, cadeiraId: a.cadeiraId, cadeira: a.cadeira,

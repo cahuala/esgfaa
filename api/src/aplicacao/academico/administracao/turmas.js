@@ -62,7 +62,7 @@ export class ServicoTurmas {
     const horarios = await this.academico.horariosDasCadeiras(cadeiras.map((c) => c.id))
     // os termos do curso (auditor/discente, TII/TFC), pelo plano de curso da turma
     const plano = this.planosCurso ? await this.planosCurso.daTurma(t) : null
-    return { ...t, matriculas, cadeiras: cadeiras.map((c) => ({ ...c, horarios: horarios.filter((h) => h.cadeiraId === c.id) })), termos: termosDoPlano(plano, cadeiras), temPlano: Boolean(plano) }
+    return { ...t, matriculas, cadeiras: cadeiras.map((c) => ({ ...c, horarios: horarios.filter((h) => h.cadeiraId === c.id) })), termos: termosDoPlano(plano, cadeiras), temPlano: Boolean(plano), blocos: plano?.blocos ?? [] }
   }
 
   async matricular(ctx, turmaId, { estudanteId }) {

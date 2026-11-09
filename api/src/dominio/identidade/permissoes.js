@@ -31,7 +31,7 @@ export const RECURSOS = [
 export const TODAS = RECURSOS.flatMap((r) => r.acoes.map((a) => `${r.id}.${a}`))
 
 // permissões que nem o Administrador tem (a decisão é do Comandante, ou de quem ele indicar num papel)
-export const SO_DO_COMANDANTE = ['publicacoes.aprovar', 'utilizadores.aprovar']
+export const SO_DO_COMANDANTE = ['publicacoes.aprovar', 'utilizadores.aprovar', 'academico.homologar']
 export const DO_ADMINISTRADOR = TODAS.filter((p) => !SO_DO_COMANDANTE.includes(p))
 
 const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `${r}.${a}`))

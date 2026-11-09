@@ -53,12 +53,33 @@ export class ServicoPlanosCurso {
     let criadas = 0
     let atualizadas = 0
     for (const c of m.cadeiras) {
-      const dados = { bloco: c.bloco, creditos: c.creditos, horasContacto: c.horasContacto, horasNaoContacto: c.horasNaoContacto, horas: c.horasContacto + c.horasNaoContacto, tii: Boolean(c.tii) }
+      const dados = { periodo: c.periodo, bloco: c.bloco, creditos: c.creditos, horasContacto: c.horasContacto, horasNaoContacto: c.horasNaoContacto, horas: c.horasContacto + c.horasNaoContacto, tii: Boolean(c.tii) }
       const ja = existentes.find((x) => x.codigo === c.codigo)
       if (ja) { await this.academico.atualizarCadeira(ja.id, dados); atualizadas++ } else { await this.academico.criarCadeira({ turmaId: t.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, descricao: '', ...dados }); criadas++ }
     }
     await this.auditoria.registar(ctx, { acao: 'carregar_plano_curso', colecao: 'planos_curso', alvoId: plano.id, alvoTitulo: `${plano.nome} → ${t.nome}`, detalhes: { criadas, atualizadas } })
     return { plano, criadas, atualizadas }
+  }
+
+  // o documento do plano (PDF): quem está numa turma deste curso e ano lectivo pode abri-lo no portal
+  async documento(ctx, id, { removerFicheiro }, ficheiro) {
+    try {
+      ctx.actor.exigir('academico.gerir')
+      const p = await this.planosCurso.plano(id)
+      if (!p) throw new NaoEncontrado('Plano não encontrado.')
+      let ficheiroId = null
+      if (ficheiro) {
+        if (ficheiro.tipo !== 'application/pdf' || !this.privados.confirmarTipo(ficheiro.caminho, ficheiro.tipo)) throw new ErroValidacao('O plano do curso tem de ser um PDF.', { campo: 'ficheiro' })
+        ficheiroId = ficheiro.caminho.split(/[\\/]/).pop().split('.')[0]
+        await this.academico.criarFicheiro({ id: ficheiroId, caminho: this.privados.relativo(ficheiro.caminho), nome: ficheiro.nome, tipo: ficheiro.tipo, tamanho: ficheiro.tamanho })
+      } else if (removerFicheiro !== true && removerFicheiro !== 'true') throw new ErroValidacao('Escolha o PDF do plano do curso.', { campo: 'ficheiro' })
+      const g = await this.planosCurso.guardarPlano(p.id, { ficheiroId })
+      await this.auditoria.registar(ctx, { acao: ficheiro ? 'enviar_documento_plano' : 'remover_documento_plano', colecao: 'planos_curso', alvoId: p.id, alvoTitulo: p.nome })
+      return g
+    } catch (e) {
+      if (ficheiro) this.privados.apagar(ficheiro.caminho)
+      throw e
+    }
   }
 
   // o plano da turma, as UC com os blocos e os avisos da carga horária
@@ -106,12 +127,12 @@ export class ServicoPlanosCurso {
   }
 
   async notasProva(ctx, cadeiraId, provaId, linhas) {
-    ctx.actor.exigir('academico.notas')
+    ctx.actor.exigir('academico.notas', 'academico.homologar')
     return this.esg.gravarNotas(ctx, await this.#cadeira(cadeiraId), provaId, linhas)
   }
 
   async publicarProva(ctx, cadeiraId, provaId, publicar) {
-    ctx.actor.exigir('academico.notas')
+    ctx.actor.exigir('academico.notas', 'academico.homologar')
     return this.esg.publicar(ctx, await this.#cadeira(cadeiraId), provaId, publicar)
   }
 }

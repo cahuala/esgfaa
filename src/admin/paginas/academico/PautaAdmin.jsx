@@ -25,7 +25,7 @@ const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleS
 */
 function PautaAdmin({ cadeira, avisar }) {
   const { pode } = useSessao()
-  const editar = pode('academico.notas')
+  const editar = pode('academico.notas') || pode('academico.homologar')
   const [p, setP] = useState(null)
   const [edicao, setEdicao] = useState({})
   const [alterado, setAlterado] = useState(false)

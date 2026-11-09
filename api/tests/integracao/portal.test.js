@@ -290,12 +290,14 @@ describe('portal académico', () => {
     assert.equal(sem.body.programaFicheiroId, null)
   })
 
-  it('a Administração Escolar também lança e publica notas; quem não tem permissão não', async () => {
+  it('notas publicadas no painel: só o Comandante as muda ou esconde; quem não tem permissão não', async () => {
     const url = `/api/admin/academico/cadeiras/${cadeira.id}/pauta`
-    const r = await sec().put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 15, p2: 16 }] })
+    assert.equal((await sec().put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 15, p2: 16 }] })).status, 409)
+    const comandante = await amb.criarUtilizador('comandante')
+    const r = await amb.com(comandante.token).put(url).send({ linhas: [{ estudanteId: contas.ana.id, p1: 15, p2: 16 }] })
     assert.equal(r.status, 200, r.body.erro)
     assert.equal(r.body.linhas.find((l) => l.estudante.id === contas.ana.id).situacao, 'dispensado')
-    assert.equal((await sec().put(`${url}/publicacao`).send({ publicadas: ['p1', 'p2'] })).status, 200)
+    assert.equal((await amb.com(comandante.token).put(`${url}/publicacao`).send({ publicadas: ['p1', 'p2'] })).status, 200)
     assert.equal((await portal('ana').get('/api/portal/notas')).body[0].final, 16)
 
     const redator = await amb.criarUtilizador('redator')

@@ -103,6 +103,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/planos-curso', async (req, res) => res.json(await pc.listar(ctx(req))))
   r.post('/planos-curso', validar({ body: E.planoCurso }), async (req, res) => res.status(201).json(await pc.guardar(ctx(req), null, req.dados.body)))
   r.put('/planos-curso/:id', validar({ params: pId, body: E.planoCurso }), async (req, res) => res.json(await pc.guardar(ctx(req), req.dados.params.id, req.dados.body)))
+  r.put('/planos-curso/:id/documento', ficheiro, validar({ params: pId, body: E.programa }), async (req, res) => res.json(await pc.documento(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.delete('/planos-curso/:id', validar({ params: pId }), async (req, res) => { await pc.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/turmas/:id/plano-curso', validar({ params: pId }), async (req, res) => res.json(await pc.daTurma(ctx(req), req.dados.params.id)))
   r.post('/turmas/:id/plano-curso', validar({ params: pId, body: E.modeloPlano }), async (req, res) => res.status(201).json(await pc.carregarModelo(ctx(req), req.dados.params.id, req.dados.body.modelo)))

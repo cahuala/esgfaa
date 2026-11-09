@@ -17,13 +17,14 @@ export class ServicoPautasAdministracao {
     return this.pautas.pauta(await this.#cadeira(cadeiraId))
   }
 
+  // academico.homologar: o Comandante corrige notas já publicadas
   async gravarPauta(ctx, cadeiraId, linhas) {
-    ctx.actor.exigir('academico.notas')
+    ctx.actor.exigir('academico.notas', 'academico.homologar')
     return this.pautas.gravar(ctx, await this.#cadeira(cadeiraId), linhas)
   }
 
   async publicarNotas(ctx, cadeiraId, componentes) {
-    ctx.actor.exigir('academico.notas')
+    ctx.actor.exigir('academico.notas', 'academico.homologar')
     return this.pautas.publicar(ctx, await this.#cadeira(cadeiraId), componentes)
   }
 

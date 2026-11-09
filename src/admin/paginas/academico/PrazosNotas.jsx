@@ -4,7 +4,7 @@ import { useSessao } from '../../sessaoContexto'
 import { Carregando, Painel } from '../../componentes/Ui'
 import { t as tx } from '../../../i18n/linguas'
 
-const COMPONENTES = { p1: '1.ª Prova', p2: '2.ª Prova', exame: 'Exame', recurso: 'Recurso' }
+const COMPONENTES = { TAI: 'TAI (plano de curso)', TAG: 'TAG (plano de curso)', p1: '1.ª Prova', p2: '2.ª Prova', exame: 'Exame', recurso: 'Recurso' }
 const data = (d) => d.split('-').reverse().join('/')
 
 /*
@@ -17,7 +17,7 @@ export default function PrazosNotas({ turmas, avisar }) {
   const gerir = pode('academico.gerir')
   const [lista, setLista] = useState(null)
   const [cadeiras, setCadeiras] = useState([])
-  const vazio = { componente: 'p1', inicio: '', fim: '', turmaId: '', cadeiraId: '', descricao: '' }
+  const vazio = { componente: 'TAI', inicio: '', fim: '', turmaId: '', cadeiraId: '', descricao: '' }
   const [f, setF] = useState(vazio)
   const [erro, setErro] = useState('')
   const carregar = useCallback(() => api('/academico/prazos-notas').then(setLista).catch((e) => setErro(e.message)), [])

@@ -79,7 +79,7 @@ export function validarPlano(d) {
 export function regrasPublicas(p, trabalho = null) {
   if (!p) return null
   return {
-    nome: p.nome, termo: p.termo, formula: p.formula, blocos: p.blocos ?? [], ajusteMaximo: Number(p.ajusteMaximo) || 0,
+    nome: p.nome, ficheiroId: p.ficheiroId ?? null, termo: p.termo, formula: p.formula, blocos: p.blocos ?? [], ajusteMaximo: Number(p.ajusteMaximo) || 0,
     exigirBlocos: p.exigirBlocos !== false && p.formula !== 'media', exigirTesteEscrito: p.exigirTesteEscrito !== false, exigirUcs: p.exigirUcs !== false, exigirTii: p.exigirTii !== false,
     recuperacaoAutomatica: p.recuperacaoAutomatica === true, faltasMaximas: p.faltasMaximas ?? 10, duracaoMeses: p.duracaoMeses ?? 10, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho,
   }
@@ -290,7 +290,8 @@ export function verificarCargaHoraria(cadeiras) {
   Modelos dos planos 2026/2027 da ESG (os que vieram com os documentos): os blocos, os coeficientes e as UC
   com as horas e os créditos. Carregam-se no painel para uma turma; depois ajustam-se lá.
 */
-const uc = (bloco, codigo, nome, hc, hnc, creditos, periodo = '1') => ({ bloco, codigo, nome, horasContacto: hc, horasNaoContacto: hnc, creditos, periodo })
+// os planos organizam as UC por blocos e não indicam semestres: todas são anuais
+const uc = (bloco, codigo, nome, hc, hnc, creditos, periodo = 'anual') => ({ bloco, codigo, nome, horasContacto: hc, horasNaoContacto: hnc, creditos, periodo })
 export const MODELOS_PLANO = {
   'cscd-2026': {
     plano: {
@@ -301,11 +302,11 @@ export const MODELOS_PLANO = {
       uc('ADM', 'CEO', 'Comunicação Estratégica nas Organizações', 33, 12, 3), uc('ADM', 'GP', 'Gestão de Pessoas', 33, 12, 3), uc('ADM', 'EFP', 'Economia e Finanças Públicas', 10, 5, 1),
       uc('ADM', 'DAM', 'Direito Administrativo Militar', 8, 7, 1), uc('ADM', 'LE', 'Liderança Estratégica', 35, 10, 3), uc('ADM', 'AL', 'Apoio Logístico', 31, 14, 3),
       uc('TAC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1), uc('TAC', 'PDO', 'Planeamento e Doutrina de Operações', 73, 23, 6), uc('TAC', 'ODEF', 'Operações Defensivas – Componente', 67, 23, 6),
-      uc('TAC', 'OOF', 'Operações Ofensivas – Divisão', 50, 25, 5, '2'), uc('TAC', 'OEST', 'Operações de Estabilização – Divisão', 75, 15, 6, '2'), uc('TAC', 'OAC', 'Operações de Apoio Civil', 32, 13, 3, '2'),
-      uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4, '2'), uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 12, 6, '2'),
-      uc('ESTR', 'GA', 'Geopolítica Aplicada', 42, 3, 3), uc('ESTR', 'CONF', 'Conflitualidade', 40, 5, 3), uc('ESTR', 'PPE', 'Pensamento e Planeamento Estratégico', 72, 18, 6, '2'),
-      uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 23, 7, 2, '2'),
-      uc('TII', 'MIC', 'Metodologia da Investigação Científica', 35, 10, 3), { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 88, 101, 13, 'anual'), tii: true },
+      uc('TAC', 'OOF', 'Operações Ofensivas – Divisão', 50, 25, 5), uc('TAC', 'OEST', 'Operações de Estabilização – Divisão', 75, 15, 6), uc('TAC', 'OAC', 'Operações de Apoio Civil', 32, 13, 3),
+      uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4), uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 12, 6),
+      uc('ESTR', 'GA', 'Geopolítica Aplicada', 42, 3, 3), uc('ESTR', 'CONF', 'Conflitualidade', 40, 5, 3), uc('ESTR', 'PPE', 'Pensamento e Planeamento Estratégico', 72, 18, 6),
+      uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 23, 7, 2),
+      uc('TII', 'MIC', 'Metodologia da Investigação Científica', 35, 10, 3), { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 88, 101, 13), tii: true },
     ],
   },
   'cemc-2026': {
@@ -313,17 +314,17 @@ export const MODELOS_PLANO = {
       nome: '2.º Curso de Estado-Maior Conjunto — Plano de Curso 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'ponderada', ajusteMaximo: 0,
       blocos: [{ sigla: 'ADM', nome: 'Administração', coeficiente: 2.5 }, { sigla: 'OCC', nome: 'Operações Conjuntas e Combinadas', coeficiente: 1 }, { sigla: 'ESTR', nome: 'Estratégia', coeficiente: 2 }, { sigla: 'TII', nome: 'Trabalho de Investigação Individual', coeficiente: 1.5 }],
     },
-    // Quadro 4 do plano (os semestres não vêm no plano: a distribuição é uma proposta, ajusta-se no painel)
+    // Quadro 4 do plano
     cadeiras: [
       uc('ADM', 'DC', 'Direito Castrense', 15, 2, 1), uc('ADM', 'JD', 'Justiça e Disciplina', 13, 2, 1), uc('ADM', 'CRPP', 'Comunicação, Relações Públicas e Protocolo', 45, 15, 4),
       uc('ADM', 'PA', 'Protecção Ambiental', 36, 9, 3), uc('ADM', 'IGO', 'Introdução à Gestão das Organizações', 41, 4, 3), uc('ADM', 'GP', 'Gestão de Pessoas', 39, 6, 3),
       uc('ADM', 'EID', 'Economia e Indústria de Defesa', 30, 15, 3), uc('ADM', 'ARF', 'Administração de Recursos Financeiros', 36, 9, 3), uc('ADM', 'LC', 'Logística Conjunta', 37, 8, 3),
       uc('ADM', 'CL', 'Comando e Liderança', 30, 15, 3),
-      uc('OCC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1, '2'), uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4, '2'),
-      uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 27, 7, '2'), uc('OCC', 'PCE', 'Planeamento e Condução de Exercícios', 30, 15, 3, '2'),
-      uc('ESTR', 'GEOP', 'Geopolítica', 47, 13, 4), uc('ESTR', 'EST', 'Estratégia', 49, 11, 4), uc('ESTR', 'HM', 'História Militar', 43, 17, 4, '2'),
-      uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 40, 20, 4, '2'), uc('ESTR', 'POL', 'Polemologia', 64, 26, 6, '2'),
-      uc('TII', 'MIC', 'Metodologia da Investigação Científica', 35, 10, 3), { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 88, 120, 14, 'anual'), tii: true },
+      uc('OCC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1), uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4),
+      uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 27, 7), uc('OCC', 'PCE', 'Planeamento e Condução de Exercícios', 30, 15, 3),
+      uc('ESTR', 'GEOP', 'Geopolítica', 47, 13, 4), uc('ESTR', 'EST', 'Estratégia', 49, 11, 4), uc('ESTR', 'HM', 'História Militar', 43, 17, 4),
+      uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 40, 20, 4), uc('ESTR', 'POL', 'Polemologia', 64, 26, 6),
+      uc('TII', 'MIC', 'Metodologia da Investigação Científica', 35, 10, 3), { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 88, 120, 14), tii: true },
     ],
   },
   'ceao-2026': {
@@ -333,11 +334,11 @@ export const MODELOS_PLANO = {
     },
     // o plano dá a carga horária total de cada UC (sem separar contacto e não contacto) e não indica semestres
     cadeiras: [
-      uc('NUC', 'EM', 'Estratégia Militar', 60, 0, 4, 'anual'), uc('NUC', 'AOT', 'Arte Operativa e Táctica e Jogo de Comando e Estado-Maior', 642, 0, 43, 'anual'),
-      uc('NUC', 'DT', 'Direcção de Tropas', 90, 0, 6, 'anual'), uc('NUC', 'EMF', 'Edificação Militar e das FAA', 72, 0, 5, 'anual'), uc('NUC', 'SN', 'Segurança Nacional', 126, 0, 8, 'anual'),
-      uc('NUC', 'LE', 'Liderança Estratégica', 45, 0, 3, 'anual'), uc('NUC', 'MIC', 'Metodologia de Investigação Científica', 18, 0, 1, 'anual'),
-      uc('COMP', 'AMP', 'Asseguramento Moral e Psicológico', 30, 0, 2, 'anual'), uc('COMP', 'DIP', 'Direito Internacional Público', 34, 0, 2, 'anual'), uc('COMP', 'ET', 'Ética', 30, 0, 2, 'anual'),
-      { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 60, 0, 4, 'anual'), tii: true },
+      uc('NUC', 'EM', 'Estratégia Militar', 60, 0, 4), uc('NUC', 'AOT', 'Arte Operativa e Táctica e Jogo de Comando e Estado-Maior', 642, 0, 43),
+      uc('NUC', 'DT', 'Direcção de Tropas', 90, 0, 6), uc('NUC', 'EMF', 'Edificação Militar e das FAA', 72, 0, 5), uc('NUC', 'SN', 'Segurança Nacional', 126, 0, 8),
+      uc('NUC', 'LE', 'Liderança Estratégica', 45, 0, 3), uc('NUC', 'MIC', 'Metodologia de Investigação Científica', 18, 0, 1),
+      uc('COMP', 'AMP', 'Asseguramento Moral e Psicológico', 30, 0, 2), uc('COMP', 'DIP', 'Direito Internacional Público', 34, 0, 2), uc('COMP', 'ET', 'Ética', 30, 0, 2),
+      { ...uc('TII', 'TII', 'Trabalho de Investigação Individual', 60, 0, 4), tii: true },
     ],
   },
   'coamp-2026': {
@@ -348,16 +349,16 @@ export const MODELOS_PLANO = {
       blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 1 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 1 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 1 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }],
     },
     cadeiras: [
-      uc('NUC', 'PM', 'Psicologia Militar', 45, 0, 3, 'anual'), uc('NUC', 'AP', 'Acção Psicológica', 180, 0, 12, 'anual'), uc('NUC', 'TPAMP', 'Teoria e Prática do Asseguramento Moral e Psicológico', 30, 0, 2, 'anual'),
-      uc('NUC', 'OTOAMP', 'Organização Táctico-Operacional do Asseguramento Moral e Psicológico', 116, 0, 7, 'anual'), uc('NUC', 'TPEM', 'Teoria e Prática da Educação dos Militares', 30, 0, 2, 'anual'),
-      uc('NUC', 'OTCL', 'Organização do Trabalho de Cultura e Lazer nas FAA', 30, 0, 2, 'anual'), uc('NUC', 'PCOM', 'Psicologia da Comunicação e Oratória Militar', 30, 0, 2, 'anual'),
-      uc('NUC', 'RPFA', 'Relações Públicas nas Forças Armadas', 45, 0, 3, 'anual'),
-      uc('COMP', 'CP', 'Cerimonial e Protocolo', 30, 0, 2, 'anual'), uc('COMP', 'HMA', 'História Militar de Angola', 32, 0, 2, 'anual'), uc('COMP', 'TFDM', 'Tecnologia do Fortalecimento da Disciplina Militar', 30, 0, 2, 'anual'),
-      uc('COMP', 'PRI', 'Psicologia de Relações Interpessoais', 17, 0, 1, 'anual'), uc('COMP', 'TPTSM', 'Teoria e Prática do Trabalho Social Militar', 30, 0, 2, 'anual'), uc('COMP', 'PMU', 'Psicologia das Multidões', 16, 0, 1, 'anual'),
-      uc('TAC', 'TOP', 'Topografia', 21, 0, 1, 'anual'), uc('TAC', 'DO', 'Doutrina das Operações', 38, 0, 2, 'anual'), uc('TAC', 'TEM', 'Técnica de Estado-Maior', 57, 0, 3, 'anual'), uc('TAC', 'BD', 'Brigada na Defesa', 64, 0, 4, 'anual'),
-      uc('GER', 'DIP', 'Direito Internacional Público', 30, 0, 2, 'anual'), uc('GER', 'GA', 'Geopolítica Aplicada', 30, 0, 2, 'anual'), uc('GER', 'CL', 'Comando e Liderança', 30, 0, 2, 'anual'), uc('GER', 'PE', 'Pensamento Estratégico', 45, 0, 3, 'anual'),
+      uc('NUC', 'PM', 'Psicologia Militar', 45, 0, 3), uc('NUC', 'AP', 'Acção Psicológica', 180, 0, 12), uc('NUC', 'TPAMP', 'Teoria e Prática do Asseguramento Moral e Psicológico', 30, 0, 2),
+      uc('NUC', 'OTOAMP', 'Organização Táctico-Operacional do Asseguramento Moral e Psicológico', 116, 0, 7), uc('NUC', 'TPEM', 'Teoria e Prática da Educação dos Militares', 30, 0, 2),
+      uc('NUC', 'OTCL', 'Organização do Trabalho de Cultura e Lazer nas FAA', 30, 0, 2), uc('NUC', 'PCOM', 'Psicologia da Comunicação e Oratória Militar', 30, 0, 2),
+      uc('NUC', 'RPFA', 'Relações Públicas nas Forças Armadas', 45, 0, 3),
+      uc('COMP', 'CP', 'Cerimonial e Protocolo', 30, 0, 2), uc('COMP', 'HMA', 'História Militar de Angola', 32, 0, 2), uc('COMP', 'TFDM', 'Tecnologia do Fortalecimento da Disciplina Militar', 30, 0, 2),
+      uc('COMP', 'PRI', 'Psicologia de Relações Interpessoais', 17, 0, 1), uc('COMP', 'TPTSM', 'Teoria e Prática do Trabalho Social Militar', 30, 0, 2), uc('COMP', 'PMU', 'Psicologia das Multidões', 16, 0, 1),
+      uc('TAC', 'TOP', 'Topografia', 21, 0, 1), uc('TAC', 'DO', 'Doutrina das Operações', 38, 0, 2), uc('TAC', 'TEM', 'Técnica de Estado-Maior', 57, 0, 3), uc('TAC', 'BD', 'Brigada na Defesa', 64, 0, 4),
+      uc('GER', 'DIP', 'Direito Internacional Público', 30, 0, 2), uc('GER', 'GA', 'Geopolítica Aplicada', 30, 0, 2), uc('GER', 'CL', 'Comando e Liderança', 30, 0, 2), uc('GER', 'PE', 'Pensamento Estratégico', 45, 0, 3),
       // Quadro Resumo do plano: o TII/TFC tem 156 tempos escolares e 10 UCréd
-      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10, 'anual'), tii: true },
+      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10), tii: true },
     ],
   },
 }

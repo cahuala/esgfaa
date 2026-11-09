@@ -38,6 +38,10 @@ export class ServicoFicheirosPortal {
       // a prova escrita antes de ser feita: só os docentes da cadeira (a Repartição abre-a no painel)
       if (conta.tipo !== 'docente') negar()
       await this.apoio.cadeiraDoDocente(conta, uso.cadeiraId)
+    } else if (uso.tipo === 'plano_curso') {
+      // o plano do curso: quem tem uma cadeira numa turma desse curso e ano lectivo
+      const turmas = (await this.acesso.minhasCadeiras(conta)).map((c) => c.turma)
+      if (!turmas.some((t) => t?.curso === uso.curso && t?.anoLetivo === uso.anoLetivo)) negar()
     } else if (uso.tipo === 'pedido') {
       if (uso.estudanteId !== conta.id) negar()
     } else negar() // um uso novo sem regra de acesso não se entrega a ninguém

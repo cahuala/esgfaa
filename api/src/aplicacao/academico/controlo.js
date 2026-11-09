@@ -13,7 +13,8 @@ const nota = (v) => (v === null || v === undefined || v === '' ? null : Number(v
   - provas escritas: o docente envia o enunciado; a Repartição de Administração Escolar imprime uma cópia
     por estudante e marca como impressa (o docente é avisado). Os estudantes nunca veem o ficheiro;
   - alteração de notas já publicadas: o docente pede para um ou mais estudantes, com o motivo; o Comandante
-    autoriza ou recusa cada um; com a autorização, o docente muda a nota desse estudante uma vez;
+    autoriza ou recusa cada um; com a autorização, o docente muda a nota desse estudante uma vez. No painel,
+    só o Comandante muda uma nota publicada;
   - docentes: os que o Pessoal e Quadros regista chegam ao Comandante, que verifica a lista.
 */
 export class ServicoControloAcademico {
@@ -83,6 +84,23 @@ export class ServicoControloAcademico {
     return r
   }
 
+  // ---------- programa da cadeira em PDF (docente) ----------
+
+  async programaDocente(ctx, cadeiraId, { removerFicheiro }, ficheiro) {
+    try {
+      const c = await this.apoio.cadeiraDoDocente(ctx.conta, cadeiraId)
+      if (ficheiro && ficheiro.tipo !== 'application/pdf') throw new ErroValidacao('O programa tem de ser um PDF.', { campo: 'ficheiro' })
+      if (!ficheiro && removerFicheiro !== true && removerFicheiro !== 'true') throw new ErroValidacao('Escolha o PDF do programa.', { campo: 'ficheiro' })
+      const programaFicheiroId = ficheiro ? await this.apoio.registarFicheiro(ficheiro, ctx.conta.id) : null
+      await this.academico.atualizarCadeira(c.id, { programaFicheiroId })
+      await this.auditoria.registar(ctx, { acao: ficheiro ? 'enviar_programa' : 'remover_programa', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome, utilizador: quem(ctx.conta) })
+      return { programaFicheiroId }
+    } catch (erro) {
+      if (ficheiro) this.privados.apagar(ficheiro.caminho)
+      throw erro
+    }
+  }
+
   // ---------- alteração de notas publicadas (docente) ----------
 
   // { avaliacaoId } (prova do plano de curso) ou { componente } (pauta clássica): tem de estar publicada
@@ -141,6 +159,11 @@ export class ServicoControloAcademico {
       throw new Conflito(`As notas de ${nomeProva} já foram publicadas: para mudar a de ${nomes.join(', ')} peça a alteração ao Comandante.`)
     }
     return usar
+  }
+
+  // no painel: uma nota já publicada só a muda (ou esconde) o Comandante; os outros pedem-na pelo docente
+  exigirComandante(ctx, nomeProva) {
+    if (!ctx.actor?.pode('academico.homologar')) throw new Conflito(`As notas de ${nomeProva} já foram publicadas: só o Comandante as altera. O docente da cadeira pede a alteração e o Comandante autoriza.`)
   }
 
   async gastarAutorizacoes(usar) {

@@ -1,6 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
+import { estadoDosPrazos, mensagemFechado } from '../../../dominio/academico/avaliacao/prazosNotas.js'
 import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, recuperacaoPossivel, regrasPublicas, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
@@ -10,8 +11,15 @@ import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decis
   painel (Administração Escolar). Quem chama já confirmou o acesso à cadeira.
 */
 export class ServicoAvaliacaoEsg {
-  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio, controlo = null }) {
-    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio, controlo })
+  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio, controlo = null, prazosNotas = null, fuso = 'Africa/Luanda' }) {
+    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas, fuso })
+  }
+
+  // o período de lançamento dos TAI e dos TAG nesta UC (Administração Escolar)
+  async #prazos(cadeira) {
+    if (!this.prazosNotas) return null
+    const hoje = new Intl.DateTimeFormat('en-CA', { timeZone: this.fuso, year: 'numeric', month: '2-digit', day: '2-digit' }).format(this.relogio.agora())
+    return estadoDosPrazos(await this.prazosNotas.daCadeira(cadeira), cadeira, hoje)
   }
 
   planoDaCadeira(cadeira) {
@@ -38,7 +46,7 @@ export class ServicoAvaliacaoEsg {
     const [avaliacoes, estudantes, tiis] = await Promise.all([this.planos.avaliacoes(cadeira.id), this.academico.estudantesDaPautaDaCadeira(cadeira), cadeira.tii ? this.#tiis(cadeira.turmaId) : {}])
     const notas = await this.planos.notas(avaliacoes.map((a) => a.id))
     return {
-      modo: 'esg', cadeira, plano, tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO,
+      modo: 'esg', cadeira, plano, tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO, prazos: await this.#prazos(cadeira),
       avaliacoes: avaliacoes.map((a) => ({ ...a, pedidos: Object.values(notas[a.id] ?? {}).filter((n) => n.recuperacaoPedidaEm).length, revisoes: Object.values(notas[a.id] ?? {}).filter((n) => n.revisao && !n.revisao.decididaEm).length })),
       linhas: estudantes.map((e) => {
         const minhas = Object.fromEntries(avaliacoes.map((a) => [a.id, notas[a.id]?.[e.id] ?? {}]))
@@ -111,10 +119,15 @@ export class ServicoAvaliacaoEsg {
       if (recuperacao !== null && (a.tipo !== 'TAI' || nota === null || nota >= NOTA_MINIMA)) throw new ErroValidacao('O teste de recuperação só existe num TAI com nota negativa.', { campo: 'recuperacao' })
       return { estudanteId, nota, recuperacao }
     })
-    // publicadas: o docente só muda a nota dos estudantes que o Comandante autorizou (a Repartição pode sempre, com registo)
+    const atuais = (await this.planos.notas([a.id]))[a.id] ?? {}
+    // por publicar: o docente só lança dentro do prazo (depois de publicada, conta a autorização do Comandante)
+    if (ctx.conta && !a.publicadaEm && limpas.some((l) => (l.nota ?? null) !== (atuais[l.estudanteId]?.nota ?? null))) {
+      const prazo = (await this.#prazos(cadeira))?.[a.tipo]
+      if (prazo && !prazo.aberto) throw new SemPermissao(mensagemFechado(a.tipo, prazo))
+    }
+    // publicadas: o docente só muda a nota dos estudantes que o Comandante autorizou; no painel, só o Comandante as muda
     let usar = []
-    if (ctx.conta && a.publicadaEm && this.controlo) {
-      const atuais = (await this.planos.notas([a.id]))[a.id] ?? {}
+    if (a.publicadaEm && this.controlo) {
       // o teste de recuperação que o estudante pediu (ou que o plano dá sozinho) lança-se sem pedir: é o seguimento normal
       const automatica = (await this.planoDaCadeira(cadeira))?.recuperacaoAutomatica === true
       const mudam = limpas.filter((l) => {
@@ -123,7 +136,8 @@ export class ServicoAvaliacaoEsg {
         const recuperacaoMuda = (l.recuperacao ?? null) !== (antes.recuperacao ?? null)
         return recuperacaoMuda && !(antes.recuperacaoPedidaEm || automatica)
       })
-      usar = await this.controlo.exigirAutorizacoes(cadeira, { avaliacaoId: a.id }, mudam, `${a.tipo} ${a.titulo}`)
+      if (ctx.conta) usar = await this.controlo.exigirAutorizacoes(cadeira, { avaliacaoId: a.id }, mudam, `${a.tipo} ${a.titulo}`)
+      else if (mudam.length) this.controlo.exigirComandante(ctx, `${a.tipo} ${a.titulo}`)
     }
     await this.planos.gravarNotas(a.id, limpas)
     await this.controlo?.gastarAutorizacoes(usar)
@@ -142,6 +156,7 @@ export class ServicoAvaliacaoEsg {
     } else if (!publicar && a.publicadaEm) {
       // o docente não retira a publicação (seria a forma de mudar notas sem autorização)
       if (ctx.conta) throw new Conflito('As notas já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.')
+      this.controlo?.exigirComandante(ctx, `${a.tipo} ${a.titulo}`)
       await this.planos.atualizarAvaliacao(a.id, { publicadaEm: null })
       await this.auditoria.registar(ctx, { acao: 'retirar_publicacao', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
     }

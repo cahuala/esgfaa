@@ -150,6 +150,9 @@ export async function abrirNoAparelho(id) {
   Envio de ficheiros com progresso (XMLHttpRequest dá o avanço do envio, o fetch não).
   aoProgresso(0..100) é chamado durante o envio.
 */
+// o PDF do plano do curso
+export const abrirPlano = (id) => abrirFicheiro(id, { nome: 'Plano do curso', ver: true })
+
 export function enviarComProgresso(caminho, formulario, { metodo = 'POST', aoProgresso } = {}) {
   if (!API_URL) return Promise.reject(new Error(tx('O portal não está ligado ao servidor (VITE_API_URL).')))
   return new Promise((resolver, rejeitar) => {

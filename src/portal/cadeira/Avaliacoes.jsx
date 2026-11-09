@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FaEye, FaEyeSlash, FaPrint, FaSave } from 'react-icons/fa'
-import { api } from '../api'
+import { abrirPlano, api } from '../api'
 import { Cartao, Vazio, Carregando } from '../componentes'
 import { Nota, Situacao } from '../avaliacao'
 import Composicao from './Composicao'
@@ -27,7 +27,7 @@ function PautaOuEsg(props) {
   if (!modo) return <Carregando texto={tx('A carregar a pauta…')} />
   return (
     <>
-      {modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} /> : <Pauta {...props} />}
+      {modo === 'esg' ? <PautaEsg c={c} avisar={props.avisar} pedir={api} base={`/cadeiras/${c.id}`} abrirDocumento={abrirPlano} /> : <Pauta {...props} />}
       <ControloNotas c={c} avisar={props.avisar} />
     </>
   )

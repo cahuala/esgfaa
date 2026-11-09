@@ -5,10 +5,14 @@ import { dataValida, erro, escolha, texto } from '../comum/validacao.js'
   Prazos de lançamento das notas, definidos pela Administração Escolar / Direcção de Ensino.
   Para cada componente (1.ª prova, 2.ª prova, exame, recurso) vale o prazo mais específico:
   o da cadeira (prorrogação) > o da turma > o geral da Escola. Sem nenhum prazo definido, o lançamento
-  dessa componente fica livre. Datas AAAA-MM-DD; o último dia conta.
+  dessa componente fica livre. Datas AAAA-MM-DD; o último dia conta. Nas turmas com plano de curso da ESG, os
+  prazos são dos TAI e dos TAG.
 */
+export const COMPONENTES_PRAZO = [...COMPONENTES_NOTA, 'TAI', 'TAG']
+export const NOMES_PRAZOS = { ...NOMES_COMPONENTES, TAI: 'Trabalhos de Aplicação Individual (TAI)', TAG: 'Trabalhos de Aplicação de Grupo (TAG)' }
+
 export function validarPrazo(d) {
-  const componente = escolha(d.componente, 'componente', 'Componente', COMPONENTES_NOTA)
+  const componente = escolha(d.componente, 'componente', 'Componente', COMPONENTES_PRAZO)
   if (!dataValida(d.inicio)) throw erro('inicio', 'Indique a data de início.')
   if (!dataValida(d.fim)) throw erro('fim', 'Indique a data de fim.')
   if (d.fim < d.inicio) throw erro('fim', 'O fim tem de ser depois do início.')
@@ -18,7 +22,7 @@ export function validarPrazo(d) {
 // estado de cada componente na cadeira: { p1: { livre, aberto, inicio, fim, origem, texto }, … }
 export function estadoDosPrazos(prazos, cadeira, hoje) {
   const r = {}
-  for (const k of COMPONENTES_NOTA) {
+  for (const k of COMPONENTES_PRAZO) {
     const nivel = (p) => (p.cadeiraId === cadeira.id ? 3 : p.turmaId && p.turmaId === cadeira.turmaId ? 2 : !p.cadeiraId && !p.turmaId ? 1 : 0)
     const aplicaveis = prazos.filter((p) => p.componente === k && nivel(p) > 0)
     const maior = Math.max(0, ...aplicaveis.map(nivel))
@@ -36,4 +40,4 @@ export function estadoDosPrazos(prazos, cadeira, hoje) {
   return r
 }
 
-export const mensagemFechado = (k, e) => `O prazo de lançamento da ${NOMES_COMPONENTES[k]} está fechado (${e.texto.toLowerCase()}, ${e.origem}). Peça à Administração Escolar uma prorrogação.`
+export const mensagemFechado = (k, e) => `O prazo de lançamento ${['TAI', 'TAG'].includes(k) ? `dos ${k}` : `da ${NOMES_COMPONENTES[k]}`} está fechado (${e.texto.toLowerCase()}, ${e.origem}). Peça à Administração Escolar uma prorrogação.`

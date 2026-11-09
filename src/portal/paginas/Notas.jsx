@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaPrint } from 'react-icons/fa'
-import { api } from '../api'
+import { abrirPlano, api } from '../api'
 import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
 import { Nota, Situacao } from '../avaliacao'
@@ -91,6 +91,12 @@ function Notas() {
 
 // boletim pelo plano de curso da ESG: as provas (TAI/TAG) publicadas, a nota da UC e a menção
 function BoletimEsg({ lista, semestres }) {
+  // como nos planos: por blocos (sem plano com blocos, por semestres)
+  const blocos = lista.find((l) => l.plano?.blocos?.length)?.plano.blocos ?? []
+  const siglas = blocos.map((b) => b.sigla)
+  const grupos = blocos.length
+    ? [...blocos.map((b) => ({ chave: b.sigla, titulo: b.nome, linhas: lista.filter((l) => l.cadeira.bloco === b.sigla) })), { chave: '', titulo: tx('Outras'), linhas: lista.filter((l) => !siglas.includes(l.cadeira.bloco)) }].filter((g) => g.linhas.length)
+    : semestres.map((s) => ({ chave: s, titulo: PERIODOS[s], linhas: lista.filter((l) => l.cadeira.periodo === s) })).filter((g) => g.linhas.length)
   return (
     <>
       <Cartao titulo={<><i className="fa fa-table me-2" />{tx('Boletim de notas — plano de curso da ESG')}</>} corpo={false}>
@@ -106,10 +112,10 @@ function BoletimEsg({ lista, semestres }) {
                 <th scope="col">{tx('Situação')}</th>
               </tr>
             </thead>
-            {semestres.map((s) => (
-              <tbody key={s}>
-                {semestres.length > 1 && <tr className="p-matriz-grupo"><th colSpan={6}>{PERIODOS[s]}</th></tr>}
-                {lista.filter((l) => l.cadeira.periodo === s).map((l) => (
+            {grupos.map((g) => (
+              <tbody key={g.chave}>
+                {grupos.length > 1 && <tr className="p-matriz-grupo"><th colSpan={6}>{g.titulo}</th></tr>}
+                {g.linhas.map((l) => (
                   <tr key={l.cadeira.id}>
                     <th scope="row" className="p-matriz-nome">
                       <Link to={`/cadeiras/${l.cadeira.id}?separador=avaliacoes`}>{l.cadeira.nome}</Link>
@@ -130,7 +136,7 @@ function BoletimEsg({ lista, semestres }) {
         </div>
       </Cartao>
       <p className="p-legenda">{tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
-      {lista.find((l) => l.plano)?.plano ? <RegrasPlano plano={lista.find((l) => l.plano).plano} aberto /> : <p className="p-legenda">{REGRA_ESG}</p>}
+      {lista.find((l) => l.plano)?.plano ? <RegrasPlano plano={lista.find((l) => l.plano).plano} aberto abrirDocumento={abrirPlano} /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </>
   )
 }

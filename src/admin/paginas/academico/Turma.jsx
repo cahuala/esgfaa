@@ -201,7 +201,13 @@ function Turma() {
       {aba === 'cadeiras' && (
         <div className="row">
           <div className="col-xl-8">
-            {['1', '2', 'anual'].map((per) => {
+            {t.temPlano && [...t.blocos.map((b) => ({ chave: b.sigla, titulo: b.nome, lista: t.cadeiras.filter((c) => c.bloco === b.sigla) })), { chave: '', titulo: tx('Sem bloco'), lista: t.cadeiras.filter((c) => !t.blocos.some((b) => b.sigla === c.bloco)) }].filter((g) => g.lista.length).map((g) => (
+              <section key={g.chave} className="mb-3" aria-label={g.titulo}>
+                <h3 className="h5 d-flex flex-wrap align-items-center gap-2 mb-2">{g.titulo} <span className="badge bg-dark">{tx('{0} cadeira(s)', { 0: g.lista.length })}</span></h3>
+                {g.lista.map((c) => <CadeiraTurma key={c.id} c={c} gerir={gerir} carregar={carregar} avisar={setAviso} />)}
+              </section>
+            ))}
+            {!t.temPlano && ['1', '2', 'anual'].map((per) => {
               const lista = t.cadeiras.filter((c) => String(c.periodo) === per)
               if (!lista.length) return null
               const ano = anos.find((a) => a.id === t.anoLetivo)

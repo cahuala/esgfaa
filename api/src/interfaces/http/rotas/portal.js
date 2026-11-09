@@ -123,6 +123,7 @@ export function rotasPortal({ servicos, config, privados }) {
   r.get('/cadeiras/:id/provas-escritas', validar({ params: pId }), async (req, res) => res.json(await ctl.enunciadosDaCadeira(ctx(req), req.dados.params.id)))
   r.post('/cadeiras/:id/provas-escritas', ficheiro, validar({ params: pId, body: E.provaEscrita }), async (req, res) => res.status(201).json(await ctl.enviarEnunciado(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.delete('/provas-escritas/:id', validar({ params: pId }), async (req, res) => { await ctl.apagarEnunciado(ctx(req), req.dados.params.id); res.status(204).end() })
+  r.put('/cadeiras/:id/programa', ficheiro, validar({ params: pId, body: E.programa }), async (req, res) => res.json(await ctl.programaDocente(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.get('/cadeiras/:id/alteracoes-notas', validar({ params: pId }), async (req, res) => res.json(await ctl.pedidosDaCadeira(ctx(req), req.dados.params.id)))
   r.post('/cadeiras/:id/alteracoes-notas', validar({ params: pId, body: E.pedidoAlteracaoNota }), async (req, res) => res.status(201).json(await ctl.pedirAlteracao(ctx(req), req.dados.params.id, req.dados.body)))
 

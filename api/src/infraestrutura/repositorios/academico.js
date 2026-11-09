@@ -714,7 +714,7 @@ export class RepositorioAcademico {
   // a que pertence um ficheiro (para decidir quem o pode descarregar)
   async usoDoFicheiro(id) {
     const p = this.prisma
-    const [material, trabalho, entrega, pedido, programa, workshop, anexo, video, enunciado] = await Promise.all([
+    const [material, trabalho, entrega, pedido, programa, workshop, anexo, video, enunciado, plano] = await Promise.all([
       p.material.findFirst({ where: { OR: [{ ficheiroId: id }, { ficheiros: { some: { ficheiroId: id } } }] }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.trabalho.findFirst({ where: { ficheiroId: id }, select: { id: true, cadeiraId: true, secao: { select: { visivel: true } } } }),
       p.entrega.findFirst({ where: { OR: [{ ficheiros: { some: { ficheiroId: id } } }, { correcaoFicheiroId: id }] }, select: { estudanteId: true, correcaoFicheiroId: true, trabalho: { select: { cadeiraId: true, anonimo: true, notasOcultas: true, notasLibertadasEm: true } }, grupo: { select: { membros: { select: { estudanteId: true } } } } } }),
@@ -724,6 +724,7 @@ export class RepositorioAcademico {
       p.forumAnexo.findUnique({ where: { ficheiroId: id }, select: { topico: { select: { cadeiraId: true } }, resposta: { select: { topico: { select: { cadeiraId: true } } } } } }),
       p.videoCurto.findFirst({ where: { OR: [{ ficheiroId: id }, { capaId: id }] }, select: { cadeiraId: true } }),
       p.enunciadoProva.findUnique({ where: { ficheiroId: id }, select: { cadeiraId: true } }),
+      p.planoCurso.findFirst({ where: { ficheiroId: id }, select: { curso: true, anoLetivo: true } }),
     ])
     if (material) return { tipo: 'material', cadeiraId: material.cadeiraId, escondido: material.secao?.visivel === false, atividade: `material-${material.id}` }
     if (trabalho) return { tipo: 'enunciado', cadeiraId: trabalho.cadeiraId, escondido: trabalho.secao?.visivel === false, atividade: `trabalho-${trabalho.id}` }
@@ -734,6 +735,7 @@ export class RepositorioAcademico {
     if (anexo) return { tipo: 'forum', cadeiraId: anexo.topico?.cadeiraId ?? anexo.resposta.topico.cadeiraId }
     if (video) return { tipo: 'video_curto', cadeiraId: video.cadeiraId }
     if (enunciado) return { tipo: 'enunciado_prova', cadeiraId: enunciado.cadeiraId }
+    if (plano) return { tipo: 'plano_curso', curso: plano.curso, anoLetivo: plano.anoLetivo }
     return null
   }
 }

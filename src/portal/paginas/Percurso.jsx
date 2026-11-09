@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../api'
+import { abrirPlano, api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { Cartao, Carregando, Erro, Titulo, Vazio, Widget } from '../componentes'
 import { nota } from '../formatar'
@@ -92,7 +92,7 @@ function Percurso() {
                             <tr key={l.cadeira.id}>
                               <th scope="row" className="p-matriz-nome">
                                 {a.matricula.estado === 'ativa' ? <Link to={`/cadeiras/${l.cadeira.id}`}>{l.cadeira.nome}</Link> : l.cadeira.nome}
-                                <small>{l.cadeira.codigo} · {PERIODOS[l.cadeira.periodo]}{l.cadeira.docente && ` · ${l.cadeira.docente}`}</small>
+                                <small>{l.cadeira.codigo} · {l.cadeira.bloco ? `${tx('Bloco')} ${l.cadeira.bloco}` : PERIODOS[l.cadeira.periodo]}{l.cadeira.docente && ` · ${l.cadeira.docente}`}</small>
                               </th>
                               <td>{l.cadeira.horas}</td>
                               <td className="p-matriz-mac"><Nota valor={l.mac} /></td>
@@ -171,7 +171,7 @@ function PlanoCurso({ pc, conclusao }) {
           <div className="ms-auto">{pc.homologado ? <span className="badge bg-success"><i className="fa fa-stamp me-1" />{tx('Homologada pelo Comandante')}</span> : <span className="badge bg-secondary">{tx('Classificação provisória (por homologar)')}</span>}</div>
         </div>
         {!conclusao.concluido && conclusao.emFalta?.length > 0 && <div className="small text-muted mt-3"><b>{tx('Para concluir o curso:')}</b> {conclusao.emFalta.join(' · ')}</div>}
-        {pc.regras && <RegrasPlano plano={pc.regras} />}
+        {pc.regras && <RegrasPlano plano={pc.regras} abrirDocumento={abrirPlano} />}
       </div>
     </div>
   )

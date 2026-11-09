@@ -1,6 +1,5 @@
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
-import { validarPrazo } from '../../../dominio/academico/avaliacao/prazosNotas.js'
-import { NOMES_COMPONENTES } from '../../../dominio/academico/avaliacao/resultado.js'
+import { NOMES_PRAZOS, validarPrazo } from '../../../dominio/academico/avaliacao/prazosNotas.js'
 
 /*
   Prazos de lançamento das notas (Administração Escolar / Direcção de Ensino): gerais, de uma turma ou de
@@ -14,7 +13,7 @@ export class ServicoPrazosNotas {
   async listar(ctx) {
     ctx.actor.exigir('academico.ver')
     return (await this.prazosNotas.todos()).map((p) => ({
-      ...p, componenteNome: NOMES_COMPONENTES[p.componente],
+      ...p, componenteNome: NOMES_PRAZOS[p.componente],
       ambito: p.cadeira ? `Cadeira: ${p.cadeira.codigo} ${p.cadeira.nome}` : p.turma ? `Turma: ${p.turma.nome} (${p.turma.anoLetivo})` : 'Toda a Escola',
       turma: undefined, cadeira: undefined,
     }))
@@ -26,7 +25,7 @@ export class ServicoPrazosNotas {
     if (cadeiraId && !(await this.academico.cadeira(cadeiraId))) throw new ErroValidacao('Cadeira inválida.', { campo: 'cadeiraId' })
     if (!cadeiraId && turmaId && !(await this.academico.turma(turmaId))) throw new ErroValidacao('Turma inválida.', { campo: 'turmaId' })
     const p = await this.prazosNotas.criar({ ...v, cadeiraId: cadeiraId || null, turmaId: cadeiraId ? null : turmaId || null, criadoPor: ctx.actor.nome ?? '' })
-    await this.auditoria.registar(ctx, { acao: 'definir_prazo_notas', colecao: 'prazos_notas', alvoId: p.id, alvoTitulo: `${NOMES_COMPONENTES[p.componente]}: ${p.inicio} a ${p.fim}` })
+    await this.auditoria.registar(ctx, { acao: 'definir_prazo_notas', colecao: 'prazos_notas', alvoId: p.id, alvoTitulo: `${NOMES_PRAZOS[p.componente]}: ${p.inicio} a ${p.fim}` })
     return p
   }
 
@@ -35,6 +34,6 @@ export class ServicoPrazosNotas {
     const p = await this.prazosNotas.porId(id)
     if (!p) throw new NaoEncontrado('Prazo não encontrado.')
     await this.prazosNotas.apagar(id)
-    await this.auditoria.registar(ctx, { acao: 'apagar_prazo_notas', colecao: 'prazos_notas', alvoId: id, alvoTitulo: `${NOMES_COMPONENTES[p.componente]}: ${p.inicio} a ${p.fim}` })
+    await this.auditoria.registar(ctx, { acao: 'apagar_prazo_notas', colecao: 'prazos_notas', alvoId: id, alvoTitulo: `${NOMES_PRAZOS[p.componente]}: ${p.inicio} a ${p.fim}` })
   }
 }

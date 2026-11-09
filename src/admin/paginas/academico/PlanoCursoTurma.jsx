@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api } from '../../api'
+import { abrirFicheiro, api } from '../../api'
 import { Carregando, Painel } from '../../componentes/Ui'
 import ConselhoCurso from './ConselhoCurso'
 import RegrasPlano from '../../../portal/RegrasPlano'
@@ -38,6 +38,26 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
       carregar()
       aoMudar?.()
     } catch (e) { falhou(e) }
+  }
+  async function enviarDocumento(dados, texto) {
+    try {
+      await api(`/academico/planos-curso/${d.plano.id}/documento`, { metodo: 'PUT', formulario: dados })
+      avisar({ texto })
+      carregar()
+    } catch (e) { falhou(e) }
+  }
+  const escolherDocumento = (e) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''
+    if (!f) return
+    const dados = new FormData()
+    dados.append('ficheiro', f)
+    enviarDocumento(dados, tx('Plano do curso enviado.'))
+  }
+  const retirarDocumento = () => {
+    const dados = new FormData()
+    dados.append('removerFicheiro', 'true')
+    enviarDocumento(dados, tx('Documento retirado.'))
   }
   async function guardarPlano(e) {
     e.preventDefault()
@@ -98,6 +118,15 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
               </table>
             )}
             {/* o que os auditores/discentes e os docentes vêem (as mesmas regras que o sistema aplica) */}
+            {/* o documento do plano: os auditores/discentes e os docentes do curso abrem-no no portal */}
+            <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <span className="fw-bold small"><i className="fa fa-file-pdf me-1" />{tx('Documento do plano (PDF)')}</span>
+              {p.ficheiroId
+                ? <button type="button" className="btn btn-sm btn-white" onClick={() => abrirFicheiro(p.ficheiroId, 'Plano do curso').catch(falhou)}>{tx('Abrir')}</button>
+                : <span className="small text-muted">{tx('Ainda não foi enviado.')}</span>}
+              {gerir && <label className="btn btn-sm btn-white mb-0">{p.ficheiroId ? tx('Substituir') : tx('Enviar o PDF')}<input type="file" accept="application/pdf" className="d-none" onChange={escolherDocumento} /></label>}
+              {gerir && p.ficheiroId && <button type="button" className="btn btn-sm btn-white" onClick={retirarDocumento}>{tx('Retirar')}</button>}
+            </div>
             <RegrasPlano plano={{ ...p, factoresJuizo: (p.factoresJuizo ?? []).length || 11, trabalho: d.ucs.find((u) => u.tii)?.nome ?? null }} />
           </>
         )}

@@ -163,7 +163,7 @@ function CartaoCadeira({ c, p }) {
           <i className="fa fa-chalkboard p-capa-icone" />
         </span>
         <span className="p-turma-cadeira-corpo">
-          <span className="small text-muted text-uppercase fw-bold">{PERIODOS[c.periodo]} · {c.horas} {tx('h')}</span>
+          <span className="small text-muted text-uppercase fw-bold">{c.bloco ? `${tx('Bloco')} ${c.bloco}` : PERIODOS[c.periodo]} · {c.horas} {tx('h')}</span>
           <span className="d-block h6 mt-1 mb-1 text-body">{c.nome}</span>
           <span className="d-block small text-muted"><i className="fa fa-chalkboard-teacher me-1" />{c.docente ? c.docente.nome : tx('Docentes por alocar')}</span>
           {p?.total > 0 && (

@@ -160,23 +160,26 @@ export class ServicoPautas {
     const atuais = await this.academico.pautaDaCadeira(cadeira.id)
     for (const l of notas) for (const k of calculadas) l[k] = atuais[l.estudanteId]?.[k] ?? null
     /*
-      O docente (no portal) só lança uma componente dentro do prazo definido pela Administração Escolar.
-      A Administração Escolar (no painel) pode sempre corrigir: fica no registo de atividades.
+      O docente (no portal) só lança uma componente dentro do prazo definido pela Administração Escolar; depois
+      de publicada, o prazo já não conta: a alteração depende da autorização do Comandante.
+      A Administração Escolar (no painel) corrige as que ainda não foram publicadas: fica no registo de atividades.
     */
     if (ctx.conta) {
       const prazos = await this.prazos(cadeira)
       const mudadas = new Set()
       for (const l of notas) for (const k of COMPONENTES_NOTA) if (!calculadas.includes(k) && (l[k] ?? null) !== (atuais[l.estudanteId]?.[k] ?? null)) mudadas.add(k)
-      const fechada = COMPONENTES_NOTA.find((k) => mudadas.has(k) && prazos && !prazos[k].aberto)
+      const fechada = COMPONENTES_NOTA.find((k) => mudadas.has(k) && prazos && !prazos[k].aberto && !(cadeira.notasPublicadas ?? []).includes(k))
       if (fechada) throw new SemPermissao(mensagemFechado(fechada, prazos[fechada]))
     }
     // componentes já publicadas: o docente só muda a nota dos estudantes que o Comandante autorizou
     const usar = []
-    if (ctx.conta && this.controlo) {
+    if (this.controlo) {
       const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v))
       for (const k of COMPONENTES_NOTA.filter((x) => (cadeira.notasPublicadas ?? []).includes(x) && !calculadas.includes(x))) {
         const mudam = notas.filter((l) => num(l[k]) !== num(atuais[l.estudanteId]?.[k])).map((l) => ({ estudanteId: l.estudanteId, nota: num(l[k]) }))
-        if (mudam.length) usar.push(...(await this.controlo.exigirAutorizacoes(cadeira, { componente: k }, mudam, NOMES_COMPONENTES[k])))
+        if (!mudam.length) continue
+        if (ctx.conta) usar.push(...(await this.controlo.exigirAutorizacoes(cadeira, { componente: k }, mudam, NOMES_COMPONENTES[k])))
+        else this.controlo.exigirComandante(ctx, NOMES_COMPONENTES[k])
       }
     }
     await this.academico.gravarPauta(cadeira.id, notas)
@@ -193,6 +196,7 @@ export class ServicoPautas {
     // o docente não esconde notas já publicadas (seria a forma de as mudar sem autorização do Comandante)
     const retiradas = (cadeira.notasPublicadas ?? []).filter((k) => !ordenada.includes(k))
     if (ctx.conta && retiradas.length) throw new Conflito(`As notas de ${retiradas.map((k) => NOMES_COMPONENTES[k]).join(', ')} já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.`)
+    if (!ctx.conta && retiradas.length) this.controlo?.exigirComandante(ctx, retiradas.map((k) => NOMES_COMPONENTES[k]).join(', '))
     await this.academico.publicarNotas(cadeira.id, ordenada)
     const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
     if (novas.length) {

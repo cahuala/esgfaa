@@ -7,6 +7,7 @@ import { FORMAS_AVALIACAO, NOTA_MAXIMA_RECUPERACAO, REGRA_ESG, SITUACOES, TIPOS_
 import RegrasPlano from '../RegrasPlano'
 import { t as tx } from '../../i18n/linguas'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
+import { abrirPlano } from '../api'
 
 const paraTexto = (v) => (v === null || v === undefined ? '' : String(v).replace('.', ','))
 const paraNumero = (v) => {
@@ -24,7 +25,7 @@ const VAZIA = { tipo: 'TAI', forma: 'teste', titulo: '', data: '', peso: '' }
   abre o prazo de pedido de recuperação (até às 17h do dia útil seguinte).
   pedir(caminho, opções): a função da API (portal ou painel); base: «/cadeiras/:id».
 */
-export function PautaEsg({ c, avisar, pedir, base }) {
+export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
   const [p, setP] = useState(null)
   const [edicao, setEdicao] = useState({}) // { provaId: { estudanteId: { nota, recuperacao } } }
   const [mudadas, setMudadas] = useState(new Set())
@@ -120,6 +121,9 @@ export function PautaEsg({ c, avisar, pedir, base }) {
         </div>
       </div>
 
+      {!c.tii && p.prazos && ['TAI', 'TAG'].some((k) => !p.prazos[k].livre) && (
+        <div className="small p-sem-impressao mb-2"><i className="fa fa-calendar-check me-1" />{tx('Lançamento de notas')}: {['TAI', 'TAG'].filter((k) => !p.prazos[k].livre).map((k) => <span key={k} className={`me-3 ${p.prazos[k].aberto ? 'text-success' : 'text-danger'}`} title={p.prazos[k].origem}><b>{k}</b> — {tx(p.prazos[k].texto)}</span>)}</div>
+      )}
       {nova && (
         <form className="panel p-3 mb-2 p-sem-impressao" onSubmit={criar}>
           <div className="row g-2 align-items-end">
@@ -200,7 +204,7 @@ export function PautaEsg({ c, avisar, pedir, base }) {
           </div>
         </div>
       )}
-      {p.plano ? <RegrasPlano plano={{ ...p.plano, factoresJuizo: (p.plano.factoresJuizo ?? []).length || 11 }} className="p-sem-impressao" /> : <p className="p-legenda">{REGRA_ESG}</p>}
+      {p.plano ? <RegrasPlano plano={{ ...p.plano, factoresJuizo: (p.plano.factoresJuizo ?? []).length || 11 }} className="p-sem-impressao" abrirDocumento={abrirDocumento} /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </div>
   )
 }
@@ -270,7 +274,7 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
         <div className="p-notas-final"><span>{tx('Nota da UC')}</span><Nota valor={n.final} forte />{n.mencao && n.situacao === 'aprovado' && <small>{n.mencao}</small>}</div>
       </div>
       <p className="p-legenda">{tx('A nota da UC só aparece quando todas as provas estiverem publicadas.')}</p>
-      {n.plano ? <RegrasPlano plano={n.plano} /> : <p className="p-legenda">{REGRA_ESG}</p>}
+      {n.plano ? <RegrasPlano plano={n.plano} abrirDocumento={abrirPlano} /> : <p className="p-legenda">{REGRA_ESG}</p>}
     </Cartao>
   )
 }

@@ -12,8 +12,10 @@ import './RegrasPlano.css'
             faltasMaximas, duracaoMeses, factoresJuizo, trabalho }
 */
 // o quadro: fechado por defeito (com um resumo da nota final), abre-se para ver todas as regras
-export default function RegrasPlano({ plano, aberto = false, className = '' }) {
+// abrirDocumento(id): abre o PDF do plano (no portal; sem ele, o botão não aparece)
+export default function RegrasPlano({ plano, aberto = false, className = '', abrirDocumento }) {
   const [abrir, setAbrir] = useState(aberto)
+  const [erro, setErro] = useState('')
   const regras = regrasDoPlano(plano)
   if (!regras.length) return null
   return (
@@ -23,6 +25,12 @@ export default function RegrasPlano({ plano, aberto = false, className = '' }) {
         <span className="me-auto"><b>{tx('Regras de avaliação do curso')}</b>{plano.nome && <span className="d-block small text-muted">{plano.nome}</span>}</span>
         <i className={`fa fa-chevron-${abrir ? 'up' : 'down'}`} aria-hidden="true" />
       </button>
+      {plano.ficheiroId && abrirDocumento && (
+        <div className="px-3 py-2">
+          <button type="button" className="btn btn-sm btn-white" onClick={() => abrirDocumento(plano.ficheiroId).catch((e) => setErro(e.message))}><i className="fa fa-file-pdf me-1" aria-hidden="true" />{tx('Abrir o plano do curso (PDF)')}</button>
+          {erro && <span className="text-danger small ms-2">{erro}</span>}
+        </div>
+      )}
       {abrir && (
         <dl className="p-regras-lista mb-0">
           {regras.map(([titulo, texto]) => (

@@ -197,7 +197,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // avaliação pelos planos de curso da ESG (TAI/TAG, blocos, coeficientes): nas turmas com plano
   // provas escritas, alterações de notas publicadas (autorizadas pelo Comandante) e verificação dos docentes
   const controlo = new ServicoControloAcademico({ controlo: r.controlo, academico: r.academico, planos: r.planosCurso, privados, auditoria, notificacoes, relogio })
-  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio, controlo })
+  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas: r.prazosNotas, fuso: config.fuso })
   const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg, controlo })
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao, esg })
@@ -245,7 +245,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       trabalhos: new ServicoTrabalhos(d),
       presencas: new ServicoPresencas(d),
       forum: new ServicoForum(d),
-      calendario: new ServicoCalendario(d),
+      calendario: new ServicoCalendario({ ...d, planosCurso: r.planosCurso }),
       progresso: new ServicoProgresso(d),
       questionarios: new ServicoQuestionarios(d),
       licoes: new ServicoLicoes(d),
