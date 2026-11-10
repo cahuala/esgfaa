@@ -246,6 +246,8 @@ grep -q '^PORTA_WEB=' "$CONF/pessoal.env" || echo "PORTA_WEB=$PORTA_WEB" >> "$CO
 # a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
 if ! grep -q '^BI_API_KEY=.' "$CONF/pessoal.env"; then
   CHAVE_BI="${ESG_BI_API_KEY:-}"
+  # o pendrive preparado com --chave-bi traz a chave
+  [[ -z "$CHAVE_BI" && -f "$PEN/chave-bi.txt" ]] && CHAVE_BI="$(head -n 1 "$PEN/chave-bi.txt")"
   if [[ -z "$CHAVE_BI" && -z "${ESG_ADMIN_EMAIL:-}" && -t 0 ]]; then
     echo; echo "CONSULTA DO BI (base de dados do Estado; o servidor precisa de acesso à internet)"
     read -r -s -p "  Chave (BI_API_KEY; Enter = sem consulta, pode indicar noutra actualização): " CHAVE_BI || true; echo

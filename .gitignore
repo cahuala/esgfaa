@@ -56,3 +56,6 @@ CONTAS-SERVIDOR-TESTE.md
 # instalador em pendrive: componentes descarregados e a pasta pronta (leva o Quadro Orgânico real)
 instalador/.cache/
 instalador/pendrive/
+
+# chave da consulta do BI (só no pendrive preparado com --chave-bi)
+chave-bi.txt

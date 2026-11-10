@@ -2,13 +2,15 @@
 /*
   Prepara o pendrive de instalação do Sistema de Gestão de Pessoal e Quadros (sem internet na Escola).
 
-    node instalador/preparar-pendrive.mjs [--destino <pasta ou pendrive>] [--organica <quadro.xlsx>] [--so-descarregar]
+    node instalador/preparar-pendrive.mjs [--destino <pasta ou pendrive>] [--organica <quadro.xlsx>] [--chave-bi] [--so-descarregar]
 
   1. Descarrega (uma vez, para instalador/.cache) o Node.js, o PostgreSQL, o Caddy e o WinSW, e confere os resumos.
   2. Constrói a página e junta a API com as dependências (só o que corre; sem dados de demonstração).
   3. Converte o Quadro Orgânico (Excel) em organica.json: a instalação carrega as unidades e os cargos.
   4. Copia os instaladores (Windows e Linux) e escreve o MANIFESTO (resumo de cada ficheiro, para o
      instalador saber se a cópia no pendrive está estragada).
+  Com --chave-bi, leva a chave da consulta do BI (BI_API_KEY de api-pessoal/.env) em chave-bi.txt: o
+  instalador usa-a sem perguntar. Esse pendrive (e um zip dele) passa a dar acesso à consulta: não o envie por e-mail.
   Por omissão a pasta fica em instalador/pendrive/ESG-PESSOAL (fora do git): copie-a para a raiz do pendrive.
 */
 import crypto from 'node:crypto'
@@ -161,6 +163,13 @@ async function main() {
   fs.cpSync(path.join(AQUI, 'linux'), path.join(DESTINO, 'linux'), { recursive: true })
   for (const f of ['INSTALAR-WINDOWS.bat', 'INSTALAR-LINUX.sh', 'INSTALAR-LINUX.desktop', 'PREPARAR-COMPUTADOR-WINDOWS.bat', 'PREPARAR-COMPUTADOR-LINUX.sh', 'LEIA-ME.txt']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
   for (const f of ['INSTALAR-LINUX.sh', 'INSTALAR-LINUX.desktop', 'PREPARAR-COMPUTADOR-LINUX.sh', 'linux/instalar.sh']) fs.chmodSync(path.join(DESTINO, f), 0o755)
+  if (process.argv.includes('--chave-bi')) {
+    const env = fs.existsSync(path.join(RAIZ, 'api-pessoal', '.env')) ? fs.readFileSync(path.join(RAIZ, 'api-pessoal', '.env'), 'utf8') : ''
+    const chave = /^BI_API_KEY=(.+)$/m.exec(env)?.[1]?.trim().replace(/^["']|["']$/g, '')
+    if (!chave) throw new Error('--chave-bi: não há BI_API_KEY em api-pessoal/.env.')
+    fs.writeFileSync(path.join(DESTINO, 'chave-bi.txt'), `${chave}\n`)
+    console.log('  ✓ chave da consulta do BI incluída (chave-bi.txt)')
+  }
   fs.writeFileSync(path.join(DESTINO, 'VERSAO.txt'), `${execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: RAIZ }).toString().trim()} · ${new Date().toISOString().slice(0, 10)}\n`)
 
   passo('A escrever o manifesto (resumo de cada ficheiro)…')

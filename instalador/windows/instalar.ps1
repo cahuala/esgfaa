@@ -377,6 +377,9 @@ if (-not ($linhasEnv -match '^IP_SISTEMA=')) { $linhasEnv += "IP_SISTEMA=$IpSist
 # a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
 if (-not ($linhasEnv -match '^BI_API_KEY=.+')) {
   $ChaveBi = $env:ESG_BI_API_KEY
+  # o pendrive preparado com --chave-bi traz a chave
+  $FicheiroBi = Join-Path $Pen 'chave-bi.txt'
+  if (-not $ChaveBi -and (Test-Path $FicheiroBi)) { $ChaveBi = (Get-Content $FicheiroBi -Encoding UTF8 -TotalCount 1) }
   if (-not $ChaveBi -and -not $env:ESG_ADMIN_EMAIL) {
     Write-Host ''
     Write-Host 'CONSULTA DO BI (base de dados do Estado; o servidor precisa de acesso à internet)' -ForegroundColor Cyan
