@@ -357,3 +357,11 @@
 .pes-ponto-numero { font-size: 1.35rem; font-weight: 700; line-height: 1.1; }
 .pes-aparelho { background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: .9rem; }
 .pes-aparelho-novo { border-color: #f0ad4e; box-shadow: 0 0 0 3px rgba(240, 173, 78, .15); }
+
+/* campo de data em dia/mês/ano (InputData) */
+.pes-data { position: relative; display: block; }
+.pes-data.w-auto, .w-auto > .pes-data { display: inline-block; }
+.pes-data > input[type="text"] { padding-right: 2rem; }
+.pes-data-cal { position: absolute; top: 0; right: 0; bottom: 0; width: 2rem; border: 0; background: none; color: var(--bs-secondary-color, #6c757d); }
+.pes-data-cal:hover { color: var(--bs-body-color, #212529); }
+.pes-data-nativo { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }

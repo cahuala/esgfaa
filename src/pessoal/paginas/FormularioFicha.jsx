@@ -6,7 +6,7 @@ import Carregar from '../componentes/Carregar'
 import Familiares from '../componentes/Familiares'
 import { useSessao } from '../sessao'
 import { useArvore } from '../arvore'
-import { Cabecalho, Campo, Carregando, Escolha, EscolhaCategoriaDocente, NaoEncontrado } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Escolha, EscolhaCategoriaDocente, InputData, NaoEncontrado } from '../componentes/Ui'
 import { EscolhaSituacao } from '../componentes/Situacao'
 import { BANCOS } from '../bancos'
 import { textoDespacho } from '../despacho'
@@ -76,9 +76,10 @@ export default function FormularioFicha() {
   const militar = d.tipo === 'militar'
   // estudantes e docentes podem vir de fora da ESG (outra unidade das FAA, ou civis sem unidade)
   const deFora = ['docente', 'estudante'].some((v) => d.vinculo === v || (d.outrosVinculos ?? []).includes(v))
+  const ehDocente = d.vinculo === 'docente' || (d.outrosVinculos ?? []).includes('docente')
   const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? (v.target.type === 'checkbox' ? v.target.checked : v.target.value) : v }))
   const txt = (k, extra = {}) => <input className={`form-control form-control-sm ${erro?.campo === k ? 'is-invalid' : ''}`} value={d[k] ?? ''} onChange={set(k)} {...extra} />
-  const data = (k) => txt(k, { type: 'date' })
+  const data = (k) => <InputData className={`form-control form-control-sm ${erro?.campo === k ? 'is-invalid' : ''}`} value={d[k] ?? ''} onChange={set(k)} />
   const postos = ref.postos[d.ramo] ?? []
   const quadros = ref.quadros[d.ramo] ?? []
   const categoriasCivis = ref.carreirasCivis[d.carreiraCivil]?.categorias ?? []
@@ -134,6 +135,8 @@ export default function FormularioFicha() {
   async function guardar(e) {
     e.preventDefault()
     if (passo < PASSOS.length - 1) { irPara(passo + 1); return }
+    // na Revisão só grava o botão «Registar»/«Guardar» (não um Enter num campo)
+    if (e.nativeEvent?.submitter && e.nativeEvent.submitter.id !== 'pes-guardar') return
     for (let k = 0; k < PASSOS.length - 1; k++) { const f = emFalta(k); if (f) { setErro(f); setPasso(k); return } }
     setErro(null)
     setAGuardar(true)
@@ -273,7 +276,7 @@ export default function FormularioFicha() {
           </div>
         </Seccao>
       )}
-      {atual === 'servico' && (d.vinculo === 'docente' || (d.outrosVinculos ?? []).includes('docente')) && (
+      {atual === 'servico' && ehDocente && (
         <Seccao titulo="Docente" icone="fa-chalkboard-teacher">
           <div className="row">
             <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
@@ -348,6 +351,7 @@ export default function FormularioFicha() {
             {deFora && militar && <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="O estudante ou o docente colaborador militar que vem de outra unidade das FAA: ex.: Regimento de Infantaria n.º 10, Base Aérea do Lubango. Os civis não têm unidade.">{txt('unidadeOrigem')}</Campo>}
             {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, os militares mudam de cargo por proposta de nomeação e os civis em Orgânica › cargo › Colocar civil."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])} vazio="Sem cargo" /></Campo>}
             {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
+            {!d.cargoId && !ehDocente && <Campo rotulo="Cargo fora da orgânica actual" col="col-md-8" ajuda="Para um cargo que já não consta da orgânica (orientações antigas) ou que ainda não foi criado nela: escreva-o como está no documento. Os cargos da orgânica escolhem-se acima; para criar um novo, Orgânica › unidade › Novo cargo.">{txt('funcaoActual', { maxLength: 200 })}</Campo>}
             <Campo rotulo="Na Escola desde" col="col-md-4" ajuda="Data de apresentação na ESG (para o histórico dos efectivos).">{data('dataEntradaEscola')}</Campo>
             <div className="col-12 d-flex flex-wrap gap-4 my-2">
               <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.avaliacaoFavoravel} onChange={set('avaliacaoFavoravel')} /> <span className="form-check-label">Avaliação favorável</span></label>
@@ -387,7 +391,7 @@ export default function FormularioFicha() {
             <R r="Familiares" v={(d.agregado ?? []).filter((a) => a.nome?.trim()).length ? `${d.agregado.filter((a) => a.nome?.trim()).length}` : ''} /><R r="Banco · IBAN" v={[d.banco, d.iban].filter(Boolean).join(' · ')} />
             <R r="Unidade" v={arvore.lista.find((u) => String(u.id) === String(d.unidadeId))?.nome} />
             {d.unidadeOrigem && <R r="Unidade de origem" v={d.unidadeOrigem} />}
-            {!id && <R r="Cargo" v={cargos.find((c) => String(c.id) === String(d.cargoId))?.nome} />}
+            <R r="Cargo" v={cargos.find((c) => String(c.id) === String(d.cargoId))?.nome || (d.funcaoActual && `${d.funcaoActual} (fora da orgânica)`)} />
             <R r="Fotografia" v={foto ? foto.name : fotoAtual ? 'A actual' : ''} />
           </div>
         </Seccao>
@@ -396,9 +400,11 @@ export default function FormularioFicha() {
       <div className="pes-passos-nav">
         <button type="button" className="btn btn-white" disabled={passo === 0} onClick={() => irPara(passo - 1)}><i className="fa fa-arrow-left me-1" />Anterior</button>
         <span className="small text-muted">Passo {passo + 1} de {PASSOS.length}</span>
+        {/* chaves diferentes: sem elas o React reaproveita o botão e o clique em «Próximo» que abre a
+            Revisão acabava como «Registar» (submit), gravando sem deixar rever */}
         {passo < PASSOS.length - 1
-          ? <button type="button" className="btn btn-theme" onClick={() => irPara(passo + 1)}>Próximo<i className="fa fa-arrow-right ms-1" /></button>
-          : <button id="pes-guardar" type="submit" className="btn btn-theme" disabled={aGuardar}><i className={`fa ${aGuardar ? 'fa-spinner fa-spin' : 'fa-save'} me-1`} />{id ? 'Guardar a ficha' : militar ? 'Registar o militar' : 'Registar o funcionário'}</button>}
+          ? <button key="proximo" type="button" className="btn btn-theme" onClick={() => irPara(passo + 1)}>Próximo<i className="fa fa-arrow-right ms-1" /></button>
+          : <button key="guardar" id="pes-guardar" type="submit" className="btn btn-theme" disabled={aGuardar}><i className={`fa ${aGuardar ? 'fa-spinner fa-spin' : 'fa-save'} me-1`} />{id ? 'Guardar a ficha' : militar ? 'Registar o militar' : 'Registar o funcionário'}</button>}
       </div>
     </form>
   )

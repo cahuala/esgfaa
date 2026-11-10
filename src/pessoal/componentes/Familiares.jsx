@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { dataPt } from '../formatar'
+import { InputData } from './Ui'
 
 const PARENTESCOS = [['Cônjuge', 'Cônjuge'], ['Filho(a)', 'Filho(a)'], ['Pai', 'Pai'], ['Mãe', 'Mãe'], ['Irmão/Irmã', 'Irmão/Irmã'], ['Neto(a)', 'Neto(a)'], ['Outro', 'Outro']]
 const ESTADOS = [['solteiro', 'Solteiro(a)'], ['casado', 'Casado(a)'], ['uniao_facto', 'União de facto'], ['divorciado', 'Divorciado(a)'], ['viuvo', 'Viúvo(a)']]
@@ -86,7 +87,7 @@ export default function Familiares({ lista = [], aoMudar, editar = true, aGravar
               </div>
               {C('fam-nome', 'Nome completo *', txt('nome', { placeholder: 'Nome do familiar' }), 'col-md-5')}
               {C('fam-par', 'Parentesco *', <select id="fam-par" className="form-select form-select-sm" value={f.parentesco} onChange={set('parentesco')}><option value="">Seleccione…</option>{PARENTESCOS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}{f.parentesco && !PARENTESCOS.some(([k]) => k === f.parentesco) && <option value={f.parentesco}>{f.parentesco}</option>}</select>, 'col-md-2')}
-              {C('fam-dataNascimento', 'Data de nascimento', txt('dataNascimento', { type: 'date' }))}
+              {C('fam-dataNascimento', 'Data de nascimento', <InputData id="fam-dataNascimento" value={f.dataNascimento ?? ''} onChange={set('dataNascimento')} />)}
               {C('fam-gen', 'Género', <select id="fam-gen" className="form-select form-select-sm" value={f.genero} onChange={set('genero')}><option value="">Seleccione…</option><option value="M">Masculino</option><option value="F">Feminino</option></select>)}
               {C('fam-ec', 'Estado civil', <select id="fam-ec" className="form-select form-select-sm" value={f.estadoCivil} onChange={set('estadoCivil')}><option value="">Seleccione…</option>{ESTADOS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>)}
               {C('fam-nacionalidade', 'Nacionalidade', txt('nacionalidade'))}

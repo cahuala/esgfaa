@@ -20,7 +20,7 @@ import Anexo from '../componentes/Anexo'
 import FichaAcessoPortal from '../componentes/FichaAcessoPortal'
 import { juntarAoProcesso } from '../anexos'
 import Carregar from '../componentes/Carregar'
-import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, NaoEncontrado } from '../componentes/Ui'
+import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, InputData, Modal, NaoEncontrado } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
 import { descarregarMeusDados } from '../../utils/meusDados'
 
@@ -149,7 +149,7 @@ export default function Perfil() {
               <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
               <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
               {p.unidadeOrigem && <Dado r="Unidade de origem (fora da ESG)" cheio v={p.unidadeOrigem} />}
-              <Dado r="Cargo" cheio v={p.cargo?.nome && <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</>} />
+              <Dado r="Cargo" cheio v={p.cargo?.nome ? <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</> : p.funcaoActual && <>{p.funcaoActual}<small className="text-muted ms-2">fora da orgânica</small></>} />
               <Dado r="Na Escola desde" v={dataPt(p.dataEntradaEscola || p.dataCargo || p.dataAdmissao)} />
               {!p.ativo && <Dado r="Saiu da Escola" cheio v={[dataPt(p.dataSaidaEscola), p.motivoSaida, p.destinoSaida && `destino: ${p.destinoSaida}`].filter((x) => x && x !== '—').join(' · ')} />}
               {p.observacoes && <Dado r="Observações" cheio v={p.observacoes} />}
@@ -488,7 +488,7 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
             <div className="row align-items-end border-bottom pb-2 mb-2">
               <Campo rotulo="Tipo" col="col-md-4"><Escolha valor={novo.tipo} aoMudar={(v) => setNovo({ ...novo, tipo: v })} opcoes={ref.tiposDocumento} vazio={null} /></Campo>
               <Campo rotulo="Título (opcional)" col="col-md-4"><input className="form-control form-control-sm" value={novo.titulo} onChange={(e) => setNovo({ ...novo, titulo: e.target.value })} /></Campo>
-              <Campo rotulo="Data do documento" col="col-md-4"><input type="date" className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
+              <Campo rotulo="Data do documento" col="col-md-4"><InputData className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
               <div className="col-12 mb-2"><Carregar aceitar="application/pdf,image/*,.docx" maxMb={25} compacto titulo={`Juntar ${ref.tiposDocumento[novo.tipo]?.toLowerCase() ?? 'documento'}: arraste para aqui`} progresso={aEnviar} aoEscolher={anexar} ajuda="PDF, imagem digitalizada ou Word · até 25 MB" /></div>
             </div>
           )}
@@ -540,7 +540,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
       <p className="small text-muted">Promoções, graduações, nomeações e exonerações entram no histórico pelas propostas aprovadas.</p>
       <div className="row">
         <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.eventosManuais.map((k) => [k, ref.tiposEvento[k]])} vazio={null} /></Campo>
-        <Campo rotulo="Data"><input type="date" className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
+        <Campo rotulo="Data"><InputData className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
         <Campo rotulo={d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho…)"><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
         <Campo rotulo="Entidade"><input className="form-control form-control-sm" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
@@ -565,8 +565,8 @@ function FormCurso({ p, curso, aoFechar, aoGuardar }) {
         <Campo rotulo="É condição de promoção (art. 52.º)?" col="col-12" ajuda="Escolha o curso da lei a que corresponde, para contar na verificação da promoção."><Escolha valor={d.chave} aoMudar={(v) => setD({ ...d, chave: v, tipo: v ? 'promocao' : d.tipo })} opcoes={ref.cursosPromocao} vazio="Não" /></Campo>
         <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={{ formacao: 'Formação', promocao: 'Promoção', qualificacao: 'Qualificação', actualizacao: 'Actualização', academico: 'Académico' }} vazio={null} /></Campo>
         <Campo rotulo="Local"><input className="form-control form-control-sm" value={d.local} onChange={(e) => setD({ ...d, local: e.target.value })} /></Campo>
-        <Campo rotulo="Início" col="col-md-3"><input type="date" className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
-        <Campo rotulo="Fim" col="col-md-3"><input type="date" className="form-control form-control-sm" value={d.fim} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
+        <Campo rotulo="Início" col="col-md-3"><InputData className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
+        <Campo rotulo="Fim" col="col-md-3"><InputData className="form-control form-control-sm" value={d.fim} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
         <Campo rotulo="Aproveitamento" col="col-md-3"><Escolha valor={String(d.aproveitamento)} aoMudar={(v) => setD({ ...d, aproveitamento: v === 'true' })} opcoes={[['true', 'Com aproveitamento'], ['false', 'Sem aproveitamento']]} vazio={null} /></Campo>
         <Campo rotulo="Classificação (0–20)" col="col-md-3"><input type="number" min="0" max="20" step="0.01" className="form-control form-control-sm" value={d.classificacao} onChange={(e) => setD({ ...d, classificacao: e.target.value })} /></Campo>
       </div>
@@ -583,7 +583,7 @@ function TerminarGraduacao({ p, g, aoFechar, aoGuardar }) {
       {erro && <div className="alert alert-danger">{erro}</div>}
       <p className="small text-muted">A graduação cessa com o fim do cargo que a justificou, a promoção ou por despacho (art. 67.º).</p>
       <div className="row">
-        <Campo rotulo="Data de fim"><input type="date" className="form-control form-control-sm" value={d.fim} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
+        <Campo rotulo="Data de fim"><InputData className="form-control form-control-sm" value={d.fim} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
         <Campo rotulo="Motivo"><input className="form-control form-control-sm" value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} /></Campo>
       </div>
     </Modal>

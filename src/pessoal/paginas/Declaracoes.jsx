@@ -4,7 +4,7 @@ import { api } from '../api'
 import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Foto from '../componentes/Foto'
-import { Cabecalho, Carregando, Erro, Modal } from '../componentes/Ui'
+import { Cabecalho, Carregando, Erro, InputData, Modal } from '../componentes/Ui'
 import { gerarLote, registarEmissao, vencimentoDaTabela } from '../docPessoal'
 import { kwanzas } from '../docPessoal/base'
 import { brasaoPng, emblema } from '../documentos'
@@ -151,9 +151,9 @@ export default function Declaracoes() {
           <div className="pes-pesquisa flex-grow-1"><i className="fa fa-search" /><input className="form-control form-control-sm" value={filtros.q} onChange={(e) => setFiltros({ ...filtros, q: e.target.value })} placeholder="Pesquisar por NIP, nome, tipo ou nº de documento…" aria-label="Pesquisar declarações" /></div>
           <div className="d-flex gap-1 align-items-center px-2 py-1 rounded" style={{ background: '#faf8f2' }}>
             <span className="small fw-semibold text-muted">Emitidas de</span>
-            <input type="date" className="form-control form-control-sm w-auto" value={filtros.de} onChange={(e) => setFiltros({ ...filtros, de: e.target.value })} aria-label="De" />
+            <InputData className="form-control form-control-sm w-auto" value={filtros.de} onChange={(e) => setFiltros({ ...filtros, de: e.target.value })} aria-label="De" />
             <span className="small text-muted">a</span>
-            <input type="date" className="form-control form-control-sm w-auto" value={filtros.ate} onChange={(e) => setFiltros({ ...filtros, ate: e.target.value })} aria-label="Até" />
+            <InputData className="form-control form-control-sm w-auto" value={filtros.ate} onChange={(e) => setFiltros({ ...filtros, ate: e.target.value })} aria-label="Até" />
             <button type="button" className="btn btn-xs btn-white" disabled={!dados?.length} onClick={relacao} title="Imprimir a relação das declarações emitidas no período"><i className="fa fa-print me-1" />Relação</button>
           </div>
           <button type="button" className="btn btn-xs btn-white" disabled={!dados?.length} onClick={() => exportarExcel('Declarações emitidas', colunas, dados)}><i className="fa fa-file-excel me-1 text-success" />Excel</button>

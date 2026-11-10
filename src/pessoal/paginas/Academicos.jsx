@@ -7,7 +7,7 @@ import Foto from '../componentes/Foto'
 import Carregar from '../componentes/Carregar'
 import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
-import { Cabecalho, Campo, Carregando, Erro, Escolha, EscolhaCategoriaDocente, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Erro, Escolha, EscolhaCategoriaDocente, InputData, Modal, Painel } from '../componentes/Ui'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
 import { textoDespacho } from '../despacho'
 
@@ -305,15 +305,15 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
                 {bi.texto && <div className={`small mt-1 ${bi.estado === 'ok' ? 'text-success' : 'text-danger'}`}><i className={`fa ${bi.estado === 'ok' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-1`} />{bi.texto}</div>}
               </Campo>
               <Campo rotulo="Nome completo" obrigatorio col="col-md-12"><input {...campo('nome')} required minLength={5} /></Campo>
-              <Campo rotulo="Data de nascimento" col="col-md-4"><input {...campo('dataNascimento', { type: 'date' })} /></Campo>
+              <Campo rotulo="Data de nascimento" col="col-md-4"><InputData {...campo('dataNascimento')} /></Campo>
               <Campo rotulo="Género" col="col-md-4"><Escolha valor={d.genero} aoMudar={set('genero')} opcoes={ref.generos} /></Campo>
               <Campo rotulo="Estado civil" col="col-md-4"><Escolha valor={d.estadoCivil} aoMudar={set('estadoCivil')} opcoes={ref.estadosCivis} /></Campo>
             </div>
           </div>
         </div>
         <div className="row gx-3">
-          <Campo rotulo="Data de emissão do BI" col="col-md-4"><input {...campo('biEmitidoEm', { type: 'date' })} /></Campo>
-          <Campo rotulo="Validade do BI" col="col-md-4"><input {...campo('biValidade', { type: 'date' })} /></Campo>
+          <Campo rotulo="Data de emissão do BI" col="col-md-4"><InputData {...campo('biEmitidoEm')} /></Campo>
+          <Campo rotulo="Validade do BI" col="col-md-4"><InputData {...campo('biValidade')} /></Campo>
           <Campo rotulo="Local de emissão do BI" col="col-md-4"><input {...campo('biLocalEmissao', { placeholder: 'ex.: Luanda' })} /></Campo>
           <Campo rotulo="País de nascimento" col="col-md-3"><input {...campo('paisNascimento')} /></Campo>
           <Campo rotulo="Província" col="col-md-3"><Escolha valor={d.provincia} aoMudar={set('provincia')} opcoes={ref.provincias} /></Campo>
@@ -335,7 +335,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
             <Campo rotulo="NIP" obrigatorio col="col-md-4"><input {...campo('nip')} required /></Campo>
             <Campo rotulo="Nome de guerra" col="col-md-4"><input {...campo('nomeGuerra')} /></Campo>
             <Campo rotulo="Especialidade" col="col-md-4"><input {...campo('especialidade')} /></Campo>
-            <Campo rotulo="Data de incorporação" col="col-md-4"><input {...campo('dataIngresso', { type: 'date' })} /></Campo>
+            <Campo rotulo="Data de incorporação" col="col-md-4"><InputData {...campo('dataIngresso')} /></Campo>
             <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="Se vem de outra unidade das FAA (ex.: Regimento de Infantaria n.º 10). Se é da ESG, ponha a unidade depois, na ficha."><input {...campo('unidadeOrigem')} /></Campo>
           </div>
         </>}

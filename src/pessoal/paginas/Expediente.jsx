@@ -5,7 +5,7 @@ import { useSessao } from '../sessao'
 import { useDados } from '../useDados'
 import Tabela from '../componentes/Tabela'
 import Carregar from '../componentes/Carregar'
-import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Erro, Escolha, InputData, Modal, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
 
 const CAIXAS = [['por_receber', 'Por receber', 'fa-inbox'], ['na_unidade', 'Na minha unidade', 'fa-folder-open'], ['enviados', 'Enviados', 'fa-paper-plane'], ['arquivo', 'Arquivo', 'fa-archive']]
@@ -53,8 +53,8 @@ function Caixas() {
       <ul className="nav nav-tabs mb-3">{caixas.map(([k, t, ic]) => <li key={k} className="nav-item"><button type="button" className={`nav-link ${caixa === k ? 'active' : ''}`} onClick={() => setParams({ caixa: k })}><i className={`fa ${ic} me-1`} />{t}</button></li>)}</ul>
       {comFiltros && (
         <div className="row g-2 mb-2 align-items-end">
-          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">Registado de</label><input type="date" className="form-control form-control-sm" value={filtros.de ?? ''} onChange={(e) => mudar('de', e.target.value)} /></div>
-          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">até</label><input type="date" className="form-control form-control-sm" value={filtros.ate ?? ''} min={filtros.de} onChange={(e) => mudar('ate', e.target.value)} /></div>
+          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">Registado de</label><InputData className="form-control form-control-sm" value={filtros.de ?? ''} onChange={(e) => mudar('de', e.target.value)} /></div>
+          <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">até</label><InputData className="form-control form-control-sm" value={filtros.ate ?? ''} min={filtros.de} onChange={(e) => mudar('ate', e.target.value)} /></div>
           <div className="col-6 col-md-3"><label className="form-label small mb-0 text-muted">Sentido</label><Escolha valor={filtros.sentido} aoMudar={(v) => mudar('sentido', v)} opcoes={{ entrada: 'Entrada (de fora da Escola)', saida: 'Saída (para fora da Escola)', interno: 'Interno' }} vazio="Todos" /></div>
           <div className="col-6 col-md-2"><label className="form-label small mb-0 text-muted">Armário</label><input className="form-control form-control-sm" defaultValue={filtros.armario ?? ''} key={filtros.armario ?? ''} onBlur={(e) => mudar('armario', e.target.value.trim())} onKeyDown={(e) => e.key === 'Enter' && mudar('armario', e.target.value.trim())} placeholder="Ex.: A1" /></div>
         </div>
@@ -115,7 +115,7 @@ function NovoDocumento({ aoFechar, aoCriar }) {
         <Campo rotulo="Assunto" obrigatorio col="col-md-8"><input className="form-control form-control-sm" value={d.assunto} onChange={set('assunto')} /></Campo>
         <Campo rotulo="N.º do documento" col="col-md-4"><input className="form-control form-control-sm" placeholder="Ex.: ____/ESG/2026" value={d.numero} onChange={set('numero')} /></Campo>
         {d.sentido !== 'interno' && <Campo rotulo={d.sentido === 'entrada' ? 'Veio de (entidade externa)' : 'Para (entidade externa)'} col="col-md-8"><input className="form-control form-control-sm" value={d.entidadeExterna} onChange={set('entidadeExterna')} /></Campo>}
-        <Campo rotulo="Prazo de resposta" col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.prazo} onChange={set('prazo')} /></Campo>
+        <Campo rotulo="Prazo de resposta" col="col-md-4"><InputData className="form-control form-control-sm" value={d.prazo} onChange={set('prazo')} /></Campo>
         <Campo rotulo="Resumo" col="col-12"><textarea className="form-control form-control-sm" rows={3} value={d.resumo} onChange={set('resumo')} /></Campo>
         <Campo rotulo={d.sentido === 'entrada' ? 'Distribuir também a (opcional)' : 'Enviar a (áreas da Escola)'} obrigatorio={d.sentido === 'interno'} col="col-md-6">{unidades ? <Destinos valor={d.destinos} aoMudar={set('destinos')} unidades={unidades} minha={utilizador.unidadeId} /> : <Carregando />}</Campo>
         <div className="col-md-6">

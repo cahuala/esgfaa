@@ -134,3 +134,12 @@ describe('postos da Marinha', () => {
     assert.equal(problemaNaFicha({ tipo: 'militar', ramo: 'MGA', posto: 'posto_inventado', fps: 'SMO', nip: '1' })?.[0], 'posto')
   })
 })
+
+describe('Ficha: cargo fora da orgânica actual', () => {
+  it('sem cargo da orgânica, o cargo escrito à mão (orientações antigas) aparece como cargo', async () => {
+    const { comDerivados } = await import('../../src/dominio/pessoal/ficha.js')
+    assert.equal(comDerivados({ tipo: 'civil', nome: 'A', funcaoActual: 'Chefe da Secção de Logística' }).cargoNome, 'Chefe da Secção de Logística')
+    assert.equal(comDerivados({ tipo: 'civil', nome: 'A', funcaoActual: 'Antigo', cargo: { nome: 'Chefe' } }).cargoNome, 'Chefe')
+    assert.equal(comDerivados({ tipo: 'civil', nome: 'A' }).cargoNome, '')
+  })
+})

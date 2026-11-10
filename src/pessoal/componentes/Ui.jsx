@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Espera from '../../components/Espera/Espera'
 
@@ -158,5 +158,47 @@ export function EscolhaCategoriaDocente({ valor, aoMudar, referencias: ref, ...r
       {ref.categoriasDocenteContratado && <optgroup label="Especialmente contratado">{ref.categoriasDocenteContratado.map((c) => <option key={c} value={c}>{c}</option>)}</optgroup>}
       {valor && !conhecida && <option value={valor}>{valor}</option>}
     </select>
+  )
+}
+
+/*
+  Campo de data sempre em dia/mês/ano (o <input type="date"> segue a língua do Windows: num Windows em
+  inglês mostrava mês/dia/ano). Escreve-se 25122026 ou 25/12/2026; o botão abre o calendário do navegador.
+  O valor que entra e sai continua aaaa-mm-dd, como no <input type="date">.
+*/
+const dataParaPt = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso ?? '')); return m ? `${m[3]}/${m[2]}/${m[1]}` : '' }
+function dataParaIso(t) {
+  if (!t) return ''
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t)
+  if (!m) return null
+  const iso = `${m[3]}-${m[2]}-${m[1]}`
+  const d = new Date(`${iso}T12:00:00Z`)
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso ? iso : null
+}
+export function InputData({ value, onChange, min, max, className = 'form-control form-control-sm', style, ...resto }) {
+  const [texto, setTexto] = useState(() => dataParaPt(value))
+  const [visto, setVisto] = useState(value)
+  const nativo = useRef(null)
+  if (value !== visto) {
+    setVisto(value)
+    if (dataParaIso(texto) !== String(value ?? '').slice(0, 10)) setTexto(dataParaPt(value))
+  }
+  const mudar = (iso) => onChange?.({ target: { value: iso, type: 'date', name: resto.name } })
+  function escrever(e) {
+    const n = e.target.value.replace(/\D/g, '').slice(0, 8)
+    const t = [n.slice(0, 2), n.slice(2, 4), n.slice(4)].filter(Boolean).join('/')
+    setTexto(t)
+    const iso = dataParaIso(t)
+    if (iso !== null && iso !== String(value ?? '').slice(0, 10)) mudar(iso)
+  }
+  // incompleta ou impossível (31/02): ao sair do campo, volta à que está guardada
+  const sair = () => { if (dataParaIso(texto) === null) setTexto(dataParaPt(value)) }
+  const invalida = texto.length === 10 && dataParaIso(texto) === null
+  return (
+    <span className={`pes-data${/\bw-auto\b/.test(className) ? ' w-auto' : ''}`} style={style}>
+      <input {...resto} type="text" inputMode="numeric" autoComplete="off" placeholder="dd/mm/aaaa" maxLength={10} className={`${className} ${invalida ? 'is-invalid' : ''}`} value={texto} onChange={escrever} onBlur={sair} />
+      <button type="button" className="pes-data-cal" tabIndex={-1} aria-label="Abrir o calendário" disabled={resto.disabled} onClick={() => { try { nativo.current?.showPicker() } catch { nativo.current?.focus() } }}><i className="fa fa-calendar-alt" /></button>
+      <input ref={nativo} type="date" className="pes-data-nativo" tabIndex={-1} aria-hidden="true" value={String(value ?? '').slice(0, 10)} min={min} max={max} onChange={(e) => { setTexto(dataParaPt(e.target.value)); mudar(e.target.value) }} />
+    </span>
   )
 }

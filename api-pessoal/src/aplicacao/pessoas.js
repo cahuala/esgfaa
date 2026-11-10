@@ -356,7 +356,7 @@ export class ServicoPessoas {
     const bi = String(numero ?? '').trim().toUpperCase().replace(/\s/g, '')
     if (!/^[0-9]{9}[A-Z]{2}[0-9]{3}$/.test(bi)) throw invalido('Número de BI inválido (ex.: 001234567LA041).', 'bi')
     const { url, chave } = this.config.bi
-    if (!chave) throw new ErroDominio('A consulta do BI não está configurada (BI_API_KEY no servidor).', 'indisponivel')
+    if (!chave) throw new ErroDominio('A consulta do BI não está configurada neste servidor: falta a chave (BI_API_KEY). Corra o instalador outra vez (actualização) e indique a chave; o servidor precisa de acesso à internet. Até lá, preencha a ficha à mão.', 'indisponivel')
     let j
     try {
       const r = await this.enviar(`${url}?bi=${encodeURIComponent(bi)}`, { headers: { Authorization: `Basic ${chave}`, Accept: 'application/json' }, timeout: 15_000 })

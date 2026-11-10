@@ -243,6 +243,17 @@ fi
 # numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
 sed -i "s|^ENDERECO=.*|ENDERECO=$DOMINIO|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=$ORIGENS|; s|^PORTA_WEB=.*|PORTA_WEB=$PORTA_WEB|" "$CONF/pessoal.env"
 grep -q '^PORTA_WEB=' "$CONF/pessoal.env" || echo "PORTA_WEB=$PORTA_WEB" >> "$CONF/pessoal.env"
+# a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
+if ! grep -q '^BI_API_KEY=.' "$CONF/pessoal.env"; then
+  CHAVE_BI="${ESG_BI_API_KEY:-}"
+  if [[ -z "$CHAVE_BI" && -z "${ESG_ADMIN_EMAIL:-}" && -t 0 ]]; then
+    echo; echo "CONSULTA DO BI (base de dados do Estado; o servidor precisa de acesso à internet)"
+    read -r -s -p "  Chave (BI_API_KEY; Enter = sem consulta, pode indicar noutra actualização): " CHAVE_BI || true; echo
+  fi
+  CHAVE_BI="$(printf '%s' "$CHAVE_BI" | tr -d '[:space:]')"
+  if [[ -n "$CHAVE_BI" ]]; then sed -i '/^BI_API_KEY=/d' "$CONF/pessoal.env"; echo "BI_API_KEY=$CHAVE_BI" >> "$CONF/pessoal.env"; ok "chave da consulta do BI guardada"; fi
+  unset CHAVE_BI
+fi
 # shellcheck disable=SC1091
 set -a; . "$CONF/pessoal.env"; set +a
 

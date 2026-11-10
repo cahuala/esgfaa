@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
+import { dataPt } from '../formatar'
+import { InputData } from './Ui'
 
 const SITUACOES_MILITARES = [['adiado', 'Adiado'], ['disponibilidade', 'Disponibilidade'], ['isento', 'Isento'], ['nao_apto', 'Não apto'], ['refratario', 'Refratário'], ['militar', 'Militar']]
 const NIVEIS = [['MB', 'Muito bem'], ['B', 'Bem'], ['R', 'Razoável']]
@@ -47,7 +49,7 @@ export default function RegistoBiografico({ p, editar, aoMudar }) {
     }
   }
   const inp = (val, aoMudarV, extra = {}) => (em ? <input className="form-control form-control-sm" value={val ?? ''} onChange={aoMudarV} {...extra} /> : <span>{val || '—'}</span>)
-  const data = (val, aoMudarV, rot) => inp(val, aoMudarV, { type: 'date', 'aria-label': rot })
+  const data = (val, aoMudarV, rot) => (em ? <InputData value={val ?? ''} onChange={aoMudarV} aria-label={rot} /> : <span>{val ? dataPt(val) : '—'}</span>)
 
   return (
     <>

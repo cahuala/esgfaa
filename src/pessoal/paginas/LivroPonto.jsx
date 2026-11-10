@@ -4,7 +4,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Foto from '../componentes/Foto'
 import Tabela from '../componentes/Tabela'
-import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Erro, Escolha, InputData, Modal, Painel } from '../componentes/Ui'
 import { documentoPdf } from '../exportar'
 
 const hojeLuanda = () => new Date(Date.now() + 3_600_000).toISOString().slice(0, 10)
@@ -102,7 +102,7 @@ function Dia() {
       <div className="pes-filtros bg-white rounded mb-3 border">
         <div className="input-group input-group-sm" style={{ width: 'auto' }}>
           <button type="button" className="btn btn-white" aria-label="Dia anterior" onClick={() => setData(new Date(new Date(`${data}T12:00:00Z`).getTime() - 86_400_000).toISOString().slice(0, 10))}><i className="fa fa-chevron-left" /></button>
-          <input type="date" className="form-control form-control-sm" value={data} max={l.hoje} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Dia" />
+          <InputData className="form-control form-control-sm" value={data} max={l.hoje} onChange={(e) => e.target.value && setData(e.target.value)} aria-label="Dia" />
           <button type="button" className="btn btn-white" aria-label="Dia seguinte" disabled={data >= l.hoje} onClick={() => setData(new Date(new Date(`${data}T12:00:00Z`).getTime() + 86_400_000).toISOString().slice(0, 10))}><i className="fa fa-chevron-right" /></button>
         </div>
         {data !== l.hoje && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setData(l.hoje)}>Hoje</button>}
@@ -213,7 +213,7 @@ function MarcacaoManual({ pessoas, pessoa, data, hoje, aoFechar, aoGuardar }) {
         <p className="small text-muted">Para quando o aparelho não leu o dedo ou estava desligado. Fica com o seu nome e a justificação, na auditoria.</p>
         <div className="row gx-3">
           <Campo rotulo="Pessoa" obrigatorio col="col-12"><Escolha valor={d.pessoaId} aoMudar={(v) => setD({ ...d, pessoaId: v })} opcoes={pessoas.map((p) => [String(p.id), `${p.nome} (n.º ${p.numeroAparelho})`])} vazio="Escolha" required aria-label="Pessoa" /></Campo>
-          <Campo rotulo="Dia" obrigatorio col="col-6"><input type="date" className="form-control form-control-sm" max={hoje} value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} required /></Campo>
+          <Campo rotulo="Dia" obrigatorio col="col-6"><InputData className="form-control form-control-sm" max={hoje} value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} required /></Campo>
           <Campo rotulo="Hora" obrigatorio col="col-6"><input type="time" className="form-control form-control-sm" value={d.hora} onChange={(e) => setD({ ...d, hora: e.target.value })} required /></Campo>
           <Campo rotulo="Justificação" obrigatorio col="col-12"><input className="form-control form-control-sm" value={d.justificacao} onChange={(e) => setD({ ...d, justificacao: e.target.value })} minLength={5} maxLength={300} required placeholder="ex.: o aparelho não leu o dedo" /></Campo>
         </div>

@@ -57,7 +57,8 @@ export function comDerivados(p, hoje = new Date()) {
   f.registo = lerRegisto(p.registo)
   f.vencimento = p.vencimento ? Number(p.vencimento) : null
   f.unidadeNome = p.unidade?.nome ?? ''
-  f.cargoNome = p.cargo?.nome ?? ''
+  // sem cargo da orgânica: o que se escreveu (cargo de uma orgânica antiga, ou a função de um colaborador de fora)
+  f.cargoNome = p.cargo?.nome || p.funcaoActual || ''
   // a função do cargo (comando, direcção/chefia, estado-maior, execução): conta para a ordem hierárquica
   f.funcao = p.cargo?.funcao ?? null
   // o posto que o cargo exige (para encontrar quem está num cargo de posto acima do seu)

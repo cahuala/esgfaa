@@ -6,7 +6,7 @@ import { useSessao } from '../sessao'
 import Tabela from '../componentes/Tabela'
 import Foto from '../componentes/Foto'
 import EscolherPessoa from '../componentes/EscolherPessoa'
-import { Cabecalho, Campo, Carregando, Escolha, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Escolha, InputData, Modal, Painel } from '../componentes/Ui'
 import { dataPt } from '../formatar'
 import Anexo from '../componentes/Anexo'
 import { juntarAoProcesso } from '../anexos'
@@ -45,8 +45,8 @@ function NovaAusencia({ aoFechar, aoGuardar }) {
           {pessoa ? <div className="d-flex align-items-center gap-2"><strong>{pessoa.postoAbreviatura ? `${pessoa.postoAbreviatura} ` : ''}{pessoa.nome}</strong><button type="button" className="btn btn-xs btn-secondary" onClick={() => setPessoa(null)}>mudar</button></div> : <EscolherPessoa aoEscolher={setPessoa} />}
         </Campo>
         <Campo rotulo="Tipo" obrigatorio col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.tiposAusencia} vazio={null} /></Campo>
-        <Campo rotulo="Início" obrigatorio col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
-        <Campo rotulo={semFim ? 'Fim (vazio enquanto durar)' : 'Último dia'} obrigatorio={!semFim} col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.fim} min={d.inicio} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
+        <Campo rotulo="Início" obrigatorio col="col-md-4"><InputData className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
+        <Campo rotulo={semFim ? 'Fim (vazio enquanto durar)' : 'Último dia'} obrigatorio={!semFim} col="col-md-4"><InputData className="form-control form-control-sm" value={d.fim} min={d.inicio} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
         <Campo rotulo="Motivo" col="col-md-7"><input className="form-control form-control-sm" maxLength={300} value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} placeholder={d.tipo === 'hospital' ? 'Ex.: internamento no Hospital Militar Principal' : d.tipo === 'detido' ? 'Ex.: detenção disciplinar' : ''} /></Campo>
         <Campo rotulo="Documento" col="col-md-5"><input className="form-control form-control-sm" maxLength={150} value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} placeholder="Participação, guia de baixa, auto…" /></Campo>
         <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useDados } from '../useDados'
 import Tabela from '../componentes/Tabela'
-import { Cabecalho, Carregando, Painel } from '../componentes/Ui'
+import { Cabecalho, Carregando, InputData, Painel } from '../componentes/Ui'
 import { dataHoraPt } from '../formatar'
 
 const ACOES = { entrar: 'Entrou', entrada_falhada: 'Entrada falhada', acesso_recusado: 'Acesso recusado (fora da rede)', ver_ficha: 'Consultou ficha', criar_ficha: 'Criou ficha', editar_ficha: 'Editou ficha', exportar: 'Exportou dados', criar_proposta: 'Criou proposta', submeter_proposta: 'Submeteu proposta', aprovar_proposta: 'Aprovou proposta', rejeitar_proposta: 'Rejeitou proposta', devolver_proposta: 'Devolveu proposta', cancelar_proposta: 'Cancelou proposta', registar_licenca: 'Registou licença', mudar_senha: 'Mudou a palavra-passe', criar_utilizador: 'Criou utilizador', editar_utilizador: 'Editou utilizador' }
@@ -23,8 +23,8 @@ export default function Auditoria() {
       <Cabecalho titulo="Auditoria" subtitulo="registo de todas as ações" migalhas={[['Administração'], ['Auditoria']]} />
       <Painel>
         <div className="row mb-2">
-          <div className="col-md-3"><label className="small text-muted">De</label><input type="date" className="form-control form-control-sm" value={f.de} onChange={(e) => setF({ ...f, de: e.target.value })} /></div>
-          <div className="col-md-3"><label className="small text-muted">Até</label><input type="date" className="form-control form-control-sm" value={f.ate} onChange={(e) => setF({ ...f, ate: e.target.value })} /></div>
+          <div className="col-md-3"><label className="small text-muted">De</label><InputData className="form-control form-control-sm" value={f.de} onChange={(e) => setF({ ...f, de: e.target.value })} /></div>
+          <div className="col-md-3"><label className="small text-muted">Até</label><InputData className="form-control form-control-sm" value={f.ate} onChange={(e) => setF({ ...f, ate: e.target.value })} /></div>
         </div>
         {erro ? <div className="alert alert-danger">{erro}</div> : !linhas ? <Carregando /> : <Tabela titulo="Auditoria do sistema de pessoal" colunas={colunas} linhas={linhas} porPagina={50} />}
       </Painel>

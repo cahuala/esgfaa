@@ -7,7 +7,7 @@ import { ICONE_UNIDADE } from '../arvore'
 import { documentoExcel, documentoPdf } from '../exportar'
 import Foto from '../componentes/Foto'
 import Tabela from '../componentes/Tabela'
-import { Cabecalho, Campo, Carregando, Erro, Escolha, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Erro, Escolha, InputData, Modal, Painel } from '../componentes/Ui'
 
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0)
 const corPct = (p) => (p >= 80 ? '#2e7d32' : p >= 50 ? '#e65100' : '#c62828')
@@ -441,7 +441,7 @@ function ColocarCivil({ c, aoFechar, aoGuardar }) {
           )}
         </>
       )}
-      <Campo rotulo="No cargo desde" col="col-md-4"><input type="date" className="form-control form-control-sm" value={data} onChange={(e) => setData(e.target.value)} /></Campo>
+      <Campo rotulo="No cargo desde" col="col-md-4"><InputData className="form-control form-control-sm" value={data} onChange={(e) => setData(e.target.value)} /></Campo>
     </Modal>
   )
 }

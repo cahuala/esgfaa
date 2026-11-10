@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { dataPt } from '../formatar'
-import { Campo, Modal } from './Ui'
+import { Campo, InputData, Modal } from './Ui'
 import Anexo from './Anexo'
 import { juntarAoProcesso } from '../anexos'
 
@@ -146,7 +146,7 @@ function NovoRegisto({ p, d, setD, aoFechar, aoGuardar }) {
     <Modal titulo={`${t.nome} — ${p.nome}`} aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-white" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" disabled={aGravar} onClick={guardar}><i className="fa fa-save me-1" />Registar</button></>}>
       {erro && <div className="alert alert-danger py-2">{erro}</div>}
       <div className="row">
-        <Campo rotulo="Data" col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
+        <Campo rotulo="Data" col="col-md-4"><InputData className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
         <Campo rotulo={t.infr} obrigatorio col="col-md-8"><input className="form-control form-control-sm" value={d.descricao} maxLength={1000} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         {comPena && <Campo rotulo={d.tipo === 'condenacao' ? 'Pena imposta' : 'Pena aplicada'} col="col-md-6"><input className="form-control form-control-sm" list="penas" value={d.pena} maxLength={300} onChange={(e) => setD({ ...d, pena: e.target.value })} /><datalist id="penas">{(d.tipo === 'punicao' ? ['Repreensão', 'Repreensão registada', 'Multa', 'Suspensão', 'Despromoção', 'Demissão'] : ['Pena de prisão', 'Pena suspensa', 'Multa']).map((x) => <option key={x} value={x} />)}</datalist></Campo>}
         <Campo rotulo={t.autoridade} col={comPena ? 'col-md-6' : 'col-md-6'}><input className="form-control form-control-sm" value={d.entidade} maxLength={150} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>

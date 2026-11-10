@@ -127,7 +127,7 @@ function manifesto(raiz) {
   const andar = (d) => {
     for (const f of fs.readdirSync(d, { withFileTypes: true })) {
       const p = path.join(d, f.name)
-      if (f.isDirectory()) { if (!['registos', 'node_modules'].includes(f.name)) andar(p) } else if (f.name !== 'MANIFESTO.txt') linhas.push(`${sha(p)}  ${path.relative(raiz, p).split(path.sep).join('/')}`)
+      if (f.isDirectory()) { if (f.name !== 'registos') andar(p) } else if (f.name !== 'MANIFESTO.txt') linhas.push(`${sha(p)}  ${path.relative(raiz, p).split(path.sep).join('/')}`)
     }
   }
   andar(raiz)

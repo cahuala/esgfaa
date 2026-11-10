@@ -374,6 +374,18 @@ $linhasEnv = @((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*'
 $linhasEnv = @($linhasEnv -replace '^IP_SISTEMA=.*', "IP_SISTEMA=$IpSistema")
 if (-not ($linhasEnv -match '^PORTA_WEB=')) { $linhasEnv += "PORTA_WEB=$PortaWeb" }
 if (-not ($linhasEnv -match '^IP_SISTEMA=')) { $linhasEnv += "IP_SISTEMA=$IpSistema" }
+# a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
+if (-not ($linhasEnv -match '^BI_API_KEY=.+')) {
+  $ChaveBi = $env:ESG_BI_API_KEY
+  if (-not $ChaveBi -and -not $env:ESG_ADMIN_EMAIL) {
+    Write-Host ''
+    Write-Host 'CONSULTA DO BI (base de dados do Estado; o servidor precisa de acesso à internet)' -ForegroundColor Cyan
+    $ChaveBi = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((Read-Host '  Chave (BI_API_KEY; Enter = sem consulta, pode indicar noutra actualização)' -AsSecureString)))
+  }
+  $ChaveBi = "$ChaveBi".Trim()
+  if ($ChaveBi) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^BI_API_KEY=' }) + "BI_API_KEY=$ChaveBi"; Ok 'chave da consulta do BI guardada' }
+  $ChaveBi = $null
+}
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhasEnv, (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }

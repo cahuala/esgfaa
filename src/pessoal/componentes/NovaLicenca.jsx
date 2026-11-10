@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import EscolherPessoa from './EscolherPessoa'
-import { Campo, Condicoes, Escolha, Modal } from './Ui'
+import { Campo, Condicoes, Escolha, InputData, Modal } from './Ui'
 import Anexo from './Anexo'
 import { juntarAoProcesso } from '../anexos'
 
@@ -43,8 +43,8 @@ export default function NovaLicenca({ pessoa: inicial, aoFechar, aoGuardar }) {
           {pessoa ? <div className="d-flex align-items-center gap-2"><strong>{pessoa.postoAbreviatura ? `${pessoa.postoAbreviatura} ` : ''}{pessoa.nome}</strong>{!inicial && <button type="button" className="btn btn-xs btn-secondary" onClick={() => setPessoa(null)}>mudar</button>}</div> : <EscolherPessoa aoEscolher={setPessoa} />}
         </Campo>
         <Campo rotulo="Tipo" obrigatorio col="col-md-4"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={tipos} vazio={null} /></Campo>
-        <Campo rotulo="Início" obrigatorio col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
-        <Campo rotulo="Fim" obrigatorio col="col-md-4"><input type="date" className="form-control form-control-sm" value={d.fim} min={d.inicio} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
+        <Campo rotulo="Início" obrigatorio col="col-md-4"><InputData className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
+        <Campo rotulo="Fim" obrigatorio col="col-md-4"><InputData className="form-control form-control-sm" value={d.fim} min={d.inicio} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>
         <Campo rotulo="Despacho / documento"><input className="form-control form-control-sm" value={d.despacho} onChange={(e) => setD({ ...d, despacho: e.target.value })} /></Campo>
         <Campo rotulo="Observações"><input className="form-control form-control-sm" value={d.observacoes} onChange={(e) => setD({ ...d, observacoes: e.target.value })} /></Campo>
         <Campo rotulo="Despacho / documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>

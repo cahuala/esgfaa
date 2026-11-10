@@ -8,7 +8,7 @@ import { fichasDeProposta } from '../documentos'
 import { documentosDaProposta, gerarLote } from '../docPessoal'
 import Foto from '../componentes/Foto'
 import EscolherPessoa from '../componentes/EscolherPessoa'
-import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, Modal, Painel } from '../componentes/Ui'
+import { Cabecalho, Campo, Carregando, Condicoes, Erro, Escolha, Estado, InputData, Modal, Painel } from '../componentes/Ui'
 import { dataHoraPt, dataPt } from '../formatar'
 import Anexo from '../componentes/Anexo'
 import { juntarAProposta } from '../anexos'
@@ -185,8 +185,8 @@ function Adicionar({ p, cargos, aoFechar, aoAdicionar }) {
         {p.tipo === 'graduacao' && <Campo rotulo="Posto da graduação" obrigatorio><Escolha valor={item.postoProposto} aoMudar={set('postoProposto')} opcoes={postos.map((x) => [x.id, x.nome])} /></Campo>}
         {p.tipo === 'nomeacao' && <Campo rotulo="Cargo" obrigatorio col="col-12"><Escolha valor={item.cargoId} aoMudar={set('cargoId')} opcoes={cargos.map((c) => [c.id, `${c.nome}${c.unidadeNome ? ` — ${c.unidadeNome}` : ''} · ${c.livres} livre(s)`])} /></Campo>}
         {['graduacao', 'nomeacao', 'exoneracao'].includes(p.tipo) && <>
-          <Campo rotulo={p.tipo === 'exoneracao' ? 'Data' : 'Início'} col="col-md-6"><input type="date" className="form-control form-control-sm" value={item.inicio ?? ''} onChange={set('inicio')} /></Campo>
-          {p.tipo !== 'exoneracao' && <Campo rotulo="Fim (se temporária)" col="col-md-6"><input type="date" className="form-control form-control-sm" value={item.fim ?? ''} onChange={set('fim')} /></Campo>}
+          <Campo rotulo={p.tipo === 'exoneracao' ? 'Data' : 'Início'} col="col-md-6"><InputData className="form-control form-control-sm" value={item.inicio ?? ''} onChange={set('inicio')} /></Campo>
+          {p.tipo !== 'exoneracao' && <Campo rotulo="Fim (se temporária)" col="col-md-6"><InputData className="form-control form-control-sm" value={item.fim ?? ''} onChange={set('fim')} /></Campo>}
         </>}
         <Campo rotulo="Justificação" col="col-12"><textarea rows={2} className="form-control form-control-sm" value={item.justificacao ?? ''} onChange={set('justificacao')} /></Campo>
       </div>
@@ -244,7 +244,7 @@ function Decidir({ titulo, botao, cor, campos, aviso, aoFechar, aoConfirmar, rot
       {aviso && <div className="alert alert-info">{aviso}</div>}
       <div className="row">
         {campos.includes('documento') && <Campo rotulo={rotuloDocumento}><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>}
-        {campos.includes('dataDocumento') && <Campo rotulo="Data do documento"><input type="date" className="form-control form-control-sm" value={d.dataDocumento} onChange={(e) => setD({ ...d, dataDocumento: e.target.value })} /></Campo>}
+        {campos.includes('dataDocumento') && <Campo rotulo="Data do documento"><InputData className="form-control form-control-sm" value={d.dataDocumento} onChange={(e) => setD({ ...d, dataDocumento: e.target.value })} /></Campo>}
         {campos.includes('motivo') && <Campo rotulo={rotuloMotivo} col="col-12"><textarea rows={3} className="form-control form-control-sm" value={d.motivo} onChange={(e) => setD({ ...d, motivo: e.target.value })} /></Campo>}
         {comFicheiro && <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} ajuda="PDF ou imagem (também Word) · até 25 MB · fica nos documentos da proposta" /></Campo>}
       </div>
