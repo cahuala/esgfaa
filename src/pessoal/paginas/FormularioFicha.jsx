@@ -338,7 +338,7 @@ export default function FormularioFicha() {
             <Campo rotulo="Banco" col="col-md-3">{txt('banco', { list: 'bancos-angola', placeholder: 'BAI, BPC, BFA…' })}<datalist id="bancos-angola">{Object.entries(ref.bancos ?? BANCOS).map(([k, b]) => <option key={k} value={k}>{b.nome ?? b}</option>)}</datalist></Campo>
             <Campo rotulo="IBAN" col="col-md-5" ajuda="Fica cifrado.">{txt('iban')}</Campo>
             <Campo rotulo="Número de conta" col="col-md-4" ajuda="Fica cifrado.">{txt('numeroConta')}</Campo>
-            <Campo rotulo="Vencimento mensal (Kz)" col="col-md-4" ajuda={militar ? 'Vazio = as declarações usam a tabela salarial do posto. Fica cifrado.' : 'Vazio = as declarações usam a tabela salarial dos civis. Fica cifrado.'}>{txt('vencimento', { type: 'number', step: '0.01', min: 0 })}</Campo>
+            <Campo rotulo="Vencimento mensal (Kz)" col="col-md-4" ajuda={militar ? 'As declarações levam o líquido da tabela salarial do posto; este valor pode escolher-se ao emitir. Fica cifrado.' : 'Vazio = as declarações usam a tabela salarial dos civis. Fica cifrado.'}>{txt('vencimento', { type: 'number', step: '0.01', min: 0 })}</Campo>
             {!militar && <Campo rotulo="N.º de segurança social (INSS)" col="col-md-4">{txt('inss')}</Campo>}
           </div>
         </Seccao>

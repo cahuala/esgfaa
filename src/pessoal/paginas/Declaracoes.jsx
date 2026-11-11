@@ -5,7 +5,7 @@ import { useDados } from '../useDados'
 import { useSessao } from '../sessao'
 import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Erro, InputData, Modal } from '../componentes/Ui'
-import { gerarLote, registarEmissao, vencimentoDaTabela } from '../docPessoal'
+import { gerarLote, registarEmissao, vencimentoDaTabela, vencimentoPorDefeito } from '../docPessoal'
 import { kwanzas } from '../docPessoal/base'
 import { brasaoPng, emblema } from '../documentos'
 import { documentoPdf, exportarExcel } from '../exportar'
@@ -234,7 +234,7 @@ function NovaDeclaracao({ aoEmitir }) {
   const termo = q.trim().toLowerCase()
   const encontrados = useMemo(() => (termo.length < 2 || !pessoas ? [] : pessoas.filter((x) => [x.nome, x.nip, x.numeroAgente, x.bi].some((v) => String(v ?? '').toLowerCase().includes(termo))).slice(0, 8)), [termo, pessoas])
   const tabela = p ? vencimentoDaTabela(p) : null
-  const salario = valor !== '' ? Number(valor) : p?.vencimento || tabela
+  const salario = valor !== '' ? Number(valor) : p ? vencimentoPorDefeito(p) : null
 
   async function escolher(x) {
     setQ('')
@@ -242,7 +242,7 @@ function NovaDeclaracao({ aoEmitir }) {
       const ficha = await api(`/pessoas/${x.id}`)
       setP(ficha)
       setModelo(modelosPara(ficha)[0]?.id ?? '')
-      setValor(ficha.vencimento ?? '')
+      setValor('')
       setCurso((ficha.cursos ?? []).find((c) => !c.fim)?.nome || (ficha.vinculo === 'estudante' ? ficha.unidadeNome : '') || '')
     } catch (e) {
       avisar(e.message, 'erro')
@@ -261,9 +261,10 @@ function NovaDeclaracao({ aoEmitir }) {
       const m = modelosPara(p).find((x) => x.id === modelo) ?? modelosPara(p)[0]
       const escolhas = fins.map((id) => {
         const f = TODAS.find((x) => x.id === id)
-        const venc = valor !== '' ? { valor: Number(valor) } : {}
+        // o salário escolhido fica na declaração (aparece na lista e reimprime-se igual)
+        const venc = salario && m.dados.comVencimento !== 'Não' ? { valor: salario } : {}
         // os modelos dos bancos têm o texto próprio; os da ESG levam a finalidade na OBS
-        if (f.banco) return { tipo: f.tipo, dados: { finalidade: f.nome, ...venc } }
+        if (f.banco) return { tipo: f.tipo, dados: { finalidade: f.nome, ...(salario ? { valor: salario } : {}) } }
         const obs = f.obs({ pais, outra: outra.trim() })
         return { tipo: m.tipo, dados: { ...m.dados, finalidade: obs, ...(obs ? {} : { semObs: true }), ...venc, ...(m.discente && curso ? { curso } : {}) } }
       })
@@ -347,7 +348,13 @@ function NovaDeclaracao({ aoEmitir }) {
           <div className="pes-grelha">
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Modelo</div><div className="pes-campo-v">{modeloAtual?.nome}</div></div>
             <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Finalidade(s)</div><div className="pes-campo-v fw-semibold">{nomesFins.join('  ·  ')}</div></div>
-            <div className="pes-campo"><div className="pes-campo-r">Salário líquido (KZ)</div><input type="number" step="0.01" min="0" className="form-control" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={tabela ? kwanzas(tabela) : ''} /><div className="form-text small">{valor === '' ? (salario ? `Vai ${kwanzas(salario)} Kz (${p.vencimento ? 'da ficha' : 'da tabela salarial'}).` : 'Sem tabela: escreva o salário.') : 'Vai o que escreveu.'}</div></div>
+            <div className="pes-campo"><div className="pes-campo-r">Salário líquido (KZ)</div><input type="number" step="0.01" min="0" className="form-control" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={salario ? kwanzas(salario) : ''} />
+              <div className="form-text small">{valor === '' ? (salario ? `Vai ${kwanzas(salario)} Kz (${salario === tabela ? 'da tabela salarial, líquido' : 'da ficha'}).` : 'Sem tabela: escreva o salário.') : 'Vai o que escreveu.'}</div>
+              <div className="d-flex flex-wrap gap-1 mt-1">
+                {tabela && <button type="button" className={`btn btn-xs ${Number(valor) === tabela || (valor === '' && salario === tabela) ? 'btn-theme' : 'btn-white'}`} onClick={() => setValor(String(tabela))}>Tabela salarial: {kwanzas(tabela)}</button>}
+                {p.vencimento && p.vencimento !== tabela && <button type="button" className={`btn btn-xs ${Number(valor) === p.vencimento || (valor === '' && salario === p.vencimento) ? 'btn-theme' : 'btn-white'}`} onClick={() => setValor(String(p.vencimento))}>Da ficha: {kwanzas(p.vencimento)}</button>}
+              </div>
+            </div>
             {precisaIban && <div className="pes-campo"><div className="pes-campo-r">IBAN (declarações dos bancos)</div><div className={`pes-campo-v font-monospace ${p.iban ? '' : 'pes-campo-vazio'}`}>{p.iban || 'Sem IBAN registado na ficha'}</div></div>}
             {modeloAtual?.discente && <div className="pes-campo pes-campo-cheio"><div className="pes-campo-r">Discente do (curso)</div><input className="form-control" value={curso} onChange={(e) => setCurso(e.target.value)} /></div>}
           </div>

@@ -14,12 +14,18 @@ const FINALIDADE = { campo: 'finalidade', rotulo: 'Finalidade (OBS)', tipo: 'tex
 // vencimento da tabela salarial (líquido): do posto (militares); do cargo e, sem ele, da categoria (civis)
 export const vencimentoDaTabela = (p) => (militar(p) ? p.vencimentoTabela?.liquido : p.vencimentoCargo ?? p.remuneracao?.liquido) ?? null
 /*
-  O vencimento escreve-se ao emitir; se ficar vazio, vai o da ficha e, sem ele, o líquido da tabela salarial.
+  O vencimento escreve-se ao emitir; se ficar vazio, vai o líquido da tabela salarial do posto (militares) e,
+  sem ele, o da ficha; nos civis, o da ficha e, sem ele, o da tabela.
   Nas declarações de efectividade e de serviço pode escolher-se não falar do vencimento.
 */
-const VALOR = (p) => {
+export const vencimentoPorDefeito = (p) => {
   const tabela = vencimentoDaTabela(p)
-  return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: p.vencimento ?? '', ajuda: `Vazio = ${p.vencimento ? 'o da ficha' : tabela ? `o da tabela salarial (${kwanzas(tabela)} KZ líquido)` : 'sem vencimento (falta a tabela)'}.` }
+  return (militar(p) ? tabela || p.vencimento : p.vencimento || tabela) || null
+}
+const origemVencimento = (p) => (vencimentoPorDefeito(p) === vencimentoDaTabela(p) ? 'da tabela salarial, líquido' : 'da ficha')
+const VALOR = (p) => {
+  const v = vencimentoPorDefeito(p)
+  return { campo: 'valor', rotulo: 'Vencimento mensal (KZ)', tipo: 'numero', inicial: '', ajuda: `Vazio = ${v ? `${kwanzas(v)} KZ (${origemVencimento(p)})` : 'sem vencimento (falta a tabela)'}.` }
 }
 const semDomiciliar = (f) => (p) => f(p) && p.vinculo !== 'domiciliar'
 // o dia que vai no documento («ESG em Luanda, 24 de Junho de 2026»): por defeito hoje, mas pode ser outro
@@ -118,8 +124,8 @@ export async function gerarLote(itens, quem, nomeFicheiro) {
   for (const { p, escolha: e, emitido } of itens) {
     const c = CATALOGO.find((x) => x.tipo === e.tipo)
     const o = { ...e.dados, numero: emitido?.numero, ano: emitido?.ano }
-    // vencimento: o escrito, o da ficha ou o da tabela salarial; ou nenhum, se se escolheu não falar dele
-    if (c.grupo === 'declaracoes') o.valor = c.semVencimento || o.comVencimento === 'Não' ? null : o.valor || p.vencimento || vencimentoDaTabela(p)
+    // vencimento: o escrito ou o por defeito (militares: o da tabela salarial; civis: o da ficha); ou nenhum, se se escolheu não falar dele
+    if (c.grupo === 'declaracoes') o.valor = c.semVencimento || o.comVencimento === 'Não' ? null : o.valor || vencimentoPorDefeito(p)
     await c.desenhar(d, p, o, quem)
   }
   d.doc.save(nomeFicheiro)
