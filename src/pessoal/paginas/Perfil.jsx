@@ -149,7 +149,7 @@ export default function Perfil() {
               <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
               <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
               {p.unidadeOrigem && <Dado r="Unidade de origem (fora da ESG)" cheio v={p.unidadeOrigem} />}
-              <Dado r="Cargo" cheio v={p.cargo?.nome ? <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</> : p.funcaoActual && <>{p.funcaoActual}<small className="text-muted ms-2">fora da orgânica</small></>} />
+              <Dado r="Cargo" cheio v={p.cargo?.nome ? <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</> : p.funcaoActual} />
               <Dado r="Na Escola desde" v={dataPt(p.dataEntradaEscola || p.dataCargo || p.dataAdmissao)} />
               {!p.ativo && <Dado r="Saiu da Escola" cheio v={[dataPt(p.dataSaidaEscola), p.motivoSaida, p.destinoSaida && `destino: ${p.destinoSaida}`].filter((x) => x && x !== '—').join(' · ')} />}
               {p.observacoes && <Dado r="Observações" cheio v={p.observacoes} />}

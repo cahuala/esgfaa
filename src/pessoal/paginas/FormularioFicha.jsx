@@ -140,7 +140,7 @@ export default function FormularioFicha() {
     for (let k = 0; k < PASSOS.length - 1; k++) { const f = emFalta(k); if (f) { setErro(f); setPasso(k); return } }
     setErro(null)
     setAGuardar(true)
-    const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId ? Number(d.cargoId) : null }
+    const corpo = { ...d, unidadeId: d.unidadeId ? Number(d.unidadeId) : null, cargoId: d.cargoId && d.cargoId !== 'outro' ? Number(d.cargoId) : null }
     corpo.militarAlocadoId = corpo.vinculo === 'domiciliar' && corpo.militarAlocadoId ? Number(corpo.militarAlocadoId) : null
     for (const k of ['nip', 'numeroAgente', 'bi', 'email', 'genero', 'estadoCivil', 'habilitacao', 'quadroEspecial', 'carreiraCivil', 'categoriaCivil', 'vinculoCivil', 'posto', 'voluntario']) if (corpo[k] === '') corpo[k] = null
     corpo.agregado = (corpo.agregado ?? []).filter((a) => a.nome?.trim()).map((a) => Object.fromEntries(Object.entries(a).filter(([, v]) => v !== '')))
@@ -349,9 +349,9 @@ export default function FormularioFicha() {
           <div className="row">
             <Campo rotulo="Unidade (orgânica)" col="col-md-4" ajuda={deFora ? 'Quem não é da ESG fica «Sem unidade».' : undefined}><Escolha valor={d.unidadeId} aoMudar={set('unidadeId')} opcoes={arvore.opcoes} vazio="Sem unidade" /></Campo>
             {deFora && militar && <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="O estudante ou o docente colaborador militar que vem de outra unidade das FAA: ex.: Regimento de Infantaria n.º 10, Base Aérea do Lubango. Os civis não têm unidade.">{txt('unidadeOrigem')}</Campo>}
-            {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, os militares mudam de cargo por proposta de nomeação e os civis em Orgânica › cargo › Colocar civil."><Escolha valor={d.cargoId} aoMudar={set('cargoId')} opcoes={cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])} vazio="Sem cargo" /></Campo>}
+            {!id && <Campo rotulo="Cargo atual" col="col-md-4" ajuda="Só no registo; depois, os militares mudam de cargo por proposta de nomeação e os civis em Orgânica › cargo › Colocar civil."><Escolha valor={d.cargoId} aoMudar={(v) => setD((x) => ({ ...x, cargoId: v, ...(v !== 'outro' && !ehDocente ? { funcaoActual: '' } : {}) }))} opcoes={[['outro', 'Outro cargo (escrever)'], ...cargos.filter((c) => !d.unidadeId || arvore.descendentes(Number(d.unidadeId)).has(c.unidadeId)).map((c) => [c.id, `${c.nome} — ${c.unidadeCaminho || 'sem unidade'} (${c.ocupados}/${c.vagas})`])]} vazio="Sem cargo" /></Campo>}
             {!id && <Campo rotulo="No cargo desde" col="col-md-4">{data('dataCargo')}</Campo>}
-            {!d.cargoId && !ehDocente && <Campo rotulo="Cargo fora da orgânica actual" col="col-md-8" ajuda="Para um cargo que já não consta da orgânica (orientações antigas) ou que ainda não foi criado nela: escreva-o como está no documento. Os cargos da orgânica escolhem-se acima; para criar um novo, Orgânica › unidade › Novo cargo.">{txt('funcaoActual', { maxLength: 200 })}</Campo>}
+            {(id ? !d.cargoId : d.cargoId === 'outro') && !ehDocente && <Campo rotulo={id ? 'Cargo' : 'Qual cargo'} col="col-md-8" ajuda="Escreva o cargo como está no documento.">{txt('funcaoActual', { maxLength: 200 })}</Campo>}
             <Campo rotulo="Na Escola desde" col="col-md-4" ajuda="Data de apresentação na ESG (para o histórico dos efectivos).">{data('dataEntradaEscola')}</Campo>
             <div className="col-12 d-flex flex-wrap gap-4 my-2">
               <label className="form-check"><input type="checkbox" className="form-check-input" checked={d.avaliacaoFavoravel} onChange={set('avaliacaoFavoravel')} /> <span className="form-check-label">Avaliação favorável</span></label>
@@ -391,7 +391,7 @@ export default function FormularioFicha() {
             <R r="Familiares" v={(d.agregado ?? []).filter((a) => a.nome?.trim()).length ? `${d.agregado.filter((a) => a.nome?.trim()).length}` : ''} /><R r="Banco · IBAN" v={[d.banco, d.iban].filter(Boolean).join(' · ')} />
             <R r="Unidade" v={arvore.lista.find((u) => String(u.id) === String(d.unidadeId))?.nome} />
             {d.unidadeOrigem && <R r="Unidade de origem" v={d.unidadeOrigem} />}
-            <R r="Cargo" v={cargos.find((c) => String(c.id) === String(d.cargoId))?.nome || (d.funcaoActual && `${d.funcaoActual} (fora da orgânica)`)} />
+            <R r="Cargo" v={cargos.find((c) => String(c.id) === String(d.cargoId))?.nome || d.funcaoActual} />
             <R r="Fotografia" v={foto ? foto.name : fotoAtual ? 'A actual' : ''} />
           </div>
         </Seccao>
