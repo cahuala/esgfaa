@@ -124,7 +124,13 @@ export function linhaPessoa(p, cursoDiscente) {
 }
 
 export function guiaMarcha(d, p, o, quem) {
+  // com textos compridos (destino, motivo, unidade) aperta-se a letra e os espaços até caber na folha
+  return caberNaFolha(d, (k) => desenharGuia(d, p, o, quem, k), { limite: 290 })
+}
+
+function desenharGuia(d, p, o, quem, k) {
   const { doc } = d
+  const g = (n) => n * k
   novaPagina(d)
   // o emblema e a marca-d'água ao centro do quadro (como no modelo)
   marcaDagua(d, 110, 150, 150, 0.1, true)
@@ -134,8 +140,8 @@ export function guiaMarcha(d, p, o, quem) {
   const w = 181
   const topo = 26
   const alto = 30
-  const T = TAM + 1
-  const L = 6.4 // entre linhas
+  const T = (TAM + 1) * k
+  const L = 6.4 * k // entre linhas
   // cabeçalho em três colunas
   const col = [69, 57, 55]
   doc.setLineWidth(0.35).rect(x0, topo, w, alto)
@@ -172,23 +178,23 @@ export function guiaMarcha(d, p, o, quem) {
   const xi = x0 + 3
   const wi = w - 6
   y = paragrafo(d, intro, y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
-  y += 4
+  y += g(4)
   y = paragrafo(d, [marcha], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
-  y += 8
+  y += g(8)
   // «A fim de Gozar Férias ________» (a linha vai até ao fim do quadro)
   y = paragrafo(d, [fim], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
   doc.setFont('times', 'normal').setFontSize(T)
   const ult = doc.splitTextToSize(fim, wi).at(-1)
   const xf = xi + doc.getTextWidth(ult) + 2
   if (xf < xi + wi - 6) doc.setLineWidth(0.2).line(xf, y - L + 0.8, xi + wi, y - L + 0.8)
-  y += 6
+  y += g(6)
   y = paragrafo(d, linhaPessoa(p, variante === 'discente' && o.tipo === 'dispensa' ? o.curso : ''), y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
-  y += 4.6
+  y += g(4.6)
   y = paragrafo(d, ['Utilizando as seguintes vias: Todas vias possíveis'], y, { x: xi, w: wi, recuo: 0, justificar: false, tam: T, entre: L })
   doc.setLineWidth(0.3).line(x0 + 2, y + 2, x0 + w - 2, y + 2)
-  y += 12.9
+  y += g(12.9)
   doc.setFont('times', 'normal').setFontSize(T).text('OUTRAS INDICAÇÕES', xi, y)
-  y += 10
+  y += g(10)
   const [quemE, o2, regresso] = designacao(p, o.tipo === 'dispensa' ? variante : undefined)
   const dias = String(o.dias || (o.tipo === 'ferias' ? 30 : o.tipo === 'licenca' ? 15 : 5)).padStart(2, '0')
   const inicio = dataExtenso(o.inicio)
@@ -201,15 +207,15 @@ export function guiaMarcha(d, p, o, quem) {
   y = paragrafo(d, [o.tipo === 'apresentacao' ? `${quemE}, ${estado}` : `${quemE} acima mencionad${o2} ${estado}`], y, { x: xi, w: wi, recuo: 0, tam: T, entre: L })
   doc.setLineWidth(0.3).line(x0 + 2, y + 1, x0 + w - 2, y + 1)
   // data e assinatura (como no modelo, sem negrito)
-  y += 22
+  y += g(22)
   const c = quem.comandante ?? {}
   const meio = x0 + w / 2
   doc.setFont('times', 'normal').setFontSize(T)
   doc.text(`${M(quem.local || 'Luanda')}, ${M(dataExtenso(o.data))}`, meio, y, { align: 'center' })
-  doc.text(M(c.cargo || 'O COMANDANTE DA ESG'), meio, y + 14.7, { align: 'center' })
-  if (c.nome) doc.text(M(c.nome), meio, y + 25.8, { align: 'center' })
-  if (c.posto) doc.text(`**${M(c.posto)}**`, meio, y + 34.2, { align: 'center' })
-  const fundo = Math.max(y + 53, 269)
+  doc.text(M(c.cargo || 'O COMANDANTE DA ESG'), meio, y + g(14.7), { align: 'center' })
+  if (c.nome) doc.text(M(c.nome), meio, y + g(25.8), { align: 'center' })
+  if (c.posto) doc.text(`**${M(c.posto)}**`, meio, y + g(34.2), { align: 'center' })
+  const fundo = Math.max(y + g(53), 269)
   doc.setLineWidth(0.35).rect(x0, topo, w, fundo - topo)
   doc.setFontSize(TAM)
   referencia(d, 'RPQ/ESG/CP3 OP.MG', x0, fundo + 13)

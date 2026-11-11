@@ -40,6 +40,14 @@ const texto = (v) => (v === null || v === undefined ? '' : typeof v === 'boolean
         orientacao: 'portrait' | 'landscape', assinatura, nota }
 */
 const partes = (v) => { const t = v ? String(v).slice(0, 10) : ''; return /^\d{4}-\d{2}-\d{2}$/.test(t) ? [t.slice(8, 10), t.slice(5, 7), t.slice(0, 4)] : /^\d{2}\/\d{2}\/\d{4}$/.test(t) ? t.split('/') : ['', '', ''] }
+// texto ao centro numa largura (o cargo, o nome e o posto do Comandante no canto): se não couber, a letra diminui
+function centrado(doc, t, x, y, largura) {
+  const tam = doc.getFontSize()
+  let k = tam
+  while (k > 6 && doc.setFontSize(k).getTextWidth(t) > largura) k -= 0.25
+  return doc.text(t, x, y, { align: 'center' }).setFontSize(tam)
+}
+
 export async function documentoPdf(d) {
   const [{ jsPDF }, { autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const doc = new jsPDF({ orientation: d.orientacao ?? 'landscape', unit: 'mm', format: 'a4' })
@@ -53,9 +61,10 @@ export async function documentoPdf(d) {
   let y
   if (mod) {
     const c = quem.comandante ?? {}
-    doc.setFont('times', 'bold').setFontSize(9).text('APROVADO', 45, 20, { align: 'center' }).text((c.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 45, 24, { align: 'center' })
-    if (c.nome) doc.text(c.nome.toUpperCase(), 45, 31, { align: 'center' })
-    if (c.posto) doc.text(`**${c.posto.toUpperCase()}**`, 45, 35, { align: 'center' })
+    doc.setFont('times', 'bold').setFontSize(9).text('APROVADO', 45, 20, { align: 'center' })
+    centrado(doc, (c.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 45, 24, 72)
+    if (c.nome) centrado(doc, c.nome.toUpperCase(), 45, 31, 72)
+    if (c.posto) centrado(doc, `**${c.posto.toUpperCase()}**`, 45, 35, 72)
     emblema(doc, brasao, w / 2, 6, 17)
     doc.setFont('times', 'normal').setFontSize(9).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' }).text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
     doc.setFont('times', 'bold').text('ESCOLA SUPERIOR DE GUERRA', w / 2, 36, { align: 'center' })
@@ -69,10 +78,11 @@ export async function documentoPdf(d) {
     y = 44 + linhas.length * 4.6 - 1
   } else {
     // cabeçalho do modelo
-    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' }).text((quem.comandante?.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 38, 24, { align: 'center' })
+    doc.setFont('helvetica', 'normal').setFontSize(8.5).text('VISTO', 38, 20, { align: 'center' })
+    centrado(doc, (quem.comandante?.cargo || 'O COMANDANTE DA ESG').toUpperCase(), 38, 24, 60)
     // o nome e o posto de quem ocupa hoje o cargo (Assinaturas dos documentos), como no modelo
-    if (quem.comandante?.nome) doc.text(quem.comandante.nome.toUpperCase(), 38, 30, { align: 'center' })
-    if (quem.comandante?.posto) doc.text(`** ${quem.comandante.posto.toUpperCase()} **`, 38, 34, { align: 'center' })
+    if (quem.comandante?.nome) centrado(doc, quem.comandante.nome.toUpperCase(), 38, 30, 60)
+    if (quem.comandante?.posto) centrado(doc, `** ${quem.comandante.posto.toUpperCase()} **`, 38, 34, 60)
     emblema(doc, brasao, w / 2, 6, 17)
     doc.setFont('helvetica', 'normal').setFontSize(8.5).text('FORÇAS ARMADAS ANGOLANAS', w / 2, 28, { align: 'center' })
     doc.setFont('helvetica', 'italic').text('ESTADO MAIOR GENERAL', w / 2, 32, { align: 'center' })
@@ -151,13 +161,13 @@ export async function documentoPdf(d) {
   // «ESCOLA SUPERIOR DE GUERRA em Luanda, 21 de Abril de 2026» e o Chefe da Repartição
   if (mod) {
     // nos mapas: só o Chefe da Repartição, à direita
-    if (y > h - 20) { doc.addPage(); y = 20 }
+    if (y > h - 26) { doc.addPage(); y = 20 }
     const c = quem.chefeRpq ?? {}
     doc.setFont('times', 'bold').setFontSize(9).text((c.cargo || 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS').toUpperCase(), w - 70, y + 4, { align: 'center' })
     if (c.nome) doc.setFont('times', 'normal').text(c.nome.toUpperCase(), w - 70, y + 14, { align: 'center' })
     if (c.posto) doc.text(`***${c.posto.toUpperCase()}***`, w - 70, y + 18, { align: 'center' })
   } else if (d.assinatura !== false) {
-    if (y > h - 42) { doc.addPage(); y = 25 }
+    if (y > h - 46) { doc.addPage(); y = 25 }
     const agora = new Date()
     const resto = ` em ${quem.local || 'Luanda'}, ${agora.getDate()} de ${MESES[agora.getMonth()]} de ${agora.getFullYear()}`
     doc.setFont('helvetica', 'normal').setFontSize(9)

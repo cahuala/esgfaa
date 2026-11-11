@@ -128,7 +128,7 @@ export function novaPagina(d) {
   passar a margem de baixo ou para outra folha, apaga-se e volta a desenhar-se um pouco mais apertado
   (letra e espaços), até caber. desenhar(k) desenha o documento todo, a começar com novaPagina(d).
 */
-export function caberNaFolha(d, desenhar, { limite = 287, escalas = [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74] } = {}) {
+export function caberNaFolha(d, desenhar, { limite = 287, escalas = [1, 0.95, 0.9, 0.86, 0.82, 0.78, 0.74, 0.7, 0.66, 0.62] } = {}) {
   const { doc } = d
   const paginasAntes = doc.getNumberOfPages()
   const contadorAntes = d.paginas
