@@ -1,10 +1,10 @@
 import { invalido } from '../erros.js'
 import { exigir } from './sessao.js'
-import { COMPONENTES, PERCENTAGENS, REPRESENTACAO_QP, VENCIMENTO_BASE, tabelaSalarial } from '../dominio/pessoal/tabelaSalarial.js'
+import { COMPONENTES, FORMAS_SERVICO_TABELA, PERCENTAGENS, REPRESENTACAO_QP, VENCIMENTO_BASE, chavePosto, tabelaSalarial } from '../dominio/pessoal/tabelaSalarial.js'
 import { CARREIRAS_CIVIS, remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 
 /*
-  Tabela salarial dos militares (como no SIGP): em cada posto altera-se o vencimento base e, se for preciso,
+  Tabela salarial dos militares (como no SIGP): em cada posto e forma de serviço altera-se o vencimento base e, se for preciso,
   a condição militar, a representação e o comando/chefia (vazio = calculado). O alterado fica nas
   definições («tabela-salarial»).
 */
@@ -24,20 +24,23 @@ export class ServicoTabelaSalarial {
   }
 
   // valores: { base?, condicaoMilitar?, representacao?, comandoChefia? }; null = volta a ser calculado
-  async alterarPosto(u, posto, valores) {
+  async alterarPosto(u, posto, fps, valores) {
     exigir(u, 'administrar')
     if (!(posto in VENCIMENTO_BASE)) throw invalido('Posto desconhecido.')
+    if (!FORMAS_SERVICO_TABELA.includes(fps)) throw invalido('Forma de prestação de serviço desconhecida.')
     const todas = await this.bases()
-    const antes = todas[posto] && typeof todas[posto] === 'object' ? todas[posto] : todas[posto] ? { base: todas[posto] } : {}
+    // parte do que já valia nesta forma de serviço (o dela ou, antes, o comum a todas)
+    const atual = todas[chavePosto(fps, posto)] ?? todas[posto]
+    const antes = atual && typeof atual === 'object' ? atual : atual ? { base: atual } : {}
     const novo = { ...antes }
     for (const k of COMPONENTES) {
       if (!(k in valores)) continue
       if (valores[k] === null) delete novo[k]
       else novo[k] = Math.round(valores[k] * 100) / 100
     }
-    const bases = { ...todas, [posto]: novo }
+    const bases = { ...todas, [chavePosto(fps, posto)]: novo }
     await this.bd.definicao.upsert({ where: { chave: 'tabela-salarial' }, create: { chave: 'tabela-salarial', valor: bases }, update: { valor: bases } })
-    await this.auditoria.registar(u, 'alterar_tabela_salarial', `${posto}: ${COMPONENTES.filter((k) => k in valores).map((k) => `${k} ${valores[k] ?? 'calculado'}`).join(', ')}`)
+    await this.auditoria.registar(u, 'alterar_tabela_salarial', `${posto} (${fps}): ${COMPONENTES.filter((k) => k in valores).map((k) => `${k} ${valores[k] ?? 'calculado'}`).join(', ')}`)
     return this.ver(u)
   }
 

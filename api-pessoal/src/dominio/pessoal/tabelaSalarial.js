@@ -3,7 +3,7 @@ import { FORMAS_SERVICO, POSTOS } from './hierarquia.js'
 /*
   Tabela salarial por posto dos militares (a mesma do SIGP — Repartição de Finanças/CPD). Por posto e
   forma de prestação de serviço:
-  - vencimento base (igual em todas as formas de serviço e nos três ramos);
+  - vencimento base (igual nos três ramos; pode ser diferente em cada forma de serviço);
   - condição militar = base × 30 %;
   - subsídio de representação: só de Coronel a General no Quadro Permanente (valores fixos da tabela);
   - comando/direcção/chefia = base × 5 %, de Coronel para baixo; os Oficiais Generais e o SMO não têm;
@@ -31,16 +31,21 @@ const POSTOS_FPS = {
   SMR: QP_POSTOS,
 }
 
+export const FORMAS_SERVICO_TABELA = Object.keys(POSTOS_FPS)
+
 const arred = (v) => Math.round(v * 100) / 100
 
 // as componentes que se podem escrever à mão em cada posto (como no SIGP); as não escritas calculam-se
 export const COMPONENTES = ['base', 'condicaoMilitar', 'representacao', 'comandoChefia']
 
-// vencimento de referência de um posto e forma de serviço; bases = o alterado de cada posto: o vencimento
-// base (número, como antes) ou { base, condicaoMilitar, representacao, comandoChefia } (as escritas à mão)
+// a chave do alterado de um posto numa forma de serviço («QP:major»); a antiga, só do posto, vale para todas
+export const chavePosto = (fps, posto) => `${fps}:${posto}`
+
+// vencimento de referência de um posto e forma de serviço; bases = o alterado de cada posto e forma de serviço:
+// o vencimento base (número, como antes) ou { base, condicaoMilitar, representacao, comandoChefia } (à mão)
 export function vencimentoDoPosto(posto, fps = 'QP', bases = {}) {
   const p = POSTOS[posto]
-  const v = bases[posto]
+  const v = bases[chavePosto(fps, posto)] ?? bases[posto]
   const o = v && typeof v === 'object' ? v : { base: v }
   const base = Number(o.base ?? VENCIMENTO_BASE[posto])
   if (!p || !base) return null

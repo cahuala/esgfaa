@@ -11,7 +11,7 @@ const numero = (t) => Number(String(t).replace(/\s/g, '').replace(',', '.')) || 
 
 /*
   Tabela salarial por posto (a mesma do SIGP): por forma de prestação de serviço, o vencimento base e as
-  componentes até ao líquido. O administrador altera o vencimento base e, se for preciso, a condição
+  componentes até ao líquido. O administrador altera, em cada posto e forma de serviço, o vencimento base e, se for preciso, a condição
   militar, a representação e o comando/chefia (vazio = calculado); guarda com a calculadora.
 */
 const ROTULOS = { base: 'Vencimento base', condicaoMilitar: 'Condição militar', representacao: 'Representação', comandoChefia: 'Comando/chefia' }
@@ -19,7 +19,7 @@ export default function TabelaSalarial() {
   const { ref, pode, avisar } = useSessao()
   const { dados, erro, recarregar } = useDados('/tabela-salarial')
   const [q, setQ] = useState('')
-  // o que se está a escrever, por posto: { base, condicaoMilitar, representacao, comandoChefia } (texto)
+  // o que se está a escrever, por forma de serviço e posto («QP:major»): { base, condicaoMilitar, … } (texto)
   const [ed, setEd] = useState({})
   const [aGuardar, setAGuardar] = useState(null)
   const [ramo, setRamo] = useState('')
@@ -36,17 +36,18 @@ export default function TabelaSalarial() {
   const total = grupos.reduce((s, g) => s + g.linhas.length, 0)
   const pc = dados.percentagens
 
-  async function guardar(posto) {
-    const e = ed[posto] ?? {}
+  async function guardar(fps, posto) {
+    const chave = `${fps}:${posto}`
+    const e = ed[chave] ?? {}
     if (!Object.keys(e).length) { avisar('Altere primeiro um valor deste posto.', 'erro'); return }
     if (e.base !== undefined && !numero(e.base)) { avisar('Escreva o vencimento base.', 'erro'); return }
     // a base escreve-se sempre; uma componente vazia volta a ser calculada
-    const corpo = Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k !== 'base' && String(v).trim() === '' ? null : numero(v)]))
+    const corpo = { fps, ...Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k !== 'base' && String(v).trim() === '' ? null : numero(v)])) }
     setAGuardar(posto)
     try {
       await api(`/tabela-salarial/${posto}`, { metodo: 'PUT', corpo })
-      setEd(({ [posto]: _, ...r }) => { void _; return r })
-      avisar(`${Object.keys(corpo).map((k) => ROTULOS[k]).join(', ')} de ${nome(posto)} actualizado(s).`)
+      setEd(({ [chave]: _, ...r }) => { void _; return r })
+      avisar(`${Object.keys(corpo).filter((k) => k !== 'fps').map((k) => ROTULOS[k]).join(', ')} de ${nome(posto)} (${fps}) actualizado(s).`)
       recarregar()
     } catch (e) {
       avisar(e.message, 'erro')
@@ -96,7 +97,8 @@ export default function TabelaSalarial() {
                 {grupos.map((g) => [
                   <tr key={`${g.ramo}-${g.fps}`} className="pes-sal-fps"><td colSpan={alterar ? 10 : 9}><i className="fa fa-layer-group me-1" />{ref.ramos[g.ramo].nome} — {g.nome} ({g.fps})</td></tr>,
                   ...g.linhas.map((l) => {
-                    const e = ed[l.posto] ?? {}
+                    const chave = `${g.fps}:${l.posto}`
+                    const e = ed[chave] ?? {}
                     const b = e.base !== undefined ? numero(e.base) : l.base
                     // ao escrever, as outras colunas acompanham (as mesmas regras do servidor): a componente
                     // escrita fica; a vazia ou calculada segue a fórmula
@@ -111,7 +113,7 @@ export default function TabelaSalarial() {
                     const caixa = (k, v, pode = true) => {
                       const manual = e[k] !== undefined ? String(e[k]).trim() !== '' : l.manual?.includes(k)
                       if (!alterar || !pode) return <td className={manual && pode ? 'fw-bold' : 'pes-sal-auto'}>{KZ(v)}</td>
-                      return <td><input className={`pes-sal-base ${k === 'base' || manual ? '' : 'pes-sal-auto fw-normal'}`} value={e[k] !== undefined ? e[k] : KZ(v)} title={k === 'base' || manual ? '' : 'Calculado; escreva para fixar o valor'} aria-label={`${ROTULOS[k]} de ${nome(l.posto, g.ramo)} (${g.ramo}, ${g.fps})`} onChange={(ev) => setEd({ ...ed, [l.posto]: { ...e, [k]: ev.target.value.replace(/[^0-9.,\s]/g, '') } })} onKeyDown={(ev) => { if (ev.key === 'Enter') guardar(l.posto) }} /></td>
+                      return <td><input className={`pes-sal-base ${k === 'base' || manual ? '' : 'pes-sal-auto fw-normal'}`} value={e[k] !== undefined ? e[k] : KZ(v)} title={k === 'base' || manual ? '' : 'Calculado; escreva para fixar o valor'} aria-label={`${ROTULOS[k]} de ${nome(l.posto, g.ramo)} (${g.ramo}, ${g.fps})`} onChange={(ev) => setEd({ ...ed, [chave]: { ...e, [k]: ev.target.value.replace(/[^0-9.,\s]/g, '') } })} onKeyDown={(ev) => { if (ev.key === 'Enter') guardar(g.fps, l.posto) }} /></td>
                     }
                     return (
                       <tr key={`${g.ramo}-${g.fps}-${l.posto}`}>
@@ -124,7 +126,7 @@ export default function TabelaSalarial() {
                         <td>{KZ(ili)}</td>
                         <td className="pes-sal-auto">{KZ(ss)}</td>
                         <td className="pes-sal-total">{KZ(ili - ss)}</td>
-                        {alterar && <td><button type="button" className="pes-sal-calc" onClick={() => guardar(l.posto)} disabled={aGuardar === l.posto} title="Recalcular e guardar"><i className={`fa ${aGuardar === l.posto ? 'fa-spinner fa-spin' : 'fa-calculator'}`} /></button></td>}
+                        {alterar && <td><button type="button" className="pes-sal-calc" onClick={() => guardar(g.fps, l.posto)} disabled={aGuardar === l.posto} title="Recalcular e guardar"><i className={`fa ${aGuardar === l.posto ? 'fa-spinner fa-spin' : 'fa-calculator'}`} /></button></td>}
                       </tr>
                     )
                   }),
@@ -134,7 +136,7 @@ export default function TabelaSalarial() {
           )}
         </div>
       </div>
-      <p className="small text-muted mt-2">Os valores de um posto são iguais nos três ramos e nas formas de prestação de serviço (os postos equivalem-se: Coronel = Capitão-de-Mar-e-Guerra): alterá-los num posto altera-os em todos. A representação só existe no QP e o SMO não tem comando/chefia. Nas declarações, o vencimento escreve-se ao emitir; se ficar vazio, vai o líquido desta tabela.</p>
+      <p className="small text-muted mt-2">Os valores de um posto são os mesmos nos três ramos (os postos equivalem-se: Coronel = Capitão-de-Mar-e-Guerra), mas cada forma de prestação de serviço (QP, SMC, SMO, SMR) tem os seus: alterar o 2.º Sargento no SMC não muda o do QP. A representação só existe no QP e o SMO não tem comando/chefia. Nas declarações, o vencimento escreve-se ao emitir; se ficar vazio, vai o líquido desta tabela.</p>
     </>
   )
 }

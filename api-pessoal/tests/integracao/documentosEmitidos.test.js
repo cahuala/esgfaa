@@ -82,6 +82,11 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     t2 = (await adm.put('/api/tabela-salarial/major').send({ base: 330000, condicaoMilitar: null }).expect(200)).body
     maj = t2.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'major')
     assert.deepEqual([maj.base, maj.condicaoMilitar, maj.comandoChefia], [330000, 99000, 20000])
+    // cada forma de serviço tem o seu vencimento base: o 2.º Sargento do SMC muda, o do QP fica
+    t2 = (await adm.put('/api/tabela-salarial/segundo_sargento').send({ fps: 'SMC', base: 150000 }).expect(200)).body
+    const sarg = (fps) => t2.grupos.find((g) => g.fps === fps).linhas.find((l) => l.posto === 'segundo_sargento').base
+    assert.deepEqual([sarg('SMC'), sarg('QP')], [150000, 162000])
+    assert.equal((await adm.put('/api/tabela-salarial/major').send({ fps: 'XYZ', base: 1 })).status, 400)
     const c = (await adm.post('/api/pessoas').send(militar({ nip: 'SAL001', posto: 'coronel', fps: 'QP', iban: 'AO06 0040 0000 1234', banco: 'BPC' })).expect(201)).body
     const f = (await adm.get(`/api/pessoas/${c.id}`)).body
     assert.equal(f.vencimentoTabela.base, 400000)
