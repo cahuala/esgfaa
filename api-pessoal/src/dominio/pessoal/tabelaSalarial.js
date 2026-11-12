@@ -3,10 +3,11 @@ import { FORMAS_SERVICO, POSTOS } from './hierarquia.js'
 /*
   Tabela salarial por posto dos militares (a mesma do SIGP — Repartição de Finanças/CPD). Por posto e
   forma de prestação de serviço:
-  - vencimento base (igual em todas as formas de serviço e nos três ramos; é o único valor que se altera);
+  - vencimento base (igual em todas as formas de serviço e nos três ramos);
   - condição militar = base × 30 %;
   - subsídio de representação: só de Coronel a General no Quadro Permanente (valores fixos da tabela);
   - comando/direcção/chefia = base × 5 %, de Coronel para baixo; os Oficiais Generais e o SMO não têm;
+  - a condição militar, a representação e o comando/chefia podem escrever-se à mão em cada posto (como no SIGP);
   - total ilíquido = soma das anteriores; Caixa de Segurança Social = ilíquido × 3 %; líquido = ilíquido − SS.
   O vencimento real de cada militar (folha de vencimentos) escreve-se na ficha; a tabela serve de referência.
 */
@@ -32,18 +33,27 @@ const POSTOS_FPS = {
 
 const arred = (v) => Math.round(v * 100) / 100
 
-// vencimento de referência de um posto e forma de serviço; bases = vencimentos base alterados (por posto)
+// as componentes que se podem escrever à mão em cada posto (como no SIGP); as não escritas calculam-se
+export const COMPONENTES = ['base', 'condicaoMilitar', 'representacao', 'comandoChefia']
+
+// vencimento de referência de um posto e forma de serviço; bases = o alterado de cada posto: o vencimento
+// base (número, como antes) ou { base, condicaoMilitar, representacao, comandoChefia } (as escritas à mão)
 export function vencimentoDoPosto(posto, fps = 'QP', bases = {}) {
   const p = POSTOS[posto]
-  const base = Number(bases[posto] ?? VENCIMENTO_BASE[posto])
+  const v = bases[posto]
+  const o = v && typeof v === 'object' ? v : { base: v }
+  const base = Number(o.base ?? VENCIMENTO_BASE[posto])
   if (!p || !base) return null
+  const manual = COMPONENTES.filter((k) => k !== 'base' && o[k] !== undefined && o[k] !== null)
+  const fixo = (k, calculado) => (manual.includes(k) ? Number(o[k]) : calculado)
   const general = p.categoria === 'oficial_general'
-  const condicaoMilitar = arred((base * PERCENTAGENS.condicaoMilitar) / 100)
-  const representacao = fps === 'QP' ? REPRESENTACAO_QP[posto] ?? 0 : 0
-  const comandoChefia = general || fps === 'SMO' ? 0 : arred((base * PERCENTAGENS.comandoChefia) / 100)
+  const condicaoMilitar = fixo('condicaoMilitar', arred((base * PERCENTAGENS.condicaoMilitar) / 100))
+  // a representação só no Quadro Permanente; o SMO não tem comando/direcção/chefia
+  const representacao = fps === 'QP' ? fixo('representacao', REPRESENTACAO_QP[posto] ?? 0) : 0
+  const comandoChefia = fps === 'SMO' ? 0 : fixo('comandoChefia', general ? 0 : arred((base * PERCENTAGENS.comandoChefia) / 100))
   const iliquido = arred(base + condicaoMilitar + representacao + comandoChefia)
   const caixaSS = arred((iliquido * PERCENTAGENS.caixaSS) / 100)
-  return { base, condicaoMilitar, representacao, comandoChefia, iliquido, caixaSS, liquido: arred(iliquido - caixaSS) }
+  return { base, condicaoMilitar, representacao, comandoChefia, iliquido, caixaSS, liquido: arred(iliquido - caixaSS), manual }
 }
 
 // a tabela inteira, agrupada por forma de prestação de serviço, do posto mais alto ao mais baixo

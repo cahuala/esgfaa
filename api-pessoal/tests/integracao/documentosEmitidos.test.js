@@ -62,7 +62,7 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     assert.deepEqual([c.nome, c.origem, c.cargo], ['Segundo Comandante Teste', 'substituto', 'O 2.º COMANDANTE DA ESG (EM EXERCÍCIO)'])
   })
 
-  it('tabela salarial como a do SIGP: componentes calculadas, só o vencimento base se altera', async () => {
+  it('tabela salarial como a do SIGP: componentes calculadas ou escritas à mão', async () => {
     const t = (await adm.get('/api/tabela-salarial').expect(200)).body
     const qp = t.grupos.find((g) => g.fps === 'QP')
     const cor = qp.linhas.find((l) => l.posto === 'coronel')
@@ -75,6 +75,13 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const novo = (await adm.put('/api/tabela-salarial/coronel').send({ base: 400000 }).expect(200)).body
     assert.equal(novo.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'coronel').condicaoMilitar, 120000)
     assert.equal((await adm.put('/api/tabela-salarial/inventado').send({ base: 1 })).status, 400)
+    // as componentes escrevem-se à mão (como no SIGP); null volta ao cálculo
+    let t2 = (await adm.put('/api/tabela-salarial/major').send({ condicaoMilitar: 100000, comandoChefia: 20000 }).expect(200)).body
+    let maj = t2.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'major')
+    assert.deepEqual([maj.base, maj.condicaoMilitar, maj.comandoChefia, maj.iliquido, maj.manual], [324000, 100000, 20000, 444000, ['condicaoMilitar', 'comandoChefia']])
+    t2 = (await adm.put('/api/tabela-salarial/major').send({ base: 330000, condicaoMilitar: null }).expect(200)).body
+    maj = t2.grupos.find((g) => g.fps === 'QP').linhas.find((l) => l.posto === 'major')
+    assert.deepEqual([maj.base, maj.condicaoMilitar, maj.comandoChefia], [330000, 99000, 20000])
     const c = (await adm.post('/api/pessoas').send(militar({ nip: 'SAL001', posto: 'coronel', fps: 'QP', iban: 'AO06 0040 0000 1234', banco: 'BPC' })).expect(201)).body
     const f = (await adm.get(`/api/pessoas/${c.id}`)).body
     assert.equal(f.vencimentoTabela.base, 400000)

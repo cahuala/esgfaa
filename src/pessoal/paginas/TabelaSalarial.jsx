@@ -11,13 +11,16 @@ const numero = (t) => Number(String(t).replace(/\s/g, '').replace(',', '.')) || 
 
 /*
   Tabela salarial por posto (a mesma do SIGP): por forma de prestação de serviço, o vencimento base e as
-  componentes calculadas até ao líquido. O administrador altera só o vencimento base (com a calculadora).
+  componentes até ao líquido. O administrador altera o vencimento base e, se for preciso, a condição
+  militar, a representação e o comando/chefia (vazio = calculado); guarda com a calculadora.
 */
+const ROTULOS = { base: 'Vencimento base', condicaoMilitar: 'Condição militar', representacao: 'Representação', comandoChefia: 'Comando/chefia' }
 export default function TabelaSalarial() {
   const { ref, pode, avisar } = useSessao()
   const { dados, erro, recarregar } = useDados('/tabela-salarial')
   const [q, setQ] = useState('')
-  const [bases, setBases] = useState({})
+  // o que se está a escrever, por posto: { base, condicaoMilitar, representacao, comandoChefia } (texto)
+  const [ed, setEd] = useState({})
   const [aGuardar, setAGuardar] = useState(null)
   const [ramo, setRamo] = useState('')
   const alterar = pode('administrar')
@@ -34,13 +37,16 @@ export default function TabelaSalarial() {
   const pc = dados.percentagens
 
   async function guardar(posto) {
-    const base = numero(bases[posto])
-    if (!base) { avisar('Escreva o vencimento base.', 'erro'); return }
+    const e = ed[posto] ?? {}
+    if (!Object.keys(e).length) { avisar('Altere primeiro um valor deste posto.', 'erro'); return }
+    if (e.base !== undefined && !numero(e.base)) { avisar('Escreva o vencimento base.', 'erro'); return }
+    // a base escreve-se sempre; uma componente vazia volta a ser calculada
+    const corpo = Object.fromEntries(Object.entries(e).map(([k, v]) => [k, k !== 'base' && String(v).trim() === '' ? null : numero(v)]))
     setAGuardar(posto)
     try {
-      await api(`/tabela-salarial/${posto}`, { metodo: 'PUT', corpo: { base } })
-      setBases(({ [posto]: _, ...r }) => { void _; return r })
-      avisar(`Vencimento base de ${nome(posto)} actualizado.`)
+      await api(`/tabela-salarial/${posto}`, { metodo: 'PUT', corpo })
+      setEd(({ [posto]: _, ...r }) => { void _; return r })
+      avisar(`${Object.keys(corpo).map((k) => ROTULOS[k]).join(', ')} de ${nome(posto)} actualizado(s).`)
       recarregar()
     } catch (e) {
       avisar(e.message, 'erro')
@@ -60,7 +66,7 @@ export default function TabelaSalarial() {
 
   return (
     <>
-      <Cabecalho titulo={<><i className="fa fa-table me-2 pes-ouro" />Tabela Salarial por Posto</>} subtitulo={`${total} registos${alterar ? ' · altere o Vencimento Base — os outros valores são calculados automaticamente' : ''}`} migalhas={[['Carreiras'], ['Tabela salarial']]}>
+      <Cabecalho titulo={<><i className="fa fa-table me-2 pes-ouro" />Tabela Salarial por Posto</>} subtitulo={`${total} registos${alterar ? ' · altere o vencimento base e, se for preciso, as outras componentes (vazio = calculado)' : ''}`} migalhas={[['Carreiras'], ['Tabela salarial']]}>
         <button type="button" className="btn btn-white" onClick={() => exportarExcel('Tabela Salarial por Posto', colunas, todas)}><i className="fa fa-file-excel me-1 text-success" />Excel</button>
         <button type="button" className="btn btn-white" onClick={() => exportarPdf('Tabela Salarial por Posto', colunas, todas)}><i className="fa fa-file-pdf me-1 text-danger" />PDF</button>
       </Cabecalho>
@@ -71,7 +77,7 @@ export default function TabelaSalarial() {
         Subsídio de Representação: só de Coronel a General no Quadro Permanente ({Object.entries(dados.representacao).reverse().map(([p, v]) => `${nome(p)} ${KZ(v)}`).join(', ')}); do Tenente-Coronel para baixo é <b>0,00</b> ·
         Comando/Direcção/Chefia = Base × {pc.comandoChefia}% (Coronel para baixo); Oficiais Generais e o SMO não têm ·
         Caixa de Segurança Social (desconto) = Total Ilíquido × {pc.caixaSS}%
-        {alterar && <> · <b>Altere apenas o Vencimento Base</b> e clique <i className="fa fa-calculator" /> para recalcular e guardar.</>}
+        {alterar && <> · Como no SIGP, a <b>condição militar, a representação e o comando/chefia</b> podem escrever-se à mão (em negrito); apague o valor para voltar à fórmula. Clique <i className="fa fa-calculator" /> para guardar.</>}
       </div>
 
       <div className="card mb-3"><div className="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
@@ -90,24 +96,31 @@ export default function TabelaSalarial() {
                 {grupos.map((g) => [
                   <tr key={`${g.ramo}-${g.fps}`} className="pes-sal-fps"><td colSpan={alterar ? 10 : 9}><i className="fa fa-layer-group me-1" />{ref.ramos[g.ramo].nome} — {g.nome} ({g.fps})</td></tr>,
                   ...g.linhas.map((l) => {
-                    const editado = bases[l.posto] !== undefined
-                    const b = editado ? numero(bases[l.posto]) : l.base
-                    // ao escrever, as outras colunas acompanham (as mesmas regras do servidor)
-                    const temCmdo = g.fps !== 'SMO' && ref.postos.EXE.find((x) => x.id === l.posto)?.categoria !== 'oficial_general'
-                    const cm = editado ? (b * pc.condicaoMilitar) / 100 : l.condicaoMilitar
-                    const cc = editado ? (temCmdo ? (b * pc.comandoChefia) / 100 : 0) : l.comandoChefia
-                    const ili = editado ? b + cm + l.representacao + cc : l.iliquido
-                    const ss = editado ? (ili * pc.caixaSS) / 100 : l.caixaSS
+                    const e = ed[l.posto] ?? {}
+                    const b = e.base !== undefined ? numero(e.base) : l.base
+                    // ao escrever, as outras colunas acompanham (as mesmas regras do servidor): a componente
+                    // escrita fica; a vazia ou calculada segue a fórmula
+                    const general = ref.postos.EXE.find((x) => x.id === l.posto)?.categoria === 'oficial_general'
+                    const auto = { condicaoMilitar: (b * pc.condicaoMilitar) / 100, representacao: dados.representacao[l.posto] ?? 0, comandoChefia: general ? 0 : (b * pc.comandoChefia) / 100 }
+                    const valor = (k) => (e[k] !== undefined ? (String(e[k]).trim() === '' ? auto[k] : numero(e[k])) : l.manual?.includes(k) ? l[k] : auto[k])
+                    const cm = valor('condicaoMilitar')
+                    const rp = g.fps === 'QP' ? valor('representacao') : 0
+                    const cc = g.fps === 'SMO' ? 0 : valor('comandoChefia')
+                    const ili = b + cm + rp + cc
+                    const ss = (ili * pc.caixaSS) / 100
+                    const caixa = (k, v, pode = true) => {
+                      const manual = e[k] !== undefined ? String(e[k]).trim() !== '' : l.manual?.includes(k)
+                      if (!alterar || !pode) return <td className={manual && pode ? 'fw-bold' : 'pes-sal-auto'}>{KZ(v)}</td>
+                      return <td><input className={`pes-sal-base ${k === 'base' || manual ? '' : 'pes-sal-auto fw-normal'}`} value={e[k] !== undefined ? e[k] : KZ(v)} title={k === 'base' || manual ? '' : 'Calculado; escreva para fixar o valor'} aria-label={`${ROTULOS[k]} de ${nome(l.posto, g.ramo)} (${g.ramo}, ${g.fps})`} onChange={(ev) => setEd({ ...ed, [l.posto]: { ...e, [k]: ev.target.value.replace(/[^0-9.,\s]/g, '') } })} onKeyDown={(ev) => { if (ev.key === 'Enter') guardar(l.posto) }} /></td>
+                    }
                     return (
                       <tr key={`${g.ramo}-${g.fps}-${l.posto}`}>
                         <td><strong>{nome(l.posto, g.ramo)}</strong> <small className="text-muted">({abrev(l.posto, g.ramo)})</small></td>
                         <td className="small text-muted">{g.fps}</td>
-                        <td>{alterar
-                          ? <input className="pes-sal-base" value={editado ? bases[l.posto] : KZ(l.base)} aria-label={`Vencimento base de ${nome(l.posto, g.ramo)} (${g.ramo}, ${g.fps})`} onChange={(e) => setBases({ ...bases, [l.posto]: e.target.value.replace(/[^0-9.,\s]/g, '') })} onKeyDown={(e) => { if (e.key === 'Enter') guardar(l.posto) }} />
-                          : KZ(l.base)}</td>
-                        <td className="pes-sal-auto">{KZ(cm)}</td>
-                        <td className="pes-sal-auto">{KZ(l.representacao)}</td>
-                        <td className="pes-sal-auto">{KZ(cc)}</td>
+                        {caixa('base', b)}
+                        {caixa('condicaoMilitar', cm)}
+                        {caixa('representacao', rp, g.fps === 'QP')}
+                        {caixa('comandoChefia', cc, g.fps !== 'SMO')}
                         <td>{KZ(ili)}</td>
                         <td className="pes-sal-auto">{KZ(ss)}</td>
                         <td className="pes-sal-total">{KZ(ili - ss)}</td>
@@ -121,7 +134,7 @@ export default function TabelaSalarial() {
           )}
         </div>
       </div>
-      <p className="small text-muted mt-2">O vencimento base é igual em todas as formas de prestação de serviço e nos três ramos (os postos equivalem-se: Coronel = Capitão-de-Mar-e-Guerra): alterá-lo num posto altera-o em todos. Nas declarações, o vencimento escreve-se ao emitir; se ficar vazio, vai o líquido desta tabela.</p>
+      <p className="small text-muted mt-2">Os valores de um posto são iguais nos três ramos e nas formas de prestação de serviço (os postos equivalem-se: Coronel = Capitão-de-Mar-e-Guerra): alterá-los num posto altera-os em todos. A representação só existe no QP e o SMO não tem comando/chefia. Nas declarações, o vencimento escreve-se ao emitir; se ficar vazio, vai o líquido desta tabela.</p>
     </>
   )
 }
