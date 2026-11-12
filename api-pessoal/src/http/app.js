@@ -7,6 +7,7 @@ import { criarVerificadorRedes } from '../infraestrutura/redes.js'
 import { idPedido, semCache, tratarErros } from './middlewares.js'
 import { rotas } from './rotas.js'
 import { rotasAparelhos } from './aparelhosPonto.js'
+import { rotasCertificado } from './certificado.js'
 
 /*
   Aplicação do Sistema de Gestão de Pessoal (rede interna). Antes de tudo, recusa quem não vem das redes
@@ -26,6 +27,8 @@ export function criarApp(contentor, { registarErro } = {}) {
     res.status(403).json({ erro: 'O Sistema de Gestão de Pessoal só está disponível na rede interna da Escola.', codigo: 'fora_da_rede' })
   })
   app.use(idPedido)
+  // a página do certificado (sem sessão; também por http://IP:8085), antes do helmet: tem cabeçalhos próprios
+  app.use(rotasCertificado(config))
   app.use(helmet({
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'data:', 'blob:'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'], scriptSrc: ["'self'"], connectSrc: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"] } },
     strictTransportSecurity: false,

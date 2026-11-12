@@ -42,12 +42,13 @@ DEPOIS DE INSTALAR
        Windows: C:\ESG-Pessoal\config\pessoal.env     Linux: /etc/esg-pessoal/pessoal.env
      Sem a DADOS_CHAVE os dados pessoais não se lêem; sem a COPIAS_CHAVE as cópias não abrem.
   2. Entre em https://esg.emfaa.gov.ao com o e-mail do administrador e a palavra-passe inicial.
-     Na primeira entrada o sistema pede a verificação em dois passos (aplicação no telemóvel,
-     p. ex. Google Authenticator ou Microsoft Authenticator).
+     A verificação em dois passos é opcional (liga-se em Segurança da conta, se quiser).
   3. Em cada um dos outros computadores da Repartição, ligue este pendrive e faça duplo clique em
        PREPARAR-COMPUTADOR-WINDOWS.bat     (Linux:  sudo bash PREPARAR-COMPUTADOR-LINUX.sh)
      Pede o IP do servidor (já sugerido) e instala o certificado (registos\esg-pessoal-raiz.crt),
      para o navegador abrir https://esg.emfaa.gov.ao sem avisos.
+     Sem o pendrive: no navegador de cada computador abra  http://IP-DO-SERVIDOR:8085/certificado
+     e carregue em «Preparar este computador (Windows)» (como no SIGP-FAN).
   Os militares entram com o NIP; a palavra-passe inicial é o NIP (mudam-na na primeira entrada).
   4. Em Configurações (menu Administração › Listas do sistema) ajuste as listas: categorias do docente,
      províncias, motivos de saída, bancos, tipos de documento, de expediente e de unidade.

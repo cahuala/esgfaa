@@ -170,7 +170,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
       <p class="entrada">O <b>sistema de Pessoal</b> é a ferramenta da Repartição de Pessoal e Quadros: as fichas de todos os militares e civis da Escola, as carreiras segundo a Lei n.º 13/18, a orgânica, os processos individuais, as propostas, os extractos e os documentos. Funciona <b>só dentro da rede da Escola</b>. Os dados mais sensíveis (BI, filiação, telefone, morada) ficam cifrados na base de dados.</p>
       <section class="tema" id="pes-entrar">
         <h3>Entrar e o painel</h3>
-        <p>Entra-se com o <b>NIP</b>, o <b>n.º de agente</b> ou o e-mail e a palavra-passe. Antes de carregar em <span class="botao">Entrar</span>, marque a caixa <b>Não sou um robô</b>: o computador faz uma pequena conta durante um ou dois segundos e a caixa fica com o visto («Verificado»). É uma verificação da própria Escola, sem serviços de fora, que trava os programas que tentam adivinhar palavras-passe. Quem vê fichas tem de ligar a <a href="#dois-passos">verificação em dois passos</a>. Os militares e civis que não são da Repartição (utentes) só vêem o expediente, as mensagens e a sua própria ficha.</p>
+        <p>Entra-se com o <b>NIP</b>, o <b>n.º de agente</b> ou o e-mail e a palavra-passe. Antes de carregar em <span class="botao">Entrar</span>, marque a caixa <b>Não sou um robô</b>: o computador faz uma pequena conta durante um ou dois segundos e a caixa fica com o visto («Verificado»). É uma verificação da própria Escola, sem serviços de fora, que trava os programas que tentam adivinhar palavras-passe. A <a href="#dois-passos">verificação em dois passos</a> é opcional (recomendada). Se o navegador avisar que a ligação não é segura, carregue em <b>Instale o certificado neste computador</b>, por baixo do botão Entrar (ou abra <b>http://IP-do-servidor:8085/certificado</b>) e depois em <span class="botao">Preparar este computador (Windows)</span>: uma vez em cada computador. Os militares e civis que não são da Repartição (utentes) só vêem o expediente, as mensagens e a sua própria ficha.</p>
         <div class="par">
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-entrar.jpg" alt="Entrada do sistema de Pessoal"></button><figcaption>A entrada (só na rede interna).</figcaption></figure>
           <figure><button class="foto" type="button"><img loading="lazy" src="img/pes-painel.jpg" alt="Painel do sistema de Pessoal"></button><figcaption>O painel: efectivo, em condições de promoção, licenças, reserva, cargos ocupados e os gráficos (clique num para ver a lista).</figcaption></figure>
@@ -178,7 +178,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
       </section>
       <section class="tema" id="dois-passos">
         <h3>Verificação em dois passos</h3>
-        <p>Além da palavra-passe, a entrada pede um <b>código de 6 algarismos</b> que muda de 30 em 30 segundos numa aplicação do telemóvel (Google Authenticator, Microsoft Authenticator, FreeOTP…). Mesmo que alguém descubra a palavra-passe, sem o seu telemóvel não entra. É <b>obrigatória</b> para o administrador do painel e para quem vê fichas no sistema de Pessoal; para os outros é opcional (recomendada).</p>
+        <p>Além da palavra-passe, a entrada pede um <b>código de 6 algarismos</b> que muda de 30 em 30 segundos numa aplicação do telemóvel (Google Authenticator, Microsoft Authenticator, FreeOTP…). Mesmo que alguém descubra a palavra-passe, sem o seu telemóvel não entra. É <b>obrigatória</b> para o administrador do painel do portal; no sistema de Pessoal é <b>opcional</b> (recomendada).</p>
         <ol class="passos">
           <li>No menu, abra <b>Segurança da conta</b>. Carregue em <span class="botao">Ligar a verificação em dois passos</span>.</li>
           <li>Na aplicação do telemóvel, adicione uma conta e <b>leia o código QR</b> (ou escreva a chave que aparece ao lado).</li>
@@ -403,7 +403,6 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           <li><b>Dar ou tirar tarefas vai a despacho do Comandante</b>: <span class="botao">Pedir ao Comandante</span> envia o pedido para a Secretária digital (com o que dá e o que tira); só vale depois de deferido. Enquanto espera, a lista mostra «Mudança a despacho».</li>
           <li>O menu e os ecrãs moldam-se: o que a conta não vê desaparece do menu; onde só vê, os botões de alterar não aparecem — e o servidor recusa na mesma.</li>
           <li><span class="botao">Voltar às do papel</span> tira as permissões próprias. Mudar o papel da conta também volta às do papel novo.</li>
-          <li>Uma conta de utente a quem se dão ecrãs com fichas passa a ter de usar a verificação em dois passos.</li>
           <li>Ninguém tira a si próprio a gestão dos utilizadores. Na primeira instalação, enquanto não houver conta de Comandante, as mudanças valem logo.</li>
         </ul>
       </section>
@@ -467,7 +466,7 @@ dialog button { position: absolute; top: 8px; right: 8px; border: 0; border-radi
           <tr><td>“Conta bloqueada por excesso de tentativas”</td><td>Espere 15 minutos e tente de novo, com calma. Se continuar, peça que a reponham.</td></tr>
           <tr><td>“Código errado” ao entrar</td><td>Use o código que aparece <b>agora</b> na aplicação (muda de 30 em 30 segundos) e confira se a hora do telemóvel está certa (automática).</td></tr>
           <tr><td>Perdi o telemóvel da verificação em dois passos</td><td>Entre com um dos códigos de recuperação. Se também os perdeu, peça a um administrador que reponha a verificação.</td></tr>
-          <tr><td>“Ligue a verificação em dois passos antes de continuar”</td><td>O seu papel exige-a: siga os passos de <a href="#dois-passos">Verificação em dois passos</a>.</td></tr>
+          <tr><td>“A ligação não é privada” / “não é segura”</td><td>Falta o certificado neste computador: abra <b>http://IP-do-servidor:8085/certificado</b> e carregue em <span class="botao">Preparar este computador (Windows)</span>.</td></tr>
           <tr><td>Não consigo abrir o sistema de Pessoal</td><td>Só funciona dentro da rede da Escola: use um computador ligado à rede interna.</td></tr>
         </tbody>
       </table></div>

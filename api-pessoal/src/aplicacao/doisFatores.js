@@ -7,7 +7,7 @@ const EMISSOR = 'ESG — Pessoal'
 
 /*
   Verificação em dois passos (TOTP, aplicação de autenticação do telemóvel) das contas do sistema de pessoal.
-  Os papéis de DOIS_FATORES_PAPEIS (em produção, todos os que vêem fichas) só usam o sistema com ela ligada.
+  É opcional (cada um liga-a em Mudar palavra-passe); só os papéis de DOIS_FATORES_PAPEIS, se se indicarem, a têm de usar.
   O segredo fica cifrado na base de dados; dos códigos de recuperação só se guarda o resumo.
 */
 export class ServicoDoisFatores {

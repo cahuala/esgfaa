@@ -243,6 +243,9 @@ fi
 # numa actualização de uma instalação antiga (aberta pelo IP), passa a ser pelo nome
 sed -i "s|^ENDERECO=.*|ENDERECO=$DOMINIO|; s|^CORS_ORIGINS=.*|CORS_ORIGINS=$ORIGENS|; s|^PORTA_WEB=.*|PORTA_WEB=$PORTA_WEB|" "$CONF/pessoal.env"
 grep -q '^PORTA_WEB=' "$CONF/pessoal.env" || echo "PORTA_WEB=$PORTA_WEB" >> "$CONF/pessoal.env"
+# a página /certificado (os outros computadores instalam o certificado por lá): o ficheiro e o IP deste servidor
+sed -i '/^CERTIFICADO_RAIZ=/d; /^SERVIDOR_IP=/d' "$CONF/pessoal.env"
+printf 'CERTIFICADO_RAIZ=%s\nSERVIDOR_IP=%s\n' "$DESTINO/certificado/esg-pessoal-raiz.crt" "$IP" >> "$CONF/pessoal.env"
 # a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
 if ! grep -q '^BI_API_KEY=.' "$CONF/pessoal.env"; then
   CHAVE_BI="${ESG_BI_API_KEY:-}"
@@ -338,11 +341,12 @@ $ENDERECO {
 	reverse_proxy 127.0.0.1:$PORTA_API
 }
 
-$( [[ -n "$PORTA_HTTP" ]] && printf 'http://%s {\n\tredir %s{uri} permanent\n}\n\nhttp:// {\n\tabort\n}\n' "$ENDERECO" "$URL" )
+$( [[ -n "$PORTA_HTTP" ]] && printf 'http://%s {\n\thandle /certificado* {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n\thandle {\n\t\tredir %s{uri} permanent\n\t}\n}\n\nhttp:// {\n\thandle /certificado* {\n\t\treverse_proxy 127.0.0.1:%s\n\t}\n\thandle {\n\t\tabort\n\t}\n}\n' "$ENDERECO" "$PORTA_API" "$URL" "$PORTA_API" )
 
-# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
+# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP); e a página do
+# certificado, para os computadores a instalarem antes de confiarem no HTTPS (http://IP:8085/certificado)
 :8085 {
-	@ponto path /iclock/*
+	@ponto path /iclock/* /certificado /certificado/*
 	reverse_proxy @ponto 127.0.0.1:$PORTA_API
 	respond 404
 }
@@ -395,9 +399,10 @@ RESUMO="$DESTINO/INSTALACAO.txt"
   echo "Endereço:            $URL   (pelo IP não abre)"
   echo "No DNS da Escola:     $ENDERECO  →  ${IP:-<IP deste computador>}   (registo A; peça ao responsável pela rede)"
   echo "                      Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat (ou -LINUX.sh) do pendrive."
+  echo "Certificado (página): http://${IP:-<IP>}:8085/certificado   (em cada computador: «Preparar este computador»)"
   echo "Administrador:       $ADMIN_EMAIL"
-  if (( ${SENHA_ESCOLHIDA:-0} )); then echo "Palavra-passe:       a que escolheu na instalação   (na primeira entrada pede a verificação em dois passos)"
-  elif [[ -n "${ADMIN_PASSWORD:-}" ]]; then echo "Palavra-passe inicial: $ADMIN_PASSWORD   (na primeira entrada pede a verificação em dois passos)"; fi
+  if (( ${SENHA_ESCOLHIDA:-0} )); then echo "Palavra-passe:       a que escolheu na instalação"
+  elif [[ -n "${ADMIN_PASSWORD:-}" ]]; then echo "Palavra-passe inicial: $ADMIN_PASSWORD"; fi
   echo
   echo "Certificado (instale nos computadores da Repartição para o navegador confiar):"
   echo "   $DESTINO/certificado/esg-pessoal-raiz.crt   (cópia no pendrive: registos/esg-pessoal-raiz.crt)"

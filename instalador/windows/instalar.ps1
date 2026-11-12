@@ -374,6 +374,8 @@ $linhasEnv = @((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ENDERECO=.*'
 $linhasEnv = @($linhasEnv -replace '^IP_SISTEMA=.*', "IP_SISTEMA=$IpSistema")
 if (-not ($linhasEnv -match '^PORTA_WEB=')) { $linhasEnv += "PORTA_WEB=$PortaWeb" }
 if (-not ($linhasEnv -match '^IP_SISTEMA=')) { $linhasEnv += "IP_SISTEMA=$IpSistema" }
+# a página /certificado (os outros computadores instalam o certificado por lá): o ficheiro e o IP deste servidor
+$linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^(CERTIFICADO_RAIZ|SERVIDOR_IP)=' }) + "CERTIFICADO_RAIZ=$Destino\certificado\esg-pessoal-raiz.crt" + "SERVIDOR_IP=$ip"
 # a chave da consulta do BI (base de dados do Estado) não vai no pendrive: pede-se enquanto não houver
 if (-not ($linhasEnv -match '^BI_API_KEY=.+')) {
   $ChaveBi = $env:ESG_BI_API_KEY
@@ -461,11 +463,12 @@ $(if ($IpSistema) { "	bind $IpSistema" })
 	reverse_proxy 127.0.0.1:$PortaApi
 }
 
-$(if ($PortaHttp) { $b = if ($IpSistema) { "`n`tbind $IpSistema" } else { '' }; "http://$Endereco {$b`n`tredir $Url{uri} permanent`n}`n`nhttp:// {$b`n`tabort`n}" })
+$(if ($PortaHttp) { $b = if ($IpSistema) { "`n`tbind $IpSistema" } else { '' }; $cert = "`n`thandle /certificado* {`n`t`treverse_proxy 127.0.0.1:$PortaApi`n`t}"; "http://$Endereco {$b$cert`n`thandle {`n`t`tredir $Url{uri} permanent`n`t}`n}`n`nhttp:// {$b$cert`n`thandle {`n`t`tabort`n`t}`n}" })
 
-# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP)
+# aparelhos de ponto (impressão digital): só /iclock (os aparelhos ligam-se pelo IP); e a página do
+# certificado, para os computadores a instalarem antes de confiarem no HTTPS (http://IP:8085/certificado)
 :8085 {
-	@ponto path /iclock/*
+	@ponto path /iclock/* /certificado /certificado/*
 	reverse_proxy @ponto 127.0.0.1:$PortaApi
 	respond 404
 }
@@ -554,11 +557,12 @@ $resumo = @(
   "Endereço:              $Url   (pelo IP não abre)",
   "No DNS da Escola:      $Endereco  ->  $ip   (registo A; peça ao responsável pela rede)",
   '                       Enquanto não houver, em cada computador corra PREPARAR-COMPUTADOR-WINDOWS.bat do pendrive.',
+  "Certificado (página):  http://${ip}:8085/certificado   (em cada computador: «Preparar este computador»)",
   "Administrador:         $AdminEmail"
 )
 if ($script:ReiniciarServidor) { $resumo += @('', "ATENÇÃO: reinicie o servidor para $Url começar a funcionar (o IP $IpSistema só fica livre para o sistema depois disso).") }
-if ($SenhaEscolhida) { $resumo += 'Palavra-passe:         a que escolheu na instalação   (na primeira entrada pede a verificação em dois passos)' }
-elseif ($AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (na primeira entrada pede a verificação em dois passos)" }
+if ($SenhaEscolhida) { $resumo += 'Palavra-passe:         a que escolheu na instalação' }
+elseif ($AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha" }
 $resumo += @(
   '',
   'Certificado (instale nos outros computadores da Repartição para o navegador confiar):',

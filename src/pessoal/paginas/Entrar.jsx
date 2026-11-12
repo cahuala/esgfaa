@@ -86,6 +86,7 @@ export default function Entrar() {
                 {aEntrar ? <><i className="fa fa-spinner fa-spin me-2" />A entrar…</> : <><i className="fa fa-sign-in-alt me-2" />Entrar</>}
               </button>
               <p className="text-muted small mt-3 mb-0"><i className="fa fa-shield-alt me-1" />Este sistema só funciona dentro da rede da Escola. Todas as consultas e alterações ficam registadas.</p>
+              <p className="small mt-2 mb-0"><a href="/certificado"><i className="fa fa-certificate me-1" />O navegador avisa que a ligação não é segura? Instale o certificado neste computador</a></p>
             </form>
           </div>
         </div>

@@ -22,7 +22,7 @@ const ESQUEMA = z.object({
   JWT_SECRET: z.string().default(''),
   // chave da encriptação dos dados pessoais na base de dados (32 bytes: 64 hex ou base64); NUNCA a perca
   DADOS_CHAVE: z.string().default(''),
-  // papéis que têm de usar a verificação em dois passos (em produção, por omissão, todos os que vêem fichas)
+  // papéis que têm de usar a verificação em dois passos (por omissão nenhum: cada um liga-a se quiser)
   DOIS_FATORES_PAPEIS: z.string().optional(),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/).default('8h'),
   // minutos sem uso ao fim dos quais a sessão termina
@@ -46,6 +46,12 @@ const ESQUEMA = z.object({
   BI_API_URL: z.url().default('https://api.gov.ao/bi/v1/getBI'),
   BI_API_KEY: z.string().default(''),
   DATA_DIR: z.string().default('dados'),
+  // a página /certificado (para os computadores da rede confiarem no HTTPS): o certificado da raiz, o nome,
+  // a porta do HTTPS e o IP do servidor (escritos pelo instalador)
+  CERTIFICADO_RAIZ: z.string().default(''),
+  ENDERECO: z.string().default(''),
+  PORTA_WEB: z.string().default(''),
+  SERVIDOR_IP: z.string().default(''),
 })
 
 const proxy = (v) => (!v ? false : /^\d+$/.test(v) ? Number(v) : v === 'true' ? true : v)
@@ -75,7 +81,7 @@ export function criarConfig(env = process.env) {
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     ligacoesBd: e.DB_POOL,
     segredoJwt: segredo,
-    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,chefe,comandante,operador,consulta' : '')).split(',').map((x) => x.trim()).filter(Boolean),
+    doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? '').split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('pessoal-desenvolvimento-dados').digest('hex'),
     duracaoSessao: e.SESSION_TTL,
@@ -91,5 +97,6 @@ export function criarConfig(env = process.env) {
     pastaFicheiros: path.resolve(RAIZ, e.DATA_DIR, 'ficheiros'),
     maxDocumento: e.MAX_DOCUMENTO_MB * 1048576,
     bi: { url: e.BI_API_URL, chave: e.BI_API_KEY },
+    certificado: { caminho: e.CERTIFICADO_RAIZ, endereco: e.ENDERECO, ip: e.SERVIDOR_IP, url: e.ENDERECO ? `https://${e.ENDERECO}${e.PORTA_WEB && e.PORTA_WEB !== '443' ? `:${e.PORTA_WEB}` : ''}` : '' },
   }
 }
