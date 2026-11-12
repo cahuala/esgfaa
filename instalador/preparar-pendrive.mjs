@@ -161,7 +161,7 @@ async function main() {
   passo('A copiar os instaladores…')
   fs.cpSync(path.join(AQUI, 'windows'), path.join(DESTINO, 'windows'), { recursive: true })
   fs.cpSync(path.join(AQUI, 'linux'), path.join(DESTINO, 'linux'), { recursive: true })
-  for (const f of ['INSTALAR-WINDOWS.bat', 'INSTALAR-LINUX.sh', 'INSTALAR-LINUX.desktop', 'PREPARAR-COMPUTADOR-WINDOWS.bat', 'PREPARAR-COMPUTADOR-LINUX.sh', 'LEIA-ME.txt']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
+  for (const f of ['INSTALAR-WINDOWS.bat', 'ACTUALIZAR-WINDOWS.bat', 'INSTALAR-LINUX.sh', 'INSTALAR-LINUX.desktop', 'PREPARAR-COMPUTADOR-WINDOWS.bat', 'PREPARAR-COMPUTADOR-LINUX.sh', 'LEIA-ME.txt']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
   for (const f of ['INSTALAR-LINUX.sh', 'INSTALAR-LINUX.desktop', 'PREPARAR-COMPUTADOR-LINUX.sh', 'linux/instalar.sh']) fs.chmodSync(path.join(DESTINO, f), 0o755)
   if (process.argv.includes('--chave-bi')) {
     const env = fs.existsSync(path.join(RAIZ, 'api-pessoal', '.env')) ? fs.readFileSync(path.join(RAIZ, 'api-pessoal', '.env'), 'utf8') : ''

@@ -59,8 +59,10 @@ SE A INSTALAÇÃO FALHAR
   Depois de corrigir, corra outra vez o instalador: continua e não apaga dados.
 
 ACTUALIZAR
-  Um pendrive com uma versão nova do sistema instala-se da mesma forma: o instalador vê que já está
-  instalado e só actualiza o programa (os dados, as chaves e a configuração ficam).
-  Antes, convém fazer uma cópia de segurança (é automática todos os dias às 2h).
+  Windows já instalado: duplo clique em  ACTUALIZAR-WINDOWS.bat  (aceite o pedido do Windows, «Sim»).
+  Não pergunta nada (portas, IP, conta): faz uma cópia de segurança, troca o código, actualiza a base de
+  dados e volta a ligar o sistema. Os dados, as contas e a configuração ficam. Se algo falhar, volta
+  sozinho à versão anterior e escreve registos\ERRO-ACTUALIZACAO-<data>.txt.
+  (O INSTALAR-WINDOWS.bat também actualiza, mas volta a verificar as portas e pode fazer perguntas.)
 
 O pendrive tem o Quadro Orgânico da Escola: guarde-o em lugar seguro.
