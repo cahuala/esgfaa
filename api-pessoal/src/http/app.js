@@ -30,7 +30,7 @@ export function criarApp(contentor, { registarErro } = {}) {
   // a página do certificado (sem sessão; também por http://IP:8085), antes do helmet: tem cabeçalhos próprios
   app.use(rotasCertificado(config))
   app.use(helmet({
-    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'data:', 'blob:'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'], scriptSrc: ["'self'"], connectSrc: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"] } },
+    contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'data:', 'blob:'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'], scriptSrc: ["'self'", "'wasm-unsafe-eval'"], connectSrc: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"] } },
     strictTransportSecurity: false,
   }))
   app.use(cors({ origin: (o, cb) => cb(null, !o || config.origens.includes(o)), methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'X-Sessao'], credentials: true, maxAge: 600 }))

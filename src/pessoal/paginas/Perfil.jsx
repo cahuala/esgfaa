@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { abrirFicheiro, api, enviarComProgresso, urlFoto } from '../api'
+import { abrirFicheiro, api, urlFoto } from '../api'
 import { etiquetaProcesso, referenciaElogiosa } from '../documentos'
 import Foto from '../componentes/Foto'
 import { reduzirFoto } from '../fotos'
@@ -19,6 +19,7 @@ import NovaLicenca from '../componentes/NovaLicenca'
 import Anexo from '../componentes/Anexo'
 import FichaAcessoPortal from '../componentes/FichaAcessoPortal'
 import { juntarAoProcesso } from '../anexos'
+import JuntarDocumentos from '../componentes/JuntarDocumentos'
 import Carregar from '../componentes/Carregar'
 import { Campo, Carregando, Condicoes, Erro, Escolha, Estado, InputData, Modal, NaoEncontrado } from '../componentes/Ui'
 import { anos, dataPt } from '../formatar'
@@ -440,30 +441,14 @@ function OsMeusDados() {
 function ProcessoIndividual({ p, editar, aoMudar }) {
   const { ref, avisar } = useSessao()
   const [loc, setLoc] = useState({ estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', estado: p.processo?.estado ?? 'activo', observacoes: p.processo?.observacoes ?? '' })
-  const [novo, setNovo] = useState({ tipo: 'bi', titulo: '', data: '' })
-  const [aEnviar, setAEnviar] = useState(null)
+  // os ficheiros arrastados (um, vários ou a pasta do militar), a ler e conferir em JuntarDocumentos
+  const [juntar, setJuntar] = useState(null)
   const falta = []
   const tem = (v, t) => { if (!v) falta.push(t) }
   tem(p.bi, 'N.º do BI'); tem(p.dataNascimento, 'Data de nascimento'); tem(p.fotoId, 'Fotografia'); tem(p.telefone, 'Telefone'); tem(p.habilitacao, 'Habilitações'); tem(p.unidadeId, 'Unidade')
   if (p.tipo === 'militar') { tem(p.dataIngresso, 'Data de ingresso'); tem(p.dataAntiguidadePosto, 'Antiguidade no posto'); tem(p.documentos.some((d) => d.tipo === 'extracto_promocao'), 'Extracto de promoção ao posto actual') }
   tem(p.documentos.some((d) => d.tipo === 'bi'), 'Cópia do BI digitalizada')
   const guardar = () => api(`/processos/${p.id}`, { metodo: 'PUT', corpo: loc }).then(() => { avisar(p.processo ? 'Processo actualizado.' : 'Processo aberto e numerado.'); aoMudar() }).catch((e) => avisar(e.message, 'erro'))
-  async function anexar(f) {
-    if (!f) return
-    setAEnviar(0)
-    const fd = new FormData()
-    fd.append('tipo', novo.tipo)
-    fd.append('titulo', novo.titulo)
-    fd.append('data', novo.data)
-    fd.append('ficheiro', f)
-    try {
-      await enviarComProgresso(`/pessoas/${p.id}/documentos`, fd, setAEnviar)
-      avisar('Documento junto ao processo.')
-      setNovo({ ...novo, titulo: '' })
-      aoMudar()
-    } catch (e) { avisar(e.message, 'erro') }
-    setAEnviar(null)
-  }
   return (
     <div className="row">
       <div className="col-xl-4">
@@ -485,13 +470,11 @@ function ProcessoIndividual({ p, editar, aoMudar }) {
       <div className="col-xl-8">
         <Bloco titulo={`Documentos digitalizados (${p.documentos.length})`} icone="fa-file-alt">
           {editar && (
-            <div className="row align-items-end border-bottom pb-2 mb-2">
-              <Campo rotulo="Tipo" col="col-md-4"><Escolha valor={novo.tipo} aoMudar={(v) => setNovo({ ...novo, tipo: v })} opcoes={ref.tiposDocumento} vazio={null} /></Campo>
-              <Campo rotulo="Título (opcional)" col="col-md-4"><input className="form-control form-control-sm" value={novo.titulo} onChange={(e) => setNovo({ ...novo, titulo: e.target.value })} /></Campo>
-              <Campo rotulo="Data do documento" col="col-md-4"><InputData className="form-control form-control-sm" value={novo.data} onChange={(e) => setNovo({ ...novo, data: e.target.value })} /></Campo>
-              <div className="col-12 mb-2"><Carregar aceitar="application/pdf,image/*,.docx" maxMb={25} compacto titulo={`Juntar ${ref.tiposDocumento[novo.tipo]?.toLowerCase() ?? 'documento'}: arraste para aqui`} progresso={aEnviar} aoEscolher={anexar} ajuda="PDF, imagem digitalizada ou Word · até 25 MB" /></div>
+            <div className="border-bottom pb-2 mb-2">
+              <Carregar aceitar="application/pdf,image/*,.docx,.xlsx" multiplo pasta maxMb={25} compacto icone="fa-folder-plus" titulo="Juntar documentos: arraste os ficheiros ou a pasta do militar" aoEscolher={(l) => setJuntar(l.map((f) => ({ pessoaId: p.id, ficheiro: f })))} ajuda="PDF, imagens ou Word · o sistema reconhece cada documento (BI, extractos, louvores…) e separa um PDF que tenha vários" />
             </div>
           )}
+          {juntar && <JuntarDocumentos itens={juntar} aoFechar={() => setJuntar(null)} aoTerminar={() => { setJuntar(null); avisar('Documentos juntos ao processo.'); aoMudar() }} />}
           <Tabela titulo={`Processo individual — ${p.nome}`} linhas={p.documentos.map((d) => ({ ...d, tipoNome: ref.tiposDocumento[d.tipo] ?? d.tipo }))} aoClicar={(d) => abrirFicheiro(`/documentos/${d.id}/ficheiro`, d.nomeOriginal).catch((e) => avisar(e.message, 'erro'))} vazio="Sem documentos digitalizados." colunas={[
             { chave: 'data', titulo: 'Data', valor: (d) => d.data?.slice(0, 10) ?? '', mostrar: (d) => dataPt(d.data) },
             { chave: 'tipo', titulo: 'Tipo', valor: (d) => d.tipoNome },

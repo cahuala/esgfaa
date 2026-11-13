@@ -20,6 +20,10 @@ describe('Secretária digital de cada conta: os documentos guardados por pastas'
     assert.deepEqual([d.titulo, d.pasta, d.nomeOriginal, d.mime, d.ficheiro], ['Ofício n.º 120', 'Ofícios 2026', 'oficio.pdf', 'application/pdf', undefined])
     // sem título fica o nome do ficheiro
     assert.equal((await op.post('/api/pastas').attach('ficheiro', PDF, 'escala.pdf').expect(201)).body.titulo, 'escala.pdf')
+    // nomes com acentos chegam inteiros
+    const acentos = (await op.post('/api/pastas').attach('ficheiro', PDF, 'Ofício (pág. 3-4).pdf').expect(201)).body
+    assert.equal(acentos.nomeOriginal, 'Ofício (pág. 3-4).pdf')
+    await op.delete(`/api/pastas/${acentos.id}`).expect(204)
     assert.equal((await op.post('/api/pastas').attach('ficheiro', Buffer.from('<html>'), 'x.html')).status, 400)
     assert.equal((await op.get('/api/pastas').expect(200)).body.length, 2)
     const f = await op.get(`/api/pastas/${d.id}/ficheiro`).expect(200)

@@ -23,6 +23,12 @@ export function tipoDoFicheiro(buffer, nome = '') {
   return null
 }
 
+// o multer lê o nome do ficheiro como latin1: «Ofício.pdf» chegava «OfÃ­cio.pdf»; volta a UTF-8 (se não for UTF-8 válido, fica como veio)
+export function nomeDoFicheiro(n) {
+  const u = Buffer.from(String(n ?? ''), 'latin1').toString('utf8')
+  return u.includes('\uFFFD') ? String(n ?? '') : u
+}
+
 // pasta privada (fora de qualquer endereço público); os ficheiros só se lêem com sessão e permissão
 export class Ficheiros {
   constructor(pasta) {
@@ -36,7 +42,7 @@ export class Ficheiros {
     if (!t) throw invalido('Tipo de ficheiro não aceite: use PDF, JPG, PNG, WEBP, Word (.docx) ou Excel (.xlsx).', 'ficheiro')
     const nome = `${crypto.randomUUID()}.${t.ext}`
     await fs.promises.writeFile(path.join(this.pasta, nome), ficheiro.buffer)
-    return { ficheiro: nome, mime: t.mime, tamanho: ficheiro.buffer.length, nomeOriginal: String(ficheiro.originalname || nome).slice(0, 200) }
+    return { ficheiro: nome, mime: t.mime, tamanho: ficheiro.buffer.length, nomeOriginal: (nomeDoFicheiro(ficheiro.originalname) || nome).slice(0, 200) }
   }
 
   caminho(nome) {

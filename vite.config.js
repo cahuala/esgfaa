@@ -2,6 +2,8 @@ import crypto from 'node:crypto'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import fs from 'node:fs'
+import { OCR } from './scripts/ocr-ficheiros.mjs'
 
 /*
   Política de segurança de conteúdo (CSP) nas páginas publicadas: só correm os scripts da própria aplicação
@@ -23,7 +25,8 @@ function csp(env) {
           .map((m) => `'sha256-${crypto.createHash('sha256').update(m[1]).digest('base64')}'`)
         const politica = [
           "default-src 'self'",
-          `script-src 'self' ${hashes.join(' ')}`.trim(),
+          // wasm-unsafe-eval: o OCR do Pessoal (WebAssembly) — não permite eval() de JavaScript
+          `script-src 'self' 'wasm-unsafe-eval' ${hashes.join(' ')}`.trim(),
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "font-src 'self' data: https://fonts.gstatic.com",
           `img-src 'self' data: blob: https: ${apis}`.trim(),
@@ -43,9 +46,23 @@ function csp(env) {
   }
 }
 
+// em desenvolvimento, o OCR do Pessoal (no build vai para ocr/ pelo preparar-pessoal.mjs)
+const ocrDev = {
+  name: 'esg-ocr-dev',
+  apply: 'serve',
+  configureServer(servidor) {
+    servidor.middlewares.use('/pessoal/ocr/', (req, res, next) => {
+      const f = OCR[req.url.slice(1).split('?')[0]]
+      if (!f) return next()
+      res.setHeader('Content-Type', f.endsWith('.js') ? 'text/javascript' : 'application/octet-stream')
+      fs.createReadStream(f).pipe(res)
+    })
+  },
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), csp(loadEnv(mode, process.cwd(), 'VITE_'))],
+  plugins: [react(), ocrDev, csp(loadEnv(mode, process.cwd(), 'VITE_'))],
   base: process.env.BASE_PATH || '/',
   build: {
     // quatro aplicações: o site público, o painel de administração, o portal académico e o sistema de

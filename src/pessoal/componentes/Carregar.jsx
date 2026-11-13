@@ -9,6 +9,30 @@ function aceite(f, aceitar) {
   return aceitar.split(',').map((x) => x.trim().toLowerCase()).some((a) => (a.startsWith('.') ? f.name.toLowerCase().endsWith(a) : a.endsWith('/*') ? f.type.startsWith(a.slice(0, -1)) : f.type === a))
 }
 
+// uma pasta largada: todos os ficheiros dela e das subpastas, cada um com o caminho (f.caminho: «Pasta/123456/bi.pdf»)
+async function daPasta(entrada, caminho = '') {
+  if (entrada.isFile) {
+    const f = await new Promise((ok, falha) => entrada.file(ok, falha))
+    Object.defineProperty(f, 'caminho', { value: `${caminho}${f.name}` })
+    return [f]
+  }
+  const leitor = entrada.createReader()
+  const filhos = []
+  // readEntries devolve aos bocados (até 100 de cada vez): lê-se até vir vazio
+  for (;;) {
+    const lote = await new Promise((ok, falha) => leitor.readEntries(ok, falha))
+    if (!lote.length) break
+    filhos.push(...lote)
+  }
+  return (await Promise.all(filhos.filter((e) => !e.name.startsWith('.')).map((e) => daPasta(e, `${caminho}${entrada.name}/`)))).flat()
+}
+
+async function largados(dt, pasta) {
+  const entradas = pasta ? [...dt.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean) : []
+  if (!entradas.some((e) => e.isDirectory)) return [...dt.files]
+  return (await Promise.all(entradas.map((e) => daPasta(e)))).flat()
+}
+
 function Miniatura({ f }) {
   const url = useMemo(() => (f.type.startsWith('image/') ? URL.createObjectURL(f) : null), [f])
   useEffect(() => () => { if (url) URL.revokeObjectURL(url) }, [url])
@@ -56,7 +80,7 @@ export default function Carregar({ aceitar, multiplo = false, maxMb = 25, pasta 
         className={`pes-carregar-zona ${sobre ? 'sobre' : ''} ${compacto ? 'compacto' : ''} ${bloqueado ? 'bloqueado' : ''}`}
         onClick={abrir} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrir() } }}
         onDragOver={(e) => { e.preventDefault(); if (!bloqueado) setSobre(true) }} onDragLeave={() => setSobre(false)}
-        onDrop={(e) => { e.preventDefault(); setSobre(false); if (!bloqueado) receber([...e.dataTransfer.files]) }}
+        onDrop={(e) => { e.preventDefault(); setSobre(false); if (!bloqueado) largados(e.dataTransfer, pasta).then(receber) }}
       >
         <i className={`fa ${aEnviar ? 'fa-spinner fa-spin' : icone} ${compacto ? '' : 'fa-2x'} text-theme`} />
         <div className="pes-carregar-texto">

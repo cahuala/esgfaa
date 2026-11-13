@@ -2,11 +2,12 @@
 /*
   Prepara a pasta da aplicação do sistema de pessoal (dist-pessoal/) a partir do build (npm run build):
   a página dist/pessoal/index.html passa a index.html e vêm os recursos partilhados (dist/assets, o brasão…).
-  Leva o manual do Pessoal (dist/pessoal/manual → manual/). Não leva as páginas do site, do portal nem do painel. A API interna serve esta pasta (APP_DIR).
+  Leva o manual do Pessoal (dist/pessoal/manual → manual/) e o leitor das digitalizações (OCR → ocr/). Não leva as páginas do site, do portal nem do painel. A API interna serve esta pasta (APP_DIR).
 */
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { OCR } from './ocr-ficheiros.mjs'
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(RAIZ, 'dist')
@@ -21,5 +22,8 @@ fs.copyFileSync(path.join(dist, 'pessoal', 'index.html'), path.join(saida, 'inde
 fs.cpSync(path.join(dist, 'assets'), path.join(saida, 'assets'), { recursive: true })
 // o manual do sistema de Pessoal (só aqui: o do Portal Académico fica no portal)
 if (fs.existsSync(path.join(dist, 'pessoal', 'manual'))) fs.cpSync(path.join(dist, 'pessoal', 'manual'), path.join(saida, 'manual'), { recursive: true })
+// o OCR (ler o texto das digitalizações no processo individual), sem internet
+fs.mkdirSync(path.join(saida, 'ocr'))
+for (const [nome, origem] of Object.entries(OCR)) fs.copyFileSync(origem, path.join(saida, 'ocr', nome))
 for (const f of fs.readdirSync(dist, { withFileTypes: true })) if (f.isFile() && f.name !== 'index.html' && f.name !== '404.html') fs.copyFileSync(path.join(dist, f.name), path.join(saida, f.name))
 console.log(`Aplicação do pessoal pronta em ${path.relative(RAIZ, saida) || saida} (APP_DIR).`)

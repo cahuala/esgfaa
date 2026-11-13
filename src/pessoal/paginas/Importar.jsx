@@ -6,6 +6,8 @@ import { folhasXlsx, lerCsv, lerXlsx } from '../../admin/paginas/academico/lerFo
 import { reduzirFoto } from '../fotos'
 import Tabela from '../componentes/Tabela'
 import Carregar from '../componentes/Carregar'
+import JuntarDocumentos from '../componentes/JuntarDocumentos'
+import { caminhoDe } from '../separar'
 import { Cabecalho, Escolha, Painel } from '../componentes/Ui'
 
 // colunas reconhecidas na folha (pelo título, sem acentos nem maiúsculas) → campo da ficha
@@ -60,7 +62,7 @@ function aplicarLigacoes(tabela, titulos, ligacoes) {
 }
 
 export default function Importar() {
-  const { avisar } = useSessao()
+  const { avisar, alteraEm } = useSessao()
   const navegar = useNavigate()
   const [aba, setAba] = useState('excel')
   const [modo, setModo] = useState('novos')
@@ -177,6 +179,7 @@ export default function Importar() {
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item"><button type="button" className={`nav-link ${aba === 'excel' ? 'active' : ''}`} onClick={() => setAba('excel')}><i className="fa fa-file-excel me-1" />Folha Excel</button></li>
         <li className="nav-item"><button type="button" className={`nav-link ${aba === 'fotos' ? 'active' : ''}`} onClick={() => setAba('fotos')}><i className="fa fa-images me-1" />Fotografias em lote</button></li>
+        {alteraEm('processos') && <li className="nav-item"><button type="button" className={`nav-link ${aba === 'processos' ? 'active' : ''}`} onClick={() => setAba('processos')}><i className="fa fa-folder-open me-1" />Processos individuais (pastas)</button></li>}
       </ul>
       {aba === 'excel' && (
         <>
@@ -217,7 +220,69 @@ export default function Importar() {
           )}
         </Painel>
       )}
+      {aba === 'processos' && <ProcessosEmLote />}
     </>
+  )
+}
+
+const identificacao = (t) => String(t ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+// a pessoa de um ficheiro: a pasta (ou o nome do ficheiro) com o NIP, o n.º de agente ou o nome completo
+function pessoaDoCaminho(caminho, porId, porNome) {
+  const partes = caminho.split('/')
+  for (const parte of [...partes.slice(0, -1).reverse(), partes.at(-1).replace(/\.[^.]+$/, '')]) {
+    for (const palavra of parte.split(/[^A-Za-z0-9]+/)) {
+      const p = porId.get(identificacao(palavra))
+      if (p) return p
+    }
+    const p = porNome.get(sem(parte.replace(/[0-9]/g, '')))
+    if (p) return p
+  }
+  return null
+}
+
+/*
+  Processos individuais em lote: uma pasta com uma subpasta por militar (o NIP, o n.º de agente ou o nome
+  completo no nome da subpasta, ex.: «Processos/123456 - João Manuel/…»). Cada ficheiro vai para o processo
+  dessa pessoa; o sistema reconhece cada documento e separa os PDFs que tenham vários (JuntarDocumentos).
+*/
+function ProcessosEmLote() {
+  const { avisar } = useSessao()
+  const [grupos, setGrupos] = useState(null)
+  const [juntar, setJuntar] = useState(null)
+  async function escolher(ficheiros) {
+    try {
+      const pessoas = await api('/pessoas', { consulta: { ativo: 'todos' } })
+      const porId = new Map()
+      for (const p of pessoas) for (const k of [p.nip, p.numeroAgente]) if (identificacao(k).length >= 3) porId.set(identificacao(k), p)
+      const porNome = new Map(pessoas.map((p) => [sem(p.nome), p]))
+      const g = new Map()
+      const semPessoa = []
+      for (const f of ficheiros) {
+        const p = pessoaDoCaminho(caminhoDe(f), porId, porNome)
+        if (!p) { semPessoa.push(caminhoDe(f)); continue }
+        if (!g.has(p.id)) g.set(p.id, { pessoa: p, ficheiros: [] })
+        g.get(p.id).ficheiros.push(f)
+      }
+      setGrupos({ lista: [...g.values()], semPessoa })
+    } catch (e) { avisar(e.message, 'erro') }
+  }
+  const itens = (grupos?.lista ?? []).flatMap(({ pessoa, ficheiros }) => ficheiros.map((f) => ({ pessoaId: pessoa.id, pessoaNome: `${pessoa.nip ?? pessoa.numeroAgente ?? ''} ${pessoa.nome}`.trim(), ficheiro: f })))
+  return (
+    <Painel titulo="Processos individuais: pasta com uma subpasta por militar" icone="fa-folder-open">
+      <p className="small">Arraste a pasta grande (ou escolha-a). Dentro dela, <strong>uma subpasta por militar ou civil</strong>, com o <strong>NIP</strong> (ou o n.º de agente, ou o nome completo) no nome da subpasta, por exemplo <code>Processos/123456 - João Manuel/BI.pdf</code>. O sistema lê cada documento, reconhece o tipo (BI, extractos, louvores…), separa os PDFs que tenham vários documentos e mostra tudo para conferir antes de juntar aos processos.</p>
+      <Carregar aceitar="application/pdf,image/*,.docx,.xlsx" multiplo pasta maxMb={25} icone="fa-folder-open" titulo="Arraste a pasta dos processos para aqui" ajuda="PDF, imagens ou Word · uma subpasta por pessoa (NIP no nome)" aoEscolher={escolher} />
+      {grupos && (
+        <div className="mt-3">
+          <p className="small mb-2"><span className="text-success fw-bold">{grupos.lista.length} pessoa(s)</span> · {itens.length} ficheiro(s){grupos.semPessoa.length > 0 && <> · <span className="text-danger">{grupos.semPessoa.length} sem pessoa (a pasta não tem um NIP, n.º de agente ou nome que exista)</span></>}</p>
+          <ul className="small mb-2" style={{ maxHeight: 220, overflow: 'auto' }}>
+            {grupos.lista.map(({ pessoa, ficheiros }) => <li key={pessoa.id}><strong>{pessoa.nip ?? pessoa.numeroAgente}</strong> {pessoa.nome}: {ficheiros.length} ficheiro(s)</li>)}
+            {grupos.semPessoa.slice(0, 50).map((c) => <li key={c} className="text-danger">{c}</li>)}
+          </ul>
+          <button type="button" className="btn btn-sm btn-theme" disabled={!itens.length} onClick={() => setJuntar(itens)}><i className="fa fa-search me-1" />Ler e separar {itens.length} ficheiro(s)</button>
+        </div>
+      )}
+      {juntar && <JuntarDocumentos itens={juntar} aoFechar={() => setJuntar(null)} aoTerminar={() => { setJuntar(null); setGrupos(null) }} />}
+    </Painel>
   )
 }
 
