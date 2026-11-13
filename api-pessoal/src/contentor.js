@@ -21,6 +21,7 @@ import { ServicoProcessos } from './aplicacao/processos.js'
 import { ServicoExtractos } from './aplicacao/extractos.js'
 import { ServicoExpediente } from './aplicacao/expediente.js'
 import { ServicoMensagens } from './aplicacao/mensagens.js'
+import { ServicoPastas } from './aplicacao/pastas.js'
 import { Ficheiros } from './infraestrutura/ficheiros.js'
 import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { ServicoPonto } from './aplicacao/ponto.js'
@@ -67,6 +68,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     extractos: new ServicoExtractos({ bd, auditoria, ficheiros, ...relogio }),
     expediente: new ServicoExpediente({ bd, auditoria, ficheiros, listas, ...relogio }),
     mensagens: new ServicoMensagens({ bd, ficheiros, ...relogio }),
+    pastas: new ServicoPastas({ bd, auditoria, ficheiros }),
     privacidade: new ServicoPrivacidade({ bd, pessoas, auditoria, ...relogio }),
     sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, ...(enviar ? { enviar } : {}), ...relogio }),
   }

@@ -143,7 +143,7 @@ export default function App() {
           <Route path="/ausencias" element={<Area id="ausencias"><Ausencias /></Area>} />
           <Route path="/faltas-civis" element={<Area id="ausencias"><FaltasCivis /></Area>} />
           <Route path="/ponto" element={<Area id="ponto"><LivroPonto /></Area>} />
-          <Route path="/secretaria" element={<Area id="secretaria"><Secretaria /></Area>} />
+          <Route path="/secretaria" element={<Secretaria />} />
           <Route path="/quadro" element={<Navigate to="/organica" replace />} />
           <Route path="/organica/importar" element={<Area id="organica"><ImportarOrganica /></Area>} />
           <Route path="/organica" element={<Area id="organica"><Organica /></Area>} />

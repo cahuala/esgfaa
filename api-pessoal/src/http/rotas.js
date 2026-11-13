@@ -216,6 +216,13 @@ export function rotas({ servicos: s, config }) {
   r.post('/expediente/:id/despacho', validar({ params: E.pId, body: z.object({ nota: z.string().max(1000).default('') }) }), async (req, res) => res.json(await s.expediente.submeterDespacho(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.expediente.despachar(u(req), req.dados.params.id, req.dados.body)))
 
+  // os documentos que cada conta guarda na sua Secretária digital (só o dono os vê)
+  r.get('/pastas', async (req, res) => res.json(await s.pastas.listar(u(req))))
+  r.post('/pastas', anexos.single('ficheiro'), async (req, res) => res.status(201).json(await s.pastas.guardar(u(req), { titulo: req.body?.titulo ?? '', pasta: req.body?.pasta ?? '' }, req.file)))
+  r.put('/pastas/:id', validar({ params: E.pId, body: z.object({ titulo: z.string().max(200).optional(), pasta: z.string().max(100).optional() }) }), async (req, res) => res.json(await s.pastas.editar(u(req), req.dados.params.id, req.dados.body)))
+  r.get('/pastas/:id/ficheiro', validar({ params: E.pId }), async (req, res) => enviarFicheiro(res, await s.pastas.ficheiro(u(req), req.dados.params.id)))
+  r.delete('/pastas/:id', validar({ params: E.pId }), async (req, res) => { await s.pastas.remover(u(req), req.dados.params.id); res.status(204).end() })
+
   // mensagens internas
   r.get('/mensagens/conversas', async (req, res) => res.json(await s.mensagens.conversas(u(req))))
   r.get('/mensagens/contactos', async (req, res) => res.json(await s.mensagens.contactos(u(req))))

@@ -3,6 +3,8 @@ import { useDados } from '../useDados'
 import { Cabecalho, Carregando, Erro, Painel } from '../componentes/Ui'
 import { dataHoraPt } from '../formatar'
 import PedidosDespacho from '../componentes/PedidosDespacho'
+import MeusDocumentos from '../componentes/MeusDocumentos'
+import { useSessao } from '../sessao'
 
 const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light text-dark border' }
 
@@ -13,7 +15,7 @@ const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light t
   escalão superior: abre-se a proposta e despacha-se «Autorizo o envio» ou «Devolvo para correção». E os pedidos que só valem
   com o seu despacho: docentes novos, categorias, saídas de docentes, contas e papéis do sistema. Em baixo, os últimos despachados.
 */
-function Secretaria() {
+function Despacho() {
   const navegar = useNavigate()
   const { dados, erro } = useDados('/secretaria', undefined, { tempoReal: true })
   if (erro) return <Erro texto={erro} />
@@ -33,7 +35,6 @@ function Secretaria() {
   )
   return (
     <>
-      <Cabecalho titulo="Secretária digital" subtitulo="documentos a despacho do Comandante" migalhas={[['Secretária digital']]} />
       <Painel titulo={`Por despachar (${dados.pendentes.length})`} icone="fa-stamp" corpo={false}>
         <div className="list-group list-group-flush">
           {dados.pendentes.map(linha)}
@@ -68,6 +69,19 @@ function Secretaria() {
           {!dados.despachados.length && !dados.propostas.despachadas.length && <div className="list-group-item text-muted">Ainda nada despachado.</div>}
         </div>
       </Painel>
+    </>
+  )
+}
+
+// a Secretária digital é de todas as contas (os documentos de cada um); quem despacha vê também o que está a despacho
+function Secretaria() {
+  const { ve } = useSessao()
+  const despacha = ve('secretaria')
+  return (
+    <>
+      <Cabecalho titulo="Secretária digital" subtitulo={despacha ? 'documentos a despacho do Comandante e os seus documentos' : 'os seus documentos, arrumados por pastas'} migalhas={[['Secretária digital']]} />
+      {despacha && <Despacho />}
+      <MeusDocumentos />
     </>
   )
 }

@@ -79,11 +79,11 @@ export function limparAreas(v) {
 /*
   Cada rota da API e a área (ou áreas: basta uma) que precisa. Nas leituras (GET) chega «ver»; nas escritas,
   «alterar». As leituras partilhadas (listas de pessoas, unidades, cargos…) não têm área: servem vários ecrãs
-  e os serviços já pedem «ver». LIVRES: o que qualquer conta faz (a própria conta, expediente, mensagens).
+  e os serviços já pedem «ver». LIVRES: o que qualquer conta faz (a própria conta, expediente, mensagens, os seus documentos).
 */
 // leitura: uma escrita que só consulta (ex.: verificar uma licença antes de a marcar) — chega «ver»
 const R = (metodo, caminho, areas, leitura = false) => ({ metodo, re: new RegExp(`^${caminho.replace(/:[a-z]+/g, '[^/]+')}$`), areas: [].concat(areas), leitura: leitura || metodo === 'GET' })
-export const LIVRES = [/^\/eu(\/|$)/, /^\/mudar-senha$/, /^\/sair$/, /^\/eventos$/, /^\/avisos$/, /^\/referencias$/, /^\/expediente(\/|$)/, /^\/anexos\//, /^\/mensagens\//]
+export const LIVRES = [/^\/eu(\/|$)/, /^\/mudar-senha$/, /^\/sair$/, /^\/eventos$/, /^\/avisos$/, /^\/referencias$/, /^\/expediente(\/|$)/, /^\/anexos\//, /^\/mensagens\//, /^\/pastas(\/|$)/]
 export const ROTAS = [
   // leituras partilhadas por vários ecrãs
   R('GET', '/painel', null), R('GET', '/pessoas', null), R('GET', '/pessoas/:id', null), R('GET', '/pessoas/:id/foto', null), R('GET', '/unidades', null), R('GET', '/cargos', null),

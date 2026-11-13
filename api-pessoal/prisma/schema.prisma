@@ -38,6 +38,7 @@ model Utilizador {
   doisFatores     DoisFatores?
   pedidosDespacho PedidoDespacho[]
   sessoes         Sessao[]
+  documentos      DocumentoGuardado[]
 
   @@map("utilizadores")
 }
@@ -58,6 +59,23 @@ model Sessao {
 
   @@index([utilizadorId])
   @@map("sessoes")
+}
+
+// os documentos que cada conta guarda na sua Secretária digital (só o dono os vê)
+model DocumentoGuardado {
+  id           Int        @id @default(autoincrement())
+  utilizadorId Int        @map("utilizador_id")
+  titulo       String
+  pasta        String     @default("")
+  ficheiro     String
+  nomeOriginal String     @map("nome_original")
+  mime         String
+  tamanho      Int
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  utilizador   Utilizador @relation(fields: [utilizadorId], references: [id], onDelete: Cascade)
+
+  @@index([utilizadorId])
+  @@map("documentos_guardados")
 }
 
 model DoisFatores {
