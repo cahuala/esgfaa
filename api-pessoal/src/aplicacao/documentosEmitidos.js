@@ -2,6 +2,8 @@ import { ASSINANTES, calcularAssinantes } from './assinantes.js'
 import { conflito, invalido, naoEncontrado } from '../erros.js'
 import { exigir } from './sessao.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { emSerie } from '../infraestrutura/bd.js'
+import { proximoProtocolo } from './expediente.js'
 
 /*
   Documentos pessoais emitidos a partir da ficha (declarações, guias de marcha, fichas…). Cada emissão fica
@@ -69,28 +71,25 @@ export class ServicoDocumentosEmitidos {
     if (!documentos.length) throw invalido('Escolha pelo menos um documento.')
     for (const d of documentos) if (!TIPOS_DOCUMENTO_PESSOAL[d.tipo]) throw invalido(`Documento desconhecido: ${d.tipo}.`)
     const ano = this.agora().getFullYear()
-    // como no SIGP: a mesma declaração, com a mesma finalidade, à mesma pessoa há menos de 24 h é repetição
-    // (só segue se se confirmar: dados.repetir)
-    const desde = new Date(this.agora().getTime() - 86_400_000)
-    for (const d of documentos.filter((x) => TIPOS_DOCUMENTO_PESSOAL[x.tipo].serie && !x.dados?.repetir)) {
-      const antes = await this.bd.documentoEmitido.findMany({ where: { pessoaId, tipo: d.tipo, criadoEm: { gte: desde } }, select: { numero: true, ano: true, dados: true } })
-      const igual = antes.find((x) => String(x.dados?.finalidade ?? '') === String(d.dados?.finalidade ?? ''))
-      if (igual) throw conflito(`${TIPOS_DOCUMENTO_PESSOAL[d.tipo].nome} para ${p.nome}${d.dados?.finalidade ? ` (${d.dados.finalidade})` : ''} já foi emitida há menos de 24 h (Nº${String(igual.numero).padStart(3, '0')}/${String(igual.ano).slice(-2)}). [repetir]`)
-    }
-    const r = []
-    for (const d of documentos) {
-      const serie = TIPOS_DOCUMENTO_PESSOAL[d.tipo].serie ?? ''
-      // número seguinte da série; repete se dois pedidos em paralelo apanharem o mesmo (único na base)
-      for (let tentativa = 0; ; tentativa++) {
-        try {
-          const numero = serie ? ((await this.bd.documentoEmitido.aggregate({ where: { serie, ano }, _max: { numero: true } }))._max.numero ?? 0) + 1 : null
-          r.push(await this.bd.documentoEmitido.create({ data: { pessoaId, tipo: d.tipo, serie, ano, numero, dados: d.dados ?? {}, emitidoPor: u.email, criadoEm: this.agora() } }))
-          break
-        } catch (e) {
-          if (e?.code !== 'P2002' || tentativa > 4) throw e
-        }
+    // os pedidos ao mesmo tempo atendem-se um a um (emSerie): cada declaração tem o seu número e um
+    // segundo clique na mesma declaração já encontra a primeira
+    const r = await emSerie(this.bd, `documentos-emitidos-${ano}`, async (tx) => {
+      // como no SIGP: a mesma declaração, com a mesma finalidade, à mesma pessoa há menos de 24 h é repetição
+      // (só segue se se confirmar: dados.repetir)
+      const desde = new Date(this.agora().getTime() - 86_400_000)
+      for (const d of documentos.filter((x) => TIPOS_DOCUMENTO_PESSOAL[x.tipo].serie && !x.dados?.repetir)) {
+        const antes = await tx.documentoEmitido.findMany({ where: { pessoaId, tipo: d.tipo, criadoEm: { gte: desde } }, select: { numero: true, ano: true, dados: true } })
+        const igual = antes.find((x) => String(x.dados?.finalidade ?? '') === String(d.dados?.finalidade ?? ''))
+        if (igual) throw conflito(`${TIPOS_DOCUMENTO_PESSOAL[d.tipo].nome} para ${p.nome}${d.dados?.finalidade ? ` (${d.dados.finalidade})` : ''} já foi emitida há menos de 24 h (Nº${String(igual.numero).padStart(3, '0')}/${String(igual.ano).slice(-2)}). [repetir]`)
       }
-    }
+      const feitos = []
+      for (const d of documentos) {
+        const serie = TIPOS_DOCUMENTO_PESSOAL[d.tipo].serie ?? ''
+        const numero = serie ? ((await tx.documentoEmitido.aggregate({ where: { serie, ano }, _max: { numero: true } }))._max.numero ?? 0) + 1 : null
+        feitos.push(await tx.documentoEmitido.create({ data: { pessoaId, tipo: d.tipo, serie, ano, numero, dados: d.dados ?? {}, emitidoPor: u.email, criadoEm: this.agora() } }))
+      }
+      return feitos
+    })
     // a guia de férias fica também registada como licença de férias (se ainda não estiver)
     for (const d of documentos.filter((x) => x.tipo === 'guia_ferias' && /^\d{4}-\d{2}-\d{2}$/.test(x.dados?.inicio ?? '') && Number(x.dados?.dias) > 0)) {
       const inicio = new Date(`${d.dados.inicio}T00:00:00Z`)
@@ -108,16 +107,8 @@ export class ServicoDocumentosEmitidos {
   }
 
   async #expedienteSaida(u, { tipo, numero, assunto, resumo }) {
-    const ano = this.agora().getFullYear()
-    for (let t = 0; t < 6; t++) {
-      const n = (await this.bd.expediente.count({ where: { protocolo: { startsWith: `EXP-${ano}-` } } })) + 1 + t
-      try {
-        return await this.bd.expediente.create({ data: { protocolo: `EXP-${ano}-${String(n).padStart(4, '0')}`, sentido: 'saida', tipo, numero, assunto: assunto.slice(0, 300), resumo: resumo.slice(0, 2000), origemUnidadeId: u.unidadeId ?? null, estado: 'arquivado', criadoPorId: u.id, criadoEm: this.agora() } })
-      } catch (e) {
-        if (e?.code !== 'P2002') throw e
-      }
-    }
-    return null
+    const ano = this.agora().getUTCFullYear()
+    return emSerie(this.bd, `expediente-${ano}`, async (tx) => tx.expediente.create({ data: { protocolo: await proximoProtocolo(tx, ano), sentido: 'saida', tipo, numero, assunto: assunto.slice(0, 300), resumo: resumo.slice(0, 2000), origemUnidadeId: u.unidadeId ?? null, estado: 'arquivado', criadoPorId: u.id, criadoEm: this.agora() } }))
   }
 
   async historico(u, pessoaId) {

@@ -1,7 +1,15 @@
 import { invalido, naoEncontrado, semPermissao } from '../erros.js'
 import { Prisma } from '@prisma/client'
-import { eDuplicado } from '../infraestrutura/bd.js'
+import { emSerie } from '../infraestrutura/bd.js'
 import { exigir, pode } from './sessao.js'
+
+// o protocolo seguinte do ano (EXP-2026-0001); só dentro de emSerie(`expediente-${ano}`)
+export async function proximoProtocolo(tx, ano) {
+  const p = (n) => `EXP-${ano}-${String(n).padStart(4, '0')}`
+  let n = (await tx.expediente.count({ where: { protocolo: { startsWith: `EXP-${ano}-` } } })) + 1
+  while (await tx.expediente.findUnique({ where: { protocolo: p(n) }, select: { id: true } })) n++
+  return p(n)
+}
 
 // o que o Comandante escreve no despacho
 export const DECISOES_DESPACHO = { visto: 'Visto', concordo: 'Concordo', autorizo: 'Autorizo', nao_concordo: 'Não concordo', indefiro: 'Indefiro', tomei_conhecimento: 'Tomei conhecimento', informe: 'Informe / ver comigo', arquive_se: 'Arquive-se' }
@@ -151,23 +159,18 @@ export class ServicoExpediente {
     for (const f of ficheiros) guardados.push(await this.ficheiros.guardar(f))
     const ano = this.agora().getUTCFullYear()
     let x
-    for (let t = 0; !x; t++) {
-      const n = (await this.bd.expediente.count({ where: { protocolo: { startsWith: `EXP-${ano}-` } } })) + 1 + t
-      try {
-        x = await this.bd.$transaction(async (tx) => {
-          const e = await tx.expediente.create({ data: { protocolo: `EXP-${ano}-${String(n).padStart(4, '0')}`, sentido: d.sentido, tipo: d.tipo, numero: d.numero ?? '', assunto: d.assunto, resumo: d.resumo ?? '', classificacao: d.classificacao, origemUnidadeId: d.sentido === 'entrada' ? null : minha, entidadeExterna: d.entidadeExterna ?? '', temFisico: Boolean(d.temFisico), prazo: d.prazo ? new Date(d.prazo) : null, criadoPorId: u.id } })
-          for (const g of guardados) await tx.anexoExpediente.create({ data: { expedienteId: e.id, ...g, criadoPorId: u.id } })
-          // entrada de fora: fica registada na unidade que a recebeu, já recebida
-          if (d.sentido === 'entrada') await tx.movimento.create({ data: { expedienteId: e.id, deUnidadeId: null, paraUnidadeId: minha, nota: 'Entrada na Escola', enviadoPorId: u.id, recebidoPorId: u.id, recebidoEm: this.agora(), fisico: d.temFisico ? 'recebido' : 'nao_aplica', fisicoRecebidoEm: d.temFisico ? this.agora() : null } })
-          for (const para of destinos) await tx.movimento.create({ data: { expedienteId: e.id, deUnidadeId: minha, paraUnidadeId: para, nota: d.nota ?? '', enviadoPorId: u.id, fisico: d.temFisico ? 'a_enviar' : 'nao_aplica', fisicoPortador: d.portador ?? '' } })
-          return e
-        })
-      } catch (e) {
-        if (!eDuplicado(e) || t > 5) {
-          for (const g of guardados) this.ficheiros.apagar(g.ficheiro)
-          throw e
-        }
-      }
+    try {
+      x = await emSerie(this.bd, `expediente-${ano}`, async (tx) => {
+        const e = await tx.expediente.create({ data: { protocolo: await proximoProtocolo(tx, ano), sentido: d.sentido, tipo: d.tipo, numero: d.numero ?? '', assunto: d.assunto, resumo: d.resumo ?? '', classificacao: d.classificacao, origemUnidadeId: d.sentido === 'entrada' ? null : minha, entidadeExterna: d.entidadeExterna ?? '', temFisico: Boolean(d.temFisico), prazo: d.prazo ? new Date(d.prazo) : null, criadoPorId: u.id } })
+        for (const g of guardados) await tx.anexoExpediente.create({ data: { expedienteId: e.id, ...g, criadoPorId: u.id } })
+        // entrada de fora: fica registada na unidade que a recebeu, já recebida
+        if (d.sentido === 'entrada') await tx.movimento.create({ data: { expedienteId: e.id, deUnidadeId: null, paraUnidadeId: minha, nota: 'Entrada na Escola', enviadoPorId: u.id, recebidoPorId: u.id, recebidoEm: this.agora(), fisico: d.temFisico ? 'recebido' : 'nao_aplica', fisicoRecebidoEm: d.temFisico ? this.agora() : null } })
+        for (const para of destinos) await tx.movimento.create({ data: { expedienteId: e.id, deUnidadeId: minha, paraUnidadeId: para, nota: d.nota ?? '', enviadoPorId: u.id, fisico: d.temFisico ? 'a_enviar' : 'nao_aplica', fisicoPortador: d.portador ?? '' } })
+        return e
+      })
+    } catch (e) {
+      for (const g of guardados) this.ficheiros.apagar(g.ficheiro)
+      throw e
     }
     await this.auditoria.registar(u, 'registar_expediente', `${x.protocolo}: ${x.assunto}`, { destinos })
     return this.obter(u, x.id)

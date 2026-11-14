@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { ErroDominio } from '../erros.js'
+import { eSobrecarga } from '../infraestrutura/bd.js'
 import { tokenDoPedido } from './sessaoCookie.js'
 
 export const COOKIE_PESSOAL = 'esg_pessoal'
@@ -57,6 +58,11 @@ export function tratarErros(registar) {
     if (erro.type === 'entity.too.large') return res.status(413).json({ erro: 'Conteúdo demasiado grande.', codigo: 'demasiado_grande' })
     if (erro.name === 'MulterError') return res.status(400).json({ erro: erro.code === 'LIMIT_FILE_SIZE' ? 'Fotografia demasiado grande.' : 'Envio de ficheiro inválido.', codigo: 'validacao' })
     if (erro.code === 'P2025') return res.status(404).json({ erro: 'Não encontrado.', codigo: 'nao_encontrado' })
+    // todas as ligações à base de dados ocupadas: o pedido não fica pendurado, pede-se para repetir
+    if (eSobrecarga(erro)) {
+      registar({ id: req.id, erro })
+      return res.status(503).set('Retry-After', '5').json({ erro: 'O sistema está muito ocupado neste momento. Tente de novo dentro de alguns segundos.', codigo: 'ocupado' })
+    }
     registar({ id: req.id, erro })
     res.status(500).json({ erro: 'Erro interno do servidor.', codigo: 'interno', pedido: req.id })
   }

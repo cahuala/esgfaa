@@ -1,5 +1,5 @@
 import { conflito, invalido, naoEncontrado } from '../erros.js'
-import { eDuplicado } from '../infraestrutura/bd.js'
+import { emSerie } from '../infraestrutura/bd.js'
 import { abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
 import { ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
@@ -70,18 +70,14 @@ export class ServicoProcessos {
       if (ocupada) throw conflito(`Essa posição da estante já tem o processo ${ocupada.numero} (${ocupada.pessoa.nome}).`)
     }
     if (p.processo) return this.bd.processo.update({ where: { pessoaId }, data: dados })
-    // n.º sequencial PI-00001; se dois pedidos chegarem ao mesmo tempo, tenta o seguinte
-    for (let t = 0; t < 5; t++) {
-      const n = (await this.bd.processo.count()) + 1 + t
-      try {
-        const r = await this.bd.processo.create({ data: { ...dados, pessoaId, numero: `PI-${String(n).padStart(5, '0')}` } })
-        await this.auditoria.registar(u, 'abrir_processo', `${r.numero}: ${p.nome}`)
-        return r
-      } catch (e) {
-        if (!eDuplicado(e)) throw e
-      }
-    }
-    throw conflito('Não foi possível numerar o processo. Tente de novo.')
+    // n.º sequencial PI-00001; os pedidos ao mesmo tempo numeram-se um a um (emSerie)
+    const r = await emSerie(this.bd, 'processos', async (tx) => {
+      let n = (await tx.processo.count()) + 1
+      while (await tx.processo.findUnique({ where: { numero: `PI-${String(n).padStart(5, '0')}` }, select: { pessoaId: true } })) n++
+      return tx.processo.create({ data: { ...dados, pessoaId, numero: `PI-${String(n).padStart(5, '0')}` } })
+    })
+    await this.auditoria.registar(u, 'abrir_processo', `${r.numero}: ${p.nome}`)
+    return r
   }
 
   async documentos(u, pessoaId) {
