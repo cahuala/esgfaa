@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { exportarExcel, exportarPdf } from '../exportar'
+import { useSessao } from '../sessao'
 
 const normalizar = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 const TAMANHOS = [10, 25, 50, 100]
@@ -21,6 +22,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
   const [pagina, setPagina] = useState(1)
   const [tamanho, setTamanho] = useState(porPagina)
   const [aExportar, setAExportar] = useState('')
+  const avisar = useSessao()?.avisar
   const chaveEscolha = `pes-colunas:${titulo}`
   const [escolha, setEscolha] = useState(() => lerEscolha(chaveEscolha)) // { chave: true (vê-se) | false (escondida) }
   const [verColunas, setVerColunas] = useState(false)
@@ -61,6 +63,8 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
     try {
       if (formato === 'excel') await exportarExcel(titulo, exportaveis, filtradas, { filtro: pesquisa && `pesquisa: «${pesquisa}»` })
       else await exportarPdf(titulo, exportaveis, filtradas, { subtitulo: [subtitulo, pesquisa && `pesquisa: «${pesquisa}»`].filter(Boolean).join(' · ') })
+    } catch (e) {
+      avisar?.(`Não foi possível fazer o ${formato === 'excel' ? 'Excel' : 'PDF'}: ${e.message}`, 'erro')
     } finally {
       setAExportar('')
     }
