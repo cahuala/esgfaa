@@ -29,6 +29,16 @@ describe('Dados pessoais cifrados na base de dados (AES-256-GCM)', () => {
     assert.equal((await adm.get('/api/pessoas')).body.find((x) => x.id === p.id).bi, '001234567LA041')
   })
 
+  it('a lista resumida (tabela do Pessoal) não leva os dados pessoais que só a ficha precisa', async () => {
+    await adm.post('/api/pessoas').send(militar({ nip: 'CIF009', bi: '009234567LA041', telefone: '+244 923 000 999', morada: 'Cazenga', iban: 'AO06004000000000000000000', vencimento: 410945.74 })).expect(201)
+    const resumo = (await adm.get('/api/pessoas?campos=resumo&q=CIF009').expect(200)).body
+    assert.equal(resumo.length, 1)
+    assert.deepEqual([resumo[0].bi, resumo[0].telefone], ['009234567LA041', '+244 923 000 999'])
+    for (const c of ['morada', 'iban', 'vencimento', 'pai', 'mae', 'agregado']) assert.ok(!(c in resumo[0]), c)
+    const completa = (await adm.get('/api/pessoas?q=CIF009').expect(200)).body
+    assert.deepEqual([completa[0].morada, completa[0].vencimento], ['Cazenga', 410945.74])
+  })
+
   it('o mesmo BI não se repete (pelo índice), mesmo escrito com espaços ou minúsculas', async () => {
     await adm.post('/api/pessoas').send(militar({ nip: 'CIF002', bi: '009999999LA011' })).expect(201)
     const r = await adm.post('/api/pessoas').send(militar({ nip: 'CIF003', bi: '009999999la011' }))

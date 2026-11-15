@@ -9,9 +9,10 @@ import { Escolha, Modal } from './Ui'
 /*
   «Documentos» na lista do pessoal: escolhe-se o tipo de lista (efectividade, por posto, por ramo, lista
   geral do pessoal civil…) e sai com as pessoas que estão na lista (com os filtros escolhidos), no modelo
-  da Escola. pessoas = as linhas da tabela.
+  da Escola. pessoas = as linhas da tabela; com filtros, a tabela tem a lista resumida e as fichas completas
+  (as que os documentos podem precisar: vencimento, IBAN, morada…) só se buscam aqui, ao fazer o documento.
 */
-export default function EscolherLista({ pessoas, descricao, aoFechar }) {
+export default function EscolherLista({ pessoas: linhas, filtros, descricao, aoFechar }) {
   const { ref, avisar } = useSessao()
   const arvore = useArvore()
   const lista = DOCUMENTOS.filter((d) => d.grupo !== 'propostas')
@@ -24,6 +25,11 @@ export default function EscolherLista({ pessoas, descricao, aoFechar }) {
   async function fazer(formato) {
     setA(formato)
     try {
+      let pessoas = linhas
+      if (filtros) {
+        const completas = new Map((await api('/pessoas', { consulta: filtros })).map((p) => [p.id, p]))
+        pessoas = linhas.map((p) => completas.get(p.id) ?? p)
+      }
       const ctx = { pessoas, ref, arvore, base: null }
       if (d.precisa === 'licencas') ctx.licencas = (await api('/licencas', { consulta: { estado: 'em_curso' } })).filter((l) => pessoas.some((p) => p.id === l.pessoaId))
       if (d.precisa === 'domiciliares') ctx.domiciliares = (await api('/pessoas', { consulta: { vinculo: 'domiciliar' } })).filter((p) => pessoas.some((x) => x.id === p.militarAlocadoId))
@@ -40,7 +46,7 @@ export default function EscolherLista({ pessoas, descricao, aoFechar }) {
   }
 
   return (
-    <Modal titulo={`Documentos — ${pessoas.length} pessoa(s) da lista`} aoFechar={aoFechar} largo
+    <Modal titulo={`Documentos — ${linhas.length} pessoa(s) da lista`} aoFechar={aoFechar} largo
       rodape={<>
         <span className="me-auto small text-muted">No modelo da Escola: visto do Comandante, título, tabela e a assinatura do Chefe da Repartição.</span>
         <button type="button" className="btn btn-white" onClick={aoFechar}>Fechar</button>

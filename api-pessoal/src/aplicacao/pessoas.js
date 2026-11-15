@@ -14,6 +14,7 @@ import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/dom
 import { exigir } from './sessao.js'
 import { comparadorHierarquico, ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
 import { posicoesUnidades } from './ordem.js'
+import { CAMPOS_CIFRADOS } from '../infraestrutura/cifraDados.js'
 
 // tipos de registo no histórico (os das propostas e os que se lançam à mão)
 export const TIPOS_EVENTO = {
@@ -44,6 +45,9 @@ export const TIPOS_EVENTO = {
 export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'referencia_elogiosa', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
 const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true, postoRequerido: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
+// a lista resumida (a tabela do Pessoal) não leva os dados pessoais cifrados que a tabela não mostra (IBAN,
+// vencimento, morada, pais…): menos para decifrar e enviar, e não saem do servidor sem ser precisos
+const SO_NA_FICHA = CAMPOS_CIFRADOS.filter((c) => !['bi', 'telefone'].includes(c))
 const vazioANulo = (v) => (v === '' ? null : v)
 const CAMPOS_UNICOS = { nip: 'NIP', numeroAgente: 'número de agente', bi: 'bilhete de identidade', email: 'e-mail' }
 
@@ -63,8 +67,8 @@ export class ServicoPessoas {
     Object.assign(this, { bd, auditoria, config, tabelaSalarial, listas, despachos, enviar, agora })
   }
 
-  async #todas(where) {
-    return this.bd.pessoa.findMany({ where, include: INCLUIR_LISTA, orderBy: { nome: 'asc' } })
+  async #todas(where, { resumo = false } = {}) {
+    return this.bd.pessoa.findMany({ where, include: INCLUIR_LISTA, ...(resumo ? { omit: Object.fromEntries(SO_NA_FICHA.map((c) => [c, true])) } : {}), orderBy: { nome: 'asc' } })
   }
 
   /*
@@ -84,7 +88,10 @@ export class ServicoPessoas {
     if (!f.vinculo) where.vinculo = { not: 'domiciliar' }
     if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
     const hoje = this.agora()
-    let lista = (await this.#todas(where)).map((p) => comDerivados(p, hoje))
+    // campos=resumo: sem os dados pessoais que só a ficha e os documentos impressos precisam (SO_NA_FICHA)
+    const resumo = f.campos === 'resumo'
+    let lista = (await this.#todas(where, { resumo })).map((p) => comDerivados(p, hoje))
+    if (resumo) for (const p of lista) for (const c of SO_NA_FICHA) delete p[c]
     if (f.grupo) lista = lista.filter((p) => p.grupo === f.grupo)
     if (f.categoria) lista = lista.filter((p) => p.categoria === f.categoria)
     if (f.elegivel) lista = lista.filter((p) => p.elegivelPromocao)

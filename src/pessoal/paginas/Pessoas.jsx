@@ -30,7 +30,9 @@ export default function Pessoas() {
   const filtros = useMemo(() => Object.fromEntries(params), [params])
   const [listas, setListas] = useState(false)
   const [avancada, setAvancada] = useState(false)
-  const { dados: linhas, erro } = useDados('/pessoas', filtros)
+  // a tabela só precisa da lista resumida; os documentos buscam as fichas completas ao imprimir (EscolherLista)
+  const consulta = useMemo(() => ({ ...filtros, campos: 'resumo' }), [filtros])
+  const { dados: linhas, erro } = useDados('/pessoas', consulta)
   const arvore = useArvore()
 
   const mudar = (k, v) => {
@@ -82,7 +84,7 @@ export default function Pessoas() {
 
   return (
     <>
-      {listas && <EscolherLista pessoas={linhas} descricao={descricao} aoFechar={() => setListas(false)} />}
+      {listas && <EscolherLista pessoas={linhas} filtros={filtros} descricao={descricao} aoFechar={() => setListas(false)} />}
       <Cabecalho titulo="Pessoal" subtitulo="fichas de militares e civis" migalhas={[['Pessoal']]}>
         {pode('editar') && <Link to="/importar" className="btn btn-outline-theme"><i className="fa fa-file-import me-2" />Importar Excel</Link>}
         {pode('editar') && <Link to="/pessoas/nova" className="btn btn-theme"><i className="fa fa-user-plus me-2" />Nova ficha</Link>}
