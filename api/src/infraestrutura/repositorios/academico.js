@@ -554,14 +554,15 @@ export class RepositorioAcademico {
   }
 
   // entrega (ou substitui a anterior, enquanto o prazo permitir): ficheiros e/ou texto
-  async gravarEntrega({ trabalhoId, estudanteId, grupoId = null, ficheiroIds, texto, comentario }) {
+  // entregueEm: a hora do relógio do serviço (a mesma com que se verificou o prazo)
+  async gravarEntrega({ trabalhoId, estudanteId, grupoId = null, ficheiroIds, texto, comentario, entregueEm = new Date() }) {
     const p = this.prisma
     const e = await p.$transaction(async (tx) => {
-      const limpar = { texto, comentario, entregueEm: new Date(), nota: null, correcao: '', corrigidaEm: null, correcaoFicheiroId: null, grelha: {} }
+      const limpar = { texto, comentario, entregueEm, nota: null, correcao: '', corrigidaEm: null, correcaoFicheiroId: null, grelha: {} }
       // em grupo: uma só entrega do grupo; quem entregou por último fica como autor
       const x = grupoId
-        ? await tx.entrega.upsert({ where: { trabalhoId_grupoId: { trabalhoId, grupoId } }, create: { trabalhoId, estudanteId, grupoId, texto, comentario }, update: { ...limpar, estudanteId } })
-        : await tx.entrega.upsert({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, create: { trabalhoId, estudanteId, texto, comentario }, update: limpar })
+        ? await tx.entrega.upsert({ where: { trabalhoId_grupoId: { trabalhoId, grupoId } }, create: { trabalhoId, estudanteId, grupoId, texto, comentario, entregueEm }, update: { ...limpar, estudanteId } })
+        : await tx.entrega.upsert({ where: { trabalhoId_estudanteId: { trabalhoId, estudanteId } }, create: { trabalhoId, estudanteId, texto, comentario, entregueEm }, update: limpar })
       await tx.entregaFicheiro.deleteMany({ where: { entregaId: x.id } })
       if (ficheiroIds.length) await tx.entregaFicheiro.createMany({ data: ficheiroIds.map((ficheiroId, ordem) => ({ entregaId: x.id, ficheiroId, ordem })) })
       return x

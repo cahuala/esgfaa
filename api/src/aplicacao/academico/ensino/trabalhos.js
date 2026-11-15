@@ -58,7 +58,7 @@ export class ServicoTrabalhos {
       throw e
     }
     const entrega = await this.academico.gravarEntrega({
-      trabalhoId: trabalho.id, estudanteId: conta.id, grupoId: grupo?.id ?? null, ficheiroIds, texto: corpo, comentario: texto(comentario, 'comentario', 'Comentário', { max: 2000, obrigatorio: false }),
+      trabalhoId: trabalho.id, estudanteId: conta.id, grupoId: grupo?.id ?? null, ficheiroIds, texto: corpo, comentario: texto(comentario, 'comentario', 'Comentário', { max: 2000, obrigatorio: false }), entregueEm: this.relogio.agora(),
     })
     await this.auditoria.registar(ctx, { acao: 'entregar_trabalho', colecao: 'trabalhos', alvoId: trabalho.id, alvoTitulo: trabalho.titulo, detalhes: { ficheiros: ficheiroIds.length }, utilizador: quem(conta) })
     if (grupo) {
