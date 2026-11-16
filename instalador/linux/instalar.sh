@@ -259,6 +259,12 @@ if ! grep -q '^BI_API_KEY=.' "$CONF/pessoal.env"; then
   if [[ -n "$CHAVE_BI" ]]; then sed -i '/^BI_API_KEY=/d' "$CONF/pessoal.env"; echo "BI_API_KEY=$CHAVE_BI" >> "$CONF/pessoal.env"; ok "chave da consulta do BI guardada"; fi
   unset CHAVE_BI
 fi
+# ligação ao Portal Académico: o pendrive preparado com --ligacao-portal traz o endereço e a chave partilhada
+if [[ -f "$PEN/ligacao-portal.txt" ]] && [[ $(grep -cE '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=.+' "$PEN/ligacao-portal.txt") -eq 2 ]]; then
+  sed -i '/^PORTAL_API_URL=/d; /^INTEGRACAO_CHAVE=/d' "$CONF/pessoal.env"
+  grep -E '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' "$PEN/ligacao-portal.txt" | tr -d '\r' >> "$CONF/pessoal.env"
+  ok "ligação ao portal: $(sed -n 's/^PORTAL_API_URL=//p' "$PEN/ligacao-portal.txt" | tr -d '\r')"
+fi
 # shellcheck disable=SC1091
 set -a; . "$CONF/pessoal.env"; set +a
 

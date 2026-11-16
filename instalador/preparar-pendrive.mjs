@@ -2,7 +2,8 @@
 /*
   Prepara o pendrive de instalação do Sistema de Gestão de Pessoal e Quadros (sem internet na Escola).
 
-    node instalador/preparar-pendrive.mjs [--destino <pasta ou pendrive>] [--organica <quadro.xlsx>] [--chave-bi] [--so-descarregar]
+    node instalador/preparar-pendrive.mjs [--destino <pasta ou pendrive>] [--organica <quadro.xlsx>] [--chave-bi]
+      [--ligacao-portal <endereço do portal>] [--so-descarregar]
 
   1. Descarrega (uma vez, para instalador/.cache) o Node.js, o PostgreSQL, o Caddy e o WinSW, e confere os resumos.
   2. Constrói a página e junta a API com as dependências (só o que corre; sem dados de demonstração).
@@ -11,6 +12,9 @@
      instalador saber se a cópia no pendrive está estragada).
   Com --chave-bi, leva a chave da consulta do BI (BI_API_KEY de api-pessoal/.env) em chave-bi.txt: o
   instalador usa-a sem perguntar. Esse pendrive (e um zip dele) passa a dar acesso à consulta: não o envie por e-mail.
+  Com --ligacao-portal https://…, leva em ligacao-portal.txt o endereço do Portal Académico e a chave partilhada
+  (INTEGRACAO_CHAVE, a mesma do portal, dada na variável ESG_INTEGRACAO_CHAVE): a instalação e a actualização
+  ligam o Pessoal ao portal (envia só os docentes e os estudantes). Também não se envia por e-mail.
   Por omissão a pasta fica em instalador/pendrive/ESG-PESSOAL (fora do git): copie-a para a raiz do pendrive.
 */
 import crypto from 'node:crypto'
@@ -169,6 +173,16 @@ async function main() {
     if (!chave) throw new Error('--chave-bi: não há BI_API_KEY em api-pessoal/.env.')
     fs.writeFileSync(path.join(DESTINO, 'chave-bi.txt'), `${chave}\n`)
     console.log('  ✓ chave da consulta do BI incluída (chave-bi.txt)')
+  }
+  const ligacao = path.join(DESTINO, 'ligacao-portal.txt')
+  fs.rmSync(ligacao, { force: true })
+  if (process.argv.includes('--ligacao-portal')) {
+    const url = arg('--ligacao-portal', '')
+    const chave = String(process.env.ESG_INTEGRACAO_CHAVE || '').trim()
+    if (!/^https:\/\/[^\s/]+/.test(url)) throw new Error('--ligacao-portal: indique o endereço do portal (https://…).')
+    if (!/^[\x21-\x7e]{32,}$/.test(chave)) throw new Error('--ligacao-portal: defina ESG_INTEGRACAO_CHAVE (a INTEGRACAO_CHAVE do portal, 32+ caracteres).')
+    fs.writeFileSync(ligacao, `PORTAL_API_URL=${url.replace(/\/$/, '')}\nINTEGRACAO_CHAVE=${chave}\n`)
+    console.log(`  ✓ ligação ao portal incluída (ligacao-portal.txt → ${url})`)
   }
   fs.writeFileSync(path.join(DESTINO, 'VERSAO.txt'), `${execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: RAIZ }).toString().trim()} · ${new Date().toISOString().slice(0, 10)}\n`)
 

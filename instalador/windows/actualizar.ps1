@@ -24,6 +24,7 @@ catch { $Reg = Join-Path $env:PUBLIC 'Documents\ESG-Pessoal-registos'; New-Item 
 $Log = Join-Path $Reg "actualizacao-$Carimbo.log"
 $script:Passo = 'início'
 $script:Trocado = $false
+$script:Parado = $false
 Start-Transcript -Path $Log -Force | Out-Null
 
 function Passo($texto) { $script:Passo = $texto; Write-Host ''; Write-Host "=== [$(Get-Date -Format HH:mm:ss)] $texto" -ForegroundColor Cyan }
@@ -48,8 +49,10 @@ trap {
     Stop-Service 'ESG-Pessoal-Copias', 'ESG-Pessoal' -Force -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force "$Destino\sistema" -ErrorAction SilentlyContinue
     Rename-Item "$Destino\sistema.anterior" 'sistema' -ErrorAction SilentlyContinue
-    Start-Service 'ESG-Pessoal', 'ESG-Pessoal-Copias' -ErrorAction SilentlyContinue
   }
+  # os serviços parados para a troca voltam a ligar-se (o sistema não fica desligado por causa do erro)
+  if ($script:Parado) { Start-Service 'ESG-Pessoal', 'ESG-Pessoal-Web', 'ESG-Pessoal-Copias' -ErrorAction SilentlyContinue }
+  $liga = $script:Parado -and (Get-Service 'ESG-Pessoal' -ErrorAction SilentlyContinue).Status -eq 'Running'
   try { Stop-Transcript | Out-Null } catch {}
   $f = Join-Path $Reg "ERRO-ACTUALIZACAO-$Carimbo.txt"
   $linhas = @(
@@ -59,7 +62,8 @@ trap {
     "Passo que falhou: $script:Passo",
     "Erro: $($erro.Exception.Message)",
     '',
-    $(if ($script:Trocado) { 'O sistema voltou à versão anterior e continua a funcionar.' } else { 'Nada foi mudado: o sistema continua como estava.' }),
+    $(if ($script:Trocado) { 'O sistema voltou à versão anterior.' } else { 'O código do sistema não foi mudado: continua na versão anterior.' }),
+    $(if ($script:Parado -and $liga) { 'O sistema foi ligado de novo.' } elseif ($script:Parado) { 'ATENÇÃO: o sistema não voltou a ligar-se. Reinicie o computador ou ligue o serviço «ESG Pessoal» em Serviços (services.msc).' }),
     "A cópia de segurança feita antes de actualizar está em $Dados\copias.",
     '',
     "ÚLTIMAS LINHAS DO REGISTO ($Log):"
@@ -107,11 +111,27 @@ try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\copias.mjs', 'copiar', 
 Ok "cópia em $Dados\copias"
 
 Passo 'A trocar o código do sistema'
-Stop-Service 'ESG-Pessoal-Copias', 'ESG-Pessoal' -Force -ErrorAction SilentlyContinue
+# pára os três serviços do sistema (só os dele): o do HTTPS também, porque nas instalações até 37358cd o
+# Caddy corria com a pasta de trabalho em sistema\ e o Windows não deixa mudar o nome de uma pasta em uso
+$script:Parado = $true
+Stop-Service 'ESG-Pessoal-Copias', 'ESG-Pessoal', 'ESG-Pessoal-Web' -Force -ErrorAction SilentlyContinue
+$xmlWeb = "$Destino\servicos\ESG-Pessoal-Web.xml"
+if (Test-Path $xmlWeb) {
+  $x = [IO.File]::ReadAllText($xmlWeb)
+  $novo = $x.Replace("<workingdirectory>$Destino\sistema</workingdirectory>", "<workingdirectory>$Destino\caddy</workingdirectory>")
+  if ($novo -ne $x) { [IO.File]::WriteAllText($xmlWeb, $novo, (New-Object Text.UTF8Encoding $false)) }
+}
 Start-Sleep 2
-Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\node\*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and ($_.Path -like "$Destino\node\*" -or $_.Path -like "$Destino\caddy\*") } | Stop-Process -Force -ErrorAction SilentlyContinue
 if (Test-Path "$Destino\sistema.anterior") { Remove-Item -Recurse -Force "$Destino\sistema.anterior" }
-Rename-Item "$Destino\sistema" 'sistema.anterior'
+# um antivírus ou o indexador podem segurar um ficheiro por instantes: tenta durante um minuto
+for ($i = 1; ; $i++) {
+  try { Rename-Item "$Destino\sistema" 'sistema.anterior' -ErrorAction Stop; break }
+  catch {
+    if ($i -ge 20) { Falha "A pasta $Destino\sistema está a ser usada por outro programa. Feche as janelas (Explorador, Linha de comandos, editores) abertas nessa pasta e corra de novo o ACTUALIZAR-WINDOWS.bat. ($($_.Exception.Message))" }
+    Start-Sleep 3
+  }
+}
 $script:Trocado = $true
 Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema"
 Ok 'código novo no lugar (o anterior ficou em sistema.anterior)'
@@ -133,12 +153,16 @@ if (-not ($linhas -match '^SERVIDOR_IP=')) {
   $ip = if ($Cfg.IP_SISTEMA) { $Cfg.IP_SISTEMA } else { (Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1).IPv4Address.IPAddress | Select-Object -First 1 }
   $linhas += "SERVIDOR_IP=$ip"
 }
+# ligação ao Portal Académico: o pendrive preparado com --ligacao-portal traz o endereço e a chave partilhada
+$FicheiroPortal = Join-Path $Pen 'ligacao-portal.txt'
+if (Test-Path $FicheiroPortal) {
+  $novas = @(Get-Content $FicheiroPortal -Encoding UTF8 | Where-Object { $_ -match '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=.+' })
+  if ($novas.Count -eq 2) { $linhas = @($linhas | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + $novas; Ok "ligação ao portal: $(($novas[0]) -replace '^PORTAL_API_URL=', '')" }
+}
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhas, (New-Object Text.UTF8Encoding $false))
 $Caddyfile = Join-Path $Conf 'Caddyfile'
-$caddyMudou = $false
 if ((Test-Path $Caddyfile) -and -not (Select-String -Path $Caddyfile -Pattern '/certificado' -Quiet)) {
   (Get-Content $Caddyfile) -replace '^(\s*@ponto path /iclock/\*)\s*$', '$1 /certificado /certificado/*' | Set-Content -Path $Caddyfile -Encoding ASCII
-  $caddyMudou = $true
 }
 
 Passo 'A ligar o sistema'
@@ -148,8 +172,9 @@ if (-not (Responde)) {
   Falha 'O sistema não respondeu depois de actualizar.'
 }
 Start-Service 'ESG-Pessoal-Copias' -ErrorAction SilentlyContinue
-if ($caddyMudou) { Restart-Service 'ESG-Pessoal-Web' -Force -ErrorAction SilentlyContinue }
+Start-Service 'ESG-Pessoal-Web'
 $script:Trocado = $false
+$script:Parado = $false
 Ok 'o sistema responde'
 
 $versao = (Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join ''

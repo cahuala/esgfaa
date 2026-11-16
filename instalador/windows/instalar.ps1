@@ -391,6 +391,12 @@ if (-not ($linhasEnv -match '^BI_API_KEY=.+')) {
   if ($ChaveBi) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^BI_API_KEY=' }) + "BI_API_KEY=$ChaveBi"; Ok 'chave da consulta do BI guardada' }
   $ChaveBi = $null
 }
+# ligação ao Portal Académico: o pendrive preparado com --ligacao-portal traz o endereço e a chave partilhada
+$FicheiroPortal = Join-Path $Pen 'ligacao-portal.txt'
+if (Test-Path $FicheiroPortal) {
+  $novas = @(Get-Content $FicheiroPortal -Encoding UTF8 | Where-Object { $_ -match '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=.+' })
+  if ($novas.Count -eq 2) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + $novas; Ok "ligação ao portal: $(($novas[0]) -replace '^PORTAL_API_URL=', '')" }
+}
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhasEnv, (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }
@@ -481,7 +487,7 @@ try { [IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCII
 catch { Write-Host "    (aviso: não foi possível escrever em $hosts — $($_.Exception.Message); neste computador use o DNS da Escola)" -ForegroundColor Yellow }
 
 # cada serviço é o WinSW com um .xml ao lado (arranca com o Windows e volta a arrancar se cair)
-function Servico($id, $nome, $exe, $argumentos, $extra = '') {
+function Servico($id, $nome, $exe, $argumentos, $extra = '', $pasta = "$Destino\sistema") {
   $dir = "$Destino\servicos"
   Copy-Item (Join-Path $Pen 'componentes\winsw.exe') "$dir\$id.exe" -Force
   @"
@@ -491,7 +497,7 @@ function Servico($id, $nome, $exe, $argumentos, $extra = '') {
   <description>Sistema de Gestão de Pessoal e Quadros da ESG</description>
   <executable>$exe</executable>
   <arguments>$argumentos</arguments>
-  <workingdirectory>$Destino\sistema</workingdirectory>
+  <workingdirectory>$pasta</workingdirectory>
   <startmode>Automatic</startmode>
   <depend>ESG-Pessoal-BD</depend>
   <onfailure action="restart" delay="10 sec"/>
@@ -504,7 +510,7 @@ $extra
   if (-not (Get-Service $id -ErrorAction SilentlyContinue)) { Correr "$dir\$id.exe" @('install') }
 }
 Servico 'ESG-Pessoal' 'ESG Pessoal — sistema' $Node "--env-file=&quot;$EnvFicheiro&quot; src\servidor.js"
-Servico 'ESG-Pessoal-Web' 'ESG Pessoal — HTTPS (Caddy)' "$Destino\caddy\caddy.exe" "run --config &quot;$Caddyfile&quot; --adapter caddyfile" "  <env name=`"AppData`" value=`"$Dados\caddy`"/>"
+Servico 'ESG-Pessoal-Web' 'ESG Pessoal — HTTPS (Caddy)' "$Destino\caddy\caddy.exe" "run --config &quot;$Caddyfile&quot; --adapter caddyfile" "  <env name=`"AppData`" value=`"$Dados\caddy`"/>" "$Destino\caddy"
 Servico 'ESG-Pessoal-Copias' 'ESG Pessoal — cópias de segurança diárias' $Node "--env-file=&quot;$EnvFicheiro&quot; scripts\copias.mjs agendar --sistema pessoal" "  <env name=`"PATH`" value=`"$PgBin;%PATH%`"/>"
 foreach ($s in 'ESG-Pessoal', 'ESG-Pessoal-Web', 'ESG-Pessoal-Copias') {
   try { Restart-Service $s -Force -ErrorAction Stop }

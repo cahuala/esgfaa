@@ -61,5 +61,18 @@ fi
 # a chave das cópias de segurança diárias (gerada uma vez, só no servidor)
 remoto "grep -q '^COPIAS_CHAVE=' deploy/teste.env || echo \"COPIAS_CHAVE=\$(openssl rand -hex 32)\" >> deploy/teste.env"
 
+# o portal recebe o Pessoal da Escola (dados reais): os dados não podem ficar com a chave de desenvolvimento, que
+# está no código. Se o teste.env ainda a tiver, passa-se tudo para uma chave nova, gerada e guardada só no servidor
+# (antes: cópia da base em copias/ e do teste.env em deploy/teste-antes-da-chave.env)
+CHAVE_DEV=$(node -e "console.log(require('crypto').createHash('sha256').update('portal-desenvolvimento-dados').digest('hex'))")
+if remoto "grep -qx 'DADOS_CHAVE=$CHAVE_DEV' deploy/teste.env"; then
+  echo "→ chave nova para os dados pessoais do portal"
+  remoto "set -e; mkdir -p copias; $C build api; $C stop api; \
+    $C exec -T bd pg_dump -U esgfaa -d esgfaa -Fc > copias/portal-antes-da-chave-nova.dump; \
+    cp deploy/teste.env deploy/teste-antes-da-chave.env; NOVA=\$(openssl rand -hex 32); \
+    $C run --rm --no-deps -e DADOS_CHAVE_ANTIGA=$CHAVE_DEV -e DADOS_CHAVE=\$NOVA api node scripts/trocar-chave.js; \
+    sed -i \"s/^DADOS_CHAVE=.*/DADOS_CHAVE=\$NOVA/\" deploy/teste.env"
+fi
+
 echo "→ arrancar"
 remoto "$C up -d --build && $C ps"

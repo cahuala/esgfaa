@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { criarAmbiente } from '../apoio/ambiente.js'
 import { CifraDados, cifrarExistentes } from '../../src/infraestrutura/bd/cifraDados.js'
+import { trocarChave } from '../../scripts/trocar-chave.js'
 
 const CHAVE = 'chave-partilhada-com-o-pessoal-de-32-caracteres-ou-mais'
 const assinar = (data, corpo) => crypto.createHmac('sha256', CHAVE).update(`${data}.${corpo}`).digest('hex')
@@ -48,5 +49,23 @@ describe('Portal: dados pessoais cifrados na base de dados (AES-256-GCM)', () =>
     assert.ok(CifraDados.cifrado(b.dados))
     assert.equal((await amb.contentor.prisma.contaPortal.findUnique({ where: { id: c.id } })).dados.telefone, '+244 900 000 000')
     assert.equal(await cifrarExistentes(amb.contentor.prismaBase, amb.contentor.cifraDados), 0)
+  })
+
+  it('troca da chave (scripts/trocar-chave.js): tudo passa para a chave nova e pode correr-se duas vezes', async () => {
+    const antiga = amb.config.chaveDados
+    const nova = crypto.randomBytes(32).toString('hex')
+    const base = amb.contentor.prismaBase
+    const antes = await base.contaPortal.findUnique({ where: { email: 'mateus.kiala@esgfaa.gov.ao' } })
+    const n = await trocarChave(base, antiga, nova)
+    assert.ok(n >= 2)
+    const depois = await base.contaPortal.findUnique({ where: { email: 'mateus.kiala@esgfaa.gov.ao' } })
+    assert.notEqual(depois.dados.c1, antes.dados.c1)
+    assert.equal(JSON.parse(new CifraDados(nova).decifrar(depois.dados.c1)).nip, 'NIP7788')
+    assert.throws(() => new CifraDados(antiga).decifrar(depois.dados.c1))
+    const m = (await base.mensagemContacto.findMany()).find((x) => x.nome === 'Joana Bumba')
+    assert.equal(new CifraDados(nova).decifrar(m.mensagem), 'Gostaria de saber as datas das candidaturas ao curso.')
+    assert.equal(await trocarChave(base, antiga, nova), 0)
+    // volta à chave do ambiente (o resto do ficheiro e o fecho usam-na)
+    assert.equal(await trocarChave(base, nova, antiga), n)
   })
 })
