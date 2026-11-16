@@ -64,11 +64,14 @@ export function senhaInicial() {
 const COM_UNIDADE = { unidade: { select: { nome: true } } }
 // o militar da Escola entra com o NIP; a palavra-passe inicial é o próprio NIP (muda-a na primeira entrada)
 const senhaDoMilitar = (p) => (p?.tipo === 'militar' && p.nip ? p.nip : null)
+// com que se entra e qual é a palavra-passe inicial: o militar com o NIP, o civil com o n.º de agente (muda-a logo)
+const identificadorDe = (p) => (p?.tipo === 'militar' ? (p.nip || null) : (p?.numeroAgente || null))
+const NOME_IDENTIFICADOR = (p) => (p?.tipo === 'militar' ? 'NIP' : 'n.º de agente')
 const emailDaPessoa = (p) => (p.email || `${(p.nip || p.numeroAgente || `pessoa${p.id}`).toLowerCase().replace(/[^a-z0-9]/g, '')}@pessoal.interno`).toLowerCase()
 
-export function validarSenha(senha, email = '', nip = '') {
+export function validarSenha(senha, email = '', nip = '', nomeId = 'NIP') {
   const s = String(senha ?? '')
-  if (nip && s.trim().toUpperCase() === String(nip).toUpperCase()) throw invalido('A palavra-passe não pode ser o NIP: escolha uma nova.', 'senha')
+  if (nip && s.trim().toUpperCase() === String(nip).toUpperCase()) throw invalido(`A palavra-passe não pode ser o ${nomeId}: escolha uma nova.`, 'senha')
   if (s.length < 10) throw invalido('A palavra-passe deve ter pelo menos 10 caracteres.', 'senha')
   if (!/[a-zA-Z]/.test(s) || !/\d/.test(s)) throw invalido('A palavra-passe deve ter letras e números.', 'senha')
   if (email && s.toLowerCase().includes(email.split('@')[0].toLowerCase())) throw invalido('A palavra-passe não pode conter o nome do e-mail.', 'senha')
@@ -180,8 +183,8 @@ export class ServicoSessao {
 
   async mudarSenha(u, { atual, nova }, ip = '', navegador = '') {
     if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe atual está errada.', 'atual')
-    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { nip: true } }) : null
-    validarSenha(nova, u.email, p?.nip)
+    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { tipo: true, nip: true, numeroAgente: true } }) : null
+    validarSenha(nova, u.email, identificadorDe(p) ?? p?.nip, p ? NOME_IDENTIFICADOR(p) : 'NIP')
     if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da atual.', 'nova')
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { senha: await this.cifra.cifrar(nova), deveMudar: false, versaoToken: { increment: 1 } } })
     // a palavra-passe nova termina todas as sessões (também as de outros computadores); esta abre outra
@@ -203,7 +206,7 @@ export class ServicoSessao {
     const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
     const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
     const permissoes = new Map(pendentes.filter((x) => x.tipo === 'utilizador_permissoes').map((x) => [x.utilizadorId, x.resumo]))
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true } } } })).map((x) => ({ ...publico(x), nip: senhaDoMilitar(x.pessoa), papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })).map((x) => ({ ...publico(x), nip: identificadorDe(x.pessoa), identificador: x.pessoa ? NOME_IDENTIFICADOR(x.pessoa) : null, papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
   }
 
   // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não
@@ -302,8 +305,8 @@ export class ServicoSessao {
       nome = p.nome
       email = email || emailDaPessoa(p)
       unidadeId = unidadeId ?? p.unidadeId
-      senha = senhaDoMilitar(p) ?? senha
-      if (!senhaDoMilitar(p)) validarSenha(senha, email)
+      senha = identificadorDe(p) ?? senha
+      if (!identificadorDe(p)) validarSenha(senha, email)
     } else {
       if (!nome || String(nome).trim().length < 3) throw invalido('Indique o nome.', 'nome')
       if (!email) throw invalido('Indique o e-mail.', 'email')
@@ -326,7 +329,7 @@ export class ServicoSessao {
 
   async editar(u, id, { nome, email, papel, ativo, senha, reporNip, unidadeId, permissoes }) {
     exigir(u, 'administrar')
-    const alvo = await this.bd.utilizador.findUnique({ where: { id }, include: { pessoa: { select: { tipo: true, nip: true } } } })
+    const alvo = await this.bd.utilizador.findUnique({ where: { id }, include: { pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
     if (papel !== undefined && !PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
     if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desativar a sua conta.')
@@ -351,10 +354,10 @@ export class ServicoSessao {
     }
     if (ativo !== undefined) data.ativo = ativo
     if (unidadeId !== undefined) data.unidadeId = unidadeId
-    // repor: o militar volta a entrar com o NIP como palavra-passe (e muda-a logo)
+    // repor: o militar volta a entrar com o NIP como palavra-passe, o civil com o n.º de agente (e muda-a logo)
     if (reporNip) {
-      senha = senhaDoMilitar(alvo.pessoa)
-      if (!senha) throw invalido('Só a conta de um militar da Escola (com NIP) volta à palavra-passe do NIP.', 'senha')
+      senha = identificadorDe(alvo.pessoa)
+      if (!senha) throw invalido('Só a conta de um militar (com NIP) ou de um civil (com n.º de agente) da Escola volta à palavra-passe inicial.', 'senha')
     } else if (senha) validarSenha(senha, alvo.email)
     if (senha) {
       Object.assign(data, { senha: await this.cifra.cifrar(senha), deveMudar: true, falhas: 0, bloqueadoAte: null })
@@ -384,7 +387,7 @@ export class ServicoSessao {
 
   /*
     Contas de utente para as pessoas da Escola (todas as que ainda não têm, ou as indicadas): entram com o
-    e-mail, o NIP ou o n.º de agente e uma palavra-passe inicial, que têm de mudar (a do militar é o NIP). Devolve as palavras-passe
+    e-mail, o NIP ou o n.º de agente e uma palavra-passe inicial, que têm de mudar (a do militar é o NIP, a do civil o n.º de agente). Devolve as palavras-passe
     (só esta vez) para se imprimirem e entregarem em mão.
   */
   async criarContasPessoas(u, { pessoaIds } = {}) {
@@ -392,7 +395,7 @@ export class ServicoSessao {
     const pessoas = await this.bd.pessoa.findMany({ where: { ativo: true, utilizador: null, vinculo: { not: 'domiciliar' }, ...(pessoaIds?.length ? { id: { in: pessoaIds } } : {}) }, orderBy: { nome: 'asc' } })
     const criadas = []
     for (const p of pessoas) {
-      const senha = senhaDoMilitar(p) ?? senhaInicial()
+      const senha = identificadorDe(p) ?? senhaInicial()
       const email = emailDaPessoa(p)
       if (await this.bd.utilizador.findUnique({ where: { email } })) continue
       await this.bd.utilizador.create({ data: { nome: p.nome, email, papel: 'utente', pessoaId: p.id, unidadeId: p.unidadeId, senha: await this.cifra.cifrar(senha) } })

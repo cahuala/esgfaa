@@ -20,7 +20,7 @@ export default function Utilizadores() {
   useEffect(() => { carregar() }, [carregar])
   const colunas = useMemo(() => [
     { chave: 'nome', titulo: 'Nome', valor: (u) => u.nome, mostrar: (u) => <strong>{u.nome}</strong> },
-    { chave: 'email', titulo: 'Entra com', valor: (u) => u.nip ?? u.email, mostrar: (u) => (u.nip ? <><span className="badge bg-light text-dark border me-1">NIP</span>{u.nip}</> : u.email) },
+    { chave: 'email', titulo: 'Entra com', valor: (u) => u.nip ?? u.email, mostrar: (u) => (u.nip ? <><span className="badge bg-light text-dark border me-1">{u.identificador === 'NIP' ? 'NIP' : 'Agente'}</span>{u.nip}</> : u.email) },
     { chave: 'papel', titulo: 'Papel', valor: (u) => u.papelNome, mostrar: (u) => <>{u.papelNome}{u.papelPedido && <div className="small text-warning-emphasis"><i className="fa fa-stamp me-1" />Pedido: {u.papelPedidoNome} (a despacho)</div>}</> },
     { chave: 'unidade', titulo: 'Unidade', valor: (u) => u.unidadeNome },
     { chave: 'estado', titulo: 'Estado', valor: (u) => (u.aguardaDespacho ? 'A aguardar despacho' : u.ativo ? 'Ativo' : 'Desativado'), mostrar: (u) => (u.aguardaDespacho ? <span className="badge bg-warning text-dark" title="Não entra até o Comandante deferir"><i className="fa fa-stamp me-1" />A aguardar despacho</span> : <span className={`badge ${u.ativo ? 'bg-success' : 'bg-secondary'}`}>{u.ativo ? 'Ativo' : 'Desativado'}</span>) },
@@ -65,25 +65,28 @@ export default function Utilizadores() {
   )
 }
 
-// conta nova: de alguém da Escola (o militar entra com o NIP e a palavra-passe inicial é o NIP) ou de fora, com e-mail
+// conta nova: de alguém da Escola (o militar entra com o NIP, o civil com o n.º de agente, e a palavra-passe inicial é esse número) ou de fora, com e-mail
 function FormUtilizador({ u, eu, papeis, comConta, aoFechar, aoGuardar }) {
   const [d, setD] = useState({ nome: u.nome ?? '', email: u.email ?? '', papel: u.papel ?? 'operador', ativo: u.ativo ?? true, senha: '', unidadeId: u.unidadeId ?? '' })
   const [daEscola, setDaEscola] = useState(true)
   const [pessoa, setPessoa] = useState(null)
   const { dados: unidades } = useDados('/unidades')
   const [erro, setErro] = useState('')
-  const militar = pessoa?.tipo === 'militar' && pessoa.nip
+  // com que entra e qual é a palavra-passe inicial: o NIP do militar ou o n.º de agente do civil
+  const ident = pessoa ? (pessoa.tipo === 'militar' ? pessoa.nip : pessoa.numeroAgente) : null
+  const nomeIdent = pessoa?.tipo === 'militar' ? 'NIP' : 'n.º de agente'
+  const nomeIdentU = u.identificador === 'NIP' ? 'NIP' : 'n.º de agente'
   const guardar = () => {
     const unidadeId = d.unidadeId ? Number(d.unidadeId) : null
     if (!u.id && daEscola && !pessoa) return setErro('Escolha a pessoa da Escola.')
     const corpo = u.id
       ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}), ...(d.email && d.email !== u.email ? { email: d.email } : {}) }
-      : daEscola ? { pessoaId: pessoa.id, papel: d.papel, unidadeId, ...(militar ? {} : { senha: d.senha }) } : { ...d, unidadeId }
+      : daEscola ? { pessoaId: pessoa.id, papel: d.papel, unidadeId, ...(ident ? {} : { senha: d.senha }) } : { ...d, unidadeId }
     api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then((r) => aoGuardar(`Utilizador guardado. ${textoDespacho(r)}`.trim())).catch((e) => setErro(e.message))
   }
   const reporNip = () => {
-    if (!window.confirm(`A palavra-passe de ${u.nome} volta a ser o NIP (${u.nip}) e terá de a mudar ao entrar. Continuar?`)) return
-    api(`/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { reporNip: true } }).then(() => aoGuardar(`${u.nome} entra agora com o NIP ${u.nip} como palavra-passe (muda-a na primeira entrada).`)).catch((e) => setErro(e.message))
+    if (!window.confirm(`A palavra-passe de ${u.nome} volta a ser o ${nomeIdentU} (${u.nip}) e terá de a mudar ao entrar. Continuar?`)) return
+    api(`/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { reporNip: true } }).then(() => aoGuardar(`${u.nome} entra agora com o ${nomeIdentU} ${u.nip} como palavra-passe (muda-a na primeira entrada).`)).catch((e) => setErro(e.message))
   }
   // perdeu o telemóvel e os códigos de recuperação: volta a ligar a verificação ao entrar
   const repor2fa = () => {
@@ -109,15 +112,15 @@ function FormUtilizador({ u, eu, papeis, comConta, aoFechar, aoGuardar }) {
           </div>
         ) : <>
           <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
-          <Campo rotulo={u.nip ? 'Entra com o NIP' : 'E-mail'} obrigatorio><input type={u.nip ? 'text' : 'email'} className="form-control form-control-sm" value={u.nip ?? d.email} disabled={Boolean(u.id) && !(!u.nip && d.papel === 'comandante')} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
+          <Campo rotulo={u.nip ? `Entra com o ${nomeIdentU}` : 'E-mail'} obrigatorio><input type={u.nip ? 'text' : 'email'} className="form-control form-control-sm" value={u.nip ?? d.email} disabled={Boolean(u.id) && !(!u.nip && d.papel === 'comandante')} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
           {u.id && u.nip && <Campo rotulo="E-mail" ajuda={d.papel === 'comandante' ? 'O Comandante usa a mesma conta no painel de gestão: entra lá com este e-mail e a mesma palavra-passe.' : 'Também pode entrar com o e-mail.'}><input type="email" className="form-control form-control-sm" value={/@pessoal\.interno$/.test(d.email) ? '' : d.email} placeholder="nome@esgfaa.gov.ao" onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>}
         </>}
         <Campo rotulo="Unidade (expediente e conversa da unidade)"><Escolha valor={String(d.unidadeId ?? '')} aoMudar={(v) => setD({ ...d, unidadeId: v })} opcoes={(unidades ?? []).map((x) => [String(x.id), x.nome])} vazio="Nenhuma" /></Campo>
         <Campo rotulo="Papel"><Escolha valor={d.papel} aoMudar={(v) => setD({ ...d, papel: v })} opcoes={papeis} vazio={null} disabled={u.id === eu.id} /></Campo>
-        {militar
-          ? <div className="col-12 mb-3"><div className="alert alert-info py-2 small mb-0"><i className="fa fa-key me-1" />Entra com o NIP <b>{pessoa.nip}</b> e a palavra-passe inicial é também o NIP. Na primeira entrada tem de escolher uma nova.</div></div>
+        {ident
+          ? <div className="col-12 mb-3"><div className="alert alert-info py-2 small mb-0"><i className="fa fa-key me-1" />Entra com o {nomeIdent} <b>{ident}</b> e a palavra-passe inicial é também o {nomeIdent}. Na primeira entrada tem de escolher uma nova.</div></div>
           : <Campo rotulo={u.id ? 'Nova palavra-passe (para repor)' : 'Palavra-passe inicial'} obrigatorio={!u.id} ajuda="Pelo menos 10 caracteres, com letras e números. A pessoa muda-a na primeira entrada."><input type="password" autoComplete="new-password" className="form-control form-control-sm" value={d.senha} onChange={(e) => setD({ ...d, senha: e.target.value })} /></Campo>}
-        {u.id && u.nip && <div className="col-12 mb-3"><button type="button" className="btn btn-sm btn-outline-theme" onClick={reporNip}><i className="fa fa-key me-1" />Repor a palavra-passe para o NIP</button></div>}
+        {u.id && u.nip && <div className="col-12 mb-3"><button type="button" className="btn btn-sm btn-outline-theme" onClick={reporNip}><i className="fa fa-key me-1" />Repor a palavra-passe para o {nomeIdentU}</button></div>}
         {u.id && u.id !== eu.id && <div className="col-12"><label className="form-check"><input type="checkbox" className="form-check-input" checked={d.ativo} onChange={(e) => setD({ ...d, ativo: e.target.checked })} /> <span className="form-check-label">Conta ativa</span></label></div>}
       </div>}
     </Modal>
