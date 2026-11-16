@@ -1,7 +1,9 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
+import crypto from 'node:crypto'
 import { criarAmbiente } from '../apoio/ambiente.js'
 
+const CHAVE = 'chave-partilhada-com-o-pessoal-de-32-caracteres-ou-mais'
 const NOVA = 'Nova-senha-2026-forte'
 
 /*
@@ -96,5 +98,20 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
     assert.deepEqual([c.docentes.length, c.docentesPropostos.length], [0, 1])
     const h = (await ensino.put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente', horas: 40 }] })).body
     assert.deepEqual([h.docentes.length, h.docentesPropostos.length, h.docentes[0].horas], [1, 0, 40])
+  })
+})
+
+describe('O Pessoal pergunta o que espera pelo Comandante (pedido assinado)', () => {
+  let amb
+  before(async () => { amb = await criarAmbiente({ env: { APROVACAO_COMANDANTE: 'sim', INTEGRACAO_CHAVE: CHAVE, PAINEL_URL: 'https://esg.exemplo.ao/painel/' } }) })
+  after(() => amb.fechar())
+
+  it('só os números e o endereço do painel; sem assinatura, recusado', async () => {
+    const data = String(Math.floor(Date.now() / 1000))
+    const assinatura = crypto.createHmac('sha256', CHAVE).update(`${data}.{}`).digest('hex')
+    const n = (await amb.http().post('/api/integracao/pessoal/pendentes-comandante').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinatura).send('{}').expect(200)).body
+    assert.deepEqual(Object.keys(n).sort(), ['alteracoesNotas', 'avisos', 'comentarios', 'contasPainel', 'distribuicoes', 'docentesPorVerificar', 'homologacoes', 'inqueritos', 'notas', 'painel', 'site'])
+    assert.deepEqual([n.distribuicoes, n.notas, n.painel], [0, 0, 'https://esg.exemplo.ao/painel/'])
+    assert.equal((await amb.http().post('/api/integracao/pessoal/pendentes-comandante').set('Content-Type', 'application/json').send('{}')).status, 401)
   })
 })

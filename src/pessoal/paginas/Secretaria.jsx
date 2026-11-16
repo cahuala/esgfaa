@@ -8,6 +8,63 @@ import { useSessao } from '../sessao'
 
 const COR = { urgente: 'bg-danger', confidencial: 'bg-dark', normal: 'bg-light text-dark border' }
 
+// o que só avança com o Comandante: aqui (Sistema de Pessoal) e no painel de gestão (Sistema Académico e site)
+const NO_PORTAL = [
+  ['distribuicoes', 'Distribuição de serviço docente (docentes nas cadeiras de cada turma)'],
+  ['notas', 'Publicação das notas (provas, exames, TAI/TAG)'],
+  ['alteracoesNotas', 'Alteração de notas já publicadas'],
+  ['homologacoes', 'Classificação final do curso (homologação)'],
+  ['inqueritos', 'Inquéritos institucionais (avaliação dos docentes)'],
+  ['avisos', 'Avisos gerais do portal aos estudantes'],
+  ['docentesPorVerificar', 'Docentes por verificar'],
+  ['site', 'Site: notícias, artigos, eventos, páginas…'],
+  ['comentarios', 'Comentários dos visitantes do site'],
+  ['contasPainel', 'Contas e papéis do painel de gestão'],
+]
+
+function OQueAprova({ dados }) {
+  const { dados: pedidos } = useDados('/pedidos-despacho', { estado: 'pendente' }, { tempoReal: true })
+  const { dados: portal } = useDados('/secretaria/portal')
+  const de = (re) => (pedidos ? pedidos.filter((x) => re.test(x.tipo)).length : null)
+  const numero = (n) => (n === null || n === undefined ? <span className="text-muted">—</span> : n > 0 ? <span className="badge bg-danger">{n}</span> : <span className="badge bg-success">0</span>)
+  const aqui = [
+    ['Documentos do expediente submetidos a despacho', dados.pendentes.length],
+    ['Propostas: promoção, graduação, nomeação, exoneração, progressão (civis), nomeação para curso', dados.propostas.pendentes.length],
+    ['Docentes: novo docente, mudança de categoria, deixa de ser docente', de(/^docente_/)],
+    ['Contas do sistema de Pessoal (militares e civis), papéis e permissões', de(/^utilizador_/)],
+  ]
+  return (
+    <Painel titulo="O que o Comandante aprova" icone="fa-list-check" corpo={false}>
+      <div className="table-responsive">
+        <table className="table table-sm align-middle mb-0">
+          <thead><tr><th>Sistema</th><th>O que aprova</th><th className="text-center">À espera</th><th>Onde decide</th></tr></thead>
+          <tbody>
+            {aqui.map(([o, n], i) => (
+              <tr key={o}>{i === 0 && <td rowSpan={aqui.length} className="fw-bold">Pessoal e Quadros</td>}<td>{o}</td><td className="text-center">{numero(n)}</td><td className="small">Nesta página</td></tr>
+            ))}
+            {NO_PORTAL.map(([k, o], i) => (
+              <tr key={k}>
+                {i === 0 && <td rowSpan={NO_PORTAL.length} className="fw-bold">Académico e site<div className="small fw-normal text-muted">painel de gestão</div></td>}
+                <td>{o}</td>
+                <td className="text-center">{numero(portal?.ligado && !portal.erro ? portal[k] : null)}</td>
+                <td className="small">{k === 'alteracoesNotas' ? 'Alterações de notas' : k === 'homologacoes' ? 'Conselho de Curso' : k === 'docentesPorVerificar' ? 'Docentes (verificação)' : 'Por aprovar'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="p-3 small border-top">
+        {!portal && 'A perguntar ao portal…'}
+        {portal && !portal.ligado && <span className="text-muted">O Sistema de Pessoal não está ligado ao portal: os números do painel não aparecem aqui.</span>}
+        {portal?.erro && <span className="text-danger">{portal.erro}</span>}
+        {portal?.ligado && !portal.erro && (portal.painel
+          ? <>As decisões do Sistema Académico e do site tomam-se no painel de gestão, com a conta do Comandante: <a href={portal.painel} target="_blank" rel="noreferrer">abrir o painel <i className="fa fa-external-link-alt ms-1" /></a></>
+          : 'As decisões do Sistema Académico e do site tomam-se no painel de gestão, com a conta do Comandante.')}
+      </div>
+    </Painel>
+  )
+}
+
 /*
   Secretária digital do Comandante: os documentos do Expediente que as unidades lhe submetem a despacho
   (os urgentes primeiro, depois do mais antigo). Abre-se o documento (com os anexos) e despacha-se lá:
@@ -35,6 +92,7 @@ function Despacho() {
   )
   return (
     <>
+      <OQueAprova dados={dados} />
       <Painel titulo={`Por despachar (${dados.pendentes.length})`} icone="fa-stamp" corpo={false}>
         <div className="list-group list-group-flush">
           {dados.pendentes.map(linha)}

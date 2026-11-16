@@ -83,6 +83,28 @@ export class ServicoSincronizacao {
     Quem assina os diplomas e certificados no portal: quem ocupa hoje os cargos (Comandante, Director de
     Ensino, Chefe da RPQ). Vai com cada envio, só quando muda (uma pessoa nomeada, exonerada ou de licença).
   */
+  /*
+    O que espera pelo Comandante no portal e no site (só os números), para a Secretária digital: decide-se no painel
+    de gestão. Sem ligação ao portal, diz porquê.
+  */
+  async pendentesComandante(u) {
+    exigir(u, 'despachar')
+    if (!this.ativa) return { ligado: false }
+    const corpo = '{}'
+    const data = String(Math.floor(this.agora().getTime() / 1000))
+    try {
+      const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/pendentes-comandante`, {
+        method: 'POST', body: corpo, signal: AbortSignal.timeout(8_000),
+        headers: { 'Content-Type': 'application/json', 'X-Pessoal-Data': data, 'X-Pessoal-Assinatura': assinar(this.config.portal.chave, data, corpo) },
+      })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok) return { ligado: true, erro: j.erro || `O portal respondeu ${r.status}.` }
+      return { ligado: true, ...j }
+    } catch (e) {
+      return { ligado: true, erro: `Sem ligação ao portal: ${e.message}` }
+    }
+  }
+
   async enviarAssinaturas() {
     if (!this.ativa) return { enviado: false, inativa: true }
     const d = await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } })

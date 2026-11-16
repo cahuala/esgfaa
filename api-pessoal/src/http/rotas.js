@@ -211,6 +211,7 @@ export function rotas({ servicos: s, config }) {
   // pedidos que só valem depois do despacho do Comandante (docentes, contas e papéis)
   r.get('/pedidos-despacho', validar({ query: z.object({ estado: z.enum(['pendente', 'deferido', 'indeferido', 'anulado']).optional() }) }), async (req, res) => res.json(await s.despachos.listar(u(req), req.dados.query)))
   r.post('/pedidos-despacho/:id/decidir', validar({ params: E.pId, body: z.object({ decisao: z.enum(['deferido', 'indeferido']), despacho: z.string().max(2000).default('') }) }), async (req, res) => res.json(await s.despachos.decidir(u(req), req.dados.params.id, req.dados.body)))
+  r.get('/secretaria/portal', async (req, res) => res.json(await s.sincronizacao.pendentesComandante(u(req))))
   r.get('/secretaria', async (req, res) => res.json({ ...(await s.expediente.secretaria(u(req))), propostas: await s.propostas.aDespacho(u(req)), despachosProposta: DESPACHOS_PROPOSTA }))
   r.post('/propostas/:id/despachar', validar({ params: E.pId, body: z.object({ decisao: z.string().max(30), texto: z.string().max(3000).default('') }) }), async (req, res) => res.json(await s.propostas.despachar(u(req), req.dados.params.id, req.dados.body)))
   r.post('/expediente/:id/despacho', validar({ params: E.pId, body: z.object({ nota: z.string().max(1000).default('') }) }), async (req, res) => res.json(await s.expediente.submeterDespacho(u(req), req.dados.params.id, req.dados.body)))

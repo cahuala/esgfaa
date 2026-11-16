@@ -373,3 +373,38 @@ describe('Envio para o Portal Académico', () => {
     } finally { await amb.fechar() }
   })
 })
+
+describe('Secretária digital: o que espera pelo Comandante no portal', () => {
+  it('pergunta ao portal (assinado) e devolve só os números; sem ligação ou com erro, diz porquê', async () => {
+    const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
+    let pedido = null
+    let falhar = false
+    const enviar = async (url, op) => {
+      pedido = { url, op }
+      if (falhar) throw new Error('recusada')
+      return { ok: true, status: 200, json: async () => ({ painel: 'https://esg.escola/painel/', distribuicoes: 2, notas: 3, site: 1 }) }
+    }
+    const comandante = { papel: 'comandante' }
+    const amb = await criarAmbiente({ env: { PORTAL_API_URL: 'http://portal.interno:3001', INTEGRACAO_CHAVE: chave }, enviar })
+    try {
+      const s = amb.contentor.servicos.sincronizacao
+      const r = await s.pendentesComandante(comandante)
+      assert.deepEqual([r.ligado, r.distribuicoes, r.notas, r.painel], [true, 2, 3, 'https://esg.escola/painel/'])
+      assert.equal(pedido.url, 'http://portal.interno:3001/api/integracao/pessoal/pendentes-comandante')
+      const h = pedido.op.headers
+      assert.equal(h['X-Pessoal-Assinatura'], assinar(chave, h['X-Pessoal-Data'], '{}'))
+      falhar = true
+      assert.match((await s.pendentesComandante(comandante)).erro, /Sem ligação ao portal/)
+      // só quem despacha
+      await assert.rejects(() => s.pendentesComandante({ papel: 'operador' }))
+    } finally {
+      await amb.fechar()
+    }
+    const sem = await criarAmbiente()
+    try {
+      assert.deepEqual(await sem.contentor.servicos.sincronizacao.pendentesComandante({ papel: 'comandante' }), { ligado: false })
+    } finally {
+      await sem.fechar()
+    }
+  })
+})

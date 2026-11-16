@@ -59,6 +59,7 @@ services:
       DATABASE_URL: postgresql://esgfaa:${BD_SENHA}@bd:5432/esgfaa
       PUBLIC_URL: https://${DOMINIO}
       PORTAL_URL: https://${DOMINIO}/portal/
+      PAINEL_URL: https://${DOMINIO}/${ADMIN_PATH}/
       CORS_ORIGINS: https://${DOMINIO}
       # o Caddy da frente e o Caddy das páginas
       TRUST_PROXY: "2"

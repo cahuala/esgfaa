@@ -22,6 +22,8 @@ const ESQUEMA = z.object({
   EMAIL_DOMINIO_ESCOLA: z.string().regex(/^$|^[a-z0-9.-]+\.[a-z]{2,}$/i, 'EMAIL_DOMINIO_ESCOLA deve ser um domínio (ex.: esgfaa.gov.ao)').default('esgfaa.gov.ao'),
   FUSO_HORARIO: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$|^UTC$/).default('Africa/Luanda'),
   PUBLIC_URL: z.union([z.literal(''), z.url()]).default(''),
+  // endereço do painel de gestão (https://DOMINIO/ADMIN_PATH/): o Pessoal mostra-o ao Comandante, com o que o espera
+  PAINEL_URL: z.union([z.literal(''), z.url()]).default(''),
   CORS_ORIGINS: lista('http://localhost:5173,http://localhost:4173,https://cahuala.github.io'),
   JWT_SECRET: z.string().default(''),
   // chave da encriptação dos dados pessoais na base de dados (32 bytes: 64 hex ou base64); NUNCA a perca
@@ -116,6 +118,7 @@ export function criarConfig(env = process.env, extras = {}) {
     pastaPrivada: path.join(pastaDados, 'privado'),
     dominioEmail: e.EMAIL_DOMINIO_ESCOLA.toLowerCase(),
     urlPublico: e.PUBLIC_URL.replace(/\/$/, ''),
+    urlPainel: e.PAINEL_URL,
     origens: e.CORS_ORIGINS,
     segredoJwt,
     sessaoEntreSites: e.SESSAO_ENTRE_SITES === 'sim',

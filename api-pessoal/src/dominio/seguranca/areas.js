@@ -123,7 +123,7 @@ export const ROTAS = [
   R('POST', '/organica/importar', 'organica'), R('POST', '/unidades', 'organica'), R('PUT', '/unidades/:id', 'organica'), R('DELETE', '/unidades/:id', 'organica'),
   R('POST', '/cargos', 'organica'), R('PUT', '/cargos/:id', 'organica'), R('DELETE', '/cargos/:id', 'organica'),
   // Comandante
-  R('GET', '/secretaria', 'secretaria'), R('POST', '/pedidos-despacho/:id/decidir', 'secretaria'), R('POST', '/propostas/:id/despachar', 'secretaria'),
+  R('GET', '/secretaria', 'secretaria'), R('GET', '/secretaria/portal', 'secretaria'), R('POST', '/pedidos-despacho/:id/decidir', 'secretaria'), R('POST', '/propostas/:id/despachar', 'secretaria'),
   // administração
   R('GET', '/utilizadores', ['utilizadores', 'secretaria']), R('POST', '/utilizadores', 'utilizadores'), R('PUT', '/utilizadores/:id', 'utilizadores'), R('POST', '/utilizadores/contas-pessoas', 'utilizadores'),
   R('POST', '/utilizadores/:id/2fa/repor', 'utilizadores'),

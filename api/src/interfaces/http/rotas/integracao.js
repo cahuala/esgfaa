@@ -18,6 +18,28 @@ const corpoAssinaturas = z.object({ assinaturas: z.object({ comandante: assinant
   Cada pedido vem assinado com a chave partilhada: HMAC-SHA256 de "<data>.<corpo>", e a data
   (segundos) tem de estar a menos de 5 minutos da hora do servidor, para não se poder repetir mais tarde.
 */
+// quem pergunta é o Sistema de Gestão de Pessoal (pedido assinado): conta como o Comandante, só para contar
+const LEITOR = { nome: 'Sistema de Gestão de Pessoal', pode: () => true, exigir: () => {} }
+async function pendentesDoComandante(servicos, config) {
+  const c = { actor: LEITOR }
+  const ensino = servicos.administracaoEscolar.aprovacoes
+  const controlo = servicos.controlo.controlo
+  const resumo = await controlo.resumoAcademico()
+  return {
+    painel: config.urlPainel || '',
+    site: (await servicos.conteudos.contarParaAprovar(c)) + (await servicos.paginas.contarParaAprovar(c)),
+    comentarios: await servicos.interacoes.contarParaAprovar(c),
+    avisos: await servicos.administracaoEscolar.avisos.contarParaAprovar(c),
+    inqueritos: await servicos.qualidade.inqueritos.contarParaAprovar(c),
+    contasPainel: await servicos.utilizadores.contarPorAprovar(c),
+    distribuicoes: ensino.aprovacaoComandante ? await ensino.controlo.contarDistribuicoesPendentes() : 0,
+    notas: ensino.aprovacaoComandante ? await ensino.controlo.contarPublicacoesPendentes() : 0,
+    alteracoesNotas: await controlo.contarPedidos('pendente'),
+    homologacoes: resumo.porHomologar.length,
+    docentesPorVerificar: await controlo.contarDocentesPorVerificar(),
+  }
+}
+
 export function rotasIntegracao({ servicos, config }) {
   const r = express.Router()
   // a assinatura do pedido (chave partilhada) e a data a menos de 5 minutos; null = recusado
@@ -49,6 +71,8 @@ export function rotasIntegracao({ servicos, config }) {
   r.post('/pessoal/estado-contas', ...receber(z.object({ ids: z.array(z.number().int().positive()).max(5000) }), (ctx, d) => servicos.pessoal.registo.estadoContasDoPessoal(ctx, d.ids), '100kb'))
   r.post('/pessoal/contas', ...receber(corpo, (ctx, d) => servicos.pessoal.registo.sincronizarDoPessoal(ctx, d.pessoas)))
   // quem ocupa hoje os cargos que assinam os diplomas e certificados (Comandante, Director de Ensino…)
+  // o que espera pelo Comandante no portal e no site (só os números), para a Secretária digital do Pessoal
+  r.post('/pessoal/pendentes-comandante', ...receber(z.object({}), () => pendentesDoComandante(servicos, config), '1kb'))
   r.post('/pessoal/assinaturas', ...receber(corpoAssinaturas, (ctx, d) => servicos.administracaoEscolar.conclusao.receberAssinaturasDoPessoal(ctx, d.assinaturas), '20kb'))
   return r
 }
