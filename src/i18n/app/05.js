@@ -84,6 +84,7 @@ export default [
   ["Escola Superior de Guerra · FAA", "Higher War College · FAA", "École Supérieure de Guerre · FAA", "Escuela Superior de Guerra · FAA"],
   ["O servidor do painel ainda não está ligado a este endereço. Contacte o administrador do sistema.", "The panel server is not yet connected to this address. Contact the system administrator.", "Le serveur du panneau n'est pas encore relié à cette adresse. Contactez l'administrateur du système.", "El servidor del panel aún no está conectado a esta dirección. Contacte con el administrador del sistema."],
   ["E-mail institucional", "Institutional e-mail", "E-mail institutionnel", "Correo institucional"],
+  ["E-mail institucional ou BI", "Institutional e-mail or ID card no.", "E-mail institutionnel ou n° de carte d’identité", "Correo institucional o n.º de documento"],
   ["nome@esgfaa.gov.ao", "name@esgfaa.gov.ao", "nom@esgfaa.gov.ao", "nombre@esgfaa.gov.ao"],
   ["Palavra-passe", "Password", "Mot de passe", "Contraseña"],
   ["Esconder palavra-passe", "Hide password", "Masquer le mot de passe", "Ocultar contraseña"],

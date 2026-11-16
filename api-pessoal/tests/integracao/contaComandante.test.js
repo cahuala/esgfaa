@@ -112,3 +112,77 @@ describe('Civis no Portal Académico', () => {
     }
   })
 })
+
+describe('Contas automáticas dos civis da Repartição de Pessoal e Quadros: entram com o BI', () => {
+  let amb, adm
+  before(async () => {
+    amb = await criarAmbiente()
+    adm = amb.com(await amb.entrar())
+  })
+  after(() => amb.fechar())
+  const entrar = (email, senha) => amb.http().post('/api/entrar').send({ email, senha })
+
+  it('o civil da Repartição (ou de uma secção dela) tem logo conta de Operador: entra com o BI e a palavra-passe é o BI', async () => {
+    const rpq = (await adm.post('/api/unidades').send({ nome: 'Repartição de Pessoal e Quadros' }).expect(201)).body
+    const seccao = (await adm.post('/api/unidades').send({ nome: 'Secção de Cadastro', paiId: rpq.id }).expect(201)).body
+    const outra = (await adm.post('/api/unidades').send({ nome: 'Repartição de Logística' }).expect(201)).body
+    const civil = (extra) => ({ tipo: 'civil', vinculo: 'funcionario', genero: 'F', carreiraCivil: 'tecnico_medio', ...extra })
+    const a = (await adm.post('/api/pessoas').send(civil({ nome: 'Rosa Civil Repartição', bi: '001234567LA041', unidadeId: seccao.id })).expect(201)).body
+    await adm.post('/api/pessoas').send(civil({ nome: 'Lia Civil Logística', bi: '009876543LA042', unidadeId: outra.id })).expect(201)
+    const c = await amb.contentor.bd.utilizador.findFirst({ where: { pessoaId: a.id } })
+    assert.deepEqual([c.papel, c.ativo, c.aguardaDespacho, c.deveMudar, Boolean(c.biHash), c.biHash.includes('001234567')], ['operador', true, false, true, true, false])
+    assert.equal(await amb.contentor.bd.utilizador.count({ where: { nome: 'Lia Civil Logística' } }), 0)
+    const e = await entrar('001234567la041', '001234567LA041')
+    assert.equal(e.status, 200, e.body.erro)
+    const eu = amb.com(e.body.token)
+    assert.match((await eu.post('/api/mudar-senha').send({ atual: '001234567LA041', nova: '001234567LA041' })).body.erro, /BI/)
+    await eu.post('/api/mudar-senha').send({ atual: '001234567LA041', nova: 'Rosa-nova-2026x' }).expect(200)
+    // a lista mostra que entra com o BI (sem o BI em claro); o administrador repõe para o BI
+    const l = (await adm.get('/api/utilizadores').expect(200)).body.find((x) => x.id === c.id)
+    assert.deepEqual([l.identificador, l.nip], ['BI', null])
+    await adm.put(`/api/utilizadores/${c.id}`).send({ reporNip: true }).expect(200)
+    assert.equal((await entrar('001234567LA041', '001234567LA041')).status, 200)
+    // não se repete
+    assert.deepEqual(await amb.contentor.servicos.sessao.garantirContasCivis(), { criadas: 0 })
+    // uma entrada falhada com o BI não o deixa em claro na auditoria
+    await entrar('001234567LA041', 'errada-de-proposito')
+    const reg = await amb.contentor.bd.auditoria.findMany({ where: { acao: 'entrada_falhada' } })
+    assert.ok(reg.length && reg.every((x) => !x.utilizador.includes('001234567')))
+  })
+})
+
+describe('Civis da Direcção de Ensino: conta no painel de gestão, com o BI', () => {
+  it('vão para o painel (ficha, nome, impressão do BI e palavra-passe inicial cifrada); o BI não sai daqui', async () => {
+    const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
+    const envios = []
+    const enviar = async (url, op) => {
+      if (url.endsWith('/contas-ensino')) envios.push({ corpo: JSON.parse(op.body), raw: op.body, h: op.headers })
+      return { ok: true, status: 200, json: async () => ({ resultados: [], ok: true }) }
+    }
+    const amb = await criarAmbiente({ env: { PORTAL_API_URL: 'http://portal.interno:3001', INTEGRACAO_CHAVE: chave }, enviar })
+    try {
+      const adm = amb.com(await amb.entrar())
+      const de = (await adm.post('/api/unidades').send({ nome: 'Direcção de Ensino' }).expect(201)).body
+      const sec = (await adm.post('/api/unidades').send({ nome: 'Repartição de Administração Escolar', paiId: de.id }).expect(201)).body
+      const civil = (extra) => ({ tipo: 'civil', vinculo: 'funcionario', genero: 'F', carreiraCivil: 'tecnico_medio', ...extra })
+      const a = (await adm.post('/api/pessoas').send(civil({ nome: 'Joana Civil Ensino', bi: '001111111LA011', unidadeId: sec.id })).expect(201)).body
+      await adm.post('/api/pessoas').send(militar({ nome: 'Militar do Ensino', unidadeId: de.id })).expect(201)
+      const s = amb.contentor.servicos.sincronizacao
+      await s.enviarContasEnsino()
+      const e = envios.at(-1)
+      assert.equal(e.corpo.contas.length, 1)
+      const c = e.corpo.contas[0]
+      assert.equal(c.ref, `pessoal-${a.id}`)
+      assert.equal(c.bi, (await import('node:crypto')).createHmac('sha256', chave).update('bi:001111111LA011').digest('hex'))
+      assert.match(c.senha, /^scrypt\$/)
+      assert.ok(!e.raw.includes('001111111')) // o BI não sai em claro
+      assert.deepEqual(await s.enviarContasEnsino(), { enviado: false, igual: true })
+      // sai da Direcção de Ensino: a lista vai vazia (o painel desactiva a conta)
+      await amb.contentor.bd.pessoa.update({ where: { id: a.id }, data: { unidadeId: null } })
+      await s.enviarContasEnsino()
+      assert.deepEqual(envios.at(-1).corpo, { contas: [] })
+    } finally {
+      await amb.fechar()
+    }
+  })
+})

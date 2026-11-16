@@ -80,11 +80,11 @@ function Entrar() {
                 </div>
               )}
 
-              <label className="entrada-rotulo" htmlFor="email">{tx('E-mail institucional')}</label>
+              <label className="entrada-rotulo" htmlFor="email">{tx('E-mail institucional ou BI')}</label>
               <div className="entrada-campo mb-20px">
                 <i className="fa fa-envelope" aria-hidden="true" />
                 <input
-                  type="email"
+                  type="text"
                   id="email"
                   className="form-control"
                   placeholder={tx('nome@esgfaa.gov.ao')}

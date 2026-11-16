@@ -45,6 +45,49 @@ export class ServicoUtilizadores {
     (fica a que havia). As que deixaram de vir desactivam-se. Uma conta do painel com o mesmo e-mail e outro papel
     não se toca (diz-se porquê).
   */
+  /*
+    Contas automáticas dos civis da Direcção de Ensino, vindas do Sistema de Gestão de Pessoal (pedido assinado):
+    papel Repartição de Administração Escolar, sem aprovação; entram com o BI (só a impressão dele) e a palavra-passe
+    inicial é o BI (já cifrada), que mudam na primeira entrada. Depois de criada, a conta é do painel (o administrador
+    ajusta o papel; a palavra-passe muda-se cá). Quem sai da Direcção de Ensino (deixa de vir) é desactivado.
+  */
+  async receberContasDoEnsino(ctx, contas) {
+    const resultados = []
+    const vieram = new Set()
+    for (const c of contas) {
+      vieram.add(c.ref)
+      let u = await this.utilizadores.porPessoalRef(c.ref)
+      if (!u) {
+        const outra = await this.utilizadores.porBiHash(c.bi)
+        if (outra) { resultados.push({ ref: c.ref, ok: false, erro: 'Já há uma conta do painel com este BI.' }); continue }
+        const real = c.email ? normalizarEmail(c.email) : ''
+        const email = real && !(await this.utilizadores.emailEmUso(real)) ? real : `${c.ref}@pessoal.interno`
+        u = Utilizador.novo({ nome: c.nome, email, papel: 'secretaria', senhaCifrada: c.senha, deveMudarSenha: true })
+        Object.assign(u, { pessoalRef: c.ref, biHash: c.bi })
+        u = await this.utilizadores.criar(u)
+        await this.auditoria.registar(ctx, { acao: 'conta_ensino_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { criada: true } })
+        resultados.push({ ref: c.ref, ok: true, criada: true })
+        continue
+      }
+      // o nome e o BI acompanham a ficha (uma conta desactivada fica: reactiva-a o administrador)
+      if (u.nome !== c.nome || u.biHash !== c.bi) {
+        u.definirNome(c.nome)
+        u.biHash = c.bi
+        await this.utilizadores.guardar(u)
+      }
+      resultados.push({ ref: c.ref, ok: true })
+    }
+    // quem saiu da Direcção de Ensino (ou da Escola) deixa de entrar
+    for (const u of await this.utilizadores.vindasDoPessoal()) {
+      if (vieram.has(u.pessoalRef) || !u.ativo) continue
+      u.ativo = false
+      u.invalidarSessoes()
+      await this.utilizadores.guardar(u)
+      await this.auditoria.registar(ctx, { acao: 'conta_ensino_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { desactivada: true } })
+    }
+    return { resultados }
+  }
+
   async receberComandanteDoPessoal(ctx, contas) {
     const resultados = []
     const vieram = new Set()

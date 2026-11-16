@@ -154,3 +154,40 @@ describe('Conta única do Comandante: a do Sistema de Gestão de Pessoal vale no
     assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Nova-do-Pessoal-2026')).status, 403)
   })
 })
+
+describe('Civis da Direcção de Ensino: conta no painel, vinda do Pessoal, com o BI', () => {
+  let amb
+  const BI = '001111111LA011'
+  const imp = (bi) => crypto.createHmac('sha256', CHAVE).update(`bi:${bi}`).digest('hex')
+  const enviar = (contas) => {
+    const corpo = JSON.stringify({ contas })
+    const data = String(Math.floor(Date.now() / 1000))
+    const assinatura = crypto.createHmac('sha256', CHAVE).update(`${data}.${corpo}`).digest('hex')
+    return amb.http().post('/api/integracao/pessoal/contas-ensino').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinatura).send(corpo)
+  }
+  const entrar = (email, senha) => amb.http().post('/api/admin/entrar').send({ email, senha })
+  before(async () => { amb = await criarAmbiente({ env: { INTEGRACAO_CHAVE: CHAVE } }) })
+  after(() => amb.fechar())
+
+  it('entra com o BI (palavra-passe inicial = BI, muda-a logo), papel Administração Escolar; quem sai é desactivado', async () => {
+    const conta = { ref: 'pessoal-41', nome: 'Joana Civil Ensino', bi: imp(BI), senha: await amb.contentor.cifra.cifrar(BI) }
+    assert.deepEqual((await enviar([conta]).expect(200)).body.resultados, [{ ref: 'pessoal-41', ok: true, criada: true }])
+    const e = await entrar(BI.toLowerCase(), BI)
+    assert.equal(e.status, 200, e.body.erro)
+    assert.deepEqual([e.body.utilizador.papel, e.body.utilizador.email], ['secretaria', 'pessoal-41@pessoal.interno'])
+    const eu = amb.com(e.body.token)
+    assert.equal((await eu.get('/api/admin/eu')).body.deveMudarSenha, true)
+    assert.match((await eu.put('/api/admin/eu/senha').send({ atual: BI, nova: BI })).body.erro, /BI/)
+    await eu.put('/api/admin/eu/senha').send({ atual: BI, nova: 'Kalunga-Forte-2026x!' }).expect(200)
+    // reenviar a mesma pessoa não muda a palavra-passe
+    await enviar([{ ...conta, senha: await amb.contentor.cifra.cifrar(BI) }]).expect(200)
+    assert.equal((await entrar(BI, 'Kalunga-Forte-2026x!')).status, 200)
+    // uma entrada falhada com o BI não o deixa em claro no registo
+    await entrar('009999999LA099', 'errada')
+    const reg = await amb.contentor.prismaBase.atividade.findMany({ where: { acao: 'falha_entrada' } })
+    assert.ok(reg.length && reg.every((x) => !JSON.stringify(x.detalhes).includes('009999999')))
+    // saiu da Direcção de Ensino
+    await enviar([]).expect(200)
+    assert.equal((await entrar(BI, 'Kalunga-Forte-2026x!')).status, 403)
+  })
+})

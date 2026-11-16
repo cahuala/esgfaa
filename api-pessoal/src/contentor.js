@@ -48,7 +48,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const ausencias = new ServicoAusencias({ bd, auditoria, ...relogio })
   const servicos = {
     auditoria,
-    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), inactividadeMin: config.inactividadeMin, doisFatores, despachos, ...relogio }),
+    sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), inactividadeMin: config.inactividadeMin, doisFatores, despachos, chaveBi: config.chaveDados, ...relogio }),
     despachos,
     doisFatores,
     listas,
@@ -70,7 +70,7 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
     mensagens: new ServicoMensagens({ bd, ficheiros, ...relogio }),
     pastas: new ServicoPastas({ bd, auditoria, ficheiros }),
     privacidade: new ServicoPrivacidade({ bd, pessoas, auditoria, ...relogio }),
-    sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, ...(enviar ? { enviar } : {}), ...relogio }),
+    sincronizacao: new ServicoSincronizacao({ bd, auditoria, config, cifra: new CifraSenhas(), ...(enviar ? { enviar } : {}), ...relogio }),
   }
   despachos.pessoas = pessoas
   despachos.sessao = servicos.sessao

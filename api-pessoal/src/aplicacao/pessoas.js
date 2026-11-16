@@ -233,6 +233,8 @@ export class ServicoPessoas {
       const r = await fn()
       // quem passa a ocupar o cargo de Comandante tem logo conta (entra com o NIP)
       await this.despachos?.sessao?.garantirContaDoComandante().catch((e) => console.error('Conta do Comandante:', e.message))
+      // os civis da Repartição de Pessoal e Quadros: conta com o BI
+      await this.despachos?.sessao?.garantirContasCivis().catch((e) => console.error('Contas dos civis:', e.message))
       return r
     } catch (e) {
       if (eDuplicado(e)) {

@@ -3,24 +3,29 @@ import { Actor } from '../dominio/identidade/actor.js'
 import { limparPermissoes } from '../dominio/identidade/permissoes.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../dominio/identidade/utilizador.js'
 import { motivoSenhaFraca, validarSenha } from '../dominio/identidade/politicaSenha.js'
+import { BI_ANGOLANO, impressaoBi } from '../dominio/identidade/bi.js'
 
 const CREDENCIAIS_ERRADAS = 'E-mail ou palavra-passe incorretos.'
 const bloqueada = (ate) => new ContaBloqueada(`Conta bloqueada por excesso de tentativas. Tente de novo dentro de ${MINUTOS_BLOQUEIO} minutos.`, ate)
 
 // Entrar, sair, sessão atual e mudança da própria palavra-passe
 export class ServicoSessao {
-  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null }) {
-    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores })
+  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null, chaveIntegracao = '' }) {
+    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao })
   }
 
+  // entra-se com o e-mail ou, nas contas que vêm do Pessoal (civis da Direcção de Ensino), com o BI
   async entrar(ctx, { email, senha, codigo }) {
     const emailLimpo = String(email || '').trim().toLowerCase().slice(0, 254)
-    const u = emailLimpo ? await this.utilizadores.porEmail(emailLimpo) : null
+    const comBi = this.chaveIntegracao && BI_ANGOLANO.test(emailLimpo.toUpperCase())
+    // no registo de actividade, o BI não fica em claro
+    const registado = comBi ? `BI …${emailLimpo.slice(-3).toUpperCase()}` : emailLimpo.slice(0, 120)
+    const u = comBi ? await this.utilizadores.porBiHash(impressaoBi(this.chaveIntegracao, emailLimpo)) : emailLimpo ? await this.utilizadores.porEmail(emailLimpo) : null
     const agora = this.relogio.agora()
 
     if (!u) {
       await this.cifra.verificarFicticio(senha) // mesmo tempo de resposta que uma conta existente
-      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: { email: emailLimpo.slice(0, 120) }, utilizador: null })
+      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: { email: registado }, utilizador: null })
       throw new NaoAutenticado(CREDENCIAIS_ERRADAS)
     }
 
@@ -33,7 +38,7 @@ export class ServicoSessao {
     }
 
     if (!(await this.cifra.verificar(senha, u.senha))) {
-      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: { email: emailLimpo.slice(0, 120) }, utilizador: u })
+      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: { email: registado }, utilizador: u })
       if (reserva.tentativa >= MAX_TENTATIVAS) {
         const ate = await this.utilizadores.bloquear(u.id, agora)
         await this.auditoria.registar(ctx, { acao: 'bloquear_conta', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, utilizador: u })
@@ -100,6 +105,7 @@ export class ServicoSessao {
   // muda a palavra-passe: as outras sessões terminam e devolve-se um token novo para esta
   async mudarSenha(ctx, { atual, nova }) {
     const u = await this.utilizadores.porId(ctx.actor.id)
+    if (u.biHash && this.chaveIntegracao && impressaoBi(this.chaveIntegracao, nova) === u.biHash) throw new ErroValidacao('A palavra-passe não pode ser o BI: escolha uma nova.')
     if (u.geridaPeloPessoal) throw new ErroValidacao('A conta do Comandante é a do Sistema de Gestão de Pessoal: o nome, o e-mail e a palavra-passe mudam-se lá (são os mesmos nos dois sistemas).')
     if (!(await this.cifra.verificar(atual, u.senha))) throw new ErroValidacao('A palavra-passe atual está errada.')
     validarSenha(nova, { email: u.email, nome: u.nome })

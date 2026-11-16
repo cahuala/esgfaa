@@ -24,6 +24,8 @@ model Utilizador {
   bloqueadoAte    DateTime?        @map("bloqueado_ate") @db.Timestamptz(3)
   ultimoAcesso    DateTime?        @map("ultimo_acesso") @db.Timestamptz(3)
   deveMudar       Boolean          @default(true) @map("deve_mudar")
+  // entra com o BI (civis da Repartição de Pessoal e Quadros): só a impressão (HMAC) do BI, nunca o BI em claro
+  biHash          String?          @unique @map("bi_hash")
   // conta nova (com papel acima de utente) à espera do despacho do Comandante: ainda não entra
   aguardaDespacho Boolean          @default(false) @map("aguarda_despacho")
   // o que esta conta pode fazer, ecrã a ecrã ({ área: 'ver' | 'alterar' }); vazio = as do papel

@@ -307,7 +307,7 @@ describe('Envio para o Portal Académico', () => {
       // quem assina os diplomas vai à parte (só quando muda)
       if (url.endsWith('/assinaturas')) { assinaturas.push(corpo.assinaturas); return { ok: true, status: 200, json: async () => ({ ok: true }) } }
       // a conta do Comandante também vai à parte (só quando muda)
-      if (url.endsWith('/comandante')) return { ok: true, status: 200, json: async () => ({ resultados: [] }) }
+      if (url.endsWith('/comandante') || url.endsWith('/contas-ensino')) return { ok: true, status: 200, json: async () => ({ resultados: [] }) }
       if (url.endsWith('/estado-contas')) return { ok: true, status: 200, json: async () => corpo.ids.map((id) => ({ id, numero: `E2026-${id}`, ativo: true, ultimoAcesso: null, deveMudarSenha: true })) }
       if (url.endsWith('/ficha-acesso')) { pedidos.push({ url, op }); return { ok: true, status: 200, json: async () => ({ nome: 'Aluno', numero: 'E2026-0009', email: 'aluno.fora@esgfaa.gov.ao', senhaInicial: 'Kx7m-Pq4r-Zt9w', portal: 'https://portal.escola' }) } }
       pedidos.push({ url, op })

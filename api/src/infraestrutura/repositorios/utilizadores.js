@@ -8,7 +8,7 @@ const paraEntidade = (l) => l && new Utilizador({
   id: l.id, nome: l.nome, email: l.email, senha: l.senha, papel: l.papel, ativo: l.ativo,
   criadoEm: iso(l.criadoEm), ultimoAcesso: iso(l.ultimoAcesso), tentativasFalhadas: l.tentativasFalhadas,
   bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha, aprovacao: l.aprovacao ?? null, permissoes: Array.isArray(l.permissoes) ? l.permissoes : null,
-  geridaPeloPessoal: Boolean(l.geridaPeloPessoal),
+  geridaPeloPessoal: Boolean(l.geridaPeloPessoal), pessoalRef: l.pessoalRef ?? null, biHash: l.biHash ?? null,
 })
 
 const colunas = (u) => ({
@@ -16,7 +16,7 @@ const colunas = (u) => ({
   ultimoAcesso: u.ultimoAcesso ? new Date(u.ultimoAcesso) : null,
   tentativasFalhadas: u.tentativasFalhadas, bloqueadoAte: u.bloqueadoAte ? new Date(u.bloqueadoAte) : null,
   versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha), aprovacao: u.aprovacao ?? Prisma.DbNull, permissoes: Array.isArray(u.permissoes) ? u.permissoes : Prisma.DbNull,
-  geridaPeloPessoal: Boolean(u.geridaPeloPessoal),
+  geridaPeloPessoal: Boolean(u.geridaPeloPessoal), pessoalRef: u.pessoalRef ?? null, biHash: u.biHash ?? null,
 })
 
 export class RepositorioUtilizadores {
@@ -28,6 +28,18 @@ export class RepositorioUtilizadores {
     const n = Number(id)
     if (!Number.isSafeInteger(n) || n < 1) return null
     return paraEntidade(await this.prisma.utilizador.findUnique({ where: { id: n } }))
+  }
+
+  async porBiHash(biHash) {
+    return paraEntidade(await this.prisma.utilizador.findUnique({ where: { biHash } }))
+  }
+
+  async porPessoalRef(pessoalRef) {
+    return paraEntidade(await this.prisma.utilizador.findUnique({ where: { pessoalRef } }))
+  }
+
+  async vindasDoPessoal() {
+    return (await this.prisma.utilizador.findMany({ where: { pessoalRef: { not: null } } })).map(paraEntidade)
   }
 
   // as contas que vêm do Sistema de Gestão de Pessoal (o Comandante)

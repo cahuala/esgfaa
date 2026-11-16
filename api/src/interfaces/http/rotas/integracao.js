@@ -75,6 +75,9 @@ export function rotasIntegracao({ servicos, config }) {
   r.post('/pessoal/pendentes-comandante', ...receber(z.object({}), () => pendentesDoComandante(servicos, config), '1kb'))
   // a conta do Comandante (a do Pessoal: o mesmo e-mail e a mesma palavra-passe, já cifrada)
   const comandante = z.object({ email: z.string().max(200), nome: z.string().min(2).max(100), senha: z.string().max(300).optional() })
+  // os civis da Direcção de Ensino: conta no painel com o BI (só a impressão) e a palavra-passe inicial (já cifrada)
+  const contaEnsino = z.object({ ref: z.string().regex(/^pessoal-\d+$/), nome: z.string().min(2).max(100), email: z.string().max(200).optional(), bi: z.string().regex(/^[0-9a-f]{64}$/), senha: z.string().regex(/^scrypt\$[0-9a-f]+\$[0-9a-f]+$/) })
+  r.post('/pessoal/contas-ensino', ...receber(z.object({ contas: z.array(contaEnsino).max(300) }), (ctx, d) => servicos.utilizadores.receberContasDoEnsino(ctx, d.contas), '200kb'))
   r.post('/pessoal/comandante', ...receber(z.object({ contas: z.array(comandante).max(5) }), (ctx, d) => servicos.utilizadores.receberComandanteDoPessoal(ctx, d.contas), '10kb'))
   r.post('/pessoal/assinaturas', ...receber(corpoAssinaturas, (ctx, d) => servicos.administracaoEscolar.conclusao.receberAssinaturasDoPessoal(ctx, d.assinaturas), '20kb'))
   return r

@@ -60,6 +60,10 @@ model Utilizador {
   // a conta do Comandante é a do Sistema de Gestão de Pessoal (o mesmo e-mail e a mesma palavra-passe): vem de lá
   // e só lá se muda
   geridaPeloPessoal  Boolean      @default(false) @map("gerida_pelo_pessoal")
+  // contas automáticas dos civis da Direcção de Ensino, vindas do Pessoal: a ficha de lá (pessoal-<id>) e a impressão
+  // do BI (HMAC com a chave partilhada), com que entram; o BI nunca vem em claro
+  pessoalRef         String?      @unique @map("pessoal_ref")
+  biHash             String?      @unique @map("bi_hash")
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 

@@ -289,7 +289,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const servicos = {
     auditoria,
     conteudos,
-    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores }),
+    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao: config.chaveIntegracaoPessoal }),
     doisFatores,
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria, relogio }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),

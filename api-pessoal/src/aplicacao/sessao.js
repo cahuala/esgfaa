@@ -1,4 +1,5 @@
 import { ASSINANTES } from './assinantes.js'
+import { BI_ANGOLANO } from '../dominio/pessoal/ficha.js'
 import crypto from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { ErroDominio, conflito, invalido, naoAutenticado, naoEncontrado, semPermissao } from '../erros.js'
@@ -63,6 +64,16 @@ export function senhaInicial() {
 }
 const COM_UNIDADE = { unidade: { select: { nome: true } } }
 // o militar da Escola entra com o NIP; a palavra-passe inicial é o próprio NIP (muda-a na primeira entrada)
+// as unidades cujo nome bate com «re» e as que estão dentro delas (secções)
+export async function unidadesDe(bd, re) {
+  const todas = await bd.unidade.findMany({ select: { id: true, nome: true, paiId: true } })
+  const ids = new Set(todas.filter((u) => re.test(u.nome)).map((u) => u.id))
+  for (let mudou = true; mudou;) {
+    mudou = false
+    for (const u of todas) if (u.paiId && ids.has(u.paiId) && !ids.has(u.id)) { ids.add(u.id); mudou = true }
+  }
+  return [...ids]
+}
 const senhaDoMilitar = (p) => (p?.tipo === 'militar' && p.nip ? p.nip : null)
 // com que se entra e qual é a palavra-passe inicial: o militar com o NIP, o civil com o n.º de agente (muda-a logo)
 const identificadorDe = (p) => (p?.tipo === 'militar' ? (p.nip || null) : (p?.numeroAgente || null))
@@ -79,8 +90,13 @@ export function validarSenha(senha, email = '', nip = '', nomeId = 'NIP') {
 
 export class ServicoSessao {
   // inactividadeMin: sem nenhum pedido durante este tempo, a sessão termina (o navegador fechado, o computador deixado)
-  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, despachos = null, inactividadeMin = 30, agora = () => new Date() }) {
-    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, despachos, inactividadeMin, agora })
+  constructor({ bd, cifra, tokens, auditoria, doisFatores = null, despachos = null, inactividadeMin = 30, chaveBi = 'pessoal-desenvolvimento-bi', agora = () => new Date() }) {
+    Object.assign(this, { bd, cifra, tokens, auditoria, doisFatores, despachos, inactividadeMin, chaveBi, agora })
+  }
+
+  // a impressão do BI (HMAC com a chave dos dados): entra-se com o BI sem o guardar em claro na conta
+  impressaoBi(bi) {
+    return crypto.createHmac('sha256', String(this.chaveBi)).update(`bi:${String(bi).trim().toUpperCase()}`).digest('hex')
   }
 
   // abre a sessão na base de dados e devolve o token com o id dela
@@ -95,12 +111,16 @@ export class ServicoSessao {
     return this.bd.sessao.updateMany({ where: { ...where, terminadaEm: null }, data: { terminadaEm: this.agora() } })
   }
 
-  // entra-se com o e-mail, o NIP ou o n.º de agente
+  // entra-se com o e-mail, o NIP, o n.º de agente ou o BI
   async entrar({ email, senha, codigo }, ip, navegador = '') {
     const e = String(email ?? '').trim().toLowerCase()
+    // na auditoria, o BI não fica em claro
+    const registado = BI_ANGOLANO.test(e.toUpperCase()) ? `BI …${e.slice(-3).toUpperCase()}` : e
     const u = e.includes('@')
       ? await this.bd.utilizador.findUnique({ where: { email: e } })
-      : await this.bd.utilizador.findFirst({ where: { pessoa: { OR: [{ nip: e.toUpperCase() }, { nip: e }, { numeroAgente: e }, { numeroAgente: e.toUpperCase() }] } } })
+      : BI_ANGOLANO.test(e.toUpperCase())
+        ? await this.bd.utilizador.findUnique({ where: { biHash: this.impressaoBi(e) } })
+        : await this.bd.utilizador.findFirst({ where: { pessoa: { OR: [{ nip: e.toUpperCase() }, { nip: e }, { numeroAgente: e }, { numeroAgente: e.toUpperCase() }] } } })
     const erro = new ErroDominio('NIP, e-mail ou palavra-passe incorretos.', 'nao_autenticado')
     if (!u) {
       await this.cifra.verificarFicticio(senha)
@@ -112,7 +132,7 @@ export class ServicoSessao {
     if (!(await this.cifra.verificar(senha, u.senha)) || !u.ativo) {
       const falhas = u.falhas + 1
       await this.bd.utilizador.update({ where: { id: u.id }, data: falhas >= MAX_FALHAS ? { falhas: 0, bloqueadoAte: new Date(this.agora().getTime() + BLOQUEIO_MIN * 60_000) } : { falhas } })
-      await this.auditoria.registar({ nome: e }, 'entrada_falhada', '', {}, ip)
+      await this.auditoria.registar({ nome: registado }, 'entrada_falhada', '', {}, ip)
       throw erro
     }
     // verificação em dois passos: a palavra-passe está certa; falta (ou está errado) o código do telemóvel
@@ -121,7 +141,7 @@ export class ServicoSessao {
       if (!(await this.doisFatores.verificarEntrada(u.id, codigo))) {
         const falhas = u.falhas + 1
         await this.bd.utilizador.update({ where: { id: u.id }, data: falhas >= MAX_FALHAS ? { falhas: 0, bloqueadoAte: new Date(this.agora().getTime() + BLOQUEIO_MIN * 60_000) } : { falhas } })
-        await this.auditoria.registar({ nome: e }, 'entrada_falhada', 'código de dois passos errado', {}, ip)
+        await this.auditoria.registar({ nome: registado }, 'entrada_falhada', 'código de dois passos errado', {}, ip)
         throw new ErroDominio('Código errado. Use o código que aparece agora na aplicação (ou um código de recuperação).', 'codigo_2fa')
       }
     }
@@ -183,8 +203,9 @@ export class ServicoSessao {
 
   async mudarSenha(u, { atual, nova }, ip = '', navegador = '') {
     if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe atual está errada.', 'atual')
-    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { tipo: true, nip: true, numeroAgente: true } }) : null
+    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { tipo: true, nip: true, numeroAgente: true, bi: true } }) : null
     validarSenha(nova, u.email, identificadorDe(p) ?? p?.nip, p ? NOME_IDENTIFICADOR(p) : 'NIP')
+    if (p?.bi && String(nova).trim().toUpperCase() === String(p.bi).toUpperCase()) throw invalido('A palavra-passe não pode ser o BI: escolha uma nova.', 'nova')
     if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da atual.', 'nova')
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { senha: await this.cifra.cifrar(nova), deveMudar: false, versaoToken: { increment: 1 } } })
     // a palavra-passe nova termina todas as sessões (também as de outros computadores); esta abre outra
@@ -206,7 +227,7 @@ export class ServicoSessao {
     const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
     const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
     const permissoes = new Map(pendentes.filter((x) => x.tipo === 'utilizador_permissoes').map((x) => [x.utilizadorId, x.resumo]))
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })).map((x) => ({ ...publico(x), nip: identificadorDe(x.pessoa), identificador: x.pessoa ? NOME_IDENTIFICADOR(x.pessoa) : null, papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
+    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })).map((x) => ({ ...publico(x), nip: x.biHash ? null : identificadorDe(x.pessoa), identificador: x.biHash ? 'BI' : x.pessoa ? NOME_IDENTIFICADOR(x.pessoa) : null, papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
   }
 
   // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não
@@ -295,6 +316,32 @@ export class ServicoSessao {
     return { ...r, saidas: antigos.length }
   }
 
+  /*
+    Contas automáticas dos civis da Repartição de Pessoal e Quadros (e das suas secções): entram com o BI e a
+    palavra-passe inicial é o BI (mudam-na na primeira entrada), com o papel de Operador, sem despacho. Só para quem
+    ainda não tem conta; o administrador ajusta depois. Corre como a do Comandante (ao gravar, no arranque, de minuto
+    a minuto). Os civis da Direcção de Ensino têm conta no painel de gestão (vai pela ligação ao portal).
+  */
+  async garantirContasCivis() {
+    const sistema = { nome: 'Contas automáticas (civis da Repartição de Pessoal e Quadros)' }
+    const ids = await unidadesDe(this.bd, /^Reparti[çc][ãa]o de Pessoal e Quadros\b/i)
+    if (!ids.length) return { criadas: 0 }
+    const pessoas = await this.bd.pessoa.findMany({ where: { tipo: 'civil', ativo: true, vinculo: 'funcionario', unidadeId: { in: ids }, utilizador: null }, select: { id: true, nome: true, email: true, nip: true, numeroAgente: true, bi: true, unidadeId: true } })
+    let criadas = 0
+    for (const p of pessoas) {
+      const bi = String(p.bi ?? '').trim().toUpperCase()
+      if (!BI_ANGOLANO.test(bi)) continue
+      const biHash = this.impressaoBi(bi)
+      if (await this.bd.utilizador.findUnique({ where: { biHash } })) continue
+      let email = emailDaPessoa(p)
+      if (await this.bd.utilizador.findUnique({ where: { email } })) email = `bi${biHash.slice(0, 12)}@pessoal.interno`
+      await this.bd.utilizador.create({ data: { nome: p.nome, email, papel: 'operador', pessoaId: p.id, unidadeId: p.unidadeId, biHash, senha: await this.cifra.cifrar(bi), deveMudar: true } })
+      await this.auditoria.registar(sistema, 'conta_civil_criada', p.nome, { papel: 'operador', entra: 'BI' })
+      criadas++
+    }
+    return { criadas }
+  }
+
   async criar(u, { nome, email, papel, senha, unidadeId = null, pessoaId = null }) {
     exigir(u, 'administrar')
     if (!PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
@@ -356,7 +403,7 @@ export class ServicoSessao {
     if (unidadeId !== undefined) data.unidadeId = unidadeId
     // repor: o militar volta a entrar com o NIP como palavra-passe, o civil com o n.º de agente (e muda-a logo)
     if (reporNip) {
-      senha = identificadorDe(alvo.pessoa)
+      senha = alvo.biHash && alvo.pessoaId ? (await this.bd.pessoa.findUnique({ where: { id: alvo.pessoaId }, select: { bi: true } }))?.bi?.toUpperCase() : identificadorDe(alvo.pessoa)
       if (!senha) throw invalido('Só a conta de um militar (com NIP) ou de um civil (com n.º de agente) da Escola volta à palavra-passe inicial.', 'senha')
     } else if (senha) validarSenha(senha, alvo.email)
     if (senha) {
