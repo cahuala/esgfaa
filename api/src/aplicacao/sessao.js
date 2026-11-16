@@ -61,7 +61,8 @@ export class ServicoSessao {
     await this.utilizadores.registarEntrada(u.id, agora)
 
     // palavra-passe antiga que já não cumpre a política: pede-se que a mude
-    if (!u.deveMudarSenha && motivoSenhaFraca(senha, { email: u.email, nome: u.nome })) {
+    // (a do Comandante segue a política do Sistema de Pessoal, onde se muda)
+    if (!u.deveMudarSenha && !u.geridaPeloPessoal && motivoSenhaFraca(senha, { email: u.email, nome: u.nome })) {
       u.deveMudarSenha = true
       await this.utilizadores.guardar({ ...u, ultimoAcesso: agora.toISOString(), tentativasFalhadas: 0, bloqueadoAte: null })
     }
@@ -99,6 +100,7 @@ export class ServicoSessao {
   // muda a palavra-passe: as outras sessões terminam e devolve-se um token novo para esta
   async mudarSenha(ctx, { atual, nova }) {
     const u = await this.utilizadores.porId(ctx.actor.id)
+    if (u.geridaPeloPessoal) throw new ErroValidacao('A conta do Comandante é a do Sistema de Gestão de Pessoal: o nome, o e-mail e a palavra-passe mudam-se lá (são os mesmos nos dois sistemas).')
     if (!(await this.cifra.verificar(atual, u.senha))) throw new ErroValidacao('A palavra-passe atual está errada.')
     validarSenha(nova, { email: u.email, nome: u.nome })
     if (nova === atual) throw new ErroValidacao('A nova palavra-passe tem de ser diferente da atual.')

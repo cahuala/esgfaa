@@ -19,12 +19,20 @@ const limpar = () => contentor.servicos.privacidade.aplicarConservacao().catch((
 limpar()
 setInterval(limpar, 24 * 3_600_000).unref()
 
+// a conta do Comandante segue o quadro orgânico (quem ocupa o cargo): no arranque e de minuto a minuto
+const contaComandante = () => contentor.servicos.sessao.garantirContaDoComandante().then((r) => {
+  if (['criada', 'promovida'].includes(r.estado) || r.saidas) console.log('Conta do Comandante:', JSON.stringify(r))
+}).catch((e) => console.error('Conta do Comandante:', e.message))
+await contaComandante()
+const intervaloComandante = setInterval(contaComandante, 60_000)
+
 // envio para o portal de minuto a minuto
 const sinc = contentor.servicos.sincronizacao
 const intervalo = sinc.ativa ? setInterval(() => sinc.enviarPendentes().catch((e) => console.error('Envio para o portal:', e.message)), 60_000) : null
 
 async function parar() {
   clearInterval(intervalo)
+  clearInterval(intervaloComandante)
   servidor.close()
   await contentor.fechar()
   process.exit(0)

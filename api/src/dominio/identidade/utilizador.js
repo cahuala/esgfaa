@@ -86,6 +86,7 @@ export class Utilizador {
       aprovacao: this.aprovacao,
       // as permissões próprias (escolhidas pelo Comandante); null = as do papel
       permissoes: this.permissoes ?? null,
+      geridaPeloPessoal: Boolean(this.geridaPeloPessoal),
     }
   }
 }

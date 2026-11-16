@@ -23,6 +23,7 @@ const NO_PORTAL = [
 ]
 
 function OQueAprova({ dados }) {
+  const { utilizador } = useSessao()
   const { dados: pedidos } = useDados('/pedidos-despacho', { estado: 'pendente' }, { tempoReal: true })
   const { dados: portal } = useDados('/secretaria/portal')
   const de = (re) => (pedidos ? pedidos.filter((x) => re.test(x.tipo)).length : null)
@@ -54,6 +55,9 @@ function OQueAprova({ dados }) {
         </table>
       </div>
       <div className="p-3 small border-top">
+        {utilizador?.papel === 'comandante' && portal?.ligado && /@pessoal\.interno$/.test(utilizador.email ?? '') && (
+          <div className="alert alert-warning py-2 mb-2">A sua conta não tem e-mail (só o NIP): não entra no painel de gestão. Peça ao administrador que lhe ponha o e-mail da Escola; a mesma conta e a mesma palavra-passe passam a valer nos dois sistemas.</div>
+        )}
         {!portal && 'A perguntar ao portal…'}
         {portal && !portal.ligado && <span className="text-muted">O Sistema de Pessoal não está ligado ao portal: os números do painel não aparecem aqui.</span>}
         {portal?.erro && <span className="text-danger">{portal.erro}</span>}

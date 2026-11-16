@@ -230,7 +230,10 @@ export class ServicoPessoas {
 
   async #gravar(fn) {
     try {
-      return await fn()
+      const r = await fn()
+      // quem passa a ocupar o cargo de Comandante tem logo conta (entra com o NIP)
+      await this.despachos?.sessao?.garantirContaDoComandante().catch((e) => console.error('Conta do Comandante:', e.message))
+      return r
     } catch (e) {
       if (eDuplicado(e)) {
         const campo = Object.keys(CAMPOS_UNICOS).find((k) => String(e.meta?.target ?? e.meta?.driverAdapterError?.cause?.constraint?.fields ?? e.message).includes(k === 'numeroAgente' ? 'numero_agente' : k))

@@ -45,6 +45,9 @@ function Perfil() {
         </div>
         <div className="col-lg-7">
           <Painel titulo={tx('Alterar palavra-passe')}>
+            {utilizador.geridaPeloPessoal ? (
+              <div className="alert alert-info mb-0"><i className="fa fa-id-card me-2" />{tx('A sua conta é a mesma do Sistema de Gestão de Pessoal: o mesmo e-mail e a mesma palavra-passe nos dois sistemas. A palavra-passe muda-se no Sistema de Pessoal (na rede interna da Escola) e passa a valer aqui em menos de um minuto.')}</div>
+            ) : (
             <form onSubmit={alterar}>
               {[
                 ['atual', tx('Palavra-passe atual'), 'current-password'],
@@ -59,6 +62,7 @@ function Perfil() {
               <div className="form-text mb-3">{tx('Mínimo 10 caracteres, com letras e números. Não use o seu nome nem o e-mail.')}</div>
               <button type="submit" className="btn btn-theme"><i className="fa fa-key me-1" /> {tx('Alterar palavra-passe')}</button>
             </form>
+            )}
           </Painel>
         </div>
       </div>

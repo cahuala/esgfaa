@@ -77,7 +77,7 @@ function FormUtilizador({ u, eu, papeis, comConta, aoFechar, aoGuardar }) {
     const unidadeId = d.unidadeId ? Number(d.unidadeId) : null
     if (!u.id && daEscola && !pessoa) return setErro('Escolha a pessoa da Escola.')
     const corpo = u.id
-      ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}) }
+      ? { nome: d.nome, papel: d.papel, ativo: d.ativo, unidadeId, ...(d.senha ? { senha: d.senha } : {}), ...(d.email && d.email !== u.email ? { email: d.email } : {}) }
       : daEscola ? { pessoaId: pessoa.id, papel: d.papel, unidadeId, ...(militar ? {} : { senha: d.senha }) } : { ...d, unidadeId }
     api(u.id ? `/utilizadores/${u.id}` : '/utilizadores', { metodo: u.id ? 'PUT' : 'POST', corpo }).then((r) => aoGuardar(`Utilizador guardado. ${textoDespacho(r)}`.trim())).catch((e) => setErro(e.message))
   }
@@ -109,7 +109,8 @@ function FormUtilizador({ u, eu, papeis, comConta, aoFechar, aoGuardar }) {
           </div>
         ) : <>
           <Campo rotulo="Nome" obrigatorio><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
-          <Campo rotulo={u.nip ? 'Entra com o NIP' : 'E-mail'} obrigatorio><input type={u.nip ? 'text' : 'email'} className="form-control form-control-sm" value={u.nip ?? d.email} disabled={Boolean(u.id)} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
+          <Campo rotulo={u.nip ? 'Entra com o NIP' : 'E-mail'} obrigatorio><input type={u.nip ? 'text' : 'email'} className="form-control form-control-sm" value={u.nip ?? d.email} disabled={Boolean(u.id) && !(!u.nip && d.papel === 'comandante')} onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>
+          {u.id && u.nip && <Campo rotulo="E-mail" ajuda={d.papel === 'comandante' ? 'O Comandante usa a mesma conta no painel de gestão: entra lá com este e-mail e a mesma palavra-passe.' : 'Também pode entrar com o e-mail.'}><input type="email" className="form-control form-control-sm" value={/@pessoal\.interno$/.test(d.email) ? '' : d.email} placeholder="nome@esgfaa.gov.ao" onChange={(e) => setD({ ...d, email: e.target.value })} /></Campo>}
         </>}
         <Campo rotulo="Unidade (expediente e conversa da unidade)"><Escolha valor={String(d.unidadeId ?? '')} aoMudar={(v) => setD({ ...d, unidadeId: v })} opcoes={(unidades ?? []).map((x) => [String(x.id), x.nome])} vazio="Nenhuma" /></Campo>
         <Campo rotulo="Papel"><Escolha valor={d.papel} aoMudar={(v) => setD({ ...d, papel: v })} opcoes={papeis} vazio={null} disabled={u.id === eu.id} /></Campo>

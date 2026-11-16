@@ -57,6 +57,9 @@ model Utilizador {
   aprovacao          Json?
   // o que esta conta pode fazer, escolhido pelo Comandante (lista de «recurso.acao»); vazio = as do papel
   permissoes         Json?
+  // a conta do Comandante é a do Sistema de Gestão de Pessoal (o mesmo e-mail e a mesma palavra-passe): vem de lá
+  // e só lá se muda
+  geridaPeloPessoal  Boolean      @default(false) @map("gerida_pelo_pessoal")
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 

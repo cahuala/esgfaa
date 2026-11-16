@@ -105,6 +105,30 @@ export class ServicoSincronizacao {
     }
   }
 
+  /*
+    Conta única do Comandante: a conta de Comandante daqui vale também no painel de gestão, com o mesmo e-mail e a
+    mesma palavra-passe (vai já cifrada; nunca em claro). Vai quando muda (nome, e-mail, palavra-passe, activa ou não).
+    Sem e-mail verdadeiro (só o NIP) não pode entrar no painel; enquanto tem de mudar a palavra-passe, a do painel fica
+    a que era.
+  */
+  async enviarComandante() {
+    if (!this.ativa) return { enviado: false, inativa: true }
+    const l = await this.bd.utilizador.findMany({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false }, select: { nome: true, email: true, senha: true, deveMudar: true }, orderBy: { id: 'asc' } })
+    const contas = l.filter((u) => u.email && !u.email.endsWith('@pessoal.interno')).map((u) => ({ email: u.email, nome: u.nome, ...(u.deveMudar ? {} : { senha: u.senha }) }))
+    const corpo = JSON.stringify({ contas })
+    if (corpo === this.ultimoComandante) return { enviado: false, igual: true }
+    const data = String(Math.floor(this.agora().getTime() / 1000))
+    const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/comandante`, {
+      method: 'POST', body: corpo, signal: AbortSignal.timeout(20_000),
+      headers: { 'Content-Type': 'application/json', 'X-Pessoal-Data': data, 'X-Pessoal-Assinatura': assinar(this.config.portal.chave, data, corpo) },
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.erro || `O portal respondeu ${r.status} à conta do Comandante.`)
+    this.ultimoComandante = corpo
+    this.resultadoComandante = j.resultados ?? []
+    return { enviado: true, resultados: this.resultadoComandante }
+  }
+
   async enviarAssinaturas() {
     if (!this.ativa) return { enviado: false, inativa: true }
     const d = await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } })
@@ -190,6 +214,7 @@ export class ServicoSincronizacao {
   async enviarPendentes() {
     if (!this.ativa) return { enviados: 0, erros: 0, inativa: true }
     await this.enviarAssinaturas().catch(() => {})
+    await this.enviarComandante().catch(() => {})
     const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
     const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada)) })

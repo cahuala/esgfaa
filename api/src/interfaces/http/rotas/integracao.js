@@ -73,6 +73,9 @@ export function rotasIntegracao({ servicos, config }) {
   // quem ocupa hoje os cargos que assinam os diplomas e certificados (Comandante, Director de Ensino…)
   // o que espera pelo Comandante no portal e no site (só os números), para a Secretária digital do Pessoal
   r.post('/pessoal/pendentes-comandante', ...receber(z.object({}), () => pendentesDoComandante(servicos, config), '1kb'))
+  // a conta do Comandante (a do Pessoal: o mesmo e-mail e a mesma palavra-passe, já cifrada)
+  const comandante = z.object({ email: z.string().max(200), nome: z.string().min(2).max(100), senha: z.string().max(300).optional() })
+  r.post('/pessoal/comandante', ...receber(z.object({ contas: z.array(comandante).max(5) }), (ctx, d) => servicos.utilizadores.receberComandanteDoPessoal(ctx, d.contas), '10kb'))
   r.post('/pessoal/assinaturas', ...receber(corpoAssinaturas, (ctx, d) => servicos.administracaoEscolar.conclusao.receberAssinaturasDoPessoal(ctx, d.assinaturas), '20kb'))
   return r
 }

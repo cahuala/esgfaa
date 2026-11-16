@@ -39,6 +39,61 @@ export class ServicoUtilizadores {
     if (papel === ADMINISTRADOR && !ctx.actor.pode('papeis.gerir')) throw new SemPermissao('Não pode atribuir o papel de Administrador.')
   }
 
+  /*
+    A conta do Comandante vem do Sistema de Gestão de Pessoal (pedido assinado): o mesmo e-mail e a mesma palavra-passe
+    (já cifrada, scrypt como cá). contas = as contas de Comandante activas lá; senha ausente = ainda tem de a mudar lá
+    (fica a que havia). As que deixaram de vir desactivam-se. Uma conta do painel com o mesmo e-mail e outro papel
+    não se toca (diz-se porquê).
+  */
+  async receberComandanteDoPessoal(ctx, contas) {
+    const resultados = []
+    const vieram = new Set()
+    for (const c of contas) {
+      const email = normalizarEmail(c.email)
+      vieram.add(email)
+      const senha = c.senha && /^scrypt\$[0-9a-f]+\$[0-9a-f]+$/.test(c.senha) ? c.senha : null
+      let u = await this.utilizadores.porEmail(email)
+      if (u && !u.geridaPeloPessoal && u.papel !== 'comandante') {
+        resultados.push({ email, ok: false, erro: `No painel, ${email} é uma conta com outro papel: não passa a ser a do Comandante.` })
+        continue
+      }
+      if (!u) {
+        if (!senha) { resultados.push({ email, ok: false, erro: 'Ainda tem de mudar a palavra-passe no Sistema de Pessoal.' }); continue }
+        u = Utilizador.novo({ nome: c.nome, email, papel: 'comandante', senhaCifrada: senha })
+        u.geridaPeloPessoal = true
+        u = await this.utilizadores.criar(u)
+        await this.auditoria.registar(ctx, { acao: 'conta_comandante_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: `${u.nome} (${u.email})`, detalhes: { criada: true } })
+        resultados.push({ email, ok: true, criada: true })
+        continue
+      }
+      const mudou = u.nome !== c.nome || (senha && senha !== u.senha) || !u.ativo || !u.geridaPeloPessoal || u.papel !== 'comandante'
+      if (mudou) {
+        u.definirNome(c.nome)
+        u.papel = 'comandante'
+        u.ativo = true
+        u.aprovacao = null
+        u.geridaPeloPessoal = true
+        if (senha && senha !== u.senha) {
+          u.mudarSenha(senha)
+          u.tentativasFalhadas = 0
+          u.bloqueadoAte = null
+        }
+        await this.utilizadores.guardar(u)
+        await this.auditoria.registar(ctx, { acao: 'conta_comandante_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: `${u.nome} (${u.email})` })
+      }
+      resultados.push({ email, ok: true })
+    }
+    // o Comandante que deixou de o ser no Pessoal (ou cuja conta lá foi desactivada) deixa de entrar no painel
+    for (const u of await this.utilizadores.geridasPeloPessoal()) {
+      if (vieram.has(u.email) || !u.ativo) continue
+      u.ativo = false
+      u.invalidarSessoes()
+      await this.utilizadores.guardar(u)
+      await this.auditoria.registar(ctx, { acao: 'conta_comandante_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: `${u.nome} (${u.email})`, detalhes: { desactivada: true } })
+    }
+    return { resultados }
+  }
+
   async criar(ctx, { nome, email, papel, senha }) {
     ctx.actor.exigir('utilizadores.criar')
     await this.#garantirPapel(ctx, papel)
@@ -63,6 +118,7 @@ export class ServicoUtilizadores {
     if (!u) throw new NaoEncontrado('Utilizador não encontrado.')
     const proprio = u.id === ctx.actor.id
     const antes = { ...u }
+    if (u.geridaPeloPessoal) throw new ErroValidacao('A conta do Comandante é a do Sistema de Gestão de Pessoal: o nome, o e-mail e a palavra-passe mudam-se lá (são os mesmos nos dois sistemas).')
 
     // quem não gere papéis não mexe em contas de administradores
     if (u.papel === ADMINISTRADOR && !ctx.actor.pode('papeis.gerir')) throw new SemPermissao('Só um administrador pode alterar outro administrador.')

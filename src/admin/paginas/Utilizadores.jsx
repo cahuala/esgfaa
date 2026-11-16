@@ -131,7 +131,7 @@ function Utilizadores() {
                           <div className="d-flex align-items-center">
                             <span className="admin-avatar me-2">{u.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()}</span>
                             <div>
-                              <div className="fw-bold">{u.nome} {u.id === eu.id && <span className="badge bg-gray-300 text-gray-800">{tx('eu')}</span>}</div>
+                              <div className="fw-bold">{u.nome} {u.id === eu.id && <span className="badge bg-gray-300 text-gray-800">{tx('eu')}</span>} {u.geridaPeloPessoal && <span className="badge bg-info" title={tx('A mesma conta do Sistema de Gestão de Pessoal: muda-se lá')}>{tx('conta do Pessoal')}</span>}</div>
                               <div className="small">{u.email}</div>
                             </div>
                           </div>
@@ -147,13 +147,13 @@ function Utilizadores() {
                           {pode('utilizadores.aprovar') && (
                             <button className="btn btn-sm btn-default me-1" onClick={() => setPermissoes(u)} title={tx('O que pode fazer')}><i className="fa fa-user-shield" /></button>
                           )}
-                          {pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
+                          {pode('utilizadores.editar') && !u.geridaPeloPessoal && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className="btn btn-sm btn-primary me-1" onClick={() => { setErroForm(''); setForm({ ...u, senha: '' }) }} title={tx('Editar')}><i className="fa fa-pencil-alt" /></button>
                           )}
                           {u.id !== eu.id && pode('utilizadores.editar') && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className="btn btn-sm btn-default me-1" onClick={() => reporDoisFatores(u)} title={tx('Repor a verificação em dois passos')}><i className="fa fa-mobile-alt" /></button>
                           )}
-                          {u.id !== eu.id && pode('utilizadores.editar') && u.aprovacao?.tipo !== 'criar' && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
+                          {u.id !== eu.id && pode('utilizadores.editar') && !u.geridaPeloPessoal && u.aprovacao?.tipo !== 'criar' && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
                             <button className={`btn btn-sm ${u.ativo ? 'btn-warning' : 'btn-success'}`} onClick={() => alternarAtivo(u)} title={u.ativo ? tx('Desativar') : tx('Reativar')}>
                               <i className={`fa ${u.ativo ? 'fa-user-slash' : 'fa-user-check'}`} />
                             </button>

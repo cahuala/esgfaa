@@ -1,3 +1,4 @@
+import { ASSINANTES } from './assinantes.js'
 import crypto from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { ErroDominio, conflito, invalido, naoAutenticado, naoEncontrado, semPermissao } from '../erros.js'
@@ -247,6 +248,50 @@ export class ServicoSessao {
   }
 
   // conta ligada a uma pessoa da Escola (pessoaId): o militar entra com o NIP e a palavra-passe inicial é o NIP
+  /*
+    Conta do Comandante pelo quadro orgânico: o militar que ocupa o cargo de Comandante (o das Assinaturas, ou o
+    «Comandante da Escola Superior de Guerra») tem logo conta de Comandante — entra com o NIP e a palavra-passe
+    inicial é o NIP (muda-a na primeira entrada). Se já tinha conta, passa a Comandante (fica a palavra-passe dele).
+    Quem deixou o cargo perde o papel de Comandante (fica utente). Não precisa do despacho: a nomeação é que manda.
+    Corre ao gravar uma ficha, no arranque e de minuto a minuto (apanha também os extractos e as importações).
+  */
+  async garantirContaDoComandante() {
+    const sistema = { nome: 'Quadro orgânico (cargo de Comandante)' }
+    const guardado = (await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } }))?.valor?.comandante ?? {}
+    const cargo = guardado.cargoId
+      ? await this.bd.cargo.findUnique({ where: { id: guardado.cargoId } })
+      : (await this.bd.cargo.findMany({ select: { id: true, nome: true } })).find((c) => ASSINANTES.comandante.cargo.test(c.nome))
+    if (!cargo) return { estado: 'sem_cargo' }
+    const p = await this.bd.pessoa.findFirst({ where: { cargoId: cargo.id, ativo: true }, orderBy: [{ dataCargo: 'desc' }, { id: 'asc' }], include: { utilizador: true } })
+    const r = { estado: 'vago' }
+    if (p) {
+      if (!senhaDoMilitar(p)) r.estado = 'sem_nip'
+      else if (!p.utilizador) {
+        const email = emailDaPessoa(p)
+        const ocupado = await this.bd.utilizador.findUnique({ where: { email } })
+        const c = await this.bd.utilizador.create({ data: { nome: p.nome, email: ocupado ? `${p.nip.toLowerCase().replace(/[^a-z0-9]/g, '')}@pessoal.interno` : email, papel: 'comandante', pessoaId: p.id, unidadeId: p.unidadeId ?? null, senha: await this.cifra.cifrar(senhaDoMilitar(p)), deveMudar: true } })
+        await this.auditoria.registar(sistema, 'conta_comandante_criada', `${c.nome} (NIP ${p.nip})`, { cargo: cargo.nome })
+        Object.assign(r, { estado: 'criada', utilizadorId: c.id })
+      } else {
+        const c = p.utilizador
+        if (c.papel !== 'comandante' || !c.ativo || c.aguardaDespacho) {
+          await this.bd.utilizador.update({ where: { id: c.id }, data: { papel: 'comandante', ativo: true, aguardaDespacho: false, versaoToken: { increment: 1 } } })
+          await this.auditoria.registar(sistema, 'conta_comandante_papel', `${c.nome} (${c.email})`, { cargo: cargo.nome, de: c.papel })
+          Object.assign(r, { estado: 'promovida', utilizadorId: c.id })
+        } else Object.assign(r, { estado: 'ok', utilizadorId: c.id })
+      }
+    }
+    // quem deixou o cargo (contas de Comandante ligadas a outra pessoa) deixa de ser Comandante — só quando o cargo tem
+    // um novo titular com conta (com o cargo vago ou sem NIP, as contas feitas à mão ficam como estão)
+    if (!r.utilizadorId) return { ...r, saidas: 0 }
+    const antigos = await this.bd.utilizador.findMany({ where: { papel: 'comandante', pessoaId: { not: null }, NOT: { pessoaId: p.id } } })
+    for (const c of antigos) {
+      await this.bd.utilizador.update({ where: { id: c.id }, data: { papel: 'utente', versaoToken: { increment: 1 } } })
+      await this.auditoria.registar(sistema, 'conta_comandante_saiu', `${c.nome} (${c.email})`, { cargo: cargo.nome })
+    }
+    return { ...r, saidas: antigos.length }
+  }
+
   async criar(u, { nome, email, papel, senha, unidadeId = null, pessoaId = null }) {
     exigir(u, 'administrar')
     if (!PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
@@ -279,7 +324,7 @@ export class ServicoSessao {
     }
   }
 
-  async editar(u, id, { nome, papel, ativo, senha, reporNip, unidadeId, permissoes }) {
+  async editar(u, id, { nome, email, papel, ativo, senha, reporNip, unidadeId, permissoes }) {
     exigir(u, 'administrar')
     const alvo = await this.bd.utilizador.findUnique({ where: { id }, include: { pessoa: { select: { tipo: true, nip: true } } } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
@@ -287,6 +332,13 @@ export class ServicoSessao {
     if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desativar a sua conta.')
     const data = {}
     if (nome !== undefined) data.nome = nome
+    // o e-mail (também numa conta que entra com o NIP: a do Comandante precisa dele para o painel de gestão)
+    if (email !== undefined && String(email).trim().toLowerCase() !== alvo.email) {
+      const e = String(email).trim().toLowerCase()
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) throw invalido('E-mail inválido.', 'email')
+      if (await this.bd.utilizador.findUnique({ where: { email: e } })) throw invalido('Já existe uma conta com este e-mail.', 'email')
+      data.email = e
+    }
     // a mudança de papel espera pelo despacho do Comandante (a conta fica com o papel que tem)
     let pedirPapel = false
     if (papel !== undefined && papel !== alvo.papel) {

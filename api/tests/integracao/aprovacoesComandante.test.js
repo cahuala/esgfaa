@@ -115,3 +115,42 @@ describe('O Pessoal pergunta o que espera pelo Comandante (pedido assinado)', ()
     assert.equal((await amb.http().post('/api/integracao/pessoal/pendentes-comandante').set('Content-Type', 'application/json').send('{}')).status, 401)
   })
 })
+
+describe('Conta única do Comandante: a do Sistema de Gestão de Pessoal vale no painel', () => {
+  let amb
+  const enviar = (contas) => {
+    const corpo = JSON.stringify({ contas })
+    const data = String(Math.floor(Date.now() / 1000))
+    const assinatura = crypto.createHmac('sha256', CHAVE).update(`${data}.${corpo}`).digest('hex')
+    return amb.http().post('/api/integracao/pessoal/comandante').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinatura).send(corpo)
+  }
+  const entrar = (email, senha) => amb.http().post('/api/admin/entrar').send({ email, senha })
+  before(async () => { amb = await criarAmbiente({ env: { INTEGRACAO_CHAVE: CHAVE } }) })
+  after(() => amb.fechar())
+
+  it('chega do Pessoal (palavra-passe já cifrada), entra no painel como Comandante e só se muda no Pessoal', async () => {
+    const hash = await amb.contentor.cifra.cifrar('Comandante-Pessoal-2026')
+    const r = (await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola', senha: hash }]).expect(200)).body
+    assert.deepEqual(r.resultados, [{ email: 'cmdt@esgfaa.gov.ao', ok: true, criada: true }])
+    const e = await entrar('cmdt@esgfaa.gov.ao', 'Comandante-Pessoal-2026')
+    assert.equal(e.status, 200, e.body.erro)
+    assert.deepEqual([e.body.utilizador.papel, e.body.utilizador.geridaPeloPessoal], ['comandante', true])
+    const cmdt = amb.com(e.body.token)
+    // no painel não se muda a palavra-passe nem a conta
+    const m = await cmdt.put('/api/admin/eu/senha').send({ atual: 'Comandante-Pessoal-2026', nova: 'Outra-senha-2026-x' })
+    assert.equal(m.status, 400)
+    assert.match(m.body.erro, /Sistema de Gestão de Pessoal/)
+    const admin = amb.com(await amb.entrar())
+    assert.equal((await admin.put(`/api/admin/utilizadores/${e.body.utilizador.id}`).send({ ativo: false })).status, 400)
+    // mudou a palavra-passe no Pessoal: a antiga deixa de servir no painel
+    await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola', senha: await amb.contentor.cifra.cifrar('Nova-do-Pessoal-2026') }]).expect(200)
+    assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Comandante-Pessoal-2026')).status, 401)
+    assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Nova-do-Pessoal-2026')).status, 200)
+    // uma conta do painel com outro papel não passa a ser a do Comandante
+    const outra = (await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola' }, { email: (await amb.criarUtilizador('editor_chefe')).email, nome: 'Outro' }]).expect(200)).body
+    assert.equal(outra.resultados[1].ok, false)
+    // deixou de ser Comandante no Pessoal: deixa de entrar no painel
+    await enviar([]).expect(200)
+    assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Nova-do-Pessoal-2026')).status, 403)
+  })
+})

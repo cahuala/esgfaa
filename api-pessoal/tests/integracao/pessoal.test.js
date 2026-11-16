@@ -306,6 +306,8 @@ describe('Envio para o Portal Académico', () => {
       const corpo = JSON.parse(op.body)
       // quem assina os diplomas vai à parte (só quando muda)
       if (url.endsWith('/assinaturas')) { assinaturas.push(corpo.assinaturas); return { ok: true, status: 200, json: async () => ({ ok: true }) } }
+      // a conta do Comandante também vai à parte (só quando muda)
+      if (url.endsWith('/comandante')) return { ok: true, status: 200, json: async () => ({ resultados: [] }) }
       if (url.endsWith('/estado-contas')) return { ok: true, status: 200, json: async () => corpo.ids.map((id) => ({ id, numero: `E2026-${id}`, ativo: true, ultimoAcesso: null, deveMudarSenha: true })) }
       if (url.endsWith('/ficha-acesso')) { pedidos.push({ url, op }); return { ok: true, status: 200, json: async () => ({ nome: 'Aluno', numero: 'E2026-0009', email: 'aluno.fora@esgfaa.gov.ao', senhaInicial: 'Kx7m-Pq4r-Zt9w', portal: 'https://portal.escola' }) } }
       pedidos.push({ url, op })
@@ -405,6 +407,52 @@ describe('Secretária digital: o que espera pelo Comandante no portal', () => {
       assert.deepEqual(await sem.contentor.servicos.sincronizacao.pendentesComandante({ papel: 'comandante' }), { ligado: false })
     } finally {
       await sem.fechar()
+    }
+  })
+})
+
+describe('Conta única do Comandante: vai para o painel de gestão', () => {
+  it('a conta de Comandante daqui vai com a palavra-passe já cifrada, só quando muda; sem e-mail verdadeiro não vai', async () => {
+    const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
+    const envios = []
+    const enviar = async (url, op) => {
+      if (url.endsWith('/comandante')) envios.push({ corpo: JSON.parse(op.body), h: op.headers, raw: op.body })
+      return { ok: true, status: 200, json: async () => ({ resultados: [], ok: true }) }
+    }
+    const amb = await criarAmbiente({ env: { PORTAL_API_URL: 'http://portal.interno:3001', INTEGRACAO_CHAVE: chave }, enviar })
+    try {
+      const s = amb.contentor.servicos.sincronizacao
+      // ainda não há Comandante: vai a lista vazia (o painel desactiva o que tinha vindo daqui)
+      await s.enviarComandante()
+      assert.deepEqual(envios.at(-1).corpo, { contas: [] })
+      await amb.deferirTudo() // cria o Comandante dos testes, que já mudou a palavra-passe
+      await s.enviarComandante()
+      const c = envios.at(-1).corpo.contas
+      assert.deepEqual(c.map((x) => [x.email, x.nome]), [['comandante.testes@pessoal.ao', 'Comandante dos Testes']])
+      assert.match(c[0].senha, /^scrypt\$[0-9a-f]+\$[0-9a-f]+$/)
+      assert.ok(!envios.at(-1).raw.includes('Comandante2027y')) // nunca em claro
+      assert.equal(envios.at(-1).h['X-Pessoal-Assinatura'], assinar(chave, envios.at(-1).h['X-Pessoal-Data'], envios.at(-1).raw))
+      // igual: não volta a ir
+      const n = envios.length
+      assert.deepEqual(await s.enviarComandante(), { enviado: false, igual: true })
+      assert.equal(envios.length, n)
+      // tem de mudar a palavra-passe: vai sem ela (o painel fica com a que tinha)
+      await amb.contentor.bd.utilizador.updateMany({ where: { papel: 'comandante' }, data: { deveMudar: true } })
+      await s.enviarComandante()
+      assert.equal(envios.at(-1).corpo.contas[0].senha, undefined)
+      // sem e-mail verdadeiro (só o NIP) não entra no painel
+      await amb.contentor.bd.utilizador.updateMany({ where: { papel: 'comandante' }, data: { email: 'nip123@pessoal.interno' } })
+      await s.enviarComandante()
+      assert.deepEqual(envios.at(-1).corpo, { contas: [] })
+      // o administrador põe-lhe o e-mail da Escola: volta a ir (e entra no Pessoal também com o e-mail)
+      const c2 = await amb.contentor.bd.utilizador.findFirst({ where: { papel: 'comandante' } })
+      const adm = { id: -1, papel: 'administrador' }
+      await assert.rejects(() => amb.contentor.servicos.sessao.editar(adm, c2.id, { email: 'sem-arroba' }))
+      await amb.contentor.servicos.sessao.editar(adm, c2.id, { email: 'Cmdt@esgfaa.gov.ao' })
+      await s.enviarComandante()
+      assert.deepEqual(envios.at(-1).corpo.contas.map((x) => x.email), ['cmdt@esgfaa.gov.ao'])
+    } finally {
+      await amb.fechar()
     }
   })
 })
