@@ -12,20 +12,22 @@ const juntarEstudantes = (a, b) => [...new Map([...a, ...b].map((e) => [e.id, e]
 // ficheiros de uma pasta, por ordem
 const FICHEIROS_PASTA = { ficheiros: { orderBy: { ordem: 'asc' }, include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
 
-// cadeira com a turma e os docentes alocados (regente primeiro); "docente" é o regente
+// cadeira com a turma e os docentes alocados (regente primeiro); "docente" é o regente.
+// docentes = só os aprovados pelo Comandante (dão acesso à cadeira); docentesPropostos = à espera dele
 const cadeiraLinha = (c) => {
   if (!c) return c
-  const docentes = (c.docentes || [])
-    .map((d) => ({ id: d.docente.id, nome: d.docente.nome, email: d.docente.email, numero: d.docente.numero, papel: d.papel, horas: d.horas }))
+  const todos = (c.docentes || [])
+    .map((d) => ({ id: d.docente.id, nome: d.docente.nome, email: d.docente.email, numero: d.docente.numero, papel: d.papel, horas: d.horas, estado: d.estado ?? 'aprovada' }))
     .sort((a, b) => ordemPapel[a.papel] - ordemPapel[b.papel] || a.nome.localeCompare(b.nome))
+  const docentes = todos.filter((d) => d.estado === 'aprovada')
   const regente = docentes.find((d) => d.papel === 'regente') || null
   return {
     id: c.id, turmaId: c.turmaId, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, descricao: c.descricao,
     programa: c.programa ?? '', programaFicheiroId: c.programaFicheiroId ?? null,
-    notasPublicadas: c.notasPublicadas ?? [],
+    notasPublicadas: c.notasPublicadas ?? [], publicacaoPedida: c.publicacaoPedida ?? null,
     bloco: c.bloco ?? '', creditos: c.creditos ?? 0, horasContacto: c.horasContacto ?? 0, horasNaoContacto: c.horasNaoContacto ?? 0, tii: Boolean(c.tii),
-    docentes, docente: regente,
-    turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo, anoCurricular: c.turma.anoCurricular } : undefined,
+    docentes, docente: regente, docentesPropostos: todos.filter((d) => d.estado !== 'aprovada'),
+    turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo, anoCurricular: c.turma.anoCurricular, distribuicao: c.turma.distribuicao ?? null } : undefined,
   }
 }
 const comDocentes = { docentes: { include: { docente: contaResumo } }, turma: true }
@@ -212,7 +214,7 @@ export class RepositorioAcademico {
   // cadeiras onde o docente está alocado (regente ou assistente)
   async cadeirasDoDocente(docenteId) {
     const linhas = await this.prisma.unidadeCurricular.findMany({
-      where: { docentes: { some: { docenteId } } }, include: comDocentes, orderBy: [{ turma: { anoLetivo: 'desc' } }, { nome: 'asc' }],
+      where: { docentes: { some: { docenteId, estado: 'aprovada' } } }, include: comDocentes, orderBy: [{ turma: { anoLetivo: 'desc' } }, { nome: 'asc' }],
     })
     return linhas.map(cadeiraLinha)
   }
@@ -226,7 +228,12 @@ export class RepositorioAcademico {
     return linhas.map(cadeiraLinha)
   }
 
-  // substitui a alocação de docentes de uma cadeira
+  // publicação de notas pedida ao Comandante (null = nenhuma)
+  async pedirPublicacao(cadeiraId, pedido) {
+    await this.prisma.unidadeCurricular.update({ where: { id: cadeiraId }, data: { publicacaoPedida: pedido ?? Prisma.DbNull } })
+  }
+
+  // substitui a alocação de docentes de uma cadeira (cada um com o estado: proposta | aprovada)
   async definirDocentes(cadeiraId, docentes) {
     const p = this.prisma
     await p.$transaction([

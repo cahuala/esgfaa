@@ -90,6 +90,7 @@ import { ServicoRegistoPessoal } from './aplicacao/academico/pessoal/registo.js'
 import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
 import { ServicoAnosLetivos } from './aplicacao/academico/administracao/anosLetivos.js'
 import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
+import { ServicoAprovacoesComandante } from './aplicacao/academico/administracao/aprovacoesComandante.js'
 import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/pautas.js'
 import { ServicoCalendarioAcademico } from './aplicacao/academico/administracao/calendario.js'
 import { ServicoPedidos } from './aplicacao/academico/administracao/pedidos.js'
@@ -187,7 +188,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const acesso = new AcessoCadeiras({ academico: r.academico })
   const disponibilidade = new ServicoDisponibilidade({ academico: r.academico, recursos: r.recursos, inqueritos: r.inqueritos, workshops: r.workshops, relogio })
   const registos = new ServicoRegistos({ registos: r.registos, academico: r.academico, acesso, disponibilidade, relogio, registarErro: (x) => console.error(JSON.stringify(x)) })
-  const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria })
+  const copias = new ServicoCopias({ copias: r.copias, academico: r.academico, privados, auditoria, aprovacaoComandante: config.aprovacaoComandante })
   const correio = criarCorreio({ smtp: config.smtp, remetente: config.remetente, registar: (x) => console.error(JSON.stringify(x)) })
   const notificacoes = new ServicoComunicacao({
     comunicacao: r.comunicacao, academico: r.academico, acesso, correio, relogio, tempoReal, urlPortal: config.urlPortal, registar: (x) => console.error(JSON.stringify(x)),
@@ -197,8 +198,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // avaliação pelos planos de curso da ESG (TAI/TAG, blocos, coeficientes): nas turmas com plano
   // provas escritas, alterações de notas publicadas (autorizadas pelo Comandante) e verificação dos docentes
   const controlo = new ServicoControloAcademico({ controlo: r.controlo, academico: r.academico, planos: r.planosCurso, privados, auditoria, notificacoes, relogio })
-  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas: r.prazosNotas, fuso: config.fuso })
-  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg, controlo })
+  const esg = new ServicoAvaliacaoEsg({ planos: r.planosCurso, academico: r.academico, conclusao: r.conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas: r.prazosNotas, fuso: config.fuso, aprovacaoComandante: config.aprovacaoComandante })
+  const pautas = new ServicoPautas({ academico: r.academico, recursos: r.recursos, workshops: r.workshops, prazosNotas: r.prazosNotas, fuso: config.fuso, auditoria, notificacoes, relogio, esg, controlo, aprovacaoComandante: config.aprovacaoComandante })
 
   const percursos = new ServicoPercursos({ academico: r.academico, conclusao: r.conclusao, esg })
   const apoio = new ApoioCadeiras({ acesso, academico: r.academico, notificacoes, privados })
@@ -261,6 +262,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       anosLetivos,
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, esg, planosCurso: r.planosCurso, notificacoes, copias, copiasRepo: r.copias,
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
+      aprovacaoComandante: config.aprovacaoComandante,
     }
     return {
       inscricoes: new ServicoInscricoes(d),
@@ -276,6 +278,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),
+      // distribuição dos docentes e publicação de notas: só valem com a aprovação do Comandante
+      aprovacoes: new ServicoAprovacoesComandante({ ...d, planos: r.planosCurso, controlo: r.controlo, correio, urlPortal: config.urlPortal }),
     }
   }
 
@@ -298,7 +302,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       visitas: r.visitas, interacoes: r.interacoes, conteudos: r.conteudos, atividades: r.atividades, publicidade: r.publicidade, titulos,
     }),
     ficheiros: new ServicoFicheiros({ armazenamento, auditoria, otimizar: otimizarImagem }),
-    sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico, esg }),
+    sessaoPortal: new ServicoSessaoPortal({ contas: r.contasPortal, sessoes: r.sessoes, cifra, tokens: tokensPortal, auditoria, relogio, academico: r.academico, esg, aprovacaoComandante: config.aprovacaoComandante }),
     comunicacao: notificacoes,
     grupos: new ServicoGrupos({ grupos: r.grupos, academico: r.academico, acesso }),
     registos,

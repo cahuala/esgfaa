@@ -1,3 +1,4 @@
+import { Prisma } from '../bd/prisma.js'
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 const num = (v) => (v === null || v === undefined ? null : Number(v))
 
@@ -10,7 +11,7 @@ const paraNota = (n) => ({
   nota: num(n.nota), recuperacao: num(n.recuperacao), recuperacaoPedidaEm: iso(n.recuperacaoPedidaEm),
   revisao: n.revisaoPedidaEm ? { pedidaEm: iso(n.revisaoPedidaEm), motivo: n.revisaoMotivo ?? '', decididaEm: iso(n.revisaoDecididaEm), decisao: n.revisaoDecisao ?? null, notaAnterior: num(n.revisaoNotaAnterior), decisor: n.revisaoDecisor ?? '', fundamento: n.revisaoFundamento ?? '' } : null,
 })
-const paraAvaliacao = (a) => a && { id: a.id, cadeiraId: a.cadeiraId, tipo: a.tipo, forma: a.forma, peso: num(a.peso), titulo: a.titulo, data: a.data, ordem: a.ordem, publicadaEm: iso(a.publicadaEm) }
+const paraAvaliacao = (a) => a && { id: a.id, cadeiraId: a.cadeiraId, tipo: a.tipo, forma: a.forma, peso: num(a.peso), titulo: a.titulo, data: a.data, ordem: a.ordem, publicadaEm: iso(a.publicadaEm), publicacaoPedida: a.publicacaoPedida ?? null }
 
 // planos de curso da ESG, provas (TAI/TAG) das UC e as notas de cada estudante
 export class RepositorioPlanosCurso {
@@ -66,7 +67,8 @@ export class RepositorioPlanosCurso {
   }
 
   async atualizarAvaliacao(id, dados) {
-    return paraAvaliacao(await this.prisma.avaliacaoUc.update({ where: { id }, data: dados }))
+    const d = dados.publicacaoPedida === null ? { ...dados, publicacaoPedida: Prisma.DbNull } : dados
+    return paraAvaliacao(await this.prisma.avaliacaoUc.update({ where: { id }, data: d }))
   }
 
   apagarAvaliacao(id) {

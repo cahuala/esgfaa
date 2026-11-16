@@ -42,7 +42,7 @@ export class RepositorioCopias {
     Aplica a cópia numa transação. c: conteúdo da origem; ficheiros: { idAntigo: idNovo };
     data(d) e dia(s) deslocam as datas; docentes: copiar também a alocação.
   */
-  async aplicar(destinoId, c, { ficheiros, data, dia, docentes }) {
+  async aplicar(destinoId, c, { ficheiros, data, dia, docentes, estadoDocentes = 'aprovada' }) {
     return this.prisma.$transaction(async (tx) => {
       const destino = await tx.unidadeCurricular.findUnique({ where: { id: destinoId } })
       const ordemBase = (await tx.secaoCadeira.aggregate({ where: { cadeiraId: destinoId }, _max: { ordem: true } }))._max.ordem ?? 0
@@ -127,7 +127,7 @@ export class RepositorioCopias {
       }
       let docentesCopiados = 0
       if (docentes && !(await tx.docencia.count({ where: { cadeiraId: destinoId } }))) {
-        const r = await tx.docencia.createMany({ data: c.docencias.map((d) => ({ cadeiraId: destinoId, docenteId: d.docenteId, papel: d.papel, horas: d.horas })) })
+        const r = await tx.docencia.createMany({ data: c.docencias.map((d) => ({ cadeiraId: destinoId, docenteId: d.docenteId, papel: d.papel, horas: d.horas, estado: estadoDocentes })) })
         docentesCopiados = r.count
       }
       return {

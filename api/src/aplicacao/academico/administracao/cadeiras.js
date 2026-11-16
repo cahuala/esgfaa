@@ -156,18 +156,30 @@ export class ServicoCadeiras {
     const [docentes, cadeiras] = await Promise.all([this.contas.listar({ tipo: 'docente' }), this.academico.todasCadeiras({ soAtivas: true })])
     const porDocente = new Map(docentes.map((d) => [d.id, { docente: { id: d.id, nome: d.nome, numero: d.numero, email: d.email, ativo: d.ativo }, cadeiras: [], horas: 0 }]))
     for (const c of cadeiras) {
-      for (const d of c.docentes) {
+      for (const d of [...c.docentes, ...c.docentesPropostos]) {
         const linha = porDocente.get(d.id)
         if (!linha) continue
-        linha.cadeiras.push({ id: c.id, codigo: c.codigo, nome: c.nome, turma: c.turma?.nome, periodo: c.periodo, papel: d.papel, horas: d.horas })
+        linha.cadeiras.push({ id: c.id, codigo: c.codigo, nome: c.nome, turma: c.turma?.nome, periodo: c.periodo, papel: d.papel, horas: d.horas, estado: d.estado })
         linha.horas += d.horas
       }
     }
+    // por turma: quantos docentes estão propostos e o pedido ao Comandante (pendente ou devolvido)
+    const turmas = new Map()
+    for (const c of cadeiras) {
+      if (!c.turma) continue
+      const t = turmas.get(c.turma.id) ?? { id: c.turma.id, nome: c.turma.nome, anoLetivo: c.turma.anoLetivo, distribuicao: c.turma.distribuicao, propostos: 0, cadeiras: 0, semDocentes: 0 }
+      t.cadeiras++
+      t.propostos += c.docentesPropostos.length
+      if (!c.docentes.length && !c.docentesPropostos.length) t.semDocentes++
+      turmas.set(t.id, t)
+    }
     return {
+      aprovacaoComandante: Boolean(this.aprovacaoComandante),
+      turmas: [...turmas.values()],
       docentes: [...porDocente.values()].sort((a, b) => b.horas - a.horas || a.docente.nome.localeCompare(b.docente.nome)),
       cadeiras: cadeiras.map((c) => ({
-        id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, turma: c.turma, docentes: c.docentes,
-        horasAlocadas: c.docentes.reduce((s, d) => s + d.horas, 0),
+        id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, turma: c.turma, docentes: [...c.docentes, ...c.docentesPropostos],
+        horasAlocadas: [...c.docentes, ...c.docentesPropostos].reduce((s, d) => s + d.horas, 0),
       })),
     }
   }
@@ -180,11 +192,15 @@ export class ServicoCadeiras {
       const conta = await this.contas.porId(d.docenteId)
       if (!conta || conta.tipo !== 'docente') throw new ErroValidacao('Escolha um docente.', { campo: 'docentes' })
     }
-    await this.academico.definirDocentes(c.id, docentes)
+    // quem entra de novo na cadeira fica proposto até o Comandante aprovar a distribuição da turma (o Comandante
+    // aprova logo); quem já estava aprovado continua (mudar o papel ou as horas não lhe tira o acesso)
+    const aprovados = new Set(c.docentes.map((d) => d.id))
+    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    await this.academico.definirDocentes(c.id, docentes.map((d) => ({ ...d, estado: direto || aprovados.has(d.docenteId) ? 'aprovada' : 'proposta' })))
     const nova = await this.academico.cadeira(c.id)
     await this.auditoria.registar(ctx, {
       acao: 'alocar_docentes', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome,
-      detalhes: { docentes: nova.docentes.map((d) => `${d.nome} (${d.papel}, ${d.horas} h)`) },
+      detalhes: { docentes: nova.docentes.map((d) => `${d.nome} (${d.papel}, ${d.horas} h)`), propostos: nova.docentesPropostos.map((d) => `${d.nome} (${d.papel}, ${d.horas} h)`) },
     })
     return nova
   }

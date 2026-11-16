@@ -8,8 +8,8 @@ const quem = (c) => ({ id: null, nome: `${c.nome} (portal, ${c.numero})` })
 
 // Entrada no portal académico (estudantes e docentes)
 export class ServicoSessaoPortal {
-  constructor({ contas, sessoes, cifra, tokens, auditoria, relogio, academico }) {
-    Object.assign(this, { contas, sessoes, cifra, tokens, auditoria, relogio, academico })
+  constructor({ contas, sessoes, cifra, tokens, auditoria, relogio, academico, aprovacaoComandante = false }) {
+    Object.assign(this, { contas, sessoes, cifra, tokens, auditoria, relogio, academico, aprovacaoComandante })
   }
 
   async entrar(ctx, { email, senha }) {
@@ -38,6 +38,8 @@ export class ServicoSessaoPortal {
       throw new NaoAutenticado(CREDENCIAIS_ERRADAS)
     }
     if (!c.ativo) throw new SemPermissao('Esta conta está desativada. Contacte a Administração Escolar.')
+    // o docente só entra depois de o Comandante aprovar a distribuição de serviço docente (ou verificar a conta)
+    if (this.aprovacaoComandante && c.tipo === 'docente' && !c.verificadoEm) throw new SemPermissao('A sua conta de docente ainda espera a aprovação do Comandante. Quando for aprovada, recebe o acesso por e-mail.')
     // contas antigas cuja palavra-passe inicial era o e-mail (que qualquer colega sabe): só com a ficha de acesso nova
     if (c.deveMudarSenha && String(senha).trim().toLowerCase() === c.email) {
       await this.auditoria.registar(ctx, { acao: 'falha_entrada_portal', detalhes: { email: emailLimpo.slice(0, 120), motivo: 'senha_igual_email' }, utilizador: quem(c) })

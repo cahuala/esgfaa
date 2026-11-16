@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { COLECOES } from '../esquemas'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
@@ -20,6 +21,8 @@ const OUTROS = {
   inqueritos: { rotulo: tx('Inquérito institucional'), cor: 'bg-purple', feito: tx('«{0}» aprovado: o inquérito foi lançado no portal.') },
   utilizadores: { rotulo: tx('Conta do painel de gestão'), cor: 'bg-dark', feito: tx('«{0}»: aprovado.') },
   comentarios: { rotulo: tx('Comentário de um visitante do site'), cor: 'bg-indigo', feito: tx('«{0}» aprovado: já aparece no site.') },
+  distribuicao_docente: { rotulo: tx('Distribuição de serviço docente'), cor: 'bg-orange', etiqueta: tx('Docentes nas cadeiras'), feito: tx('«{0}» aprovada: os docentes já têm as cadeiras.') },
+  publicacao_notas: { rotulo: tx('Publicação de notas'), cor: 'bg-red', etiqueta: tx('Notas'), feito: tx('«{0}»: notas publicadas, os estudantes já as veem.') },
 }
 
 /*
@@ -46,10 +49,14 @@ function Publicacoes() {
 
   async function decidir(p, decisao, motivo) {
     try {
-      await api(`/publicacoes/${p.colecao}/${encodeURIComponent(p.id)}/decisao`, { metodo: 'POST', corpo: { decisao, ...(motivo ? { motivo } : {}) } })
+      const r = await api(`/publicacoes/${p.colecao}/${encodeURIComponent(p.id)}/decisao`, { metodo: 'POST', corpo: { decisao, ...(motivo ? { motivo } : {}) } })
       const outro = OUTROS[p.colecao]
+      // distribuição aprovada: os docentes novos recebem a conta por e-mail (sem servidor de e-mail, a ficha de acesso)
+      const contas = p.colecao === 'distribuicao_docente' && decisao === 'aprovar' && r?.contasNovas
+        ? ` ${r.semEmail ? tx('{0} docente(s) novo(s): sem servidor de e-mail, a Repartição de Pessoal e Quadros entrega a ficha de acesso.', { 0: r.contasNovas }) : tx('{0} docente(s) novo(s) receberam a conta por e-mail.', { 0: r.emails })}`
+        : ''
       setAviso({ texto: decisao === 'aprovar'
-        ? (outro ? outro.feito.replace('{0}', p.titulo) : tx('«{0}» aprovado: já está no site.', { 0: p.titulo }))
+        ? (outro ? outro.feito.replace('{0}', p.titulo) + contas : tx('«{0}» aprovado: já está no site.', { 0: p.titulo }))
         : (outro ? tx('«{0}» recusado.', { 0: p.titulo }) : tx('«{0}» recusado. Quem o escreveu vê o motivo no editor.', { 0: p.titulo })) })
       setRecusar(null)
       carregar()
@@ -61,7 +68,7 @@ function Publicacoes() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Por aprovar')} subtitulo={tx('o site, os comentários dos visitantes, os avisos e inquéritos do portal e as contas do painel só avançam com a aprovação do Comandante')} migalhas={[{ rotulo: tx('Por aprovar') }]} />
+      <CabecalhoPagina titulo={tx('Por aprovar')} subtitulo={tx('o site, os comentários dos visitantes, os avisos e inquéritos do portal, os docentes nas cadeiras, as notas e as contas do painel só avançam com a aprovação do Comandante')} migalhas={[{ rotulo: tx('Por aprovar') }]} />
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!lista && !erro && <Carregando />}
       {lista?.length === 0 && <div className="alert alert-success"><i className="fa fa-check-circle me-2" />{tx('Não há nada à espera de aprovação.')}</div>}
@@ -70,7 +77,7 @@ function Publicacoes() {
         if (outro) {
           const conta = p.colecao === 'utilizadores'
           return (
-            <Painel key={`${p.colecao}/${p.id}`} titulo={<><span className={`badge ${outro.cor} me-2`}>{conta ? (p.tipo === 'conta' ? tx('Conta nova') : tx('Mudança de papel')) : tx('Nova publicação')}</span>{outro.rotulo}</>}>
+            <Painel key={`${p.colecao}/${p.id}`} titulo={<><span className={`badge ${outro.cor} me-2`}>{conta ? (p.tipo === 'conta' ? tx('Conta nova') : tx('Mudança de papel')) : outro.etiqueta ?? tx('Nova publicação')}</span>{outro.rotulo}</>}>
               <div className="d-flex flex-wrap gap-3 align-items-start">
                 <div className="flex-grow-1" style={{ minWidth: 240 }}>
                   <h4 className="mb-1">{p.titulo}</h4>
@@ -78,6 +85,7 @@ function Publicacoes() {
                     ? <p className="mb-2">{p.email} · {p.tipo === 'conta' ? tx('papel: {0}', { 0: papeis[p.papel] || p.papel }) : tx('de {0} para {1}', { 0: papeis[p.de] || p.de, 1: papeis[p.papel] || p.papel })}</p>
                     : <p className="text-muted mb-2" style={{ whiteSpace: 'pre-wrap' }}>{p.resumo}</p>}
                   {p.destino && <div className="small mb-1"><b>{p.colecao === 'comentarios' ? tx('Em:') : tx('Para:')}</b> {p.destino}</div>}
+                  {p.ligacao && <div className="small mb-1"><Link to={p.ligacao}><i className="fa fa-table me-1" />{tx('Ver a pauta completa')}</Link></div>}
                   <div className="small text-muted">{p.colecao === 'comentarios'
                     ? tx('Revisto pela equipa de comunicação ({0}), {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })
                     : tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>

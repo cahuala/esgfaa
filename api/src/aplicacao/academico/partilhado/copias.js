@@ -19,8 +19,8 @@ const somarAnos = (d, anos) => {
   para o acesso continuar a depender da matrícula de cada ano).
 */
 export class ServicoCopias {
-  constructor({ copias, academico, privados, auditoria }) {
-    Object.assign(this, { copias, academico, privados, auditoria })
+  constructor({ copias, academico, privados, auditoria, aprovacaoComandante = false }) {
+    Object.assign(this, { copias, academico, privados, auditoria, aprovacaoComandante })
   }
 
   async copiar(ctx, origem, destino, { docentes = false } = {}, utilizador) {
@@ -43,6 +43,8 @@ export class ServicoCopias {
     const resumo = await this.copias.aplicar(destino.id, c, {
       ficheiros,
       docentes,
+      // os docentes copiados para o ano novo também esperam a aprovação do Comandante
+      estadoDocentes: this.aprovacaoComandante ? 'proposta' : 'aprovada',
       data: (d) => somarAnos(d, anos),
       dia: (s) => somarAnos(`${s}T12:00:00Z`, anos).toISOString().slice(0, 10),
     })

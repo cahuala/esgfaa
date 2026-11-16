@@ -92,6 +92,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/satisfacao/:id/resultados', validar({ params: pId }), async (req, res) => res.json(await iq.resultados(ctx(req), req.dados.params.id)))
   r.delete('/satisfacao/:id', validar({ params: pId }), async (req, res) => { await iq.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/alocacao', async (req, res) => res.json(await a.cadeiras.alocacao(ctx(req))))
+  // o Ensino envia ao Comandante a distribuição dos docentes de uma turma
+  r.post('/turmas/:id/distribuicao', validar({ params: pId }), async (req, res) => res.json(await a.aprovacoes.enviarDistribuicao(ctx(req), req.dados.params.id)))
 
   r.get('/cadeiras/:id/pauta', validar({ params: pId }), async (req, res) => res.json(await a.pautas.pauta(ctx(req), req.dados.params.id)))
   r.put('/cadeiras/:id/pauta', validar({ params: pId, body: E.pauta }), async (req, res) => res.json(await a.pautas.gravarPauta(ctx(req), req.dados.params.id, req.dados.body.linhas)))

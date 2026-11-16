@@ -108,8 +108,12 @@ function Pauta({ c, avisar }) {
   async function publicar(k) {
     const publicadas = p.publicadas.includes(k) ? p.publicadas.filter((x) => x !== k) : [...p.publicadas, k]
     try {
-      setP({ ...p, ...(await api(`/cadeiras/${c.id}/pauta/publicacao`, { metodo: 'PUT', corpo: { publicadas } })), linhas: p.linhas })
-      avisar({ texto: publicadas.includes(k) ? tx('{0}: publicada aos estudantes.', { 0: NOMES_COMPONENTES[k] }) : tx('{0}: escondida dos estudantes.', { 0: NOMES_COMPONENTES[k] }) })
+      const r = await api(`/cadeiras/${c.id}/pauta/publicacao`, { metodo: 'PUT', corpo: { publicadas } })
+      setP({ ...p, ...r, linhas: p.linhas })
+      // na Escola só o Comandante publica: fica o pedido
+      const pedida = !r.publicadas.includes(k) && r.cadeira?.publicacaoPedida?.estado === 'pendente' && r.cadeira.publicacaoPedida.componentes.includes(k)
+      avisar({ texto: pedida ? tx('{0}: publicação pedida ao Comandante. Os estudantes veem as notas quando ele aprovar.', { 0: NOMES_COMPONENTES[k] })
+        : publicadas.includes(k) ? tx('{0}: publicada aos estudantes.', { 0: NOMES_COMPONENTES[k] }) : tx('{0}: escondida dos estudantes.', { 0: NOMES_COMPONENTES[k] }) })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
     }
@@ -124,8 +128,10 @@ function Pauta({ c, avisar }) {
   // prazo de lançamento definido pela Administração Escolar: fora dele a coluna fica fechada
   const prazo = (k) => p.prazos?.[k]
   const fechada = (k) => Boolean(prazo(k) && !prazo(k).aberto)
+  const pedido = p.cadeira?.publicacaoPedida
   const cabeca = (k) => {
     const pub = p.publicadas.includes(k)
+    const espera = !pub && pedido?.estado === 'pendente' && pedido.componentes?.includes(k)
     return (
       <th scope="col" key={k}>
         {NOMES_COMPONENTES[k]}
@@ -133,8 +139,8 @@ function Pauta({ c, avisar }) {
         <button type="button" className={`btn btn-xs ms-1 p-sem-impressao ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} title={calculada(k) ? tx('Calculada a partir das atividades. Clique para mudar.') : tx('Calcular a partir de trabalhos e questionários')} aria-label={tx('Como se calcula: {0}', { 0: NOMES_COMPONENTES[k] })}>
           <i className="fa fa-calculator" />
         </button>
-        <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} aria-pressed={pub} title={pub ? tx('Os estudantes já veem esta coluna. Clique para esconder.') : tx('Ainda escondida. Clique para publicar aos estudantes.')}>
-          {pub ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {pub ? tx('Publicada') : tx('Por publicar')}
+        <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} disabled={espera} aria-pressed={pub} title={pub ? tx('Os estudantes já veem esta coluna. Clique para esconder.') : espera ? tx('A publicação espera a aprovação do Comandante.') : tx('Ainda escondida. Clique para publicar aos estudantes.')}>
+          {pub ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {pub ? tx('Publicada') : espera ? tx('À espera do Comandante') : tx('Por publicar')}
         </button>
       </th>
     )
@@ -164,6 +170,7 @@ function Pauta({ c, avisar }) {
 
   return (
     <div className="p-coluna">
+      {pedido?.estado === 'recusada' && <div className="alert alert-danger p-sem-impressao"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou a publicação de {0}: {1}', { 0: (pedido.componentes ?? []).map((k) => NOMES_COMPONENTES[k]).join(', '), 1: pedido.motivo })}</div>}
       <div className="p-pauta-barra">
         <div className="p-pauta-contagem">
           {Object.entries(SITUACOES).filter(([k]) => contagem[k]).map(([k, s]) => <span key={k} className={`badge ${{ cinzento: 'bg-gray-400', verde: 'bg-success', azul: 'bg-primary', dourado: 'bg-warning text-dark', vermelho: 'bg-danger' }[s.cor]}`}>{s.texto}: {contagem[k]}</span>)}

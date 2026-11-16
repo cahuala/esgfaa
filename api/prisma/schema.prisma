@@ -121,13 +121,13 @@ model Gosto {
 }
 
 model Comentario {
-  id      Int      @id @default(autoincrement())
-  colecao String
-  itemId  String   @map("item_id")
-  nome    String
-  texto   String
-  ip      String?
-  data    DateTime @default(now()) @db.Timestamptz(3)
+  id         Int       @id @default(autoincrement())
+  colecao    String
+  itemId     String    @map("item_id")
+  nome       String
+  texto      String
+  ip         String?
+  data       DateTime  @default(now()) @db.Timestamptz(3)
   // pendente (equipa de comunicação) → revisto (Comandante) → publicado
   estado     String    @default("publicado")
   revistoPor String?   @map("revisto_por")
@@ -300,6 +300,8 @@ model Turma {
   nome          String
   ativa         Boolean  @default(true)
   anoFinal      Boolean  @default(false) @map("ano_final") // turma de finalistas (último ano: trabalho de fim de curso)
+  // distribuição dos docentes pelas cadeiras enviada ao Comandante: { estado: pendente | devolvida, pedidoPor, pedidoEm, motivo }
+  distribuicao  Json?
   criadaEm      DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
 
   cadeiras   UnidadeCurricular[]
@@ -342,6 +344,8 @@ model UnidadeCurricular {
   programa           String   @default("") // programa da cadeira escrito no portal (HTML filtrado)
   programaFicheiroId String?  @map("programa_ficheiro_id") // ou em documento (PDF, Word)
   notasPublicadas    String[] @default([]) @map("notas_publicadas") // componentes que os estudantes já veem
+  // publicação de notas pedida ao Comandante: { estado: pendente | recusada, componentes, pedidoPor, pedidoEm, motivo }
+  publicacaoPedida   Json?    @map("publicacao_pedida")
   // planos de curso da ESG: bloco de UC, unidades de crédito, horas de contacto e de não contacto; tii = a nota vem do TII
   bloco              String   @default("")
   creditos           Int      @default(0)
@@ -389,6 +393,8 @@ model Docencia {
   docenteId Int    @map("docente_id")
   papel     String @default("regente") // "regente" | "assistente"
   horas     Int    @default(0) // horas atribuídas a este docente na cadeira
+  // proposta = o Ensino pôs o docente na cadeira e espera o Comandante; só a aprovada dá acesso à cadeira
+  estado    String @default("aprovada")
 
   cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   docente ContaPortal       @relation(fields: [docenteId], references: [id], onDelete: Cascade)
@@ -1722,16 +1728,18 @@ model PlanoCurso {
 
 // uma prova de avaliação de uma UC (TAI ou TAG)
 model AvaliacaoUc {
-  id          Int       @id @default(autoincrement())
-  cadeiraId   Int       @map("cadeira_id")
-  tipo        String // TAI | TAG
-  forma       String    @default("teste") // teste | relatorio | oral | trabalho
-  peso        Decimal?  @db.Decimal(5, 2) // % na nota da UC (ex.: TAG 50 + defesa 50); sem peso = média simples
-  titulo      String
-  data        String? // AAAA-MM-DD
-  ordem       Int       @default(0)
-  publicadaEm DateTime? @map("publicada_em") @db.Timestamptz(3)
-  criadaEm    DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
+  id               Int       @id @default(autoincrement())
+  cadeiraId        Int       @map("cadeira_id")
+  tipo             String // TAI | TAG
+  forma            String    @default("teste") // teste | relatorio | oral | trabalho
+  peso             Decimal?  @db.Decimal(5, 2) // % na nota da UC (ex.: TAG 50 + defesa 50); sem peso = média simples
+  titulo           String
+  data             String? // AAAA-MM-DD
+  ordem            Int       @default(0)
+  publicadaEm      DateTime? @map("publicada_em") @db.Timestamptz(3)
+  // publicação pedida ao Comandante: { estado: pendente | recusada, pedidoPor, pedidoEm, motivo }
+  publicacaoPedida Json?     @map("publicacao_pedida")
+  criadaEm         DateTime  @default(now()) @map("criada_em") @db.Timestamptz(3)
 
   cadeira UnidadeCurricular @relation(fields: [cadeiraId], references: [id], onDelete: Cascade)
   notas   NotaAvaliacaoUc[]

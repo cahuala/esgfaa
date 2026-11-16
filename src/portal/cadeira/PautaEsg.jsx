@@ -82,8 +82,17 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
       setAGuardar(false)
     }
   }
-  const publicar = (a) => pedir(`${base}/provas/${a.id}/publicacao`, { metodo: 'PUT', corpo: { publicar: !a.publicadaEm } })
-    .then((r) => { aplicar(r); avisar({ texto: a.publicadaEm ? tx('{0}: escondida.', { 0: a.titulo }) : tx('{0}: publicada. Abriu o prazo de pedido de recuperação.', { 0: a.titulo }) }) }).catch(falhou)
+  // na Escola só o Comandante publica: o docente pede (e pode desistir do pedido enquanto espera)
+  const espera = (a) => !a.publicadaEm && a.publicacaoPedida?.estado === 'pendente'
+  const publicar = (a) => pedir(`${base}/provas/${a.id}/publicacao`, { metodo: 'PUT', corpo: { publicar: !a.publicadaEm && !espera(a) } })
+    .then((r) => {
+      aplicar(r)
+      const nova = r.avaliacoes?.find((x) => x.id === a.id)
+      avisar({ texto: a.publicadaEm ? tx('{0}: escondida.', { 0: a.titulo })
+        : espera(a) ? tx('{0}: pedido de publicação retirado.', { 0: a.titulo })
+          : nova && !nova.publicadaEm ? tx('{0}: publicação pedida ao Comandante. Os estudantes veem as notas quando ele aprovar.', { 0: a.titulo })
+            : tx('{0}: publicada. Abriu o prazo de pedido de recuperação.', { 0: a.titulo }) })
+    }).catch(falhou)
   const apagar = (a) => pedir(`${base}/provas/${a.id}`, { metodo: 'DELETE' }).then(aplicar).catch(falhou)
   // o peso de cada prova na nota da UC (%), como o plano da UC fixa; sem peso em todas = média simples
   const mudarPeso = (a) => {
@@ -159,8 +168,9 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
                       {a.revisoes > 0 && <div className="small text-info fw-normal"><i className="fa fa-gavel me-1" />{tx('{0} pedido(s) de revisão', { 0: a.revisoes })}</div>}
                       <div className="p-sem-impressao mt-1">
                         <button type="button" className={`p-publicar ${a.publicadaEm ? 'p-publicada' : ''}`} onClick={() => publicar(a)} aria-pressed={Boolean(a.publicadaEm)} title={a.publicadaEm ? tx('Publicada em {0}. Clique para esconder.', { 0: dataHora(a.publicadaEm) }) : tx('Ainda escondida. Clique para publicar.')}>
-                          {a.publicadaEm ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {a.publicadaEm ? tx('Publicada') : tx('Por publicar')}
+                          {a.publicadaEm ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {a.publicadaEm ? tx('Publicada') : espera(a) ? tx('À espera do Comandante') : tx('Por publicar')}
                         </button>
+                        {!a.publicadaEm && a.publicacaoPedida?.estado === 'recusada' && <div className="small text-danger fw-normal mt-1">{tx('Recusada pelo Comandante: {0}', { 0: a.publicacaoPedida.motivo })}</div>}
                         <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => mudarPeso(a)} title={tx('Peso na nota da UC')} aria-label={tx('Peso na nota da UC')}><i className="fa fa-balance-scale" /></button>
                         {!a.publicadaEm && <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => apagar(a)} title={tx('Apagar a prova')} aria-label={tx('Apagar a prova')}><i className="fa fa-trash" /></button>}
                       </div>

@@ -103,21 +103,22 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   // ---------- à espera do Comandante: o site, os avisos e inquéritos do portal, as contas do painel ----------
   const avisosGerais = servicos.administracaoEscolar.avisos
   const inqueritos = servicos.qualidade.inqueritos
+  const aprovacoesEnsino = servicos.administracaoEscolar.aprovacoes
   r.get('/publicacoes', async (req, res) => {
     const c = ctx(req)
-    if (!c.actor.pode('utilizadores.aprovar')) c.actor.exigir('publicacoes.aprovar')
+    if (!c.actor.pode('utilizadores.aprovar') && !c.actor.pode('academico.homologar')) c.actor.exigir('publicacoes.aprovar')
     const site = c.actor.pode('publicacoes.aprovar') ? [...(await servicos.conteudos.paraAprovar(c)), ...(await servicos.paginas.paraAprovar(c))] : []
     const contas = c.actor.pode('utilizadores.aprovar') ? (await servicos.utilizadores.listar(c)).filter((u) => u.aprovacao).map((u) => ({
       colecao: 'utilizadores', id: String(u.id), titulo: u.nome, tipo: u.aprovacao.tipo === 'criar' ? 'conta' : 'papel', pedidoPor: u.aprovacao.pedidoPor, pedidoEm: u.aprovacao.pedidoEm,
       email: u.email, papel: u.aprovacao.papel, de: u.aprovacao.de ?? null,
     })) : []
-    const lista = [...site, ...(await avisosGerais.paraAprovar(c)), ...(await inqueritos.paraAprovar(c)), ...(await servicos.interacoes.paraAprovar(c)), ...contas]
+    const lista = [...site, ...(await avisosGerais.paraAprovar(c)), ...(await inqueritos.paraAprovar(c)), ...(await servicos.interacoes.paraAprovar(c)), ...contas, ...(await aprovacoesEnsino.paraAprovar(c))]
     enviar(req, res, lista.sort((a, b) => String(a.pedidoEm).localeCompare(String(b.pedidoEm))))
   })
   r.get('/publicacoes/contagem', async (req, res) => {
     const c = ctx(req)
     const site = c.actor.pode('publicacoes.aprovar') ? (await servicos.conteudos.contarParaAprovar(c)) + (await servicos.paginas.contarParaAprovar(c)) : 0
-    const portal = (await avisosGerais.contarParaAprovar(c)) + (await inqueritos.contarParaAprovar(c))
+    const portal = (await avisosGerais.contarParaAprovar(c)) + (await inqueritos.contarParaAprovar(c)) + (await aprovacoesEnsino.contarParaAprovar(c))
     const contas = await servicos.utilizadores.contarPorAprovar(c)
     const comentarios = await servicos.interacoes.contarParaAprovar(c)
     res.json({ pendentes: site + portal + contas + comentarios, site, portal, contas, comentarios })
@@ -131,6 +132,8 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
       inqueritos: () => inqueritos.decidir(c, id, req.dados.body),
       utilizadores: () => servicos.utilizadores.decidir(c, id, req.dados.body),
       comentarios: () => servicos.interacoes.decidir(c, id, req.dados.body),
+      distribuicao_docente: () => aprovacoesEnsino.decidirDistribuicao(c, id, req.dados.body),
+      publicacao_notas: () => aprovacoesEnsino.decidirNotas(c, id, req.dados.body),
     }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, req.dados.body))
     enviar(req, res, await decidir())
   })

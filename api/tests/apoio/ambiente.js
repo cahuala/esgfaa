@@ -30,7 +30,8 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
   const pastaPrivada = fs.mkdtempSync(path.join(os.tmpdir(), 'esgfaa-privado-'))
   const config = criarConfig({
     NODE_ENV: 'test', DATABASE_URL: URL_TESTE, JWT_SECRET: 'segredo-de-teste-com-mais-de-trinta-e-dois-caracteres',
-    ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.senha, ADMIN_NAME: 'Administrador Teste', ...env,
+    // a aprovação do Comandante (docentes nas cadeiras, publicação de notas) só nos testes que a pedem
+    ADMIN_EMAIL: ADMIN.email, ADMIN_PASSWORD: ADMIN.senha, ADMIN_NAME: 'Administrador Teste', APROVACAO_COMANDANTE: 'nao', ...env,
   }, { pastaUploads, pastaPrivada })
   // limites altos por omissão; os testes de limites baixam-nos
   for (const k of Object.keys(config.limites)) config.limites[k] = { janelaMs: 60_000, maximo: 10_000, ...limites[k] }

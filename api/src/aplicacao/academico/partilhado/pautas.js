@@ -15,8 +15,8 @@ import { SemPermissao } from '../../../dominio/comum/erros.js'
   "utilizador" é quem fica no registo de atividades (undefined = o utilizador do painel).
 */
 export class ServicoPautas {
-  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio, esg = null, controlo = null }) {
-    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio, esg, controlo })
+  constructor({ academico, recursos, workshops, prazosNotas, fuso = 'Africa/Luanda', auditoria, notificacoes, relogio, esg = null, controlo = null, aprovacaoComandante = false }) {
+    Object.assign(this, { academico, recursos, workshops, prazosNotas, fuso, auditoria, notificacoes, relogio, esg, controlo, aprovacaoComandante })
   }
 
   // o dia de hoje na hora de Luanda (AAAA-MM-DD)
@@ -197,8 +197,17 @@ export class ServicoPautas {
     const retiradas = (cadeira.notasPublicadas ?? []).filter((k) => !ordenada.includes(k))
     if (ctx.conta && retiradas.length) throw new Conflito(`As notas de ${retiradas.map((k) => NOMES_COMPONENTES[k]).join(', ')} já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.`)
     if (!ctx.conta && retiradas.length) this.controlo?.exigirComandante(ctx, retiradas.map((k) => NOMES_COMPONENTES[k]).join(', '))
-    await this.academico.publicarNotas(cadeira.id, ordenada)
     const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
+    // as notas novas só chegam aos estudantes com a aprovação do Comandante: fica o pedido (o Comandante publica logo)
+    if (this.aprovacaoComandante && novas.length && !ctx.actor?.pode?.('academico.homologar')) {
+      const antes = cadeira.publicacaoPedida?.estado === 'pendente' ? cadeira.publicacaoPedida.componentes ?? [] : []
+      const componentes = COMPONENTES_NOTA.filter((k) => novas.includes(k) || antes.includes(k))
+      await this.academico.pedirPublicacao(cadeira.id, { estado: 'pendente', componentes, pedidoPor: ctx.conta?.nome ?? ctx.actor?.nome ?? '', pedidoEm: this.relogio.agora().toISOString() })
+      await this.auditoria.registar(ctx, { acao: 'pedir_publicacao_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${componentes.map((k) => NOMES_COMPONENTES[k]).join(', ')} — ${cadeira.nome}`, utilizador })
+      return this.pauta(await this.academico.cadeira(cadeira.id))
+    }
+    await this.academico.publicarNotas(cadeira.id, ordenada)
+    if (novas.length && cadeira.publicacaoPedida) await this.academico.pedirPublicacao(cadeira.id, null)
     if (novas.length) {
       const quais = novas.map((k) => NOMES_COMPONENTES[k]).join(', ')
       await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${quais} — ${cadeira.nome}`, utilizador })

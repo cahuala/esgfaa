@@ -48,6 +48,9 @@ const ESQUEMA = z.object({
   // servidor Jitsi das salas de videoconferência do portal (o ideal é um servidor da Escola; meet.jit.si limita as salas incorporadas)
   JITSI_URL: z.url().default('https://meet.jit.si'),
   PORTAL_URL: z.union([z.literal(''), z.url()]).default(''),
+  // o Comandante aprova a distribuição dos docentes pelas cadeiras (e as contas dos docentes) e cada publicação
+  // de notas; «nao» desliga (só os testes antigos, que não passam por ele)
+  APROVACAO_COMANDANTE: z.enum(['sim', 'nao']).default('sim'),
   // chave partilhada com o Sistema de Gestão de Pessoal (rede interna), que envia os docentes e estudantes; vazio = desligado
   INTEGRACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'INTEGRACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   // anti-plágio: pesquisa na internet (Brave Search) e avaliação de IA / traduções (Claude)
@@ -135,6 +138,7 @@ export function criarConfig(env = process.env, extras = {}) {
     // endereço do portal usado nas ligações dos e-mails (ex.: https://escola.ao/portal/)
     urlPortal: e.PORTAL_URL.replace(/\/$/, ''),
     chaveIntegracaoPessoal: e.INTEGRACAO_CHAVE,
+    aprovacaoComandante: e.APROVACAO_COMANDANTE === 'sim',
     // serviços externos opcionais (sem chave ficam desligados)
     pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },
     ia: { chave: e.ANTHROPIC_API_KEY, modelo: e.ANTHROPIC_MODELO },

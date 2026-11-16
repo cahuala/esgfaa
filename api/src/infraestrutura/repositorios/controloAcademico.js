@@ -1,9 +1,18 @@
+import { Prisma } from '../bd/prisma.js'
 /*
   Controlo académico centralizado no Comandante e na Repartição de Administração Escolar:
   as provas escritas enviadas para impressão, os pedidos de alteração de notas já publicadas
   e a verificação dos docentes registados.
 */
 const CADEIRA = { select: { id: true, codigo: true, nome: true, turma: { select: { id: true, nome: true, anoLetivo: true } } } }
+
+// a turma com as cadeiras e os docentes (aprovados e propostos), para o Comandante rever
+const TURMA_COM_DOCENCIAS = {
+  cadeiras: {
+    orderBy: [{ periodo: 'asc' }, { codigo: 'asc' }],
+    select: { id: true, codigo: true, nome: true, horas: true, docentes: { select: { papel: true, horas: true, estado: true, docente: { select: { id: true, nome: true, email: true, numero: true, verificadoEm: true, ultimoAcesso: true, ativo: true } } } } },
+  },
+}
 
 export class RepositorioControloAcademico {
   constructor({ prisma }) {
@@ -95,6 +104,61 @@ export class RepositorioControloAcademico {
 
   contarDocentesPorVerificar() {
     return this.prisma.contaPortal.count({ where: { tipo: 'docente', ativo: true, verificadoEm: null } })
+  }
+
+  // ---------- distribuição dos docentes pelas cadeiras (o Comandante aprova) ----------
+
+  turmaComDocencias(id) {
+    return this.prisma.turma.findUnique({ where: { id }, include: TURMA_COM_DOCENCIAS })
+  }
+
+  turmasComDistribuicaoPendente() {
+    return this.prisma.turma.findMany({ where: { distribuicao: { path: ['estado'], equals: 'pendente' } }, include: TURMA_COM_DOCENCIAS, orderBy: { id: 'asc' } })
+  }
+
+  contarDistribuicoesPendentes() {
+    return this.prisma.turma.count({ where: { distribuicao: { path: ['estado'], equals: 'pendente' } } })
+  }
+
+  guardarDistribuicao(turmaId, pedido) {
+    return this.prisma.turma.update({ where: { id: turmaId }, data: { distribuicao: pedido ?? Prisma.DbNull } })
+  }
+
+  // aprova os docentes propostos da turma; devolve os ids das contas
+  async aprovarPropostas(turmaId) {
+    const l = await this.prisma.docencia.findMany({ where: { estado: 'proposta', cadeira: { turmaId } }, select: { docenteId: true } })
+    await this.prisma.docencia.updateMany({ where: { estado: 'proposta', cadeira: { turmaId } }, data: { estado: 'aprovada' } })
+    return [...new Set(l.map((d) => d.docenteId))]
+  }
+
+  // ---------- publicação de notas (o Comandante aprova) ----------
+
+  cadeirasComPublicacaoPendente() {
+    return this.prisma.unidadeCurricular.findMany({ where: { publicacaoPedida: { path: ['estado'], equals: 'pendente' } }, include: { turma: { select: { id: true, nome: true, anoLetivo: true } } }, orderBy: { id: 'asc' } })
+  }
+
+  avaliacoesComPublicacaoPendente() {
+    return this.prisma.avaliacaoUc.findMany({ where: { publicacaoPedida: { path: ['estado'], equals: 'pendente' } }, include: { cadeira: { include: { turma: { select: { id: true, nome: true, anoLetivo: true } } } } }, orderBy: { id: 'asc' } })
+  }
+
+  async contarPublicacoesPendentes() {
+    const onde = { publicacaoPedida: { path: ['estado'], equals: 'pendente' } }
+    return (await this.prisma.unidadeCurricular.count({ where: onde })) + (await this.prisma.avaliacaoUc.count({ where: onde }))
+  }
+
+  // as notas de uma cadeira (ou de uma prova TAI/TAG) para o Comandante rever: quantos, média, positivas
+  async resumoNotas(cadeiraId, componentes) {
+    const l = await this.prisma.notaPauta.findMany({ where: { cadeiraId }, select: Object.fromEntries(componentes.map((k) => [k, true])) })
+    return componentes.map((k) => {
+      const v = l.map((x) => (x[k] === null || x[k] === undefined ? null : Number(x[k]))).filter((x) => x !== null)
+      return { componente: k, notas: v.length, media: v.length ? v.reduce((s, x) => s + x, 0) / v.length : null, positivas: v.filter((x) => x >= 10).length }
+    })
+  }
+
+  async resumoNotasProva(avaliacaoId) {
+    const l = await this.prisma.notaAvaliacaoUc.findMany({ where: { avaliacaoId }, select: { nota: true } })
+    const v = l.map((x) => (x.nota === null ? null : Number(x.nota))).filter((x) => x !== null)
+    return { notas: v.length, media: v.length ? v.reduce((s, x) => s + x, 0) / v.length : null, positivas: v.filter((x) => x >= 10).length }
   }
 
   // ---------- resumo para o painel ----------

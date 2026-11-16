@@ -1,20 +1,35 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
-import { CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { dataHora } from '../../formatar'
 import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
 import { t as tx } from '../../../i18n/linguas'
 
-// alocação de docentes: carga horária de cada docente e cadeiras por alocar (turmas ativas)
+const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto')}</span>
+
+/*
+  Alocação de docentes: carga horária de cada docente e cadeiras por alocar (turmas ativas). Quem o Ensino põe
+  numa cadeira fica «proposto» (sem acesso) até o Comandante aprovar a distribuição da turma, que o Ensino lhe
+  envia aqui depois de rever a lista.
+*/
 function Alocacao() {
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
+  const [aviso, setAviso] = useState(null)
+  const carregar = () => api('/academico/alocacao').then(setD).catch((e) => setErro(e.message))
+  const enviar = (t) => {
+    if (!window.confirm(tx('Enviar ao Comandante a distribuição dos docentes de «{0}»? Os docentes propostos só têm a cadeira (e a conta) depois de ele aprovar.', { 0: t.nome }))) return
+    api(`/academico/turmas/${t.id}/distribuicao`, { metodo: 'POST' })
+      .then((r) => { setAviso({ texto: tx('Enviada ao Comandante ({0} docente(s) propostos).', { 0: r.propostos }) }); carregar() })
+      .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
+  }
   const [filtro, setFiltro] = useState('todas')
   // filtros: o ano letivo (o atual por omissão) e o semestre em que a cadeira é dada
   const [anos, setAnos] = useState([])
   const [ano, setAno] = useState('')
   const [semestre, setSemestre] = useState('')
-  useEffect(() => { api('/academico/alocacao').then(setD).catch((e) => setErro(e.message)) }, [])
+  useEffect(() => { carregar() }, [])
   useEffect(() => { api('/academico/anos-letivos').then((l) => { setAnos(l); setAno(l.find((a) => a.atual)?.id ?? '') }).catch(() => {}) }, [])
 
   if (erro) return <Erro texto={erro} />
@@ -60,6 +75,33 @@ function Alocacao() {
         ))}
       </div>
 
+      {d.aprovacaoComandante && d.turmas.length > 0 && (
+        <Painel titulo={tx('Distribuição de serviço docente: aprovação do Comandante')} corpo={false}>
+          <div className="table-responsive">
+            <table className="table align-middle mb-0">
+              <thead><tr><th>{tx('Turma')}</th><th>{tx('Cadeiras')}</th><th>{tx('Docentes propostos')}</th><th>{tx('Estado')}</th><th /></tr></thead>
+              <tbody>
+                {d.turmas.filter((t) => !ano || t.anoLetivo === ano).map((t) => {
+                  const e = t.distribuicao?.estado
+                  return (
+                    <tr key={t.id}>
+                      <td className="fw-bold">{t.nome}<div className="small text-muted fw-normal">{t.anoLetivo}</div></td>
+                      <td>{t.cadeiras}{t.semDocentes > 0 && <div className="small text-warning">{tx('{0} sem docentes', { 0: t.semDocentes })}</div>}</td>
+                      <td>{t.propostos}</td>
+                      <td className="small">
+                        {e === 'pendente' && <span className="badge bg-info">{tx('À espera do Comandante desde {0}', { 0: dataHora(t.distribuicao.pedidoEm) })}</span>}
+                        {e === 'devolvida' && <><span className="badge bg-danger">{tx('Devolvida pelo Comandante')}</span><div className="text-danger mt-1">{t.distribuicao.motivo}</div></>}
+                        {!e && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span> : <span className="badge bg-success">{tx('Aprovada')}</span>)}
+                      </td>
+                      <td className="text-end">{e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Painel>
+      )}
       <div className="row">
         <div className="col-xl-5">
           <Painel titulo={tx('Carga horária por docente')} corpo={false}>
@@ -74,7 +116,7 @@ function Alocacao() {
                   <div className="progress my-1" style={{ height: 6 }}><div className="progress-bar bg-red" style={{ width: `${(x.horas / maxHoras) * 100}%` }} /></div>
                   <div className="small text-muted">
                     {x.cadeiras.length === 0 ? tx('Sem cadeiras') : x.cadeiras.map((c) => (
-                      <Link key={c.id} to={`/academico/cadeiras/${c.id}?separador=docentes`} className="me-2 text-decoration-none">{c.codigo} <span className="text-muted">({PAPEIS_DOCENCIA[c.papel].toLowerCase()}, {c.horas} {tx('h)')}</span></Link>
+                      <Link key={c.id} to={`/academico/cadeiras/${c.id}?separador=docentes`} className="me-2 text-decoration-none">{c.codigo} <span className="text-muted">({PAPEIS_DOCENCIA[c.papel].toLowerCase()}, {c.horas} {tx('h)')}</span>{c.estado === 'proposta' && PROPOSTO}</Link>
                     ))}
                   </div>
                 </div>
@@ -108,7 +150,7 @@ function Alocacao() {
                       </td>
                       <td className="small">
                         {c.docentes.length === 0 ? <span className="badge bg-warning text-dark">{tx('Por alocar')}</span> : c.docentes.map((x) => (
-                          <div key={x.id}>{x.papel === 'regente' ? <i className="fa fa-star text-warning me-1" title={tx('Regente')} /> : <i className="fa fa-user text-muted me-1" title={tx('Assistente')} />}{x.nome}</div>
+                          <div key={x.id}>{x.papel === 'regente' ? <i className="fa fa-star text-warning me-1" title={tx('Regente')} /> : <i className="fa fa-user text-muted me-1" title={tx('Assistente')} />}{x.nome}{x.estado === 'proposta' && PROPOSTO}</div>
                         ))}
                       </td>
                       <td className={`text-end text-nowrap ${c.horasAlocadas < c.horas ? 'text-warning' : ''}`}>{c.horasAlocadas} / {c.horas}</td>
@@ -121,6 +163,7 @@ function Alocacao() {
           </Painel>
         </div>
       </div>
+      <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )
 }

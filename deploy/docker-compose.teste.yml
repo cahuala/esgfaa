@@ -90,7 +90,9 @@ services:
       DADOS_CHAVE: ${DADOS_CHAVE_PESSOAL:?defina DADOS_CHAVE_PESSOAL}
       # TESTE: aberto a quem tiver conta (na Escola, só as redes internas)
       REDES_INTERNAS: ${REDES_INTERNAS:-0.0.0.0/0}
-      PORTAL_API_URL: http://api:3001
+      # o portal de teste recebe o Pessoal da Escola (dados reais): o Pessoal de teste (demonstração) não envia
+      # para lá, senão as pessoas de demonstração voltavam a aparecer. Para o ligar: PESSOAL_TESTE_PORTAL=http://api:3001
+      PORTAL_API_URL: ${PESSOAL_TESTE_PORTAL:-}
       INTEGRACAO_CHAVE: ${INTEGRACAO_CHAVE}
       # consulta do BI na base de dados do Estado (a chave só está no deploy/teste.env do servidor)
       BI_API_KEY: ${BI_API_KEY:-}

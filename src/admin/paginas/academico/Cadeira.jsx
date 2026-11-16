@@ -147,10 +147,10 @@ function Dados({ c, gerir, recarregar, avisar }) {
   )
 }
 
-// regente + assistentes, com as horas de cada um
+// regente + assistentes, com as horas de cada um; os novos ficam propostos até o Comandante aprovar a distribuição
 function Docentes({ c, gerir, recarregar, avisar }) {
   const [todos, setTodos] = useState([])
-  const [linhas, setLinhas] = useState(c.docentes.map((d) => ({ docenteId: String(d.id), papel: d.papel, horas: String(d.horas) })))
+  const [linhas, setLinhas] = useState([...c.docentes, ...(c.docentesPropostos ?? [])].map((d) => ({ docenteId: String(d.id), papel: d.papel, horas: String(d.horas), proposto: d.estado === 'proposta' })))
   const [erro, setErro] = useState('')
   useEffect(() => { api('/academico/contas?tipo=docente').then((l) => setTodos(l.filter((d) => d.ativo))).catch(() => {}) }, [])
 
@@ -161,8 +161,10 @@ function Docentes({ c, gerir, recarregar, avisar }) {
   async function guardar() {
     setErro('')
     try {
-      await api(`/academico/cadeiras/${c.id}/docentes`, { metodo: 'PUT', corpo: { docentes: linhas.filter((l) => l.docenteId).map((l) => ({ docenteId: Number(l.docenteId), papel: l.papel, horas: Number(l.horas || 0) })) } })
-      avisar({ texto: tx('Alocação guardada. Os docentes já veem a cadeira no portal.') })
+      const n = await api(`/academico/cadeiras/${c.id}/docentes`, { metodo: 'PUT', corpo: { docentes: linhas.filter((l) => l.docenteId).map((l) => ({ docenteId: Number(l.docenteId), papel: l.papel, horas: Number(l.horas || 0) })) } })
+      avisar({ texto: n.docentesPropostos?.length
+        ? tx('Alocação guardada. {0} docente(s) propostos: só veem a cadeira depois de o Comandante aprovar a distribuição da turma (envie-a em «Alocação de docentes»).', { 0: n.docentesPropostos.length })
+        : tx('Alocação guardada. Os docentes já veem a cadeira no portal.') })
       recarregar()
     } catch (falha) {
       setErro(falha.message)
@@ -184,6 +186,7 @@ function Docentes({ c, gerir, recarregar, avisar }) {
                   <option value="">{tx('Escolha…')}</option>
                   {todos.map((d) => <option key={d.id} value={d.id} disabled={linhas.some((x, j) => j !== i && x.docenteId === String(d.id))}>{d.nome} ({d.numero})</option>)}
                 </select>
+                {l.proposto && <span className="badge bg-warning text-dark mt-1">{tx('Proposto: espera a aprovação do Comandante')}</span>}
               </td>
               <td>
                 <select className="form-select" value={l.papel} disabled={!gerir} aria-label={tx('Papel do docente {0}', { 0: i + 1 })} onChange={(e) => mudar(i, 'papel', e.target.value)}>

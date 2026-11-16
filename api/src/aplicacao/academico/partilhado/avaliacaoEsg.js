@@ -11,8 +11,8 @@ import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decis
   painel (Administração Escolar). Quem chama já confirmou o acesso à cadeira.
 */
 export class ServicoAvaliacaoEsg {
-  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio, controlo = null, prazosNotas = null, fuso = 'Africa/Luanda' }) {
-    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas, fuso })
+  constructor({ planos, academico, conclusao, auditoria, notificacoes, relogio, controlo = null, prazosNotas = null, fuso = 'Africa/Luanda', aprovacaoComandante = false }) {
+    Object.assign(this, { planos, academico, conclusao, auditoria, notificacoes, relogio, controlo, prazosNotas, fuso, aprovacaoComandante })
   }
 
   // o período de lançamento dos TAI e dos TAG nesta UC (Administração Escolar)
@@ -149,8 +149,15 @@ export class ServicoAvaliacaoEsg {
   async publicar(ctx, cadeira, avaliacaoId, publicar, utilizador) {
     await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
-    if (publicar && !a.publicadaEm) {
-      await this.planos.atualizarAvaliacao(a.id, { publicadaEm: this.relogio.agora() })
+    // só o Comandante publica: os outros deixam o pedido (que ele aprova ou recusa em «Por aprovar»)
+    if (publicar && !a.publicadaEm && this.aprovacaoComandante && !ctx.actor?.pode?.('academico.homologar')) {
+      await this.planos.atualizarAvaliacao(a.id, { publicacaoPedida: { estado: 'pendente', pedidoPor: ctx.conta?.nome ?? ctx.actor?.nome ?? '', pedidoEm: this.relogio.agora().toISOString() } })
+      await this.auditoria.registar(ctx, { acao: 'pedir_publicacao_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
+    } else if (!publicar && !a.publicadaEm && a.publicacaoPedida) {
+      // desiste do pedido ainda por decidir
+      await this.planos.atualizarAvaliacao(a.id, { publicacaoPedida: null })
+    } else if (publicar && !a.publicadaEm) {
+      await this.planos.atualizarAvaliacao(a.id, { publicadaEm: this.relogio.agora(), publicacaoPedida: null })
       await this.auditoria.registar(ctx, { acao: 'publicar_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
       await this.notificacoes?.notificar(await this.notificacoes.estudantesDaCadeira(cadeira), { tipo: 'notas', titulo: `Notas publicadas: ${a.tipo} ${a.titulo}`, texto: cadeira.nome, ligacao: '/notas' })
     } else if (!publicar && a.publicadaEm) {
