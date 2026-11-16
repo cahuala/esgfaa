@@ -29,6 +29,8 @@ export default defineConfig({
       timeout: 60_000,
       env: {
         PORT: '3101', NODE_ENV: 'test', LOG: 'nenhum',
+        // o fluxo com a aprovação do Comandante (docentes nas cadeiras, notas) testa-se na API (aprovacoesComandante.test.js)
+        APROVACAO_COMANDANTE: 'nao',
         CORS_ORIGINS: SITE,
         ADMIN_EMAIL: ADMIN_E2E.email, ADMIN_PASSWORD: ADMIN_E2E.senha,
       },
