@@ -423,8 +423,14 @@ export class ServicoSessao {
         else pedirPermissoes = { novas, atuais, finais }
       }
     }
-    if (alvo.aguardaDespacho && data.ativo === true) delete data.ativo // só o despacho a abre
+    // o administrador pode activar uma conta à espera do despacho do Comandante: o pedido fica anulado (fica na auditoria)
+    const activadaSemDespacho = alvo.aguardaDespacho && data.ativo === true
+    if (activadaSemDespacho) data.aguardaDespacho = false
     const g = await this.bd.utilizador.update({ where: { id }, data, include: COM_UNIDADE })
+    if (activadaSemDespacho) {
+      await this.despachos?.anular(this.bd, { tipo: 'utilizador_novo', utilizadorId: id })
+      await this.auditoria.registar(u, 'activar_sem_despacho', g.email, { papel: g.papel, nota: 'Activada pelo administrador (sem o despacho do Comandante)' })
+    }
     if (pedirPermissoes) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_permissoes', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${resumoAreas(pedirPermissoes.atuais, pedirPermissoes.finais)}`, dados: { permissoes: pedirPermissoes.novas } })
     if (pedirPapel) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_papel', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${PAPEIS[alvo.papel]?.nome ?? alvo.papel} → ${PAPEIS[papel].nome}`, dados: { papel, anterior: alvo.papel } })
     await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha) })

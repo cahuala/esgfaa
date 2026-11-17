@@ -186,3 +186,24 @@ describe('Civis da Direcção de Ensino: conta no painel de gestão, com o BI', 
     }
   })
 })
+
+describe('O administrador activa uma conta à espera do despacho do Comandante', () => {
+  it('a conta fica activa, entra, e o pedido ao Comandante fica anulado (na auditoria)', async () => {
+    const amb = await criarAmbiente()
+    try {
+      const adm = amb.com(await amb.entrar())
+      await amb.deferirTudo() // há Comandante: as contas acima de utente esperam o despacho
+      const c = (await adm.post('/api/utilizadores').send({ nome: 'Operadora Nova Teste', email: 'operadora.nova@esg.emfaa.gov.ao', papel: 'operador', senha: 'Operadora2026x' }).expect(201)).body
+      assert.deepEqual(c.aDespacho, ['utilizador_novo'])
+      assert.equal((await amb.http().post('/api/entrar').send({ email: 'operadora.nova@esg.emfaa.gov.ao', senha: 'Operadora2026x' })).body.codigo, 'aguarda_despacho')
+      const r = (await adm.put(`/api/utilizadores/${c.id}`).send({ ativo: true }).expect(200)).body
+      assert.deepEqual([r.ativo, r.aguardaDespacho], [true, false])
+      assert.equal((await amb.http().post('/api/entrar').send({ email: 'operadora.nova@esg.emfaa.gov.ao', senha: 'Operadora2026x' })).status, 200)
+      const p = await amb.contentor.bd.pedidoDespacho.findFirst({ where: { tipo: 'utilizador_novo', utilizadorId: c.id } })
+      assert.equal(p.estado, 'anulado')
+      assert.ok(await amb.contentor.bd.auditoria.findFirst({ where: { acao: 'activar_sem_despacho' } }))
+    } finally {
+      await amb.fechar()
+    }
+  })
+})
