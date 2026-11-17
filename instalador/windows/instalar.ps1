@@ -202,6 +202,9 @@ function PrepararIpSistema($novo) {
   $placa = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1
   if (-not $placa) { Write-Host '    não se encontrou a placa de rede ligada (com gateway)' -ForegroundColor Yellow; return $false }
   $principal = Get-NetIPAddress -InterfaceIndex $placa.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -ne $novo -and -not $_.SkipAsSource } | Select-Object -First 1
+  # o IP principal do servidor (o das ligações de saída, onde estão a VPN e o IIS) não serve: tem de ser um IP novo, livre
+  $existente = Get-NetIPAddress -IPAddress $novo -ErrorAction SilentlyContinue
+  if ($existente -and -not $existente.SkipAsSource) { Write-Host "    $novo é o IP deste servidor (onde estão a VPN e o IIS): indique outro IP, livre, da mesma rede" -ForegroundColor Yellow; return $false }
   if (-not (Get-NetIPAddress -IPAddress $novo -ErrorAction SilentlyContinue)) {
     if ((Get-NetIPInterface -InterfaceIndex $placa.InterfaceIndex -AddressFamily IPv4).Dhcp -eq 'Enabled') { Write-Host "    a placa «$($placa.InterfaceAlias)» recebe o IP por DHCP: só se acrescenta um IP a uma placa com IP fixo" -ForegroundColor Yellow; return $false }
     $mascara = [uint32]([Math]::Pow(2, 32) - [Math]::Pow(2, 32 - $principal.PrefixLength))

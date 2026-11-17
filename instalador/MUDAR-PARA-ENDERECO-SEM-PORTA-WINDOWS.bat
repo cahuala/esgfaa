@@ -12,6 +12,7 @@ if %errorlevel% neq 0 (
 echo.
 echo  Para o sistema abrir em https://esg.emfaa.gov.ao (sem :8443) precisa de um IP LIVRE da rede da Escola,
 echo  so para o sistema (peca-o ao responsavel pela rede). Os dados, as contas e as chaves ficam como estao.
+echo  NAO e o IP deste servidor (esse fica para a VPN): tem de ser outro, que nenhum equipamento use.
 echo  Depois: no DNS da Escola, esg.emfaa.gov.ao passa a apontar para esse IP; e em cada computador ja
 echo  preparado corre-se outra vez PREPARAR-COMPUTADOR-WINDOWS.bat (o IP mudou).
 echo.
