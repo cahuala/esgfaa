@@ -101,10 +101,17 @@ export default function FormularioFicha() {
       const b = await api(`/bi/${encodeURIComponent(numero)}`)
       const naFicha = (k) => (k === 'dataNascimento' ? String(d[k] ?? '').slice(0, 10) : d[k])
       const diferencas = CAMPOS_BI.filter(([k]) => b[k] && naFicha(k) && simples(naFicha(k)) !== simples(b[k])).map(([campo, rotulo]) => ({ campo, rotulo, ficha: naFicha(campo), bi: b[campo] }))
-      // só preenche o que está vazio; o que já está escrito fica, e as diferenças mostram-se
-      setD((x) => ({ ...x, bi: numero, ...Object.fromEntries(Object.entries(b).filter(([k, v]) => v && !x[k])) }))
-      setDifBi(diferencas.length ? { bi: numero, dados: b, diferencas } : null)
-      avisar(diferencas.length ? `O BI tem ${diferencas.length} dado(s) diferente(s) da ficha: veja ao lado do BI.` : 'BI verificado na base de dados do Estado: os dados conferem.')
+      if (!automatico) {
+        // ao carregar em «pesquisar»: os dados do BI substituem os que estão escritos
+        setD((x) => ({ ...x, bi: numero, ...Object.fromEntries(Object.entries(b).filter(([, v]) => v)) }))
+        setDifBi(null)
+        avisar(diferencas.length ? `Dados do BI copiados para a ficha: ${diferencas.length} campo(s) alterado(s) (${diferencas.map((x) => x.rotulo).join(', ')}).` : 'BI verificado na base de dados do Estado: os dados foram copiados para a ficha.')
+      } else {
+        // ao sair do campo do BI: só preenche o que está vazio; as diferenças mostram-se ao lado
+        setD((x) => ({ ...x, bi: numero, ...Object.fromEntries(Object.entries(b).filter(([k, v]) => v && !x[k])) }))
+        setDifBi(diferencas.length ? { bi: numero, dados: b, diferencas } : null)
+        avisar(diferencas.length ? `O BI tem ${diferencas.length} dado(s) diferente(s) da ficha: veja ao lado do BI.` : 'BI verificado na base de dados do Estado: os dados conferem.')
+      }
     } catch (x) {
       setDifBi(null)
       setErro({ texto: x.message, campo: 'bi' })

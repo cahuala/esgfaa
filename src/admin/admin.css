@@ -288,14 +288,15 @@
 .aviso-flutuante {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  top: 70px;
+  bottom: auto;
   z-index: 2000;
   max-width: 420px;
   animation: aviso-entrar 0.25s ease;
 }
 
 @keyframes aviso-entrar {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: none; }
 }
 

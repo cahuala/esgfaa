@@ -19,7 +19,8 @@
 .pes-condicoes li:last-child { border-bottom: 0; }
 .pes-condicoes i { margin-top: .2rem; font-size: 1.05rem; }
 /* avisos (toasts): no canto superior direito, por baixo da barra do topo */
-.pes-aviso { position: fixed; right: 1rem; top: 4.25rem; z-index: 2000; max-width: 460px; display: flex; align-items: center; }
+/* (com .alert: o estilo geral dos alertas põe position: relative e ganhava a esta regra) */
+.alert.pes-aviso { position: fixed; right: 1rem; top: 4.25rem; bottom: auto; left: auto; z-index: 2000; max-width: 460px; display: flex; align-items: center; margin: 0; }
 .pes-sugestoes { z-index: 1060; max-height: 320px; overflow: auto; }
 .pes-ramo-EXE { background: #4b5320; color: #fff; }
 .pes-ramo-FAN { background: #4a90c2; color: #fff; }
