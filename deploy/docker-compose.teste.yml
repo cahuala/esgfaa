@@ -60,6 +60,8 @@ services:
       PUBLIC_URL: https://${DOMINIO}
       PORTAL_URL: https://${DOMINIO}/portal/
       PAINEL_URL: https://${DOMINIO}/${ADMIN_PATH}/
+      # o domínio do e-mail das contas do portal (docentes e estudantes): o da Escola
+      EMAIL_DOMINIO_ESCOLA: ${EMAIL_DOMINIO_ESCOLA:-esg.emfaa.gov.ao}
       CORS_ORIGINS: https://${DOMINIO}
       # o Caddy da frente e o Caddy das páginas
       TRUST_PROXY: "2"
