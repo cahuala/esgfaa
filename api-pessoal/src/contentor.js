@@ -74,6 +74,8 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   }
   despachos.pessoas = pessoas
   despachos.sessao = servicos.sessao
+  // as guias de férias do mês emitem-se como as da ficha
+  servicos.planoFerias.documentos = servicos.documentosEmitidos
   // um docente ou estudante alterado vai para o portal daí a poucos segundos (não espera pelo minuto)
   if (!config.teste) pessoas.aoMudarPortal = () => servicos.sincronizacao.agendar()
   return { config, bd, base, cifraDados, servicos, fechar: () => base.$disconnect() }

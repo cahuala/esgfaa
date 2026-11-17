@@ -29,6 +29,14 @@ const contaComandante = () => contentor.servicos.sessao.garantirContaDoComandant
 await contaComandante()
 const intervaloComandante = setInterval(contaComandante, 60_000)
 
+// as guias de férias do mês ficam prontas quando o mês chega (no arranque e de hora a hora)
+const guiasFerias = () => contentor.servicos.planoFerias.prepararDoMesAtual().then((r) => {
+  if (r.preparadas) console.log(`Guias de férias preparadas: ${r.preparadas}`)
+  if (r.erros.length) console.error('Guias de férias:', r.erros.join('; '))
+}).catch((e) => console.error('Guias de férias:', e.message))
+await guiasFerias()
+const intervaloGuias = setInterval(guiasFerias, 3_600_000)
+
 // envio para o portal de minuto a minuto
 const sinc = contentor.servicos.sincronizacao
 const intervalo = sinc.ativa ? setInterval(() => sinc.enviarPendentes().catch((e) => console.error('Envio para o portal:', e.message)), 60_000) : null
@@ -36,6 +44,7 @@ const intervalo = sinc.ativa ? setInterval(() => sinc.enviarPendentes().catch((e
 async function parar() {
   clearInterval(intervalo)
   clearInterval(intervaloComandante)
+  clearInterval(intervaloGuias)
   servidor.close()
   await contentor.fechar()
   process.exit(0)

@@ -1,6 +1,11 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { tempoServico } from '../dominio/pessoal/carreira.js'
 import { exigir } from './sessao.js'
+import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+
+// quem prepara as guias sozinho, quando chega o mês (fica assim na auditoria e no expediente)
+const AUTOMATICO = { email: 'plano de férias (automático)', nome: 'Plano de férias', papel: 'operador' }
+const doMes = (ano, mes) => `${ano}-${String(mes).padStart(2, '0')}`
 
 /*
   Plano de férias (como no SIGP, no Planeamento): por unidade e ano, o mês de férias de cada militar e
@@ -22,8 +27,61 @@ export function mesDe(texto) {
 }
 
 export class ServicoPlanoFerias {
-  constructor({ bd, auditoria, pessoas, agora = () => new Date() }) {
-    Object.assign(this, { bd, auditoria, pessoas, agora })
+  constructor({ bd, auditoria, pessoas, documentos = null, agora = () => new Date() }) {
+    Object.assign(this, { bd, auditoria, pessoas, documentos, agora })
+  }
+
+  /*
+    Guias de férias do mês, prontas a imprimir: quando chega o mês (ou antes, com «Preparar já»), cada pessoa do
+    plano desse mês fica com a guia de férias emitida (início no dia 1, os dias a que tem direito, a data da guia o
+    dia em que se preparou), a licença de férias registada e a saída no livro do expediente. Quem já tem a guia desse
+    mês (feita na ficha) não leva outra. Depois é só imprimir todas de uma vez.
+  */
+  async prepararGuias(u, { ano, mes }) {
+    if (!u.automatico) exigir(u, 'editar')
+    const [falta] = await this.#guias(ano, mes)
+    const hoje = this.agora().toISOString().slice(0, 10)
+    let preparadas = 0
+    const erros = []
+    for (const x of falta) {
+      try {
+        await this.documentos.emitir(u, x.pessoa.id, [{ tipo: 'guia_ferias', dados: { inicio: `${doMes(ano, mes)}-01`, dias: diasDeFerias(x.pessoa), data: hoje, planoFerias: true } }])
+        preparadas++
+      } catch (e) {
+        erros.push(`${x.pessoa.nome}: ${e.message}`)
+      }
+    }
+    if (preparadas) await this.auditoria.registar(u, 'guias_ferias_preparadas', `${preparadas} guia(s) de ${MESES[mes - 1]} de ${ano}`)
+    return { preparadas, erros }
+  }
+
+  // corre de hora a hora: no mês que chegou, as guias de quem está no plano ficam preparadas
+  async prepararDoMesAtual() {
+    const h = this.agora()
+    // o livro do expediente precisa de uma conta: a primeira do administrador (fica «plano de férias (automático)»)
+    const admin = await this.bd.utilizador.findFirst({ where: { papel: 'administrador', ativo: true }, orderBy: { id: 'asc' }, select: { id: true, unidadeId: true } })
+    if (!admin) return { preparadas: 0, erros: ['Não há conta de administrador activa.'] }
+    return this.prepararGuias({ ...AUTOMATICO, id: admin.id, unidadeId: admin.unidadeId, automatico: true }, { ano: h.getFullYear(), mes: h.getMonth() + 1 })
+  }
+
+  // as do mês: quem está no plano, com a guia (se já tem) e quantas vezes se imprimiu
+  async guiasDoMes(u, { ano, mes }) {
+    exigir(u, 'ver')
+    const [falta, com] = await this.#guias(ano, mes)
+    const linha = (x) => ({ pessoa: x.pessoa, guia: x.guia ? { id: x.guia.id, dados: x.guia.dados, impressoes: x.guia.impressoes, ultimaImpressao: x.guia.ultimaImpressao, criadoEm: x.guia.criadoEm, emitidoPor: x.guia.emitidoPor } : null })
+    return { ano, mes, linhas: [...com, ...falta].map(linha).sort((a, b) => a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt')) }
+  }
+
+  // [sem guia, com guia] das pessoas activas do plano desse mês (os empregados domiciliares não levam guia)
+  async #guias(ano, mes) {
+    const plano = await this.bd.planoFerias.findMany({ where: { ano, mes, pessoa: { ativo: true, vinculo: { not: 'domiciliar' } } }, include: { pessoa: { select: { id: true, nome: true, tipo: true, nip: true, numeroAgente: true, posto: true, ramo: true, categoriaCivil: true, unidade: { select: { nome: true } } } } } })
+    const ids = plano.map((x) => x.pessoaId)
+    const emitidas = ids.length ? await this.bd.documentoEmitido.findMany({ where: { tipo: 'guia_ferias', pessoaId: { in: ids } }, orderBy: { criadoEm: 'desc' } }) : []
+    const guia = new Map()
+    for (const g of emitidas) if (String(g.dados?.inicio ?? '').startsWith(doMes(ano, mes)) && !guia.has(g.pessoaId)) guia.set(g.pessoaId, g)
+    const pessoa = (p) => ({ id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || '', unidadeNome: p.unidade?.nome ?? '' })
+    const linhas = plano.map((x) => ({ pessoa: pessoa(x.pessoa), guia: guia.get(x.pessoaId) ?? null }))
+    return [linhas.filter((x) => !x.guia), linhas.filter((x) => x.guia)]
   }
 
   async ver(u, { ano, unidadeId, tipo }) {

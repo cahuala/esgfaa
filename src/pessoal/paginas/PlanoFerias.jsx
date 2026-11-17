@@ -9,6 +9,7 @@ import Foto from '../componentes/Foto'
 import { Cabecalho, Carregando, Erro, Escolha, Modal } from '../componentes/Ui'
 import { documentoPdf, exportarExcel } from '../exportar'
 import { lerCsv, lerXlsx } from '../../admin/paginas/academico/lerFolha'
+import { gerarLote } from '../docPessoal'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 const MESES_LONGOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -71,6 +72,8 @@ export default function PlanoFerias() {
           {editar && <button type="button" className="btn btn-theme" onClick={() => setCarregar(true)}><i className="fa fa-file-excel me-1" />Carregar Excel</button>}
         </>}
       </Cabecalho>
+
+      <GuiasDoMes />
 
       <div className="card mb-3"><div className="card-body d-flex flex-wrap gap-3 align-items-end">
         <div style={{ minWidth: 280 }}><label className="form-label small fw-bold mb-1" htmlFor="pf-unidade">Unidade</label><Escolha id="pf-unidade" valor={unidadeId} aoMudar={setUnidadeId} opcoes={arvore.opcoes} vazio="Toda a Escola" /></div>
@@ -202,5 +205,99 @@ function CarregarPlano({ ano, linhas, unidade, aoFechar, aoCarregar }) {
         </div>
       </>}
     </Modal>
+  )
+}
+
+/*
+  Guias de férias do mês, prontas a imprimir: quando o mês chega, o sistema emite sozinho a guia de cada pessoa do
+  plano desse mês (início no dia 1, os dias a que tem direito) e regista a licença e a saída no expediente. Aqui
+  imprimem-se todas de uma vez (as que ainda não se imprimiram, ou todas). Para um mês que ainda não chegou,
+  «Preparar já» emite-as antes.
+*/
+function GuiasDoMes() {
+  const { pode, avisar } = useSessao()
+  const h = new Date()
+  const [mesAno, setMesAno] = useState(`${h.getFullYear()}-${h.getMonth() + 1}`)
+  const [ano, mes] = mesAno.split('-').map(Number)
+  const { dados, erro, recarregar } = useDados('/plano-ferias/guias', { ano, mes })
+  const [aFazer, setAFazer] = useState(false)
+  const opcoes = [-1, 0, 1, 2].map((d) => new Date(h.getFullYear(), h.getMonth() + d, 1)).map((x) => [`${x.getFullYear()}-${x.getMonth() + 1}`, `${MESES_LONGOS[x.getMonth()]} de ${x.getFullYear()}`])
+  const linhas = dados?.linhas ?? []
+  const prontas = linhas.filter((l) => l.guia)
+  const porImprimir = prontas.filter((l) => !l.guia.impressoes)
+  const semGuia = linhas.filter((l) => !l.guia)
+
+  async function preparar() {
+    setAFazer(true)
+    try {
+      const r = await api('/plano-ferias/guias', { metodo: 'POST', corpo: { ano, mes } })
+      avisar(`${r.preparadas} guia(s) preparada(s).${r.erros.length ? ` Não foi possível: ${r.erros.join('; ')}` : ''}`, r.erros.length ? 'erro' : undefined)
+      recarregar()
+    } catch (e) {
+      avisar(e.message, 'erro')
+    } finally {
+      setAFazer(false)
+    }
+  }
+
+  async function imprimir(lista) {
+    if (!lista.length) return
+    setAFazer(true)
+    try {
+      const [quem, ...fichas] = await Promise.all([api('/definicoes/assinaturas'), ...lista.map((l) => api(`/pessoas/${l.pessoa.id}`))])
+      const porId = new Map(fichas.map((p) => [p.id, p]))
+      await gerarLote(lista.map((l) => ({ p: porId.get(l.pessoa.id), escolha: { tipo: 'guia_ferias', dados: l.guia.dados }, emitido: {} })), quem, `guias-de-ferias-${MESES_LONGOS[mes - 1].toLowerCase()}-${ano}.pdf`)
+      await api('/declaracoes/impressoes', { metodo: 'POST', corpo: { ids: lista.map((l) => l.guia.id) } })
+      recarregar()
+    } catch (e) {
+      avisar(`Não foi possível fazer as guias: ${e.message}`, 'erro')
+    } finally {
+      setAFazer(false)
+    }
+  }
+
+  return (
+    <div className="card mb-3">
+      <div className="card-header d-flex flex-wrap gap-2 align-items-center">
+        <span className="fw-bold flex-grow-1"><i className="fa fa-file-signature me-2" style={{ color: '#e65100' }} />Guias de férias do mês</span>
+        <select className="form-select form-select-sm w-auto" value={mesAno} onChange={(e) => setMesAno(e.target.value)} aria-label="Mês das guias">
+          {opcoes.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+        </select>
+      </div>
+      <div className="card-body">
+        {erro && <Erro texto={erro} />}
+        {!dados && !erro && <Carregando />}
+        {dados && !linhas.length && <div className="text-muted">Ninguém no plano de férias de {MESES_LONGOS[mes - 1]} de {ano}.</div>}
+        {dados && linhas.length > 0 && <>
+          <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
+            <span>{linhas.length} pessoa(s) de férias em {MESES_LONGOS[mes - 1]}: <b>{prontas.length} guia(s) pronta(s)</b>{porImprimir.length ? `, ${porImprimir.length} por imprimir` : ''}{semGuia.length ? `, ${semGuia.length} por preparar` : ''}.</span>
+            <span className="flex-grow-1" />
+            {pode('editar') && semGuia.length > 0 && <button type="button" className="btn btn-sm btn-white" disabled={aFazer} onClick={preparar}><i className="fa fa-magic me-1" />Preparar já ({semGuia.length})</button>}
+            {porImprimir.length > 0 && <button type="button" className="btn btn-sm btn-theme" disabled={aFazer} onClick={() => imprimir(porImprimir)}><i className="fa fa-print me-1" />Imprimir as por imprimir ({porImprimir.length})</button>}
+            {prontas.length > 0 && <button type="button" className="btn btn-sm btn-white" disabled={aFazer} onClick={() => imprimir(prontas)}><i className="fa fa-print me-1" />Imprimir todas ({prontas.length})</button>}
+          </div>
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-0">
+              <thead><tr><th>Nome</th><th>Posto / categoria</th><th>Unidade</th><th>Guia</th></tr></thead>
+              <tbody>
+                {linhas.map((l) => (
+                  <tr key={l.pessoa.id}>
+                    <td><Link to={`/pessoas/${l.pessoa.id}?aba=emitidos`}>{l.pessoa.nome}</Link><div className="small text-muted">{l.pessoa.nip ? `NIP ${l.pessoa.nip}` : l.pessoa.numeroAgente ? `Agente ${l.pessoa.numeroAgente}` : ''}</div></td>
+                    <td className="small">{l.pessoa.postoNome}</td>
+                    <td className="small">{l.pessoa.unidadeNome}</td>
+                    <td className="small">
+                      {!l.guia && <span className="badge bg-warning text-dark">Por preparar</span>}
+                      {l.guia && (l.guia.impressoes ? <span className="badge bg-success">Impressa</span> : <span className="badge bg-info">Pronta, por imprimir</span>)}
+                      {l.guia && <div className="text-muted">a partir de {String(l.guia.dados?.inicio ?? '').split('-').reverse().join('/')}, {l.guia.dados?.dias} dias</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>}
+        <div className="small text-muted mt-2">Quando o mês chega, as guias de quem está no plano preparam-se sozinhas (com a licença de férias e a saída no expediente). As férias adicionais (15 dias) continuam a fazer-se na ficha.</div>
+      </div>
+    </div>
   )
 }

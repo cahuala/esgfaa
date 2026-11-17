@@ -110,6 +110,7 @@ export const ROTAS = [
   R('POST', '/extractos/:id/aplicar', 'propostas'), R('DELETE', '/extractos/:id', 'propostas'),
   R('GET', '/licencas', 'licencas'), R('POST', '/licencas/verificar', 'licencas', true), R('POST', '/licencas', 'licencas'), R('DELETE', '/licencas/:id', 'licencas'),
   R('GET', '/plano-ferias', 'licencas'), R('PUT', '/plano-ferias', 'licencas'), R('POST', '/plano-ferias/importar', 'licencas'),
+  R('GET', '/plano-ferias/guias', 'licencas'), R('POST', '/plano-ferias/guias', 'licencas'),
   R('GET', '/ausencias', 'ausencias'), R('POST', '/ausencias', 'ausencias'), R('PUT', '/ausencias/:id', 'ausencias'), R('DELETE', '/ausencias/:id', 'ausencias'),
   R('GET', '/faltas-civis', 'ausencias'), R('PUT', '/faltas-civis', 'ausencias'),
   R('GET', '/ponto/livro', 'ponto'), R('GET', '/ponto/mes', 'ponto'), R('POST', '/ponto/marcacoes', 'ponto'), R('DELETE', '/ponto/marcacoes/:id', 'ponto'), R('POST', '/ponto/faltas', 'ponto'),
