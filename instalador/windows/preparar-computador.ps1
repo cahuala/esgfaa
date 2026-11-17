@@ -19,6 +19,12 @@ try {
   Import-Certificate -FilePath $crt -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
   Write-Host '[ok] certificado instalado (Chrome e Edge passam a confiar; no Firefox: Definições > Certificados > Importar)' -ForegroundColor Green
   ipconfig /flushdns | Out-Null
+  # um ícone no ambiente de trabalho de todos os utilizadores: abre o endereço certo (com a porta), sem o escrever
+  try {
+    $atalho = Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Sistema de Pessoal.url'
+    [IO.File]::WriteAllLines($atalho, [string[]]@('[InternetShortcut]', "URL=$url"), (New-Object Text.ASCIIEncoding))
+    Write-Host "[ok] ícone «Sistema de Pessoal» no ambiente de trabalho (abre $url)" -ForegroundColor Green
+  } catch { Write-Host "(aviso: não foi possível criar o ícone: $($_.Exception.Message))" -ForegroundColor Yellow }
   Write-Host ''
   Write-Host "Pronto. Abra $url"
   Start-Process $url

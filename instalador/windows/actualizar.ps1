@@ -180,6 +180,16 @@ Ok 'o sistema responde'
 $versao = (Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join ''
 $resumo = "Actualizado para $versao em $(Get-Date -Format 'yyyy-MM-dd HH:mm'). Endereço: https://$($Cfg.ENDERECO)$(if ($Cfg.PORTA_WEB -and $Cfg.PORTA_WEB -ne '443') { ":$($Cfg.PORTA_WEB)" })"
 [IO.File]::WriteAllLines((Join-Path $Reg "ACTUALIZACAO-CONCLUIDA-$Carimbo.txt"), [string[]]@($resumo), (New-Object Text.UTF8Encoding $true))
+# para «Preparar este computador» (PREPARAR-COMPUTADOR-WINDOWS.bat): o IP, o nome e o endereço certo (com a porta) e o
+# certificado, no pendrive
+try {
+  $cfgNovo = @{}
+  foreach ($l in Get-Content $EnvFicheiro -Encoding UTF8) { if ($l -match '^([A-Z_]+)=(.*)$') { $cfgNovo[$Matches[1]] = $Matches[2] } }
+  $porta = if ($cfgNovo.PORTA_WEB -and $cfgNovo.PORTA_WEB -ne '443') { ":$($cfgNovo.PORTA_WEB)" } else { '' }
+  $ipServidor = if ($cfgNovo.IP_SISTEMA) { $cfgNovo.IP_SISTEMA } else { $cfgNovo.SERVIDOR_IP }
+  if ($ipServidor -and $cfgNovo.ENDERECO) { Set-Content -Path (Join-Path $Reg 'servidor.txt') -Value "$ipServidor $($cfgNovo.ENDERECO) https://$($cfgNovo.ENDERECO)$porta" -Encoding ASCII }
+  if (Test-Path "$Destino\certificado\esg-pessoal-raiz.crt") { Copy-Item "$Destino\certificado\esg-pessoal-raiz.crt" (Join-Path $Reg 'esg-pessoal-raiz.crt') -Force }
+} catch { Write-Host "    (aviso: não foi possível deixar o endereço no pendrive: $($_.Exception.Message))" -ForegroundColor Yellow }
 Stop-Transcript | Out-Null
 Write-Host ''
 Write-Host '==============================================================' -ForegroundColor Green
