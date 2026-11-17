@@ -508,7 +508,10 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
   const [ficheiro, setFicheiro] = useState(null)
   async function guardar() {
     try {
-      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: { ...d, data: d.data || null, postoNovo: ['promocao', 'graduacao', 'despromocao'].includes(d.tipo) && d.postoNovo ? d.postoNovo : undefined, cargoNome: ['nomeacao', 'exoneracao'].includes(d.tipo) ? d.cargoNome || undefined : undefined } })
+      const { condecoracao, ...resto } = d
+      // a condecoração (da lista do SIGP-FAN) e o motivo ficam juntos na descrição
+      const descricao = d.tipo === 'condecoracao' && condecoracao ? [condecoracao, d.descricao].filter(Boolean).join(' — ') : d.descricao
+      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: { ...resto, descricao, data: d.data || null, postoNovo: ['promocao', 'graduacao', 'despromocao'].includes(d.tipo) && d.postoNovo ? d.postoNovo : undefined, cargoNome: ['nomeacao', 'exoneracao'].includes(d.tipo) ? d.cargoNome || undefined : undefined } })
     } catch (e) {
       setErro(e.message)
       return
@@ -526,14 +529,23 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
         <Campo rotulo="Data (opcional)"><InputData className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
         {['promocao', 'graduacao', 'despromocao'].includes(d.tipo) && <Campo rotulo="Posto"><Escolha valor={d.postoNovo ?? ''} aoMudar={(v) => setD({ ...d, postoNovo: v })} opcoes={(ref.postos[p.ramo] ?? []).map((x) => [x.id, x.nome])} vazio="—" /></Campo>}
         {['nomeacao', 'exoneracao'].includes(d.tipo) && <Campo rotulo="Cargo" col="col-12"><input className="form-control form-control-sm" value={d.cargoNome ?? ''} onChange={(e) => setD({ ...d, cargoNome: e.target.value })} placeholder="Por extenso, como na ordem de serviço" /></Campo>}
-        <Campo rotulo={d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
+        {d.tipo === 'condecoracao' && (
+          <Campo rotulo="Condecoração (escolha ou escreva)" col="col-12">
+            <input className="form-control form-control-sm" list="lista-condecoracoes" value={d.condecoracao ?? ''} onChange={(e) => setD({ ...d, condecoracao: e.target.value })} />
+            <datalist id="lista-condecoracoes">{CONDECORACOES.map((c) => <option key={c} value={c} />)}</datalist>
+          </Campo>
+        )}
+        <Campo rotulo={d.tipo === 'condecoracao' ? 'Motivo' : d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho…)"><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
-        <Campo rotulo="Entidade"><input className="form-control form-control-sm" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
+        <Campo rotulo={['condecoracao', 'louvor'].includes(d.tipo) ? 'Entidade concedente' : 'Entidade'}><input className="form-control form-control-sm" value={d.entidade} placeholder={d.tipo === 'condecoracao' ? 'Ex.: Presidente da República, CEMGFAA…' : undefined} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>
         <Campo rotulo="Documento digitalizado" col="col-12"><Anexo ficheiro={ficheiro} aoMudar={setFicheiro} /></Campo>
       </div>
     </Modal>
   )
 }
+
+// as condecorações militares (como no SIGP-FAN); escreve-se outra se não estiver na lista
+const CONDECORACOES = ['Medalha de Mérito Militar', 'Medalha de Serviço Distinto', 'Medalha Militar dos Serviços Distintos', 'Medalha de Bons Serviços', 'Medalha de Comportamento Exemplar', 'Medalha de Antiguidade', 'Medalha Militar do Tempo de Serviço', 'Medalha Militar Comemorativa das Forças Armadas Angolanas', 'Medalha Comemorativa de Aniversário das Forças Armadas Angolanas', 'Medalha Comemorativa de Evento Especial']
 
 function FormCurso({ p, curso, aoFechar, aoGuardar }) {
   const { ref, avisar } = useSessao()
