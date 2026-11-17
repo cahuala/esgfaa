@@ -63,6 +63,8 @@ export class ServicoImportacao {
     const unidades = await this.bd.unidade.findMany()
     const cargos = await this.bd.cargo.findMany({ include: { _count: { select: { pessoas: { where: { ativo: true } } } } } })
     const ocupacao = new Map(cargos.map((c) => [c.id, c._count.pessoas]))
+    // os oficiais pelo NIP (os domiciliares ficam afectos a um)
+    const oficiais = new Map((await this.bd.pessoa.findMany({ where: { tipo: 'militar', nip: { not: null } }, select: { id: true, nip: true } })).map((p) => [String(p.nip).toUpperCase(), p.id]))
     const vistos = new Set()
     const resultado = []
     let biIndisponivel = false
@@ -71,13 +73,21 @@ export class ServicoImportacao {
       const r = { linha: i + 2, nome: String(l.nome ?? '').trim(), identificacao: String(l.nip || l.numeroAgente || '').trim() }
       try {
         const ident = r.identificacao.toUpperCase()
-        if (!ident) throw invalido('Falta o NIP (ou o n.º de agente, para civis).')
-        if (vistos.has(ident)) throw invalido('Repetido na folha.')
-        vistos.add(ident)
-        const existente = await this.bd.pessoa.findFirst({ where: { OR: [{ nip: ident }, { numeroAgente: ident }] } })
+        // os empregados domiciliares não têm NIP nem n.º de agente: reconhecem-se pelo nome e pelo oficial (NIP)
+        const domiciliar = sem(l.vinculo).includes('domiciliar')
+        if (!ident && !(domiciliar && modo === 'novos')) throw invalido('Falta o NIP (ou o n.º de agente, para civis).')
+        const chave = ident || `dom:${sem(l.nome)}:${String(l.oficial ?? '').trim().toUpperCase()}`
+        if (vistos.has(chave)) throw invalido('Repetido na folha.')
+        vistos.add(chave)
+        let existente = ident ? await this.bd.pessoa.findFirst({ where: { OR: [{ nip: ident }, { numeroAgente: ident }] } }) : null
         if (modo === 'novos' && existente) throw invalido(`Já existe: ${existente.nome}.`)
         if (modo === 'actualizar' && !existente) throw invalido('Não existe nenhuma ficha com esse NIP/n.º de agente.')
-        const d = this.#converter(l, { unidades, cargos, base: existente })
+        const d = this.#converter(l, { unidades, cargos, base: existente, ocupacao, oficiais })
+        if (!ident && domiciliar) {
+          if (!d.militarAlocadoId) throw invalido('Falta o NIP do oficial a que a(o) domiciliar fica afecta(o).')
+          existente = (await this.bd.pessoa.findMany({ where: { vinculo: 'domiciliar', militarAlocadoId: d.militarAlocadoId }, select: { nome: true } })).find((x) => sem(x.nome) === sem(d.nome ?? l.nome))
+          if (existente) throw invalido(`Já existe: ${existente.nome}.`)
+        }
         // verificar o BI na base de dados do Estado: preenche o que falta e avisa do que não bate certo
         if (verificarBi && d.bi && !biIndisponivel) {
           const { d: b, erro } = await this.#bi(d.bi)
@@ -96,7 +106,7 @@ export class ServicoImportacao {
           if (!d.nome || d.nome.length < 5) throw invalido('Falta o nome completo.')
           d.tipo ??= l.nip ? 'militar' : 'civil'
           if (d.tipo === 'militar') d.nip = ident
-          else d.numeroAgente = ident
+          else if (ident) d.numeroAgente = ident
         }
         const final = { ...(existente ?? {}), ...d }
         const problema = problemaNaFicha(final)
@@ -132,7 +142,7 @@ export class ServicoImportacao {
     return Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v instanceof Date ? v.toISOString().slice(0, 10) : v]))
   }
 
-  #converter(l, { unidades, cargos, base }) {
+  #converter(l, { unidades, cargos, base, ocupacao = new Map(), oficiais = new Map() }) {
     const d = {}
     const tem = (k) => l[k] !== undefined && String(l[k]).trim() !== ''
     if (tem('tipo')) d.tipo = corresponder(l.tipo, [['militar', 'militar', 'mil'], ['civil', 'civil']], 'Tipo')
@@ -151,7 +161,12 @@ export class ServicoImportacao {
     if (tem('estadoCivil')) d.estadoCivil = corresponder(l.estadoCivil, [...daLista(ESTADOS_CIVIS), ['solteiro', 'solteira'], ['casado', 'casada'], ['viuvo', 'viuva'], ['divorciado', 'divorciada']], 'Estado civil')
     if (tem('provincia')) d.provincia = corresponder(l.provincia, PROVINCIAS.map((p) => [p, p]), 'Província')
     if (tem('habilitacao')) d.habilitacao = corresponder(l.habilitacao, [...daLista(HABILITACOES), ['medio', 'ensino medio', 'medio'], ['base', 'ensino de base', 'basico'], ['pos_graduacao', 'pos graduacao', 'pos-graduacao'], ['primeiro_ciclo', '1 ciclo', 'i ciclo'], ['segundo_ciclo', '2 ciclo', 'ii ciclo']], 'Habilitação')
-    if (tem('vinculo')) d.vinculo = corresponder(l.vinculo, daLista(VINCULOS).filter(([k]) => k !== 'domiciliar'), 'Vínculo')
+    if (tem('vinculo')) d.vinculo = corresponder(l.vinculo, daLista(VINCULOS), 'Vínculo')
+    // o oficial (NIP) a que a(o) domiciliar fica afecta(o)
+    if (tem('oficial')) {
+      d.militarAlocadoId = oficiais.get(String(l.oficial).trim().toUpperCase())
+      if (!d.militarAlocadoId) throw invalido(`Não há nenhum militar com o NIP ${String(l.oficial).trim()} (o oficial da(o) domiciliar).`)
+    }
     const tipo = d.tipo ?? base?.tipo ?? (l.nip ? 'militar' : 'civil')
     if (tipo === 'militar') {
       if (tem('ramo')) d.ramo = corresponder(l.ramo, [...daLista(RAMOS), ['EXE', 'exercito', 'fat', 'exército'], ['FAN', 'forca aerea', 'força aérea'], ['MGA', 'marinha', 'marinha de guerra']], 'Ramo')
@@ -177,8 +192,13 @@ export class ServicoImportacao {
     if (tem('cargo')) {
       const unidadeId = d.unidadeId ?? base?.unidadeId
       const lista = cargos.filter((c) => !unidadeId || c.unidadeId === unidadeId)
-      const id = corresponder(l.cargo, lista.map((c) => [c.id, c.nome]), unidadeId ? 'Cargo (na unidade indicada)' : 'Cargo')
-      if (lista.filter((c) => sem(c.nome) === sem(l.cargo)).length > 1) throw invalido(`Há vários cargos «${l.cargo}»: indique a unidade.`)
+      let id = corresponder(l.cargo, lista.map((c) => [c.id, c.nome]), unidadeId ? 'Cargo (na unidade indicada)' : 'Cargo')
+      const iguais = lista.filter((c) => sem(c.nome) === sem(l.cargo))
+      if (iguais.length > 1) {
+        // vários cargos com o mesmo nome: na mesma unidade (p. ex. três «Condutor do Comando»), o primeiro com lugar livre
+        if (new Set(iguais.map((c) => c.unidadeId)).size > 1) throw invalido(`Há vários cargos «${l.cargo}»: indique a unidade.`)
+        id = (iguais.find((c) => (ocupacao.get(c.id) ?? 0) < c.vagas) ?? iguais[0]).id
+      }
       d.cargoId = id
       d.unidadeId ??= cargos.find((c) => c.id === id).unidadeId
     }

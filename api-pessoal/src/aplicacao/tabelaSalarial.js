@@ -48,13 +48,14 @@ export class ServicoTabelaSalarial {
   async verCivis(u) {
     exigir(u, 'ver')
     const bases = await this.basesCivis()
-    return Object.entries(CARREIRAS_CIVIS).filter(([, c]) => c.vencimentoBase).sort(([, a], [, b]) => a.nivel - b.nivel)
+    // todas menos os docentes do ensino superior (que não estão na tabela); as novas aparecem com o valor por preencher
+    return Object.entries(CARREIRAS_CIVIS).filter(([, c]) => !c.esg).sort(([, a], [, b]) => a.nivel - b.nivel)
       .map(([k, c]) => ({ categoria: k, nome: c.nome, nivel: c.nivel, descricao: c.descricao, classes: c.categorias, ...remuneracaoDaCategoria(k, bases) }))
   }
 
   async alterarBaseCivil(u, categoria, valor) {
     exigir(u, 'administrar')
-    if (!CARREIRAS_CIVIS[categoria]?.vencimentoBase) throw invalido('Categoria desconhecida.')
+    if (!CARREIRAS_CIVIS[categoria] || CARREIRAS_CIVIS[categoria].esg) throw invalido('Categoria desconhecida.')
     const bases = { ...(await this.basesCivis()), [categoria]: Math.round(valor * 100) / 100 }
     await this.bd.definicao.upsert({ where: { chave: 'tabela-salarial-civis' }, create: { chave: 'tabela-salarial-civis', valor: bases }, update: { valor: bases } })
     await this.auditoria.registar(u, 'alterar_tabela_salarial_civis', `${categoria}: ${bases[categoria]} Kz`)

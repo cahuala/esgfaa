@@ -17,7 +17,7 @@ const COLUNAS = [
   ['ramo', 'Ramo', ['ramo']], ['posto', 'Posto', ['posto', 'patente']], ['fps', 'Forma de serviço (QP/SMC/SMO)', ['fps', 'forma de servico', 'forma de prestacao de servico']],
   ['quadroEspecial', 'Quadro especial', ['quadro especial', 'quadro', 'arma', 'arma servico']], ['especialidade', 'Especialidade', ['especialidade']],
   ['situacao', 'Situação', ['situacao']], ['unidade', 'Unidade', ['unidade', 'u e o', 'ueo', 'orgao']], ['cargo', 'Cargo', ['cargo', 'funcao']],
-  ['vinculo', 'Vínculo (docente/estudante/funcionário)', ['vinculo']], ['bi', 'BI', ['bi', 'b i', 'bilhete de identidade', 'n bi']],
+  ['vinculo', 'Vínculo (docente/estudante/funcionário/domiciliar)', ['vinculo']], ['oficial', 'NIP do oficial (domiciliares)', ['nip do oficial', 'oficial', 'oficial beneficiario']], ['bi', 'BI', ['bi', 'b i', 'bilhete de identidade', 'n bi']],
   ['dataNascimento', 'Data de nascimento', ['data de nascimento', 'nascimento', 'data nascimento']], ['genero', 'Género', ['genero', 'sexo']],
   ['estadoCivil', 'Estado civil', ['estado civil']], ['naturalidade', 'Naturalidade', ['naturalidade', 'municipio']], ['provincia', 'Província', ['provincia']],
   ['pai', 'Pai', ['pai', 'nome do pai']], ['mae', 'Mãe', ['mae', 'nome da mae']], ['telefone', 'Telefone', ['telefone', 'telemovel', 'contacto']],
@@ -115,7 +115,7 @@ export default function Importar() {
 
   async function verificar() {
     const m = aplicarLigacoes(fonte.tabela, fonte.titulos, fonte.ligacoes)
-    if (!m.campos.includes('nip') && !m.campos.includes('numeroAgente')) return avisar('Ligue a coluna do NIP (ou do N.º de agente, para civis): é por ela que se encontra cada pessoa.', 'erro')
+    if (!m.campos.includes('nip') && !m.campos.includes('numeroAgente') && !m.campos.includes('oficial')) return avisar('Ligue a coluna do NIP (ou do N.º de agente, para civis; nos domiciliares, a do NIP do oficial): é por ela que se encontra cada pessoa.', 'erro')
     if (!m.linhas.length) return avisar('Não há linhas com dados nas colunas ligadas.', 'erro')
     try { localStorage.setItem(chaveLigacoes(fonte.tabela[fonte.titulos] ?? []), JSON.stringify(fonte.ligacoes)) } catch { /* sem armazenamento */ }
     // desvio: os títulos podem não estar na primeira linha (o número da linha é o da folha)
