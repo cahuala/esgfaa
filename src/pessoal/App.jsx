@@ -12,6 +12,7 @@ import Pessoas from './paginas/Pessoas'
 import Academicos from './paginas/Academicos'
 import Perfil from './paginas/Perfil'
 import FormularioFicha from './paginas/FormularioFicha'
+import Incompletas from './paginas/Incompletas'
 import Propostas from './paginas/Propostas'
 import Proposta from './paginas/Proposta'
 import NovaProposta from './paginas/NovaProposta'
@@ -133,6 +134,7 @@ export default function App() {
           <Route path="/pessoas/nova" element={<Area id="fichas"><FormularioFicha /></Area>} />
           <Route path="/pessoas/:id" element={<Area id="fichas"><Perfil /></Area>} />
           <Route path="/pessoas/:id/editar" element={<Area id="fichas"><FichaPorId /></Area>} />
+          <Route path="/dados-por-completar" element={<Area id="fichas"><Incompletas /></Area>} />
           <Route path="/propostas" element={<Area id="propostas"><Propostas /></Area>} />
           <Route path="/propostas/nova" element={<Area id="propostas"><NovaProposta /></Area>} />
           <Route path="/propostas/:id" element={<Area id="propostas"><Proposta /></Area>} />

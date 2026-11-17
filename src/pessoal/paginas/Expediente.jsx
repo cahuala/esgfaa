@@ -271,7 +271,7 @@ function Despacho({ x, podeDespachar, aoDespachar }) {
       <div className="small">Submetido por {p.pedidoPor}{p.pedidoUnidade ? ` (${p.pedidoUnidade})` : ''} · {dataHoraPt(p.pedidoEm)}{p.nota ? ` — «${p.nota}»` : ''}</div>
       {podeDespachar && (
         <div className="mt-2 d-flex flex-wrap gap-2 align-items-start">
-          <select className="form-select w-auto" value={d.decisao} onChange={(e) => setD({ ...d, decisao: e.target.value })} aria-label="Despacho">{Object.entries(DECISOES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          <Escolha style={{ minWidth: 220 }} valor={d.decisao} aoMudar={(v) => setD({ ...d, decisao: v })} opcoes={DECISOES} vazio={null} aria-label="Despacho" />
           <textarea className="form-control flex-grow-1" style={{ minWidth: 240 }} rows={2} value={d.texto} onChange={(e) => setD({ ...d, texto: e.target.value })} placeholder="Texto do despacho (opcional)" aria-label="Texto do despacho" />
           <button type="button" className="btn btn-dark" onClick={() => aoDespachar(d)}><i className="fa fa-stamp me-1" />Despachar</button>
         </div>

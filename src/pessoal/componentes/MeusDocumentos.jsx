@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { api, abrirFicheiro, enviarComProgresso } from '../api'
 import { useDados } from '../useDados'
-import { Campo, Carregando, Erro, Modal, Painel } from './Ui'
+import { Campo, Carregando, Erro, Escolha, Modal, Painel } from './Ui'
 import Carregar from './Carregar'
 import { dataPt } from '../formatar'
 
@@ -75,11 +75,7 @@ export default function MeusDocumentos() {
         {dados.length > 0 && (
           <div className="d-flex flex-wrap gap-2">
             <input className="form-control form-control-sm" style={{ maxWidth: 280 }} placeholder="Procurar pelo título…" value={procura} onChange={(e) => setProcura(e.target.value)} />
-            <select className="form-select form-select-sm" style={{ maxWidth: 220 }} value={pasta} onChange={(e) => setPasta(e.target.value)} aria-label="Pasta">
-              <option value="">Todas as pastas</option>
-              {pastas.map((p) => <option key={p} value={p}>{p}</option>)}
-              {dados.some((x) => !x.pasta) && <option value={SEM_PASTA}>{SEM_PASTA}</option>}
-            </select>
+            <Escolha style={{ maxWidth: 220, minWidth: 180 }} valor={pasta} aoMudar={setPasta} opcoes={[...pastas, ...(dados.some((x) => !x.pasta) ? [SEM_PASTA] : [])]} vazio="Todas as pastas" aria-label="Pasta" />
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { Escolha } from './Ui'
 import { Link } from 'react-router-dom'
 
 /*
@@ -13,15 +14,9 @@ export function EscolhaSituacao({ arvore, situacao, efectividade, aoMudar, ...re
     const [s, e] = v.split('|')
     aoMudar({ situacao: s, efectividade: s === 'activo' ? e : null })
   }
-  return (
-    <select className="form-select form-select-sm" value={valor} onChange={(e) => mudar(e.target.value)} {...resto}>
-      {arvore.map((s) => (s.filhos.length ? s.filhos.map((g) => (
-        <optgroup key={g.id} label={`${s.nome} (${s.artigo}) › ${g.nome}`}>
-          {g.filhos.map((f) => <option key={f.id} value={`${s.id}|${f.id}`}>{f.nome} ({f.artigo})</option>)}
-        </optgroup>
-      )) : <option key={s.id} value={`${s.id}|`}>{s.nome} ({s.artigo})</option>))}
-    </select>
-  )
+  // lista com pesquisa: cada efectividade com o caminho (Activo › grupo › efectividade)
+  const opcoes = arvore.flatMap((s) => (s.filhos.length ? s.filhos.flatMap((g) => g.filhos.map((f) => [`${s.id}|${f.id}`, `${s.nome} › ${g.nome} › ${f.nome} (${f.artigo})`])) : [[`${s.id}|`, `${s.nome} (${s.artigo})`]]))
+  return <Escolha valor={valor} aoMudar={mudar} opcoes={opcoes} vazio={null} id={resto.id} disabled={resto.disabled} aria-label={resto['aria-label']} />
 }
 
 function No({ nome, artigo, n, para, nivel, children }) {

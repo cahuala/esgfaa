@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
 import { dataPt } from '../formatar'
-import { InputData } from './Ui'
+import { Escolha, InputData } from './Ui'
 
 const SITUACOES_MILITARES = [['adiado', 'Adiado'], ['disponibilidade', 'Disponibilidade'], ['isento', 'Isento'], ['nao_apto', 'Não apto'], ['refratario', 'Refratário'], ['militar', 'Militar']]
 const NIVEIS = [['MB', 'Muito bem'], ['B', 'Bem'], ['R', 'Razoável']]
@@ -71,7 +71,7 @@ export default function RegistoBiografico({ p, editar, aoMudar }) {
             <table className="table table-sm mb-0"><thead><tr><th>Língua</th><th>Nível</th></tr></thead>
               <tbody>{v.linguas.map((x, i) => (em || x.nivel) && (
                 <tr key={i}><td>{i < 2 ? x.lingua : inp(x.lingua, lista('linguas', i, 'lingua'), { placeholder: 'Ex.: Espanhol', 'aria-label': 'Língua' })}</td>
-                  <td>{em ? <select className="form-select form-select-sm" value={x.nivel} onChange={lista('linguas', i, 'nivel')} aria-label={`Nível de ${x.lingua || 'língua'}`}><option value="">—</option>{NIVEIS.map(([k, t]) => <option key={k} value={k}>{k} — {t}</option>)}</select> : NIVEIS.find(([k]) => k === x.nivel)?.[1] ?? '—'}</td></tr>
+                  <td>{em ? <Escolha valor={x.nivel} aoMudar={(v) => lista('linguas', i, 'nivel')({ target: { value: v } })} opcoes={NIVEIS.map(([k, t]) => [k, `${k} — ${t}`])} aria-label={`Nível de ${x.lingua || 'língua'}`} /> : NIVEIS.find(([k]) => k === x.nivel)?.[1] ?? '—'}</td></tr>
               ))}{!em && !v.linguas.some((x) => x.nivel) && <tr><td colSpan={2} className="text-muted small">Nada registado.</td></tr>}</tbody></table>
           </div>
           <div className="pes-bloco">

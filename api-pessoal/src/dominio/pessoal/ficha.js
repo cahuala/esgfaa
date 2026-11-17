@@ -6,7 +6,7 @@ import { vencimentoDoPosto } from './tabelaSalarial.js'
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
 // a função principal e as outras (sem repetir); a domiciliar não acumula
 export const vinculosDe = (p) => (p.vinculo === 'domiciliar' ? ['domiciliar'] : [...new Set([p.vinculo, ...(p.outrosVinculos ?? [])].filter(Boolean))])
-export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário', domiciliar: 'Empregada(o) domiciliar' }
+export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Efectivo', domiciliar: 'Empregada(o) domiciliar' }
 // do mais baixo ao mais alto, com os níveis do Mod. 5/DPQ («base» fica para as fichas antigas, sem o pormenor)
 export const HABILITACOES = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Técnico médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }

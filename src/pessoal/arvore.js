@@ -23,8 +23,10 @@ export function useArvore() {
       return r
     }
     const caminho = (id) => { const c = []; for (let x = porId.get(id); x; x = porId.get(x.paiId)) c.unshift(x.sigla || x.nome); return c.join(' › ') }
+    // o caminho todo, por extenso, da unidade de cima para a de baixo (na ficha)
+    const caminhoCompleto = (id) => { const c = []; for (let x = porId.get(id); x; x = porId.get(x.paiId)) c.unshift(x.nome); return c.join(' › ') }
     const opcoes = lista.map((u) => [u.id, `${'   '.repeat(u.nivel - 1)}${u.nivel > 1 ? '└ ' : ''}${u.sigla ? `${u.sigla} — ` : ''}${u.nome}`])
-    return { escola: dados?.escola ?? null, colunas: dados?.colunas ?? [], lista, porId, opcoes, descendentes, caminho, pronta: Boolean(dados) }
+    return { escola: dados?.escola ?? null, colunas: dados?.colunas ?? [], lista, porId, opcoes, descendentes, caminho, caminhoCompleto, pronta: Boolean(dados) }
   }, [dados])
 }
 

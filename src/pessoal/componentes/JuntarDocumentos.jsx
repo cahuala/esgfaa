@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { useSessao } from '../sessao'
-import { InputData, Modal } from './Ui'
+import { Escolha, InputData, Modal } from './Ui'
 import { aceite, analisar, caminhoDe, cortarPdf, dataDoTexto, terminarOcr } from '../separar'
 
 const SEM_DATA = ['bi', 'foto']
@@ -140,7 +140,7 @@ export default function JuntarDocumentos({ itens, aoFechar, aoTerminar }) {
           {x.partes.map((p, k) => (
             <div key={p.inicio} className="row g-2 align-items-center px-2 py-1 border-top mx-0">
               <div className="col-md-2 small"><label className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={p.incluir} disabled={estado.fase !== 'rever'} onChange={(e) => mudarParte(x.i, k, { incluir: e.target.checked })} /> <span className="form-check-label" style={{ color: x.paginas.length > 1 ? CORES[k % CORES.length] : undefined }}>{x.paginas.length > 1 ? (p.fim - p.inicio > 1 ? `Págs. ${p.inicio + 1}–${p.fim}` : `Pág. ${p.inicio + 1}`) : 'Juntar'}</span></label></div>
-              <div className="col-md-4"><select className="form-select form-select-sm" value={p.tipo} disabled={estado.fase !== 'rever'} onChange={(e) => mudarParte(x.i, k, { tipo: e.target.value })} aria-label="Tipo de documento">{Object.entries(tipos).map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></div>
+              <div className="col-md-4"><Escolha valor={p.tipo} disabled={estado.fase !== 'rever'} aoMudar={(v) => mudarParte(x.i, k, { tipo: v })} opcoes={Object.entries(tipos)} vazio={null} aria-label="Tipo de documento" /></div>
               <div className="col-md-4"><input className="form-control form-control-sm" maxLength={200} placeholder={`Título (por omissão: ${tipos[p.tipo] ?? p.tipo})`} value={p.titulo} disabled={estado.fase !== 'rever'} onChange={(e) => mudarParte(x.i, k, { titulo: e.target.value })} /></div>
               <div className="col-md-2"><InputData value={p.data} disabled={estado.fase !== 'rever'} onChange={(e) => mudarParte(x.i, k, { data: e.target.value })} aria-label="Data do documento" /></div>
             </div>

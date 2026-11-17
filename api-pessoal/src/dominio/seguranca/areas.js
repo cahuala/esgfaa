@@ -93,7 +93,7 @@ export const ROTAS = [
   // leituras partilhadas por vários ecrãs
   R('GET', '/painel', null), R('GET', '/pessoas', null), R('GET', '/pessoas/:id', null), R('GET', '/pessoas/:id/foto', null), R('GET', '/unidades', null), R('GET', '/cargos', null),
   R('GET', '/organica', null), R('GET', '/organica/:id', null), R('GET', '/listas', null), R('GET', '/definicoes/assinaturas', null), R('GET', '/pedidos-despacho', null),
-  R('GET', '/domiciliares', null), R('GET', '/domiciliares/todas', null), R('PUT', '/domiciliares/:id/oficial', 'fichas'), R('GET', '/academicos', ['academicos', 'fichas']), R('GET', '/propostas/itens', null),
+  R('GET', '/domiciliares', null), R('GET', '/domiciliares/todas', null), R('GET', '/pessoas-incompletas', 'fichas'), R('PUT', '/domiciliares/:id/oficial', 'fichas'), R('GET', '/academicos', ['academicos', 'fichas']), R('GET', '/propostas/itens', null),
   // pessoal
   R('POST', '/pessoas', ['fichas', 'academicos', 'registarFichas']), R('PUT', '/pessoas/:id', ['fichas', 'academicos']), R('GET', '/bi/:numero', ['fichas', 'academicos']),
   R('POST', '/pessoas/:id/cursos', 'fichas'), R('PUT', '/pessoas/:id/cursos/:sub', 'fichas'), R('DELETE', '/pessoas/:id/cursos/:sub', 'fichas'),

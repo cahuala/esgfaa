@@ -137,13 +137,55 @@ export function Campo({ rotulo, children, ajuda, col = 'col-md-6', obrigatorio }
   )
 }
 
-export function Escolha({ valor, aoMudar, opcoes, vazio = '—', ...resto }) {
+const semAcentos = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+/*
+  Lista de escolha com pesquisa: mostra a opção escolhida; ao clicar abre a lista e o que se escreve filtra-a
+  (sem ligar a acentos nem a maiúsculas). Setas e Enter escolhem, Esc fecha. opcoes: [[valor, texto]], lista simples
+  ou { valor: texto | { nome } }; vazio: o texto da opção «nenhuma» (null = não há).
+*/
+export function Escolha({ valor, aoMudar, opcoes, vazio = '—', id, disabled, required, className = '', style, 'aria-label': ariaLabel, title }) {
   const lista = Array.isArray(opcoes) ? opcoes.map((o) => (Array.isArray(o) ? o : [o, o])) : Object.entries(opcoes).map(([k, v]) => [k, typeof v === 'string' ? v : v.nome])
+  const todas = [...(vazio !== null ? [['', vazio]] : []), ...lista.map(([k, v]) => [String(k), String(v)])]
+  const [aberto, setAberto] = useState(false)
+  const [texto, setTexto] = useState('')
+  const [realce, setRealce] = useState(0)
+  const caixa = useRef(null)
+  const escolhida = todas.find(([k]) => k === String(valor ?? ''))
+  const rotulo = (v) => v.replace(/^[\s└]+/, '')
+  const filtradas = texto ? todas.filter(([, v]) => semAcentos(v).includes(semAcentos(texto))) : todas
+  const escolher = (k) => { setAberto(false); setTexto(''); if (k !== String(valor ?? '')) aoMudar(k) }
+  const teclas = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAberto(true); setRealce((r) => Math.min(r + 1, filtradas.length - 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setRealce((r) => Math.max(r - 1, 0)) }
+    else if (e.key === 'Enter' && aberto) { e.preventDefault(); if (filtradas[realce]) escolher(filtradas[realce][0]) }
+    else if (e.key === 'Escape') { setAberto(false); setTexto('') }
+  }
+  useEffect(() => { if (aberto) caixa.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest' }) }, [aberto, realce])
   return (
-    <select className="form-select form-select-sm" value={valor ?? ''} onChange={(e) => aoMudar(e.target.value)} {...resto}>
-      {vazio !== null && <option value="">{vazio}</option>}
-      {lista.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-    </select>
+    <div className={`position-relative ${className}`} style={style} ref={caixa}>
+      <input
+        id={id} type="text" className="form-select form-select-sm" role="combobox" aria-expanded={aberto} aria-autocomplete="list" aria-label={ariaLabel} title={title}
+        disabled={disabled} required={required && !valor} autoComplete="off"
+        placeholder={escolhida && !aberto ? '' : rotulo(escolhida?.[1] ?? (vazio ?? ''))}
+        value={aberto ? texto : escolhida ? (escolhida[0] === '' ? '' : rotulo(escolhida[1])) : String(valor ?? '')}
+        onFocus={() => { setAberto(true); setTexto(''); setRealce(Math.max(0, todas.findIndex(([k]) => k === String(valor ?? '')))) }}
+        onClick={() => setAberto(true)}
+        onChange={(e) => { setTexto(e.target.value); setAberto(true); setRealce(0) }}
+        onKeyDown={teclas}
+        onBlur={() => setTimeout(() => { setAberto(false); setTexto('') }, 150)}
+      />
+      {aberto && !disabled && (
+        <div role="listbox" className="dropdown-menu show w-100 shadow" style={{ maxHeight: 280, overflowY: 'auto', zIndex: 1080 }}>
+          {filtradas.map(([k, v], i) => (
+            <button key={k || '_vazio'} type="button" role="option" aria-selected={i === realce} className={`dropdown-item small ${i === realce ? 'active' : ''} ${k === String(valor ?? '') ? 'fw-bold' : ''}`} style={{ whiteSpace: 'pre-wrap' }}
+              onMouseDown={(e) => { e.preventDefault(); escolher(k) }} onMouseEnter={() => setRealce(i)}>
+              {v}
+            </button>
+          ))}
+          {!filtradas.length && <div className="dropdown-item-text small text-muted">Nada com «{texto}»</div>}
+        </div>
+      )}
+    </div>
   )
 }
 

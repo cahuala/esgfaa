@@ -206,7 +206,7 @@ export default function Organica() {
               { chave: 'ramo', titulo: 'Ramo', valor: (x) => x.ramo || 'Civil' },
               { chave: 'cargo', titulo: 'Cargo', valor: (x) => x.cargoNome, mostrar: (x) => x.cargoNome || <span className="text-muted small">sem cargo</span> },
               { chave: 'unidade', titulo: 'Secção / subunidade', valor: (x) => x.unidadeNome },
-              { chave: 'vinculo', titulo: 'Vínculo', valor: (x) => ({ docente: 'Docente', estudante: 'Estudante', funcionario: 'Funcionário' }[x.vinculo] ?? x.vinculo) },
+              { chave: 'vinculo', titulo: 'Vínculo', valor: (x) => ({ docente: 'Docente', estudante: 'Estudante', funcionario: 'Efectivo' }[x.vinculo] ?? x.vinculo) },
             ]} />
           </Painel>
         )}

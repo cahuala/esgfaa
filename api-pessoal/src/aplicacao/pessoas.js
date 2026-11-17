@@ -408,6 +408,32 @@ export class ServicoPessoas {
     })), posicoes)
   }
 
+  /*
+    Fichas com dados em falta (militares, civis e domiciliares activos): o que falta em cada uma, para se completar.
+    Militar: NIP, posto, ramo, forma de serviço, BI, género, nascimento, ingresso, antiguidade no posto, unidade,
+    cargo, habilitações, telefone e fotografia. Civil: n.º de agente, BI, género, nascimento, admissão, carreira,
+    categoria, unidade, cargo, habilitações, telefone e fotografia. Domiciliar: o oficial, BI, género e nascimento.
+  */
+  async incompletas(u) {
+    exigir(u, 'ver')
+    const l = await this.bd.pessoa.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' }, include: { unidade: { select: { nome: true } } } })
+    const r = []
+    for (const p of l) {
+      const falta = []
+      const tem = (v, t) => { if (v === null || v === undefined || v === '') falta.push(t) }
+      if (p.vinculo === 'domiciliar') {
+        tem(p.militarAlocadoId, 'Oficial'); tem(p.bi, 'BI'); tem(p.genero, 'Género'); tem(p.dataNascimento, 'Data de nascimento')
+      } else {
+        tem(p.bi, 'BI'); tem(p.genero, 'Género'); tem(p.dataNascimento, 'Data de nascimento'); tem(p.unidadeId, 'Unidade'); tem(p.cargoId, 'Cargo')
+        tem(p.habilitacao, 'Habilitações'); tem(p.telefone, 'Telefone'); tem(p.fotoId, 'Fotografia')
+        if (p.tipo === 'militar') { tem(p.nip, 'NIP'); tem(p.posto, 'Posto'); tem(p.ramo, 'Ramo'); tem(p.fps, 'Forma de serviço'); tem(p.dataIngresso, 'Data de ingresso'); tem(p.dataAntiguidadePosto, 'Antiguidade no posto') }
+        else { tem(p.numeroAgente, 'N.º de agente'); tem(p.dataAdmissao, 'Data de admissão'); tem(p.carreiraCivil, 'Carreira'); tem(p.categoriaCivil, 'Categoria') }
+      }
+      if (falta.length) r.push({ id: p.id, nome: p.nome, tipo: p.vinculo === 'domiciliar' ? 'domiciliar' : p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil ?? '', unidadeNome: p.unidade?.nome ?? '', falta })
+    }
+    return r
+  }
+
   // todas as empregadas(os) domiciliares, com o oficial a que estão afectas(os) (ou sem nenhum)
   async todasDomiciliares(u) {
     exigir(u, 'ver')

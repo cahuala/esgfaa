@@ -5,6 +5,7 @@ import { etiquetaProcesso, referenciaElogiosa } from '../documentos'
 import Foto from '../componentes/Foto'
 import { reduzirFoto } from '../fotos'
 import { useDados } from '../useDados'
+import { useArvore } from '../arvore'
 import { useSessao } from '../sessao'
 import DocumentosPessoais from '../componentes/DocumentosPessoais'
 import Familiares from '../componentes/Familiares'
@@ -48,6 +49,7 @@ export default function Perfil() {
   const { ref, pode, avisar, utilizador } = useSessao()
   const navegar = useNavigate()
   const { dados: p, erro, naoExiste, recarregar: carregar } = useDados(`/pessoas/${id}`)
+  const arvore = useArvore()
   const [foto, setFoto] = useState({ chave: null, url: null })
   const [params] = useSearchParams()
   const [aba, setAba] = useState(params.get('aba') ?? 'identificacao')
@@ -148,7 +150,7 @@ export default function Perfil() {
               <Dado r="Nome do pai" v={p.pai} /><Dado r="Nome da mãe" v={p.mae} />
               {militar && <Dado r="Incorporação" v={dataPt(p.dataIngresso)} />}
               <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
-              <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{p.unidade.nome}</Link>} />
+              <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{arvore.caminhoCompleto(p.unidadeId) || p.unidade.nome}</Link>} />
               {p.unidadeOrigem && <Dado r="Unidade de origem (fora da ESG)" cheio v={p.unidadeOrigem} />}
               <Dado r="Cargo" cheio v={p.cargo?.nome ? <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</> : p.funcaoActual} />
               <Dado r="Na Escola desde" v={dataPt(p.dataEntradaEscola || p.dataCargo || p.dataAdmissao)} />
@@ -176,7 +178,7 @@ export default function Perfil() {
                   <Dado r="Posto" v={<><span className="pes-etq">{p.postoNome}</span>{graduacaoAtiva && <span className="pes-etq pes-etq-roxo ms-1" title="Graduação (arts. 64.º a 67.º): não conta para a antiguidade">graduado: {graduacaoAtiva.postoNome}</span>}{p.processoPendente && <span className="pes-etq pes-etq-vermelho ms-1">processo em curso</span>}</>} />
                   <Dado r="Situação (Lei n.º 13/18)" cheio v={p.situacaoCaminho ? `${p.situacaoCaminho} (${p.situacaoArtigo})` : p.situacaoNome} />
                   <Dado r="Estado" v={p.estadoNome || 'Ao serviço'} />
-                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidade?.nome} />
+                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidadeId ? arvore.caminhoCompleto(p.unidadeId) || p.unidade?.nome : null} />
                 </Grelha>
               </Bloco>
               <Bloco titulo="Classificação militar" icone="fa-shield-alt">
@@ -197,7 +199,7 @@ export default function Perfil() {
                   <Dado r="Categoria" v={p.carreiraNome && `${p.nivelCategoria ? `${p.nivelCategoria}. ` : ''}${p.carreiraNome}`} /><Dado r="Classe" v={p.categoriaCivil} /><Dado r="Vínculo" v={p.vinculoCivilNome} />
                   <Dado r="Admissão" v={dataPt(p.dataAdmissao)} /><Dado r="Na classe desde" v={dataPt(p.dataCategoria)} /><Dado r="Tempo de serviço" v={anos(p.tempoServico)} />
                   <Dado r="Avaliação de desempenho" v={p.avaliacaoFavoravel ? 'Favorável' : 'Desfavorável'} />
-                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidade?.nome} />
+                  <Dado r="Cargo" cheio v={p.cargo?.nome} /><Dado r="Unidade" cheio v={p.unidadeId ? arvore.caminhoCompleto(p.unidadeId) || p.unidade?.nome : null} />
                 </Grelha>
               </Bloco>
             )}

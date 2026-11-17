@@ -147,7 +147,7 @@ describe('Documentos pessoais emitidos (declarações numeradas, guias, fichas) 
     const m = (await adm.post('/api/pessoas').send(militar({ nip: 'VIN001', vinculo: 'funcionario', outrosVinculos: ['docente', 'estudante', 'funcionario'] })).expect(201)).body
     const f = (await adm.get(`/api/pessoas/${m.id}`)).body
     assert.deepEqual(f.vinculos, ['funcionario', 'docente', 'estudante'])
-    assert.equal(f.vinculoNome, 'Funcionário · Docente · Estudante')
+    assert.equal(f.vinculoNome, 'Efectivo · Docente · Estudante')
     assert.ok(f.docente && f.discente)
     assert.ok((await adm.get('/api/pessoas?vinculo=docente')).body.some((x) => x.id === m.id))
     assert.ok((await adm.get('/api/pessoas?vinculo=estudante')).body.some((x) => x.id === m.id))

@@ -96,6 +96,7 @@ export default function Layout({ children }) {
               <div className="menu-header">Geral</div>
               <Item para="/" fim icone="fa-chart-pie" texto="Painel" />
               <Item para="/pessoas" area="fichas" icone="fa-users" texto="Pessoal" />
+              <Item para="/dados-por-completar" area="fichas" icone="fa-clipboard-list" texto="Dados por completar" />
               <Item para="/estudantes" area="academicos" icone="fa-user-graduate" texto="Estudantes" />
               <Item para="/docentes" area="academicos" icone="fa-chalkboard-teacher" texto="Docentes" />
               {alteraEm('fichas') && <Item para="/pessoas/nova" area="fichas" icone="fa-user-plus" texto="Nova ficha" />}

@@ -325,10 +325,7 @@ function LigarColunas({ fonte, aoMudarFolha, aoMudarTitulos, aoLigar, aoVerifica
                 <td className="fw-semibold">{cab[i] || <i className="text-muted">(sem título)</i>}</td>
                 <td className="small text-truncate" style={{ maxWidth: 260 }}>{exemplos(i).join(' · ') || '—'}</td>
                 <td>
-                  <select className={`form-select form-select-sm ${fonte.ligacoes[i] ? 'border-success' : ''}`} value={fonte.ligacoes[i] ?? ''} onChange={(e) => aoLigar(i, e.target.value)} aria-label={`Coluna ${letra(i)} vai para`}>
-                    <option value="">— não importar —</option>
-                    {opcoes.map(([k, t]) => <option key={k} value={k}>{t}</option>)}
-                  </select>
+                  <Escolha className={fonte.ligacoes[i] ? 'border-success' : ''} valor={fonte.ligacoes[i] ?? ''} aoMudar={(v) => aoLigar(i, v)} opcoes={opcoes} vazio="— não importar —" aria-label={`Coluna ${letra(i)} vai para`} />
                 </td>
               </tr>
             ))}

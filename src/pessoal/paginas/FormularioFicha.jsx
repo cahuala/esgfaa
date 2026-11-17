@@ -206,7 +206,7 @@ export default function FormularioFicha() {
                 {d.vinculo !== 'domiciliar' && (
                   <Campo rotulo="Também é" col="col-md-6" ajuda="Na Escola pode ter mais de uma função: o funcionário que também é professor, ou também é aluno de um curso.">
                     <div className="d-flex flex-wrap gap-3 pt-1">
-                      {[['funcionario', 'Funcionário'], ['docente', 'Docente (professor)'], ['estudante', 'Aluno (discente)']].filter(([k]) => k !== d.vinculo).map(([k, t]) => (
+                      {[['funcionario', 'Efectivo'], ['docente', 'Docente (professor)'], ['estudante', 'Aluno (discente)']].filter(([k]) => k !== d.vinculo).map(([k, t]) => (
                         <label key={k} className="form-check mb-0"><input type="checkbox" className="form-check-input" checked={(d.outrosVinculos ?? []).includes(k)} onChange={(e) => setD({ ...d, outrosVinculos: e.target.checked ? [...(d.outrosVinculos ?? []), k] : (d.outrosVinculos ?? []).filter((x) => x !== k) })} /> <span className="form-check-label">{t}</span></label>
                       ))}
                     </div>
@@ -366,9 +366,7 @@ export default function FormularioFicha() {
                   const lista = ref.motivosSaida ?? []
                   const outro = d.motivoSaida && !lista.includes(d.motivoSaida)
                   return <>
-                    <select className="form-select form-select-sm" value={outro ? '__outro' : d.motivoSaida ?? ''} onChange={(e) => set('motivoSaida')(e.target.value === '__outro' ? ' ' : e.target.value)} aria-label="Motivo da saída">
-                      <option value="">—</option>{lista.map((x) => <option key={x}>{x}</option>)}<option value="__outro">Outro (escrever)</option>
-                    </select>
+                    <Escolha valor={outro ? '__outro' : d.motivoSaida ?? ''} aoMudar={(v) => set('motivoSaida')(v === '__outro' ? ' ' : v)} opcoes={[...lista, ['__outro', 'Outro (escrever)']]} aria-label="Motivo da saída" />
                     {outro && <input className="form-control form-control-sm mt-1" placeholder="Qual?" value={d.motivoSaida.trimStart()} onChange={(e) => set('motivoSaida')(e.target.value || ' ')} />}
                   </>
                 })()}

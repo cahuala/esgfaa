@@ -111,3 +111,21 @@ describe('Histórico lançado à mão (promoções, nomeações, louvores, conde
     }
   })
 })
+
+describe('Dados por completar', () => {
+  it('lista cada pessoa com o que lhe falta; a domiciliar sem oficial aparece', async () => {
+    const amb = await criarAmbiente()
+    try {
+      const adm = amb.com(await amb.entrar())
+      await adm.post('/api/pessoas').send({ tipo: 'militar', vinculo: 'funcionario', nome: 'Capitao Incompleto Teste', nip: 'NIPINC1', ramo: 'EXE', posto: 'capitao', fps: 'QP', quadroEspecial: 'INF' }).expect(201)
+      await amb.contentor.servicos.importacao.importar({ email: 't', papel: 'administrador' }, { modo: 'novos', simular: false, linhas: [{ nome: 'Domiciliar Sem Oficial Teste', tipo: 'civil', vinculo: 'Domiciliar', oficial: 'NIPNAOHA' }] })
+      const l = (await adm.get('/api/pessoas-incompletas').expect(200)).body
+      const m = l.find((x) => x.nome === 'Capitao Incompleto Teste')
+      assert.ok(m.falta.includes('BI') && m.falta.includes('Unidade') && !m.falta.includes('Posto'))
+      const d = l.find((x) => x.nome === 'Domiciliar Sem Oficial Teste')
+      assert.deepEqual([d.tipo, d.falta.includes('Oficial')], ['domiciliar', true])
+    } finally {
+      await amb.fechar()
+    }
+  })
+})
