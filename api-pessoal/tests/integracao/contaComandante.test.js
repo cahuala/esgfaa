@@ -207,3 +207,28 @@ describe('O administrador activa uma conta à espera do despacho do Comandante',
     }
   })
 })
+
+describe('O Operador regista fichas e emite documentos; não edita', () => {
+  it('regista uma ficha nova e emite-lhe uma declaração; não edita, nem orgânica, propostas, licenças ou salários', async () => {
+    const amb = await criarAmbiente()
+    try {
+      const adm = amb.com(await amb.entrar())
+      const c = (await adm.post('/api/utilizadores').send({ nome: 'Operador Registo Teste', email: 'op.registo@esg.emfaa.gov.ao', papel: 'operador', senha: 'Operador2026x' }).expect(201)).body
+      await adm.put(`/api/utilizadores/${c.id}`).send({ ativo: true }).expect(200)
+      const t = (await amb.http().post('/api/entrar').send({ email: 'op.registo@esg.emfaa.gov.ao', senha: 'Operador2026x' }).expect(200)).body.token
+      const op = amb.com((await amb.com(t).post('/api/mudar-senha').send({ atual: 'Operador2026x', nova: 'Operador2027y' }).expect(200)).body.token)
+      const eu = (await op.get('/api/eu').expect(200)).body
+      assert.deepEqual(eu.areas, { fichas: 'ver', registarFichas: 'alterar', documentos: 'alterar' })
+      const p = (await op.post('/api/pessoas').send(militar({ nome: 'Registado Pelo Operador', nip: 'NIPOPR1' })).expect(201)).body
+      await op.put(`/api/pessoas/${p.id}`).send({ nome: 'Mudado Pelo Operador' }).expect(403)
+      const d = await op.post(`/api/pessoas/${p.id}/documentos-emitidos`).send({ documentos: [{ tipo: 'declaracao_servico', dados: { finalidade: 'Banco' } }] })
+      assert.equal(d.status, 201, d.body.erro)
+      await op.post('/api/declaracoes/impressoes').send({ ids: [d.body[0].id] }).expect(200)
+      for (const [m, url] of [['get', '/api/propostas'], ['get', '/api/licencas'], ['get', '/api/tabela-salarial'], ['post', '/api/unidades'], ['get', '/api/utilizadores'], ['get', '/api/auditoria']]) {
+        assert.equal((await op[m](url).send({ nome: 'X' })).status, 403, `${m} ${url}`)
+      }
+    } finally {
+      await amb.fechar()
+    }
+  })
+})

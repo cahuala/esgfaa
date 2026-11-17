@@ -17,12 +17,13 @@ import { AREAS, MODELOS, areasDe, limparAreas, permissoesDe } from '../dominio/s
 */
 const COMUNS = ['expediente', 'mensagens']
 export const PAPEIS = {
-  administrador: { nome: 'Administrador', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', 'administrar', ...COMUNS] },
+  administrador: { nome: 'Administrador', permissoes: ['ver', 'supervisionar', 'editar', 'registar', 'emitir', 'propor', 'decidir', 'administrar', ...COMUNS] },
   // supervisionar: ver tudo o que é do Pessoal (utilizadores, auditoria, livro de expediente), sem alterar
-  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'supervisionar', 'editar', 'propor', 'decidir', ...COMUNS] },
+  chefe: { nome: 'Chefe de Pessoal e Quadros', permissoes: ['ver', 'supervisionar', 'editar', 'registar', 'emitir', 'propor', 'decidir', ...COMUNS] },
   // despachar: a Secretária digital (os documentos submetidos a despacho do Comandante)
   comandante: { nome: 'Comandante da ESG (vê tudo e despacha)', permissoes: ['ver', 'supervisionar', 'despachar', ...COMUNS] },
-  operador: { nome: 'Operador', permissoes: ['ver', 'editar', 'propor', ...COMUNS] },
+  // regista fichas novas e emite documentos (não edita)
+  operador: { nome: 'Operador (regista fichas e emite documentos)', permissoes: ['ver', 'registar', 'emitir', ...COMUNS] },
   consulta: { nome: 'Consulta', permissoes: ['ver', ...COMUNS] },
   utente: { nome: 'Utente (expediente e mensagens)', permissoes: COMUNS },
 }
@@ -257,9 +258,6 @@ export class ServicoSessao {
     return publico(g)
   }
 
-  async #haComandante() {
-    return Boolean(await this.bd.utilizador.count({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false } }))
-  }
 
   // o que o Comandante deferiu (mudar o papel volta às permissões do papel novo)
   async aplicarDespacho(id, data) {
@@ -411,16 +409,14 @@ export class ServicoSessao {
     }
     if (data.papel !== undefined || data.ativo !== undefined || data.senha) data.versaoToken = { increment: 1 }
     // o que a conta pode fazer, ecrã a ecrã (null = voltar às do papel): espera pelo despacho do Comandante
-    let pedirPermissoes = null
     if (permissoes !== undefined) {
       const novas = permissoes === null ? null : limparAreas(permissoes)
       const atuais = areasDe(alvo)
       const finais = novas ?? MODELOS[data.papel ?? alvo.papel] ?? {}
       if (JSON.stringify(Object.entries(finais).sort()) !== JSON.stringify(Object.entries(atuais).sort()) || (novas === null) !== !alvo.permissoes) {
         if (alvo.id === u.id && !(finais.utilizadores === 'alterar')) throw invalido('Não pode tirar a si próprio a gestão dos utilizadores.')
-        // sem Comandante ainda (primeira instalação) ou conta por despachar: aplica-se já
-        if (alvo.aguardaDespacho || !this.despachos || !(await this.#haComandante())) data.permissoes = novas ?? Prisma.DbNull
-        else pedirPermissoes = { novas, atuais, finais }
+        // o administrador dá e tira permissões directamente (fica na auditoria)
+        data.permissoes = novas ?? Prisma.DbNull
       }
     }
     // o administrador pode activar uma conta à espera do despacho do Comandante: o pedido fica anulado (fica na auditoria)
@@ -431,10 +427,9 @@ export class ServicoSessao {
       await this.despachos?.anular(this.bd, { tipo: 'utilizador_novo', utilizadorId: id })
       await this.auditoria.registar(u, 'activar_sem_despacho', g.email, { papel: g.papel, nota: 'Activada pelo administrador (sem o despacho do Comandante)' })
     }
-    if (pedirPermissoes) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_permissoes', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${resumoAreas(pedirPermissoes.atuais, pedirPermissoes.finais)}`, dados: { permissoes: pedirPermissoes.novas } })
     if (pedirPapel) await this.despachos.pedir(this.bd, u, { tipo: 'utilizador_papel', utilizadorId: id, resumo: `${g.nome} (${g.email}): ${PAPEIS[alvo.papel]?.nome ?? alvo.papel} → ${PAPEIS[papel].nome}`, dados: { papel, anterior: alvo.papel } })
-    await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha) })
-    const aDespacho = [...(pedirPapel ? ['utilizador_papel'] : []), ...(pedirPermissoes ? ['utilizador_permissoes'] : [])]
+    await this.auditoria.registar(u, 'editar_utilizador', g.email, { papel: data.papel, ativo: data.ativo, senha: Boolean(senha), ...('permissoes' in data ? { permissoes: data.permissoes === Prisma.DbNull ? 'as do papel' : data.permissoes } : {}) })
+    const aDespacho = pedirPapel ? ['utilizador_papel'] : []
     return { ...publico(g), ...(aDespacho.length ? { aDespacho } : {}) }
   }
 

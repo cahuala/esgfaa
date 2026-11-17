@@ -87,7 +87,7 @@ export default function Pessoas() {
       {listas && <EscolherLista pessoas={linhas} filtros={filtros} descricao={descricao} aoFechar={() => setListas(false)} />}
       <Cabecalho titulo="Pessoal" subtitulo="fichas de militares e civis" migalhas={[['Pessoal']]}>
         {pode('editar') && <Link to="/importar" className="btn btn-outline-theme"><i className="fa fa-file-import me-2" />Importar Excel</Link>}
-        {pode('editar') && <Link to="/pessoas/nova" className="btn btn-theme"><i className="fa fa-user-plus me-2" />Nova ficha</Link>}
+        {(pode('editar') || pode('registar')) && <Link to="/pessoas/nova" className="btn btn-theme"><i className="fa fa-user-plus me-2" />Nova ficha</Link>}
       </Cabecalho>
       <Painel titulo="Filtros" icone="fa-filter" acoes={Object.keys(filtros).length > 0 && <button type="button" className="btn btn-xs btn-secondary" onClick={() => setParams({})}>Limpar filtros</button>}>
         <div className="row">

@@ -65,7 +65,7 @@ export class ServicoDocumentosEmitidos {
 
   // regista os documentos escolhidos; as declarações recebem o número seguinte da série no ano
   async emitir(u, pessoaId, documentos) {
-    exigir(u, 'editar')
+    exigir(u, 'emitir')
     const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, select: { id: true, nome: true } })
     if (!p) throw naoEncontrado('Ficha não encontrada.')
     if (!documentos.length) throw invalido('Escolha pelo menos um documento.')
@@ -136,7 +136,7 @@ export class ServicoDocumentosEmitidos {
   }
 
   async registarImpressao(u, ids) {
-    exigir(u, 'editar')
+    exigir(u, 'emitir')
     const r = await this.bd.documentoEmitido.updateMany({ where: { id: { in: ids } }, data: { impressoes: { increment: 1 }, ultimaImpressao: this.agora() } })
     await this.auditoria.registar(u, 'imprimir_declaracoes', `${r.count} declaração(ões)`, { ids })
     return { impressas: r.count }

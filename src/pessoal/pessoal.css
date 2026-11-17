@@ -18,7 +18,8 @@
 .pes-condicoes li { display: flex; gap: .6rem; align-items: flex-start; padding: .35rem 0; border-bottom: 1px dashed rgba(0, 0, 0, .08); }
 .pes-condicoes li:last-child { border-bottom: 0; }
 .pes-condicoes i { margin-top: .2rem; font-size: 1.05rem; }
-.pes-aviso { position: fixed; right: 1rem; bottom: 1rem; z-index: 2000; max-width: 460px; display: flex; align-items: center; }
+/* avisos (toasts): no canto superior direito, por baixo da barra do topo */
+.pes-aviso { position: fixed; right: 1rem; top: 4.25rem; z-index: 2000; max-width: 460px; display: flex; align-items: center; }
 .pes-sugestoes { z-index: 1060; max-height: 320px; overflow: auto; }
 .pes-ramo-EXE { background: #4b5320; color: #fff; }
 .pes-ramo-FAN { background: #4a90c2; color: #fff; }

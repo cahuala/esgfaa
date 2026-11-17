@@ -160,9 +160,9 @@ export default function App() {
           <Route path="/tabela-salarial-civis" element={<Area id="salarios"><TabelaSalarialCivis /></Area>} />
           <Route path="/plano-ferias" element={<Area id="licencas"><PlanoFerias /></Area>} />
           <Route path="/declaracoes" element={<Area id="documentos"><Declaracoes /></Area>} />
-          <Route path="/historico-efectivos" element={<Area id="documentos"><HistoricoEfectivos /></Area>} />
-          <Route path="/documentos" element={<Area id="documentos"><Documentos /></Area>} />
-          <Route path="/documentos/:grupo" element={<Area id="documentos"><Documentos /></Area>} />
+          <Route path="/historico-efectivos" element={<Area id="relatorios"><HistoricoEfectivos /></Area>} />
+          <Route path="/documentos" element={<Area id="relatorios"><Documentos /></Area>} />
+          <Route path="/documentos/:grupo" element={<Area id="relatorios"><Documentos /></Area>} />
           <Route path="/expediente" element={<Expediente />} />
           <Route path="/expediente/:id" element={<Expediente />} />
           <Route path="/mensagens" element={<Mensagens />} />

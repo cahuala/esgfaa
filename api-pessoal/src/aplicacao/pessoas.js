@@ -11,7 +11,7 @@ import { chaveCargo } from './tabelaSalarial.js'
 import { nomeProprio } from './importacao.js'
 import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
-import { exigir } from './sessao.js'
+import { exigir, pode } from './sessao.js'
 import { comparadorHierarquico, ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
 import { posicoesUnidades } from './ordem.js'
 import { CAMPOS_CIFRADOS } from '../infraestrutura/cifraDados.js'
@@ -264,7 +264,8 @@ export class ServicoPessoas {
   }
 
   async criar(u, dados, { silencioso = false } = {}) {
-    exigir(u, 'editar')
+    // registar uma ficha nova: quem edita fichas ou quem só regista (o Operador)
+    if (!pode(u, 'registar')) exigir(u, 'editar')
     const d = this.#dados(dados)
     // um docente novo só vale depois do despacho do Comandante
     const pedirDocente = Boolean(this.despachos) && eDocente(d)
@@ -464,9 +465,10 @@ export class ServicoPessoas {
   }
 
   async guardarFoto(u, pessoaId, fotoId) {
-    exigir(u, 'editar')
     await this.#existe(pessoaId)
     const antes = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, select: { fotoId: true } })
+    // quem só regista fichas (o Operador) põe a fotografia numa ficha que ainda não tem; mudá-la é editar
+    if (!(pode(u, 'registar') && !antes?.fotoId)) exigir(u, 'editar')
     const n = await this.bd.pessoa.update({ where: { id: pessoaId }, data: { fotoId } })
     // a fotografia nova vai também para a conta do Portal Académico (docentes e estudantes)
     if (vaiParaPortal(n)) await this.#marcarSincronizacao(this.bd, n)

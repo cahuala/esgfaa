@@ -116,13 +116,13 @@ export default function Layout({ children }) {
               <Item para="/tabela-salarial" area="salarios" icone="fa-coins" texto="Tabela salarial (militares)" />
               <Item para="/tabela-salarial-civis" area="salarios" icone="fa-coins" texto="Tabela salarial (civis)" />
 
-              {algum('documentos') && <div className="menu-header">Documentos</div>}
+              {algum('documentos', 'relatorios') && <div className="menu-header">Documentos</div>}
               <Item para="/declaracoes" area="documentos" icone="fa-file-signature" texto="Declarações" />
-              <Item para="/historico-efectivos" area="documentos" icone="fa-archive" texto="Histórico dos efectivos" />
-              <Item para="/documentos/efectividade" area="documentos" icone="fa-table" texto="Efectividade" />
-              <Item para="/documentos/mapas" area="documentos" icone="fa-chart-bar" texto="Mapas estatísticos" />
-              <Item para="/documentos/propostas" area="documentos" icone="fa-file-signature" texto="Pessoal proposto" />
-              <Item para="/documentos/listas" area="documentos" icone="fa-list" texto="Listas" />
+              <Item para="/historico-efectivos" area="relatorios" icone="fa-archive" texto="Histórico dos efectivos" />
+              <Item para="/documentos/efectividade" area="relatorios" icone="fa-table" texto="Efectividade" />
+              <Item para="/documentos/mapas" area="relatorios" icone="fa-chart-bar" texto="Mapas estatísticos" />
+              <Item para="/documentos/propostas" area="relatorios" icone="fa-file-signature" texto="Pessoal proposto" />
+              <Item para="/documentos/listas" area="relatorios" icone="fa-list" texto="Listas" />
 
               {algum('organica', 'fichas') && <div className="menu-header">Organização</div>}
               <Item para="/organica" area="organica" icone="fa-sitemap" texto="Orgânica e planeamento" />
@@ -136,15 +136,16 @@ export default function Layout({ children }) {
             <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
             {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
 
-            {algum('utilizadores', 'configuracoes', 'auditoria', 'privacidade') && <div className="menu-header">Administração</div>}
+            <div className="menu-header">Administração</div>
             {<Item para="/utilizadores" area="utilizadores" icone="fa-users-cog" texto="Utilizadores" />}
             {<Item para="/listas" area="configuracoes" icone="fa-list-alt" texto="Listas do sistema" />}
             {<Item para="/assinaturas" area="configuracoes" icone="fa-signature" texto="Assinaturas dos documentos" />}
             {<Item para="/auditoria" area="auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {<Item para="/portal" area="configuracoes" icone="fa-exchange-alt" texto="Ligação ao portal" />}
             {<Item para="/pedidos-dados" area="privacidade" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
-            <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />
-            <Item para="/senha" icone="fa-key" texto="Segurança da conta" />
+            {/* quem não administra vê aqui só o seu perfil (palavra-passe, verificação em dois passos) e o manual */}
+            {algum('utilizadores', 'configuracoes', 'auditoria', 'privacidade') && <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />}
+            <Item para="/senha" icone="fa-user-circle" texto="O meu perfil" />
             <div className="menu-item"><a href="manual/index.html" target="_blank" rel="noreferrer" className="menu-link"><div className="menu-icon"><i className="fa fa-book" /></div><div className="menu-text">Manual</div></a></div>
 
             <div className="menu-divider" />

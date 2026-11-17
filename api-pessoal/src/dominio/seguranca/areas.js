@@ -10,6 +10,8 @@ export const COMUNS = ['expediente', 'mensagens']
 // ver / alterar: as permissões largas que dão; soVer / soAlterar: a área só tem um dos níveis
 export const AREAS = {
   fichas: { grupo: 'Pessoal', nome: 'Fichas do pessoal (militares e civis, domiciliares, colocar civis nos cargos)', alterar: ['editar'] },
+  // registar fichas novas, sem poder editar as que existem (o Operador)
+  registarFichas: { grupo: 'Pessoal', nome: 'Registar fichas novas (sem editar as existentes)', soAlterar: true, alterar: ['registar'] },
   academicos: { grupo: 'Pessoal', nome: 'Estudantes e docentes (registo, fichas de acesso ao portal)', alterar: ['editar'] },
   importar: { grupo: 'Pessoal', nome: 'Importar Excel e fotografias', soAlterar: true, alterar: ['editar'] },
   processos: { grupo: 'Pessoal', nome: 'Processos individuais e documentos digitalizados', alterar: ['editar'] },
@@ -21,7 +23,8 @@ export const AREAS = {
   ponto: { grupo: 'Carreiras', nome: 'Livro de ponto (civis): o dia, o mês, marcações e faltas', alterar: ['editar'] },
   pontoAparelhos: { grupo: 'Carreiras', nome: 'Livro de ponto: aparelhos de impressão digital e horário', soAlterar: true, alterar: ['editar', 'administrar'] },
   salarios: { grupo: 'Carreiras', nome: 'Tabelas salariais (militares e civis)', alterar: ['administrar'] },
-  documentos: { grupo: 'Documentos', nome: 'Declarações, mapas, listas e histórico dos efectivos', alterar: ['editar'] },
+  documentos: { grupo: 'Documentos', nome: 'Declarações e guias (emitir documentos)', alterar: ['emitir'] },
+  relatorios: { grupo: 'Documentos', nome: 'Efectividade, mapas, pessoal proposto, listas e histórico dos efectivos', soVer: true },
   organica: { grupo: 'Organização', nome: 'Orgânica: unidades, cargos e o quadro orgânico', alterar: ['administrar'] },
   secretaria: { grupo: 'Comunicação', nome: 'Secretária digital (despachar como o Comandante)', soAlterar: true, alterar: ['despachar'] },
   utilizadores: { grupo: 'Administração', nome: 'Utilizadores e permissões', ver: ['supervisionar'], alterar: ['administrar'] },
@@ -31,7 +34,7 @@ export const AREAS = {
 }
 
 const todas = (nivel, excepto = []) => Object.fromEntries(Object.keys(AREAS).filter((a) => !excepto.includes(a)).map((a) => [a, AREAS[a].soVer ? 'ver' : AREAS[a].soAlterar ? 'alterar' : nivel]))
-const TRABALHO = ['fichas', 'academicos', 'importar', 'processos', 'propostas', 'licencas', 'ausencias', 'ponto', 'documentos', 'privacidade']
+const TRABALHO = ['fichas', 'registarFichas', 'academicos', 'importar', 'processos', 'propostas', 'licencas', 'ausencias', 'ponto', 'documentos', 'privacidade']
 const verTudo = (excepto) => Object.fromEntries(Object.keys(AREAS).filter((a) => !excepto.includes(a) && !AREAS[a].soAlterar).map((a) => [a, 'ver']))
 
 // o ponto de partida de cada papel (dá as mesmas permissões que o papel sempre deu)
@@ -39,7 +42,9 @@ export const MODELOS = {
   administrador: todas('alterar', ['secretaria']),
   chefe: { ...verTudo([]), ...Object.fromEntries(TRABALHO.map((a) => [a, 'alterar'])), decidirPropostas: 'alterar' },
   comandante: { ...verTudo([]), secretaria: 'alterar' },
-  operador: { ...verTudo(['utilizadores', 'auditoria']), ...Object.fromEntries(TRABALHO.map((a) => [a, 'alterar'])) },
+  // o Operador regista fichas novas e emite documentos (vê as fichas para isso); não edita, nem a orgânica, propostas,
+  // licenças ou tabelas salariais
+  operador: { fichas: 'ver', registarFichas: 'alterar', documentos: 'alterar' },
   consulta: verTudo(['utilizadores', 'auditoria']),
   utente: {},
 }
@@ -90,10 +95,10 @@ export const ROTAS = [
   R('GET', '/organica', null), R('GET', '/organica/:id', null), R('GET', '/listas', null), R('GET', '/definicoes/assinaturas', null), R('GET', '/pedidos-despacho', null),
   R('GET', '/domiciliares', null), R('GET', '/academicos', ['academicos', 'fichas']), R('GET', '/propostas/itens', null),
   // pessoal
-  R('POST', '/pessoas', ['fichas', 'academicos']), R('PUT', '/pessoas/:id', ['fichas', 'academicos']), R('GET', '/bi/:numero', ['fichas', 'academicos']),
+  R('POST', '/pessoas', ['fichas', 'academicos', 'registarFichas']), R('PUT', '/pessoas/:id', ['fichas', 'academicos']), R('GET', '/bi/:numero', ['fichas', 'academicos']),
   R('POST', '/pessoas/:id/cursos', 'fichas'), R('PUT', '/pessoas/:id/cursos/:sub', 'fichas'), R('DELETE', '/pessoas/:id/cursos/:sub', 'fichas'),
   R('POST', '/pessoas/:id/eventos', 'fichas'), R('DELETE', '/pessoas/:id/eventos/:sub', 'fichas'), R('POST', '/pessoas/:id/graduacoes/:sub/terminar', 'fichas'),
-  R('PUT', '/pessoas/:id/foto', ['fichas', 'academicos']), R('POST', '/cargos/:id/colocar', 'fichas'), R('POST', '/cargos/:id/retirar', 'fichas'),
+  R('PUT', '/pessoas/:id/foto', ['fichas', 'academicos', 'registarFichas']), R('POST', '/cargos/:id/colocar', 'fichas'), R('POST', '/cargos/:id/retirar', 'fichas'),
   R('POST', '/pessoas/importar', 'importar'), R('POST', '/fotos/lote', 'importar'),
   R('POST', '/fichas-acesso', 'academicos'), R('POST', '/pessoas/:id/ficha-acesso', 'academicos'),
   R('GET', '/processos', 'processos'), R('PUT', '/processos/:id', 'processos'), R('GET', '/pessoas/:id/documentos', 'processos'), R('POST', '/pessoas/:id/documentos', 'processos'),
