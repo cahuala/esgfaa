@@ -3,7 +3,7 @@
   Prepara o pendrive de instalação do Sistema de Gestão de Pessoal e Quadros (sem internet na Escola).
 
     node instalador/preparar-pendrive.mjs [--destino <pasta ou pendrive>] [--organica <quadro.xlsx>] [--chave-bi]
-      [--ligacao-portal <endereço do portal>] [--so-descarregar]
+      [--ligacao-portal <endereço do portal>] [--relacoes <relacoes.json>] [--so-descarregar]
 
   1. Descarrega (uma vez, para instalador/.cache) o Node.js, o PostgreSQL, o Caddy e o WinSW, e confere os resumos.
   2. Constrói a página e junta a API com as dependências (só o que corre; sem dados de demonstração).
@@ -101,7 +101,7 @@ function sistema(pasta) {
   fs.cpSync(path.join(api, 'prisma'), path.join(pasta, 'prisma'), { recursive: true })
   fs.mkdirSync(path.join(pasta, 'scripts'), { recursive: true })
   // só os scripts da instalação e das cópias (os de demonstração — semear, preencher — não vão)
-  for (const f of ['migrar.js', 'instalar-organica.js', 'simularAparelhoPonto.js']) fs.copyFileSync(path.join(api, 'scripts', f), path.join(pasta, 'scripts', f))
+  for (const f of ['migrar.js', 'instalar-organica.js', 'carregar-relacoes.js', 'simularAparelhoPonto.js']) fs.copyFileSync(path.join(api, 'scripts', f), path.join(pasta, 'scripts', f))
   fs.copyFileSync(path.join(RAIZ, 'scripts', 'copias.mjs'), path.join(pasta, 'scripts', 'copias.mjs'))
   correr('npm', ['ci', '--omit=dev', '--no-audit', '--no-fund'], { cwd: pasta })
   // o cliente do Prisma é JavaScript + WebAssembly (serve em qualquer sistema); o que só serve para o
@@ -173,6 +173,16 @@ async function main() {
     if (!chave) throw new Error('--chave-bi: não há BI_API_KEY em api-pessoal/.env.')
     fs.writeFileSync(path.join(DESTINO, 'chave-bi.txt'), `${chave}\n`)
     console.log('  ✓ chave da consulta do BI incluída (chave-bi.txt)')
+  }
+  // relações nominais a carregar na actualização (dados reais: nunca vêm do git, nem se enviam por e-mail)
+  const pastaCarregar = path.join(DESTINO, 'carregar')
+  fs.rmSync(pastaCarregar, { recursive: true, force: true })
+  if (process.argv.includes('--relacoes')) {
+    const origem = path.resolve(arg('--relacoes', ''))
+    if (!fs.existsSync(origem)) throw new Error(`--relacoes: não existe ${origem}.`)
+    fs.mkdirSync(pastaCarregar, { recursive: true })
+    fs.copyFileSync(origem, path.join(pastaCarregar, 'relacoes.json'))
+    console.log('  ✓ relações nominais incluídas (carregar/relacoes.json): a actualização carrega-as')
   }
   const ligacao = path.join(DESTINO, 'ligacao-portal.txt')
   fs.rmSync(ligacao, { force: true })

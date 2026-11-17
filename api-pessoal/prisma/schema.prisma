@@ -284,7 +284,8 @@ model Evento {
   id            Int      @id @default(autoincrement())
   pessoaId      Int      @map("pessoa_id")
   tipo          String
-  data          DateTime @db.Date
+  // a data pode não se saber (registos antigos lançados à mão)
+  data          DateTime? @db.Date
   postoAnterior String?  @map("posto_anterior")
   postoNovo     String?  @map("posto_novo")
   cargoNome     String   @default("") @map("cargo_nome")

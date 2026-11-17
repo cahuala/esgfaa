@@ -42,7 +42,8 @@ export const TIPOS_EVENTO = {
   correcao: 'Correção de dados',
   outro: 'Outro',
 }
-export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'colocacao', 'transferencia', 'louvor', 'referencia_elogiosa', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
+// à mão: também o histórico de antes do sistema (promoções, nomeações…), que não muda o posto nem o cargo actuais
+export const EVENTOS_MANUAIS = ['ingresso', 'admissao', 'promocao', 'graduacao', 'nomeacao', 'exoneracao', 'progressao', 'curso', 'colocacao', 'transferencia', 'louvor', 'referencia_elogiosa', 'condecoracao', 'punicao', 'condenacao', 'despromocao', 'outro']
 
 const INCLUIR_LISTA = { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true, postoRequerido: true } }, militarAlocado: { select: { nome: true, posto: true, ramo: true } }, cursos: { select: { chave: true, nome: true, aproveitamento: true, fim: true } }, eventos: { where: { tipo: 'despromocao' }, select: { tipo: true, data: true } }, graduacoes: { where: { ativa: true }, select: { posto: true, ativa: true, inicio: true } } }
 // a lista resumida (a tabela do Pessoal) não leva os dados pessoais cifrados que a tabela não mostra (IBAN,
@@ -167,7 +168,7 @@ export class ServicoPessoas {
         domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, fotoId: true } },
         documentos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
         cursos: { orderBy: [{ fim: 'desc' }, { id: 'desc' }] },
-        eventos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
+        eventos: { orderBy: [{ data: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }] },
         graduacoes: { orderBy: { inicio: 'desc' } },
         licencas: { orderBy: { inicio: 'desc' } },
         itens: { include: { proposta: { select: { id: true, tipo: true, estado: true, titulo: true, criadoEm: true, documento: true } } }, orderBy: { id: 'desc' } },
@@ -258,6 +259,8 @@ export class ServicoPessoas {
       d.militarAlocadoId = null
       return
     }
+    // ainda sem oficial (p. ex. importada): liga-se depois em «Empregados domiciliares»
+    if (!d.militarAlocadoId) return
     const m = await this.bd.pessoa.findUnique({ where: { id: d.militarAlocadoId }, include: { _count: { select: { domiciliares: { where: { ativo: true, ...(id ? { id: { not: id } } : {}) } } } } } })
     if (!m || !temDireitoDomiciliar(m)) throw invalido('Só os oficiais superiores e generais têm empregados domiciliares.', 'militarAlocadoId')
     if (m._count.domiciliares >= limiteDomiciliares(m.posto)) throw invalido(`${m.nome} já tem ${m._count.domiciliares} empregado(s) domiciliar(es), o limite do posto.`, 'militarAlocadoId')
@@ -405,6 +408,26 @@ export class ServicoPessoas {
     })), posicoes)
   }
 
+  // todas as empregadas(os) domiciliares, com o oficial a que estão afectas(os) (ou sem nenhum)
+  async todasDomiciliares(u) {
+    exigir(u, 'ver')
+    const l = await this.bd.pessoa.findMany({ where: { vinculo: 'domiciliar', ativo: true }, orderBy: { nome: 'asc' }, select: { id: true, nome: true, fotoId: true, militarAlocado: { select: { id: true, nome: true, nip: true, posto: true, ramo: true } } } })
+    return l.map((x) => ({ id: x.id, nome: x.nome, fotoId: x.fotoId, oficial: x.militarAlocado ? { ...x.militarAlocado, postoNome: nomeDoPosto(x.militarAlocado.posto, x.militarAlocado.ramo) } : null }))
+  }
+
+  // liga (ou muda) a(o) domiciliar ao oficial, pelo NIP dele
+  async ligarDomiciliar(u, id, nip) {
+    exigir(u, 'editar')
+    const p = await this.bd.pessoa.findFirst({ where: { id, vinculo: 'domiciliar' }, select: { id: true, nome: true } })
+    if (!p) throw naoEncontrado('Empregada(o) domiciliar não encontrada(o).')
+    const m = await this.bd.pessoa.findFirst({ where: { tipo: 'militar', nip: String(nip ?? '').trim().toUpperCase() }, select: { id: true, nome: true } })
+    if (!m) throw invalido(`Não há nenhum militar com o NIP ${String(nip ?? '').trim()}.`, 'nip')
+    await this.#verificarDomiciliar({ vinculo: 'domiciliar', militarAlocadoId: m.id }, id)
+    await this.bd.pessoa.update({ where: { id }, data: { militarAlocadoId: m.id } })
+    await this.auditoria.registar(u, 'ligar_domiciliar', `${p.nome} → ${m.nome}`)
+    return { id, oficial: m }
+  }
+
   async porIdentificacao(ident) {
     return this.bd.pessoa.findFirst({ where: { OR: [{ nip: ident }, { numeroAgente: ident }] }, select: { id: true, nome: true } })
   }
@@ -434,11 +457,13 @@ export class ServicoPessoas {
   }
 
   // registos do histórico lançados à mão (louvores, punições, transferências…)
-  async adicionarEvento(u, pessoaId, { tipo, data, descricao, documento, entidade, pena = '' }) {
+  async adicionarEvento(u, pessoaId, { tipo, data = null, descricao, documento, entidade, pena = '', postoNovo = null, cargoNome = '' }) {
     exigir(u, 'editar')
     await this.#existe(pessoaId)
     if (!EVENTOS_MANUAIS.includes(tipo)) throw invalido('Este tipo de registo faz-se por proposta.', 'tipo')
-    const e = await this.bd.evento.create({ data: { pessoaId, tipo, data: new Date(data), descricao, documento, entidade, pena, criadoPor: u.email } })
+    if (postoNovo && !POSTOS[postoNovo]) throw invalido('Posto desconhecido.', 'postoNovo')
+    // a data é opcional (registos antigos de que não se sabe o dia)
+    const e = await this.bd.evento.create({ data: { pessoaId, tipo, data: data ? new Date(data) : null, descricao, documento, entidade, pena, postoNovo: postoNovo || null, cargoNome: cargoNome || '', criadoPor: u.email } })
     await this.auditoria.registar(u, 'adicionar_evento', `${TIPOS_EVENTO[tipo]} (ficha #${pessoaId})`)
     return e
   }
@@ -447,7 +472,7 @@ export class ServicoPessoas {
     exigir(u, 'editar')
     const e = await this.bd.evento.findFirst({ where: { id: eventoId, pessoaId } })
     if (!e) throw naoEncontrado('Registo não encontrado.')
-    if (!EVENTOS_MANUAIS.includes(e.tipo)) throw invalido('Os registos que vêm de extractos não se apagam.')
+    if (!EVENTOS_MANUAIS.includes(e.tipo) || e.propostaId) throw invalido('Os registos que vêm de extractos não se apagam.')
     await this.bd.evento.delete({ where: { id: eventoId } })
     await this.auditoria.registar(u, 'remover_evento', `${TIPOS_EVENTO[e.tipo]} (ficha #${pessoaId})`)
   }

@@ -81,7 +81,7 @@ export function verificarPromocao(p, { hoje = new Date(), modalidade } = {}) {
   if (p.processoPendente) condicoes.push(c('processo', 'Não tem processo disciplinar ou criminal em curso', 'arts. 50.º, n.º 1, f) e 103.º, n.º 1, d)', especial ? 'confirmar' : 'falta'))
   else condicoes.push(c('processo', 'Não tem processo disciplinar ou criminal em curso', 'art. 50.º, n.º 1, f)', 'ok'))
   // despromovido: 2 anos sem promoção (art. 63.º)
-  const despromocao = (p.historico || []).filter((h) => h.tipo === 'despromocao').map((h) => h.data).sort().at(-1)
+  const despromocao = (p.historico || []).filter((h) => h.tipo === 'despromocao' && h.data).map((h) => h.data).sort().at(-1)
   if (despromocao && anosEntre(despromocao, hoje) < 2) condicoes.push(c('despromocao', 'Passaram 2 anos desde a despromoção', 'art. 63.º, n.º 1', 'falta', `Pode voltar a ser promovido a partir de ${dia(somarAnos(despromocao, 2))}.`))
 
   if (!especial) {

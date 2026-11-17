@@ -144,6 +144,21 @@ try {
 } finally { Pop-Location }
 Ok 'base de dados actualizada'
 
+# as relações nominais que vêm no pendrive (carregar\relacoes.json): a orgânica que falta e as fichas novas.
+# Nunca apaga nem altera o que já existe; um problema aqui não desfaz a actualização (fica o relatório)
+$Relacoes = Join-Path $Pen 'carregar\relacoes.json'
+if (Test-Path $Relacoes) {
+  Passo 'A carregar as relações nominais (militares, civis e domiciliares)'
+  $RelatorioCarga = Join-Path $Reg "CARREGAMENTO-$Carimbo.txt"
+  Push-Location "$Destino\sistema"
+  try {
+    & $Node "--env-file=$EnvFicheiro" 'scripts\carregar-relacoes.js' $Relacoes $RelatorioCarga
+    if ($LASTEXITCODE -eq 0) { Ok "relações carregadas (relatório: $RelatorioCarga)" }
+    else { Write-Host "    (aviso: o carregamento das relações terminou com o código $LASTEXITCODE; o sistema foi actualizado na mesma)" -ForegroundColor Yellow }
+  } catch { Write-Host "    (aviso: não foi possível carregar as relações: $($_.Exception.Message); o sistema foi actualizado na mesma)" -ForegroundColor Yellow }
+  finally { Pop-Location }
+}
+
 # acertos da configuração que versões novas precisam (sem perguntar nada): a página /certificado
 $raiz = "$Dados\caddy\pki\authorities\local\root.crt"
 if (Test-Path $raiz) { New-Item -ItemType Directory -Force "$Destino\certificado" | Out-Null; Copy-Item $raiz "$Destino\certificado\esg-pessoal-raiz.crt" -Force }

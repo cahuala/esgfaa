@@ -65,7 +65,7 @@ export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoa
 export const emitirDocumentos = z.object({ documentos: z.array(z.object({ tipo: txt(40, 1), dados: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])).optional() }).strict()).min(1).max(20) }).strict()
 export const filtrosPessoas = z.record(z.string(), z.string().max(60)).optional().default({})
 export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: z.enum(['formacao', 'promocao', 'qualificacao', 'actualizacao', 'academico']).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()
-export const evento = z.object({ tipo: txt(30), data, descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default(''), pena: txt(300).default('') }).strict()
+export const evento = z.object({ tipo: txt(30), data: z.union([data, z.literal(''), z.null()]).optional().transform((v) => v || null), descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default(''), pena: txt(300).default(''), postoNovo: txt(40).optional(), cargoNome: txt(300).optional() }).strict()
 export const fimGraduacao = z.object({ fim: data, motivo: txt(500).default('') })
 
 const item = z.object({ pessoaId: id, postoProposto: opc(30), modalidade: opc(20), cargoId: idOpc, inicio: dataOpc, fim: dataOpc, justificacao: txt(1000).default('') }).strict()

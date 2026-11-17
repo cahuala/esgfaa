@@ -151,6 +151,8 @@ export function rotas({ servicos: s, config }) {
     res.json({ resultados })
   })
   r.get('/domiciliares', async (req, res) => res.json(await s.pessoas.domiciliares(u(req))))
+  r.get('/domiciliares/todas', async (req, res) => res.json(await s.pessoas.todasDomiciliares(u(req))))
+  r.put('/domiciliares/:id/oficial', validar({ params: E.pId, body: z.object({ nip: z.string().trim().min(1).max(40) }) }), async (req, res) => res.json(await s.pessoas.ligarDomiciliar(u(req), req.dados.params.id, req.dados.body.nip)))
 
   // processos individuais e documentos digitalizados
   const documento = multer({ storage: multer.memoryStorage(), limits: { fileSize: config.maxDocumento, files: 10 } })

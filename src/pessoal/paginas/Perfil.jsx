@@ -508,7 +508,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
   const [ficheiro, setFicheiro] = useState(null)
   async function guardar() {
     try {
-      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: d })
+      await api(`/pessoas/${p.id}/eventos`, { metodo: 'POST', corpo: { ...d, data: d.data || null, postoNovo: ['promocao', 'graduacao', 'despromocao'].includes(d.tipo) && d.postoNovo ? d.postoNovo : undefined, cargoNome: ['nomeacao', 'exoneracao'].includes(d.tipo) ? d.cargoNome || undefined : undefined } })
     } catch (e) {
       setErro(e.message)
       return
@@ -520,10 +520,12 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
   return (
     <Modal titulo="Lançar no histórico" aoFechar={aoFechar} rodape={<><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
-      <p className="small text-muted">Promoções, graduações, nomeações e exonerações entram no histórico pelas propostas aprovadas.</p>
+      <p className="small text-muted">As propostas aprovadas entram sozinhas no histórico. Aqui lança-se também o histórico de antes (promoções, nomeações, louvores, condecorações…): não muda o posto nem o cargo actuais. A data é opcional.</p>
       <div className="row">
         <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.eventosManuais.map((k) => [k, ref.tiposEvento[k]])} vazio={null} /></Campo>
-        <Campo rotulo="Data"><InputData className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
+        <Campo rotulo="Data (opcional)"><InputData className="form-control form-control-sm" value={d.data} onChange={(e) => setD({ ...d, data: e.target.value })} /></Campo>
+        {['promocao', 'graduacao', 'despromocao'].includes(d.tipo) && <Campo rotulo="Posto"><Escolha valor={d.postoNovo ?? ''} aoMudar={(v) => setD({ ...d, postoNovo: v })} opcoes={(ref.postos[p.ramo] ?? []).map((x) => [x.id, x.nome])} vazio="—" /></Campo>}
+        {['nomeacao', 'exoneracao'].includes(d.tipo) && <Campo rotulo="Cargo" col="col-12"><input className="form-control form-control-sm" value={d.cargoNome ?? ''} onChange={(e) => setD({ ...d, cargoNome: e.target.value })} placeholder="Por extenso, como na ordem de serviço" /></Campo>}
         <Campo rotulo={d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
         <Campo rotulo="Documento (ordem, despacho…)"><input className="form-control form-control-sm" value={d.documento} onChange={(e) => setD({ ...d, documento: e.target.value })} /></Campo>
         <Campo rotulo="Entidade"><input className="form-control form-control-sm" value={d.entidade} onChange={(e) => setD({ ...d, entidade: e.target.value })} /></Campo>

@@ -29,9 +29,10 @@ describe('Importação, BI, domiciliares, processos e extractos', () => {
       { nip: 'IMP004', nome: 'Cargo Cheio Fulano', ramo: 'EXE', posto: 'coronel', fps: 'QP', unidade: 'DE', cargo: 'Professor de Estratégia' },
     ]
     const s = (await adm.post('/api/pessoas/importar').send({ modo: 'novos', linhas, simular: true }).expect(200)).body
-    assert.deepEqual(s.linhas.map((l) => l.acao), ['criar', 'criar', 'erro', 'erro'])
+    assert.deepEqual(s.linhas.map((l) => l.acao), ['criar', 'criar', 'erro', 'criar'])
     assert.match(s.linhas[2].erro, /Posto sem correspondência/)
-    assert.match(s.linhas[3].erro, /não tem lugar livre/)
+    // o cargo já tem a pessoa da primeira linha: a importação deixa entrar e o cargo ganha um lugar
+    assert.match(s.linhas[3].avisos[0], /passa a ter 2 lugares/)
     assert.equal((await adm.get('/api/pessoas?ramo=MGA')).body.length, 0) // a simulação não grava
     await adm.post('/api/pessoas/importar').send({ modo: 'novos', linhas: linhas.slice(0, 2), simular: false }).expect(200)
     const c = (await adm.get('/api/pessoas?ramo=MGA')).body[0]
