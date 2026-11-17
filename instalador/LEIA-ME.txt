@@ -28,6 +28,14 @@ ENDEREÇO DO SISTEMA:  https://esg.emfaa.gov.ao   (ou com a porta, p. ex. :8443,
      esg.emfaa.gov.ao  ->  <IP do servidor>      (o IP aparece no fim da instalação)
   Enquanto não houver, o passo 3 abaixo resolve em cada computador.
 
+  FICOU COM :8443 E QUER SEM PORTA (https://esg.emfaa.gov.ao)?
+  No servidor, duplo clique em MUDAR-PARA-ENDERECO-SEM-PORTA-WINDOWS.bat e escreva um IP LIVRE da rede
+  (peça-o ao responsável pela rede). O sistema passa para a porta 443 desse IP; a VPN fica no IP de sempre
+  (nada se desliga). Os dados, as contas e as chaves ficam como estão. Depois:
+     1. no DNS da Escola, esg.emfaa.gov.ao passa a apontar para o IP novo;
+     2. em cada computador já preparado, corra outra vez PREPARAR-COMPUTADOR-WINDOWS.bat (o IP mudou);
+     3. se o instalador o disser no fim, reinicie o servidor.
+
 O QUE FICA INSTALADO
   - O sistema (só na rede da Escola), a base de dados PostgreSQL (só nesta máquina) e o HTTPS (Caddy).
   - Tudo arranca sozinho com o computador e volta a arrancar se falhar.
