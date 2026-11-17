@@ -670,6 +670,9 @@ model DocumentoEmitido {
   // controlo das declarações (como no SIGP): quantas vezes se imprimiu e a última
   impressoes      Int       @default(0)
   ultimaImpressao DateTime? @map("ultima_impressao") @db.Timestamptz(3)
+  // guias: o dia em que o próprio a veio levantar (e quem o registou)
+  levantadaEm     DateTime? @map("levantada_em") @db.Date
+  levantadaPor    String?   @map("levantada_por")
   pessoa          Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@unique([serie, ano, numero])

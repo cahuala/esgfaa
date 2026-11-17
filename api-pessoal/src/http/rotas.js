@@ -315,6 +315,7 @@ export function rotas({ servicos: s, config }) {
   // as guias de férias de um mês: quem está no plano, com a guia (prontas a imprimir); «preparar» emite as que faltam
   const mesAno = z.object({ ano: z.coerce.number().int().min(2000).max(2100), mes: z.coerce.number().int().min(1).max(12) })
   r.get('/plano-ferias/guias', validar({ query: mesAno }), async (req, res) => res.json(await s.planoFerias.guiasDoMes(u(req), req.dados.query)))
+  r.put('/plano-ferias/guias/:id/levantamento', validar({ params: E.pId, body: z.object({ data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() }) }), async (req, res) => res.json(await s.planoFerias.registarLevantamento(u(req), req.dados.params.id, req.dados.body.data)))
   r.post('/plano-ferias/guias', validar({ body: mesAno }), async (req, res) => res.json(await s.planoFerias.prepararGuias(u(req), req.dados.body)))
   r.post('/plano-ferias/importar', validar({ body: z.object({ ano: z.number().int().min(2000).max(2100), linhas: z.array(z.object({ identificador: z.union([z.string(), z.number()]).transform(String), mes: z.union([z.string(), z.number()]).transform(String) })).max(5000) }) }), async (req, res) => res.json(await s.planoFerias.importar(u(req), req.dados.body)))
   r.get('/tabela-salarial-civis/cargos', async (req, res) => res.json(await s.tabelaSalarial.verCivisCargos(u(req))))

@@ -39,6 +39,15 @@ describe('Guias de férias do mês, prontas a imprimir', () => {
     await adm.post('/api/declaracoes/impressoes').send({ ids: l.map((x) => x.guia.id) }).expect(200)
     const depois = (await adm.get(`/api/plano-ferias/guias?ano=${ano}&mes=${mes}`).expect(200)).body.linhas
     assert.ok(depois.every((x) => x.guia.impressoes === 1))
+    // o militar vem levantar a guia: regista-se o dia (não pode ser depois de hoje; vazio apaga)
+    const g = depois[0].guia.id
+    await adm.put(`/api/plano-ferias/guias/${g}/levantamento`).send({ data: '2026-10-16' }).expect(200)
+    assert.equal((await adm.put(`/api/plano-ferias/guias/${g}/levantamento`).send({ data: '2026-12-01' })).status, 400)
+    let x = (await adm.get(`/api/plano-ferias/guias?ano=${ano}&mes=${mes}`).expect(200)).body.linhas.find((y) => y.guia.id === g)
+    assert.deepEqual([x.guia.levantadaEm, Boolean(x.guia.levantadaPor)], ['2026-10-16', true])
+    await adm.put(`/api/plano-ferias/guias/${g}/levantamento`).send({ data: null }).expect(200)
+    x = (await adm.get(`/api/plano-ferias/guias?ano=${ano}&mes=${mes}`).expect(200)).body.linhas.find((y) => y.guia.id === g)
+    assert.equal(x.guia.levantadaEm, null)
   })
 
   it('o mês seguinte ainda não chegou: «Preparar já» emite as que faltam', async () => {

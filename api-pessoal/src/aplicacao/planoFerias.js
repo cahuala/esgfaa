@@ -55,6 +55,17 @@ export class ServicoPlanoFerias {
     return { preparadas, erros }
   }
 
+  // o dia em que o próprio veio levantar a guia (null = ainda não levantou)
+  async registarLevantamento(u, id, data) {
+    exigir(u, 'editar')
+    const g = await this.bd.documentoEmitido.findUnique({ where: { id }, include: { pessoa: { select: { nome: true } } } })
+    if (!g || !g.tipo.startsWith('guia_')) throw naoEncontrado('Guia não encontrada.')
+    if (data && data > this.agora().toISOString().slice(0, 10)) throw invalido('A data do levantamento não pode ser depois de hoje.', 'data')
+    await this.bd.documentoEmitido.update({ where: { id }, data: { levantadaEm: data ? new Date(`${data}T00:00:00Z`) : null, levantadaPor: data ? u.email : null } })
+    await this.auditoria.registar(u, 'guia_levantada', `${g.pessoa.nome}: ${data ? data.split('-').reverse().join('/') : 'apagado'}`, { id })
+    return { id, levantadaEm: data || null, levantadaPor: data ? u.email : null }
+  }
+
   // corre de hora a hora: no mês que chegou, as guias de quem está no plano ficam preparadas
   async prepararDoMesAtual() {
     const h = this.agora()
@@ -68,7 +79,7 @@ export class ServicoPlanoFerias {
   async guiasDoMes(u, { ano, mes }) {
     exigir(u, 'ver')
     const [falta, com] = await this.#guias(ano, mes)
-    const linha = (x) => ({ pessoa: x.pessoa, guia: x.guia ? { id: x.guia.id, dados: x.guia.dados, impressoes: x.guia.impressoes, ultimaImpressao: x.guia.ultimaImpressao, criadoEm: x.guia.criadoEm, emitidoPor: x.guia.emitidoPor } : null })
+    const linha = (x) => ({ pessoa: x.pessoa, guia: x.guia ? { id: x.guia.id, dados: x.guia.dados, impressoes: x.guia.impressoes, ultimaImpressao: x.guia.ultimaImpressao, criadoEm: x.guia.criadoEm, emitidoPor: x.guia.emitidoPor, levantadaEm: x.guia.levantadaEm ? x.guia.levantadaEm.toISOString().slice(0, 10) : null, levantadaPor: x.guia.levantadaPor ?? null } : null })
     return { ano, mes, linhas: [...com, ...falta].map(linha).sort((a, b) => a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt')) }
   }
 

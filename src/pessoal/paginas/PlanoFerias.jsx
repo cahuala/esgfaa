@@ -240,6 +240,19 @@ function GuiasDoMes() {
     }
   }
 
+  // o dia em que o próprio veio levantar a guia (vazio = ainda não levantou)
+  async function levantou(l, data) {
+    try {
+      await api(`/plano-ferias/guias/${l.guia.id}/levantamento`, { metodo: 'PUT', corpo: { data: data || null } })
+      avisar(data ? `${l.pessoa.nome}: levantou a guia em ${data.split('-').reverse().join('/')}.` : `${l.pessoa.nome}: levantamento apagado.`)
+      recarregar()
+    } catch (e) {
+      avisar(e.message, 'erro')
+    }
+  }
+  const hojeIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+  const levantadas = prontas.filter((l) => l.guia.levantadaEm).length
+
   async function imprimir(lista) {
     if (!lista.length) return
     setAFazer(true)
@@ -270,7 +283,7 @@ function GuiasDoMes() {
         {dados && !linhas.length && <div className="text-muted">Ninguém no plano de férias de {MESES_LONGOS[mes - 1]} de {ano}.</div>}
         {dados && linhas.length > 0 && <>
           <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
-            <span>{linhas.length} pessoa(s) de férias em {MESES_LONGOS[mes - 1]}: <b>{prontas.length} guia(s) pronta(s)</b>{porImprimir.length ? `, ${porImprimir.length} por imprimir` : ''}{semGuia.length ? `, ${semGuia.length} por preparar` : ''}.</span>
+            <span>{linhas.length} pessoa(s) de férias em {MESES_LONGOS[mes - 1]}: <b>{prontas.length} guia(s) pronta(s)</b>{porImprimir.length ? `, ${porImprimir.length} por imprimir` : ''}{semGuia.length ? `, ${semGuia.length} por preparar` : ''}{prontas.length ? `; ${levantadas} levantada(s)` : ''}.</span>
             <span className="flex-grow-1" />
             {pode('editar') && semGuia.length > 0 && <button type="button" className="btn btn-sm btn-white" disabled={aFazer} onClick={preparar}><i className="fa fa-magic me-1" />Preparar já ({semGuia.length})</button>}
             {porImprimir.length > 0 && <button type="button" className="btn btn-sm btn-theme" disabled={aFazer} onClick={() => imprimir(porImprimir)}><i className="fa fa-print me-1" />Imprimir as por imprimir ({porImprimir.length})</button>}
@@ -278,7 +291,7 @@ function GuiasDoMes() {
           </div>
           <div className="table-responsive">
             <table className="table table-sm align-middle mb-0">
-              <thead><tr><th>Nome</th><th>Posto / categoria</th><th>Unidade</th><th>Guia</th></tr></thead>
+              <thead><tr><th>Nome</th><th>Posto / categoria</th><th>Unidade</th><th>Guia</th><th style={{ minWidth: 190 }}>Levantou em</th></tr></thead>
               <tbody>
                 {linhas.map((l) => (
                   <tr key={l.pessoa.id}>
@@ -289,6 +302,14 @@ function GuiasDoMes() {
                       {!l.guia && <span className="badge bg-warning text-dark">Por preparar</span>}
                       {l.guia && (l.guia.impressoes ? <span className="badge bg-success">Impressa</span> : <span className="badge bg-info">Pronta, por imprimir</span>)}
                       {l.guia && <div className="text-muted">a partir de {String(l.guia.dados?.inicio ?? '').split('-').reverse().join('/')}, {l.guia.dados?.dias} dias</div>}
+                    </td>
+                    <td className="small">
+                      {l.guia && (pode('editar') ? (
+                        <div className="d-flex gap-1 align-items-center">
+                          <input type="date" className="form-control form-control-sm" style={{ width: 140 }} max={hojeIso()} value={l.guia.levantadaEm ?? ''} onChange={(e) => levantou(l, e.target.value)} aria-label={`Data em que ${l.pessoa.nome} levantou a guia`} />
+                          {!l.guia.levantadaEm && <button type="button" className="btn btn-xs btn-white" onClick={() => levantou(l, hojeIso())} title="Levantou hoje">Hoje</button>}
+                        </div>
+                      ) : l.guia.levantadaEm ? l.guia.levantadaEm.split('-').reverse().join('/') : <span className="text-muted">—</span>)}
                     </td>
                   </tr>
                 ))}
