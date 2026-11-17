@@ -13,7 +13,7 @@ import { pedirJson } from '../infraestrutura/https.js'
 import { limiteDomiciliares, temDireitoDomiciliar } from '../dominio/pessoal/domiciliares.js'
 import { exigir, pode } from './sessao.js'
 import { comparadorHierarquico, ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
-import { posicoesUnidades } from './ordem.js'
+import { ordenarLinhas, posicoesUnidades } from './ordem.js'
 import { CAMPOS_CIFRADOS } from '../infraestrutura/cifraDados.js'
 
 // tipos de registo no histórico (os das propostas e os que se lançam à mão)
@@ -431,14 +431,15 @@ export class ServicoPessoas {
       }
       if (falta.length) r.push({ id: p.id, nome: p.nome, tipo: p.vinculo === 'domiciliar' ? 'domiciliar' : p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil ?? '', unidadeNome: p.unidade?.nome ?? '', falta })
     }
-    return r
+    return ordenarLinhas(this.bd, r)
   }
 
   // todas as empregadas(os) domiciliares, com o oficial a que estão afectas(os) (ou sem nenhum)
   async todasDomiciliares(u) {
     exigir(u, 'ver')
     const l = await this.bd.pessoa.findMany({ where: { vinculo: 'domiciliar', ativo: true }, orderBy: { nome: 'asc' }, select: { id: true, nome: true, fotoId: true, militarAlocado: { select: { id: true, nome: true, nip: true, posto: true, ramo: true } } } })
-    return l.map((x) => ({ id: x.id, nome: x.nome, fotoId: x.fotoId, oficial: x.militarAlocado ? { ...x.militarAlocado, postoNome: nomeDoPosto(x.militarAlocado.posto, x.militarAlocado.ramo) } : null }))
+    // pela hierarquia do oficial; as que não têm oficial no fim
+    return ordenarLinhas(this.bd, l.map((x) => ({ id: x.id, nome: x.nome, fotoId: x.fotoId, oficial: x.militarAlocado ? { ...x.militarAlocado, postoNome: nomeDoPosto(x.militarAlocado.posto, x.militarAlocado.ramo) } : null })), (x) => x.oficial?.id)
   }
 
   // liga (ou muda) a(o) domiciliar ao oficial, pelo NIP dele
@@ -565,14 +566,18 @@ export class ServicoPessoas {
     for (const p of lista) {
       const rr = reservaEReforma(p, hoje)
       const f = comDerivados(p, hoje)
-      const base = { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ramo: p.ramo, posto: p.posto, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto }
+      const base = { id: p.id, nome: p.nome, fotoId: p.fotoId, nip: p.nip, ramo: p.ramo, posto: p.posto, postoNome: f.postoNome, postoAbreviatura: f.postoAbreviatura, idade: f.idade, tempoServico: rr?.tempoServico ?? null, dataNascimento: p.dataNascimento ? p.dataNascimento.toISOString().slice(0, 10) : null, situacao: p.situacao, unidadeId: p.unidadeId, unidadeNome: f.unidadeNome, cargoNome: f.cargoNome, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto }
       // com a data já passada fica marcado «em atraso»: a situação na ficha ainda não foi mudada
       const hojeTxt = hoje.toISOString().slice(0, 10)
-      if (p.situacao === 'activo' && rr?.reserva && rr.reserva.data <= limite) r.push({ ...base, passagem: 'reserva', data: rr.reserva.data, artigo: rr.reserva.artigo, idadeLimite: rr.reserva.idadeLimite, atrasado: rr.reserva.data < hojeTxt })
-      const reforma = [rr?.reforma?.data, rr?.reformaPorTempo?.data].filter(Boolean).sort()[0]
-      if (reforma && reforma <= limite) r.push({ ...base, passagem: 'reforma', data: reforma, artigo: 'art. 114.º', atrasado: reforma < hojeTxt })
+      if (p.situacao === 'activo' && rr?.reserva && rr.reserva.data <= limite) r.push({ ...base, passagem: 'reserva', data: rr.reserva.data, artigo: rr.reserva.artigo, idadeLimite: rr.reserva.idadeLimite, motivo: `${rr.reserva.idadeLimite} anos de idade (limite do posto)`, atrasado: rr.reserva.data <= hojeTxt })
+      // a reforma: pela idade (60 anos; 65 os oficiais generais) ou pelos 35 anos de serviço, o que chegar primeiro
+      const porIdade = rr?.reforma
+      const porTempo = rr?.reformaPorTempo
+      const ref = porIdade && (!porTempo || porIdade.data <= porTempo.data) ? { data: porIdade.data, artigo: porIdade.artigo, motivo: `${porIdade.idadeLimite} anos de idade` }
+        : porTempo ? { data: porTempo.data, artigo: porTempo.artigo, motivo: `${porTempo.anos} anos de serviço` } : null
+      if (ref && ref.data <= limite) r.push({ ...base, passagem: 'reforma', data: ref.data, artigo: ref.artigo, motivo: ref.motivo, idadeLimite: porIdade?.idadeLimite ?? null, atrasado: ref.data <= hojeTxt })
     }
-    // pelo ano da passagem; no mesmo ano, pela hierarquia
-    return r.sort((a, b) => a.data.slice(0, 4).localeCompare(b.data.slice(0, 4)) || cmp(a, b))
+    // pela ordem hierárquica (posto, unidade na orgânica, função, antiguidade); a mesma pessoa: a reserva antes da reforma
+    return r.sort((a, b) => cmp(a, b) || a.data.localeCompare(b.data)).map((x, i) => ({ ...x, hierarquia: i + 1 }))
   }
 }

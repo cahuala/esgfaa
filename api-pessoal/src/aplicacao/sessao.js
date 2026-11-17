@@ -4,6 +4,7 @@ import crypto from 'node:crypto'
 import { Prisma } from '@prisma/client'
 import { ErroDominio, conflito, invalido, naoAutenticado, naoEncontrado, semPermissao } from '../erros.js'
 import { eDuplicado } from '../infraestrutura/bd.js'
+import { ordenarLinhas } from './ordem.js'
 import { AREAS, MODELOS, areasDe, limparAreas, permissoesDe } from '../dominio/seguranca/areas.js'
 
 /*
@@ -228,7 +229,7 @@ export class ServicoSessao {
     const pendentes = await this.bd.pedidoDespacho.findMany({ where: { tipo: { in: ['utilizador_papel', 'utilizador_permissoes'] }, estado: 'pendente' } })
     const pedidos = new Map(pendentes.filter((x) => x.tipo === 'utilizador_papel').map((x) => [x.utilizadorId, x.dados?.papel]))
     const permissoes = new Map(pendentes.filter((x) => x.tipo === 'utilizador_permissoes').map((x) => [x.utilizadorId, x.resumo]))
-    return (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })).map((x) => ({ ...publico(x), nip: x.biHash ? null : identificadorDe(x.pessoa), identificador: x.biHash ? 'BI' : x.pessoa ? NOME_IDENTIFICADOR(x.pessoa) : null, papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null }))
+    return ordenarLinhas(this.bd, (await this.bd.utilizador.findMany({ orderBy: { nome: 'asc' }, include: { ...COM_UNIDADE, pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })).map((x) => ({ ...publico(x), nip: x.biHash ? null : identificadorDe(x.pessoa), identificador: x.biHash ? 'BI' : x.pessoa ? NOME_IDENTIFICADOR(x.pessoa) : null, papelPedido: pedidos.get(x.id) ?? null, papelPedidoNome: PAPEIS[pedidos.get(x.id)]?.nome ?? null, permissoesPedido: permissoes.get(x.id) ?? null })), (x) => x.pessoaId)
   }
 
   // precisa do despacho do Comandante: contas e papéis acima de utente; a primeira conta de Comandante não

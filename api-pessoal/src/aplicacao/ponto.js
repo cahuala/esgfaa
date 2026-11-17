@@ -1,5 +1,6 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
+import { ordenarLinhas } from './ordem.js'
 import { exigir } from './sessao.js'
 
 /*
@@ -237,8 +238,8 @@ export class ServicoPonto {
         marcacoes: r.dia.map((m) => ({ id: m.id, hora: horaLuanda(m.quando), tipo: m.tipo, origem: m.origem, verificacao: m.verificacao, aparelho: m.aparelho?.nome ?? '', justificacao: m.justificacao, criadoPor: m.criadoPor })),
       }
     })
-    // quem marcou primeiro, pela hora de entrada; os outros pela ordem das carreiras
-    linhas.sort((x, y) => (x.entrada ? 0 : 1) - (y.entrada ? 0 : 1) || (x.entrada && y.entrada ? x.entrada.localeCompare(y.entrada) : 0))
+    // pela ordem hierárquica (a hora de entrada ordena-se na coluna)
+    const ordenadas = await ordenarLinhas(this.bd, linhas)
     const ligado = (a) => a.ultimoContacto && this.agora() - a.ultimoContacto < 5 * 60_000
     return {
       data: d, hoje: hojeLuanda(this.agora()), horario: h, descanso,
@@ -251,7 +252,7 @@ export class ServicoPonto {
         semMarcacao: linhas.filter((l) => l.estado === 'sem_marcacao').length,
         ausentes: linhas.filter((l) => l.estado === 'licenca' || l.estado === 'falta').length,
       },
-      pessoas: linhas,
+      pessoas: ordenadas,
     }
   }
 
@@ -279,7 +280,7 @@ export class ServicoPonto {
     const uteis = Array.from({ length: nDias }, (_, i) => `${mes}-${doisDig(i + 1)}`).filter((d) => ![0, 6].includes(diaDaSemana(d)) && d <= hoje)
     return {
       mes, horario: h, diasUteis: uteis.length,
-      pessoas: pessoas.map((p) => {
+      pessoas: await ordenarLinhas(this.bd, pessoas.map((p) => {
         const dias = porDia[p.id] ?? {}
         const r = Object.values(dias).map((l) => this.#resumoDia(l, h))
         const aus = ausentes[p.id] ?? []
@@ -290,7 +291,7 @@ export class ServicoPonto {
           semMarcacao: uteis.filter((d) => !dias[d] && !aus.some((x) => x.de <= d && x.ate >= d)).length,
           ausencias: uteis.filter((d) => !dias[d] && aus.some((x) => x.de <= d && x.ate >= d)).length,
         }
-      }),
+      })),
     }
   }
 

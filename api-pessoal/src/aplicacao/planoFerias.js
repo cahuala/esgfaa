@@ -1,6 +1,7 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { tempoServico } from '../dominio/pessoal/carreira.js'
 import { exigir } from './sessao.js'
+import { ordenarLinhas } from './ordem.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 
 // quem prepara as guias sozinho, quando chega o mês (fica assim na auditoria e no expediente)
@@ -80,7 +81,7 @@ export class ServicoPlanoFerias {
     exigir(u, 'ver')
     const [falta, com] = await this.#guias(ano, mes)
     const linha = (x) => ({ pessoa: x.pessoa, guia: x.guia ? { id: x.guia.id, dados: x.guia.dados, impressoes: x.guia.impressoes, ultimaImpressao: x.guia.ultimaImpressao, criadoEm: x.guia.criadoEm, emitidoPor: x.guia.emitidoPor, levantadaEm: x.guia.levantadaEm ? x.guia.levantadaEm.toISOString().slice(0, 10) : null, levantadaPor: x.guia.levantadaPor ?? null } : null })
-    return { ano, mes, linhas: [...com, ...falta].map(linha).sort((a, b) => a.pessoa.nome.localeCompare(b.pessoa.nome, 'pt')) }
+    return { ano, mes, linhas: await ordenarLinhas(this.bd, [...com, ...falta].map(linha), (x) => x.pessoa.id) }
   }
 
   // [sem guia, com guia] das pessoas activas do plano desse mês (os empregados domiciliares não levam guia)

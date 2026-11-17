@@ -1,8 +1,10 @@
 import { POSTOS } from './hierarquia.js'
+import { CARREIRAS_CIVIS } from './civis.js'
 
 /*
   Ordem hierárquica de todas as listas e tabelas de pessoal:
-  1. o posto (o mais alto primeiro; os civis depois dos militares);
+  1. o posto (o mais alto primeiro); os civis depois dos militares, pelo nível da carreira (Técnico Superior,
+     Técnico Médio, Administrativo… e os domiciliares no fim);
   2. no mesmo posto, a ordem da unidade na orgânica (a Direcção antes dos Serviços Gerais; cada unidade
      logo seguida das suas subunidades), pela «ordem» de cada unidade;
   3. a função do cargo (comando, direcção/chefia, estado-maior, execução);
@@ -36,6 +38,7 @@ export function comparadorHierarquico(posicoes) {
   const data = (d) => (d ? new Date(d).getTime() : Infinity)
   const chave = (x) => [
     -(x.grauEfectivo ?? x.grau ?? (x.posto ? POSTOS[x.posto]?.grau : null) ?? -1),
+    x.posto || x.grau || x.grauEfectivo ? 0 : x.vinculo === 'domiciliar' ? 99 : CARREIRAS_CIVIS[x.carreiraCivil]?.nivel ?? 50,
     posicoes.get(x.unidadeId) ?? 1e6,
     FUNCAO[x.funcao ?? x.cargo?.funcao] ?? 9,
     data(x.dataAntiguidadePosto),

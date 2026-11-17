@@ -1,6 +1,7 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
+import { ordenarLinhas } from './ordem.js'
 import { exigir } from './sessao.js'
 
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
@@ -26,11 +27,11 @@ export class ServicoAusencias {
     if (a) where.inicio = { lte: new Date(a) }
     if (d) where.OR = [{ fim: null }, { fim: { gte: new Date(d) } }]
     const l = await this.bd.ausencia.findMany({ where, include: { pessoa: { select: { id: true, nome: true, nip: true, numeroAgente: true, posto: true, ramo: true, fotoId: true, unidadeId: true } } }, orderBy: { inicio: 'desc' }, take: 5000 })
-    return l.map((x) => ({
+    return ordenarLinhas(this.bd, l.map((x) => ({
       id: x.id, pessoaId: x.pessoaId, tipo: x.tipo, tipoNome: TIPOS_AUSENCIA[x.tipo] ?? x.tipo, inicio: dia(x.inicio), fim: dia(x.fim), motivo: x.motivo, documento: x.documento,
       dias: Math.round((new Date(x.fim ?? hoje) - new Date(x.inicio)) / 86_400_000) + 1, emCurso: !x.fim || dia(x.fim) >= hoje,
       nome: x.pessoa.nome, fotoId: x.pessoa.fotoId, unidadeId: x.pessoa.unidadeId, identificacao: x.pessoa.nip || x.pessoa.numeroAgente || '', postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : 'Civil',
-    }))
+    })))
   }
 
   async criar(u, d) {
@@ -92,7 +93,7 @@ export class ServicoAusencias {
     const fimDeSemana = Array.from({ length: nDias }, (_, i) => i + 1).filter((d) => [0, 6].includes(new Date(Date.UTC(a, m - 1, d)).getUTCDay()))
     return {
       mes, dias: nDias, fimDeSemana,
-      pessoas: pessoas.map((p) => ({ id: p.id, nome: p.nome, categoria: p.categoriaCivil || CARREIRAS_CIVIS[p.carreiraCivil]?.nome || '', faltas: [...(dias[p.id] ?? [])].sort((x, y) => x - y) })),
+      pessoas: await ordenarLinhas(this.bd, pessoas.map((p) => ({ id: p.id, nome: p.nome, categoria: p.categoriaCivil || CARREIRAS_CIVIS[p.carreiraCivil]?.nome || '', faltas: [...(dias[p.id] ?? [])].sort((x, y) => x - y) }))),
     }
   }
 

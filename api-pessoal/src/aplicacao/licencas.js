@@ -1,6 +1,7 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { TIPOS_LICENCA, verificarLicenca } from '../dominio/pessoal/carreira.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
+import { ordenarLinhas } from './ordem.js'
 import { exigir } from './sessao.js'
 
 const dia = (d) => new Date(d).toISOString().slice(0, 10)
@@ -21,7 +22,7 @@ export class ServicoLicencas {
     if (estado === 'em_curso') Object.assign(where, { inicio: { lte: new Date(hoje) }, fim: { gte: new Date(hoje) } })
     if (estado === 'futura') where.inicio = { gt: new Date(hoje) }
     const l = await this.bd.licenca.findMany({ where, include: { pessoa: { select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, ramo: true, fotoId: true } } }, orderBy: { inicio: 'desc' }, take: 5000 })
-    return l.map((x) => ({ ...x, inicio: dia(x.inicio), fim: dia(x.fim), tipoNome: NOMES_LICENCA[x.tipo] ?? x.tipo, nome: x.pessoa.nome, fotoId: x.pessoa.fotoId, identificacao: x.pessoa.nip || x.pessoa.numeroAgente || '', postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : 'Civil', estado: dia(x.inicio) > hoje ? 'futura' : dia(x.fim) < hoje ? 'terminada' : 'em_curso', pessoa: undefined }))
+    return ordenarLinhas(this.bd, l.map((x) => ({ ...x, inicio: dia(x.inicio), fim: dia(x.fim), tipoNome: NOMES_LICENCA[x.tipo] ?? x.tipo, nome: x.pessoa.nome, fotoId: x.pessoa.fotoId, identificacao: x.pessoa.nip || x.pessoa.numeroAgente || '', postoNome: x.pessoa.posto ? nomeDoPosto(x.pessoa.posto, x.pessoa.ramo) : 'Civil', estado: dia(x.inicio) > hoje ? 'futura' : dia(x.fim) < hoje ? 'terminada' : 'em_curso', pessoa: undefined })))
   }
 
   // verifica sem gravar (o formulário mostra as condições antes de confirmar)

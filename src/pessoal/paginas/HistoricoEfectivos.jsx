@@ -25,10 +25,10 @@ export default function HistoricoEfectivos() {
   if (!dados) return <Carregando />
 
   const saiu = (p) => !p.ativo
+  // pela ordem hierárquica (vem assim do servidor); a data de saída ordena-se na coluna
   const linhas = dados
     .filter((p) => (estado === 'todos' ? true : estado === 'saiu' ? saiu(p) : !saiu(p)))
     .filter((p) => !ano || (saiu(p) ? iso(p.dataSaidaEscola).startsWith(ano) : false) || entrada(p).startsWith(ano))
-    .sort((a, b) => (iso(b.dataSaidaEscola) || '9999').localeCompare(iso(a.dataSaidaEscola) || '9999') || a.nome.localeCompare(b.nome))
   const anos = [...new Set(dados.flatMap((p) => [entrada(p).slice(0, 4), iso(p.dataSaidaEscola).slice(0, 4)]).filter(Boolean))].sort().reverse()
   const nSairam = dados.filter(saiu).length
 
