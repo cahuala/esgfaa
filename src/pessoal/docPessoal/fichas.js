@@ -1,5 +1,6 @@
 import { emblema } from '../documentos'
 import { fotoBase64 } from '../fotos'
+import { listasAtuais } from '../listasAtuais'
 import { M, dataPt, logoEsg, novaPagina } from './base'
 
 /*
@@ -10,10 +11,11 @@ import { M, dataPt, logoEsg, novaPagina } from './base'
 */
 const ESTADOS_CIVIS = { solteiro: 'Solteiro(a)', casado: 'Casado(a)', uniao_facto: 'União de facto', divorciado: 'Divorciado(a)', viuvo: 'Viúvo(a)' }
 const HAB = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Ensino médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
-const ec = (p) => ESTADOS_CIVIS[p.estadoCivil] ?? p.estadoCivil ?? ''
+const ec = (p) => listasAtuais.estadosCivis?.[p.estadoCivil] ?? ESTADOS_CIVIS[p.estadoCivil] ?? p.estadoCivil ?? ''
 const idade = (iso) => { if (!iso) return ''; const n = new Date(iso); const h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return `${a} anos` }
 const residencia = (p) => [p.provincia, p.municipio, p.bairro, p.rua, p.casa && `Casa n.º ${p.casa}`].filter(Boolean).join(', ') || p.morada || ''
-const habilitacoes = (p) => [HAB[p.habilitacao], p.areaFormacao].filter(Boolean).join(' — ')
+const hab = (k) => listasAtuais.habilitacoes?.[k] ?? HAB[k]
+const habilitacoes = (p) => [hab(p.habilitacao), p.areaFormacao].filter(Boolean).join(' — ')
 const promocoes = (p) => (p.eventos ?? []).filter((e) => e.tipo === 'promocao').sort((a, b) => String(a.data).localeCompare(String(b.data)))
 const funcoes = (p) => (p.eventos ?? []).filter((e) => e.tipo === 'nomeacao' && e.cargoNome).sort((a, b) => String(a.data).localeCompare(String(b.data)))
 const cursosMil = (p) => (p.cursos ?? []).filter((c) => c.tipo !== 'academico')
@@ -288,7 +290,7 @@ export async function fichaIndividualCivil(d, p) {
   P('LOCAL DE NASCIMENTO', p.naturalidade, 46.6)
   P('PROVÍNCIA', p.provincia, 51.4)
   P('MUNICÍPIO', p.municipio, 56.1)
-  P('HABILITAÇÕES LITERÁRIAS', HAB[p.habilitacao] ?? '', 60.5)
+  P('HABILITAÇÕES LITERÁRIAS', hab(p.habilitacao) ?? '', 60.5)
   P('HABILITAÇÕES PROFISSIONAIS', p.areaFormacao, 65.3)
   P('OCUPAÇÃO LABORAL', funcaoCategoria(p), 70)
   P('SALÁRIO MENSAL', p.vencimento ? `${Number(p.vencimento).toLocaleString('pt-PT', { minimumFractionDigits: 2 })} KZ` : '', 74.8)
@@ -737,7 +739,7 @@ export function fichaRegistoBiografico(d, p) {
   doc.setLineWidth(0.2).line(c5[0], 52.6, c5[4], 52.6)
   doc.setLineWidth(0.3).line(c5[4], 17.1, c5[4], 62.4)
   const oc = [L(780), L(1310), L(1695), L(1895)]
-  const est = [[HAB[p.habilitacao] && `${HAB[p.habilitacao]}${p.areaFormacao ? ` — ${p.areaFormacao}` : ''}`, '', ''], ...(p.cursos ?? []).map((c) => [c.nome, c.local, dataPt(c.fim)])].filter((l) => l[0])
+  const est = [[hab(p.habilitacao) && `${hab(p.habilitacao)}${p.areaFormacao ? ` — ${p.areaFormacao}` : ''}`, '', ''], ...(p.cursos ?? []).map((c) => [c.nome, c.local, dataPt(c.fim)])].filter((l) => l[0])
   const posE = grelha(doc, oc, 17.1, 11.1, ['Outros Cursos ( de base, superações\nespecialização pós-graduação )', 'Escola Instituto\nou Universidade', 'Terminado em'], 8, 4.27, { tam: 9.5 })
   for (let i = 0; i < 8; i++) {
     if (est[i]) est[i].forEach((v, k) => { const [a, b2, c] = posE(i, k); valor(doc, v, a, b2 - 0.2, c, { tam: 8.5, centrar: k === 2 }) })
@@ -890,7 +892,7 @@ export function fichaDocente(d, p) {
   linha(doc, 'PROVÍNCIA', p.provincia, x, 126.7, 104, o); linha(doc, 'MUNICÍPIO', p.naturalidade || p.municipio, 105, 126.7, xf, o)
   linha(doc, 'RESIDÊNCIA', p.morada || p.municipio, x, 135.4, 100, o); linha(doc, 'DATA DE NASCIMENTO', dataPt(p.dataNascimento), 101, 135.4, xf, o)
   linha(doc, 'ESTADO CIVIL', ec(p), x, 143.4, 104, o); linha(doc, 'SEXO', p.genero === 'F' ? 'Feminino' : p.genero === 'M' ? 'Masculino' : '', 105, 143.4, xf, o)
-  linha(doc, 'GRUPO SANGUÍNEO', p.grupoSanguineo, x, 152, 91, o); linha(doc, 'HABILITAÇÃO LITERÁRIA', HAB[p.habilitacao] ?? '', 92, 152, xf, o)
+  linha(doc, 'GRUPO SANGUÍNEO', p.grupoSanguineo, x, 152, 91, o); linha(doc, 'HABILITAÇÃO LITERÁRIA', hab(p.habilitacao) ?? '', 92, 152, xf, o)
   linha(doc, 'TEL PRINCIPAL', p.telefone, x, 160.4, 104, o); linha(doc, 'TEL ALTERNATIVO', p.telefoneAlternativo, 105, 160.4, xf, o)
   T(doc, 10.5).text('E-MAIL', x, 169)
   doc.setLineWidth(0.2).setDrawColor(60).line(x + doc.getTextWidth('E-MAIL') + 1, 169.8, xf, 169.8).setDrawColor(0)

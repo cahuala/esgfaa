@@ -251,6 +251,7 @@ function SubmeterDespacho({ x, aoFechar, aoSubmeter }) {
 // o despacho no documento: à espera, ou a decisão do Comandante; quem despacha escolhe aqui
 const DECISOES = { visto: 'Visto', concordo: 'Concordo', autorizo: 'Autorizo', nao_concordo: 'Não concordo', indefiro: 'Indefiro', tomei_conhecimento: 'Tomei conhecimento', informe: 'Informe / ver comigo', arquive_se: 'Arquive-se' }
 function Despacho({ x, podeDespachar, aoDespachar }) {
+  const { ref } = useSessao()
   const [d, setD] = useState({ decisao: 'visto', texto: '' })
   const p = x.despacho
   if (p.estado === 'despachado') {
@@ -271,7 +272,7 @@ function Despacho({ x, podeDespachar, aoDespachar }) {
       <div className="small">Submetido por {p.pedidoPor}{p.pedidoUnidade ? ` (${p.pedidoUnidade})` : ''} · {dataHoraPt(p.pedidoEm)}{p.nota ? ` — «${p.nota}»` : ''}</div>
       {podeDespachar && (
         <div className="mt-2 d-flex flex-wrap gap-2 align-items-start">
-          <Escolha style={{ minWidth: 220 }} valor={d.decisao} aoMudar={(v) => setD({ ...d, decisao: v })} opcoes={DECISOES} vazio={null} aria-label="Despacho" />
+          <Escolha style={{ minWidth: 220 }} valor={d.decisao} aoMudar={(v) => setD({ ...d, decisao: v })} opcoes={ref?.decisoesDespacho ?? DECISOES} vazio={null} aria-label="Despacho" />
           <textarea className="form-control flex-grow-1" style={{ minWidth: 240 }} rows={2} value={d.texto} onChange={(e) => setD({ ...d, texto: e.target.value })} placeholder="Texto do despacho (opcional)" aria-label="Texto do despacho" />
           <button type="button" className="btn btn-dark" onClick={() => aoDespachar(d)}><i className="fa fa-stamp me-1" />Despachar</button>
         </div>

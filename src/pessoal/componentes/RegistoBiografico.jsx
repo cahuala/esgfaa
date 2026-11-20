@@ -5,7 +5,6 @@ import { dataPt } from '../formatar'
 import { Escolha, InputData } from './Ui'
 
 const SITUACOES_MILITARES = [['adiado', 'Adiado'], ['disponibilidade', 'Disponibilidade'], ['isento', 'Isento'], ['nao_apto', 'Não apto'], ['refratario', 'Refratário'], ['militar', 'Militar']]
-const NIVEIS = [['MB', 'Muito bem'], ['B', 'Bem'], ['R', 'Razoável']]
 const vazio = (n, f) => Array.from({ length: n }, (_, i) => f(i))
 const completar = (l, n, f) => [...(l ?? []), ...vazio(Math.max(0, n - (l ?? []).length), f)].slice(0, n)
 
@@ -15,7 +14,9 @@ const completar = (l, n, f) => [...(l ?? []), ...vazio(Math.max(0, n - (l ?? [])
   situação médica e outras informações relevantes. Edita-se tudo de uma vez e vai para a ficha impressa.
 */
 export default function RegistoBiografico({ p, editar, aoMudar }) {
-  const { avisar } = useSessao()
+  const { avisar, ref } = useSessao()
+  // Configurações › Listas do sistema › Níveis da avaliação
+  const NIVEIS = Object.entries(ref?.niveisAvaliacao ?? { MB: 'Muito bem', B: 'Bem', R: 'Razoável' })
   const base = p.registo ?? {}
   const novo = () => ({
     estudos: completar(base.estudos, 6, () => ({ classe: '', ano: '' })),

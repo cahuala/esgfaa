@@ -4,8 +4,7 @@ import { useSessao } from '../sessao'
 import { dataPt } from '../formatar'
 import { Escolha, InputData } from './Ui'
 
-const PARENTESCOS = [['Cônjuge', 'Cônjuge'], ['Filho(a)', 'Filho(a)'], ['Pai', 'Pai'], ['Mãe', 'Mãe'], ['Irmão/Irmã', 'Irmão/Irmã'], ['Neto(a)', 'Neto(a)'], ['Outro', 'Outro']]
-const ESTADOS = [['solteiro', 'Solteiro(a)'], ['casado', 'Casado(a)'], ['uniao_facto', 'União de facto'], ['divorciado', 'Divorciado(a)'], ['viuvo', 'Viúvo(a)']]
+const ESTADOS_ORIGEM = [['solteiro', 'Solteiro(a)'], ['casado', 'Casado(a)'], ['uniao_facto', 'União de facto'], ['divorciado', 'Divorciado(a)'], ['viuvo', 'Viúvo(a)']]
 const VAZIO = { bi: '', nome: '', parentesco: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', pai: '', mae: '', profissao: '', localTrabalho: '', telefone: '' }
 const idade = (iso) => { if (!iso) return ''; const n = new Date(iso); const h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h < new Date(h.getFullYear(), n.getMonth(), n.getDate())) a--; return `${a} anos` }
 const BI = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
@@ -18,7 +17,10 @@ const BI = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
   lista = o agregado; aoMudar(lista) grava (ou guarda no formulário).
 */
 export default function Familiares({ lista = [], aoMudar, editar = true, aGravar = false }) {
-  const { avisar } = useSessao()
+  const { avisar, ref } = useSessao()
+  // Configurações › Listas do sistema › Parentescos
+  const PARENTESCOS = (ref?.parentescos ?? []).map((x) => [x, x])
+  const ESTADOS = ref?.estadosCivis ? Object.entries(ref.estadosCivis) : ESTADOS_ORIGEM
   const [f, setF] = useState(VAZIO)
   const [emEdicao, setEmEdicao] = useState(null)
   const [erro, setErro] = useState('')

@@ -8,6 +8,8 @@ const contentor = criarContentor(config)
 // fichas de antes da encriptação: cifram-se no arranque (só o que ainda está em texto)
 const cifradas = await cifrarExistentes(contentor.base, contentor.cifraDados)
 if (cifradas) console.log(`Dados pessoais cifrados em ${cifradas} ficha(s).`)
+// os nomes mudados em Listas do sistema (postos, situações…) valem logo, também nos documentos
+await contentor.servicos.listas.todas()
 const admin = await contentor.servicos.sessao.garantirAdministrador(config.admin)
 if (admin) console.log(`Administrador criado: ${admin.email}`)
 

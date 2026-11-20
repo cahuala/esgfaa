@@ -161,6 +161,13 @@ export function problemaNaFicha(p, antes = null, listas = {}) {
   // docente: a categoria é a do Decreto Presidencial n.º 191/18
   if (p.categoriaDocente && mudou('categoriaDocente') && ![...(listas.categoriasDocente ?? CATEGORIAS_DOCENTE), ...(listas.categoriasDocenteContratado ?? CATEGORIAS_DOCENTE_CONTRATADO)].includes(p.categoriaDocente)) return ['categoriaDocente', 'Categoria do docente desconhecida (Decreto Presidencial n.º 191/18).']
   if (p.emailPessoal && p.email && mudou('emailPessoal') && p.emailPessoal.toLowerCase() === String(p.email).toLowerCase()) return ['emailPessoal', 'O e-mail pessoal é o mesmo que o da Escola.']
+  // registo biográfico: o nível de cada língua é um dos da lista (Listas do sistema › Níveis da avaliação)
+  const registo = typeof p.registo === 'string' && mudou('registo') ? (() => { try { return JSON.parse(p.registo) } catch { return null } })() : p.registo
+  if (registo && typeof registo === 'object') {
+    const niveis = Object.keys(listas.niveisAvaliacao ?? { MB: 1, B: 1, R: 1 })
+    const mau = (registo.linguas ?? []).find((l) => l?.nivel && !niveis.includes(l.nivel))
+    if (mau) return ['registo', `Nível desconhecido na língua «${mau.lingua || '—'}»: «${mau.nivel}».`]
+  }
   return null
 }
 

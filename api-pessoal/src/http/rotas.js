@@ -15,7 +15,7 @@ import { referencias } from '../dominio/pessoal/referencias.js'
 import { TIPOS_DOCUMENTO, ESTADOS_PROCESSO } from '../aplicacao/processos.js'
 import { TIPOS_EXTRACTO } from '../aplicacao/extractos.js'
 import { TIPOS_UNIDADE } from '../aplicacao/organica.js'
-import { CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expediente.js'
+import { DECISOES_DESPACHO, CLASSIFICACOES, SENTIDOS, TIPOS_EXPEDIENTE } from '../aplicacao/expediente.js'
 import { EVENTOS_MANUAIS, TIPOS_EVENTO } from '../aplicacao/pessoas.js'
 import { DESPACHOS_PROPOSTA, ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from '../aplicacao/propostas.js'
 import { NOMES_LICENCA } from '../aplicacao/licencas.js'
@@ -89,7 +89,7 @@ export function rotas({ servicos: s, config }) {
   r.get('/privacidade/pedidos', async (req, res) => res.json(await s.privacidade.listar(u(req))))
   r.put('/privacidade/pedidos/:id', validar({ params: E.pId, body: z.object({ estado: z.string().max(20), resposta: z.string().max(3000) }) }), async (req, res) => res.json(await s.privacidade.responder(u(req), req.dados.params.id, req.dados.body)))
   // as tabelas fixas e, por cima, as listas que se mudam em Configurações
-  r.get('/referencias', async (req, res) => res.json({ ...referencias(), papeis: PAPEIS, areas: AREAS, modelosAreas: MODELOS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS , ...(await s.listas.todas()) }))
+  r.get('/referencias', async (req, res) => res.json({ ...referencias(), papeis: PAPEIS, areas: AREAS, modelosAreas: MODELOS, tiposEvento: TIPOS_EVENTO, eventosManuais: EVENTOS_MANUAIS, tiposProposta: TIPOS_PROPOSTA, estadosProposta: ESTADOS_PROPOSTA, tiposLicenca: NOMES_LICENCA, tiposAusencia: TIPOS_AUSENCIA, tiposDocumento: TIPOS_DOCUMENTO, estadosProcesso: ESTADOS_PROCESSO, tiposExtracto: TIPOS_EXTRACTO, tiposUnidade: TIPOS_UNIDADE, tiposExpediente: TIPOS_EXPEDIENTE, classificacoes: CLASSIFICACOES, sentidos: SENTIDOS, decisoesDespacho: DECISOES_DESPACHO, ...(await s.listas.todas()) }))
   // Configurações › Listas do sistema
   r.get('/listas', async (req, res) => res.json(await s.listas.listar(u(req))))
   r.put('/listas/:id', validar({ params: z.object({ id: z.string().max(40) }), body: z.object({ valor: z.union([z.array(z.string().max(200)).max(300), z.record(z.string().max(40), z.string().max(200))]) }) }), async (req, res) => res.json(await s.listas.guardar(u(req), req.dados.params.id, req.dados.body.valor)))

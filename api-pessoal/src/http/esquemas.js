@@ -44,7 +44,7 @@ export const pessoa = z.object({
   conjuge: opc(150), conjugeLocalServico: opc(150),
   registo: z.object({
     estudos: z.array(z.object({ classe: opc(30), ano: opc(20) }).strict()).max(6).optional(),
-    linguas: z.array(z.object({ lingua: opc(30), nivel: z.union([z.enum(['MB', 'B', 'R']), z.literal('')]).optional() }).strict()).max(4).optional(),
+    linguas: z.array(z.object({ lingua: opc(30), nivel: opc(30) }).strict()).max(4).optional(),
     locaisAnteriores: z.array(z.object({ local: opc(150), de: opc(10), ate: opc(10), profissao: opc(100) }).strict()).max(3).optional(),
     colocacoes: z.array(z.object({ categoria: opc(100), despacho: opc(60), data: opc(10), dr: opc(40), inicio: opc(10), situacao: opc(80), colocacao: opc(120), responsabilidade: opc(150) }).strict()).max(6).optional(),
     situacaoMilitar: z.object({ tipo: z.union([z.enum(['adiado', 'disponibilidade', 'isento', 'nao_apto', 'refratario', 'militar']), z.literal('')]).optional(), desde: opc(10), reiniciou: opc(10) }).strict().optional(),
@@ -64,7 +64,7 @@ const pessoaAssina = z.object({ cargoId: idOpc, substitutoId: idOpc, cargo: txt(
 export const assinaturas = z.object({ comandante: pessoaAssina, chefeRpq: pessoaAssina, directorEnsino: pessoaAssina.default({}), local: txt(60, 2) }).strict()
 export const emitirDocumentos = z.object({ documentos: z.array(z.object({ tipo: txt(40, 1), dados: z.record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()])).optional() }).strict()).min(1).max(20) }).strict()
 export const filtrosPessoas = z.record(z.string(), z.string().max(60)).optional().default({})
-export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: z.enum(['formacao', 'promocao', 'qualificacao', 'actualizacao', 'academico']).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()
+export const curso = z.object({ chave: z.union([txt(40), z.null()]).optional(), nome: txt(200, 3), tipo: txt(30, 1).default('formacao'), local: opc(150), inicio: dataOpc, fim: dataOpc, aproveitamento: z.boolean().nullable().optional(), classificacao: z.coerce.number().min(0).max(20).nullable().optional() }).strict()
 export const evento = z.object({ tipo: txt(30), data: z.union([data, z.literal(''), z.null()]).optional().transform((v) => v || null), descricao: txt(1000).default(''), documento: txt(150).default(''), entidade: txt(150).default(''), pena: txt(300).default(''), postoNovo: txt(40).optional(), cargoNome: txt(300).optional() }).strict()
 export const fimGraduacao = z.object({ fim: data, motivo: txt(500).default('') })
 

@@ -534,7 +534,7 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
         {d.tipo === 'condecoracao' && (
           <Campo rotulo="Condecoração (escolha ou escreva)" col="col-12">
             <input className="form-control form-control-sm" list="lista-condecoracoes" value={d.condecoracao ?? ''} onChange={(e) => setD({ ...d, condecoracao: e.target.value })} />
-            <datalist id="lista-condecoracoes">{CONDECORACOES.map((c) => <option key={c} value={c} />)}</datalist>
+            <datalist id="lista-condecoracoes">{(ref.condecoracoes ?? []).map((c) => <option key={c} value={c} />)}</datalist>
           </Campo>
         )}
         <Campo rotulo={d.tipo === 'condecoracao' ? 'Motivo' : d.tipo === 'referencia_elogiosa' ? 'Texto do elogio (continua «… refere elogiosamente o … , »)' : 'Descrição'} col="col-12"><textarea className="form-control form-control-sm" rows={d.tipo === 'referencia_elogiosa' ? 4 : 2} value={d.descricao} placeholder={d.tipo === 'referencia_elogiosa' ? 'pela elevada competência, zelo e dedicação demonstrados na organização do ano académico 2026/2027' : ''} onChange={(e) => setD({ ...d, descricao: e.target.value })} /></Campo>
@@ -547,7 +547,6 @@ function NovoEvento({ p, aoFechar, aoGuardar }) {
 }
 
 // as condecorações militares (como no SIGP-FAN); escreve-se outra se não estiver na lista
-const CONDECORACOES = ['Medalha de Mérito Militar', 'Medalha de Serviço Distinto', 'Medalha Militar dos Serviços Distintos', 'Medalha de Bons Serviços', 'Medalha de Comportamento Exemplar', 'Medalha de Antiguidade', 'Medalha Militar do Tempo de Serviço', 'Medalha Militar Comemorativa das Forças Armadas Angolanas', 'Medalha Comemorativa de Aniversário das Forças Armadas Angolanas', 'Medalha Comemorativa de Evento Especial']
 
 function FormCurso({ p, curso, aoFechar, aoGuardar }) {
   const { ref, avisar } = useSessao()
@@ -562,7 +561,7 @@ function FormCurso({ p, curso, aoFechar, aoGuardar }) {
       <div className="row">
         <Campo rotulo="Nome do curso" obrigatorio col="col-12"><input className="form-control form-control-sm" value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} /></Campo>
         <Campo rotulo="É condição de promoção (art. 52.º)?" col="col-12" ajuda="Escolha o curso da lei a que corresponde, para contar na verificação da promoção."><Escolha valor={d.chave} aoMudar={(v) => setD({ ...d, chave: v, tipo: v ? 'promocao' : d.tipo })} opcoes={ref.cursosPromocao} vazio="Não" /></Campo>
-        <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={{ formacao: 'Formação', promocao: 'Promoção', qualificacao: 'Qualificação', actualizacao: 'Actualização', academico: 'Académico' }} vazio={null} /></Campo>
+        <Campo rotulo="Tipo"><Escolha valor={d.tipo} aoMudar={(v) => setD({ ...d, tipo: v })} opcoes={ref.tiposCurso ?? {}} vazio={null} /></Campo>
         <Campo rotulo="Local"><input className="form-control form-control-sm" value={d.local} onChange={(e) => setD({ ...d, local: e.target.value })} /></Campo>
         <Campo rotulo="Início" col="col-md-3"><InputData className="form-control form-control-sm" value={d.inicio} onChange={(e) => setD({ ...d, inicio: e.target.value })} /></Campo>
         <Campo rotulo="Fim" col="col-md-3"><InputData className="form-control form-control-sm" value={d.fim} onChange={(e) => setD({ ...d, fim: e.target.value })} /></Campo>

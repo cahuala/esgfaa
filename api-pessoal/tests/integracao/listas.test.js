@@ -57,4 +57,31 @@ describe('listas do sistema (Configurações)', () => {
     await op.get('/api/listas').expect(200)
     await op.put('/api/listas/provincias').send({ valor: ['Luanda'] }).expect(403)
   })
+
+  it('listas da lei: só muda o nome, e o nome novo vale em todo o sistema; repor volta ao da lei', async () => {
+    const l = (await adm.get('/api/listas').expect(200)).body
+    const postos = l.find((x) => x.id === 'postos_EXE')
+    assert.equal(postos.soNomes, true)
+    assert.equal(postos.valor.coronel, 'Coronel')
+    // não se acrescentam entradas
+    await adm.put('/api/listas/postos_EXE').send({ valor: { ...postos.valor, novo_posto: 'Posto Novo' } }).expect(400)
+    const r = (await adm.put('/api/listas/postos_EXE').send({ valor: { ...postos.valor, coronel: 'Coronel de Teste' } }).expect(200)).body
+    assert.equal(r.mudada, true)
+    const ref = (await adm.get('/api/referencias').expect(200)).body
+    assert.equal(ref.postos.EXE.find((p) => p.id === 'coronel').nome, 'Coronel de Teste')
+    // uma ficha com esse posto mostra o nome novo
+    const p = (await adm.post('/api/pessoas').send({ tipo: 'militar', nome: 'Militar Nome Novo', nip: 'NIPLISTA1', ramo: 'EXE', posto: 'coronel', fps: 'QP' }).expect(201)).body
+    assert.equal((await adm.get(`/api/pessoas/${p.id}`).expect(200)).body.postoNome, 'Coronel de Teste')
+    const ap = (await adm.post('/api/listas/postos_EXE/repor').expect(200)).body
+    assert.equal(ap.mudada, false)
+    assert.equal(ap.valor.coronel, 'Coronel')
+  })
+
+  it('habilitações: acrescenta-se uma e o nome aparece nas referências', async () => {
+    const l = (await adm.get('/api/listas').expect(200)).body.find((x) => x.id === 'habilitacoes')
+    await adm.put('/api/listas/habilitacoes').send({ valor: { ...l.valor, pos_doutoramento: 'Pós-doutoramento' } }).expect(200)
+    assert.equal((await adm.get('/api/referencias').expect(200)).body.habilitacoes.pos_doutoramento, 'Pós-doutoramento')
+    await adm.post('/api/listas/habilitacoes/repor').expect(200)
+  })
+
 })

@@ -181,7 +181,7 @@ function Adicionar({ p, cargos, aoFechar, aoAdicionar }) {
         <Campo rotulo="Pessoa" obrigatorio col="col-12">
           {pessoa ? <div><strong>{pessoa.postoAbreviatura} {pessoa.nome}</strong> <button type="button" className="btn btn-xs btn-secondary" onClick={() => setPessoa(null)}>mudar</button></div> : <EscolherPessoa filtro={FILTRO_TIPO[p.tipo]} excluir={p.itens.map((i) => i.pessoaId)} aoEscolher={setPessoa} />}
         </Campo>
-        {p.tipo === 'promocao' && <Campo rotulo="Modalidade"><Escolha valor={item.modalidade} aoMudar={set('modalidade')} opcoes={{ distincao: 'Distinção (art. 57.º)', excepcional: 'Título excepcional (art. 58.º)' }} vazio="A da lei (art. 98.º)" /></Campo>}
+        {p.tipo === 'promocao' && <Campo rotulo="Modalidade"><Escolha valor={item.modalidade} aoMudar={set('modalidade')} opcoes={{ distincao: `${ref.modalidades?.distincao ?? 'Distinção'} (art. 57.º)`, excepcional: `${ref.modalidades?.excepcional ?? 'Título excepcional'} (art. 58.º)` }} vazio="A da lei (art. 98.º)" /></Campo>}
         {p.tipo === 'graduacao' && <Campo rotulo="Posto da graduação" obrigatorio><Escolha valor={item.postoProposto} aoMudar={set('postoProposto')} opcoes={postos.map((x) => [x.id, x.nome])} /></Campo>}
         {p.tipo === 'nomeacao' && <Campo rotulo="Cargo" obrigatorio col="col-12"><Escolha valor={item.cargoId} aoMudar={set('cargoId')} opcoes={cargos.map((c) => [c.id, `${c.nome}${c.unidadeNome ? ` — ${c.unidadeNome}` : ''} · ${c.livres} livre(s)`])} /></Campo>}
         {['graduacao', 'nomeacao', 'exoneracao'].includes(p.tipo) && <>

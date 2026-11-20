@@ -46,6 +46,7 @@ import Privacidade from './paginas/Privacidade'
 import PedidosDados from './paginas/PedidosDados'
 import Utilizadores from './paginas/Utilizadores'
 import Auditoria from './paginas/Auditoria'
+import { definirListas } from './listasAtuais'
 import Portal from './paginas/Portal'
 
 // o formulário recomeça quando se muda de ficha (sem ficar com os dados da anterior)
@@ -87,6 +88,7 @@ export default function App() {
     .then(async (u) => {
       const r = u.deveMudar || u.deveAtivar2fa ? null : await api('/referencias')
       setUtilizador(u)
+      definirListas(r)
       setRef(r)
     })
     .catch(terminar)
