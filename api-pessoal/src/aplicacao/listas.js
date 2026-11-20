@@ -12,6 +12,14 @@ export const BANCOS = {
   KEVE: 'Banco Keve', SBA: 'Standard Bank Angola', BCGA: 'Banco Caixa Geral Angola', BE: 'Banco Económico', BYETU: 'Banco Yetu',
 }
 
+// especialidades dos militares (por extenso); a Repartição acrescenta as que faltarem em Configurações › Listas do sistema
+export const ESPECIALIDADES = [
+  'Infantaria', 'Infantaria Motorizada', 'Artilharia', 'Tropas Blindadas', 'Defesa Antiaérea', 'Engenharia Militar', 'Telecomunicações',
+  'Engenharia de Telecomunicações', 'Engenharia Informática', 'Criptologia', 'Inteligência Militar', 'Reconhecimento e Informação', 'Polícia Militar',
+  'Justiça Militar', 'Logística', 'Logística Geral', 'Serviços de Saúde', 'Serviços Técnicos', 'Serviços de Material', 'Armamento e Técnica',
+  'Aviação', 'Motor e Fuselagem', 'Defesa Nuclear, Biológica e Química', 'Topografia', 'Condutor Auto', 'Educação Patriótica', 'Comando',
+]
+
 /*
   Listas do sistema que a Repartição muda em Configurações (o que vem da lei com regras — postos, ramos,
   formas de prestação de serviço, situações, licenças — fica no código).
@@ -22,6 +30,7 @@ export const LISTAS = {
   categoriasDocente: { grupo: 'Docentes', nome: 'Categorias do docente — carreira', fonte: 'Decreto Presidencial n.º 191/18, art. 4.º', padrao: CATEGORIAS_DOCENTE },
   categoriasDocenteContratado: { grupo: 'Docentes', nome: 'Categorias do docente — especialmente contratado', fonte: 'Decreto Presidencial n.º 191/18, art. 5.º', padrao: CATEGORIAS_DOCENTE_CONTRATADO },
   provincias: { grupo: 'Ficha individual', nome: 'Províncias', padrao: PROVINCIAS },
+  especialidades: { grupo: 'Ficha individual', nome: 'Especialidades (militares)', padrao: ESPECIALIDADES },
   motivosSaida: { grupo: 'Ficha individual', nome: 'Motivos de saída da Escola', padrao: MOTIVOS_SAIDA },
   bancos: { grupo: 'Ficha individual', nome: 'Bancos', chaves: true, rotuloChave: 'Sigla', padrao: BANCOS },
   tiposDocumento: { grupo: 'Processo individual', nome: 'Tipos de documento do processo', chaves: true, padrao: TIPOS_DOCUMENTO },
