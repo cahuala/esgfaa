@@ -41,7 +41,8 @@ const verTudo = (excepto) => Object.fromEntries(Object.keys(AREAS).filter((a) =>
 export const MODELOS = {
   administrador: todas('alterar', ['secretaria']),
   chefe: { ...verTudo([]), ...Object.fromEntries(TRABALHO.map((a) => [a, 'alterar'])), decidirPropostas: 'alterar' },
-  comandante: { ...verTudo([]), secretaria: 'alterar' },
+  // o Comandante pode fazer tudo (todas as áreas, também a Secretária digital)
+  comandante: todas('alterar'),
   // o Operador regista fichas novas e emite documentos (vê as fichas para isso); não edita, nem a orgânica, propostas,
   // licenças ou tabelas salariais
   operador: { fichas: 'ver', registarFichas: 'alterar', documentos: 'alterar' },

@@ -87,15 +87,24 @@ export class ServicoAprovacoesComandante {
     }
     const ids = await this.controlo.aprovarPropostas(t.id)
     await this.controlo.guardarDistribuicao(t.id, null)
-    // a primeira aprovação de um docente: a conta fica verificada e a palavra-passe inicial vai por e-mail
-    const novos = t.cadeiras.flatMap((c) => c.docentes).filter((d) => ids.includes(d.docente.id) && !d.docente.verificadoEm && d.docente.ativo).map((d) => d.docente)
-    const unicos = [...new Map(novos.map((d) => [d.id, d])).values()]
-    await this.controlo.verificarDocentes(ids, ctx.actor.nome ?? '', agora)
-    let emails = 0
-    for (const d of unicos) if (await this.#enviarConta(ctx, d.id)) emails++
+    const novos = t.cadeiras.flatMap((c) => c.docentes).filter((d) => ids.includes(d.docente.id)).map((d) => d.docente)
+    const { contasNovas: unicos, emails } = await this.libertarDocentes(ctx, novos)
     await this.notificacoes?.notificar(ids, { tipo: 'aviso', titulo: 'Distribuição de serviço docente aprovada', texto: `${t.nome}: o Comandante aprovou as suas cadeiras.`, ligacao: '/cadeiras' })
     await this.auditoria.registar(ctx, { acao: 'aprovar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { docentes: ids.length, contasEnviadas: emails } })
     return { decisao: 'aprovar', docentes: ids.length, contasNovas: unicos.length, emails, semEmail: !this.correio?.real }
+  }
+
+  /*
+    A primeira aprovação de um docente (pelo Comandante, na distribuição, ou quando é ele próprio a alocar): a conta
+    fica verificada e a palavra-passe inicial vai por e-mail. Só a partir daqui o docente entra no portal.
+  */
+  async libertarDocentes(ctx, docentes) {
+    const porVerificar = [...new Map(docentes.filter((d) => d && !d.verificadoEm && d.ativo !== false).map((d) => [d.id, d])).values()]
+    if (!porVerificar.length) return { contasNovas: [], emails: 0 }
+    await this.controlo.verificarDocentes(porVerificar.map((d) => d.id), ctx.actor.nome ?? '', this.relogio.agora())
+    let emails = 0
+    for (const d of porVerificar) if (await this.#enviarConta(ctx, d.id)) emails++
+    return { contasNovas: porVerificar, emails }
   }
 
   // palavra-passe inicial nova e o e-mail com a conta (sem servidor de e-mail, a Repartição entrega a ficha de acesso)

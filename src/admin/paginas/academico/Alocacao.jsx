@@ -18,6 +18,8 @@ const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto
 function Alocacao() {
   const { pode } = useSessao()
   const gere = pode('academico.gerir')
+  // o Comandante aprova (o que ele próprio aloca já fica aprovado)
+  const aprova = pode('academico.homologar')
   const [abertas, setAbertas] = useState({})
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
@@ -114,7 +116,7 @@ function Alocacao() {
                           : t.semDocentes >= t.cadeiras ? <span className="badge bg-secondary">{tx('Por distribuir')}</span>
                             : <span className="badge bg-success">{tx('Aprovada')}</span>)}
                       </td>
-                      <td className="text-end">{gere && e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
+                      <td className="text-end">{aprova && t.propostos > 0 && <Link to="/publicacoes" className="btn btn-sm btn-success me-1"><i className="fa fa-check me-1" />{tx('Aprovar')}</Link>}{gere && !aprova && e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
                     </tr>
                   )
                 })}

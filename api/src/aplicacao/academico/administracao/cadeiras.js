@@ -197,6 +197,11 @@ export class ServicoCadeiras {
     const aprovados = new Set(c.docentes.map((d) => d.id))
     const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
     await this.academico.definirDocentes(c.id, docentes.map((d) => ({ ...d, estado: direto || aprovados.has(d.docenteId) ? 'aprovada' : 'proposta' })))
+    // foi o Comandante a alocar: já está aprovado — quem ainda não tinha acesso recebe-o agora (como na aprovação)
+    if (this.aprovacaoComandante && direto) {
+      const contas = await Promise.all(docentes.filter((d) => !aprovados.has(d.docenteId)).map((d) => this.contas.porId(d.docenteId)))
+      await this.aprovacoes?.libertarDocentes(ctx, contas)
+    }
     const nova = await this.academico.cadeira(c.id)
     await this.auditoria.registar(ctx, {
       acao: 'alocar_docentes', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome,

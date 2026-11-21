@@ -45,6 +45,17 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
     assert.deepEqual(al.turmas.find((t) => t.id === turma.id).propostos, 1)
   })
 
+  it('quando é o próprio Comandante a alocar, fica logo aprovado: o docente tem a cadeira e recebe o acesso', async () => {
+    const outro = (await ensino.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Directo Teste', email: 'directo@esgfaa.gov.ao' })).body
+    const uc2 = (await ensino.post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'LID102', nome: 'Liderança' })).body
+    const antes = correio().enviados?.length ?? 0
+    const c = (await comandante.put(`/api/admin/academico/cadeiras/${uc2.id}/docentes`).send({ docentes: [{ docenteId: outro.id, papel: 'regente', horas: 20 }] }).expect(200)).body
+    assert.deepEqual([c.docentes.map((d) => d.nome), c.docentesPropostos.length], [['Docente Directo Teste'], 0])
+    const conta = await amb.contentor.prisma.contaPortal.findUnique({ where: { id: outro.id } })
+    assert.ok(conta.verificadoEm, 'a conta fica verificada')
+    assert.equal(correio().enviados?.length ?? 0, antes + 1)
+  })
+
   it('o Ensino envia a lista; o Comandante devolve com motivo e depois aprova: o docente recebe a conta por e-mail', async () => {
     assert.equal((await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`)).status, 200)
     assert.equal((await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`)).status, 409)

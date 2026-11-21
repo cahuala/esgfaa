@@ -55,7 +55,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await c.post('/api/pessoas').send(militar())).status, 403)
   })
 
-  it('o Comandante e o Chefe de Pessoal veem tudo (utilizadores, auditoria, livro de expediente); o Comandante não altera', async () => {
+  it('o Comandante e o Chefe de Pessoal veem tudo (utilizadores, auditoria, livro de expediente); o Comandante pode fazer tudo', async () => {
     const conta = async (email, papel) => {
       await amb.criarConta(adm, { nome: `${papel} Teste`, email, papel, senha: 'Inicial2026x' })
       const t = await amb.entrar(email, 'Inicial2026x')
@@ -69,9 +69,10 @@ describe('Sistema de Gestão de Pessoal', () => {
       assert.equal((await x.get('/api/expediente?caixa=todos')).status, 200)
       assert.equal((await x.get('/api/pessoas')).status, 200)
     }
-    assert.equal((await cmd.post('/api/pessoas').send(militar())).status, 403)
-    assert.equal((await cmd.post('/api/utilizadores').send({ nome: 'Nova Conta Teste', email: 'nova.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 403)
-    assert.equal((await chefe.post('/api/utilizadores').send({ nome: 'Nova Conta Teste', email: 'nova.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 403) // contas: só o administrador
+    // o Comandante pode fazer tudo: regista fichas e cria contas
+    assert.equal((await cmd.post('/api/pessoas').send(militar())).status, 201)
+    assert.equal((await cmd.post('/api/utilizadores').send({ nome: 'Nova Conta Teste', email: 'nova.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 201)
+    assert.equal((await chefe.post('/api/utilizadores').send({ nome: 'Outra Conta Teste', email: 'outra.conta@pessoal.ao', papel: 'consulta', senha: 'Inicial2026x' })).status, 403) // contas: só o admin (e o Comandante)istrador
     // a consulta comum continua sem ver a administração
     const v = await conta('so.ver@pessoal.ao', 'consulta')
     assert.equal((await v.get('/api/auditoria')).status, 403)

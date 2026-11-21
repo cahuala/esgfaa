@@ -36,7 +36,9 @@ describe('cursos da ESG: documentos, datas, período de lançamento e notas publ
   after(() => amb.fechar())
 
   it('o PDF do plano do curso só o abre quem está no curso e ano lectivo', async () => {
-    assert.equal((await comoPdf(comandante.put(`/api/admin/academico/planos-curso/${plano.id}/documento`))).status, 403)
+    // quem não gere o académico (o Analista) não carrega o plano; o Comandante pode fazer tudo
+    const analista = amb.com((await amb.criarUtilizador('analista')).token)
+    assert.equal((await comoPdf(analista.put(`/api/admin/academico/planos-curso/${plano.id}/documento`))).status, 403)
     const p = await comoPdf(admin.put(`/api/admin/academico/planos-curso/${plano.id}/documento`))
     assert.equal(p.status, 200, p.body.erro)
     assert.ok(p.body.ficheiroId)

@@ -264,13 +264,15 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
       aprovacaoComandante: config.aprovacaoComandante,
     }
+    // distribuição dos docentes e publicação de notas: só valem com a aprovação do Comandante
+    const aprovacoes = new ServicoAprovacoesComandante({ ...d, planos: r.planosCurso, controlo: r.controlo, correio, urlPortal: config.urlPortal })
     return {
       inscricoes: new ServicoInscricoes(d),
       conclusao: new ServicoConclusaoCurso(d),
       documentos: new ServicoDocumentos(d),
       turmas: new ServicoTurmas(d),
       anosLetivos,
-      cadeiras: new ServicoCadeiras(d),
+      cadeiras: Object.assign(new ServicoCadeiras(d), { aprovacoes }),
       pautas: new ServicoPautasAdministracao(d),
       planosCurso: new ServicoPlanosCurso(d),
       conselhoCurso: new ServicoConselhoCurso(d),
@@ -278,8 +280,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),
-      // distribuição dos docentes e publicação de notas: só valem com a aprovação do Comandante
-      aprovacoes: new ServicoAprovacoesComandante({ ...d, planos: r.planosCurso, controlo: r.controlo, correio, urlPortal: config.urlPortal }),
+      aprovacoes,
     }
   }
 

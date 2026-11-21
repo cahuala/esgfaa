@@ -36,9 +36,9 @@ export const DO_ADMINISTRADOR = TODAS.filter((p) => !SO_DO_COMANDANTE.includes(p
 
 const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `${r}.${a}`))
 
-// o Comandante vê tudo (todas as permissões «ver») e decide o que é dele; o Director de Ensino vê tudo do Ensino
-const TODAS_VER = RECURSOS.filter((r) => r.acoes.includes('ver')).map((r) => `${r.id}.ver`)
-export const VER_TUDO_COMANDANTE = [...TODAS_VER, 'academico.homologar', 'publicacoes.aprovar', 'utilizadores.aprovar']
+// o Director de Ensino vê tudo do Ensino
+// o Comandante pode fazer tudo no painel (vê, gere e aprova); o nome fica por compatibilidade
+export const VER_TUDO_COMANDANTE = [...TODAS]
 export const VER_ENSINO = ['academico.ver', 'academico.conselho', 'cursos.ver', 'integridade.ver', 'biblioteca.ver', 'pessoal.ver']
 // o que estes papéis têm sempre (os já criados recebem o que falta ao arrancar)
 export const MINIMOS = { comandante: VER_TUDO_COMANDANTE, director_ensino: VER_ENSINO }
@@ -95,7 +95,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'comandante',
     nome: 'Comandante da ESG',
-    descricao: 'Vê tudo; homologa as classificações finais, autoriza alterações de notas, verifica os docentes, aprova o que se publica no site (também os comentários já revistos pela equipa de comunicação) e as contas novas e mudanças de papel do painel.',
+    descricao: 'Pode fazer tudo no painel: vê, gere e aprova (homologa as classificações finais, autoriza alterações de notas, aprova a distribuição dos docentes, o que se publica no site e as contas novas). O que ele próprio faz já fica aprovado.',
     sistema: 0,
     permissoes: VER_TUDO_COMANDANTE,
   },
