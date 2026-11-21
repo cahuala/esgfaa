@@ -844,3 +844,28 @@ fieldset:disabled .bloco-topo .btn-group {
     justify-content: center;
   }
 }
+
+/* ---------- Alocação de docentes: as cadeiras agrupadas por turma ---------- */
+.alocacao-turma + .alocacao-turma {
+  border-top: 1px solid var(--bs-border-color);
+}
+.alocacao-turma-cabeca {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+}
+.alocacao-turma-cabeca:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+.alocacao-turma-horas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: none;
+}

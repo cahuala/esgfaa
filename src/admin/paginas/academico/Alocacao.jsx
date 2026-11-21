@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
+import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
 import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
@@ -11,9 +12,13 @@ const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto
 /*
   Alocação de docentes: carga horária de cada docente e cadeiras por alocar (turmas ativas). Quem o Ensino põe
   numa cadeira fica «proposto» (sem acesso) até o Comandante aprovar a distribuição da turma, que o Ensino lhe
-  envia aqui depois de rever a lista.
+  envia aqui depois de rever a lista. As cadeiras aparecem agrupadas por turma (abre-se a turma que se quer).
+  Quem só vê (o Comandante) não tem os botões de alocar nem de enviar: aprova em «Por aprovar».
 */
 function Alocacao() {
+  const { pode } = useSessao()
+  const gere = pode('academico.gerir')
+  const [abertas, setAbertas] = useState({})
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
@@ -42,6 +47,14 @@ function Alocacao() {
   const horasTotal = d.docentes.reduce((s, x) => s + x.horas, 0)
   const cadeiras = filtro === 'sem-regente' ? semRegente : doFiltro
   const maxHoras = Math.max(1, ...d.docentes.map((x) => x.horas))
+  // as cadeiras agrupadas por turma (pela ordem em que vêm)
+  const grupos = new Map()
+  for (const c of cadeiras) {
+    const k = c.turma?.id ?? 0
+    if (!grupos.has(k)) grupos.set(k, [c.turma ?? { id: 0, nome: tx('Sem turma') }, []])
+    grupos.get(k)[1].push(c)
+  }
+  const porTurma = [...grupos.values()]
 
   const widgets = [
     ['bg-dark', 'fa-chalkboard-teacher', tx('DOCENTES'), d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
@@ -75,6 +88,12 @@ function Alocacao() {
         ))}
       </div>
 
+      {!gere && (
+        <div className="alert alert-info d-flex align-items-start">
+          <i className="fa fa-info-circle fa-lg me-2 mt-1" />
+          <div>{tx('Quem distribui os docentes pelas cadeiras é a Direcção de Ensino (Repartição de Administração Escolar). Depois de rever cada turma, envia-a ao Comandante, que a aprova ou devolve em')} <Link to="/publicacoes" className="fw-bold">{tx('Por aprovar')}</Link>. {tx('Aqui só se consulta.')}</div>
+        </div>
+      )}
       {d.aprovacaoComandante && d.turmas.length > 0 && (
         <Painel titulo={tx('Distribuição de serviço docente: aprovação do Comandante')} corpo={false}>
           <div className="table-responsive">
@@ -91,9 +110,11 @@ function Alocacao() {
                       <td className="small">
                         {e === 'pendente' && <span className="badge bg-info">{tx('À espera do Comandante desde {0}', { 0: dataHora(t.distribuicao.pedidoEm) })}</span>}
                         {e === 'devolvida' && <><span className="badge bg-danger">{tx('Devolvida pelo Comandante')}</span><div className="text-danger mt-1">{t.distribuicao.motivo}</div></>}
-                        {!e && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span> : <span className="badge bg-success">{tx('Aprovada')}</span>)}
+                        {!e && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span>
+                          : t.semDocentes >= t.cadeiras ? <span className="badge bg-secondary">{tx('Por distribuir')}</span>
+                            : <span className="badge bg-success">{tx('Aprovada')}</span>)}
                       </td>
-                      <td className="text-end">{e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
+                      <td className="text-end">{gere && e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
                     </tr>
                   )
                 })}
@@ -126,7 +147,7 @@ function Alocacao() {
         </div>
         <div className="col-xl-7">
           <Painel
-            titulo={tx('Cadeiras')}
+            titulo={tx('Cadeiras por turma')}
             corpo={false}
             acoes={(
               <div className="btn-group btn-group-sm">
@@ -135,31 +156,53 @@ function Alocacao() {
               </div>
             )}
           >
-            <div className="table-responsive">
-              <table className="table table-striped align-middle mb-0">
-                <thead><tr><th>{tx('Cadeira')}</th><th>{tx('Turma')}</th><th>{tx('Semestre')}</th><th>{tx('Docentes')}</th><th className="text-end">{tx('Horas')}</th><th /></tr></thead>
-                <tbody>
-                  {cadeiras.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">{tx('Nada a mostrar.')}</td></tr>}
-                  {cadeiras.map((c) => (
-                    <tr key={c.id}>
-                      <td><span className="fw-bold">{c.codigo}</span> {c.nome}</td>
-                      <td className="small">{c.turma?.nome}<div className="text-muted">{c.turma?.anoLetivo}</div></td>
-                      <td className="small text-nowrap">
-                        {PERIODOS[c.periodo]}
-                        {(() => { const e = ESTADOS_PERIODO[estadoDoPeriodo(anoDe(c), String(c.periodo))]; return e && <div><span className={`badge ${e.cor}`}>{e.rotulo}</span></div> })()}
-                      </td>
-                      <td className="small">
-                        {c.docentes.length === 0 ? <span className="badge bg-warning text-dark">{tx('Por alocar')}</span> : c.docentes.map((x) => (
-                          <div key={x.id}>{x.papel === 'regente' ? <i className="fa fa-star text-warning me-1" title={tx('Regente')} /> : <i className="fa fa-user text-muted me-1" title={tx('Assistente')} />}{x.nome}{x.estado === 'proposta' && PROPOSTO}</div>
-                        ))}
-                      </td>
-                      <td className={`text-end text-nowrap ${c.horasAlocadas < c.horas ? 'text-warning' : ''}`}>{c.horasAlocadas} / {c.horas}</td>
-                      <td className="text-end"><Link to={`/academico/cadeiras/${c.id}?separador=docentes`} className="btn btn-xs btn-primary">{tx('Alocar')}</Link></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {cadeiras.length === 0 && <div className="text-center text-muted py-4">{tx('Nada a mostrar.')}</div>}
+            {porTurma.map(([turma, lista]) => {
+              const aberta = abertas[turma.id] ?? porTurma.length === 1
+              const sem = lista.filter((c) => c.docentes.length === 0).length
+              const horas = lista.reduce((s2, c) => s2 + c.horasAlocadas, 0)
+              const total = lista.reduce((s2, c) => s2 + c.horas, 0)
+              return (
+                <div key={turma.id} className="alocacao-turma">
+                  <button type="button" className="alocacao-turma-cabeca" aria-expanded={aberta} onClick={() => setAbertas({ ...abertas, [turma.id]: !aberta })}>
+                    <i className={`fa fa-chevron-${aberta ? 'down' : 'right'} me-2 text-muted`} />
+                    <span className="flex-grow-1 text-start">
+                      <strong>{turma.nome}</strong> <span className="text-muted small">{turma.anoLetivo}</span>
+                      <span className="d-block small text-muted">{tx('{0} cadeira(s)', { 0: lista.length })}{sem > 0 && <span className="text-warning ms-2">· {tx('{0} sem docentes', { 0: sem })}</span>}</span>
+                    </span>
+                    <span className="alocacao-turma-horas">
+                      <span className="small">{horas} / {total} {tx('h')}</span>
+                      <span className="progress" style={{ height: 5, width: 110 }}><span className={`progress-bar ${horas >= total ? 'bg-success' : 'bg-warning'}`} style={{ width: `${total ? Math.min(100, (horas / total) * 100) : 0}%` }} /></span>
+                    </span>
+                  </button>
+                  {aberta && (
+                    <div className="table-responsive">
+                      <table className="table table-sm table-striped align-middle mb-0">
+                        <thead><tr><th>{tx('Cadeira')}</th><th>{tx('Semestre')}</th><th>{tx('Docentes')}</th><th className="text-end">{tx('Horas')}</th>{gere && <th />}</tr></thead>
+                        <tbody>
+                          {lista.map((c) => (
+                            <tr key={c.id}>
+                              <td><Link to={`/academico/cadeiras/${c.id}?separador=docentes`} className="text-decoration-none text-body"><span className="fw-bold">{c.codigo}</span> {c.nome}</Link></td>
+                              <td className="small text-nowrap">
+                                {PERIODOS[c.periodo]}
+                                {(() => { const e = ESTADOS_PERIODO[estadoDoPeriodo(anoDe(c), String(c.periodo))]; return e && <div><span className={`badge ${e.cor}`}>{e.rotulo}</span></div> })()}
+                              </td>
+                              <td className="small">
+                                {c.docentes.length === 0 ? <span className="badge bg-warning text-dark">{tx('Por alocar')}</span> : c.docentes.map((x) => (
+                                  <div key={x.id}>{x.papel === 'regente' ? <i className="fa fa-star text-warning me-1" title={tx('Regente')} /> : <i className="fa fa-user text-muted me-1" title={tx('Assistente')} />}{x.nome}{x.estado === 'proposta' && PROPOSTO}</div>
+                                ))}
+                              </td>
+                              <td className={`text-end text-nowrap ${c.horasAlocadas < c.horas ? 'text-warning' : ''}`}>{c.horasAlocadas} / {c.horas}</td>
+                              {gere && <td className="text-end"><Link to={`/academico/cadeiras/${c.id}?separador=docentes`} className="btn btn-xs btn-primary">{tx('Alocar')}</Link></td>}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </Painel>
         </div>
       </div>
