@@ -146,6 +146,12 @@ describe('Conta única do Comandante: a do Sistema de Gestão de Pessoal vale no
     await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola', senha: await amb.contentor.cifra.cifrar('Nova-do-Pessoal-2026') }]).expect(200)
     assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Comandante-Pessoal-2026')).status, 401)
     assert.equal((await entrar('cmdt@esgfaa.gov.ao', 'Nova-do-Pessoal-2026')).status, 200)
+    // com a impressão do NIP, entra também com o NIP (sem e-mail verdadeiro, vem um endereço interno)
+    const imp = crypto.createHmac('sha256', CHAVE).update('nip:10326392').digest('hex')
+    await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola', nip: imp, senha: await amb.contentor.cifra.cifrar('Nova-do-Pessoal-2026') }]).expect(200)
+    const n = await entrar('10326392', 'Nova-do-Pessoal-2026')
+    assert.equal(n.status, 200, n.body.erro)
+    assert.equal(n.body.utilizador.papel, 'comandante')
     // uma conta do painel com outro papel não passa a ser a do Comandante
     const outra = (await enviar([{ email: 'cmdt@esgfaa.gov.ao', nome: 'Comandante da Escola' }, { email: (await amb.criarUtilizador('editor_chefe')).email, nome: 'Outro' }]).expect(200)).body
     assert.equal(outra.resultados[1].ok, false)

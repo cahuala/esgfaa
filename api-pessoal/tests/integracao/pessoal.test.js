@@ -412,7 +412,7 @@ describe('Secretária digital: o que espera pelo Comandante no portal', () => {
 })
 
 describe('Conta única do Comandante: vai para o painel de gestão', () => {
-  it('a conta de Comandante daqui vai com a palavra-passe já cifrada, só quando muda; sem e-mail verdadeiro não vai', async () => {
+  it('a conta de Comandante daqui vai com a palavra-passe já cifrada, só quando muda; sem e-mail, vai pelo NIP', async () => {
     const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
     const envios = []
     const enviar = async (url, op) => {
@@ -444,6 +444,15 @@ describe('Conta única do Comandante: vai para o painel de gestão', () => {
       await amb.contentor.bd.utilizador.updateMany({ where: { papel: 'comandante' }, data: { email: 'nip123@pessoal.interno' } })
       await s.enviarComandante()
       assert.deepEqual(envios.at(-1).corpo, { contas: [] })
+      // ligado à ficha de um militar com NIP: vai com a impressão do NIP (entra no painel com o NIP) e um endereço
+      // interno feito dela — o NIP nunca vai em claro
+      const ficha = (await amb.com(await amb.entrar()).post('/api/pessoas').send(militar({ nome: 'Comandante Com NIP', nip: '10326392', posto: 'tenente_general' })).expect(201)).body
+      await amb.contentor.bd.utilizador.updateMany({ where: { papel: 'comandante' }, data: { pessoaId: ficha.id } })
+      await s.enviarComandante()
+      const cn = envios.at(-1).corpo.contas[0]
+      const imp = (await import('node:crypto')).createHmac('sha256', chave).update('nip:10326392').digest('hex')
+      assert.deepEqual([cn.nip, cn.email], [imp, `cmdt-${imp.slice(0, 16)}@pessoal.interno`])
+      assert.ok(!envios.at(-1).raw.includes('10326392'))
       // o administrador põe-lhe o e-mail da Escola: volta a ir (e entra no Pessoal também com o e-mail)
       const c2 = await amb.contentor.bd.utilizador.findFirst({ where: { papel: 'comandante' } })
       const adm = { id: -1, papel: 'administrador' }

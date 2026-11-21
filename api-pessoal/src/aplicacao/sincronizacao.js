@@ -115,13 +115,21 @@ export class ServicoSincronizacao {
   /*
     Conta única do Comandante: a conta de Comandante daqui vale também no painel de gestão, com o mesmo e-mail e a
     mesma palavra-passe (vai já cifrada; nunca em claro). Vai quando muda (nome, e-mail, palavra-passe, activa ou não).
-    Sem e-mail verdadeiro (só o NIP) não pode entrar no painel; enquanto tem de mudar a palavra-passe, a do painel fica
-    a que era.
+    Entra no painel com o e-mail ou com o NIP; enquanto tem de mudar a palavra-passe (no Pessoal), ainda não entra no
+    painel (a do painel fica a que era).
   */
   async enviarComandante() {
     if (!this.ativa) return { enviado: false, inativa: true }
-    const l = await this.bd.utilizador.findMany({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false }, select: { nome: true, email: true, senha: true, deveMudar: true }, orderBy: { id: 'asc' } })
-    const contas = l.filter((u) => u.email && !u.email.endsWith('@pessoal.interno')).map((u) => ({ email: u.email, nome: u.nome, ...(u.deveMudar ? {} : { senha: u.senha }) }))
+    const l = await this.bd.utilizador.findMany({ where: { papel: 'comandante', ativo: true, aguardaDespacho: false }, select: { nome: true, email: true, senha: true, deveMudar: true, pessoa: { select: { nip: true } } }, orderBy: { id: 'asc' } })
+    // entra no painel com o e-mail ou com o NIP (vai só a impressão do NIP; sem e-mail verdadeiro, um endereço interno
+    // feito da impressão, para o NIP não ir em claro)
+    const contas = l.map((u) => {
+      const nip = String(u.pessoa?.nip ?? '').trim().toUpperCase()
+      const impressao = /^[0-9]{5,12}$/.test(nip) ? crypto.createHmac('sha256', this.config.portal.chave).update(`nip:${nip}`).digest('hex') : null
+      const real = u.email && !u.email.endsWith('@pessoal.interno') ? u.email : null
+      if (!real && !impressao) return null
+      return { email: real ?? `cmdt-${impressao.slice(0, 16)}@pessoal.interno`, nome: u.nome, ...(impressao ? { nip: impressao } : {}), ...(u.deveMudar ? {} : { senha: u.senha }) }
+    }).filter(Boolean)
     const corpo = JSON.stringify({ contas })
     if (corpo === this.ultimoComandante) return { enviado: false, igual: true }
     const data = String(Math.floor(this.agora().getTime() / 1000))

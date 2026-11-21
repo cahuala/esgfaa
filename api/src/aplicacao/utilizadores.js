@@ -107,14 +107,16 @@ export class ServicoUtilizadores {
         if (!senha) { resultados.push({ email, ok: false, erro: 'Ainda tem de mudar a palavra-passe no Sistema de Pessoal.' }); continue }
         u = Utilizador.novo({ nome: c.nome, email, papel: 'comandante', senhaCifrada: senha })
         u.geridaPeloPessoal = true
+        if (c.nip) u.biHash = c.nip // entra também com o NIP
         u = await this.utilizadores.criar(u)
         await this.auditoria.registar(ctx, { acao: 'conta_comandante_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: `${u.nome} (${u.email})`, detalhes: { criada: true } })
         resultados.push({ email, ok: true, criada: true })
         continue
       }
-      const mudou = u.nome !== c.nome || (senha && senha !== u.senha) || !u.ativo || !u.geridaPeloPessoal || u.papel !== 'comandante'
+      const mudou = u.nome !== c.nome || (senha && senha !== u.senha) || !u.ativo || !u.geridaPeloPessoal || u.papel !== 'comandante' || (c.nip && u.biHash !== c.nip)
       if (mudou) {
         u.definirNome(c.nome)
+        if (c.nip) u.biHash = c.nip
         u.papel = 'comandante'
         u.ativo = true
         u.aprovacao = null

@@ -74,7 +74,7 @@ export function rotasIntegracao({ servicos, config }) {
   // o que espera pelo Comandante no portal e no site (só os números), para a Secretária digital do Pessoal
   r.post('/pessoal/pendentes-comandante', ...receber(z.object({}), () => pendentesDoComandante(servicos, config), '1kb'))
   // a conta do Comandante (a do Pessoal: o mesmo e-mail e a mesma palavra-passe, já cifrada)
-  const comandante = z.object({ email: z.string().max(200), nome: z.string().min(2).max(100), senha: z.string().max(300).optional() })
+  const comandante = z.object({ email: z.string().max(200), nome: z.string().min(2).max(100), nip: z.string().regex(/^[0-9a-f]{64}$/).optional(), senha: z.string().max(300).optional() })
   // os civis da Direcção de Ensino: conta no painel com o BI (só a impressão) e a palavra-passe inicial (já cifrada)
   const contaEnsino = z.object({ ref: z.string().regex(/^pessoal-\d+$/), nome: z.string().min(2).max(100), email: z.string().max(200).optional(), bi: z.string().regex(/^[0-9a-f]{64}$/), papel: z.enum(['secretaria', 'director_ensino']).optional(), senha: z.string().regex(/^scrypt\$[0-9a-f]+\$[0-9a-f]+$/) })
   r.post('/pessoal/contas-ensino', ...receber(z.object({ contas: z.array(contaEnsino).max(300) }), (ctx, d) => servicos.utilizadores.receberContasDoEnsino(ctx, d.contas), '200kb'))
