@@ -409,7 +409,7 @@ export const PAGINAS = {
         ] },
       ] },
       { titulo: tx('IV. Mensagem do Comandante'), campos: [
-        { nome: 'mensagem.citacao', rotulo: tx('Citação'), tipo: 'textarea', linhas: 3 },
+        { nome: 'mensagem.citacao', rotulo: tx('Citação'), tipo: 'textarea', linhas: 3, ajuda: tx('Só se usa enquanto não houver mensagens em Página inicial › Mensagem do Comandante (essas aparecem também aqui).') },
         { nome: 'mensagem.texto', rotulo: tx('Mensagem'), tipo: 'textarea', linhas: 4, ajuda: tx('O nome, cargo e fotografia vêm da primeira pessoa em "Corpo docente".') },
       ] },
     ],

@@ -7,6 +7,7 @@ import useSeccaoAtiva from '../../hooks/useSeccaoAtiva'
 import { iniciais } from '../../utils/texto'
 import Organograma from '../../components/Organograma/Organograma'
 import { orgaosDe } from '../../components/Organograma/orgaos'
+import { mensagensDosComandantes, nomeCompleto, paragrafos } from '../../components/MensagemComandante/comandantes'
 import styles from './Institucional.module.css'
 import { t } from '../../i18n/linguas'
 
@@ -39,6 +40,8 @@ function Institucional() {
   const ativa = useSeccaoAtiva(idsSeccoes)
   const comandante = pessoas[0] || { nome: '', cargo: '' }
   const direcao = pessoas.slice(1)
+  const msg = mensagensDosComandantes(paginas)
+  const paragrafosMsg = msg.actual ? paragrafos(msg.actual.mensagem) : []
 
   return (
     <main className={styles.pagina}>
@@ -201,19 +204,41 @@ function Institucional() {
           <section id="comando" className={styles.seccao}>
             <TituloSeccao rotulo={t('Direção / Comando')}>{t('Mensagem do Comandante')}</TituloSeccao>
 
-            <div className={styles.mensagem}>
-              <figure className={styles.retrato}>
-                {comandante.foto ? <img loading="lazy" decoding="async" src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
-              </figure>
-              <div>
-                <blockquote className={styles.citacao}>{pagina.mensagem.citacao}</blockquote>
-                <p className={styles.mensagemTexto}>{pagina.mensagem.texto}</p>
-                <div className={styles.assinatura}>
-                  <strong>{comandante.nome}</strong>
-                  <span>{comandante.cargo}</span>
+            {/* a mesma mensagem da página inicial (Páginas › Página inicial › Mensagem do Comandante); sem ela, a antiga desta página */}
+            {msg.actual ? (
+              <div className={styles.mensagem}>
+                <figure className={styles.retrato}>
+                  {msg.actual.foto ? <img loading="lazy" decoding="async" src={msg.actual.foto} alt={nomeCompleto(msg.actual)} /> : <span>{iniciais(msg.actual.nome)}</span>}
+                </figure>
+                <div>
+                  <blockquote className={styles.citacao}>{paragrafosMsg[0]}</blockquote>
+                  {paragrafosMsg.slice(1).map((x) => <p key={x.slice(0, 40)} className={styles.mensagemTexto}>{x}</p>)}
+                  <div className={styles.assinatura}>
+                    <strong>{nomeCompleto(msg.actual)}</strong>
+                    <span>{t('Comandante da Escola Superior de Guerra')}{msg.actual.periodo ? ` · ${msg.actual.periodo}` : ''}</span>
+                  </div>
+                  {msg.anteriores.length > 0 && (
+                    <Link to="/Comandantes" className={styles.ligacao}>
+                      {t('Mensagens dos comandantes anteriores')} <FaArrowRight aria-hidden="true" />
+                    </Link>
+                  )}
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className={styles.mensagem}>
+                <figure className={styles.retrato}>
+                  {comandante.foto ? <img loading="lazy" decoding="async" src={comandante.foto} alt={comandante.nome} /> : <span>{iniciais(comandante.nome)}</span>}
+                </figure>
+                <div>
+                  <blockquote className={styles.citacao}>{pagina.mensagem.citacao}</blockquote>
+                  <p className={styles.mensagemTexto}>{pagina.mensagem.texto}</p>
+                  <div className={styles.assinatura}>
+                    <strong>{comandante.nome}</strong>
+                    <span>{comandante.cargo}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className={styles.organogramaBloco}>
               <h3 className={styles.subtitulo}>{t('Organograma da Escola')}</h3>
