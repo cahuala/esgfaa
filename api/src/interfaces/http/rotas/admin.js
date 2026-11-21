@@ -16,6 +16,7 @@ import { rotasIntegridade } from './integridade.js'
 import { rotasTraducoes } from './traducoes.js'
 import { sessaoEmCookie } from '../middlewares/sessaoCookie.js'
 import { provaRobo } from '../middlewares/provaRobo.js'
+import { otimizarImagem } from '../../../infraestrutura/ficheiros/imagens.js'
 import { DoisFatoresPorAtivar } from '../../../dominio/comum/erros.js'
 
 const pColecao = z.object({ colecao: E.colecao })
@@ -212,6 +213,35 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
         enviar(req, res, ficheiros, 201)
       },
     )
+  }
+
+  // ---------- o meu perfil (fotografia, nome, telefone, cargo) ----------
+
+  r.put('/eu/perfil', validar({ body: z.object({ nome: z.string().max(100).optional(), telefone: z.string().max(30).nullable().optional(), cargo: z.string().max(120).nullable().optional() }) }), async (req, res) => {
+    res.json(await servicos.sessao.atualizarPerfil(ctx(req), req.dados.body))
+  })
+  if (armazenamento) {
+    const FOTOS = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    const foto = multer({
+      storage: multer.diskStorage({
+        destination: (req, f, cb) => cb(null, armazenamento.pastaDoMes()),
+        filename: (req, f, cb) => cb(null, armazenamento.nomeNovo(f.mimetype)),
+      }),
+      limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 2, parts: 3 },
+      fileFilter: (req, f, cb) => cb(null, FOTOS.has(f.mimetype)),
+    }).single('foto')
+    const apagarAnterior = (url) => { const c = armazenamento.caminhoDeUrl(url); if (c) armazenamento.apagar(c) }
+    r.post('/eu/foto', foto, async (req, res) => {
+      const f = req.file
+      if (!f) return res.status(400).json({ erro: 'Escolha uma fotografia JPG, PNG ou WebP até 2 MB.', codigo: 'validacao' })
+      if (!armazenamento.confirmarTipo(f.path, f.mimetype)) {
+        armazenamento.apagar(f.path)
+        return res.status(400).json({ erro: 'O ficheiro não é uma fotografia válida.', codigo: 'validacao' })
+      }
+      const o = await otimizarImagem({ caminho: f.path, tipo: f.mimetype, tamanho: f.size }).catch(() => ({ caminho: f.path }))
+      res.json(await servicos.sessao.mudarFoto(ctx(req), armazenamento.urlRelativa(o.caminho), apagarAnterior))
+    })
+    r.delete('/eu/foto', async (req, res) => res.json(await servicos.sessao.mudarFoto(ctx(req), null, apagarAnterior)))
   }
 
   // ---------- Centro de segurança ----------

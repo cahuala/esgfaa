@@ -73,4 +73,13 @@ export class ArmazenamentoLocal {
   apagar(caminho) {
     fs.rmSync(caminho, { force: true })
   }
+
+  // o caminho no disco de um endereço /uploads/… (só dentro da pasta de uploads; fora dela, null)
+  caminhoDeUrl(url) {
+    const m = /^\/uploads\/([^?#]+)$/.exec(String(url ?? ''))
+    if (!m) return null
+    const c = path.resolve(this.pasta, ...m[1].split('/'))
+    const relativo = path.relative(this.pasta, c)
+    return relativo.startsWith('..') || path.isAbsolute(relativo) ? null : c
+  }
 }

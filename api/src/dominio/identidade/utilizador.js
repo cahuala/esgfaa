@@ -87,6 +87,11 @@ export class Utilizador {
       // as permissões próprias (escolhidas pelo Comandante); null = as do papel
       permissoes: this.permissoes ?? null,
       geridaPeloPessoal: Boolean(this.geridaPeloPessoal),
+      // a conta vem do Sistema de Gestão de Pessoal (o nome muda-se lá)
+      doPessoal: Boolean(this.geridaPeloPessoal || this.pessoalRef),
+      foto: this.foto ?? null,
+      telefone: this.telefone ?? null,
+      cargo: this.cargo ?? null,
     }
   }
 }

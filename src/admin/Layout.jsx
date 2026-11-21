@@ -9,6 +9,7 @@ import SeletorLinguaPainel from '../i18n/SeletorLinguaPainel'
 import { api, comSessao } from './api'
 import { API_URL } from '../conteudo/api'
 import { ouvirTempoReal } from '../utils/tempoReal'
+import AvatarConta from './componentes/AvatarConta'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
 
 const SITE = import.meta.env.BASE_URL
@@ -106,7 +107,6 @@ function Layout({ children }) {
   }), [])
   const [paginasAberto, setPaginasAberto] = useState(pathname.startsWith('/paginas'))
 
-  const iniciais = utilizador.nome.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase()
 
   return (
     <div
@@ -138,7 +138,7 @@ function Layout({ children }) {
           <SeletorLinguaPainel />
           <div ref={menuRef} className={`navbar-item navbar-user dropdown esg-menu-utilizador ${menuUtilizador ? 'show' : ''}`}>
             <button type="button" className="navbar-link dropdown-toggle d-flex align-items-center" aria-expanded={menuUtilizador} onClick={() => setMenuUtilizador(!menuUtilizador)}>
-              <span className="admin-avatar">{iniciais}</span>
+              <AvatarConta utilizador={utilizador} />
               <span>
                 <span className="d-none d-md-inline fw-bold">{utilizador.nome}</span>
                 <b className="caret" />
@@ -147,7 +147,7 @@ function Layout({ children }) {
             {menuUtilizador && (
               <div className="dropdown-menu dropdown-menu-end show esg-menu-lista" data-bs-popper="static">
                 <div className="esg-menu-cabecalho">
-                  <span className="admin-avatar admin-avatar-grande">{iniciais}</span>
+                  <AvatarConta utilizador={utilizador} className="admin-avatar admin-avatar-grande" />
                   <div>
                     <strong>{utilizador.nome}</strong>
                     <small>{utilizador.email}</small>
@@ -176,7 +176,7 @@ function Layout({ children }) {
               <div className="esg-marca-nome">{tx('Escola Superior de Guerra')}</div>
               <div className="esg-marca-sub">{tx('Forças Armadas Angolanas')}</div>
               <Link to="/perfil" className="esg-marca-utilizador">
-                <span className="admin-avatar admin-avatar-grande">{iniciais}</span>
+                <AvatarConta utilizador={utilizador} className="admin-avatar admin-avatar-grande" />
                 <span>
                   <strong>{utilizador.nome}</strong>
                   <small>{tx(utilizador.nomePapel)}</small>

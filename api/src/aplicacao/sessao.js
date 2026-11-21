@@ -100,6 +100,36 @@ export class ServicoSessao {
     return { ...u.publico(), nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
   }
 
+  // o meu perfil: nome (não nas contas que vêm do Pessoal: muda-se lá), telefone e cargo ou função
+  async atualizarPerfil(ctx, { nome, telefone, cargo }) {
+    const u = await this.utilizadores.porId(ctx.actor.id)
+    const doPessoal = u.geridaPeloPessoal || u.pessoalRef
+    if (nome !== undefined && nome !== u.nome) {
+      if (doPessoal) throw new ErroValidacao('O nome desta conta vem do Sistema de Gestão de Pessoal: muda-se na ficha, lá.')
+      u.definirNome(nome)
+    }
+    const limpo = (t, max) => (t === undefined ? undefined : String(t ?? '').trim().replace(/\s+/g, ' ').slice(0, max) || null)
+    const tel = limpo(telefone, 30)
+    if (tel && !/^\+?[0-9 ()./-]{6,30}$/.test(tel)) throw new ErroValidacao('O telefone só tem algarismos, espaços e + ( ) - .')
+    if (tel !== undefined) u.telefone = tel
+    const c = limpo(cargo, 120)
+    if (c !== undefined) u.cargo = c
+    await this.utilizadores.guardar(u)
+    await this.auditoria.registar(ctx, { acao: 'editar_perfil' })
+    return this.eu(ctx)
+  }
+
+  // a fotografia do perfil (já gravada e confirmada na rota); a anterior apaga-se
+  async mudarFoto(ctx, url, apagarAnterior) {
+    const u = await this.utilizadores.porId(ctx.actor.id)
+    const antes = u.foto
+    u.foto = url
+    await this.utilizadores.guardar(u)
+    if (antes && antes !== url) apagarAnterior?.(antes)
+    await this.auditoria.registar(ctx, { acao: url ? 'mudar_foto_perfil' : 'tirar_foto_perfil' })
+    return this.eu(ctx)
+  }
+
   async sair(ctx) {
     await this.sessoes.revogar(ctx.sessao.jti, ctx.sessao.expira)
     await this.auditoria.registar(ctx, { acao: 'sair' })

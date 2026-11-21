@@ -44,6 +44,16 @@
   margin-right: 8px;
 }
 
+.admin-avatar-foto {
+  background: #e8ecef;
+  overflow: hidden;
+}
+.admin-avatar-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .admin-avatar-grande {
   width: 34px;
   height: 34px;
@@ -701,4 +711,118 @@ fieldset:disabled .bloco-topo .btn-group {
   .of-folha th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { background: #fff !important; }
   @page { size: A4 portrait; margin: 14mm; }
+}
+
+/* ---------- O meu perfil (como «Profile» do Color Admin): capa, fotografia, nome e papel ---------- */
+.perfil-capa {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1c2024;
+  color: #fff;
+}
+.perfil-capa-fundo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, #1c2024 0%, #2a3036 55%, #a3291a 140%);
+}
+.perfil-capa-fundo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #e53917 0 33%, #1c2024 33% 66%, #f0b400 66%);
+}
+.perfil-capa-conteudo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 28px 28px 30px;
+  flex-wrap: wrap;
+}
+.perfil-foto {
+  position: relative;
+  flex: none;
+}
+.perfil-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  background: #e53917;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  font-weight: 700;
+  overflow: hidden;
+}
+.perfil-avatar.admin-avatar-foto {
+  background: #e8ecef;
+}
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.perfil-foto-botao {
+  position: absolute;
+  right: 2px;
+  bottom: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #e53917;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.perfil-foto-botao:hover {
+  background: #c52f12;
+}
+.perfil-identidade {
+  flex: 1;
+  min-width: 220px;
+}
+.perfil-identidade h2 {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.perfil-papel {
+  color: #f0b400;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.perfil-contactos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+.perfil-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+@media (max-width: 575px) {
+  .perfil-capa-conteudo {
+    flex-direction: column;
+    text-align: center;
+  }
+  .perfil-contactos,
+  .perfil-acoes {
+    justify-content: center;
+  }
 }
