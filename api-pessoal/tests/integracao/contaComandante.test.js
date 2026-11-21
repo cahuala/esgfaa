@@ -177,8 +177,25 @@ describe('Civis da Direcção de Ensino: conta no painel de gestão, com o BI', 
       assert.match(c.senha, /^scrypt\$/)
       assert.ok(!e.raw.includes('001111111')) // o BI não sai em claro
       assert.deepEqual(await s.enviarContasEnsino(), { enviado: false, igual: true })
+      // os chefes militares: o Director de Ensino e o Chefe da Repartição de Administração Escolar vão com o NIP e o papel
+      // do cargo; o motorista do Director (também com «Ensino» no cargo) não vai
+      const cargo = async (nome, unidadeId) => (await adm.post('/api/cargos').send({ nome, unidadeId, funcao: 'direccao_chefia', tipo: 'militar', vagas: 1 }).expect(201)).body
+      const cDir = await cargo('Director da Direcção de Ensino da Escola Superior de Guerra', de.id)
+      const cChefe = await cargo('Chefe da Repartição de Administração Escolar da Direcção de Ensino', sec.id)
+      const cMot = await cargo('Motorista do Director de Ensino da Escola Superior de Guerra', de.id)
+      const dir = (await adm.post('/api/pessoas').send(militar({ nome: 'Director Ensino Teste', nip: '10576093', posto: 'brigadeiro', unidadeId: de.id, cargoId: cDir.id })).expect(201)).body
+      const chefe = (await adm.post('/api/pessoas').send(militar({ nome: 'Chefe Administracao Escolar Teste', nip: '20576094', posto: 'coronel', unidadeId: sec.id, cargoId: cChefe.id })).expect(201)).body
+      await adm.post('/api/pessoas').send(militar({ nome: 'Motorista Teste', nip: '30576095', unidadeId: de.id, cargoId: cMot.id })).expect(201)
+      await s.enviarContasEnsino()
+      const crypto = await import('node:crypto')
+      const porRef = Object.fromEntries(envios.at(-1).corpo.contas.map((x) => [x.ref, x]))
+      assert.equal(Object.keys(porRef).length, 3)
+      assert.deepEqual([porRef[`pessoal-${dir.id}`].papel, porRef[`pessoal-${chefe.id}`].papel], ['director_ensino', 'secretaria'])
+      assert.equal(porRef[`pessoal-${dir.id}`].bi, crypto.createHmac('sha256', chave).update('nip:10576093').digest('hex'))
+      assert.ok(!envios.at(-1).raw.includes('10576093')) // o NIP não sai em claro
+      assert.equal(porRef[`pessoal-${a.id}`].papel, undefined)
       // sai da Direcção de Ensino: a lista vai vazia (o painel desactiva a conta)
-      await amb.contentor.bd.pessoa.update({ where: { id: a.id }, data: { unidadeId: null } })
+      await amb.contentor.bd.pessoa.updateMany({ where: { id: { in: [a.id, dir.id, chefe.id] } }, data: { unidadeId: null } })
       await s.enviarContasEnsino()
       assert.deepEqual(envios.at(-1).corpo, { contas: [] })
     } finally {

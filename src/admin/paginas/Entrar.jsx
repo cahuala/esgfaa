@@ -80,14 +80,14 @@ function Entrar() {
                 </div>
               )}
 
-              <label className="entrada-rotulo" htmlFor="email">{tx('E-mail institucional ou BI')}</label>
+              <label className="entrada-rotulo" htmlFor="email">{tx('E-mail institucional, BI ou NIP')}</label>
               <div className="entrada-campo mb-20px">
                 <i className="fa fa-envelope" aria-hidden="true" />
                 <input
                   type="text"
                   id="email"
                   className="form-control"
-                  placeholder={tx('nome@esgfaa.gov.ao')}
+                  placeholder={tx('nome@esg.emfaa.gov.ao')}
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

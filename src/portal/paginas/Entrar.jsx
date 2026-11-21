@@ -39,7 +39,7 @@ function Entrar() {
         <label className="entrada-rotulo" htmlFor="email">{tx('E-mail')}</label>
         <div className="entrada-campo mb-20px">
           <i className="fa fa-envelope" aria-hidden="true" />
-          <input id="email" type="email" className="form-control" autoComplete="username" placeholder={tx('nome@esgfaa.gov.ao')} value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input id="email" type="email" className="form-control" autoComplete="username" placeholder={tx('nome@esg.emfaa.gov.ao')} value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
         <label className="entrada-rotulo" htmlFor="senha">{tx('Palavra-passe')}</label>

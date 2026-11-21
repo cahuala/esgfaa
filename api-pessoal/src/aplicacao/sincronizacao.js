@@ -5,6 +5,12 @@ import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir, unidadesDe } from './sessao.js'
 import { BI_ANGOLANO } from '../dominio/pessoal/ficha.js'
 import { invalido } from '../erros.js'
+
+// os cargos de chefia militar da Direcção de Ensino que têm conta automática no painel de gestão (entram com o NIP)
+const CHEFES_ENSINO = [
+  [/^Director (da Direc[çc][ãa]o )?de Ensino\b/i, 'director_ensino'],
+  [/^Chefe da Reparti[çc][ãa]o de Administra[çc][ãa]o Escolar\b/i, 'secretaria'],
+]
 import { calcularAssinantes } from './assinantes.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
@@ -133,18 +139,30 @@ export class ServicoSincronizacao {
   /*
     Os civis da Direcção de Ensino (e das suas secções) têm conta no painel de gestão: vai a ficha (pessoal-<id>), o
     nome, o e-mail se houver, a impressão do BI (HMAC com a chave partilhada; o BI não sai daqui) e a palavra-passe
-    inicial (o BI, já cifrado). Vai quando a lista muda; quem sai da Direcção de Ensino deixa de ir (o painel desactiva).
+    inicial (o BI, já cifrado). Os chefes militares (Director de Ensino, Chefe da Repartição de Administração Escolar)
+    vão da mesma forma com o NIP e o papel do cargo. Vai quando a lista muda; quem sai da Direcção de Ensino deixa de ir (o painel desactiva).
   */
   async enviarContasEnsino() {
     if (!this.ativa || !this.cifra) return { enviado: false, inativa: true }
     const ids = await unidadesDe(this.bd, /^Direc[çc][ãa]o de Ensino\b/i)
-    const pessoas = ids.length ? await this.bd.pessoa.findMany({ where: { tipo: 'civil', ativo: true, vinculo: 'funcionario', unidadeId: { in: ids } }, select: { id: true, nome: true, email: true, bi: true }, orderBy: { id: 'asc' } }) : []
-    const comBi = pessoas.map((p) => ({ p, bi: String(p.bi ?? '').trim().toUpperCase() })).filter((x) => BI_ANGOLANO.test(x.bi))
-    const contas = comBi.map(({ p, bi }) => ({ ref: `pessoal-${p.id}`, nome: p.nome, ...(p.email ? { email: p.email } : {}), bi: crypto.createHmac('sha256', this.config.portal.chave).update(`bi:${bi}`).digest('hex') }))
+    // os civis (entram com o BI) e os chefes militares — o Director de Ensino e o Chefe da Repartição de Administração
+    // Escolar (entram com o NIP; o papel no painel vem do cargo)
+    const pessoas = ids.length ? await this.bd.pessoa.findMany({ where: { ativo: true, unidadeId: { in: ids }, OR: [{ tipo: 'civil', vinculo: 'funcionario' }, { tipo: 'militar', cargo: { nome: { contains: 'Ensino', mode: 'insensitive' } } }, { tipo: 'militar', cargo: { nome: { contains: 'Administração Escolar', mode: 'insensitive' } } }] }, select: { id: true, nome: true, email: true, bi: true, tipo: true, nip: true, cargo: { select: { nome: true } } }, orderBy: { id: 'asc' } }) : []
+    const hmac = (t) => crypto.createHmac('sha256', this.config.portal.chave).update(t).digest('hex')
+    const comIdent = pessoas.map((p) => {
+      if (p.tipo === 'civil') {
+        const bi = String(p.bi ?? '').trim().toUpperCase()
+        return BI_ANGOLANO.test(bi) ? { p, ident: bi, impressao: hmac(`bi:${bi}`) } : null
+      }
+      const papel = CHEFES_ENSINO.find(([re]) => re.test(p.cargo?.nome ?? ''))?.[1]
+      const nip = String(p.nip ?? '').trim().toUpperCase()
+      return papel && /^[0-9]{5,12}$/.test(nip) ? { p, ident: nip, impressao: hmac(`nip:${nip}`), papel } : null
+    }).filter(Boolean)
+    const contas = comIdent.map(({ p, impressao, papel }) => ({ ref: `pessoal-${p.id}`, nome: p.nome, ...(p.email ? { email: p.email } : {}), bi: impressao, ...(papel ? { papel } : {}) }))
     // só a lista (sem as palavras-passe, que mudam de sal a cada cálculo) decide se volta a ir
     const marca = JSON.stringify(contas)
     if (marca === this.ultimasContasEnsino) return { enviado: false, igual: true }
-    const corpo = JSON.stringify({ contas: await Promise.all(contas.map(async (c, i) => ({ ...c, senha: await this.cifra.cifrar(comBi[i].bi) }))) })
+    const corpo = JSON.stringify({ contas: await Promise.all(contas.map(async (c, i) => ({ ...c, senha: await this.cifra.cifrar(comIdent[i].ident) }))) })
     const data = String(Math.floor(this.agora().getTime() / 1000))
     const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/contas-ensino`, {
       method: 'POST', body: corpo, signal: AbortSignal.timeout(30_000),

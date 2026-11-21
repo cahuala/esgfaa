@@ -3,7 +3,7 @@ import { Actor } from '../dominio/identidade/actor.js'
 import { limparPermissoes } from '../dominio/identidade/permissoes.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../dominio/identidade/utilizador.js'
 import { motivoSenhaFraca, validarSenha } from '../dominio/identidade/politicaSenha.js'
-import { BI_ANGOLANO, impressaoBi } from '../dominio/identidade/bi.js'
+import { BI_ANGOLANO, NIP, impressaoBi, impressaoNip } from '../dominio/identidade/bi.js'
 
 const CREDENCIAIS_ERRADAS = 'E-mail ou palavra-passe incorretos.'
 const bloqueada = (ate) => new ContaBloqueada(`Conta bloqueada por excesso de tentativas. Tente de novo dentro de ${MINUTOS_BLOQUEIO} minutos.`, ate)
@@ -14,13 +14,16 @@ export class ServicoSessao {
     Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao })
   }
 
-  // entra-se com o e-mail ou, nas contas que vêm do Pessoal (civis da Direcção de Ensino), com o BI
+  // entra-se com o e-mail ou, nas contas que vêm do Pessoal (Direcção de Ensino), com o BI (civis) ou o NIP (militares)
   async entrar(ctx, { email, senha, codigo }) {
     const emailLimpo = String(email || '').trim().toLowerCase().slice(0, 254)
     const comBi = this.chaveIntegracao && BI_ANGOLANO.test(emailLimpo.toUpperCase())
-    // no registo de actividade, o BI não fica em claro
-    const registado = comBi ? `BI …${emailLimpo.slice(-3).toUpperCase()}` : emailLimpo.slice(0, 120)
-    const u = comBi ? await this.utilizadores.porBiHash(impressaoBi(this.chaveIntegracao, emailLimpo)) : emailLimpo ? await this.utilizadores.porEmail(emailLimpo) : null
+    const comNip = this.chaveIntegracao && !comBi && NIP.test(emailLimpo)
+    // no registo de actividade, o BI e o NIP não ficam em claro
+    const registado = comBi ? `BI …${emailLimpo.slice(-3).toUpperCase()}` : comNip ? `NIP …${emailLimpo.slice(-3)}` : emailLimpo.slice(0, 120)
+    const u = comBi ? await this.utilizadores.porBiHash(impressaoBi(this.chaveIntegracao, emailLimpo))
+      : comNip ? await this.utilizadores.porBiHash(impressaoNip(this.chaveIntegracao, emailLimpo))
+        : emailLimpo ? await this.utilizadores.porEmail(emailLimpo) : null
     const agora = this.relogio.agora()
 
     if (!u) {
@@ -106,6 +109,7 @@ export class ServicoSessao {
   async mudarSenha(ctx, { atual, nova }) {
     const u = await this.utilizadores.porId(ctx.actor.id)
     if (u.biHash && this.chaveIntegracao && impressaoBi(this.chaveIntegracao, nova) === u.biHash) throw new ErroValidacao('A palavra-passe não pode ser o BI: escolha uma nova.')
+    if (u.biHash && this.chaveIntegracao && impressaoNip(this.chaveIntegracao, nova) === u.biHash) throw new ErroValidacao('A palavra-passe não pode ser o NIP: escolha uma nova.')
     if (u.geridaPeloPessoal) throw new ErroValidacao('A conta do Comandante é a do Sistema de Gestão de Pessoal: o nome, o e-mail e a palavra-passe mudam-se lá (são os mesmos nos dois sistemas).')
     if (!(await this.cifra.verificar(atual, u.senha))) throw new ErroValidacao('A palavra-passe atual está errada.')
     validarSenha(nova, { email: u.email, nome: u.nome })

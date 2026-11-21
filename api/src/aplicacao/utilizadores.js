@@ -62,17 +62,20 @@ export class ServicoUtilizadores {
         if (outra) { resultados.push({ ref: c.ref, ok: false, erro: 'Já há uma conta do painel com este BI.' }); continue }
         const real = c.email ? normalizarEmail(c.email) : ''
         const email = real && !(await this.utilizadores.emailEmUso(real)) ? real : `${c.ref}@pessoal.interno`
-        u = Utilizador.novo({ nome: c.nome, email, papel: 'secretaria', senhaCifrada: c.senha, deveMudarSenha: true })
+        // o papel vem do Pessoal pelo cargo: o Director de Ensino; os outros, a Repartição de Administração Escolar
+        u = Utilizador.novo({ nome: c.nome, email, papel: c.papel ?? 'secretaria', senhaCifrada: c.senha, deveMudarSenha: true })
         Object.assign(u, { pessoalRef: c.ref, biHash: c.bi })
         u = await this.utilizadores.criar(u)
         await this.auditoria.registar(ctx, { acao: 'conta_ensino_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { criada: true } })
         resultados.push({ ref: c.ref, ok: true, criada: true })
         continue
       }
-      // o nome e o BI acompanham a ficha (uma conta desactivada fica: reactiva-a o administrador)
-      if (u.nome !== c.nome || u.biHash !== c.bi) {
+      // o nome, o BI (ou o NIP) e o papel acompanham a ficha (uma conta desactivada fica: reactiva-a o administrador)
+      const papel = c.papel ?? 'secretaria'
+      if (u.nome !== c.nome || u.biHash !== c.bi || u.papel !== papel) {
         u.definirNome(c.nome)
         u.biHash = c.bi
+        if (u.papel !== papel) { u.papel = papel; u.invalidarSessoes() }
         await this.utilizadores.guardar(u)
       }
       resultados.push({ ref: c.ref, ok: true })

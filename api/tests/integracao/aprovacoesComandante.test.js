@@ -190,4 +190,23 @@ describe('Civis da Direcção de Ensino: conta no painel, vinda do Pessoal, com 
     await enviar([]).expect(200)
     assert.equal((await entrar(BI, 'Kalunga-Forte-2026x!')).status, 403)
   })
+
+  it('chefes militares (Director de Ensino): entram com o NIP, com o papel do cargo; o NIP não pode ficar como palavra-passe', async () => {
+    const NIP = '10576093'
+    const impNip = (n) => crypto.createHmac('sha256', CHAVE).update(`nip:${n}`).digest('hex')
+    const conta = { ref: 'pessoal-77', nome: 'Director Ensino Teste', bi: impNip(NIP), papel: 'director_ensino', senha: await amb.contentor.cifra.cifrar(NIP) }
+    assert.equal((await enviar([conta]).expect(200)).body.resultados[0].criada, true)
+    const e = await entrar(NIP, NIP)
+    assert.equal(e.status, 200, e.body.erro)
+    assert.equal(e.body.utilizador.papel, 'director_ensino')
+    const eu = amb.com(e.body.token)
+    assert.match((await eu.put('/api/admin/eu/senha').send({ atual: NIP, nova: NIP })).body.erro, /NIP/)
+    // mudou de cargo para a Repartição de Administração Escolar: o papel acompanha
+    await enviar([{ ...conta, papel: 'secretaria' }]).expect(200)
+    assert.equal((await entrar(NIP, NIP)).body.utilizador.papel, 'secretaria')
+    // o NIP não fica em claro no registo das entradas falhadas
+    await entrar('99887766', 'errada')
+    const reg = await amb.contentor.prismaBase.atividade.findMany({ where: { acao: 'falha_entrada' } })
+    assert.ok(reg.every((x) => !JSON.stringify(x.detalhes).includes('99887766')))
+  })
 })
