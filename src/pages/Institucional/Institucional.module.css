@@ -214,42 +214,105 @@
 .declaracoes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: clamp(20px, 3vw, 32px);
 }
 .declaracoes article {
-  padding: 22px;
-  background: var(--fundo);
-  border-radius: var(--raio);
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 26px 28px;
+  background: var(--fundo-cinza);
+  border-left: 3px solid var(--marca);
+  border-radius: 0 var(--raio) var(--raio) 0;
+}
+.declaracaoIcone {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--marca);
+  background: var(--superficie);
   border: 1px solid var(--linha);
 }
-.declaracoes .rotulo {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--texto);
+.declaracoes h3 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--marca);
 }
 .declaracoes p {
   margin-top: 8px;
-  font-size: 15px;
-  color: var(--texto-suave);
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.6;
+  color: var(--texto);
+  text-align: left;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+.valores {
+  margin-top: 40px;
+}
+.valoresTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--marca);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--linha);
 }
 .valores ol {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(var(--colunas, 4), minmax(0, 1fr));
+  gap: 0 clamp(20px, 3vw, 32px);
 }
 .valores li {
-  padding: 18px 20px;
-  border: 1px solid var(--linha);
-  border-radius: var(--raio);
+  padding-top: 20px;
 }
-.valores h3 {
-  font-size: 15px;
+.valorNumero {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--marca);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.valores h4 {
+  font-size: 16px;
+  font-weight: 600;
 }
 .valores p {
-  margin-top: 4px;
-  font-size: 14px;
+  margin-top: 6px;
+  font-size: 14.5px;
+  line-height: 1.6;
   color: var(--texto-suave);
+  text-align: left;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+@media (max-width: 900px) {
+  .valores ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 24px;
+  }
+}
+@media (max-width: 640px) {
+  .declaracoes {
+    grid-template-columns: 1fr;
+  }
+  .declaracoes article {
+    padding: 20px;
+  }
+  .valores ol {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* organograma */

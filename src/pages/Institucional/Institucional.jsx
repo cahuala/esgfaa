@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FaArrowRight } from 'react-icons/fa'
+import { FaArrowRight, FaBullseye, FaEye, FaShieldAlt } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import { useConteudo } from '../../conteudo/contexto'
@@ -117,23 +117,26 @@ function Institucional() {
           <section id="missao" className={styles.seccao}>
             <TituloSeccao rotulo={t('Missão, Visão e Valores')}>{t('O que nos orienta')}</TituloSeccao>
 
+            {/* a missão e a visão em destaque; os valores numerados, numa grelha com as colunas certas para quantos forem */}
             <div className={styles.declaracoes}>
-              <article>
-                <span className={styles.rotulo}>{t('Missão')}</span>
-                <p>{pagina.missao}</p>
-              </article>
-              <article>
-                <span className={styles.rotulo}>{t('Visão')}</span>
-                <p>{pagina.visao}</p>
-              </article>
+              {[['missao', t('Missão'), FaBullseye], ['visao', t('Visão'), FaEye]].map(([k, rotulo, Icone]) => (
+                <article key={k}>
+                  <span className={styles.declaracaoIcone}><Icone aria-hidden="true" /></span>
+                  <div>
+                    <h3>{rotulo}</h3>
+                    <p>{pagina[k]}</p>
+                  </div>
+                </article>
+              ))}
             </div>
 
             <div className={styles.valores}>
-              <h3 className={styles.subtitulo}>{t('Valores')}</h3>
-              <ol>
+              <h3 className={styles.valoresTitulo}><FaShieldAlt aria-hidden="true" /> {t('Valores')}</h3>
+              <ol style={{ '--colunas': Math.min(Math.max(valores.length, 1), 4) }}>
                 {valores.map((v, iV) => (
                   <li key={`${v.nome}-${iV}`}>
-                    <h3>{v.nome}</h3>
+                    <span className={styles.valorNumero}>{String(iV + 1).padStart(2, '0')}</span>
+                    <h4>{v.nome}</h4>
                     <p>{v.texto}</p>
                   </li>
                 ))}
