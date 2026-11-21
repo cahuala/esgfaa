@@ -13,8 +13,8 @@ import { calendarioAdmissao, processoAdmissao } from './cursos'
 
 const home = {
   hero: {
-    titulo: 'Formar quem defende Angola, desde o primeiro dia.',
-    texto: 'Conheça os cursos e programas da Escola Superior de Guerra e as publicações do seu corpo docente.',
+    titulo: 'Escola Superior de Guerra',
+    texto: 'Estabelecimento de ensino superior militar das Forças Armadas Angolanas.',
     imagem: Auditorio,
     metricas: [
       { valor: '32.º', legenda: 'Curso Superior de Comando e Direcção' },
@@ -23,8 +23,8 @@ const home = {
   },
   formacao: {
     etiqueta: 'Formação e Cursos',
-    titulo: 'Da admissão à graduação, formamos quem vai comandar.',
-    texto: 'Programas académicos estruturados para cada etapa da carreira militar — do planeamento estratégico à liderança institucional.',
+    titulo: 'Cursos de formação superior',
+    texto: 'Planos curriculares, duração e condições de frequência de cada curso ministrado na Escola.',
   },
   noticias: { etiqueta: 'Notícias', titulo: 'O que está a acontecer na Escola.' },
   eventos: { etiqueta: 'Eventos', titulo: 'Próximos eventos' },
@@ -38,7 +38,7 @@ const home = {
       { tipo: 'Aviso', data: '2026-09-10', titulo: 'Condicionamento de acesso às instalações', resumo: 'Durante as obras no bloco B, o acesso será feito exclusivamente pela entrada principal.', importante: false },
     ],
   },
-  corpo: { etiqueta: 'Comando e Corpo Docente', titulo: 'Quem forma, também lidera.' },
+  corpo: { etiqueta: 'Comando e Corpo Docente', titulo: 'Comando e corpo docente' },
   missao: {
     imagem: Escola2,
     missao: 'Formar oficiais com competência técnica, ética e capacidade de comando ao serviço da defesa de Angola.',
@@ -58,9 +58,19 @@ const home = {
     ],
   },
   cta: {
-    titulo: 'Pronto para dar o próximo passo na sua carreira militar?',
-    texto: 'Conheça os cursos da Escola Superior de Guerra, que preparam oficiais para funções de comando e liderança.',
-    botao: 'Conhecer o processo de admissão',
+    titulo: 'Cursos e programas da Escola',
+    texto: 'Consulte a oferta formativa da Escola e o calendário académico em vigor.',
+    botao: 'Ver os cursos',
+    ligacao: '/Cursos',
+  },
+  /*
+    Mensagem do Comandante: a do Comandante actual na página inicial; as dos comandantes que já passaram pela
+    Escola na página «Mensagens dos Comandantes». Preenche-se no painel (Páginas › Página inicial); vazia, não aparece.
+  */
+  comandante: {
+    etiqueta: 'Mensagem do Comandante',
+    titulo: 'Mensagem do Comandante',
+    mensagens: [],
   },
 }
 

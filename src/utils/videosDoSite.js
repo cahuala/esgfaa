@@ -26,7 +26,9 @@ function fotosDe(x) {
   return l.filter((f) => f.src && !vistas.has(f.src) && vistas.add(f.src)).slice(0, MAX_FOTOS)
 }
 
-export function gruposDoSite({ eventos = [], noticias = [] } = {}, hoje = hojeIso()) {
+// dias: só o que tem até esse número de dias (a página inicial mostra só o recente); os marcados «Sempre» ficam
+export function gruposDoSite({ eventos = [], noticias = [] } = {}, hoje = hojeIso(), { dias } = {}) {
+  const desde = dias ? new Date(new Date(`${hoje}T00:00:00Z`).getTime() - dias * 86_400_000).toISOString().slice(0, 10) : ''
   const grupo = (x, tipo, chave, { comFotos }) => {
     const base = `${tipo}-${x[chave]}`
     const nome = (src) => String(src).split('/').pop()
@@ -48,7 +50,7 @@ export function gruposDoSite({ eventos = [], noticias = [] } = {}, hoje = hojeIs
   const grupos = [
     ...[...realizados, ...fixos].map((e) => ({ g: grupo(e, 'evento', 'id', { comFotos: true }), fixo: sempre(e) })),
     ...disponiveis.map((n) => ({ g: grupo(n, 'noticia', 'slug', { comFotos: sempre(n) || Boolean(n.destaque) || recentes.has(n.slug) }), fixo: sempre(n) })),
-  ].filter((x) => x.g.itens.length)
+  ].filter((x) => x.g.itens.length && (!desde || x.fixo || x.g.data >= desde))
   // os marcados «Sempre» vêm primeiro; depois, do mais recente para o mais antigo
   return grupos.sort((a, b) => Number(b.fixo) - Number(a.fixo) || b.g.data.localeCompare(a.g.data)).slice(0, MAX_CARTOES).map((x) => x.g)
 }

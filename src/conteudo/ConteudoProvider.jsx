@@ -57,7 +57,8 @@ function ConteudoProvider({ children }) {
         const remoto = comImagensDoSite(resposta)
         // uma página ainda não guardada na API mantém os valores locais
         const paginasJuntas = Object.fromEntries(
-          Object.entries(LOCAL.paginas).map(([k, v]) => [k, remoto.paginas?.[k] || v]),
+          // as secções novas (ex.: a Mensagem do Comandante) que a página guardada ainda não tem ficam com as de origem
+          Object.entries(LOCAL.paginas).map(([k, v]) => [k, remoto.paginas?.[k] ? { ...v, ...remoto.paginas[k] } : v]),
         )
         setDados({ ...remoto, paginas: paginasJuntas })
         setOnline(true)

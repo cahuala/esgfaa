@@ -1,0 +1,52 @@
+.grelha {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+.foto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  border: 1px solid var(--linha);
+}
+.rotulo {
+  display: block;
+  font-size: 14px;
+  color: var(--texto-fraco);
+  margin-bottom: 6px;
+}
+h2 {
+  font-size: clamp(22px, 2.4vw, 30px);
+}
+.citacao {
+  margin: 20px 0 16px;
+  padding-left: 18px;
+  border-left: 3px solid var(--marca);
+  color: var(--texto-suave);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.citacao p + p {
+  margin-top: 10px;
+}
+.assinatura {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.assinatura span {
+  color: var(--texto-fraco);
+}
+@media (max-width: 760px) {
+  .grelha {
+    grid-template-columns: 1fr;
+  }
+  .foto {
+    max-width: 240px;
+  }
+}

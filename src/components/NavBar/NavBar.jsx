@@ -37,7 +37,7 @@ function NavBar() {
       {/* faixa institucional */}
       <div className={style.faixa}>
         <div className={style.faixaConteudo}>
-          <span>{t('Forças Armadas Angolanas')}</span>
+          <span>{t('República de Angola')} · {t('Ministério da Defesa Nacional')} · {t('Forças Armadas Angolanas')}</span>
           <span className={style.faixaDireita}>{t('Estabelecimento de Ensino Superior Militar')}</span>
         </div>
       </div>

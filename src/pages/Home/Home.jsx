@@ -9,6 +9,7 @@ import FAQ from '../../components/FAQ/Faq'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import Publicidade from '../../components/Publicidade/Publicidade'
 import ActividadesEmVideo from '../../components/ActividadesEmVideo/ActividadesEmVideo'
+import MensagemComandante from '../../components/MensagemComandante/MensagemComandante'
 
 
 
@@ -18,11 +19,13 @@ function Home() {
     return(
       <div>
          <HeroSection/>
-         <ActividadesEmVideo />
+         <MensagemComandante />
          <Publicidade posicao="home-topo" />
          <FormacaoDestaque />
          <NoticiaDestaque />
          <ProximosEventos />
+         {/* os destaques (vídeos curtos e fotografias) só dos últimos 30 dias, depois das notícias e dos eventos */}
+         <ActividadesEmVideo dias={30} />
          <Publicidade posicao="home-meio" />
          <AvisosComunicados />
          <CorpoDestaque />

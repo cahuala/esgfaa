@@ -1,0 +1,57 @@
+.corpo {
+  padding-top: 40px;
+  padding-bottom: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.corpo h2 {
+  font-size: clamp(20px, 2.2vw, 26px);
+  margin-bottom: 16px;
+}
+.mensagem {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 48px);
+  padding: 28px 0;
+  border-top: 1px solid var(--linha);
+}
+.actual {
+  border-top: 3px solid var(--marca);
+}
+.lado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.lado img,
+.semFoto {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center top;
+  border: 1px solid var(--linha);
+  margin-bottom: 8px;
+  background: var(--fundo);
+}
+.lado span {
+  color: var(--texto-fraco);
+}
+.texto {
+  color: var(--texto-suave);
+  line-height: 1.75;
+  font-size: 15px;
+}
+.texto p + p {
+  margin-top: 12px;
+}
+@media (max-width: 700px) {
+  .mensagem {
+    grid-template-columns: 1fr;
+  }
+  .lado img,
+  .semFoto {
+    max-width: 180px;
+  }
+}

@@ -50,8 +50,8 @@ function Publicidade({ posicao, variante }) {
   const props = { className: styles.ligacao, onClick: () => contar(banner.id, 'clique') }
 
   return (
-    <aside ref={ref} className={`${styles.banner} ${styles[variante] || ''}`} aria-label={t('Publicidade')}>
-      <span className={styles.rotulo}>{t('Publicidade')}</span>
+    <aside ref={ref} className={`${styles.banner} ${styles[variante] || ''}`} aria-label={t('Em destaque')}>
+      <span className={styles.rotulo}>{t('Em destaque')}</span>
       {!banner.ligacao ? <div className={styles.ligacao}>{conteudo}</div>
         : externa ? <a href={banner.ligacao} target="_blank" rel="noopener sponsored" {...props}>{conteudo}</a>
           : <Link to={banner.ligacao} {...props}>{conteudo}</Link>}

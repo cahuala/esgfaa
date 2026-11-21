@@ -53,4 +53,18 @@ describe('actividades realizadas como os estados do WhatsApp (site)', () => {
     const conf = gruposDoSite(dados, '2026-10-24').find((x) => x.id === 'evento-conferencia')
     expect(conf.itens.map((i) => [i.imagem, i.src, i.legenda])).toEqual([[true, '/conf.webp', 'Painel de oradores'], [true, '/g1.webp', 'Abertura'], [true, '/i1.webp', undefined]])
   })
+
+  it('na página inicial só o recente (dias): os mais antigos saem, os marcados «Sempre» ficam', () => {
+    const d = {
+      eventos: [
+        { id: 'recente', titulo: 'Recente', data: '2026-10-20', capa: '/r.webp' },
+        { id: 'antigo', titulo: 'Antigo', data: '2026-06-01', capa: '/a.webp' },
+        { id: 'fixo', titulo: 'Fixo', data: '2026-03-01', capa: '/f.webp', nosDestaques: 'sempre' },
+      ],
+      noticias: [],
+    }
+    expect(gruposDoSite(d, '2026-10-24', { dias: 30 }).map((x) => x.id)).toEqual(['evento-fixo', 'evento-recente'])
+    expect(gruposDoSite(d, '2026-10-24').map((x) => x.id)).toContain('evento-antigo')
+  })
+
 })
