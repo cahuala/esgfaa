@@ -811,6 +811,24 @@ fieldset:disabled .bloco-topo .btn-group {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.78);
 }
+.perfil-botao-claro,
+.perfil-botao-claro:hover,
+.perfil-botao-claro:focus {
+  background: #fff;
+  color: #1c2024;
+  border: 1px solid #fff;
+  font-weight: 600;
+}
+.perfil-botao-claro:hover {
+  background: #f1f1f1;
+}
+.perfil-botao-contorno,
+.perfil-botao-contorno:hover,
+.perfil-botao-contorno:focus {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
 .perfil-acoes {
   display: flex;
   gap: 8px;

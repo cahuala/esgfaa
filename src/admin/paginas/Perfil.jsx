@@ -83,8 +83,8 @@ function Perfil() {
             </div>
           </div>
           <div className="perfil-acoes">
-            <button type="button" className="btn btn-sm btn-light" onClick={() => ficheiro.current?.click()} disabled={aGravar === 'foto'}><i className="fa fa-camera me-1" />{utilizador.foto ? tx('Mudar fotografia') : tx('Pôr fotografia')}</button>
-            {utilizador.foto && <button type="button" className="btn btn-sm btn-outline-light" onClick={tirarFoto} disabled={aGravar === 'foto'}><i className="fa fa-trash me-1" />{tx('Tirar')}</button>}
+            <button type="button" className="btn btn-sm perfil-botao-claro" onClick={() => ficheiro.current?.click()} disabled={aGravar === 'foto'}><i className="fa fa-camera me-1" />{utilizador.foto ? tx('Mudar fotografia') : tx('Pôr fotografia')}</button>
+            {utilizador.foto && <button type="button" className="btn btn-sm perfil-botao-contorno" onClick={tirarFoto} disabled={aGravar === 'foto'}><i className="fa fa-trash me-1" />{tx('Tirar')}</button>}
           </div>
         </div>
       </div>
