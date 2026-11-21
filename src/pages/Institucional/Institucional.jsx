@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FaArrowRight, FaBullseye, FaEye, FaShieldAlt } from 'react-icons/fa'
+import { FaArrowRight, FaBuilding, FaBullhorn, FaBullseye, FaChalkboardTeacher, FaCogs, FaEye, FaFileAlt, FaFlask, FaGlobeAfrica, FaGraduationCap, FaHandshake, FaShieldAlt, FaSitemap, FaStar, FaTools } from 'react-icons/fa'
 import CabecalhoEditorial from '../../components/CabecalhoEditorial/CabecalhoEditorial'
 import CtaBanner from '../../components/CTABanner/CtaBanner'
 import { useConteudo } from '../../conteudo/contexto'
@@ -18,6 +18,16 @@ const seccoes = [
 ]
 
 const idsSeccoes = seccoes.map((s) => s.id)
+
+// a cor de cada área (vermelho da Escola, verde militar, dourado) e os ícones, pelo nome (com um de reserva)
+const CORES_AREA = ['var(--marca)', '#3d6b3a', 'var(--dourado)']
+const semAcento = (x) => String(x ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const pelo = (lista, reserva) => (nome) => (lista.find(([re]) => re.test(semAcento(nome)))?.[1] ?? reserva)
+const iconeDaArea = pelo([[/ensino|formac/, FaGraduationCap], [/investig|cooper/, FaGlobeAfrica], [/apoio|servic|logist/, FaCogs]], FaSitemap)
+const iconeDoOrgao = pelo([
+  [/direc|direç/, FaSitemap], [/docente|professor/, FaChalkboardTeacher], [/secretar|matricul/, FaFileAlt], [/investig|pesquis/, FaFlask],
+  [/cooper|internac/, FaHandshake], [/comunic|imprensa/, FaBullhorn], [/apoio|logist|servic/, FaTools],
+], FaBuilding)
 
 function Institucional() {
   const { pessoas, paginas } = useConteudo()
@@ -149,20 +159,41 @@ function Institucional() {
             <TituloSeccao rotulo={t('Organização e Estrutura')}>{t('Como a Escola está organizada')}</TituloSeccao>
             <p className={styles.introducao}>{pagina.estrutura.introducao}</p>
 
-            <div className={styles.ramos}>
-              {ramos.map((r, iR) => (
-                <div key={`${r.titulo}-${iR}`} className={styles.ramo}>
-                  <h4>{r.titulo}</h4>
-                  <ul>
-                    {r.orgaos.map((o, iO) => (
-                      <li key={`${o.nome}-${iO}`}>
-                        <strong>{o.nome}</strong>
-                        <span>{o.texto}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            {/* como um organograma: o Comando no topo e, ligadas a ele, as áreas (painéis com a lista dos órgãos) */}
+            <div className={styles.comandoTopo}>
+              <span className={styles.comandoIcone}><FaStar aria-hidden="true" /></span>
+              <div>
+                <strong>{t('Comando da Escola')}</strong>
+                <span>{t('Comandante e 2.º Comandante')}</span>
+              </div>
+            </div>
+            <div className={styles.ramos} style={{ '--areas': Math.min(Math.max(ramos.length, 1), 3) }}>
+              {ramos.map((r, iR) => {
+                const IconeArea = iconeDaArea(r.titulo)
+                return (
+                  <article key={`${r.titulo}-${iR}`} className={styles.ramo} style={{ '--cor-area': CORES_AREA[iR % CORES_AREA.length] }}>
+                    <header className={styles.ramoCabeca}>
+                      <IconeArea aria-hidden="true" />
+                      <h4>{r.titulo}</h4>
+                      <span className={styles.ramoConta}>{r.orgaos.length}</span>
+                    </header>
+                    <ul>
+                      {r.orgaos.map((o, iO) => {
+                        const Icone = iconeDoOrgao(o.nome)
+                        return (
+                          <li key={`${o.nome}-${iO}`}>
+                            <span className={styles.orgaoIcone}><Icone aria-hidden="true" /></span>
+                            <div>
+                              <strong>{o.nome}</strong>
+                              <span>{o.texto}</span>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </article>
+                )
+              })}
             </div>
           </section>
 

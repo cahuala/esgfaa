@@ -320,41 +320,167 @@
   font-size: 15.5px;
   color: var(--texto-suave);
   max-width: 75ch;
+  text-align: left;
+  hyphens: manual;
+  -webkit-hyphens: manual;
 }
 .organogramaBloco {
   margin-top: 36px;
 }
-.ramos {
-  margin-top: 20px;
+.comandoTopo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  margin: 28px auto 0;
+  padding: 14px 22px;
+  background: var(--fundo-escuro);
+  color: #fff;
+  border-radius: var(--raio);
+}
+/* o traço que desce do Comando até às áreas */
+.comandoTopo::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 22px;
+  background: var(--linha-forte);
+}
+.comandoIcone {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 16px;
+  place-items: center;
+  background: var(--marca);
+  color: #fff;
+}
+.comandoTopo strong {
+  display: block;
+  font-size: 15px;
+}
+.comandoTopo span:not(.comandoIcone) {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.ramos {
+  position: relative;
+  margin-top: 44px;
+  padding-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(var(--areas, 3), minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+/* o traço horizontal que liga as áreas ao Comando */
+.ramos::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(100% / var(--areas, 3) / 2);
+  right: calc(100% / var(--areas, 3) / 2);
+  height: 2px;
+  background: var(--linha-forte);
 }
 .ramo {
-  padding: 18px 20px;
-  background: var(--fundo);
-  border-radius: var(--raio);
+  position: relative;
+  background: var(--superficie);
   border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  overflow: visible;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-.ramo h4 {
+.ramo::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -23px;
+  width: 2px;
+  height: 22px;
+  background: var(--linha-forte);
+}
+.ramoCabeca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--fundo-escuro);
+  color: #fff;
+  border-radius: var(--raio) var(--raio) 0 0;
+  border-bottom: 3px solid var(--cor-area);
+}
+.ramoCabeca h4 {
+  flex: 1;
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 10px;
+  color: #fff;
+  margin: 0;
+}
+.ramoConta {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--cor-area);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 .ramo ul {
   list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ramo li {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  text-align: left;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+.ramo li + li {
+  border-top: 1px solid var(--linha);
+}
+.orgaoIcone {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--raio);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--cor-area);
+  font-size: 15px;
 }
 .ramo strong {
   display: block;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
 }
-.ramo span {
-  font-size: 13px;
+.ramo li span:not(.orgaoIcone) {
+  display: block;
+  margin-top: 2px;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: var(--texto-suave);
+}
+@media (max-width: 860px) {
+  .ramos {
+    grid-template-columns: 1fr;
+    padding-top: 0;
+    margin-top: 32px;
+  }
+  .ramos::before,
+  .ramo::before {
+    display: none;
+  }
+  .comandoTopo::after {
+    height: 10px;
+  }
 }
 
 /* mensagem do comandante */
