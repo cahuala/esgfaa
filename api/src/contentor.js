@@ -113,6 +113,7 @@ import { ServicoOriginalidade } from './aplicacao/integridade/originalidade.js'
 import { extrairTexto } from './infraestrutura/texto/extrair.js'
 import { criarOcr } from './infraestrutura/texto/ocr.js'
 import { PesquisaBrave } from './infraestrutura/web/pesquisaBrave.js'
+import { FontesCientificas } from './infraestrutura/web/fontesCientificas.js'
 import { obterPagina } from './infraestrutura/web/paginas.js'
 import { ClienteClaude } from './infraestrutura/ia/claude.js'
 import { RepositorioTraducoes } from './infraestrutura/repositorios/traducoes.js'
@@ -222,6 +223,9 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // anti-plágio: indexa trabalhos entregues e obras digitais, e compara em fila
   const originalidade = new ServicoOriginalidade({
     pesquisaWeb: ext.pesquisaWeb, obterPagina: ext.obterPagina, claude: ext.claude, pesquisasPorDocumento: config.pesquisaWeb?.porDocumento ?? 8,
+    // publicações científicas (OpenAlex, Crossref, CORE): só com FONTES_CIENTIFICAS=sim (os testes substituem-nas)
+    fontesCientificas: 'fontesCientificas' in externos ? externos.fontesCientificas : config.fontesCientificas?.ativas ? new FontesCientificas({ coreChave: config.fontesCientificas.coreChave }) : null,
+    pesquisasCientificasPorDocumento: config.fontesCientificas?.porDocumento ?? 6,
     // tradução (paráfrase noutra língua) e OCR dos PDF digitalizados: correm no servidor (o Claude só se autorizado)
     tradutor: ext.tradutor, ocr: 'ocr' in externos ? externos.ocr : criarOcr(),
     integridade: r.integridade, academico: r.academico, contas: r.contasPortal, biblioteca: r.biblioteca, privados, extrair: extrairTexto, apoio, auditoria, relogio,

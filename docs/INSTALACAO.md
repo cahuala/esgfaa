@@ -126,6 +126,7 @@ As migrações da base de dados aplicam-se sozinhas no arranque. Faça uma cópi
 - [ ] Servidor interno inacessível de fora da rede da Escola (confirmar a partir de uma rede externa).
 - [ ] Registo ou autorização na Agência de Protecção de Dados (APD) e política de privacidade aprovada pelo jurista.
 - [ ] `DADOS_FORA_DE_ANGOLA=nao` (salvo autorização expressa).
+- [ ] Anti-plágio com publicações científicas: `FONTES_CIENTIFICAS=sim` (e `CORE_API_KEY`, opcional) só com a autorização da Escola — envia frases dos trabalhos para o OpenAlex, a Crossref e o CORE.
 
 ## 9. Problemas
 

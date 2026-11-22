@@ -130,10 +130,11 @@ function Relatorio({ r }) {
               <span>{r.fontes.length} {tx('fonte(s) ·')} {r.trechos.length} {tx('trecho(s)')}</span>
             </div>
             <div className="small mt-2"><Internet i={r.internet} /></div>
+            <div className="small mt-1"><Cientificas c={r.verificacoes?.cientificas} /></div>
             <Verificacoes v={r.verificacoes} />
             <div className="small text-muted mt-2">
               <i className="fa fa-info-circle me-1" />
-              {tx('Comparado com os trabalhos entregues no portal, as obras digitais da biblioteca, o repositório de referência')}{r.internet?.estado === 'feita' ? tx(' e páginas da internet') : ''}.
+              {tx('Comparado com os trabalhos entregues no portal, as obras digitais da biblioteca, o repositório de referência')}{r.internet?.estado === 'feita' ? tx(' e páginas da internet') : ''}{r.verificacoes?.cientificas?.estado === 'feita' ? tx(' e publicações científicas (revistas, teses e livros)') : ''}.
               {r.opcoes?.excluirCitacoes && tx(' Citações entre aspas')}{r.opcoes?.excluirCitacoes && r.opcoes?.excluirReferencias ? tx(' e a') : r.opcoes?.excluirReferencias ? ' A' : ''}{r.opcoes?.excluirReferencias && tx(' lista de referências')}{(r.opcoes?.excluirCitacoes || r.opcoes?.excluirReferencias) && tx(' não contam.')}
               {' '}{tx('A percentagem indica texto coincidente, não plágio: cabe ao docente avaliar cada trecho.')}
             </div>
@@ -277,6 +278,18 @@ function Verificacoes({ v }) {
         : `${tx('Tradução')}: ${tx(ESTADO_TRADUCAO[tr.estado] ?? 'não verificada')}`)}
       {v.ocr && <li className="text-warning"><i className="fa fa-file-image me-1" />{tx('Lido por reconhecimento de texto (OCR): confirme os trechos, a leitura pode ter erros.')}</li>}
     </ul>
+  )
+}
+
+// publicações científicas (OpenAlex, Crossref, CORE): o que se consultou nesta análise
+function Cientificas({ c }) {
+  if (!c?.estado || c.estado === 'sem-servico') return <span className="text-muted"><i className="fa fa-flask me-1" />{tx('Publicações científicas não ligadas (a Escola liga-as no servidor: FONTES_CIENTIFICAS=sim).')}</span>
+  if (c.estado === 'desligada') return <span className="text-muted"><i className="fa fa-flask me-1" />{tx('Sem publicações científicas nesta análise.')}</span>
+  return (
+    <span className="text-muted">
+      <i className="fa fa-flask me-1 text-primary" />{tx('Publicações científicas')} ({c.bases}): {c.frases} {tx('frase(s) pesquisada(s),')} {c.publicacoes} {tx('publicação(ões) comparada(s).')}
+      {c.erro && <span className="text-warning"> {tx('Pesquisa incompleta:')} {c.erro}</span>}
+    </span>
   )
 }
 

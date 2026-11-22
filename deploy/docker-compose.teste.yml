@@ -72,6 +72,9 @@ services:
       # no teste, a verificação em dois passos fica à escolha de cada um
       DOIS_FATORES_PAPEIS: ${DOIS_FATORES_PAPEIS:-}
       DADOS_FORA_DE_ANGOLA: "nao"
+      # anti-plágio com publicações científicas (OpenAlex, Crossref; CORE com chave): liga-se com FONTES_CIENTIFICAS=sim
+      FONTES_CIENTIFICAS: ${FONTES_CIENTIFICAS:-nao}
+      CORE_API_KEY: ${CORE_API_KEY:-}
     volumes:
       - dados:/app/api/dados
 

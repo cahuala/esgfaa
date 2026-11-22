@@ -8,8 +8,10 @@ import { pareceDigitalizacao } from '../../infraestrutura/texto/ocr.js'
 import { avaliarComClaude } from './avaliacaoIA.js'
 import { instrucoesParaIA } from '../../dominio/seguranca/ataques.js'
 
-export const ORIGENS = { entrega: 'Trabalho entregue', biblioteca: 'Biblioteca digital', repositorio: 'Repositório de referência', verificacao: 'Verificação avulsa', internet: 'Internet' }
-const PADRAO = { excluirCitacoes: true, excluirReferencias: true, internet: true, ia: true, parafrase: true, traducao: true }
+export const ORIGENS = { entrega: 'Trabalho entregue', biblioteca: 'Biblioteca digital', repositorio: 'Repositório de referência', verificacao: 'Verificação avulsa', internet: 'Internet', cientifica: 'Publicação científica' }
+const PADRAO = { excluirCitacoes: true, excluirReferencias: true, internet: true, cientificas: true, ia: true, parafrase: true, traducao: true }
+// publicações científicas lidas por análise (as mais parecidas com as frases pesquisadas)
+const MAX_PUBLICACOES = 30
 // tradução: o trabalho (em português) vai para estas línguas e compara-se com as fontes nelas
 const LINGUAS_TRADUCAO = ['en', 'fr']
 const MAX_FRASES_TRADUCAO = 300
@@ -33,8 +35,8 @@ export function normasDoTexto(texto) {
 export class ServicoOriginalidade {
   #fila = Promise.resolve()
 
-  constructor({ integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb = null, obterPagina = null, claude = null, pesquisasPorDocumento = 8, tradutor = null, ocr = null }) {
-    Object.assign(this, { integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb, obterPagina, claude, pesquisasPorDocumento, tradutor, ocr })
+  constructor({ integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb = null, obterPagina = null, claude = null, pesquisasPorDocumento = 8, tradutor = null, ocr = null, fontesCientificas = null, pesquisasCientificasPorDocumento = 6 }) {
+    Object.assign(this, { integridade, academico, contas, biblioteca, privados, extrair, apoio, auditoria, relogio, registarErro, pesquisaWeb, obterPagina, claude, pesquisasPorDocumento, tradutor, ocr, fontesCientificas, pesquisasCientificasPorDocumento })
   }
 
   // texto de um ficheiro; um PDF digitalizado (quase sem texto) passa pelo OCR, se houver
@@ -122,14 +124,19 @@ export class ServicoOriginalidade {
     for (const t of traducao.versoes) for (const x of await this.integridade.candidatos(t.hashes, doc.id, { tipo: 1, limite: 8 })) ids.add(x)
     const docs = await this.integridade.documentosComTexto([...ids])
     const web = await this.#internet(doc.texto, a.opcoes)
+    const ciencia = await this.#cientificas(doc.texto, a.opcoes)
     const fontes = [
       ...docs.map((f) => ({ id: f.id, texto: f.texto, tokens: tokenizar(f.texto) })),
       ...web.paginas.map((p) => ({ id: p.id, texto: p.texto, tokens: tokenizar(p.texto) })),
+      ...ciencia.publicacoes.map((p) => ({ id: p.id, texto: p.texto, tokens: tokenizar(p.texto) })),
     ]
     const r = comparar({ texto: doc.texto, tokens }, fontes, { parecidas: parafrase ? this.#parecidas(frasesA, linguaDe(doc.texto), fontes, traducao.versoes) : [] })
     const info = Object.fromEntries([
       ...docs.map((f) => [f.id, { titulo: f.titulo, autor: f.autor, origem: f.origem, contexto: f.contexto }]),
       ...web.paginas.map((p) => [p.id, { titulo: p.titulo || new URL(p.url).hostname, autor: new URL(p.url).hostname, origem: 'internet', contexto: '', url: p.url }]),
+      ...ciencia.publicacoes.map((p) => [p.id, {
+        titulo: p.titulo, autor: [p.autores.join(', '), p.ano, p.revista].filter(Boolean).join(' · '), origem: 'cientifica', contexto: p.doi ? `DOI ${p.doi}` : p.base, url: p.url,
+      }]),
     ])
     await this.integridade.concluirAnalise(id, {
       estado: 'concluida', percentagem: r.percentagem, concluidaEm: this.relogio.agora(),
@@ -137,7 +144,7 @@ export class ServicoOriginalidade {
       internet: web.info, ia: a.opcoes.ia === false ? {} : await this.#ia(doc.texto), normas: normasDoTexto(doc.texto),
       // o que se verificou (o relatório diz o que ficou de fora)
       verificacoes: {
-        exacta: true, parafrase, traducao: traducao.info, ocr: Boolean(a.opcoes.lidoPorOcr), internet: web.info.estado,
+        exacta: true, parafrase, traducao: traducao.info, ocr: Boolean(a.opcoes.lidoPorOcr), internet: web.info.estado, cientificas: ciencia.info,
         percentagens: { exacta: r.percentagemExacta, parafrase: r.percentagemParafrase, traducao: r.percentagemTraducao },
       },
     })
@@ -211,6 +218,33 @@ export class ServicoOriginalidade {
       })
     }
     return { paginas, info: { estado: erro && !frases.length ? 'erro' : 'feita', frases: frases.length, resultados: urls.size, paginas: paginas.length, erro } }
+  }
+
+  /*
+    Publicações científicas (OpenAlex, Crossref e, com chave, CORE): pesquisa as frases mais características do
+    trabalho e compara com o título, o resumo e (no CORE) o texto integral das publicações encontradas.
+  */
+  async #cientificas(texto, opcoes) {
+    if (!this.fontesCientificas) return { publicacoes: [], info: { estado: 'sem-servico' } }
+    if (opcoes.cientificas === false) return { publicacoes: [], info: { estado: 'desligada' } }
+    const frasesP = frasesParaPesquisa(texto, this.pesquisasCientificasPorDocumento)
+    const porChave = new Map()
+    let erro = ''
+    for (const f of frasesP) {
+      try {
+        for (const x of await this.fontesCientificas.pesquisar(f, { resultados: 3 })) {
+          const k = String(x.doi || x.titulo).toLowerCase()
+          if (!porChave.has(k) && x.texto?.length > 150) porChave.set(k, x)
+        }
+      } catch (e) {
+        erro = e.message
+      }
+    }
+    const publicacoes = [...porChave.values()].slice(0, MAX_PUBLICACOES).map((x, k) => ({ ...x, id: `sci${k}`, texto: x.texto.slice(0, 400_000) }))
+    return {
+      publicacoes,
+      info: { estado: erro && !porChave.size ? 'erro' : 'feita', bases: this.fontesCientificas.nome ?? '', frases: frasesP.length, publicacoes: publicacoes.length, erro },
+    }
   }
 
   // utilização de IA: indicadores locais sempre; avaliação do Claude se houver chave
