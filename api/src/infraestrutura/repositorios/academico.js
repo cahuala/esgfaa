@@ -1,14 +1,18 @@
 import { Conflito } from '../../dominio/comum/erros.js'
 import { Prisma, eDuplicado } from '../bd/prisma.js'
 import { notasDoTrabalhoVisiveis } from '../../dominio/academico/atividades/trabalhos.js'
+import { ordenarPorHierarquia } from '../../dominio/academico/pessoas/hierarquia.js'
 
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 const num = (d) => (d === null || d === undefined ? null : Number(d))
 const contaResumo = { select: { id: true, nome: true, numero: true, email: true } }
+// a conta com o posto (para a ordem hierárquica e as listas), sem os outros dados pessoais
+const comPosto = { select: { ...contaResumo.select, dados: true } }
+const resumoComPosto = ({ dados, ...e }) => ({ ...e, posto: dados?.posto ?? '' })
 
 const ordemPapel = { regente: 0, assistente: 1 }
-// junta duas listas de estudantes sem repetir, por ordem alfabética
-const juntarEstudantes = (a, b) => [...new Map([...a, ...b].map((e) => [e.id, e])).values()].sort((x, y) => x.nome.localeCompare(y.nome, 'pt'))
+// junta duas listas de estudantes sem repetir, pela ordem hierárquica (posto e, no mesmo posto, nome)
+const juntarEstudantes = (a, b) => ordenarPorHierarquia([...new Map([...a, ...b].map((e) => [e.id, e])).values()])
 // ficheiros de uma pasta, por ordem
 const FICHEIROS_PASTA = { ficheiros: { orderBy: { ordem: 'asc' }, include: { ficheiro: { select: { id: true, nome: true, tipo: true, tamanho: true } } } } }
 
@@ -68,7 +72,7 @@ export class RepositorioAcademico {
   async matriculasDaTurma(turmaId) {
     // com o posto, o ramo e o NIP (para procurar na turma)
     const linhas = await this.prisma.matricula.findMany({ where: { turmaId }, include: { estudante: { select: { ...contaResumo.select, dados: true, fotoCaminho: true } } }, orderBy: { estudante: { nome: 'asc' } } })
-    return linhas.map((m) => ({ id: m.id, estado: m.estado, criadaEm: iso(m.criadaEm), estudante: { id: m.estudante.id, nome: m.estudante.nome, numero: m.estudante.numero, email: m.estudante.email, dados: m.estudante.dados ?? {}, temFoto: Boolean(m.estudante.fotoCaminho) } }))
+    return ordenarPorHierarquia(linhas, (m) => m.estudante).map((m) => ({ id: m.id, estado: m.estado, criadaEm: iso(m.criadaEm), estudante: { id: m.estudante.id, nome: m.estudante.nome, numero: m.estudante.numero, email: m.estudante.email, dados: m.estudante.dados ?? {}, temFoto: Boolean(m.estudante.fotoCaminho) } }))
   }
 
   async matriculasDoEstudante(estudanteId) {
@@ -104,10 +108,10 @@ export class RepositorioAcademico {
   async estudantesDaPauta(turmaId) {
     const linhas = await this.prisma.matricula.findMany({
       where: { turmaId, estado: { in: ['ativa', 'concluida'] } },
-      include: { estudante: contaResumo },
+      include: { estudante: comPosto },
       orderBy: { estudante: { nome: 'asc' } },
     })
-    return linhas.map((m) => m.estudante)
+    return ordenarPorHierarquia(linhas.map((m) => resumoComPosto(m.estudante)))
   }
 
   // matrículas de um estudante em todos os anos (percurso académico), da mais antiga para a mais recente
@@ -123,10 +127,10 @@ export class RepositorioAcademico {
   async estudantesAtivosDaTurma(turmaId) {
     const linhas = await this.prisma.matricula.findMany({
       where: { turmaId, estado: 'ativa', estudante: { ativo: true } },
-      include: { estudante: contaResumo },
+      include: { estudante: comPosto },
       orderBy: { estudante: { nome: 'asc' } },
     })
-    return linhas.map((m) => m.estudante)
+    return ordenarPorHierarquia(linhas.map((m) => resumoComPosto(m.estudante)))
   }
 
   // presenças de várias cadeiras: [{ cadeiraId, estudanteId, estado }] (indicadores)
@@ -145,18 +149,18 @@ export class RepositorioAcademico {
   async estudantesDaCadeira(cadeira) {
     const [daTurma, inscritos] = await Promise.all([
       this.estudantesAtivosDaTurma(cadeira.turmaId),
-      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa', estudante: { ativo: true } }, include: { estudante: contaResumo } }),
+      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa', estudante: { ativo: true } }, include: { estudante: comPosto } }),
     ])
-    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...i.estudante, inscrito: true })))
+    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...resumoComPosto(i.estudante), inscrito: true })))
   }
 
   // estudantes que entram na pauta da cadeira (também os de matrícula concluída)
   async estudantesDaPautaDaCadeira(cadeira) {
     const [daTurma, inscritos] = await Promise.all([
       this.estudantesDaPauta(cadeira.turmaId),
-      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa' }, include: { estudante: contaResumo } }),
+      this.prisma.inscricaoCadeira.findMany({ where: { cadeiraId: cadeira.id, estado: 'ativa' }, include: { estudante: comPosto } }),
     ])
-    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...i.estudante, inscrito: true })))
+    return juntarEstudantes(daTurma, inscritos.map((i) => ({ ...resumoComPosto(i.estudante), inscrito: true })))
   }
 
   // ids das cadeiras onde o estudante está inscrito (fora da turma)

@@ -21,14 +21,14 @@ function PautaTurma() {
     descarregarCsv(`pauta-${d.turma.nome}`, [
       [`Pauta da turma ${d.turma.nome} — ${d.turma.curso} — ${d.turma.anoLetivo}`], [],
       ['N.º', 'Estudante', 'Número', ...d.cadeiras.map((c) => c.codigo), 'Média', 'Aprovadas', 'Situação'],
-      ...d.linhas.map((l, i) => [i + 1, l.estudante.nome, l.estudante.numero, ...d.cadeiras.map((c) => decimal(l.notas[c.id]?.final)), decimal(l.media), `${l.aprovadas}/${l.total}`, SITUACAO_ANO[l.situacaoAno]]),
+      ...d.linhas.map((l, i) => [i + 1, [l.estudante.posto, l.estudante.nome].filter(Boolean).join(' '), l.estudante.numero, ...d.cadeiras.map((c) => decimal(l.notas[c.id]?.final)), decimal(l.media), `${l.aprovadas}/${l.total}`, SITUACAO_ANO[l.situacaoAno]]),
     ])
   }
 
   return (
     <Documento
       titulo="Pauta da turma" paisagem voltar={`/academico/turmas/${d.turma.id}`}
-      subtitulo={`${d.turma.curso} · ${d.turma.nome} · ${d.turma.anoCurricular}.º ano · ano lectivo ${d.turma.anoLetivo}`}
+      subtitulo={`${d.turma.curso} · ${d.turma.nome} · ${d.turma.anoFinal && d.turma.anoCurricular === 1 ? '' : `${d.turma.anoCurricular}.º ano · `}ano lectivo ${d.turma.anoLetivo}`}
       acoes={<button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}
       assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Director Pedagógico']}
     >
@@ -44,7 +44,7 @@ function PautaTurma() {
           {d.linhas.map((l, i) => (
             <tr key={l.estudante.id}>
               <td className="of-num">{i + 1}</td>
-              <td>{l.estudante.nome}<div className="small text-muted">{l.estudante.numero}</div></td>
+              <td>{l.estudante.posto ? `${l.estudante.posto} ` : ''}{l.estudante.nome}<div className="small text-muted">{l.estudante.numero}</div></td>
               {d.cadeiras.map((c) => {
                 const n = l.notas[c.id]
                 return <td key={c.id} className="of-centro">{n?.final !== null && n?.final !== undefined ? <b>{n.final}</b> : '—'}<div className="small">{ABREV[n?.situacao || 'em_curso']}</div></td>

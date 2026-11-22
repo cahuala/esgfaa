@@ -23,4 +23,26 @@ describe('Turmas e duração do curso', () => {
     const t = (await adm.post('/api/admin/academico/turmas').send({ curso: 'curso-longo-de-teste', anoLetivo: '2026/2027', nome: 'Longo 1.º ano', anoCurricular: 1 }).expect(201)).body
     assert.deepEqual([t.anoFinal, t.anoCurricular], [false, 1])
   })
+
+  it('lista do curso: os estudantes de todas as turmas, pela ordem hierárquica, com a turma de cada um', async () => {
+    const turmas = (await adm.get('/api/admin/academico/turmas').expect(200)).body.filter((t) => t.curso === 'curso-superior-de-comando-e-direccao')
+    const [a, b] = turmas
+    const conta = async (nome, posto, turmaId) => {
+      const r = (await amb.registarEMatricular(adm, turmaId, { nome, email: `${nome.split(' ')[0].toLowerCase()}@esgfaa.gov.ao` })).body
+      await amb.contentor.prisma.contaPortal.update({ where: { id: r.id }, data: { dados: posto ? { posto } : {} } })
+    }
+    await conta('Zeferino Major', 'Major', a.id)
+    await conta('Bruno Coronel', 'Coronel', b.id)
+    await conta('Abel Major', 'Major', b.id)
+    await conta('Carla Civil', null, a.id)
+    const l = (await adm.get('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/lista?anoLetivo=2026/2027').expect(200)).body
+    assert.deepEqual(l.estudantes.map((e) => [e.nome, e.posto, e.turma]), [
+      ['Bruno Coronel', 'Coronel', b.nome], ['Abel Major', 'Major', b.nome], ['Zeferino Major', 'Major', a.nome], ['Carla Civil', '', a.nome],
+    ])
+    assert.equal(l.turmas.length, 2)
+    // a relação nominal da turma vem pela mesma ordem
+    const t = (await adm.get(`/api/admin/academico/turmas/${b.id}`).expect(200)).body
+    assert.deepEqual(t.matriculas.map((m) => m.estudante.nome), ['Bruno Coronel', 'Abel Major'])
+  })
+
 })

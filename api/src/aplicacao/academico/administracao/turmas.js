@@ -10,6 +10,7 @@ export function mesesDoCurso(curso) {
   const a = /(\d+)\s*ano/.exec(t)
   return a ? Number(a[1]) * 12 : null
 }
+import { ordenarPorHierarquia } from '../../../dominio/academico/pessoas/hierarquia.js'
 import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados.js'
 
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
@@ -77,6 +78,25 @@ export class ServicoTurmas {
     // os termos do curso (auditor/discente, TII/TFC), pelo plano de curso da turma
     const plano = this.planosCurso ? await this.planosCurso.daTurma(t) : null
     return { ...t, matriculas, cadeiras: cadeiras.map((c) => ({ ...c, horarios: horarios.filter((h) => h.cadeiraId === c.id) })), termos: termosDoPlano(plano, cadeiras), temPlano: Boolean(plano), blocos: plano?.blocos ?? [] }
+  }
+
+  /*
+    Lista do curso: os estudantes com matrícula activa em todas as turmas de um curso num ano lectivo, com a turma de
+    cada um, pela ordem hierárquica (posto e, no mesmo posto, nome).
+  */
+  async listaDoCurso(ctx, cursoId, anoLetivo) {
+    ctx.actor.exigir('academico.ver')
+    const curso = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
+    if (!curso) throw new NaoEncontrado('Curso não encontrado.')
+    const turmas = (await this.academico.listarTurmas()).filter((t) => t.curso === curso.id && (!anoLetivo || t.anoLetivo === anoLetivo))
+    const estudantes = []
+    for (const t of turmas) for (const e of await this.academico.estudantesAtivosDaTurma(t.id)) estudantes.push({ ...e, turma: t.nome, turmaId: t.id })
+    const d = curso.dados ?? curso
+    return {
+      curso: { id: curso.id, nome: d.nome, sigla: d.sigla ?? '', duracao: d.duracao ?? '' }, anoLetivo: anoLetivo || null,
+      turmas: turmas.map((t) => ({ id: t.id, nome: t.nome, anoLetivo: t.anoLetivo, estudantes: t.estudantes })),
+      estudantes: ordenarPorHierarquia(estudantes),
+    }
   }
 
   async matricular(ctx, turmaId, { estudanteId }) {

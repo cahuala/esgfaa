@@ -19,6 +19,8 @@ import CadeiraAcademica from './paginas/academico/Cadeira'
 import Alocacao from './paginas/academico/Alocacao'
 import Indicadores from './paginas/academico/Indicadores'
 import PautaTurma from './paginas/academico/documentos/PautaTurma'
+import ListaTurma from './paginas/academico/documentos/ListaTurma'
+import ListaCurso from './paginas/academico/documentos/ListaCurso'
 import PautaCadeira from './paginas/academico/documentos/PautaCadeira'
 import FolhaPresencas from './paginas/academico/documentos/FolhaPresencas'
 import ListaProva from './paginas/academico/documentos/ListaProva'
@@ -85,6 +87,8 @@ function App() {
         {pode('biblioteca.ver') && <Route path="/biblioteca/obras/:id" element={<Obra />} />}
         {pode('biblioteca.ver') && <Route path="/biblioteca/emprestimos" element={<Circulacao />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/pauta" element={<PautaTurma />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/lista" element={<ListaTurma />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/curso/:curso/lista" element={<ListaCurso />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/pauta" element={<PautaCadeira />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/presencas" element={<FolhaPresencas />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/prova" element={<ListaProva />} />}

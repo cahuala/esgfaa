@@ -60,7 +60,7 @@ function FolhaPresencas() {
           {d.estudantes.map((e, i) => (
             <tr key={e.id}>
               <td className="of-num">{i + 1}</td>
-              <td>{e.nome}{e.inscrito && ' *'}</td>
+              <td>{e.posto ? `${e.posto} ` : ''}{e.nome}{e.inscrito && ' *'}</td>
               {aulas.map((a) => <td key={a.id} className="of-centro">{estado(a, e)}</td>)}
               {vazias.map((_, k) => <td key={`v${k}`} />)}
               {!soBranco && <td className="of-centro">{faltas(e)}</td>}

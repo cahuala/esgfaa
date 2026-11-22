@@ -46,6 +46,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/turmas', async (req, res) => res.json(await a.turmas.listarTurmas(ctx(req))))
   r.post('/turmas', validar({ body: E.turma }), async (req, res) => res.status(201).json(await a.turmas.criarTurma(ctx(req), req.dados.body)))
   r.get('/turmas/:id', validar({ params: pId }), async (req, res) => res.json(await a.turmas.turma(ctx(req), req.dados.params.id)))
+  // lista do curso (todas as turmas de um curso num ano lectivo), pela ordem hierárquica
+  r.get('/cursos/:curso/lista', validar({ params: z.object({ curso: z.string().max(120) }), query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.turmas.listaDoCurso(ctx(req), req.dados.params.curso, req.dados.query.anoLetivo)))
   r.put('/turmas/:id', validar({ params: pId, body: E.turma }), async (req, res) => res.json(await a.turmas.editarTurma(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/matriculas', validar({ params: pId, body: E.matricula }), async (req, res) => res.status(201).json(await a.turmas.matricular(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/contas/importar', validar({ body: E.importarPessoas }), async (req, res) => res.json(await p.registo.importar(ctx(req), req.dados.body)))

@@ -38,7 +38,7 @@ function PautaCadeira() {
         <tbody>
           {p.linhas.map((l, i) => (
             <tr key={l.estudante.id}>
-              <td className="of-num">{i + 1}</td><td>{l.estudante.nome}{l.estudante.inscrito && ' *'}</td><td>{l.estudante.numero}</td>
+              <td className="of-num">{i + 1}</td><td>{l.estudante.posto ? `${l.estudante.posto} ` : ''}{l.estudante.nome}{l.estudante.inscrito && ' *'}</td><td>{l.estudante.numero}</td>
               <td className="of-centro">{valor(l.p1)}</td><td className="of-centro">{valor(l.p2)}</td><td className="of-centro">{valor(l.mac)}</td>
               <td className="of-centro">{valor(l.exame)}</td><td className="of-centro">{valor(l.recurso)}</td>
               <td className="of-centro"><b>{l.situacao === 'recurso' ? '—' : valor(l.final)}</b></td>

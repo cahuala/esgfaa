@@ -52,7 +52,7 @@ function ListaProva() {
         </thead>
         <tbody>
           {d.estudantes.map((e, i) => (
-            <tr key={e.id}><td className="of-num">{i + 1}</td><td>{e.nome}</td><td>{e.numero}</td><td className="of-assinar" /><td /><td /></tr>
+            <tr key={e.id}><td className="of-num">{i + 1}</td><td>{e.posto ? `${e.posto} ` : ''}{e.nome}</td><td>{e.numero}</td><td className="of-assinar" /><td /><td /></tr>
           ))}
         </tbody>
       </table>
