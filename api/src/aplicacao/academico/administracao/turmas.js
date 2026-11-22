@@ -1,6 +1,15 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
 import { termosDoPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
+
+// a duração do curso em meses, do texto da ficha do curso («10 meses», «2 anos»); sem ela, null
+export function mesesDoCurso(curso) {
+  const t = String(curso?.dados?.duracao ?? curso?.duracao ?? '').toLowerCase()
+  const m = /(\d+)\s*m[eê]s/.exec(t)
+  if (m) return Number(m[1])
+  const a = /(\d+)\s*ano/.exec(t)
+  return a ? Number(a[1]) * 12 : null
+}
 import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados.js'
 
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
@@ -17,9 +26,9 @@ export class ServicoTurmas {
   }
 
   async #cursoValido(curso) {
-    const cursos = (await this.conteudos.listar('cursos')).map((c) => c.id)
-    if (!cursos.includes(curso)) throw new ErroValidacao('Escolha um curso existente.', { campo: 'curso' })
-    return curso
+    const c = (await this.conteudos.listar('cursos')).find((x) => x.id === curso)
+    if (!c) throw new ErroValidacao('Escolha um curso existente.', { campo: 'curso' })
+    return c
   }
 
   #anoCurricular(valor) {
@@ -35,8 +44,13 @@ export class ServicoTurmas {
     if (b !== a + 1) throw new ErroValidacao('O ano lectivo tem dois anos seguidos (ex.: 2026/2027).', { campo: 'anoLetivo' })
     // o ano fica configurado (datas dos semestres) se ainda não estava
     await this.anosLetivos?.garantir(anoLetivo)
+    const c = await this.#cursoValido(curso)
+    // um curso de até 12 meses (os da Escola duram 10) tem um só ano: a turma é logo a final (trabalho de fim de curso,
+    // conclusão, diplomas) e não há ano curricular
+    const umSoAno = (mesesDoCurso(c) ?? 0) > 0 && mesesDoCurso(c) <= 12
     const turma = await this.academico.criarTurma({
-      curso: await this.#cursoValido(curso), anoLetivo, anoCurricular: this.#anoCurricular(anoCurricular), nome: texto(nome, 'nome', 'Nome da turma', { min: 2, max: 80 }),
+      curso: c.id, anoLetivo, anoCurricular: umSoAno ? 1 : this.#anoCurricular(anoCurricular), nome: texto(nome, 'nome', 'Nome da turma', { min: 2, max: 80 }),
+      ...(umSoAno ? { anoFinal: true } : {}),
     })
     await this.auditoria.registar(ctx, { acao: 'criar_turma', colecao: 'turmas', alvoId: turma.id, alvoTitulo: turma.nome })
     return turma

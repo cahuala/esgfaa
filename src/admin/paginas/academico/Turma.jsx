@@ -57,6 +57,9 @@ function Turma() {
   // as datas do ano letivo da turma: o semestre de cada cadeira está por começar, a decorrer ou terminado
   const [anos, setAnos] = useState([])
   useEffect(() => { api('/academico/anos-letivos').then(setAnos).catch(() => {}) }, [])
+  // a ficha do curso (a duração: um curso de até 12 meses não tem ano curricular nem passagem de ano)
+  const [fichaCurso, setFichaCurso] = useState(null)
+  useEffect(() => { if (t?.curso) api('/colecoes/cursos').then((l) => setFichaCurso(l.find((c) => c.id === t.curso) ?? null)).catch(() => {}) }, [t?.curso])
   // a conclusão do curso de cada finalista (só esses têm certificado e diploma)
   useEffect(() => {
     if (!t?.anoFinal) return
@@ -82,6 +85,8 @@ function Turma() {
   const concluiram = [...conclusao.values()].filter((c) => c.concluido).length
   // os termos do curso: auditores/discentes e TII/TFC (pelo plano de curso da turma)
   const curso = t.termos ?? { pessoas: 'Estudantes', pessoa: 'Estudante', trabalho: { sigla: 'TFC', nome: 'Trabalho de fim de curso' } }
+  const meses = (() => { const d = String(fichaCurso?.duracao ?? '').toLowerCase(); const m = /(\d+)\s*m[eê]s/.exec(d); if (m) return Number(m[1]); const a = /(\d+)\s*ano/.exec(d); return a ? Number(a[1]) * 12 : null })()
+  const variosAnos = (meses ?? 13) > 12
   const ABAS = [
     ['estudantes', tx(curso.pessoas), 'fa-user-graduate', t.matriculas.length],
     ...(t.anoFinal ? [['finalistas', tx('Finalistas e {0}', { 0: curso.trabalho.sigla }), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
@@ -93,7 +98,7 @@ function Turma() {
 
   return (
     <>
-      <CabecalhoPagina titulo={t.nome} subtitulo={tx('{0} · {1}.º ano', { 0: t.anoLetivo, 1: t.anoCurricular })} migalhas={[{ rotulo: tx('Turmas'), para: '/academico/turmas' }, { rotulo: t.nome }]}>
+      <CabecalhoPagina titulo={t.nome} subtitulo={[fichaCurso?.nome, t.anoLetivo, variosAnos ? tx('{0}.º ano', { 0: t.anoCurricular }) : meses ? tx('{0} meses', { 0: meses }) : ''].filter(Boolean).join(' · ')} migalhas={[{ rotulo: tx('Turmas'), para: '/academico/turmas' }, { rotulo: t.nome }]}>
         <Link to="/academico/turmas" className="btn btn-white"><i className="fa fa-arrow-left me-1" /> {tx('Turmas')}</Link>
       </CabecalhoPagina>
 
@@ -102,7 +107,9 @@ function Turma() {
         <Resumo icone="fa-book" cor="info" valor={t.cadeiras.length} rotulo={tx('Cadeiras')} detalhe={tx('{0} docente(s)', { 0: new Set(t.cadeiras.flatMap((c) => (c.docentes ?? []).map((d) => d.id))).size })} />
         {t.anoFinal
           ? <Resumo icone="fa-award" cor="success" valor={`${concluiram}/${conclusao.size}`} rotulo={tx('Concluíram o curso')} detalhe={tx('podem receber certificado e diploma')} />
-          : <Resumo icone="fa-level-up-alt" cor="warning" valor={`${t.anoCurricular}.º`} rotulo={tx('Ano do curso')} detalhe={tx('não é a turma de finalistas')} />}
+          : variosAnos
+            ? <Resumo icone="fa-level-up-alt" cor="warning" valor={`${t.anoCurricular}.º`} rotulo={tx('Ano do curso')} detalhe={tx('não é a turma de finalistas')} />
+            : <Resumo icone="fa-clock" cor="warning" valor={meses ? tx('{0} meses', { 0: meses }) : '—'} rotulo={tx('Duração do curso')} detalhe={tx('um só ano lectivo')} />}
         <Resumo icone="fa-calendar" cor="secondary" valor={t.anoLetivo} rotulo={tx('Ano lectivo')} detalhe={t.anoFinal ? tx('turma de finalistas') : ''} />
       </div>
 
@@ -116,7 +123,7 @@ function Turma() {
         <Painel titulo={tx('{0} da turma', { 0: tx(curso.pessoas) })} corpo={false} acoes={gerir && <>
           <button type="button" className="btn btn-xs btn-theme" onClick={() => setMatricular(!matricular)}><i className={`fa ${matricular ? 'fa-times' : 'fa-user-plus'} me-1`} />{matricular ? tx('Fechar') : tx('Matricular estudantes')}</button>
           <button type="button" className="btn btn-xs btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" />{tx('Do Excel/CSV')}</button>
-          {!t.anoFinal && <button type="button" className="btn btn-xs btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" />{tx('Passagem de ano')}</button>}
+          {!t.anoFinal && variosAnos && <button type="button" className="btn btn-xs btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" />{tx('Passagem de ano')}</button>}
         </>}>
           {matricular && gerir && <div className="p-3 border-bottom bg-light"><MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} /></div>}
           <div className="p-3 border-bottom d-flex flex-wrap gap-2 align-items-center">
