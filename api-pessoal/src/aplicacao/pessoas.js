@@ -577,7 +577,7 @@ export class ServicoPessoas {
         : porTempo ? { data: porTempo.data, artigo: porTempo.artigo, motivo: `${porTempo.anos} anos de serviço` } : null
       if (ref && ref.data <= limite) r.push({ ...base, passagem: 'reforma', data: ref.data, artigo: ref.artigo, motivo: ref.motivo, idadeLimite: porIdade?.idadeLimite ?? null, atrasado: ref.data <= hojeTxt })
     }
-    // pela ordem hierárquica (posto e, no mesmo posto, ordem alfabética); a mesma pessoa: a reserva antes da reforma
+    // pela ordem hierárquica (posto, unidade na orgânica, função, antiguidade); a mesma pessoa: a reserva antes da reforma
     return r.sort((a, b) => cmp(a, b) || a.data.localeCompare(b.data)).map((x, i) => ({ ...x, hierarquia: i + 1 }))
   }
 }

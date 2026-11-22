@@ -2,12 +2,15 @@ import { POSTOS } from './hierarquia.js'
 import { CARREIRAS_CIVIS } from './civis.js'
 
 /*
-  Ordem hierárquica de todas as listas e tabelas de pessoal (a mesma das listas do Ensino):
-  1. o posto (o mais alto primeiro; o graduado conta no posto em que está graduado); os civis depois dos militares,
-     pelo nível da carreira (Técnico Superior, Técnico Médio, Administrativo… e os domiciliares no fim);
-  2. dentro do mesmo posto (ou nível), por ordem alfabética do nome.
-  (A Lista de antiguidade é a excepção: ordena pela antiguidade, que é o que mostra.)
+  Ordem hierárquica de todas as listas e tabelas de pessoal:
+  1. o posto (o mais alto primeiro); os civis depois dos militares, pelo nível da carreira (Técnico Superior,
+     Técnico Médio, Administrativo… e os domiciliares no fim);
+  2. no mesmo posto, a ordem da unidade na orgânica (a Direcção antes dos Serviços Gerais; cada unidade
+     logo seguida das suas subunidades), pela «ordem» de cada unidade;
+  3. a função do cargo (comando, direcção/chefia, estado-maior, execução);
+  4. a antiguidade no posto (a mais antiga primeiro) e, por fim, o nome.
 */
+const FUNCAO = { comando: 0, direccao_chefia: 1, estado_maior: 2, execucao: 3 }
 
 // posição de cada unidade na árvore (percorrida pela ordem e pelo nome): Map id -> 0, 1, 2…
 export function posicoesDasUnidades(unidades) {
@@ -28,20 +31,23 @@ export function posicoesDasUnidades(unidades) {
 }
 
 /*
-  Comparador. x: { posto | grau | grauEfectivo, tipo, vinculo, carreiraCivil, nome }.
+  Comparador. x: { posto | grau, tipo, unidadeId, funcao (do cargo) | cargo: { funcao }, dataAntiguidadePosto, nome }.
   O posto de uma graduação activa conta (o graduado ocupa o lugar do posto em que está graduado), se vier em grauEfectivo.
 */
-// (as posições das unidades já não contam; o parâmetro fica para quem ainda o passa)
-export function comparadorHierarquico() {
+export function comparadorHierarquico(posicoes) {
+  const data = (d) => (d ? new Date(d).getTime() : Infinity)
   const chave = (x) => [
     -(x.grauEfectivo ?? x.grau ?? (x.posto ? POSTOS[x.posto]?.grau : null) ?? -1),
     x.posto || x.grau || x.grauEfectivo ? 0 : x.vinculo === 'domiciliar' ? 99 : CARREIRAS_CIVIS[x.carreiraCivil]?.nivel ?? 50,
+    posicoes.get(x.unidadeId) ?? 1e6,
+    FUNCAO[x.funcao ?? x.cargo?.funcao] ?? 9,
+    data(x.dataAntiguidadePosto),
   ]
   return (a, b) => {
     const ka = chave(a)
     const kb = chave(b)
     for (let k = 0; k < ka.length; k++) if (ka[k] !== kb[k]) return ka[k] - kb[k]
-    return String(a.nome ?? '').localeCompare(String(b.nome ?? ''), 'pt', { sensitivity: 'base' })
+    return String(a.nome ?? '').localeCompare(String(b.nome ?? ''), 'pt')
   }
 }
 
