@@ -84,7 +84,7 @@ function Turmas() {
                   <span className="d-flex align-items-center gap-2 small">
                     {meses && <span className="badge bg-light text-dark"><i className="fa fa-clock me-1" />{meses} {tx('meses')}</span>}
                     <span className="badge bg-secondary">{tx('{0} turma(s)', { 0: turmas.length })}</span>
-                    {pode('academico.gerir') && <button type="button" className="btn btn-xs btn-light" onClick={() => novaNoCurso(c.id)}><i className="fa fa-plus me-1" />{tx('Nova turma neste curso')}</button>}
+                    {pode('academico.gerir') && <button type="button" className="btn btn-xs perfil-botao-claro" onClick={() => novaNoCurso(c.id)}><i className="fa fa-plus me-1" />{tx('Nova turma neste curso')}</button>}
                   </span>
                 )}
               >
