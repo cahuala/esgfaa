@@ -35,7 +35,7 @@ export class ServicoExtractos {
     const e = await this.bd.extracto.findUnique({ where: { id }, include: { itens: { include: { pessoa: { include: { cargo: true, unidade: true } } }, orderBy: { id: 'asc' } } } })
     if (!e) throw naoEncontrado('Extracto não encontrado.')
     const cargos = new Map((await this.bd.cargo.findMany({ select: { id: true, nome: true } })).map((c) => [c.id, c.nome]))
-    // pela ordem hierárquica (posto, unidade, função, antiguidade)
+    // pela ordem hierárquica (posto e, no mesmo posto, ordem alfabética)
     const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
     e.itens.sort((a, b) => cmp(a.pessoa, b.pessoa))
     return {

@@ -37,7 +37,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
     if (ordem) {
       const c = colunas.find((x) => x.chave === ordem.chave)
       if (c) {
-        // o posto ordena-se pela ordem hierárquica do servidor (posto, unidade na orgânica, função, antiguidade)
+        // o posto ordena-se pela ordem hierárquica do servidor (posto e, no mesmo posto, ordem alfabética)
         const hier = c.chave === 'posto' && r.length > 0 && r.every((l) => l.hierarquia)
         const chaveDe = (l) => (hier ? l.hierarquia : c.ordenarPor ? c.ordenarPor(l) : valor(c, l))
         r = [...r].sort((a, b) => {

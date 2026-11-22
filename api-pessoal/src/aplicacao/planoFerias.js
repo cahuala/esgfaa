@@ -105,7 +105,7 @@ export class ServicoPlanoFerias {
     const linhas = lista.map((p) => ({
       id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, grau: p.grau ?? 0,
       categoriaCivil: p.categoriaCivil, unidadeNome: p.unidadeNome, fotoId: p.fotoId, mes: mes.get(p.id) ?? null, dias: diasDeFerias(p, hoje), adicionais: feriasAdicionais(p, hoje), hierarquia: p.hierarquia,
-    })) // a lista vem já pela ordem hierárquica (posto, unidade, função, antiguidade)
+    })) // a lista vem já pela ordem hierárquica (posto e, no mesmo posto, ordem alfabética)
     return { ano, linhas, planeados: linhas.filter((l) => l.mes).length }
   }
 

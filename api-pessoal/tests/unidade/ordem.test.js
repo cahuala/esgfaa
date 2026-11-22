@@ -14,4 +14,14 @@ describe('ordem hierárquica', () => {
     ]
     assert.deepEqual([...l].sort(cmp).map((x) => x.nome), ['Eva', 'Caio', 'Dino', 'Ana', 'Bia'])
   })
+
+  it('no mesmo posto, por ordem alfabética (a unidade e a antiguidade já não contam)', () => {
+    const cmp2 = comparadorHierarquico(new Map([[1, 0], [2, 1]]))
+    const l = [
+      { nome: 'Zeca Major', tipo: 'militar', posto: 'major', unidadeId: 1, dataAntiguidadePosto: '2010-01-01' },
+      { nome: 'Abel Major', tipo: 'militar', posto: 'major', unidadeId: 2, dataAntiguidadePosto: '2020-01-01' },
+    ]
+    assert.deepEqual([...l].sort(cmp2).map((x) => x.nome), ['Abel Major', 'Zeca Major'])
+  })
+
 })

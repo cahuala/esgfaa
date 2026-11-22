@@ -12,7 +12,7 @@ const pt = (iso) => (iso ? new Date(`${String(iso).slice(0, 10)}T12:00:00Z`).toL
 const militar = (p) => p.tipo === 'militar'
 
 // militares do mais graduado e mais antigo para o mais moderno; depois os civis pela categoria
-// a ordem hierárquica que o servidor calcula (posto, unidade na orgânica, função, antiguidade, nome): «hierarquia»
+// a ordem hierárquica que o servidor calcula (posto e, no mesmo posto, ordem alfabética): «hierarquia»
 export const porHierarquia = (a, b) => (a.hierarquia && b.hierarquia ? a.hierarquia - b.hierarquia : (b.grau ?? -1) - (a.grau ?? -1) || String(a.nome).localeCompare(String(b.nome), 'pt'))
   || (b.nivelCategoria ?? 0) - (a.nivelCategoria ?? 0)
   || String(a.dataAntiguidadePosto ?? a.dataCategoria ?? '9').localeCompare(String(b.dataAntiguidadePosto ?? b.dataCategoria ?? '9'))
