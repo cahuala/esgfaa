@@ -24,7 +24,7 @@ async function primeiraEntrada(page, email, senha) {
   await page.getByLabel('Palavra-passe', { exact: true }).fill(senha)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await expect(page.getByText(/Escolha uma palavra-passe nova para continuar/)).toBeVisible()
-  await page.getByLabel(/Palavra-passe atual/).fill(senha)
+  await page.getByLabel(/Palavra-passe actual/).fill(senha)
   await page.getByLabel('Nova palavra-passe', { exact: true }).fill(NOVA)
   await page.getByLabel('Repetir a nova palavra-passe').fill(NOVA)
   await page.getByRole('button', { name: 'Guardar nova palavra-passe' }).click()
