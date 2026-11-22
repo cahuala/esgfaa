@@ -69,7 +69,7 @@ export default function PrazosNotas({ turmas, avisar }) {
               </table>
             </div>
           )}
-          <div className="small text-muted p-2">{tx('Vale o prazo mais específico: o da cadeira (prorrogação), depois o da turma, depois o de toda a Escola. Fora do prazo, o docente não lança essa componente; a Administração Escolar pode sempre corrigir no painel (fica no registo de atividades).')}</div>
+          <div className="small text-muted p-2">{tx('Vale o prazo mais específico: o da cadeira (prorrogação), depois o da turma, depois o de toda a Escola. Fora do prazo, o docente não lança essa componente; a Administração Escolar pode sempre corrigir no painel (fica no registo de actividades).')}</div>
         </Painel>
       </div>
       {gerir && (

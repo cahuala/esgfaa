@@ -20,7 +20,7 @@ export class NaoAutenticado extends ErroDominio {
 }
 
 export class SemPermissao extends ErroDominio {
-  constructor(mensagem = 'Não tem permissão para esta ação.') { super(mensagem, 'sem_permissao') }
+  constructor(mensagem = 'Não tem permissão para esta acção.') { super(mensagem, 'sem_permissao') }
 }
 
 export class NaoEncontrado extends ErroDominio {

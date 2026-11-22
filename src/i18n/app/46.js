@@ -3,7 +3,7 @@ export default [
   ["Finalistas e TFC", "Finalists and thesis", "Finalistes et mémoire", "Finalistas y TFC"],
   ["Cadeiras e horário", "Course units and timetable", "Unités et horaire", "Asignaturas y horario"],
   ["Avaliação dos docentes", "Lecturer evaluation", "Évaluation des enseignants", "Evaluación de los docentes"],
-  ["{0} com matrícula ativa", "{0} with active enrolment", "{0} avec inscription active", "{0} con matrícula activa"],
+  ["{0} com matrícula activa", "{0} with active enrolment", "{0} avec inscription active", "{0} con matrícula activa"],
   ["{0} docente(s)", "{0} lecturer(s)", "{0} enseignant(s)", "{0} docente(s)"],
   ["Concluíram o curso", "Completed the course", "Ont terminé le cours", "Concluyeron el curso"],
   ["podem receber certificado e diploma", "may receive certificate and diploma", "peuvent recevoir certificat et diplôme", "pueden recibir certificado y diploma"],

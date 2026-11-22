@@ -15,7 +15,7 @@ const seccoes = [
   { id: 'historia', label: 'História' },
   { id: 'missao', label: 'Missão, Visão e Valores' },
   { id: 'estrutura', label: 'Organização e Estrutura' },
-  { id: 'comando', label: 'Direção / Comando' },
+  { id: 'comando', label: 'Direcção / Comando' },
 ]
 
 const idsSeccoes = seccoes.map((s) => s.id)
@@ -202,7 +202,7 @@ function Institucional() {
 
           {/* IV. Direção / Comando */}
           <section id="comando" className={styles.seccao}>
-            <TituloSeccao rotulo={t('Direção / Comando')}>{t('Mensagem do Comandante')}</TituloSeccao>
+            <TituloSeccao rotulo={t('Direcção / Comando')}>{t('Mensagem do Comandante')}</TituloSeccao>
 
             {/* a mesma mensagem da página inicial (Páginas › Página inicial › Mensagem do Comandante); sem ela, a antiga desta página */}
             {msg.actual ? (
@@ -246,7 +246,7 @@ function Institucional() {
             </div>
 
             <div className={styles.diretorio}>
-              <h3 className={styles.subtitulo}>{t('Equipa de direção')}</h3>
+              <h3 className={styles.subtitulo}>{t('Equipa de direcção')}</h3>
               <ul>
                 {direcao.map((p) => (
                   <li key={p.id}>

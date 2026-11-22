@@ -32,7 +32,7 @@ const home = {
     etiqueta: 'Informação oficial',
     titulo: 'Avisos e comunicados',
     lista: [
-      { tipo: 'Alteração de calendário', data: '2026-09-25', titulo: 'Novas datas para os exames do 1.º semestre', resumo: 'O período de exames foi reajustado. Consulte o calendário académico atualizado.', importante: true },
+      { tipo: 'Alteração de calendário', data: '2026-09-25', titulo: 'Novas datas para os exames do 1.º semestre', resumo: 'O período de exames foi reajustado. Consulte o calendário académico actualizado.', importante: true },
       { tipo: 'Convocatória', data: '2026-09-22', titulo: 'Convocatória para reunião do corpo docente', resumo: 'Convocam-se todos os docentes para a reunião geral de preparação do novo semestre.', importante: false },
       { tipo: 'Comunicado', data: '2026-09-18', titulo: 'Novo número da Revista da Escola Superior de Guerra', resumo: 'Já está disponível no site, para leitura livre, o novo número da revista da Escola.', importante: false },
       { tipo: 'Aviso', data: '2026-09-10', titulo: 'Condicionamento de acesso às instalações', resumo: 'Durante as obras no bloco B, o acesso será feito exclusivamente pela entrada principal.', importante: false },
@@ -53,8 +53,8 @@ const home = {
       { pergunta: 'Quais são os requisitos de admissão?', resposta: 'Os requisitos variam consoante o curso pretendido — normalmente incluem posto militar mínimo, habilitações académicas e tempo de serviço. Consulte a página de cada curso, na secção "Requisitos de admissão", para os critérios específicos.' },
       { pergunta: 'Como aceder a documentos públicos da Escola?', resposta: 'Todos os documentos de acesso público — regulamentos, editais, relatórios e publicações — estão disponíveis na secção "Publicações e Documentos", com pesquisa por categoria, ano e tipo de documento.' },
       { pergunta: 'Como contactar um departamento específico?', resposta: 'Na página de Contactos encontra os meios de contacto gerais da Escola. Para departamentos específicos, consulte a secção "Organização e Estrutura" em Institucional, onde estão listados os responsáveis de cada área.' },
-      { pergunta: 'A Escola oferece programas de cooperação internacional?', resposta: 'Sim. A Escola mantém acordos de cooperação com instituições militares parceiras, incluindo intercâmbio de docentes, alunos e projetos conjuntos de investigação. Mais informação na secção de Cooperação Internacional.' },
-      { pergunta: 'Onde posso consultar o calendário académico?', resposta: 'O calendário com o início e fim dos cursos, períodos letivos, exames e outros eventos institucionais está disponível na Agenda Académica, acessível a partir do menu principal.' },
+      { pergunta: 'A Escola oferece programas de cooperação internacional?', resposta: 'Sim. A Escola mantém acordos de cooperação com instituições militares parceiras, incluindo intercâmbio de docentes, alunos e projectos conjuntos de investigação. Mais informação na secção de Cooperação Internacional.' },
+      { pergunta: 'Onde posso consultar o calendário académico?', resposta: 'O calendário com o início e fim dos cursos, períodos lectivos, exames e outros eventos institucionais está disponível na Agenda Académica, acessível a partir do menu principal.' },
     ],
   },
   cta: {
@@ -90,7 +90,7 @@ const institucional = {
     imagem: Escola2,
     legenda: 'Sessão solene no auditório principal.',
     paragrafos: [
-      'A Escola Superior de Guerra das Forças Armadas Angolanas nasceu da necessidade de formar, em Angola, os oficiais destinados às mais altas funções de comando, direção e estado-maior, reduzindo a dependência da formação no estrangeiro e adaptando o ensino à realidade nacional.',
+      'A Escola Superior de Guerra das Forças Armadas Angolanas nasceu da necessidade de formar, em Angola, os oficiais destinados às mais altas funções de comando, direcção e estado-maior, reduzindo a dependência da formação no estrangeiro e adaptando o ensino à realidade nacional.',
       'Desde então, a Escola consolidou-se como o principal estabelecimento de ensino superior militar do país. O seu modelo combina a formação doutrinária com a investigação científica e a cooperação com instituições congéneres, num ambiente em que oficiais dos três ramos aprendem a planear e a decidir em conjunto.',
       'Ao longo dos anos, os cursos foram sendo revistos para acompanhar a evolução das ameaças, da tecnologia e das missões das Forças Armadas, mantendo como referência os valores que definem a condição militar.',
     ],
@@ -111,23 +111,23 @@ const institucional = {
     { nome: 'Espírito de serviço', texto: 'Colocar o interesse nacional acima do interesse pessoal.' },
   ],
   estrutura: {
-    introducao: 'Sob a direção do Comando, a Escola organiza-se em três áreas — ensino, investigação e cooperação, e apoio — cada uma com órgãos de missão própria.',
+    introducao: 'Sob a direcção do Comando, a Escola organiza-se em três áreas — ensino, investigação e cooperação, e apoio — cada uma com órgãos de missão própria.',
     comando: 'Dirige a Escola e define as orientações estratégicas de ensino, investigação e cooperação.',
     // o organograma: cada órgão diz de quem depende (vazio = topo) e se é de linha ou de apoio
     orgaos: [
       { nome: 'Comando da Escola', sigla: '', responsavel: 'carlos-vieira', dependeDe: '', tipo: 'linha', texto: 'Dirige a Escola e define as orientações estratégicas.', ligacao: '' },
       { nome: 'Gabinete do Comandante', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'apoio', texto: 'Apoio directo ao Comando e expediente.', ligacao: '' },
       { nome: 'Gabinete de Comunicação', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'apoio', texto: 'Imprensa, eventos, publicações e redes sociais.', ligacao: '/Noticias' },
-      { nome: 'Direção de Ensino', sigla: '', responsavel: 'ana-baptista', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Planeia os cursos, os planos curriculares e a avaliação.', ligacao: '/Cursos' },
-      { nome: 'Corpo Docente', sigla: '', responsavel: 'isabel-fortunato', dependeDe: 'Direção de Ensino', tipo: 'linha', texto: 'Docentes militares e civis.', ligacao: '' },
-      { nome: 'Secretaria Académica', sigla: '', responsavel: '', dependeDe: 'Direção de Ensino', tipo: 'linha', texto: 'Matrículas, certificados e calendário.', ligacao: '' },
+      { nome: 'Direcção de Ensino', sigla: '', responsavel: 'ana-baptista', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Planeia os cursos, os planos curriculares e a avaliação.', ligacao: '/Cursos' },
+      { nome: 'Corpo Docente', sigla: '', responsavel: 'isabel-fortunato', dependeDe: 'Direcção de Ensino', tipo: 'linha', texto: 'Docentes militares e civis.', ligacao: '' },
+      { nome: 'Secretaria Académica', sigla: '', responsavel: '', dependeDe: 'Direcção de Ensino', tipo: 'linha', texto: 'Matrículas, certificados e calendário.', ligacao: '' },
       { nome: 'Departamento de Investigação', sigla: '', responsavel: 'miguel-santos', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Estratégia, segurança e defesa.', ligacao: '/Artigos' },
       { nome: 'Cooperação Internacional', sigla: '', responsavel: 'jose-manuel', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Protocolos e intercâmbio com instituições parceiras.', ligacao: '' },
       { nome: 'Serviços de Apoio', sigla: '', responsavel: '', dependeDe: 'Comando da Escola', tipo: 'linha', texto: 'Logística, instalações e recursos administrativos.', ligacao: '' },
     ],
     ramos: [
       { titulo: 'Ensino', orgaos: [
-        { nome: 'Direção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },
+        { nome: 'Direcção de Ensino', texto: 'Planeia os cursos, os planos curriculares e a avaliação.' },
         { nome: 'Corpo Docente', texto: 'Docentes militares e civis responsáveis pela formação.' },
         { nome: 'Secretaria Académica', texto: 'Matrículas, certificados e calendário.' },
       ] },

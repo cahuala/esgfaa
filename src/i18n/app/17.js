@@ -25,7 +25,7 @@ export default [
   ["Orientações para o estudante (opcional)", "Guidance for the student (optional)", "Consignes pour l'étudiant (facultatif)", "Orientaciones para el estudiante (opcional)"],
   ["A resposta é corrigida por si; a nota sai quando a corrigir.", "You grade the answer; the grade is released when you grade it.", "La réponse est corrigée par vous ; la note paraît une fois corrigée.", "La respuesta la corrige usted; la nota sale cuando la corrija."],
   ["Aceites:", "Accepted:", "Acceptées :", "Aceptadas:"],
-  ["Correção manual", "Manual grading", "Correction manuelle", "Corrección manual"],
+  ["Correcção manual", "Manual grading", "Correction manuelle", "Corrección manual"],
   ["Passa a receber avisos de todos os tópicos e respostas.", "You will now get notified of all topics and replies.", "Vous recevrez désormais des avis pour tous les sujets et réponses.", "Ahora recibirá avisos de todos los temas y respuestas."],
   ["Deixou de seguir o fórum.", "You stopped following the forum.", "Vous ne suivez plus le forum.", "Dejó de seguir el foro."],
   ["A seguir o fórum", "Following the forum", "Forum suivi", "Siguiendo el foro"],

@@ -90,7 +90,7 @@ function Noticias() {
         migalhas={[{ label: t('Notícias') }]}
         sobretitulo={t('Boletim informativo')}
         titulo={t('Notícias')}
-        entrada={t('Atividade da Escola: cerimónias, cooperação, formação e investigação.')}
+        entrada={t('Actividade da Escola: cerimónias, cooperação, formação e investigação.')}
       />
 
       <ActividadesEmVideo />
@@ -237,7 +237,7 @@ function Noticias() {
         <aside className={styles.arquivo} aria-label={t('Notícias anteriores')}>
           <h2>{t('Notícias anteriores')}</h2>
           {arquivo.length === 0 ? (
-            <p className={styles.arquivoVazio}>{t('Todas as notícias desta seleção estão na coluna principal.')}</p>
+            <p className={styles.arquivoVazio}>{t('Todas as notícias desta selecção estão na coluna principal.')}</p>
           ) : (
             arquivo.map((g) => (
               <div key={g.mes} className={styles.arquivoGrupo}>

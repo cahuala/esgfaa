@@ -121,7 +121,7 @@ function Estatisticas() {
             </div>
             <div className="col-xl-6">
               <Painel titulo={tx('De onde vêm os visitantes')}>
-                <Barras linhas={dados.origens} vazio={tx('Só acessos diretos (endereço escrito ou favoritos).')} />
+                <Barras linhas={dados.origens} vazio={tx('Só acessos directos (endereço escrito ou favoritos).')} />
               </Painel>
             </div>
             <div className="col-xl-4">

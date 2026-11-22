@@ -153,7 +153,7 @@ export function SolucaoPergunta({ p }) {
   if (p.tipo === 'correspondencia') return <ul className="list-unstyled small mb-0">{p.opcoes.pares.map((x, i) => <li key={i} className="text-success"><i className="fa fa-arrows-alt-h me-1" />{x.a} → {x.b}</li>)}</ul>
   if (p.tipo === 'lacunas') return <div className="small text-success"><i className="fa fa-check-circle me-1" />{p.opcoes.lacunas.map((l) => l.join(' / ')).join(' · ')}</div>
   if (p.tipo === 'ordenar') return <ol className="small mb-0 text-success">{p.opcoes.itens.map((x, i) => <li key={i}>{x}</li>)}</ol>
-  if (p.tipo === 'dissertacao') return <div className="small text-muted"><i className="fa fa-pen me-1" />{tx('Correção manual')}{p.opcoes.orientacao ? ` · ${p.opcoes.orientacao}` : ''}</div>
+  if (p.tipo === 'dissertacao') return <div className="small text-muted"><i className="fa fa-pen me-1" />{tx('Correcção manual')}{p.opcoes.orientacao ? ` · ${p.opcoes.orientacao}` : ''}</div>
   return (
     <ul className="list-unstyled small mb-0 mt-1">
       {p.opcoes.map((o, i) => <li key={i} className={o.correta ? 'text-success fw-bold' : 'text-muted'}><i className={`fa ${o.correta ? 'fa-check-circle' : 'fa-circle'} me-1`} />{o.texto}</li>)}

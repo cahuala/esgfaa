@@ -215,8 +215,8 @@ export function verificarApa(textoOriginal) {
     if (sem(texto.slice(0, 1500)).includes(sem(d.texto.slice(0, 60)))) continue
     const pag = (depois && PAGINA.test(depois.local)) || (antes && PAGINA.test(antes.local)) || PAGINA.test(texto.slice(d.fim, d.fim + 40))
     if (!depois && !antes) {
-      problema(problemas, 'erro', 'citacao-direta', 'Citação direta (entre aspas) sem autor e ano.', onde)
-    } else if (!pag) problema(problemas, 'erro', 'citacao-direta', 'Citação direta sem o número da página (por exemplo: Gil, 2019, p. 27).', onde)
+      problema(problemas, 'erro', 'citacao-direta', 'Citação directa (entre aspas) sem autor e ano.', onde)
+    } else if (!pag) problema(problemas, 'erro', 'citacao-direta', 'Citação directa sem o número da página (por exemplo: Gil, 2019, p. 27).', onde)
     if (d.palavras >= 40) problema(problemas, 'aviso', 'citacao-bloco', 'Citações com 40 palavras ou mais vão em bloco (parágrafo recuado), sem aspas.', onde)
   }
 

@@ -50,7 +50,7 @@ function Comentarios() {
   function pedirRecusar(c) {
     setConfirmar({
       titulo: tx('Recusar comentário'),
-      texto: <>{tx('Recusar o comentário de')} <b>{c.nome}</b>{tx('? Não chega ao site e é apagado (o texto fica no registo de atividades).')}</>,
+      texto: <>{tx('Recusar o comentário de')} <b>{c.nome}</b>{tx('? Não chega ao site e é apagado (o texto fica no registo de actividades).')}</>,
       botao: tx('Recusar'),
       perigo: true,
       confirmar: () => { setConfirmar(null); rever(c, 'recusar') },
@@ -66,7 +66,7 @@ function Comentarios() {
   function pedirApagar(c) {
     setConfirmar({
       titulo: tx('Apagar comentário'),
-      texto: <>{tx('Apagar o comentário de')} <b>{c.nome}</b>{tx('? Deixa de aparecer no site e a ação fica registada.')}</>,
+      texto: <>{tx('Apagar o comentário de')} <b>{c.nome}</b>{tx('? Deixa de aparecer no site e a acção fica registada.')}</>,
       botao: tx('Apagar'),
       perigo: true,
       confirmar: async () => {
@@ -131,7 +131,7 @@ function Comentarios() {
           <div className="table-responsive mt-3">
             <table className="table table-striped align-middle mb-0">
               <thead>
-                <tr><th>{tx('Autor')}</th><th>{tx('Comentário')}</th><th>{tx('Em')}</th><th>{tx('Data')}</th><th className="text-end">{tx('Ações')}</th></tr>
+                <tr><th>{tx('Autor')}</th><th>{tx('Comentário')}</th><th>{tx('Em')}</th><th>{tx('Data')}</th><th className="text-end">{tx('Acções')}</th></tr>
               </thead>
               <tbody>
                 {visiveis.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-4">{estado === 'pendente' ? tx('Não há comentários por rever.') : tx('Sem comentários.')}</td></tr>}

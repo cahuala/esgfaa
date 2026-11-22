@@ -1,7 +1,7 @@
 // [português, inglês, francês, espanhol] — organograma da Escola e imagens do topo (site e painel)
 export default [
   ["Organograma (órgãos e dependências)", "Organisation chart (bodies and reporting lines)", "Organigramme (organes et dépendances)", "Organigrama (órganos y dependencias)"],
-  ["Sai na secção «Direção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.", "Shown in the «Leadership / Command» section. A body with no «Reports to» goes at the top; support bodies sit beside the one they report to.", "Affiché dans la section «Direction / Commandement». L'organe sans «Dépend de» est en haut ; les organes d'appui sont à côté de celui dont ils dépendent.", "Aparece en la sección «Dirección / Mando». El órgano sin «Depende de» queda arriba; los de apoyo quedan al lado de aquel del que dependen."],
+  ["Sai na secção «Direcção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.", "Shown in the «Leadership / Command» section. A body with no «Reports to» goes at the top; support bodies sit beside the one they report to.", "Affiché dans la section «Direction / Commandement». L'organe sans «Dépend de» est en haut ; les organes d'appui sont à côté de celui dont ils dépendent.", "Aparece en la sección «Dirección / Mando». El órgano sin «Depende de» queda arriba; los de apoyo quedan al lado de aquel del que dependen."],
   ["Depende de", "Reports to", "Dépend de", "Depende de"],
   ["Vazio: fica no topo do organograma.", "Empty: goes at the top of the chart.", "Vide : en haut de l'organigramme.", "Vacío: queda arriba del organigrama."],
   ["Linha (hierarquia)", "Line (hierarchy)", "Ligne (hiérarchie)", "Línea (jerarquía)"],

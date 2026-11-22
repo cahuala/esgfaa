@@ -39,7 +39,7 @@ export const TIPOS_EVENTO = {
   punicao: 'Punição disciplinar',
   condenacao: 'Condenação criminal',
   saida: 'Saída da Escola',
-  correcao: 'Correção de dados',
+  correcao: 'Correcção de dados',
   outro: 'Outro',
 }
 // à mão: também o histórico de antes do sistema (promoções, nomeações…), que não muda o posto nem o cargo actuais

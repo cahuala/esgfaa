@@ -49,9 +49,9 @@ describe('sessão do painel', () => {
     assert.equal(acoes.total, 1)
   })
 
-  it('conta desativada não entra (403)', async () => {
-    await amb.criarUtilizador('redator', { email: 'inativo@teste.ao', ativo: false })
-    const r = await amb.http().post('/api/admin/entrar').send({ email: 'inativo@teste.ao', senha: SENHA })
+  it('conta desactivada não entra (403)', async () => {
+    await amb.criarUtilizador('redator', { email: 'inactivo@teste.ao', ativo: false })
+    const r = await amb.http().post('/api/admin/entrar').send({ email: 'inactivo@teste.ao', senha: SENHA })
     assert.equal(r.status, 403)
   })
 

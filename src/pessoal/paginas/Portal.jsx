@@ -26,7 +26,7 @@ export default function Portal() {
         <div className="col-xl-5">
           <Painel titulo="Como funciona" icone="fa-info-circle">
             <p>Este sistema corre só na rede interna. Quando se regista ou altera um <strong>docente</strong> ou <strong>estudante</strong> com e-mail, envia ao portal, num só sentido e com assinatura, apenas: nome, e-mail, posto, ramo, NIP, telefone e unidade. O resto da ficha nunca sai daqui.</p>
-            <p className="mb-0">Quem deixa de ser docente/estudante ou sai da Escola fica com a conta do portal desativada. Os envios repetem-se de minuto a minuto até o portal responder.</p>
+            <p className="mb-0">Quem deixa de ser docente/estudante ou sai da Escola fica com a conta do portal desactivada. Os envios repetem-se de minuto a minuto até o portal responder.</p>
           </Painel>
         </div>
         <div className="col-xl-7">

@@ -34,8 +34,8 @@ export function validarRestricoes(dados, existentes, propria) {
       if (!TIPOS_ATIVIDADE.includes(x?.tipo)) throw erro('requisitos', 'Condição inválida.')
       const id = Number(x.id)
       const k = chave(x.tipo, id)
-      if (!existentes.has(k)) throw erro('requisitos', 'A condição tem de ser uma atividade desta cadeira.')
-      if (k === propria) throw erro('requisitos', 'Uma atividade não pode depender de si própria.')
+      if (!existentes.has(k)) throw erro('requisitos', 'A condição tem de ser uma actividade desta cadeira.')
+      if (k === propria) throw erro('requisitos', 'Uma actividade não pode depender de si própria.')
       if (vistas.has(k)) throw erro('requisitos', 'A mesma condição aparece duas vezes.')
       vistas.add(k)
       let notaMinima = null

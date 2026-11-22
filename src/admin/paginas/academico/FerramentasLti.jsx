@@ -63,7 +63,7 @@ function FerramentasLti() {
   )
   return (
     <>
-      <CabecalhoPagina titulo={tx('Ferramentas externas (LTI)')} subtitulo={tx('laboratórios virtuais, simuladores e outras plataformas, com entrada direta a partir do portal')} migalhas={[{ rotulo: tx('Ferramentas externas (LTI)') }]}>
+      <CabecalhoPagina titulo={tx('Ferramentas externas (LTI)')} subtitulo={tx('laboratórios virtuais, simuladores e outras plataformas, com entrada directa a partir do portal')} migalhas={[{ rotulo: tx('Ferramentas externas (LTI)') }]}>
         {gerir && !f && <button type="button" className="btn btn-theme" onClick={() => setF(VAZIA)}><i className="fa fa-plus me-1" />{tx('Registar ferramenta')}</button>}
       </CabecalhoPagina>
 
@@ -88,7 +88,7 @@ function FerramentasLti() {
                 <div className="mb-2"><label className="form-label fw-bold" htmlFor="lti-red">{tx('Outros endereços de retorno (opcional, um por linha)')}</label><textarea id="lti-red" className="form-control" rows={2} value={Array.isArray(f.redirecionamentos) ? f.redirecionamentos.join('\n') : f.redirecionamentos} onChange={(e) => setF({ ...f, redirecionamentos: e.target.value })} /></div>
                 {campo('idImplementacao', tx('Deployment ID'), { maxLength: 100 })}
                 <label className="form-check mb-1"><input type="checkbox" className="form-check-input" checked={f.partilharDados} onChange={(e) => setF({ ...f, partilharDados: e.target.checked })} /> <span className="form-check-label">{tx('Enviar o nome e o e-mail de quem entra (sem isto, a ferramenta só recebe um identificador)')}</span></label>
-                <label className="form-check mb-3"><input type="checkbox" className="form-check-input" checked={f.ativa} onChange={(e) => setF({ ...f, ativa: e.target.checked })} /> <span className="form-check-label">{tx('Ativa (os docentes podem usá-la)')}</span></label>
+                <label className="form-check mb-3"><input type="checkbox" className="form-check-input" checked={f.ativa} onChange={(e) => setF({ ...f, ativa: e.target.checked })} /> <span className="form-check-label">{tx('Activa (os docentes podem usá-la)')}</span></label>
                 <div className="d-flex gap-2">
                   <button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar')}</button>
                   <button type="button" className="btn btn-white" onClick={() => setF(null)}>{tx('Cancelar')}</button>
@@ -103,9 +103,9 @@ function FerramentasLti() {
                     <div key={x.id} className="list-group-item">
                       <div className="d-flex align-items-center gap-2 mb-1">
                         <b className="flex-grow-1">{x.nome}</b>
-                        <span className={`badge ${x.ativa ? 'bg-success' : 'bg-secondary'}`}>{x.ativa ? tx('Ativa') : tx('Desativada')}</span>
+                        <span className={`badge ${x.ativa ? 'bg-success' : 'bg-secondary'}`}>{x.ativa ? tx('Activa') : tx('Desactivada')}</span>
                         {gerir && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...x, redirecionamentos: x.redirecionamentos.join('\n') })}><i className="fa fa-pen" /></button>}
-                        {gerir && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => setConfirmar({ titulo: tx('Apagar ferramenta'), texto: tx('Apagar «{0}»? As atividades que a usam deixam de abrir.', { 0: x.nome }), botao: tx('Apagar'), perigo: true, confirmar: async () => { setConfirmar(null); try { await api(`/academico/lti/${x.id}`, { metodo: 'DELETE' }); carregar() } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) } } })}><i className="fa fa-trash-alt" /></button>}
+                        {gerir && <button type="button" className="btn btn-xs btn-white text-danger" onClick={() => setConfirmar({ titulo: tx('Apagar ferramenta'), texto: tx('Apagar «{0}»? As actividades que a usam deixam de abrir.', { 0: x.nome }), botao: tx('Apagar'), perigo: true, confirmar: async () => { setConfirmar(null); try { await api(`/academico/lti/${x.id}`, { metodo: 'DELETE' }); carregar() } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) } } })}><i className="fa fa-trash-alt" /></button>}
                       </div>
                       {x.descricao && <div className="small text-muted mb-2">{x.descricao}</div>}
                       <div className="row g-2">

@@ -35,7 +35,7 @@ describe('glossário e wiki da cadeira', () => {
     const g = (quem, corpo) => portal(quem).post(`/api/portal/cadeiras/${cadeira.id}/glossario`).send(corpo)
     const doc = (await g('prof', { termo: 'Estratégia', definicao: 'Arte de empregar os meios para atingir os fins políticos.' })).body
     assert.equal(doc.aprovado, true)
-    const prop = (await g('ana', { termo: 'Centro de gravidade', definicao: 'Fonte de poder de onde o adversário tira liberdade de ação.' })).body
+    const prop = (await g('ana', { termo: 'Centro de gravidade', definicao: 'Fonte de poder de onde o adversário tira liberdade de acção.' })).body
     assert.equal(prop.aprovado, false)
     assert.equal((await g('bruno', { termo: 'estratégia', definicao: 'Repetido em minúsculas.' })).status, 409)
     // o colega não vê o termo por aprovar; a autora e o docente veem

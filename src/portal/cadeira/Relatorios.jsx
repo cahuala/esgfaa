@@ -37,7 +37,7 @@ function Relatorios({ c, avisar }) {
   if (!p) return <Carregando />
 
   function exportar() {
-    const cab = [tx('Estudante'), tx('Número'), tx('Acessos'), tx('Último acesso'), tx('Atividades abertas'), tx('Entregas'), tx('Questionários'), tx('Fórum')]
+    const cab = [tx('Estudante'), tx('Número'), tx('Acessos'), tx('Último acesso'), tx('Actividades abertas'), tx('Entregas'), tx('Questionários'), tx('Fórum')]
     const linhas = p.estudantes.map((e) => [e.estudante.nome, e.estudante.numero, e.acessos, e.ultimoAcesso ? dataHora(e.ultimoAcesso) : tx('Nunca'), e.atividadesVistas, e.entregas, e.questionarios, e.forum])
     const texto = [[tx('Participação — {0} {1}', { 0: c.codigo, 1: c.nome })], [], cab, ...linhas].map((l) => l.map(csv).join(';')).join('\r\n')
     const url = URL.createObjectURL(new Blob(['\uFEFF', texto], { type: 'text/csv;charset=utf-8' }))
@@ -59,7 +59,7 @@ function Relatorios({ c, avisar }) {
         {semAcesso > 0 && <div className="alert alert-warning rounded-0 mb-0 py-2 small"><i className="fa fa-exclamation-triangle me-1" />{semAcesso} {tx('estudante(s) sem entrar na cadeira há uma semana ou mais.')}</div>}
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
-            <thead><tr><th>{tx('Estudante')}</th><th className="text-center">{tx('Acessos')}</th><th>{tx('Último acesso')}</th><th className="text-center">{tx('Atividades abertas')}</th><th className="text-center">{tx('Entregas')}</th><th className="text-center">{tx('Questionários')}</th><th className="text-center">{tx('Fórum')}</th><th /></tr></thead>
+            <thead><tr><th>{tx('Estudante')}</th><th className="text-center">{tx('Acessos')}</th><th>{tx('Último acesso')}</th><th className="text-center">{tx('Actividades abertas')}</th><th className="text-center">{tx('Entregas')}</th><th className="text-center">{tx('Questionários')}</th><th className="text-center">{tx('Fórum')}</th><th /></tr></thead>
             <tbody>
               {p.estudantes.map((e) => (
                 <tr key={e.estudante.id}>
@@ -78,10 +78,10 @@ function Relatorios({ c, avisar }) {
         </div>
       </Cartao>
 
-      <Cartao titulo={<><i className="fa fa-eye me-2" />{tx('Uso das atividades')}</>} corpo={false}>
+      <Cartao titulo={<><i className="fa fa-eye me-2" />{tx('Uso das actividades')}</>} corpo={false}>
         <div className="table-responsive">
           <table className="table align-middle mb-0">
-            <thead><tr><th>{tx('Atividade')}</th><th className="text-center">{tx('Aberturas')}</th><th style={{ width: '35%' }}>{tx('Estudantes que abriram')}</th></tr></thead>
+            <thead><tr><th>{tx('Actividade')}</th><th className="text-center">{tx('Aberturas')}</th><th style={{ width: '35%' }}>{tx('Estudantes que abriram')}</th></tr></thead>
             <tbody>
               {p.atividades.map((a) => {
                 const pc = p.totalEstudantes ? Math.round((a.estudantes / p.totalEstudantes) * 100) : 0

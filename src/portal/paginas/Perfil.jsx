@@ -8,7 +8,7 @@ import AvisosAparelho from '../AvisosAparelho'
 import { t as tx } from '../../i18n/linguas'
 import { descarregarMeusDados } from '../../utils/meusDados'
 
-const ESTADOS = { ativa: tx('Ativa'), suspensa: tx('Suspensa'), concluida: tx('Concluída'), anulada: tx('Anulada') }
+const ESTADOS = { ativa: tx('Activa'), suspensa: tx('Suspensa'), concluida: tx('Concluída'), anulada: tx('Anulada') }
 
 // perfil no estilo do Color Admin (profile header com a fotografia da sede)
 function Perfil() {
@@ -61,7 +61,7 @@ function Perfil() {
                 <label className="form-check-label" htmlFor="pref-email">{tx('Receber as notificações também por e-mail (')}{conta.email})</label>
               </div>
               <p className="small text-muted mt-2 mb-0">
-                {tx('Materiais novos, avisos, trabalhos, correções, notas publicadas, respostas no fórum, mensagens e lembretes de prazo.')}
+                {tx('Materiais novos, avisos, trabalhos, correcções, notas publicadas, respostas no fórum, mensagens e lembretes de prazo.')}
                 {!pref.emailAtivo && tx(' (O envio de e-mails ainda não está configurado no servidor: por agora as notificações aparecem só no portal.)')}
               </p>
               <AvisosAparelho />

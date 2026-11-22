@@ -40,9 +40,9 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
   it('página com texto filtrado; edição', async () => {
     const criar = (corpo) => portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).send(corpo)
     assert.equal((await criar({ tipo: 'pagina', titulo: 'Vazia', conteudo: '<p>  </p>' })).status, 400)
-    const r = await criar({ tipo: 'pagina', titulo: 'Introdução', conteudo: '<h2>Objetivos</h2><p>Ler <b>Clausewitz</b>.</p><script>alert(1)</script><img src=x onerror="alert(2)">' })
+    const r = await criar({ tipo: 'pagina', titulo: 'Introdução', conteudo: '<h2>Objectivos</h2><p>Ler <b>Clausewitz</b>.</p><script>alert(1)</script><img src=x onerror="alert(2)">' })
     assert.equal(r.status, 201, r.body.erro)
-    assert.match(r.body.conteudo, /<h2>Objetivos<\/h2>/)
+    assert.match(r.body.conteudo, /<h2>Objectivos<\/h2>/)
     assert.doesNotMatch(r.body.conteudo, /script|onerror/)
     const e = await portal('prof').put(`/api/portal/materiais/${r.body.id}`).send({ conteudo: '<p>Novo texto.</p>', titulo: 'Introdução à cadeira' })
     assert.equal(e.status, 200, e.body.erro)
@@ -211,7 +211,7 @@ describe('mais recursos: página, pasta, videoconferência, sondagem e avaliaç�
     assert.equal((await amb.com(tokens.ana).get(`/api/admin/academico/turmas/${turma.id}/avaliacao`)).status, 401)
   })
 
-  it('vídeos curtos da cadeira (como os estados do WhatsApp): o docente publica, os estudantes da cadeira veem, os outros não', async () => {
+  it('vídeos curtos da cadeira (como os estados do WhatsApp): o docente publica, os estudantes da cadeira vêem, os outros não', async () => {
     const url = `/api/portal/cadeiras/${cadeira.id}/videos-curtos`
     const enviar = (quem, ficheiro = [MP4, { filename: 'aula.mp4', contentType: 'video/mp4' }]) => portal(quem).post(url).field('legenda', 'Exercício na carta').field('duracao', '42').attach('ficheiro', ...ficheiro).attach('ficheiros', PNG, { filename: 'capa.png', contentType: 'image/png' })
     assert.equal((await enviar('ana')).status, 403)

@@ -10,7 +10,7 @@ import { sem, tokenizar } from './semelhanca.js'
 */
 const FORMULAS = [
   'e importante notar', 'e importante salientar', 'vale ressaltar', 'vale a pena destacar', 'convem destacar', 'em suma', 'em ultima analise',
-  'em conclusao', 'desempenha um papel crucial', 'desempenha um papel fundamental', 'papel crucial', 'no cenario atual', 'no mundo atual',
+  'em conclusao', 'desempenha um papel crucial', 'desempenha um papel fundamental', 'papel crucial', 'no cenario actual', 'no mundo actual',
   'num mundo cada vez mais', 'nesse sentido', 'neste contexto', 'alem disso', 'por outro lado', 'de forma abrangente', 'multifacetado',
   'abordagem holistica', 'mergulhar', 'explorar a fundo', 'e crucial', 'e fundamental', 'promover', 'fomentar', 'potencializar',
   'it is important to note', 'in conclusion', 'furthermore', 'moreover', 'delve', 'plays a crucial role', 'in today s world', 'tapestry',

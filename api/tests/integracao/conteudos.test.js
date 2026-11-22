@@ -107,7 +107,7 @@ describe('conteúdos e páginas (painel)', () => {
     assert.equal((await api().delete('/api/admin/comentarios/abc')).status, 404)
   })
 
-  it('painel com totais, rascunhos por publicar e atividades', async () => {
+  it('painel com totais, rascunhos por publicar e actividades', async () => {
     const red = await amb.criarUtilizador('redator')
     await amb.com(red.token).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Rascunho pendente' }))
     const r = await api().get('/api/admin/painel')

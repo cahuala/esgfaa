@@ -13,7 +13,7 @@ const contactos = {
     { nome: 'Secretaria Académica', descricao: 'Matrículas e certificados', email: 'secretaria@esgfaa.gov.ao' },
     { nome: 'Gabinete de Comunicação', descricao: 'Imprensa, eventos e redes sociais', email: 'comunicacao@esgfaa.gov.ao' },
     { nome: 'Cooperação Internacional', descricao: 'Parcerias e intercâmbio com escolas militares', email: 'cooperacao@esgfaa.gov.ao' },
-    { nome: 'Departamento de Investigação', descricao: 'Publicações, revista e projetos científicos', email: 'investigacao@esgfaa.gov.ao' },
+    { nome: 'Departamento de Investigação', descricao: 'Publicações, revista e projectos científicos', email: 'investigacao@esgfaa.gov.ao' },
   ],
   assuntos: [
     'Admissão aos cursos',

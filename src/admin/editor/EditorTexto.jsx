@@ -347,7 +347,7 @@ function EditorTexto({ html, onChange, aoErro, editavel = true, placeholder = tx
         <span><b>{e.palavras.toLocaleString(localAtual())}</b> {tx('palavras')}</span>
         <span><b>{e.caracteres.toLocaleString(localAtual())}</b> {tx('caracteres')}</span>
         <span>~{Math.max(1, Math.round(e.palavras / 200))} {tx('min de leitura')}</span>
-        {editavel && <span className="ed-dica"><i className="fa fa-info-circle me-1" />{tx('Arraste as imagens para as mudar de sítio · largue fotografias diretamente no texto')}</span>}
+        {editavel && <span className="ed-dica"><i className="fa fa-info-circle me-1" />{tx('Arraste as imagens para as mudar de sítio · largue fotografias directamente no texto')}</span>}
       </div>
     </div>
   )

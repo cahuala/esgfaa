@@ -54,7 +54,7 @@ function Utilizadores() {
       const espera = r.aprovacao && (!form.id || r.aprovacao.tipo === 'papel')
       setAviso({ texto: espera
         ? (form.id ? tx('A mudança de papel fica à espera da aprovação do Comandante.') : tx('Conta criada: fica à espera da aprovação do Comandante. Depois, comunique a palavra-passe a {0} por um canal seguro.', { 0: form.nome }))
-        : (form.id ? tx('Utilizador atualizado.') : tx('Utilizador criado. Comunique a palavra-passe a {0} por um canal seguro.', { 0: form.nome })) })
+        : (form.id ? tx('Utilizador actualizado.') : tx('Utilizador criado. Comunique a palavra-passe a {0} por um canal seguro.', { 0: form.nome })) })
       setForm(null)
       carregar()
     } catch (falha) {
@@ -85,17 +85,17 @@ function Utilizadores() {
 
   function alternarAtivo(u) {
     setConfirmar({
-      titulo: u.ativo ? tx('Desativar utilizador') : tx('Reativar utilizador'),
+      titulo: u.ativo ? tx('Desactivar utilizador') : tx('Reativar utilizador'),
       texto: u.ativo
-        ? <><b>{u.nome}</b> {tx('deixa de conseguir entrar no painel. O histórico das suas ações mantém-se.')}</>
+        ? <><b>{u.nome}</b> {tx('deixa de conseguir entrar no painel. O histórico das suas acções mantém-se.')}</>
         : <><b>{u.nome}</b> {tx('volta a poder entrar no painel.')}</>,
-      botao: u.ativo ? tx('Desativar') : tx('Reativar'),
+      botao: u.ativo ? tx('Desactivar') : tx('Reativar'),
       perigo: u.ativo,
       confirmar: async () => {
         setConfirmar(null)
         try {
           await api(`/utilizadores/${u.id}`, { metodo: 'PUT', corpo: { ativo: !u.ativo } })
-          setAviso({ texto: u.ativo ? tx('Utilizador desativado.') : tx('Utilizador reativado.') })
+          setAviso({ texto: u.ativo ? tx('Utilizador desactivado.') : tx('Utilizador reativado.') })
           carregar()
         } catch (e) {
           setAviso({ tipo: 'erro', texto: e.message })
@@ -122,7 +122,7 @@ function Utilizadores() {
               <div className="table-responsive">
                 <table className="table table-striped align-middle mb-0">
                   <thead>
-                    <tr><th>{tx('Nome')}</th><th>{tx('Papel')}</th><th>{tx('Estado')}</th><th>{tx('Último acesso')}</th><th className="text-center">{tx('Ações')}</th><th className="text-end" /></tr>
+                    <tr><th>{tx('Nome')}</th><th>{tx('Papel')}</th><th>{tx('Estado')}</th><th>{tx('Último acesso')}</th><th className="text-center">{tx('Acções')}</th><th className="text-end" /></tr>
                   </thead>
                   <tbody>
                     {lista?.map((u) => (
@@ -140,7 +140,7 @@ function Utilizadores() {
                           <span className={`badge ${CORES_PAPEIS[u.papel] || 'bg-secondary'}`}>{tx(papel(u.papel)?.nome || u.papel)}</span>
                           {u.aprovacao?.tipo === 'papel' && <div className="small text-warning-emphasis mt-1"><i className="fa fa-hourglass-half me-1" />{tx('Pedido: {0} (à espera do Comandante)', { 0: tx(papel(u.aprovacao.papel)?.nome || u.aprovacao.papel) })}</div>}
                         </td>
-                        <td>{u.aprovacao?.tipo === 'criar' ? <span className="badge bg-warning text-dark">{tx('À espera do Comandante')}</span> : u.ativo ? <span className="text-success"><i className="fa fa-circle fs-8px me-1" />{tx('Ativo')}</span> : <span><i className="fa fa-circle fs-8px me-1" />{tx('Desativado')}</span>}</td>
+                        <td>{u.aprovacao?.tipo === 'criar' ? <span className="badge bg-warning text-dark">{tx('À espera do Comandante')}</span> : u.ativo ? <span className="text-success"><i className="fa fa-circle fs-8px me-1" />{tx('Activo')}</span> : <span><i className="fa fa-circle fs-8px me-1" />{tx('Desactivado')}</span>}</td>
                         <td className="text-nowrap">{u.ultimoAcesso ? dataHora(u.ultimoAcesso) : tx('Nunca entrou')}</td>
                         <td className="text-center"><Link to={`/atividades?utilizador=${u.id}`}>{u.atividades}</Link></td>
                         <td className="text-end text-nowrap">
@@ -154,7 +154,7 @@ function Utilizadores() {
                             <button className="btn btn-sm btn-default me-1" onClick={() => reporDoisFatores(u)} title={tx('Repor a verificação em dois passos')}><i className="fa fa-mobile-alt" /></button>
                           )}
                           {u.id !== eu.id && pode('utilizadores.editar') && !u.geridaPeloPessoal && u.aprovacao?.tipo !== 'criar' && (u.papel !== 'administrador' || pode('papeis.gerir')) && (
-                            <button className={`btn btn-sm ${u.ativo ? 'btn-warning' : 'btn-success'}`} onClick={() => alternarAtivo(u)} title={u.ativo ? tx('Desativar') : tx('Reativar')}>
+                            <button className={`btn btn-sm ${u.ativo ? 'btn-warning' : 'btn-success'}`} onClick={() => alternarAtivo(u)} title={u.ativo ? tx('Desactivar') : tx('Reativar')}>
                               <i className={`fa ${u.ativo ? 'fa-user-slash' : 'fa-user-check'}`} />
                             </button>
                           )}

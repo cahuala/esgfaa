@@ -91,7 +91,7 @@ function Atividades() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Registo de atividades')} subtitulo={tx('segurança e auditoria')} migalhas={[{ rotulo: tx('Registo de atividades') }]} />
+      <CabecalhoPagina titulo={tx('Registo de actividades')} subtitulo={tx('segurança e auditoria')} migalhas={[{ rotulo: tx('Registo de actividades') }]} />
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
 
       <Painel titulo={tx('Filtros')}>
@@ -103,8 +103,8 @@ function Atividades() {
             </select>
           </div>
           <div className="col-md-2">
-            <select className="form-select" value={filtros.acao} onChange={(e) => mudar('acao', e.target.value)} aria-label={tx('Ação')}>
-              <option value="">{tx('Todas as ações')}</option>
+            <select className="form-select" value={filtros.acao} onChange={(e) => mudar('acao', e.target.value)} aria-label={tx('Acção')}>
+              <option value="">{tx('Todas as acções')}</option>
               {dados?.acoes.map((a) => <option key={a} value={a}>{NOMES_ACOES[a] || a}</option>)}
             </select>
           </div>
@@ -124,17 +124,17 @@ function Atividades() {
       </Painel>
 
       <Painel
-        titulo={tx('Ações registadas{0}', { 0: dados ? ` (${dados.total})` : '' })}
+        titulo={tx('Acções registadas{0}', { 0: dados ? ` (${dados.total})` : '' })}
         corpo={false}
         acoes={dados?.total > 0 && (
           <Exportar
-            titulo={tx('Registo de atividades')}
+            titulo={tx('Registo de actividades')}
             filtro={filtroEscrito}
             obterLinhas={todasAsLinhas}
             colunas={[
               { titulo: tx('Data'), valor: (a) => dataHora(a.data) },
               { titulo: tx('Utilizador'), valor: (a) => a.utilizador_nome || tx('desconhecido') },
-              { titulo: tx('Ação'), valor: (a) => NOMES_ACOES[a.acao] || a.acao },
+              { titulo: tx('Acção'), valor: (a) => NOMES_ACOES[a.acao] || a.acao },
               { titulo: tx('Área'), valor: (a) => (a.colecao ? NOMES_COLECOES[a.colecao] || a.colecao : '') },
               { titulo: tx('Alvo'), valor: (a) => a.alvo_titulo },
               { titulo: tx('Detalhes'), valor: (a) => detalhes(a) },
@@ -147,7 +147,7 @@ function Atividades() {
           <div className="table-responsive">
             <table className="table table-striped align-middle mb-0 small">
               <thead>
-                <tr><th>{tx('Data')}</th><th>{tx('Utilizador')}</th><th>{tx('Ação')}</th><th>{tx('Alvo')}</th><th>{tx('Detalhes')}</th><th>{tx('IP')}</th></tr>
+                <tr><th>{tx('Data')}</th><th>{tx('Utilizador')}</th><th>{tx('Acção')}</th><th>{tx('Alvo')}</th><th>{tx('Detalhes')}</th><th>{tx('IP')}</th></tr>
               </thead>
               <tbody>
                 {dados?.linhas.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-4">{tx('Sem registos para estes filtros.')}</td></tr>}

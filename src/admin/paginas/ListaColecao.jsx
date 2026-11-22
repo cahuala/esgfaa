@@ -132,7 +132,7 @@ function ListaColecao() {
                   <th>{tx('Estado')}</th>
                   {INTERATIVAS.includes(colecao) && <th className="text-nowrap text-center" title={tx('Visualizações · Gostos · Comentários')}><i className="fa fa-eye" /> · <i className="fa fa-heart" /> · <i className="fa fa-comment" /></th>}
                   {publicidade && <><th className="text-end">{tx('Impressões')}</th><th className="text-end">{tx('Cliques')}</th><th className="text-end" title={tx('Taxa de cliques')}>{tx('CTR')}</th></>}
-                  <th className="text-end" style={{ width: 1 }}>{tx('Ações')}</th>
+                  <th className="text-end" style={{ width: 1 }}>{tx('Acções')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -170,7 +170,7 @@ function ListaColecao() {
                       })}
                       <td>
                         {item._estado === 'publicado'
-                          ? <span className="badge bg-success">{publicidade && item.ativo === false ? tx('Publicado · inativo') : tx('Publicado')}</span>
+                          ? <span className="badge bg-success">{publicidade && item.ativo === false ? tx('Publicado · inactivo') : tx('Publicado')}</span>
                           : <span className="badge bg-warning text-dark">{tx('Rascunho')}</span>}
                         {item._aprovacao?.estado === 'pendente' && <div><span className="badge bg-info mt-1"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante')}</span></div>}
                         {item._aprovacao?.estado === 'recusado' && <div><span className="badge bg-danger mt-1" title={item._aprovacao.motivo}>{tx('Recusado')}</span></div>}

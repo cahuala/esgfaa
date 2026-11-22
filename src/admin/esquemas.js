@@ -162,7 +162,7 @@ export const COLECOES = {
       { nome: 'inscricoes', rotulo: tx('Inscrições abertas'), tipo: 'booleano' },
       { nome: 'programa', rotulo: tx('Programa do dia'), tipo: 'objetos', rotuloItem: tx('Momento'), campos: [
         { nome: 'hora', rotulo: tx('Hora'), tipo: 'hora', largura: 'terco' },
-        { nome: 'atividade', rotulo: tx('Atividade'), tipo: 'texto', largura: 'doisTercos' },
+        { nome: 'atividade', rotulo: tx('Actividade'), tipo: 'texto', largura: 'doisTercos' },
       ] },
       { nome: 'nosDestaques', rotulo: tx('Nos Destaques do site'), tipo: 'selecao', opcoes: [
         { valor: '', rotulo: tx('Automático (eventos realizados e notícias recentes ou em manchete)') },
@@ -199,7 +199,7 @@ export const COLECOES = {
       { nome: 'destinatarios', rotulo: tx('Destinatários'), tipo: 'texto', largura: 'metade' },
       { nome: 'coordenador', rotulo: tx('Coordenação'), tipo: 'selecao', opcoes: 'pessoas', largura: 'metade' },
       { nome: 'apresentacao', rotulo: tx('Apresentação (um parágrafo por linha da lista)'), tipo: 'listaTexto', multilinha: true },
-      { nome: 'objetivos', rotulo: tx('Objetivos'), tipo: 'listaTexto' },
+      { nome: 'objetivos', rotulo: tx('Objectivos'), tipo: 'listaTexto' },
       { nome: 'plano', rotulo: tx('Plano curricular'), tipo: 'objetos', rotuloItem: tx('Período'), campos: [
         { nome: 'periodo', rotulo: tx('Período ou bloco (ex.: 1.º semestre; Bloco I — Administração)'), tipo: 'texto' },
         { nome: 'unidades', rotulo: tx('Unidades curriculares'), tipo: 'objetos', rotuloItem: tx('Unidade'), campos: [
@@ -247,7 +247,7 @@ export const COLECOES = {
       { nome: 'resumo', rotulo: tx('Apresentação'), tipo: 'textarea', linhas: 3, ajuda: tx('Duas ou três frases sobre os temas deste número.') },
       { nome: 'pdf', rotulo: tx('Revista em PDF'), tipo: 'ficheiro', largura: 'metade', obrigatorio: true, ajuda: tx('O ficheiro completo, como foi paginado. Os visitantes leem-no no site e podem descarregá-lo.') },
       { nome: 'capa', rotulo: tx('Capa (opcional)'), tipo: 'imagem', largura: 'metade', ajuda: tx('Sem imagem, o site usa a primeira página do PDF como capa.') },
-      { nome: 'sumario', rotulo: tx('Sumário'), tipo: 'objetos', rotuloItem: tx('Artigo'), ajuda: tx('Com a página, o leitor abre diretamente no artigo.'), campos: [
+      { nome: 'sumario', rotulo: tx('Sumário'), tipo: 'objetos', rotuloItem: tx('Artigo'), ajuda: tx('Com a página, o leitor abre directamente no artigo.'), campos: [
         { nome: 'titulo', rotulo: tx('Título'), tipo: 'texto', largura: 'metade' },
         { nome: 'autor', rotulo: tx('Autor'), tipo: 'texto', largura: 'terco' },
         { nome: 'pagina', rotulo: tx('Página'), tipo: 'texto', largura: 'sexto' },
@@ -256,7 +256,7 @@ export const COLECOES = {
   },
   publicidade: {
     titulo: tx('Publicidade'), singular: 'banner', botaoNovo: tx('Novo banner'), icone: 'fa-bullhorn', chave: 'id', campoTitulo: 'titulo', ordenavel: true,
-    ajudaLista: tx('Em cada posição do site aparece o primeiro banner ativo da lista (use as setas para escolher a ordem).'),
+    ajudaLista: tx('Em cada posição do site aparece o primeiro banner activo da lista (use as setas para escolher a ordem).'),
     colunas: [
       { rotulo: '', tipo: 'imagem', valor: (i) => i.imagem },
       { rotulo: tx('Banner'), valor: (i) => i.titulo, principal: true },
@@ -280,7 +280,7 @@ export const COLECOES = {
       { nome: 'botao', rotulo: tx('Texto do botão'), tipo: 'texto', largura: 'metade' },
       { nome: 'ligacao', rotulo: tx('Ligação'), tipo: 'texto', largura: 'metade', ajuda: tx('Endereço completo (https://…) ou página do site (ex.: /Cursos).') },
       { nome: 'posicao', rotulo: tx('Posição no site'), tipo: 'selecao', opcoes: 'posicoesBanner', largura: 'metade' },
-      { nome: 'ativo', rotulo: tx('Ativo'), tipo: 'booleano', largura: 'metade' },
+      { nome: 'ativo', rotulo: tx('Activo'), tipo: 'booleano', largura: 'metade' },
       { nome: 'inicio', rotulo: tx('Mostrar a partir de'), tipo: 'data', largura: 'metade' },
       { nome: 'fim', rotulo: tx('Mostrar até'), tipo: 'data', largura: 'metade' },
     ],
@@ -391,7 +391,7 @@ export const PAGINAS = {
       ] },
       { titulo: tx('III. Estrutura'), campos: [
         { nome: 'estrutura.introducao', rotulo: tx('Introdução'), tipo: 'textarea', linhas: 2 },
-        { nome: 'estrutura.orgaos', rotulo: tx('Organograma (órgãos e dependências)'), tipo: 'objetos', rotuloItem: tx('Órgão'), ajuda: tx('Sai na secção «Direção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.'), campos: [
+        { nome: 'estrutura.orgaos', rotulo: tx('Organograma (órgãos e dependências)'), tipo: 'objetos', rotuloItem: tx('Órgão'), ajuda: tx('Sai na secção «Direcção / Comando». O órgão sem «Depende de» fica no topo; os de apoio ficam ao lado de quem dependem.'), campos: [
           { nome: 'nome', rotulo: tx('Órgão'), tipo: 'texto', largura: 'metade', obrigatorio: true },
           { nome: 'sigla', rotulo: tx('Sigla'), tipo: 'texto', largura: 'terco' },
           { nome: 'dependeDe', rotulo: tx('Depende de'), tipo: 'selecao', opcoes: 'irmaos', largura: 'metade', ajuda: tx('Vazio: fica no topo do organograma.') },
@@ -502,7 +502,7 @@ export const POSICOES_BANNER = [
 export const NOMES_RECURSOS = {
   noticias: tx('Notícias'), artigos: tx('Artigos'), eventos: tx('Eventos'), cursos: tx('Cursos'), pessoas: tx('Corpo docente'), revistas: tx('Revista'),
   publicidade: tx('Publicidade'), paginas: tx('Páginas do site'), comentarios: tx('Comentários'), contactos: tx('Mensagens do site'), academico: tx('Gestão académica (portal)'), pessoal: tx('Pessoal e Quadros'), biblioteca: tx('Biblioteca'), integridade: tx('Integridade académica (anti-plágio)'), estatisticas: tx('Estatísticas'),
-  utilizadores: tx('Utilizadores'), papeis: tx('Papéis e permissões'), atividades: tx('Registo de atividades'), seguranca: tx('Centro de segurança'), publicacoes: tx('Publicações do site'),
+  utilizadores: tx('Utilizadores'), papeis: tx('Papéis e permissões'), atividades: tx('Registo de actividades'), seguranca: tx('Centro de segurança'), publicacoes: tx('Publicações do site'),
 }
 export const NOMES_PERMISSOES = { ver: tx('Ver'), criar: tx('Criar'), editar: tx('Editar'), apagar: tx('Apagar'), publicar: tx('Publicar'), gerir: tx('Gerir'), notas: tx('Notas'), registar: tx('Registar'), aprovar: tx('Aprovar'), conselho: tx('Conselho'), homologar: tx('Homologar') }
 
@@ -549,7 +549,7 @@ export const NOMES_ACOES = {
   lancar_notas: tx('Lançou notas'),
   publicar_notas: tx('Publicou notas'),
   alocar_docentes: tx('Alocou docentes a uma cadeira'),
-  programa_cadeira: tx('Atualizou o programa de uma cadeira'),
+  programa_cadeira: tx('Actualizou o programa de uma cadeira'),
   marcar_evento: tx('Marcou uma data no calendário académico'),
   apagar_topico: tx('Apagou um tópico do fórum'),
   publicar_questionario: tx('Publicou um questionário'),
@@ -625,20 +625,20 @@ export const NOMES_ACOES = {
   editar_plano_curso: tx('Editou um plano de curso'),
   editar_prova: tx('Editou uma prova'),
   enviar_prova_escrita: tx('Enviou uma prova escrita para imprimir'),
-  excecao_questionario: tx('Deu uma exceção num questionário'),
+  excecao_questionario: tx('Deu uma excepção num questionário'),
   exportar_meus_dados: tx('Descarregou os seus dados pessoais'),
   homologar_classificacoes: tx('Homologou as classificações finais'),
   imprimir_prova_escrita: tx('Imprimiu uma prova escrita'),
   juizo_ampliativo: tx('Registou o juízo ampliativo'),
   libertar_notas: tx('Libertou as notas'),
-  mudar_protecao: tx('Mudou a proteção do sistema'),
+  mudar_protecao: tx('Mudou a protecção do sistema'),
   passagem_de_ano: tx('Fez a passagem de ano'),
   pedido_dados: tx('Fez um pedido sobre dados pessoais'),
   pedir_alteracao_nota: tx('Pediu a alteração de uma nota publicada'),
   pedir_recuperacao: tx('Pediu o teste de recuperação'),
   pedir_revisao_prova: tx('Pediu a revisão de uma prova'),
   propor_classificacoes: tx('Propôs as classificações ao Conselho de Curso'),
-  protecao_automatica: tx('Proteção automática'),
+  protecao_automatica: tx('Protecção automática'),
   reabrir_classificacoes: tx('Reabriu as classificações'),
   reabrir_prova_escrita: tx('Voltou a pôr uma prova por imprimir'),
   responder_pedido_dados: tx('Respondeu a um pedido sobre dados pessoais'),

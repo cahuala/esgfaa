@@ -229,7 +229,7 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto={tx('Indicadores académicos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto={tx('Inquéritos de satisfação')} />}
             {pode('integridade.ver') && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Integridade académica')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano letivo e semestres')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano lectivo e semestres')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
@@ -247,7 +247,7 @@ function Layout({ children }) {
             {pode('seguranca.ver') && <ItemMenu para="/seguranca" icone="fa-user-shield" texto={tx('Centro de segurança')} />}
             {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto={tx('Utilizadores')} />}
             {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto={tx('Papéis e permissões')} />}
-            {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto={tx('Registo de atividades')} />}
+            {pode('atividades.ver') && <ItemMenu para="/atividades" icone="fa-shield-alt" texto={tx('Registo de actividades')} />}
             {!aprova && pode('atividades.ver') && <ItemMenu para="/acontecimentos" icone="fa-bell" texto={tx('Acontecimentos importantes')} />}
             {pode('atividades.ver') && <ItemMenu para="/privacidade" icone="fa-user-lock" texto={tx('Pedidos sobre dados pessoais')} />}
 
@@ -279,7 +279,7 @@ function Layout({ children }) {
           <div className="alert alert-warning d-flex align-items-center mb-3" role="alert">
             <i className="fa fa-shield-alt fa-lg me-3" />
             <div className="flex-fill">
-              <strong>{tx('Mude a sua palavra-passe.')}</strong> {tx('A atual foi definida por outra pessoa ou já não cumpre as regras de segurança (mínimo de 10 caracteres, com letras e números).')}
+              <strong>{tx('Mude a sua palavra-passe.')}</strong> {tx('A actual foi definida por outra pessoa ou já não cumpre as regras de segurança (mínimo de 10 caracteres, com letras e números).')}
             </div>
             <Link to="/perfil" className="btn btn-sm btn-warning ms-3">{tx('Mudar agora')}</Link>
           </div>

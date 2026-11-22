@@ -46,7 +46,7 @@ function Pedidos() {
                       <td className="text-end">{pode('academico.gerir') && <button type="button" className="btn btn-sm btn-primary" onClick={() => setAberto(aberto === p.id ? null : p.id)}>{aberto === p.id ? tx('Fechar') : tx('Tratar')}</button>}</td>
                     </tr>
                     {aberto === p.id && (
-                      <tr><td colSpan={5}><TratarPedido p={p} aoGuardar={() => { setAberto(null); setAviso({ texto: tx('Pedido atualizado.') }); carregar() }} avisar={setAviso} /></td></tr>
+                      <tr><td colSpan={5}><TratarPedido p={p} aoGuardar={() => { setAberto(null); setAviso({ texto: tx('Pedido actualizado.') }); carregar() }} avisar={setAviso} /></td></tr>
                     )}
                   </Fragment>
                 ))}
@@ -97,7 +97,7 @@ function TratarPedido({ p, aoGuardar, avisar }) {
       <div className="col-md-3">
         <label className="form-label fw-bold" htmlFor={`pf-${p.id}`}>{tx('Documento (PDF)')}</label>
         <input id={`pf-${p.id}`} type="file" accept="application/pdf" className="form-control" onChange={(e) => setFicheiro(e.target.files[0] || null)} />
-        {p.ficheiroId && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => abrirFicheiro(p.ficheiroId, `${p.tipo}.pdf`).catch((x) => avisar({ tipo: 'erro', texto: x.message }))}>{tx('Ver o documento atual')}</button>}
+        {p.ficheiroId && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => abrirFicheiro(p.ficheiroId, `${p.tipo}.pdf`).catch((x) => avisar({ tipo: 'erro', texto: x.message }))}>{tx('Ver o documento actual')}</button>}
       </div>
       <div className="col-md-1"><button type="submit" className="btn btn-theme w-100" disabled={aGuardar}>{tx('Guardar')}</button></div>
     </form>

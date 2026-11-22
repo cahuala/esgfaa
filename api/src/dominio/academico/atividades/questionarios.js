@@ -12,7 +12,7 @@ export const TIPOS_PERGUNTA = {
   correspondencia: 'Correspondência',
   lacunas: 'Preencher lacunas',
   ordenar: 'Ordenar',
-  dissertacao: 'Dissertação (correção manual)',
+  dissertacao: 'Dissertação (correcção manual)',
 }
 export const TIPOS_COM_OPCOES = ['unica', 'multipla', 'vf']
 export const MARGEM_ENTREGA_MS = 30_000 // tolerância de rede para a entrega no fim do tempo

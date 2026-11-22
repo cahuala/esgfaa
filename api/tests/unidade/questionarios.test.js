@@ -29,7 +29,7 @@ describe('questionários: regras', () => {
     assert.deepEqual(limparRespostas('lixo', perguntas), {})
   })
 
-  it('correção: tudo ou nada por pergunta, nota de 0 a 20', () => {
+  it('correcção: tudo ou nada por pergunta, nota de 0 a 20', () => {
     assert.equal(corrigir(perguntas, { 1: [1], 2: [0, 2], 3: [1] }).nota, 20)
     // múltipla com uma a mais não conta: 2 + 0 + 1 = 3 de 4
     const r = corrigir(perguntas, { 1: [1], 2: [0, 1, 2], 3: [1] })
@@ -88,13 +88,13 @@ describe('questionários: tipos novos, ordem aleatória e estatísticas', async 
     assert.equal(q.validarPergunta({ tipo: 'dissertacao', enunciado: 'Comente a frase.' }).tipo, 'dissertacao')
   })
 
-  it('correção: curta sem acentos nem maiúsculas, numérica com tolerância, correspondência parcial', () => {
+  it('correcção: curta sem acentos nem maiúsculas, numérica com tolerância, correspondência parcial', () => {
     const r = q.corrigir([curta, numerica, corresp], { 10: 'clausewitz', 11: '1975', 12: [0, 2, 1] })
     assert.deepEqual(r.detalhe.map((d) => d.obtidos), [1, 1, 1]) // 1 dos 3 pares certos
     assert.deepEqual([r.obtidos, r.total, r.nota], [3, 5, 12])
     assert.equal(q.corrigir([numerica], { 11: '1974' }).nota, 0)
     assert.equal(q.corrigir([{ ...numerica, opcoes: { valor: 3.14, tolerancia: 0.01 } }], { 11: '3,15' }).nota, 20)
-    assert.equal(q.normalizar('  Ação  Militar '), 'acao militar')
+    assert.equal(q.normalizar('  Acção  Militar '), 'accao militar')
   })
 
   it('dissertação: nota por corrigir até o docente dar os pontos', () => {

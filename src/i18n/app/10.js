@@ -2,7 +2,7 @@
 export default [
   ["Ano curricular", "Curricular year", "Année d'études", "Año curricular"],
   ["Ainda não há turmas.", "No classes yet.", "Aucune promotion pour l'instant.", "Aún no hay grupos."],
-  ["Inativa", "Inactive", "Inactive", "Inactiva"],
+  ["Inactiva", "Inactive", "Inactive", "Inactiva"],
   [".º ano", " year", "e année", ".º año"],
   ["Nova turma", "New class", "Nouvelle promotion", "Nuevo grupo"],
   ["Nome da turma", "Class name", "Nom de la promotion", "Nombre del grupo"],
@@ -21,7 +21,7 @@ export default [
   ["Digitais", "Digital", "Numériques", "Digitales"],
   ["Reservas", "Reservations", "Réservations", "Reservas"],
   ["catálogo de obras, exemplares e versões digitais", "catalogue of works, copies and digital versions", "catalogue des ouvrages, exemplaires et versions numériques", "catálogo de obras, ejemplares y versiones digitales"],
-  ["Registos Dublin Core (OAI-DC) para repositórios e catálogos coletivos", "Dublin Core (OAI-DC) records for repositories and union catalogues", "Notices Dublin Core (OAI-DC) pour les dépôts et catalogues collectifs", "Registros Dublin Core (OAI-DC) para repositorios y catálogos colectivos"],
+  ["Registos Dublin Core (OAI-DC) para repositórios e catálogos colectivos", "Dublin Core (OAI-DC) records for repositories and union catalogues", "Notices Dublin Core (OAI-DC) pour les dépôts et catalogues collectifs", "Registros Dublin Core (OAI-DC) para repositorios y catálogos colectivos"],
   ["Exportar Dublin Core", "Export Dublin Core", "Exporter en Dublin Core", "Exportar Dublin Core"],
   ["Nova obra", "New work", "Nouvel ouvrage", "Nueva obra"],
   ["Atender", "Handle", "Traiter", "Atender"],

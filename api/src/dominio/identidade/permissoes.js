@@ -47,7 +47,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'administrador',
     nome: 'Administrador',
-    descricao: 'Acesso total, incluindo utilizadores, papéis e registo de atividades (a aprovação das publicações é do Comandante).',
+    descricao: 'Acesso total, incluindo utilizadores, papéis e registo de actividades (a aprovação das publicações é do Comandante).',
     sistema: 1,
     permissoes: DO_ADMINISTRADOR,
   },
@@ -63,7 +63,7 @@ export const PAPEIS_PADRAO = [
   },
   {
     id: 'redator',
-    nome: 'Redator',
+    nome: 'Redactor',
     descricao: 'Escreve notícias, artigos e eventos como rascunho; um editor-chefe revê e publica.',
     sistema: 0,
     permissoes: [
@@ -116,7 +116,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'ciberseguranca',
     nome: 'Responsável de Cibersegurança',
-    descricao: 'Centro de segurança: tentativas de entrada, ataques e IP suspeitos, bloquear e desbloquear endereços; consulta o registo de atividades. Não edita conteúdos nem utilizadores.',
+    descricao: 'Centro de segurança: tentativas de entrada, ataques e IP suspeitos, bloquear e desbloquear endereços; consulta o registo de actividades. Não edita conteúdos nem utilizadores.',
     sistema: 0,
     permissoes: ['seguranca.ver', 'seguranca.gerir', 'atividades.ver'],
   },

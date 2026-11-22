@@ -43,7 +43,7 @@ function Verificar() {
                 <p className="small text-muted">{tx('Estudante n.º')} {r.cert.numero}</p>
                 <p className="mb-1">{tx('concluiu o')}</p>
                 <p className="p-certificado-cadeira">{r.cert.curso}</p>
-                <p>{tx('com a classificação final de')} <b>{String(r.cert.media).replace('.', ',')} {tx('valores')}</b> {tx('· ano letivo')} {r.cert.anoLetivo}</p>
+                <p>{tx('com a classificação final de')} <b>{String(r.cert.media).replace('.', ',')} {tx('valores')}</b> {tx('· ano lectivo')} {r.cert.anoLetivo}</p>
                 <div className="small text-muted">{tx('Emitido em')} {new Date(r.cert.emitidoEm).toLocaleDateString(localAtual())} {tx('· código')} {r.cert.codigo}</div>
               </div>
             ) : <DocumentoCertificado cert={r.cert} />}

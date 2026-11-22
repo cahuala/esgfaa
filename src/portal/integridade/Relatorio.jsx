@@ -207,7 +207,7 @@ function Relatorio({ r }) {
 const REGRAS_APA = {
   'sem-referencia': 'Citação sem referência', ano: 'Ano diferente da referência', apelido: 'Apelido diferente da referência', maiusculas: 'Apelido em maiúsculas',
   'et-al': '«et al.» mal escrito', espacos: 'Espaços na citação', 'e-comercial': '«&» ou «e»', 'tres-autores': 'Três ou mais autores', pagina: 'Página da citação',
-  'citacao-direta': 'Citação direta', 'citacao-bloco': 'Citação em bloco', referencias: 'Lista de referências', norma: 'Norma das referências',
+  'citacao-direta': 'Citação directa', 'citacao-bloco': 'Citação em bloco', referencias: 'Lista de referências', norma: 'Norma das referências',
   'referencia-ano': 'Formato da referência', 'referencia-repetida': 'Referência repetida', ordem: 'Ordem alfabética', doi: 'DOI', url: 'Endereço (URL)',
   edicao: 'Edição', 'ponto-final': 'Ponto final', 'nao-citada': 'Referência não citada',
 }
@@ -281,7 +281,7 @@ function Verificacoes({ v }) {
 }
 
 function Internet({ i }) {
-  if (!i?.estado || i.estado === 'sem-servico') return <span className="text-muted"><i className="fa fa-globe me-1" />{tx('Pesquisa na internet não configurada (a Escola tem de ativar a chave do Brave Search).')}</span>
+  if (!i?.estado || i.estado === 'sem-servico') return <span className="text-muted"><i className="fa fa-globe me-1" />{tx('Pesquisa na internet não configurada (a Escola tem de activar a chave do Brave Search).')}</span>
   if (i.estado === 'desligada') return <span className="text-muted"><i className="fa fa-globe me-1" />{tx('Sem pesquisa na internet nesta análise.')}</span>
   return (
     <span className="text-muted">

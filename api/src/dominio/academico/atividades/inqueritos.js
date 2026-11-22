@@ -14,7 +14,7 @@ export const RESULTADOS = ['apos_responder', 'apos_fecho', 'nunca']
 export const MINIMO_RESPOSTAS_AVALIACAO = 3
 
 export const PERGUNTAS_AVALIACAO = [
-  { tipo: 'escala', texto: 'O docente apresentou os objetivos, o programa e as regras de avaliação da cadeira.' },
+  { tipo: 'escala', texto: 'O docente apresentou os objectivos, o programa e as regras de avaliação da cadeira.' },
   { tipo: 'escala', texto: 'As aulas foram bem preparadas e organizadas.' },
   { tipo: 'escala', texto: 'O docente explicou a matéria com clareza.' },
   { tipo: 'escala', texto: 'O docente foi pontual e assíduo.' },

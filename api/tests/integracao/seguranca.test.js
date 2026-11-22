@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { criarAmbiente } from '../apoio/ambiente.js'
 
-describe('proteções HTTP', () => {
+describe('protecções HTTP', () => {
   let amb
   before(async () => { amb = await criarAmbiente() })
   after(() => amb.fechar())

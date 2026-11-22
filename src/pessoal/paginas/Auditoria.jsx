@@ -13,14 +13,14 @@ export default function Auditoria() {
   const colunas = useMemo(() => [
     { chave: 'quando', titulo: 'Quando', valor: (a) => a.quando, mostrar: (a) => dataHoraPt(a.quando) },
     { chave: 'utilizador', titulo: 'Utilizador', valor: (a) => a.utilizador },
-    { chave: 'acao', titulo: 'Ação', valor: (a) => ACOES[a.acao] ?? a.acao, mostrar: (a) => <span className={`badge ${/falhada|recusado/.test(a.acao) ? 'bg-danger' : a.acao === 'exportar' ? 'bg-warning text-dark' : 'bg-light text-dark border'}`}>{ACOES[a.acao] ?? a.acao}</span> },
+    { chave: 'acao', titulo: 'Acção', valor: (a) => ACOES[a.acao] ?? a.acao, mostrar: (a) => <span className={`badge ${/falhada|recusado/.test(a.acao) ? 'bg-danger' : a.acao === 'exportar' ? 'bg-warning text-dark' : 'bg-light text-dark border'}`}>{ACOES[a.acao] ?? a.acao}</span> },
     { chave: 'alvo', titulo: 'Sobre', valor: (a) => a.alvo },
     { chave: 'detalhes', titulo: 'Detalhes', valor: (a) => (Object.keys(a.detalhes ?? {}).length ? JSON.stringify(a.detalhes) : '') , mostrar: (a) => <span className="small text-muted">{Object.entries(a.detalhes ?? {}).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' · ')}</span> },
     { chave: 'ip', titulo: 'Endereço', valor: (a) => a.ip },
   ], [])
   return (
     <>
-      <Cabecalho titulo="Auditoria" subtitulo="registo de todas as ações" migalhas={[['Administração'], ['Auditoria']]} />
+      <Cabecalho titulo="Auditoria" subtitulo="registo de todas as acções" migalhas={[['Administração'], ['Auditoria']]} />
       <Painel>
         <div className="row mb-2">
           <div className="col-md-3"><label className="small text-muted">De</label><InputData className="form-control form-control-sm" value={f.de} onChange={(e) => setF({ ...f, de: e.target.value })} /></div>

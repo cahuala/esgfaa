@@ -39,9 +39,9 @@ export class ServicoOrganizacao {
 
   async restricoes(ctx, { tipo, id, ...dados }) {
     const buscar = this.#buscarAtividade(tipo)
-    if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
+    if (!buscar) throw new ErroValidacao('Tipo de actividade inválido.', { campo: 'tipo' })
     const a = await buscar(id)
-    if (!a) throw new NaoEncontrado('Atividade não encontrada.')
+    if (!a) throw new NaoEncontrado('Actividade não encontrada.')
     const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, a.cadeiraId)
     const { lista } = await this.disponibilidade.atividades(cadeira.id)
     const mudanca = validarRestricoes(dados, new Set(lista.map((x) => x.chave)), `${tipo}-${a.id}`)
@@ -79,9 +79,9 @@ export class ServicoOrganizacao {
   // muda um material, trabalho ou questionário de capítulo
   async moverAtividade(ctx, { tipo, id, secaoId }) {
     const buscar = this.#buscarAtividade(tipo)
-    if (!buscar) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
+    if (!buscar) throw new ErroValidacao('Tipo de actividade inválido.', { campo: 'tipo' })
     const atividade = await buscar(id)
-    if (!atividade) throw new NaoEncontrado('Atividade não encontrada.')
+    if (!atividade) throw new NaoEncontrado('Actividade não encontrada.')
     const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, atividade.cadeiraId)
     await this.academico.moverAtividade(tipo, atividade.id, await this.apoio.secaoDaCadeira(cadeira.id, secaoId))
   }

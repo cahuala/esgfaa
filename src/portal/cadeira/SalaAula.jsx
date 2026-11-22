@@ -82,7 +82,7 @@ function SalaAula(props) {
         <div className="col-12">
           <div className="alert alert-info d-flex flex-wrap align-items-center gap-2 p-sala-previa">
             <i className="fa fa-user-graduate fa-lg" />
-            <span className="flex-grow-1">{tx('Está a ver a sala de aula como os estudantes a veem. Não aparecem as atividades escondidas; as datas de abertura e as condições não se aplicam a si.')}</span>
+            <span className="flex-grow-1">{tx('Está a ver a sala de aula como os estudantes a vêem. Não aparecem as actividades escondidas; as datas de abertura e as condições não se aplicam a si.')}</span>
             <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({})}><i className="fa fa-pen me-1" />{tx('Voltar ao modo de docente')}</button>
           </div>
         </div>
@@ -103,7 +103,7 @@ function SalaAula(props) {
               <i className="fa fa-chalkboard me-2" />{tx('Sala de aula')}
             </button>
             {ordem.length > 0 && (
-              <div className="p-sala-progresso" title={tx('{0} de {1} atividades concluídas', { 0: feitas, 1: ordem.length })}>
+              <div className="p-sala-progresso" title={tx('{0} de {1} actividades concluídas', { 0: feitas, 1: ordem.length })}>
                 <div className="progress"><div className="progress-bar bg-success" style={{ width: `${Math.round((feitas / ordem.length) * 100)}%` }} /></div>
                 <span>{feitas}/{ordem.length}</span>
               </div>
@@ -128,7 +128,7 @@ function SalaAula(props) {
                   </button>
                   {estaAberto && (
                     <ul id={`sala-cap-${k}`} className="p-sala-itens">
-                      {g.itens.length === 0 && <li className="p-sala-item vazio">{tx('Sem atividades neste capítulo.')}</li>}
+                      {g.itens.length === 0 && <li className="p-sala-item vazio">{tx('Sem actividades neste capítulo.')}</li>}
                       {g.itens.map((a) => {
                         const t = tipoVisual(a)
                         return (
@@ -185,7 +185,7 @@ function estado(a, feita) {
 
 // lista grande das atividades (entrada de um capítulo)
 function ListaItens({ itens, feita, abrirItem }) {
-  if (!itens.length) return <Vazio>{tx('Sem atividades neste capítulo.')}</Vazio>
+  if (!itens.length) return <Vazio>{tx('Sem actividades neste capítulo.')}</Vazio>
   return (
     <div className="list-group list-group-flush p-sala-lista">
       {itens.map((a, i) => {
@@ -220,7 +220,7 @@ function Entrada({ c, grupos, feita, feitas, total, proxima, abrirItem, abrirGru
             <div className="flex-grow-1 min-w-0">
               <div className="small text-uppercase fw-bold text-muted">{tx('Sala de aula')}</div>
               <h2 className="h4 mt-1 mb-1">{tx('Bem-vindo, {0}', { 0: primeiroNome(conta.nome) })}</h2>
-              <p className="text-muted mb-0">{total ? tx('Escolha um capítulo à direita ou continue onde ficou. Concluiu {0} de {1} atividades.', { 0: feitas, 1: total }) : tx('O docente ainda não publicou atividades nesta cadeira.')}</p>
+              <p className="text-muted mb-0">{total ? tx('Escolha um capítulo à direita ou continue onde ficou. Concluiu {0} de {1} actividades.', { 0: feitas, 1: total }) : tx('O docente ainda não publicou actividades nesta cadeira.')}</p>
             </div>
             {total > 0 && (
               <div className="p-sala-anel" aria-label={tx('{0}% concluído', { 0: pct })}>

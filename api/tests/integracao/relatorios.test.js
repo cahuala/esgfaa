@@ -31,7 +31,7 @@ describe('relatórios: registos e participação', () => {
   })
   after(() => amb.fechar())
 
-  it('registos de quem abriu o quê; participação por estudante e por atividade', async () => {
+  it('registos de quem abriu o quê; participação por estudante e por actividade', async () => {
     const doc = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).field('titulo', 'Sebenta').field('tipo', 'ficheiro')
       .attach('ficheiro', PDF, { filename: 'sebenta.pdf', contentType: 'application/pdf' })).body
     const t = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).send({ titulo: 'Ensaio', prazo: '2026-11-30T23:59:00Z' })).body

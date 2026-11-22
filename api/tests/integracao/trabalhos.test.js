@@ -6,7 +6,7 @@ const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 const anexo = (nome) => [PDF, { filename: nome, contentType: 'application/pdf' }]
 
-describe('trabalhos completos: vários ficheiros, texto, grelha, correção em ficheiro e prorrogações', () => {
+describe('trabalhos completos: vários ficheiros, texto, grelha, correcção em ficheiro e prorrogações', () => {
   let amb, relogio, cadeira
   const contas = {}
   const tokens = {}
@@ -59,7 +59,7 @@ describe('trabalhos completos: vários ficheiros, texto, grelha, correção em f
     assert.equal((await portal('ana').post(`/api/portal/trabalhos/${ambos.id}/entrega`).field('texto', 'Resumo').attach('ficheiro', ...anexo('r.pdf'))).status, 201)
   })
 
-  it('correção pela grelha de avaliação e ficheiro corrigido devolvido só ao autor', async () => {
+  it('correcção pela grelha de avaliação e ficheiro corrigido devolvido só ao autor', async () => {
     const grelha = [{ criterio: 'Estrutura', pontos: 4 }, { criterio: 'Argumentação', pontos: 10 }, { criterio: 'Fontes', pontos: 6 }]
     const t = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).field('titulo', 'Ensaio').field('prazo', '2026-11-20T23:59:00Z').field('grelha', JSON.stringify(grelha))).body
     assert.equal(t.grelha.length, 3)

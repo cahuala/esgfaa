@@ -41,7 +41,7 @@ export function injecaoNoPedido({ corpo, consulta }) {
 
 // --- phishing (ligações para enganar quem lê: páginas falsas da Escola, pedidos de senha, encurtadores) ---
 const ENCURTADORES = /^(bit\.ly|tinyurl\.com|t\.co|is\.gd|cutt\.ly|rebrand\.ly|shorturl\.at|ow\.ly|rb\.gy|tiny\.cc|s\.id|t\.ly|lnkd\.in|goo\.gl)$/i
-const ISCO = /\b(senha|palavra-passe|password|credenciais|verifi(car|que) (a sua )?conta|confirm(ar|e) (os seus )?dados|conta (será )?(bloqueada|suspensa|desativada)|actualiz(ar|e) (os seus )?dados|iban|multicaixa|pagamento urgente|prémio|ganhou)\b/i
+const ISCO = /\b(senha|palavra-passe|password|credenciais|verifi(car|que) (a sua )?conta|confirm(ar|e) (os seus )?dados|conta (será )?(bloqueada|suspensa|desactivada)|actualiz(ar|e) (os seus )?dados|iban|multicaixa|pagamento urgente|prémio|ganhou)\b/i
 
 export function phishingNoTexto(texto, dominio = 'esgfaa.gov.ao') {
   const t = String(texto || '')

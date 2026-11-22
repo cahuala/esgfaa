@@ -176,7 +176,7 @@ function EditorQuestionario({ id, avisar, voltar }) {
     api(`/perguntas/${p.id}/banco`, { metodo: 'POST', corpo: { categoria } }).then(() => avisar({ texto: tx('Pergunta guardada no seu banco.') })).catch(falhou)
   }
   const total = q.perguntas.reduce((s, p) => s + p.pontos, 0)
-  const separadores = [['perguntas', 'fa-list-ol', tx('Perguntas ({0})', { 0: q.perguntas.length })], ['resultados', 'fa-poll', tx('Resultados ({0})', { 0: q.resultados.length })], ['estatisticas', 'fa-chart-bar', tx('Estatísticas')], ['excecoes', 'fa-user-clock', tx('Exceções ({0})', { 0: q.excecoes?.length || 0 })], ['definicoes', 'fa-cog', tx('Definições')]]
+  const separadores = [['perguntas', 'fa-list-ol', tx('Perguntas ({0})', { 0: q.perguntas.length })], ['resultados', 'fa-poll', tx('Resultados ({0})', { 0: q.resultados.length })], ['estatisticas', 'fa-chart-bar', tx('Estatísticas')], ['excecoes', 'fa-user-clock', tx('Excepções ({0})', { 0: q.excecoes?.length || 0 })], ['definicoes', 'fa-cog', tx('Definições')]]
 
   return (
     <>
@@ -270,20 +270,20 @@ function Excecoes({ q, avisar, falhou, recarregar }) {
     e.preventDefault()
     try {
       await api(`/questionarios/${q.id}/excecoes`, { metodo: 'PUT', corpo: { ...f, estudanteId: Number(f.estudanteId), fecha: f.fecha ? localParaIso(f.fecha) : null } })
-      avisar({ texto: tx('Exceção guardada. O estudante foi avisado.') })
+      avisar({ texto: tx('Excepção guardada. O estudante foi avisado.') })
       setF(EXCECAO_VAZIA)
       recarregar()
     } catch (falha) {
       falhou(falha)
     }
   }
-  const retirar = async (x) => (await perguntar(tx('Retirar a exceção de {0}?', { 0: x.estudante.nome }), { titulo: tx('Retirar exceção'), botao: tx('Retirar'), perigo: true }))
+  const retirar = async (x) => (await perguntar(tx('Retirar a excepção de {0}?', { 0: x.estudante.nome }), { titulo: tx('Retirar excepção'), botao: tx('Retirar'), perigo: true }))
     && api(`/questionarios/${q.id}/excecoes/${x.estudanteId}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
   return (
     <div className="row g-4">
       <div className="col-xl-7">
         <p className="text-muted small">{tx('Para quem precisa de condições diferentes das da turma: outra data de fecho, mais tempo ou mais tentativas. O que deixar em branco fica como para os outros.')}</p>
-        {!q.excecoes?.length ? <Vazio>{tx('Sem exceções: todos têm as mesmas condições.')}</Vazio> : (
+        {!q.excecoes?.length ? <Vazio>{tx('Sem excepções: todos têm as mesmas condições.')}</Vazio> : (
           <table className="table table-sm align-middle">
             <thead><tr><th>{tx('Estudante')}</th><th>{tx('Fecha')}</th><th className="text-center">{tx('Duração')}</th><th className="text-center">{tx('Tentativas')}</th><th>{tx('Motivo')}</th><th /></tr></thead>
             <tbody>
@@ -294,7 +294,7 @@ function Excecoes({ q, avisar, falhou, recarregar }) {
                   <td className="text-center small">{x.duracao === null ? '—' : x.duracao ? tx('{0} min', { 0: x.duracao }) : tx('Livre')}</td>
                   <td className="text-center small">{x.tentativas ?? '—'}</td>
                   <td className="small text-muted">{x.motivo}</td>
-                  <td className="text-end"><button type="button" className="btn btn-xs btn-white text-danger" onClick={() => retirar(x)} aria-label={tx('Retirar a exceção de {0}', { 0: x.estudante.nome })}><i className="fa fa-times" /></button></td>
+                  <td className="text-end"><button type="button" className="btn btn-xs btn-white text-danger" onClick={() => retirar(x)} aria-label={tx('Retirar a excepção de {0}', { 0: x.estudante.nome })}><i className="fa fa-times" /></button></td>
                 </tr>
               ))}
             </tbody>
@@ -315,7 +315,7 @@ function Excecoes({ q, avisar, falhou, recarregar }) {
             <div className="col-6"><Campo id="ex-tent" rotulo={tx('Tentativas')}><input id="ex-tent" type="number" min={1} max={10} value={f.tentativas} onChange={(e) => setF({ ...f, tentativas: e.target.value })} placeholder={String(q.tentativas)} /></Campo></div>
           </div>
           <Campo id="ex-motivo" rotulo={tx('Motivo (opcional)')}><input id="ex-motivo" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder={tx('Ex.: missão de serviço')} maxLength={300} /></Campo>
-          <div><button type="submit" className="btn btn-theme"><i className="fa fa-user-clock me-1" />{tx('Guardar exceção')}</button></div>
+          <div><button type="submit" className="btn btn-theme"><i className="fa fa-user-clock me-1" />{tx('Guardar excepção')}</button></div>
         </form>
       </div>
     </div>
@@ -389,7 +389,7 @@ function CorrigirTentativa({ id, avisar, fechar }) {
             )}
             <div className="modal-footer">
               <button type="button" className="btn btn-white" onClick={fechar}>{tx('Fechar')}</button>
-              <button type="button" className="btn btn-theme" onClick={guardar} disabled={!d}><i className="fa fa-save me-1" />{tx('Guardar correção')}</button>
+              <button type="button" className="btn btn-theme" onClick={guardar} disabled={!d}><i className="fa fa-save me-1" />{tx('Guardar correcção')}</button>
             </div>
           </div>
         </div>

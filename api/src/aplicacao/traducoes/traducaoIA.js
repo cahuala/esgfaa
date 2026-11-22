@@ -7,9 +7,9 @@ Traduz do português europeu para ${LINGUAS[lingua]} textos institucionais (not�
 Regras:
 - registo formal, claro e natural, com a terminologia militar e académica habitual na língua de destino;
 - mantém nomes de pessoas, lugares e instituições; mantém siglas (ESG, FAA, CEM, SADC, …) e traduz os postos militares para o equivalente usual;
-- mantém etiquetas HTML, marcas de formatação, números, datas e quebras de linha exatamente como estão;
+- mantém etiquetas HTML, marcas de formatação, números, datas e quebras de linha exactamente como estão;
 - não acrescentes nem omitas informação.
-Recebes um objeto JSON "caminho -> texto". Responde APENAS com um objeto JSON com exatamente as mesmas chaves e os textos traduzidos.`
+Recebes um objeto JSON "caminho -> texto". Responde APENAS com um objeto JSON com exactamente as mesmas chaves e os textos traduzidos.`
 
 // traduz um mapa de textos, em lotes, e devolve o mapa traduzido (só as chaves pedidas)
 export async function traduzirComClaude(cliente, textos, lingua) {

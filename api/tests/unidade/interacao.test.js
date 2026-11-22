@@ -24,7 +24,7 @@ describe('comentários', () => {
 
 describe('banners', () => {
   const hoje = '2026-10-10'
-  it('em vigor quando ativo e dentro das datas', () => {
+  it('em vigor quando activo e dentro das datas', () => {
     assert.ok(bannerEmVigor({}, hoje))
     assert.ok(bannerEmVigor({ inicio: '2026-10-10', fim: '2026-10-10' }, hoje))
     assert.ok(!bannerEmVigor({ ativo: false }, hoje))

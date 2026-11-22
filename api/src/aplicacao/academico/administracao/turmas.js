@@ -30,9 +30,9 @@ export class ServicoTurmas {
 
   async criarTurma(ctx, { curso, anoLetivo, nome, anoCurricular }) {
     ctx.actor.exigir('academico.gerir')
-    if (!ANO_LETIVO.test(anoLetivo || '')) throw new ErroValidacao('Ano letivo no formato 2026/2027.', { campo: 'anoLetivo' })
+    if (!ANO_LETIVO.test(anoLetivo || '')) throw new ErroValidacao('Ano lectivo no formato 2026/2027.', { campo: 'anoLetivo' })
     const [a, b] = anoLetivo.split('/').map(Number)
-    if (b !== a + 1) throw new ErroValidacao('O ano letivo tem dois anos seguidos (ex.: 2026/2027).', { campo: 'anoLetivo' })
+    if (b !== a + 1) throw new ErroValidacao('O ano lectivo tem dois anos seguidos (ex.: 2026/2027).', { campo: 'anoLetivo' })
     // o ano fica configurado (datas dos semestres) se ainda não estava
     await this.anosLetivos?.garantir(anoLetivo)
     const turma = await this.academico.criarTurma({

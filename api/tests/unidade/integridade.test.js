@@ -76,9 +76,9 @@ describe('anti-plágio: extração de texto', () => {
 import { frasesParaPesquisa, indicadoresIA, paragrafos } from '../../src/dominio/integridade/ia.js'
 import { enderecoPublico, htmlParaTexto } from '../../src/infraestrutura/web/paginas.js'
 
-const IA = `A liderança militar desempenha um papel crucial no sucesso das operações modernas. É importante notar que os comandantes devem equilibrar a disciplina com a motivação das tropas. Além disso, a comunicação eficaz permite alinhar os objetivos estratégicos com a execução tática. Nesse sentido, a formação contínua assume uma importância fundamental para todos os oficiais.
+const IA = `A liderança militar desempenha um papel crucial no sucesso das operações modernas. É importante notar que os comandantes devem equilibrar a disciplina com a motivação das tropas. Além disso, a comunicação eficaz permite alinhar os objectivos estratégicos com a execução táctica. Nesse sentido, a formação contínua assume uma importância fundamental para todos os oficiais.
 
-No cenário atual, as forças armadas enfrentam desafios cada vez mais complexos e multifacetados. Por outro lado, a tecnologia oferece novas oportunidades para melhorar a coordenação entre as unidades. Além disso, a cooperação internacional permite partilhar boas práticas e experiências relevantes. Desta forma, é crucial promover uma cultura de inovação em todas as estruturas.
+No cenário actual, as forças armadas enfrentam desafios cada vez mais complexos e multifacetados. Por outro lado, a tecnologia oferece novas oportunidades para melhorar a coordenação entre as unidades. Além disso, a cooperação internacional permite partilhar boas práticas e experiências relevantes. Desta forma, é crucial promover uma cultura de inovação em todas as estruturas.
 
 Em suma, a liderança eficaz depende de múltiplos fatores interligados e complementares. É fundamental que os líderes desenvolvam competências técnicas e humanas de forma equilibrada. Além disso, a avaliação regular do desempenho contribui para a melhoria contínua das organizações. Em última análise, o sucesso depende da capacidade de adaptação às mudanças do ambiente.`
 const HUMANO = `Comandei a companhia durante dois anos no Cunene. Foi duro. Logo na primeira semana perdemos um camião numa picada que nenhum mapa mostrava, e percebi que a informação que vinha de Luanda estava atrasada meses.

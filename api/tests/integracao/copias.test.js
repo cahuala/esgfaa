@@ -6,7 +6,7 @@ import { anosEntre } from '../../src/aplicacao/academico/partilhado/copias.js'
 const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 
-describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
+describe('novo ano lectivo: copiar cadeiras e importar conteúdos', () => {
   let amb, sec, antiga, turmaNova, origem
   const contas = {}
   const tokens = {}
@@ -25,7 +25,7 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     contas.ana = (await amb.registarEMatricular(sec(), turmaNova.id, { nome: 'Estudante Ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     origem = (await sec().post(`/api/admin/academico/turmas/${antiga.id}/cadeiras`).send({ codigo: 'EST101', nome: 'Estratégia', periodo: 'anual', horas: 90 })).body
     await sec().put(`/api/admin/academico/cadeiras/${origem.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente', horas: 90 }] })
-    await sec().put(`/api/admin/academico/cadeiras/${origem.id}/programa`).send({ texto: '<p>Objetivos do curso.</p>' })
+    await sec().put(`/api/admin/academico/cadeiras/${origem.id}/programa`).send({ texto: '<p>Objectivos do curso.</p>' })
     for (const k of ['prof', 'prof2', 'velho', 'ana']) {
       const email = `${k}@esgfaa.gov.ao`
       const r = await amb.http().post('/api/portal/entrar').send({ email, senha: amb.senhaInicial(email) })
@@ -50,7 +50,7 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
   })
   after(() => amb.fechar())
 
-  it('anos entre anos letivos', () => {
+  it('anos entre anos lectivos', () => {
     assert.equal(anosEntre('2025/2026', '2026/2027'), 1)
     assert.equal(anosEntre('2024/2025', '2026/2027'), 2)
     assert.equal(anosEntre('x', '2026/2027'), 0)
@@ -66,7 +66,7 @@ describe('novo ano letivo: copiar cadeiras e importar conteúdos', () => {
     assert.deepEqual([nova.periodo, nova.horas, nova.docentes[0].id], ['anual', 90, contas.prof.id])
     const v = (await portal('ana').get(`/api/portal/cadeiras/${nova.id}`)).body
     assert.deepEqual(v.secoes.map((s) => [s.titulo, s.resumo]), [['Capítulo 1', 'Teoria.']])
-    assert.equal(v.programa, '<p>Objetivos do curso.</p>')
+    assert.equal(v.programa, '<p>Objectivos do curso.</p>')
     assert.equal(v.trabalhos[0].prazo, '2026-11-20T23:59:00.000Z')
     assert.equal(v.trabalhos[0].secaoId, v.secoes[0].id)
     assert.equal(v.trabalhos[0].entrega, null) // as entregas não vêm

@@ -31,7 +31,7 @@ export class ServicoMateriais {
         const f = await this.lti.ferramentaAtiva(dados.ferramentaId)
         const url = String(dados.url || '').trim()
         if (url && (!/^https:\/\//.test(url) || !urlSegura(url) || new URL(url).origin !== new URL(f.urlLancamento).origin)) {
-          throw new ErroValidacao('O endereço da atividade tem de ser da mesma ferramenta (https://…).', { campo: 'url' })
+          throw new ErroValidacao('O endereço da actividade tem de ser da mesma ferramenta (https://…).', { campo: 'url' })
         }
         base.estrutura = { ferramentaId: f.id, nome: f.nome, ...(url ? { url } : {}) }
         base.url = ''

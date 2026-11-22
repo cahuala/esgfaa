@@ -101,7 +101,7 @@ function Pagina({ id, eDocente, titulos, irPara, avisar, mudou, apagada }) {
           <div className="alert alert-warning d-flex align-items-center gap-2">
             <span className="flex-grow-1">{tx('Está a ver a versão de')} {dataHora(p.versao.criadaEm)} ({p.versao.autor.nome}).</span>
             {eDocente && <button type="button" className="btn btn-sm btn-theme" onClick={repor}>{tx('Repor esta versão')}</button>}
-            <button type="button" className="btn btn-sm btn-white" onClick={() => setVersao(null)}>{tx('Ver a atual')}</button>
+            <button type="button" className="btn btn-sm btn-white" onClick={() => setVersao(null)}>{tx('Ver a actual')}</button>
           </div>
         )}
         <div className="p-programa" onClick={clicar} dangerouslySetInnerHTML={{ __html: comLigacoes(p.versao.conteudo, titulos) }} />
@@ -112,7 +112,7 @@ function Pagina({ id, eDocente, titulos, irPara, avisar, mudou, apagada }) {
           <div className="list-group list-group-flush">
             {p.versoes.map((v, i) => (
               <button key={v.id} type="button" className={`list-group-item list-group-item-action text-start ${v.id === p.versao.id ? 'active' : ''}`} onClick={() => setVersao(i === 0 ? null : v.id)}>
-                <b>{dataHora(v.criadaEm)}</b> · {v.autor.nome}{i === 0 && ' (atual)'}
+                <b>{dataHora(v.criadaEm)}</b> · {v.autor.nome}{i === 0 && ' (actual)'}
                 {v.resumo && <span className="d-block small opacity-75">{v.resumo}</span>}
               </button>
             ))}

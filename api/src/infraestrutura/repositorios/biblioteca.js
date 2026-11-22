@@ -184,7 +184,7 @@ export class RepositorioBiblioteca {
 
   async renovar(id, { prazo, renovacoes }) {
     const { count } = await this.prisma.emprestimo.updateMany({ where: { id, devolvidoEm: null, renovacoes: renovacoes - 1 }, data: { prazo, renovacoes } })
-    if (!count) throw new Conflito('O empréstimo mudou entretanto. Atualize a página.')
+    if (!count) throw new Conflito('O empréstimo mudou entretanto. Actualize a página.')
     return this.emprestimo(id)
   }
 
@@ -224,7 +224,7 @@ export class RepositorioBiblioteca {
   async mudarReserva(r, dados) {
     // só muda se o estado ainda for o que se leu (dois pedidos ao mesmo tempo não se pisam)
     const { count } = await this.prisma.reserva.updateMany({ where: { id: r.id, estado: r.estado }, data: dados })
-    if (!count) throw new Conflito('A reserva mudou entretanto. Atualize a página.')
+    if (!count) throw new Conflito('A reserva mudou entretanto. Actualize a página.')
     return this.reserva(r.id)
   }
 

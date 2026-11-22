@@ -75,7 +75,7 @@ export default function Perfil() {
     try {
       fd.append('foto', await reduzirFoto(f))
       await api(`/pessoas/${id}/foto`, { metodo: 'PUT', formulario: fd })
-      avisar('Fotografia atualizada.')
+      avisar('Fotografia actualizada.')
       carregar()
     } catch (x) {
       avisar(x.message, 'erro')
@@ -216,7 +216,7 @@ export default function Perfil() {
           </div>
           <div className="col-xl-4">
             {editar && pode('propor') && (
-              <Bloco titulo="Ações" icone="fa-bolt">
+              <Bloco titulo="Acções" icone="fa-bolt">
                 <div className="d-grid gap-2">
                   {(militar ? ['promocao', 'graduacao', 'nomeacao', 'curso', 'exoneracao'] : ['progressao', 'nomeacao', 'curso', 'exoneracao']).filter((t) => t !== 'exoneracao' || p.cargoId).map((t) => (
                     <button key={t} type="button" className="btn btn-outline-theme text-start" onClick={() => navegar(`/propostas/nova?tipo=${t}&pessoa=${p.id}`)}><i className="fa fa-file-signature me-2" />{t === 'curso' ? 'Propor para curso' : `Propor ${ref.tiposProposta[t].nome.toLowerCase()}`}</button>
@@ -553,7 +553,7 @@ function FormCurso({ p, curso, aoFechar, aoGuardar }) {
   const [d, setD] = useState({ chave: curso.chave ?? '', nome: curso.nome ?? '', tipo: curso.tipo ?? 'formacao', local: curso.local ?? '', inicio: curso.inicio?.slice(0, 10) ?? '', fim: curso.fim?.slice(0, 10) ?? '', aproveitamento: curso.aproveitamento ?? true, classificacao: curso.classificacao ?? '' })
   const [erro, setErro] = useState('')
   const corpo = { ...d, chave: d.chave || null, classificacao: d.classificacao === '' ? null : Number(d.classificacao) }
-  const guardar = () => api(`/pessoas/${p.id}/cursos${curso.id ? `/${curso.id}` : ''}`, { metodo: curso.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar(curso.id ? 'Curso atualizado.' : 'Curso adicionado.')).catch((e) => setErro(e.message))
+  const guardar = () => api(`/pessoas/${p.id}/cursos${curso.id ? `/${curso.id}` : ''}`, { metodo: curso.id ? 'PUT' : 'POST', corpo }).then(() => aoGuardar(curso.id ? 'Curso actualizado.' : 'Curso adicionado.')).catch((e) => setErro(e.message))
   const apagar = () => api(`/pessoas/${p.id}/cursos/${curso.id}`, { metodo: 'DELETE' }).then(() => aoGuardar('Curso apagado.')).catch((e) => avisar(e.message, 'erro'))
   return (
     <Modal titulo={curso.id ? 'Editar curso' : 'Adicionar curso'} aoFechar={aoFechar} rodape={<>{curso.id && <button type="button" className="btn btn-outline-danger me-auto" onClick={apagar}>Apagar</button>}<button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-theme" onClick={guardar}>Guardar</button></>}>

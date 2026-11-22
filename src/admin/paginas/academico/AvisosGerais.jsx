@@ -43,7 +43,7 @@ function AvisosGerais() {
             <Painel key={a.id} titulo={a.titulo} acoes={pode('academico.gerir') && (
               <button type="button" className="btn btn-xs btn-icon btn-danger" title={tx('Apagar')} onClick={async () => { if (await confirmar(tx('Apagar este aviso?'), { titulo: tx('Apagar aviso'), botao: tx('Apagar'), perigo: true })) api(`/academico/avisos/${a.id}`, { metodo: 'DELETE' }).then(carregar) }}><i className="fa fa-times" /></button>
             )}>
-              {a.estado === 'pendente' && <div className="alert alert-warning py-2 small"><i className="fa fa-hourglass-half me-1" />{tx('À espera da aprovação do Comandante: os estudantes ainda não o veem.')}</div>}
+              {a.estado === 'pendente' && <div className="alert alert-warning py-2 small"><i className="fa fa-hourglass-half me-1" />{tx('À espera da aprovação do Comandante: os estudantes ainda não o vêem.')}</div>}
               {a.estado === 'recusado' && <div className="alert alert-danger py-2 small"><i className="fa fa-times-circle me-1" />{tx('Recusado pelo Comandante: {0}', { 0: a.aprovacao?.motivo || '—' })}</div>}
               <p style={{ whiteSpace: 'pre-wrap' }}>{a.texto}</p>
               <div className="small text-muted">{a.turma ? tx('Turma {0}', { 0: a.turma }) : tx('Todos os estudantes')} · {dataHora(a.criadoEm)}</div>

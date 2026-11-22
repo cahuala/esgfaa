@@ -4,7 +4,7 @@ import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 
 const DATAS = { inicio: '2026-10-01', semestre1Inicio: '2026-10-05', semestre1Fim: '2027-02-12', semestre2Inicio: '2027-03-01', semestre2Fim: '2027-07-16', fim: '2027-07-31' }
 
-describe('anos letivos: datas do ano e dos semestres', () => {
+describe('anos lectivos: datas do ano e dos semestres', () => {
   let amb, adm
   before(async () => {
     amb = await criarAmbiente({ relogio: relogioFalso('2026-11-20T10:00:00Z') })
@@ -12,7 +12,7 @@ describe('anos letivos: datas do ano e dos semestres', () => {
   })
   after(() => amb.fechar())
 
-  it('cria, valida as datas, diz o semestre em curso e qual é o ano atual', async () => {
+  it('cria, valida as datas, diz o semestre em curso e qual é o ano actual', async () => {
     const r = await adm.post('/api/admin/academico/anos-letivos').send({ id: '2026/2027', ...DATAS })
     assert.equal(r.status, 201, r.body.erro)
     assert.equal(r.body.atual, true) // o primeiro fica o atual
@@ -39,7 +39,7 @@ describe('anos letivos: datas do ano e dos semestres', () => {
     assert.equal((await adm.delete('/api/admin/academico/anos-letivos/2026-2027')).status, 204)
   })
 
-  it('a Repartição de Pessoal e Quadros não mexe nos anos letivos', async () => {
+  it('a Repartição de Pessoal e Quadros não mexe nos anos lectivos', async () => {
     const pq = amb.com((await amb.criarUtilizador('pessoal_quadros')).token)
     assert.equal((await pq.post('/api/admin/academico/anos-letivos').send({ id: '2030/2031', ...DATAS })).status, 403)
   })

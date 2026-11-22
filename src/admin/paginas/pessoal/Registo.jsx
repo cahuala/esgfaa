@@ -53,7 +53,7 @@ function Registo() {
     try {
       if (editar) {
         await api(`/academico/contas/${editar}`, { metodo: 'PUT', corpo: { nome: f.nome, email: f.email, dados: dadosDe(f) } })
-        setAviso({ texto: tx('Dados atualizados.') })
+        setAviso({ texto: tx('Dados actualizados.') })
       } else {
         const c = await api('/academico/contas', { metodo: 'POST', corpo: { tipo: f.tipo, nome: f.nome, email: f.email, dados: dadosDe(f) } })
         setFicha(c)
@@ -72,7 +72,7 @@ function Registo() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const ativar = (c) => api(`/academico/contas/${c.id}`, { metodo: 'PUT', corpo: { ativo: !c.ativo } })
-    .then(() => { setAviso({ texto: c.ativo ? tx('Conta desativada (sessões terminadas).') : tx('Conta ativada.') }); carregar() })
+    .then(() => { setAviso({ texto: c.ativo ? tx('Conta desactivada (sessões terminadas).') : tx('Conta activada.') }); carregar() })
     .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   async function repor(c) {
     if (!(await confirmar(tx('{0} recebe uma palavra-passe inicial nova (na ficha de acesso) e terá de a mudar ao entrar. A antiga deixa de servir e as sessões abertas terminam.', { 0: c.nome }), { titulo: tx('Repor a palavra-passe'), botao: tx('Repor') }))) return
@@ -119,13 +119,13 @@ function Registo() {
                         <td className="font-monospace">{c.numero}</td>
                         <td className="small">{[c.dados?.posto, c.dados?.ramo, c.dados?.nip && tx('NIP {0}', { 0: c.dados.nip })].filter(Boolean).join(' · ') || '—'}</td>
                         <td className="text-nowrap small">{c.ultimoAcesso ? dataHora(c.ultimoAcesso) : tx('Nunca entrou')}</td>
-                        <td>{!c.ativo ? <span className="badge bg-secondary">{tx('Desativada')}</span> : c.deveMudarSenha ? <span className="badge bg-warning text-dark">{tx('Palavra-passe inicial')}</span> : <span className="badge bg-success">{tx('Ativa')}</span>}</td>
+                        <td>{!c.ativo ? <span className="badge bg-secondary">{tx('Desactivada')}</span> : c.deveMudarSenha ? <span className="badge bg-warning text-dark">{tx('Palavra-passe inicial')}</span> : <span className="badge bg-success">{tx('Activa')}</span>}</td>
                         <td className="text-end text-nowrap">
                           {registar && (
                             <>
                               {mudar && <button type="button" className="btn btn-sm btn-white me-1" onClick={() => abrirEdicao(c)} title={tx('Editar dados')} aria-label={tx('Editar {0}', { 0: c.nome })}><i className="fa fa-pen" /></button>}
                               <button type="button" className="btn btn-sm btn-white me-1" onClick={() => repor(c)} title={tx('Repor a palavra-passe')} aria-label={tx('Repor a palavra-passe de {0}', { 0: c.nome })}><i className="fa fa-key" /></button>
-                              {mudar && <button type="button" className={`btn btn-sm ${c.ativo ? 'btn-white text-danger' : 'btn-success'}`} onClick={() => ativar(c)}>{c.ativo ? tx('Desativar') : tx('Ativar')}</button>}
+                              {mudar && <button type="button" className={`btn btn-sm ${c.ativo ? 'btn-white text-danger' : 'btn-success'}`} onClick={() => ativar(c)}>{c.ativo ? tx('Desactivar') : tx('Activar')}</button>}
                             </>
                           )}
                         </td>

@@ -51,8 +51,8 @@ export class ServicoSessao {
     }
 
     if (!u.ativo) {
-      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: 'conta desativada', utilizador: u })
-      throw new SemPermissao(u.aprovacao ? 'A conta ainda espera a aprovação do Comandante.' : 'Esta conta está desativada. Contacte um administrador.')
+      await this.auditoria.registar(ctx, { acao: 'falha_entrada', detalhes: 'conta desactivada', utilizador: u })
+      throw new SemPermissao(u.aprovacao ? 'A conta ainda espera a aprovação do Comandante.' : 'Esta conta está desactivada. Contacte um administrador.')
     }
     // verificação em dois passos: a palavra-passe está certa, falta (ou está errado) o código do telemóvel
     if (this.doisFatores && (await this.doisFatores.ativo(u.id))) {
@@ -84,7 +84,7 @@ export class ServicoSessao {
     const sessao = this.tokens.verificar(token)
     if (!sessao || (await this.sessoes.revogada(sessao.jti))) throw new NaoAutenticado('Sessão expirada. Entre novamente.')
     const u = await this.utilizadores.porId(sessao.utilizadorId)
-    if (!u || !u.ativo) throw new NaoAutenticado('Conta inexistente ou desativada.')
+    if (!u || !u.ativo) throw new NaoAutenticado('Conta inexistente ou desactivada.')
     if (u.versaoToken !== sessao.versao) throw new NaoAutenticado('A sessão foi terminada. Entre novamente.')
     // as permissões leem-se sempre da base: mudar um papel (ou as da conta) tem efeito imediato;
     // as escolhidas pelo Comandante para esta conta mandam sobre as do papel
@@ -141,9 +141,9 @@ export class ServicoSessao {
     if (u.biHash && this.chaveIntegracao && impressaoBi(this.chaveIntegracao, nova) === u.biHash) throw new ErroValidacao('A palavra-passe não pode ser o BI: escolha uma nova.')
     if (u.biHash && this.chaveIntegracao && impressaoNip(this.chaveIntegracao, nova) === u.biHash) throw new ErroValidacao('A palavra-passe não pode ser o NIP: escolha uma nova.')
     if (u.geridaPeloPessoal) throw new ErroValidacao('A conta do Comandante é a do Sistema de Gestão de Pessoal: o nome, o e-mail e a palavra-passe mudam-se lá (são os mesmos nos dois sistemas).')
-    if (!(await this.cifra.verificar(atual, u.senha))) throw new ErroValidacao('A palavra-passe atual está errada.')
+    if (!(await this.cifra.verificar(atual, u.senha))) throw new ErroValidacao('A palavra-passe actual está errada.')
     validarSenha(nova, { email: u.email, nome: u.nome })
-    if (nova === atual) throw new ErroValidacao('A nova palavra-passe tem de ser diferente da atual.')
+    if (nova === atual) throw new ErroValidacao('A nova palavra-passe tem de ser diferente da actual.')
     u.mudarSenha(await this.cifra.cifrar(nova))
     const guardado = await this.utilizadores.guardar(u)
     await this.sessoes.revogar(ctx.sessao.jti, ctx.sessao.expira)

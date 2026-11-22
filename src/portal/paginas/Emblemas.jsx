@@ -35,9 +35,9 @@ function Emblemas() {
   return (
     <>
       <Titulo rotulo={tx('Emblemas')} titulo={tx('Os meus emblemas')} sub={tx('{0} ganho(s)', { 0: d.ganhos.length })} />
-      <p className="text-muted">{tx('Os emblemas ganham-se sozinhos, ao avançar nas cadeiras: a primeira atividade, cada capítulo concluído, a cadeira inteira e os trabalhos todos entregues a tempo.')}</p>
+      <p className="text-muted">{tx('Os emblemas ganham-se sozinhos, ao avançar nas cadeiras: a primeira actividade, cada capítulo concluído, a cadeira inteira e os trabalhos todos entregues a tempo.')}</p>
       <h2 className="h5 fw-bold mt-3 mb-2"><i className="fa fa-trophy text-warning me-2" />{tx('Ganhos')}</h2>
-      {d.ganhos.length === 0 ? <Vazio>{tx('Ainda não tem emblemas. Abra uma cadeira e faça a primeira atividade.')}</Vazio> : (
+      {d.ganhos.length === 0 ? <Vazio>{tx('Ainda não tem emblemas. Abra uma cadeira e faça a primeira actividade.')}</Vazio> : (
         <div className="p-emblemas">{d.ganhos.map((e) => <Emblema key={e.id} e={e} />)}</div>
       )}
       {porGanhar.length > 0 && (

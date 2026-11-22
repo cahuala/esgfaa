@@ -44,7 +44,7 @@ export default function PermissoesConta({ u, eu, aoFechar, aoGuardar }) {
   return (
     <Painel titulo={tx('O que {0} pode fazer', { 0: u.nome })} acoes={<button type="button" className="btn btn-xs btn-white" onClick={aoFechar}><i className="fa fa-times" /></button>}>
       {erro && <div className="alert alert-danger py-2">{erro}</div>}
-      <p className="small text-muted">{tx('Papel')}: <b>{u.papel}</b> · {u.permissoes ? tx('com permissões próprias') : tx('com as permissões do papel')}. {tx('Marque o que a conta pode fazer em cada área; o que difere do papel fica a amarelo. A sua escolha vale logo e fica no registo de atividades.')}</p>
+      <p className="small text-muted">{tx('Papel')}: <b>{u.papel}</b> · {u.permissoes ? tx('com permissões próprias') : tx('com as permissões do papel')}. {tx('Marque o que a conta pode fazer em cada área; o que difere do papel fica a amarelo. A sua escolha vale logo e fica no registo de actividades.')}</p>
       {u.id === eu.id && <div className="alert alert-info py-2 small">{tx('É a sua conta: não pode tirar a si próprio a aprovação das contas.')}</div>}
       <div className="table-responsive">
         <table className="table table-bordered align-middle text-center mb-0 tabela-permissoes">

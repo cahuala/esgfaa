@@ -60,7 +60,7 @@ function Alocacao() {
 
   const widgets = [
     ['bg-dark', 'fa-chalkboard-teacher', tx('DOCENTES'), d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
-    ['bg-red', 'fa-book', tx('CADEIRAS (TURMAS ATIVAS)'), doFiltro.length, tx('{0} sem docentes', { 0: semDocentes.length })],
+    ['bg-red', 'fa-book', tx('CADEIRAS (TURMAS ACTIVAS)'), doFiltro.length, tx('{0} sem docentes', { 0: semDocentes.length })],
     ['bg-orange', 'fa-user-clock', tx('SEM REGENTE'), semRegente.length, tx('precisam de alocação')],
     ['bg-teal', 'fa-clock', tx('HORAS ALOCADAS'), horasTotal, tx('em todas as cadeiras')],
   ]
@@ -69,8 +69,8 @@ function Alocacao() {
     <>
       <CabecalhoPagina titulo={tx('Alocação de docentes')} subtitulo={tx('regentes, assistentes e carga horária')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Alocação de docentes') }]} />
       <div className="d-flex flex-wrap gap-2 mb-3">
-        <select className="form-select w-auto" value={ano} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano letivo')}>
-          <option value="">{tx('Todos os anos letivos')}</option>
+        <select className="form-select w-auto" value={ano} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano lectivo')}>
+          <option value="">{tx('Todos os anos lectivos')}</option>
           {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
         </select>
         <select className="form-select w-auto" value={semestre} onChange={(e) => setSemestre(e.target.value)} aria-label={tx('Semestre')}>
@@ -133,7 +133,7 @@ function Alocacao() {
               {d.docentes.map((x) => (
                 <div key={x.docente.id} className="list-group-item">
                   <div className="d-flex justify-content-between align-items-baseline">
-                    <span className="fw-bold">{x.docente.nome} {!x.docente.ativo && <span className="badge bg-secondary">{tx('Inativo')}</span>}</span>
+                    <span className="fw-bold">{x.docente.nome} {!x.docente.ativo && <span className="badge bg-secondary">{tx('Inactivo')}</span>}</span>
                     <span className="fw-bold">{x.horas} {tx('h')}</span>
                   </div>
                   <div className="progress my-1" style={{ height: 6 }}><div className="progress-bar bg-red" style={{ width: `${(x.horas / maxHoras) * 100}%` }} /></div>

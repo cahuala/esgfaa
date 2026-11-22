@@ -65,7 +65,7 @@ export default [
   ["palavras", "words", "mots", "palabras"],
   ["caracteres", "characters", "caractères", "caracteres"],
   ["min de leitura", "min read", "min de lecture", "min de lectura"],
-  ["Arraste as imagens para as mudar de sítio · largue fotografias diretamente no texto", "Drag images to move them · drop photos straight into the text", "Glissez les images pour les déplacer · déposez les photos directement dans le texte", "Arrastre las imágenes para moverlas · suelte fotos directamente en el texto"],
+  ["Arraste as imagens para as mudar de sítio · largue fotografias directamente no texto", "Drag images to move them · drop photos straight into the text", "Glissez les images pour les déplacer · déposez les photos directement dans le texte", "Arrastre las imágenes para moverlas · suelte fotos directamente en el texto"],
   ["imagens", "images", "images", "imágenes"],
   ["vídeos", "videos", "vidéos", "vídeos"],
   ["Título da notícia", "News headline", "Titre de l'actualité", "Título de la noticia"],

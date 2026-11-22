@@ -52,7 +52,7 @@ function Acontecimentos() {
                     </div>
                   ))}
                 </div>
-                {g.total > g.linhas.length && <div className="panel-body py-2 small"><Link to="/atividades">{tx('Ver tudo no Registo de atividades ({0})', { 0: g.total })}</Link></div>}
+                {g.total > g.linhas.length && <div className="panel-body py-2 small"><Link to="/atividades">{tx('Ver tudo no Registo de actividades ({0})', { 0: g.total })}</Link></div>}
               </Painel>
             </div>
           ))}

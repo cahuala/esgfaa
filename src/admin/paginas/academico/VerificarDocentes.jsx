@@ -62,7 +62,7 @@ function VerificarDocentes() {
                 {visiveis.map((d) => (
                   <tr key={d.id} className={d.ativo ? '' : 'text-muted'}>
                     {verifica && <td>{!d.verificadoEm && <input type="checkbox" className="form-check-input" checked={escolhidos.includes(d.id)} onChange={() => marcar(d.id)} aria-label={tx('Escolher {0}', { 0: d.nome })} />}</td>}
-                    <td><b>{d.nome}</b>{!d.ativo && <span className="badge bg-secondary ms-1">{tx('Inativo')}</span>}<div className="small text-muted">{[d.numero, d.dados?.posto, d.email].filter(Boolean).join(' · ')}</div></td>
+                    <td><b>{d.nome}</b>{!d.ativo && <span className="badge bg-secondary ms-1">{tx('Inactivo')}</span>}<div className="small text-muted">{[d.numero, d.dados?.posto, d.email].filter(Boolean).join(' · ')}</div></td>
                     <td className="small">{cadeiras(d).join('; ') || <span className="text-muted">{tx('Sem cadeiras atribuídas')}</span>}</td>
                     <td className="small text-nowrap">{dataHora(d.criadoEm)}</td>
                     <td>{d.verificadoEm ? <><span className="badge bg-success">{tx('Verificado')}</span><div className="small text-muted">{d.verificadoPor} · {dataHora(d.verificadoEm)}</div></> : <span className="badge bg-warning text-dark">{tx('Por verificar')}</span>}</td>

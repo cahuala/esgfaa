@@ -25,7 +25,7 @@ describe('«Descarregar os meus dados» em Excel', () => {
     })
     expect(resumo).toEqual([['Notas', 1], ['Inscrições', 0], ['Presenças', 3], ['Mensagens enviadas', 1], ['Mensagens recebidas', 0]])
     expect(folhas.map((f) => f.nome)).toEqual(['Conta', 'Notas', 'Mensagens enviadas'])
-    expect(folhas[0].linhas).toEqual([['Nome', 'Pedro Neto'], ['Ativo', 'Sim'], ['Dados (ramo)', 'Marinha']])
+    expect(folhas[0].linhas).toEqual([['Nome', 'Pedro Neto'], ['Activo', 'Sim'], ['Dados (ramo)', 'Marinha']])
     expect(folhas[1].colunas).toEqual(['P1', 'Cadeira (código)', 'Cadeira (nome)', 'Grelha'])
     expect(folhas[1].linhas[0]).toEqual(['16', 'EST101', 'Estratégia', '4; 8.5'])
     expect(folhas[2].colunas).toEqual(['Texto'])

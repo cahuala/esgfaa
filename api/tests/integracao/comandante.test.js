@@ -43,7 +43,7 @@ describe('o Comandante: avisos por e-mail e acontecimentos importantes', () => {
     correio.real = true
   })
 
-  it('acontecimentos importantes da semana, por grupo; só para quem vê o registo de atividades', async () => {
+  it('acontecimentos importantes da semana, por grupo; só para quem vê o registo de actividades', async () => {
     const r = await amb.com(cmd.token).get('/api/admin/acontecimentos?dias=7')
     assert.equal(r.status, 200)
     const g = Object.fromEntries(r.body.grupos.map((x) => [x.id, x]))

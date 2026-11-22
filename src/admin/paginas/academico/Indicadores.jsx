@@ -36,7 +36,7 @@ function Indicadores() {
 
   const g = d.geral
   const widgets = [
-    ['bg-dark', 'fa-user-graduate', tx('ESTUDANTES ATIVOS'), g.estudantes, tx('{0} turma(s) · {1} cadeiras', { 0: g.turmas, 1: g.cadeiras })],
+    ['bg-dark', 'fa-user-graduate', tx('ESTUDANTES ACTIVOS'), g.estudantes, tx('{0} turma(s) · {1} cadeiras', { 0: g.turmas, 1: g.cadeiras })],
     ['bg-red', 'fa-exclamation-triangle', tx('EM RISCO'), g.emRisco, tx('faltas, negativas ou sem acesso')],
     ['bg-orange', 'fa-hourglass-half', tx('PAUTAS EM ATRASO'), g.pautasEmAtraso, tx('notas por lançar há 15+ dias')],
     ['bg-teal', 'fa-check-circle', tx('APROVAÇÃO MÉDIA'), pct(g.taxaAprovacao), tx('assiduidade média {0}', { 0: pct(g.assiduidade) })],
@@ -45,9 +45,9 @@ function Indicadores() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Indicadores académicos')} subtitulo={tx('ano letivo {0}', { 0: d.anoLetivo || '—' })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Indicadores') }]}>
+      <CabecalhoPagina titulo={tx('Indicadores académicos')} subtitulo={tx('ano lectivo {0}', { 0: d.anoLetivo || '—' })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Indicadores') }]}>
         {d.anos.length > 1 && (
-          <select className="form-select w-auto" value={ano || d.anoLetivo} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano letivo')}>
+          <select className="form-select w-auto" value={ano || d.anoLetivo} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano lectivo')}>
             {d.anos.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
         )}

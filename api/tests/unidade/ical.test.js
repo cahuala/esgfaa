@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { deLuanda, gerarIcal } from '../../src/dominio/academico/organizacao/ical.js'
 
 describe('calendário iCal', () => {
-  it('horas de Luanda passam a UTC; dias inteiros; momentos exatos; texto escapado e dobrado', () => {
+  it('horas de Luanda passam a UTC; dias inteiros; momentos exactos; texto escapado e dobrado', () => {
     assert.equal(deLuanda('2026-11-20', '09:00').toISOString(), '2026-11-20T08:00:00.000Z')
     const ics = gerarIcal([
       { id: 'e1', tipo: 'p1', data: '2026-11-20', inicio: '09:00', fim: '12:00', titulo: '1.ª Prova', cadeira: 'Estratégia', local: 'Anfiteatro A, piso 1' },

@@ -51,7 +51,7 @@ function AlteracoesNotas() {
         corpo={false}
         acoes={lista?.length > 0 && <Exportar titulo={tx('Alterações de notas')} filtro={estado ? ESTADOS[estado][1] : ''} linhas={lista} colunas={[
           { titulo: tx('Pedido em'), valor: (p) => dataHora(p.pedidoEm) }, { titulo: tx('Cadeira'), valor: (p) => `${p.cadeira.codigo} ${p.cadeira.nome}` }, { titulo: tx('Turma'), valor: (p) => p.cadeira.turma?.nome },
-          { titulo: tx('Prova'), valor: nomeProva }, { titulo: tx('Estudante'), valor: (p) => p.estudante?.nome }, { titulo: tx('Nota atual'), valor: (p) => p.notaAtual }, { titulo: tx('Nota nova'), valor: (p) => p.notaNova },
+          { titulo: tx('Prova'), valor: nomeProva }, { titulo: tx('Estudante'), valor: (p) => p.estudante?.nome }, { titulo: tx('Nota actual'), valor: (p) => p.notaAtual }, { titulo: tx('Nota nova'), valor: (p) => p.notaNova },
           { titulo: tx('Motivo'), valor: (p) => p.motivo }, { titulo: tx('Docente'), valor: (p) => p.docente }, { titulo: tx('Estado'), valor: (p) => ESTADOS[p.estado][1] }, { titulo: tx('Decidido por'), valor: (p) => p.decididoPor }, { titulo: tx('Fundamento'), valor: (p) => p.fundamento },
         ]} />}
       >

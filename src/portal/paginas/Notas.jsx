@@ -34,7 +34,7 @@ function Notas() {
       {!lista && !erro ? <Carregando /> : lista && (lista.length === 0 ? <Vazio>{tx('Sem disciplinas.')}</Vazio> : (
         <>
           <div className="row p-sem-impressao">
-            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo={tx('DISCIPLINAS')} valor={lista.length} nota={tx('este ano letivo')} /></div>
+            <div className="col-xl-3 col-md-6"><Widget cor="bg-dark" icone="fa-book" titulo={tx('DISCIPLINAS')} valor={lista.length} nota={tx('este ano lectivo')} /></div>
             <div className="col-xl-3 col-md-6"><Widget cor="bg-teal" icone="fa-check-circle" titulo={tx('CONCLUÍDAS')} valor={concluidas.length} nota={tx('aprovadas ou dispensadas')} /></div>
             <div className="col-xl-3 col-md-6"><Widget cor="bg-red" icone="fa-star" titulo={tx('MÉDIA DAS CONCLUÍDAS')} valor={nota(media)} nota={tx('escala de 0 a 20')} /></div>
             <div className="col-xl-3 col-md-6"><Widget cor="bg-orange" icone="fa-hourglass-half" titulo={tx('POR CONCLUIR')} valor={lista.length - concluidas.length} nota={tx('Ver percurso académico')} para="/percurso" /></div>

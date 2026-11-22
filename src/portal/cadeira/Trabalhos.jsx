@@ -51,7 +51,7 @@ function Trabalhos({ c, eDocente, recarregar, avisar, so }) {
               <span><i className="fa fa-inbox me-1" />{TIPOS_ENTREGA[t.tipoEntrega]}{t.tipoEntrega !== 'texto' && tx(' · até {0} ficheiro(s)', { 0: t.maxFicheiros })}</span>
               {t.aceitaAtraso && <span className="text-warning"><i className="fa fa-exclamation-triangle me-1" />{tx('Aceita entregas fora de prazo')}</span>}
               {t.emGrupo && <span className="badge bg-indigo"><i className="fa fa-users me-1" />{tx('Trabalho em grupo')}</span>}
-              {t.anonimo ? <span className="badge bg-dark"><i className="fa fa-user-secret me-1" />{tx('Correção anónima')}</span>
+              {t.anonimo ? <span className="badge bg-dark"><i className="fa fa-user-secret me-1" />{tx('Correcção anónima')}</span>
                 : t.notasOcultas && <span className="badge bg-secondary"><i className="fa fa-eye-slash me-1" />{tx('Notas publicadas todas de uma vez')}</span>}
             </div>
             {t.enunciado && <p className="p-texto-pre">{t.enunciado}</p>}
@@ -131,10 +131,10 @@ function MinhaEntrega({ t, grupo, recarregar, avisar, baixar }) {
           {e.texto && <div className="p-texto-entregue mb-2">{e.texto}</div>}
           {e.nota !== null || e.correcao || e.correcaoFicheiroId ? (
             <div className="p-correcao">
-              <div className="d-flex align-items-center gap-2 mb-1"><i className="fa fa-check-double text-success" /><b>{tx('Correção')}</b>{e.nota !== null && <span className="badge bg-success fs-12px">{nota(e.nota)} {tx('valores')}</span>}</div>
+              <div className="d-flex align-items-center gap-2 mb-1"><i className="fa fa-check-double text-success" /><b>{tx('Correcção')}</b>{e.nota !== null && <span className="badge bg-success fs-12px">{nota(e.nota)} {tx('valores')}</span>}</div>
               {t.grelha?.length > 0 && Object.keys(e.grelha || {}).length > 0 && <div className="my-2"><TabelaGrelha grelha={t.grelha} pontos={e.grelha} /></div>}
               {e.correcao && <p className="p-texto-pre mb-1">{e.correcao}</p>}
-              {e.correcaoFicheiroId && <CorrecaoDoDocente id={e.correcaoFicheiroId} nome={tx('Correção - {0}', { 0: t.titulo })} baixar={baixar} />}
+              {e.correcaoFicheiroId && <CorrecaoDoDocente id={e.correcaoFicheiroId} nome={tx('Correcção - {0}', { 0: t.titulo })} baixar={baixar} />}
             </div>
           ) : t.aguardaNotas && e.corrigida ? (
             <div className="alert alert-info py-2 small mb-0"><i className="fa fa-hourglass-half me-1" />{tx('A sua entrega já foi corrigida. A nota aparece quando o docente publicar as notas de todos.')}</div>
@@ -232,12 +232,12 @@ function Entregas({ trabalho, avisar, baixar, recarregar }) {
   async function publicar() {
     const falta = entregues - corrigidas
     const texto = falta > 0
-      ? tx('Ainda há {0} entrega(s) por corrigir. Publicar já as notas? Os estudantes passam a ver a nota, o comentário e a correção{1}.', { 0: falta, 1: d.anonimo ? tx(', e a correção deixa de ser anónima') : '' })
-      : tx('Os estudantes passam a ver a nota, o comentário e a correção{0}. Cada um recebe um aviso.', { 0: d.anonimo ? tx(', e a correção deixa de ser anónima') : '' })
+      ? tx('Ainda há {0} entrega(s) por corrigir. Publicar já as notas? Os estudantes passam a ver a nota, o comentário e a correcção{1}.', { 0: falta, 1: d.anonimo ? tx(', e a correcção deixa de ser anónima') : '' })
+      : tx('Os estudantes passam a ver a nota, o comentário e a correcção{0}. Cada um recebe um aviso.', { 0: d.anonimo ? tx(', e a correcção deixa de ser anónima') : '' })
     if (!(await confirmar(texto, { titulo: tx('Publicar as notas'), botao: tx('Publicar') }))) return
     try {
       await api(`/trabalhos/${trabalho.id}/libertar-notas`, { metodo: 'POST' })
-      avisar({ texto: tx('Notas publicadas: os estudantes já as veem.') })
+      avisar({ texto: tx('Notas publicadas: os estudantes já as vêem.') })
       carregar()
       recarregar?.()
     } catch (e) {
@@ -255,8 +255,8 @@ function Entregas({ trabalho, avisar, baixar, recarregar }) {
         <div className="p-por-publicar">
           <i className={`fa ${d.anonimo ? 'fa-user-secret' : 'fa-eye-slash'} fa-lg`} />
           <div className="flex-grow-1 small">
-            <b className="d-block">{d.anonimo ? tx('Correção anónima') : tx('Notas por publicar')}</b>
-            {d.anonimo ? tx('Os nomes aparecem como «Participante 1, 2…». ') : ''}{tx('Os estudantes ainda não veem as notas: corrija todas as entregas e publique-as de uma vez.')}
+            <b className="d-block">{d.anonimo ? tx('Correcção anónima') : tx('Notas por publicar')}</b>
+            {d.anonimo ? tx('Os nomes aparecem como «Participante 1, 2…». ') : ''}{tx('Os estudantes ainda não vêem as notas: corrija todas as entregas e publique-as de uma vez.')}
           </div>
           <button type="button" className="btn btn-sm btn-theme" onClick={publicar} disabled={!corrigidas}><i className="fa fa-bullhorn me-1" />{tx('Publicar as notas ({0})', { 0: corrigidas })}</button>
         </div>
@@ -282,7 +282,7 @@ function CorrecaoDoDocente({ id, nome, baixar }) {
   return (
     <div className="mt-2">
       <div className="d-flex gap-2 flex-wrap">
-        <button type="button" className={`btn btn-sm ${ver ? 'btn-dark' : 'btn-theme'}`} onClick={() => setVer(!ver)} aria-expanded={ver}><i className={`fa ${ver ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{ver ? tx('Esconder a correção') : tx('Ver o trabalho corrigido')}</button>
+        <button type="button" className={`btn btn-sm ${ver ? 'btn-dark' : 'btn-theme'}`} onClick={() => setVer(!ver)} aria-expanded={ver}><i className={`fa ${ver ? 'fa-eye-slash' : 'fa-eye'} me-1`} />{ver ? tx('Esconder a correcção') : tx('Ver o trabalho corrigido')}</button>
         <button type="button" className="btn btn-sm btn-white" onClick={() => baixar(id, nome)}><i className="fa fa-download me-1" />{tx('Descarregar')}</button>
       </div>
       {ver && <div className="mt-2"><VerFicheiro ficheiro={{ id, nome }} titulo={nome} falhou={() => {}} /></div>}
@@ -313,7 +313,7 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
       if (ficheiroCorrecao[0]) fd.append('ficheiro', ficheiroCorrecao[0].ficheiro)
       fd.append('anotacoes', JSON.stringify(anotacoes))
       await enviarComProgresso(`/entregas/${entrega.id}`, fd, { metodo: 'PUT' })
-      avisar({ texto: tx('Correção de {0} guardada. O estudante foi avisado.', { 0: estudante.nome }) })
+      avisar({ texto: tx('Correcção de {0} guardada. O estudante foi avisado.', { 0: estudante.nome }) })
       setFicheiroCorrecao([])
       recarregar()
     } catch (e) {
@@ -332,9 +332,9 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
     setAnotacoes(todas)
     if (partes.length) {
       const pdf = await gerarPdfCorrigido(partes)
-      const nome = pdfs.length === 1 ? `Correção - ${pdfs[0].nome.replace(/\.pdf$/i, '')}.pdf` : `Correção - ${estudante.nome}.pdf`
+      const nome = pdfs.length === 1 ? `Correcção - ${pdfs[0].nome.replace(/\.pdf$/i, '')}.pdf` : `Correcção - ${estudante.nome}.pdf`
       setFicheiroCorrecao([{ ficheiro: new File([pdf], nome, { type: 'application/pdf' }), progresso: 0, erro: '' }])
-      avisar({ texto: tx('PDF corrigido pronto. Guarde a correção para o enviar a {0}.', { 0: estudante.nome }) })
+      avisar({ texto: tx('PDF corrigido pronto. Guarde a correcção para o enviar a {0}.', { 0: estudante.nome }) })
     } else {
       setFicheiroCorrecao([])
     }
@@ -387,21 +387,21 @@ function LinhaEntrega({ t, estudante, entrega, prorrogacao, grupo, analise, reve
                   <div className="d-flex align-items-center gap-2 mt-2 small">
                     <span className="text-muted">{tx('Originalidade:')}</span><ChipOriginalidade a={analise} />
                     {analise?.estado === 'concluida' && <Link to={`/integridade/${analise.id}`}>{tx('Ver relatório')}</Link>}
-                    {analise?.estado !== 'pendente' && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => api(`/entregas/${entrega.id}/integridade`, { metodo: 'POST' }).then(() => { avisar({ texto: tx('A verificar de novo, com o repositório atual.') }); reverificar() }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>{analise ? tx('Verificar de novo') : tx('Verificar')}</button>}
+                    {analise?.estado !== 'pendente' && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => api(`/entregas/${entrega.id}/integridade`, { metodo: 'POST' }).then(() => { avisar({ texto: tx('A verificar de novo, com o repositório actual.') }); reverificar() }).catch((e) => avisar({ tipo: 'erro', texto: e.message }))}>{analise ? tx('Verificar de novo') : tx('Verificar')}</button>}
                   </div>
                 </div>
               )}
               <div className={entrega ? 'col-lg-6' : 'col-12'}>
                 {entrega && (
                   <>
-                    <h4 className="h6 fw-bold">{tx('Correção')}</h4>
+                    <h4 className="h6 fw-bold">{tx('Correcção')}</h4>
                     {comGrelha
                       ? <TabelaGrelha grelha={t.grelha} pontos={pontos} editavel aoMudar={setPontos} />
                       : <div className="d-flex align-items-center gap-2 mb-2"><label htmlFor={`n-${estudante.id}`} className="fw-bold small">{tx('Nota (0 a 20)')}</label><input id={`n-${estudante.id}`} className="form-control form-control-sm p-nota" inputMode="decimal" value={notaManual} onChange={(e) => setNotaManual(e.target.value)} aria-label={tx('Nota de {0}', { 0: estudante.nome })} /></div>}
                     <textarea className="form-control my-2" rows={3} placeholder={tx('Comentário para o estudante')} value={correcao} onChange={(e) => setCorrecao(e.target.value)} aria-label={tx('Comentário para {0}', { 0: estudante.nome })} />
                     <ZonaUpload id={`fc-${entrega.id}`} ficheiros={ficheiroCorrecao} aoMudar={setFicheiroCorrecao} nota={tx('Ficheiro corrigido para o estudante (opcional).')} desativado={aGuardar} />
-                    {entrega.correcaoFicheiroId && !ficheiroCorrecao.length && <button type="button" className="btn btn-link btn-sm px-0" onClick={() => baixar(entrega.correcaoFicheiroId, 'Correção')}><i className="fa fa-paperclip me-1" />{tx('Ficheiro de correção já enviado')}</button>}
-                    <div className="mt-2"><button type="button" className="btn btn-theme btn-sm" onClick={corrigir} disabled={aGuardar}><i className="fa fa-save me-1" />{aGuardar ? tx('A guardar…') : tx('Guardar correção')}</button></div>
+                    {entrega.correcaoFicheiroId && !ficheiroCorrecao.length && <button type="button" className="btn btn-link btn-sm px-0" onClick={() => baixar(entrega.correcaoFicheiroId, 'Correcção')}><i className="fa fa-paperclip me-1" />{tx('Ficheiro de correcção já enviado')}</button>}
+                    <div className="mt-2"><button type="button" className="btn btn-theme btn-sm" onClick={corrigir} disabled={aGuardar}><i className="fa fa-save me-1" />{aGuardar ? tx('A guardar…') : tx('Guardar correcção')}</button></div>
                   </>
                 )}
                 <h4 className="h6 fw-bold mt-3">{tx('Prorrogação do prazo só para este estudante')}</h4>

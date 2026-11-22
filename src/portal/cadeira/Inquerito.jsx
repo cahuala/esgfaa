@@ -8,7 +8,7 @@ import EditorInquerito from '../inquerito/EditorInquerito'
 import { t as tx } from '../../i18n/linguas'
 
 const paraCampo = (iso) => (iso ? new Date(new Date(iso).getTime() - new Date(iso).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : '')
-const MOSTRAR = { apos_responder: tx('Os estudantes veem os resultados depois de responderem.'), apos_fecho: tx('Os estudantes veem os resultados depois do fecho.'), nunca: tx('Só o docente vê os resultados.') }
+const MOSTRAR = { apos_responder: tx('Os estudantes vêem os resultados depois de responderem.'), apos_fecho: tx('Os estudantes vêem os resultados depois do fecho.'), nunca: tx('Só o docente vê os resultados.') }
 
 // sondagem, inquérito de opinião ou avaliação do docente aberta a partir da página da cadeira
 function Inquerito({ c, eDocente, recarregar, avisar, so }) {

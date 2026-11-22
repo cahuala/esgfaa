@@ -95,7 +95,7 @@ function CopiarConteudos({ c, recarregar, avisar }) {
   if (!origens) return null
   return (
     <Painel titulo={tx('Copiar conteúdos de outra cadeira')}>
-      <p className="small text-muted">{tx('Capítulos, materiais e ficheiros, trabalhos, questionários, datas, programa e composição das notas. As datas avançam os anos que separam os anos letivos.')}</p>
+      <p className="small text-muted">{tx('Capítulos, materiais e ficheiros, trabalhos, questionários, datas, programa e composição das notas. As datas avançam os anos que separam os anos lectivos.')}</p>
       <div className="d-flex gap-2 flex-wrap align-items-center">
         <select className="form-select w-auto" value={origem} onChange={(e) => setOrigem(e.target.value)} aria-label={tx('Cadeira de origem')}>
           <option value="">{tx('Escolha a cadeira…')}</option>
@@ -163,8 +163,8 @@ function Docentes({ c, gerir, recarregar, avisar }) {
     try {
       const n = await api(`/academico/cadeiras/${c.id}/docentes`, { metodo: 'PUT', corpo: { docentes: linhas.filter((l) => l.docenteId).map((l) => ({ docenteId: Number(l.docenteId), papel: l.papel, horas: Number(l.horas || 0) })) } })
       avisar({ texto: n.docentesPropostos?.length
-        ? tx('Alocação guardada. {0} docente(s) propostos: só veem a cadeira depois de o Comandante aprovar a distribuição da turma (envie-a em «Alocação de docentes»).', { 0: n.docentesPropostos.length })
-        : tx('Alocação guardada. Os docentes já veem a cadeira no portal.') })
+        ? tx('Alocação guardada. {0} docente(s) propostos: só vêem a cadeira depois de o Comandante aprovar a distribuição da turma (envie-a em «Alocação de docentes»).', { 0: n.docentesPropostos.length })
+        : tx('Alocação guardada. Os docentes já vêem a cadeira no portal.') })
       recarregar()
     } catch (falha) {
       setErro(falha.message)
@@ -206,7 +206,7 @@ function Docentes({ c, gerir, recarregar, avisar }) {
           <button type="button" className="btn btn-theme" onClick={guardar}><i className="fa fa-save me-1" /> {tx('Guardar alocação')}</button>
         </div>
       )}
-      <p className="small text-muted mt-3 mb-0">{tx('O regente e os assistentes veem a cadeira no portal: publicam materiais, avisos e trabalhos, registam aulas e lançam a pauta.')}</p>
+      <p className="small text-muted mt-3 mb-0">{tx('O regente e os assistentes vêem a cadeira no portal: publicam materiais, avisos e trabalhos, registam aulas e lançam a pauta.')}</p>
     </div>
   )
 }
@@ -239,7 +239,7 @@ function Programa({ c, gerir, recarregar, avisar }) {
       <div className="col-xl-8">
         <h5 className="mb-2">{tx('Programa escrito no portal')}</h5>
         <div className="border rounded">
-          <EditorTexto html={html} onChange={setHtml} aoErro={(t) => avisar({ tipo: 'erro', texto: t })} editavel={gerir} placeholder={tx('Objetivos, conteúdos, avaliação, bibliografia…')} />
+          <EditorTexto html={html} onChange={setHtml} aoErro={(t) => avisar({ tipo: 'erro', texto: t })} editavel={gerir} placeholder={tx('Objectivos, conteúdos, avaliação, bibliografia…')} />
         </div>
         {gerir && <button type="button" className="btn btn-theme mt-2" onClick={guardarTexto} disabled={aGuardar}><i className="fa fa-save me-1" /> {aGuardar ? tx('A guardar…') : tx('Guardar programa')}</button>}
       </div>

@@ -41,11 +41,11 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
             <div className="modal-body">
               {erro && <div className="alert alert-danger py-2">{erro}</div>}
               <p className="text-muted small">
-                {tx('Escolha os trabalhos, questionários e avaliações por pares que contam e o peso de cada um. A nota é a média ponderada (0 a 20). Quem não entregar depois do prazo, ou não fizer o questionário até fechar, fica com 0. Enquanto faltar a correção de alguma atividade, a nota fica por calcular.')}
+                {tx('Escolha os trabalhos, questionários e avaliações por pares que contam e o peso de cada um. A nota é a média ponderada (0 a 20). Quem não entregar depois do prazo, ou não fizer o questionário até fechar, fica com 0. Enquanto faltar a correcção de alguma actividade, a nota fica por calcular.')}
               </p>
               {atividades.length === 0 ? <div className="alert alert-info mb-0">{tx('Esta cadeira ainda não tem trabalhos nem questionários.')}</div> : (
                 <table className="table table-hover align-middle mb-0">
-                  <thead><tr><th style={{ width: 40 }} /><th>{tx('Atividade')}</th><th style={{ width: 130 }}>{tx('Peso')}</th><th className="text-end" style={{ width: 80 }}>%</th></tr></thead>
+                  <thead><tr><th style={{ width: 40 }} /><th>{tx('Actividade')}</th><th style={{ width: 130 }}>{tx('Peso')}</th><th className="text-end" style={{ width: 80 }}>%</th></tr></thead>
                   <tbody>
                     {atividades.map((a) => {
                       const k = `${a.tipo}-${a.id}`
@@ -67,7 +67,7 @@ function Composicao({ componente, atividades, atual, guardar, fechar }) {
               {atual && <button type="button" className="btn btn-white me-auto" disabled={aGuardar} onClick={() => submeter(null)}><i className="fa fa-pen me-1" />{tx('Voltar a lançar à mão')}</button>}
               <button type="button" className="btn btn-white" onClick={fechar} disabled={aGuardar}>{tx('Cancelar')}</button>
               <button type="button" className="btn btn-theme" disabled={aGuardar || !escolhidas.length} onClick={() => submeter(escolhidas.map((k) => { const [tipo, id] = k.split('-'); return { tipo, id: Number(id), peso: Number(itens[k]) || 1 } }))}>
-                <i className="fa fa-calculator me-1" />{tx('Calcular a partir destas atividades')}
+                <i className="fa fa-calculator me-1" />{tx('Calcular a partir destas actividades')}
               </button>
             </div>
           </div>

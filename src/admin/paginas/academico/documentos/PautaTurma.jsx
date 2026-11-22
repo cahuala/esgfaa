@@ -28,9 +28,9 @@ function PautaTurma() {
   return (
     <Documento
       titulo="Pauta da turma" paisagem voltar={`/academico/turmas/${d.turma.id}`}
-      subtitulo={`${d.turma.curso} · ${d.turma.nome} · ${d.turma.anoCurricular}.º ano · ano letivo ${d.turma.anoLetivo}`}
+      subtitulo={`${d.turma.curso} · ${d.turma.nome} · ${d.turma.anoCurricular}.º ano · ano lectivo ${d.turma.anoLetivo}`}
       acoes={<button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}
-      assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Diretor Pedagógico']}
+      assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Director Pedagógico']}
     >
       <table>
         <thead>

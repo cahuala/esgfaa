@@ -5,7 +5,7 @@ import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 
-describe('livro de notas: componentes da pauta calculadas a partir das atividades', () => {
+describe('livro de notas: componentes da pauta calculadas a partir das actividades', () => {
   let amb, relogio, sec, cadeira, outra
   const contas = {}
   const tokens = {}

@@ -86,7 +86,7 @@ describe('portal: fórum, calendário, progresso e questionários', () => {
     assert.equal((await portal('prof2').delete(`/api/portal/eventos/${exame.body.id}`)).status, 404)
   })
 
-  it('questionários: sem respostas certas para o estudante, tempo controlado pelo servidor, correção automática', async () => {
+  it('questionários: sem respostas certas para o estudante, tempo controlado pelo servidor, correcção automática', async () => {
     const criar = await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/questionarios`).send({ titulo: 'Teste formativo 1', duracao: 20, tentativas: 2 })
     assert.equal(criar.status, 201, criar.body.erro)
     const q = criar.body.id

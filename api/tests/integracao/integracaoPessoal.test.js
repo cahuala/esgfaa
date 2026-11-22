@@ -20,7 +20,7 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
   before(async () => { amb = await criarAmbiente({ env: { INTEGRACAO_CHAVE: CHAVE } }) })
   after(() => amb.fechar())
 
-  it('cria a conta do docente (entra com o e-mail como palavra-passe inicial), atualiza e desativa', async () => {
+  it('cria a conta do docente (entra com o e-mail como palavra-passe inicial), actualiza e desactiva', async () => {
     const p = { ref: 'pessoal-1', tipo: 'docente', nome: 'Coronel António Kiala', email: 'kiala@esgfaa.gov.ao', ativo: true, dados: { posto: 'Coronel', ramo: 'EXE', nip: 'NIP1' } }
     const r = await enviar([p])
     assert.equal(r.status, 200, r.body.erro)

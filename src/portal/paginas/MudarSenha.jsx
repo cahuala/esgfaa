@@ -39,7 +39,7 @@ function MudarSenha({ obrigatoria = false, aoTerminar }) {
 
   const formulario = (
     <form onSubmit={submeter} className="p-formulario">
-      <Campo id="atual" rotulo={obrigatoria ? tx('Palavra-passe atual (o seu e-mail)') : tx('Palavra-passe atual')} erro={erros.atual}>
+      <Campo id="atual" rotulo={obrigatoria ? tx('Palavra-passe actual (o seu e-mail)') : tx('Palavra-passe actual')} erro={erros.atual}>
         <input id="atual" type="password" autoComplete="current-password" value={f.atual} onChange={(e) => setF({ ...f, atual: e.target.value })} required />
       </Campo>
       <Campo id="nova" rotulo={tx('Nova palavra-passe')} erro={erros.nova}>

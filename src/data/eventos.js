@@ -58,11 +58,11 @@ const eventos = [
     categoria: 'Seminário',
     titulo: 'Seminário de Investigação Científica em Estratégia Militar',
     local: 'Sala de conferências, Bloco B',
-    resumo: 'Apresentação e discussão de projetos de investigação em curso no Departamento de Investigação.',
+    resumo: 'Apresentação e discussão de projectos de investigação em curso no Departamento de Investigação.',
     capa: Curso3,
     inscricoes: true,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'O seminário apresenta os projetos de investigação em curso e abre espaço de debate entre investigadores, docentes e alunos.' },
+      { tipo: 'paragrafo', texto: 'O seminário apresenta os projectos de investigação em curso e abre espaço de debate entre investigadores, docentes e alunos.' },
     ],
   },
   {
@@ -73,7 +73,7 @@ const eventos = [
     categoria: 'Visita oficial',
     titulo: 'Visita de delegação de escola militar parceira',
     local: 'Instalações da Escola',
-    resumo: 'Programa de trabalho com a direção e visita às instalações académicas.',
+    resumo: 'Programa de trabalho com a direcção e visita às instalações académicas.',
     capa: EscolaDeGuerra,
     conteudo: [
       { tipo: 'paragrafo', texto: 'A visita enquadra-se no protocolo de cooperação em vigor e prevê reuniões de trabalho e uma visita às salas de aula e à biblioteca.' },
@@ -105,7 +105,7 @@ const eventos = [
     resumo: 'Balanço do ano académico e homenagem aos docentes e funcionários.',
     capa: Escola2,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'A cerimónia encerra oficialmente o ano académico, com o balanço das atividades e uma homenagem aos docentes e funcionários da Escola.' },
+      { tipo: 'paragrafo', texto: 'A cerimónia encerra oficialmente o ano académico, com o balanço das actividades e uma homenagem aos docentes e funcionários da Escola.' },
     ],
   },
   {
@@ -130,7 +130,7 @@ const eventos = [
     categoria: 'Cerimónia',
     titulo: 'Cerimónia de abertura do ano académico 2026',
     local: 'Auditório principal da Escola',
-    resumo: 'Sessão solene de abertura do ano letivo com os novos alunos.',
+    resumo: 'Sessão solene de abertura do ano lectivo com os novos alunos.',
     capa: Auditorio,
     conteudo: [
       { tipo: 'paragrafo', texto: 'A sessão solene de abertura do ano académico recebeu mais de 200 novos alunos.' },

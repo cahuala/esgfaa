@@ -13,13 +13,13 @@ export function calcularEmblemas({ cadeira, secoes = [], itens = [], pontualidad
     id: `${cadeira.id}-${chave}`, tipo, titulo, descricao, cadeira, ganho: feitas >= total, feitas: Math.min(feitas, total), total,
   })
   const feitas = itens.filter((i) => i.feita).length
-  novo('inicio', 'inicio', 'Primeiros passos', `Fez a primeira atividade de ${cadeira.nome}.`, Math.min(feitas, 1), 1)
+  novo('inicio', 'inicio', 'Primeiros passos', `Fez a primeira actividade de ${cadeira.nome}.`, Math.min(feitas, 1), 1)
   for (const s of secoes) {
     const doCapitulo = itens.filter((i) => i.secaoId === s.id)
     if (!doCapitulo.length) continue
-    novo('capitulo', `capitulo-${s.id}`, s.titulo, `Concluiu todas as atividades de «${s.titulo}».`, doCapitulo.filter((i) => i.feita).length, doCapitulo.length)
+    novo('capitulo', `capitulo-${s.id}`, s.titulo, `Concluiu todas as actividades de «${s.titulo}».`, doCapitulo.filter((i) => i.feita).length, doCapitulo.length)
   }
-  novo('cadeira', 'cadeira', `${cadeira.nome}`, `Concluiu todas as atividades da cadeira.`, feitas, itens.length)
+  novo('cadeira', 'cadeira', `${cadeira.nome}`, `Concluiu todas as actividades da cadeira.`, feitas, itens.length)
   if (pontualidade.length >= 2) {
     novo('pontual', 'pontual', 'Sempre a tempo', `Entregou todos os trabalhos de ${cadeira.nome} dentro do prazo.`,
       pontualidade.filter((p) => p.aTempo).length, pontualidade.length)

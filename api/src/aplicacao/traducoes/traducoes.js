@@ -112,7 +112,7 @@ export class ServicoTraducoes {
     this.#lingua(lingua)
     const a = await this.#alvo(colecao, id)
     ctx.actor.exigir(a.editar)
-    if (!this.tradutor) throw new ErroValidacao('A tradução automática não está ativa (falta configurar LIBRETRANSLATE_URL ou ANTHROPIC_API_KEY no servidor). Pode traduzir à mão.')
+    if (!this.tradutor) throw new ErroValidacao('A tradução automática não está activa (falta configurar LIBRETRANSLATE_URL ou ANTHROPIC_API_KEY no servidor). Pode traduzir à mão.')
     const originais = extrairTextos(a.dados)
     const atual = await this.traducoes.ler(colecao, id, lingua)
     const mudados = atual ? new Set(desatualizados(atual.originais, originais)) : null

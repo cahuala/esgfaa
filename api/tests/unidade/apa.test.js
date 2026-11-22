@@ -21,7 +21,7 @@ describe('normas APA: citações e referências', () => {
     assert.equal(r.referenciasCitadas, 5)
   })
 
-  it('erros reais dos ante-projectos: ano trocado, apelido com gralha, maiúsculas ABNT, et al. sem espaço, citação direta sem página', () => {
+  it('erros reais dos ante-projectos: ano trocado, apelido com gralha, maiúsculas ABNT, et al. sem espaço, citação directa sem página', () => {
     const r = verificarApa(corpo(
       'Os sistemas de RH (Kavanagh et al., 2018) apoiam a decisão. A população “é a totalidade de indivíduos que possuem as mesmas características definidas para um estudo” (KAUARK et al.,2010). Erl, Puttini e Mahmood (2013) definem a nuvem. Ver também (Severino, 2007).',
       ['Erl, T., Puttini, R., & Mahmood, Z. (2013). Cloud computing. Prentice Hall.', 'Kavanagh, M. J., Thite, M., & Johnson, R. D. (2015). Human resource information systems (3rd ed.). SAGE.', 'Kuark, F. S., Manhães, F. C., & Medeiros, C. H. (2010). Metodologia da pesquisa. Via Litterarum.', 'Armstrong, M. (2023). Handbook of human resource management practice. Kogan Page.'],

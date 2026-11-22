@@ -47,7 +47,7 @@ describe('tradução dos dados nos painéis: o tradutor do servidor traduz cada 
     assert.ok(enviados.includes('A primeira aula é no Anfiteatro A. Tragam o programa.'))
   })
 
-  it('revisão no painel: a correção fica e serve a todos; apagar volta a pedir ao tradutor', async () => {
+  it('revisão no painel: a correcção fica e serve a todos; apagar volta a pedir ao tradutor', async () => {
     const texto = 'Aula de quarta passa para o Anfiteatro B'
     await amb.com(admin).post('/api/admin/traduzir').send({ lingua: 'es', textos: [texto] }).expect(200)
     const lista = (await amb.com(admin).get('/api/admin/traducoes/dados').query({ lingua: 'es', q: 'quarta' }).expect(200)).body

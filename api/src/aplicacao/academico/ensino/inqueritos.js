@@ -47,7 +47,7 @@ export class ServicoInqueritos {
     if (d.pergunta !== undefined || d.opcoes !== undefined || !atual) r.perguntas = validarSondagem(d)
     if (d.anonimo !== undefined) r.anonimo = Boolean(d.anonimo)
     if (d.mostrarResultados !== undefined) {
-      if (!RESULTADOS.includes(d.mostrarResultados)) throw new ErroValidacao('Escolha quando os estudantes veem os resultados.', { campo: 'mostrarResultados' })
+      if (!RESULTADOS.includes(d.mostrarResultados)) throw new ErroValidacao('Escolha quando os estudantes vêem os resultados.', { campo: 'mostrarResultados' })
       r.resultados = d.mostrarResultados
     }
     if (d.fecha !== undefined) r.fecha = data(d.fecha)

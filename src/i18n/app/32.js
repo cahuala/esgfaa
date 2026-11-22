@@ -8,7 +8,7 @@ export default [
   ["Nota final = {0} % MAC + {1} % exame (ou recurso), arredondada às unidades; aprovação com {2}.", "Final grade = {0} % CA + {1} % exam (or resit), rounded to whole numbers; pass mark {2}.", "Note finale = {0} % CC + {1} % examen (ou rattrapage), arrondie à l'unité ; réussite avec {2}.", "Nota final = {0} % EC + {1} % examen (o recuperación), redondeada a la unidad; aprobado con {2}."],
   ["Administrador", "Administrator", "Administrateur", "Administrador"],
   ["Editor-chefe", "Editor-in-chief", "Rédacteur en chef", "Redactor jefe"],
-  ["Redator", "Writer", "Rédacteur", "Redactor"],
+  ["Redactor", "Writer", "Rédacteur", "Redactor"],
   ["Moderador", "Moderator", "Modérateur", "Moderador"],
   ["Repartição de Administração Escolar", "Academic Administration Office", "Service de l'administration scolaire", "Departamento de Administración Escolar"],
   ["Bibliotecário", "Librarian", "Bibliothécaire", "Bibliotecario"],

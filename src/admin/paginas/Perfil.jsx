@@ -124,7 +124,7 @@ function Perfil() {
             ) : (
               <form onSubmit={alterarSenha}>
                 {[
-                  ['atual', tx('Palavra-passe atual'), 'current-password'],
+                  ['atual', tx('Palavra-passe actual'), 'current-password'],
                   ['nova', tx('Nova palavra-passe'), 'new-password'],
                   ['repetir', tx('Repetir a nova palavra-passe'), 'new-password'],
                 ].map(([campo, rotulo, auto]) => (

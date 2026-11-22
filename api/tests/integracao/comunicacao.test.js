@@ -68,7 +68,7 @@ describe('portal: notificações, e-mails, lembretes e mensagens', () => {
     assert.ok(html.includes('&lt;script&gt;') && !html.includes('<script>'))
   })
 
-  it('correção, notas publicadas e respostas no fórum chegam a quem interessa', async () => {
+  it('correcção, notas publicadas e respostas no fórum chegam a quem interessa', async () => {
     const t = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).send({ titulo: 'Ensaio', prazo: '2026-11-20T23:59:00Z' })).body
     const e = (await portal('ana').post(`/api/portal/trabalhos/${t.id}/entrega`).attach('ficheiro', PDF, { filename: 'e.pdf', contentType: 'application/pdf' })).body
     await portal('prof').put(`/api/portal/entregas/${e.id}`).send({ nota: 15 })

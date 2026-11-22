@@ -17,7 +17,7 @@ import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
 const DIAS = ['', tx('Segunda'), tx('Terça'), tx('Quarta'), tx('Quinta'), tx('Sexta'), tx('Sábado')]
-const ESTADOS = { ativa: ['bg-success', tx('Ativa')], suspensa: ['bg-warning text-dark', tx('Suspensa')], concluida: ['bg-info', tx('Concluída')], anulada: ['bg-secondary', tx('Anulada')] }
+const ESTADOS = { ativa: ['bg-success', tx('Activa')], suspensa: ['bg-warning text-dark', tx('Suspensa')], concluida: ['bg-info', tx('Concluída')], anulada: ['bg-secondary', tx('Anulada')] }
 
 const POR_PAGINA = 15
 
@@ -98,12 +98,12 @@ function Turma() {
       </CabecalhoPagina>
 
       <div className="row g-2 mb-3">
-        <Resumo icone="fa-user-graduate" cor="primary" valor={t.matriculas.length} rotulo={tx(curso.pessoas)} detalhe={tx('{0} com matrícula ativa', { 0: ativas })} />
+        <Resumo icone="fa-user-graduate" cor="primary" valor={t.matriculas.length} rotulo={tx(curso.pessoas)} detalhe={tx('{0} com matrícula activa', { 0: ativas })} />
         <Resumo icone="fa-book" cor="info" valor={t.cadeiras.length} rotulo={tx('Cadeiras')} detalhe={tx('{0} docente(s)', { 0: new Set(t.cadeiras.flatMap((c) => (c.docentes ?? []).map((d) => d.id))).size })} />
         {t.anoFinal
           ? <Resumo icone="fa-award" cor="success" valor={`${concluiram}/${conclusao.size}`} rotulo={tx('Concluíram o curso')} detalhe={tx('podem receber certificado e diploma')} />
           : <Resumo icone="fa-level-up-alt" cor="warning" valor={`${t.anoCurricular}.º`} rotulo={tx('Ano do curso')} detalhe={tx('não é a turma de finalistas')} />}
-        <Resumo icone="fa-calendar" cor="secondary" valor={t.anoLetivo} rotulo={tx('Ano letivo')} detalhe={t.anoFinal ? tx('turma de finalistas') : ''} />
+        <Resumo icone="fa-calendar" cor="secondary" valor={t.anoLetivo} rotulo={tx('Ano lectivo')} detalhe={t.anoFinal ? tx('turma de finalistas') : ''} />
       </div>
 
       <ul className="nav nav-tabs tm-abas mb-3" role="tablist">
@@ -143,7 +143,7 @@ function Turma() {
           </div>
           <div className="table-responsive">
             <table className="table align-middle mb-0 tm-tabela">
-              <thead><tr><th>{tx('Militar')}</th><th>{tx('N.º')}</th><th>{tx('Matrícula')}</th>{t.anoFinal && <th>{tx('Curso')}</th>}<th className="text-end">{tx('Ações')}</th></tr></thead>
+              <thead><tr><th>{tx('Militar')}</th><th>{tx('N.º')}</th><th>{tx('Matrícula')}</th>{t.anoFinal && <th>{tx('Curso')}</th>}<th className="text-end">{tx('Acções')}</th></tr></thead>
               <tbody>
                 {t.matriculas.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-5"><i className="fa fa-user-graduate fa-2x d-block mb-2 opacity-25" />{tx('Ainda não há estudantes nesta turma.')}{gerir && <> {tx('Use «Matricular estudantes».')}</>}</td></tr>}
                 {t.matriculas.length > 0 && !encontradas.length && <tr><td colSpan={5} className="text-center text-muted py-4">{tx('Ninguém encontrado para «{0}».', { 0: procura })}</td></tr>}

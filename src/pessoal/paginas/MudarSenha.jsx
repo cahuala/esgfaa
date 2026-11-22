@@ -70,7 +70,7 @@ export default function MudarSenha({ obrigatoria = false }) {
     <form onSubmit={guardar} style={{ maxWidth: 420 }}>
       {obrigatoria && <div className="alert alert-info">Antes de continuar, escolha uma palavra-passe só sua (pelo menos 10 caracteres, com letras e números).</div>}
       {erro && <div className="alert alert-danger">{erro}</div>}
-      {campo('atual', 'Palavra-passe atual', 'current-password')}
+      {campo('atual', 'Palavra-passe actual', 'current-password')}
       {campo('nova', 'Nova palavra-passe', 'new-password')}
       {campo('repetir', 'Repetir a nova palavra-passe', 'new-password')}
       <button type="submit" className="btn btn-theme" disabled={aGuardar}><i className="fa fa-key me-2" />Mudar palavra-passe</button>

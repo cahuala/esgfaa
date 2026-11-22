@@ -88,14 +88,14 @@ export class ServicoLti {
 
   async ferramentaAtiva(id) {
     const f = await this.lti.ler(id)
-    if (!f?.ativa) throw new ErroValidacao('Escolha uma ferramenta externa ativa.', { campo: 'ferramentaId' })
+    if (!f?.ativa) throw new ErroValidacao('Escolha uma ferramenta externa activa.', { campo: 'ferramentaId' })
     return f
   }
 
   // 1.º passo: o portal pede à ferramenta para começar a sessão (formulário enviado pelo navegador)
   async lancamento(ctx, materialId, emissor) {
     const m = await this.academico.material(materialId)
-    if (!m || m.tipo !== 'lti') throw new NaoEncontrado('Atividade não encontrada.')
+    if (!m || m.tipo !== 'lti') throw new NaoEncontrado('Actividade não encontrada.')
     if (ctx.conta.tipo === 'docente') await this.apoio.cadeiraDoDocente(ctx.conta, m.cadeiraId)
     else {
       await this.apoio.cadeiraAcessivel(ctx.conta, m.cadeiraId)
@@ -123,10 +123,10 @@ export class ServicoLti {
     const permitidos = [f.urlLancamento, ...f.redirecionamentos]
     if (!permitidos.includes(p.redirect_uri)) erro('redirect_uri não registado para esta ferramenta.')
     let pista
-    try { pista = jwt.verify(String(p.login_hint || ''), this.segredo, { audience: AUDIENCIA_PEDIDO, algorithms: ['HS256'] }) } catch { erro('login_hint inválido ou expirado. Abra outra vez a atividade no portal.') }
+    try { pista = jwt.verify(String(p.login_hint || ''), this.segredo, { audience: AUDIENCIA_PEDIDO, algorithms: ['HS256'] }) } catch { erro('login_hint inválido ou expirado. Abra outra vez a actividade no portal.') }
     if (pista.f !== f.id || (p.lti_message_hint && String(p.lti_message_hint) !== String(pista.m))) erro('o pedido não corresponde a esta ferramenta.')
     const [m, conta] = await Promise.all([this.academico.material(pista.m), this.contas.porId(pista.c)])
-    if (!m || !conta?.ativo) throw new NaoEncontrado('Atividade não encontrada.')
+    if (!m || !conta?.ativo) throw new NaoEncontrado('Actividade não encontrada.')
     const cadeira = await this.academico.cadeira(m.cadeiraId)
     const agora = Math.floor(Date.now() / 1000)
     const corpo = {

@@ -22,7 +22,7 @@ export default function PermissoesContas() {
       const altera = a.filter(([, n]) => n === 'alterar').length
       return <span className="small">{a.length ? `${a.length} ecrã(s) · altera em ${altera}` : 'só expediente e mensagens'}{u.permissoesProprias && <span className="badge bg-info ms-1">próprias</span>}{u.permissoesPedido && <div className="text-warning-emphasis"><i className="fa fa-stamp me-1" />Pedido do administrador: {u.permissoesPedido}</div>}</span>
     } },
-    { chave: 'estado', titulo: 'Estado', valor: (u) => (u.aguardaDespacho ? 'A aguardar despacho' : u.ativo ? 'Ativa' : 'Desativada') },
+    { chave: 'estado', titulo: 'Estado', valor: (u) => (u.aguardaDespacho ? 'A aguardar despacho' : u.ativo ? 'Activa' : 'Desactivada') },
   ], [])
   if (erro) return <Erro texto={erro} aoRepetir={recarregar} />
   if (!dados) return <Carregando />

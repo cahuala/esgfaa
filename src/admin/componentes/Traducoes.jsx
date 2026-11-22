@@ -5,7 +5,7 @@ import { Painel } from './Ui'
 import { confirmar } from '../../portal/dialogos'
 import { t as tx } from '../../i18n/linguas'
 
-const NOMES = { titulo: tx('Título'), subtitulo: tx('Subtítulo'), resumo: tx('Resumo'), texto: tx('Texto'), html: tx('Texto formatado'), legenda: tx('Legenda'), categoria: tx('Categoria'), conteudo: tx('Conteúdo'), nome: 'Nome', cargo: tx('Cargo'), destaque: tx('Destaque'), autor: tx('Autor'), local: 'Local', programa: tx('Programa'), atividade: tx('Atividade'), itens: tx('Itens'), apresentacao: tx('Apresentação'), objetivos: tx('Objetivos'), requisitos: tx('Requisitos'), saidas: tx('Saídas'), plano: tx('Plano'), unidades: tx('Unidades'), periodo: tx('Período'), regime: tx('Regime'), duracao: tx('Duração'), destinatarios: tx('Destinatários'), palavrasChave: tx('Palavras-chave'), area: tx('Área'), tipo: 'Tipo', pergunta: tx('Pergunta'), resposta: tx('Resposta'), etiqueta: tx('Etiqueta'), botao: tx('Botão') }
+const NOMES = { titulo: tx('Título'), subtitulo: tx('Subtítulo'), resumo: tx('Resumo'), texto: tx('Texto'), html: tx('Texto formatado'), legenda: tx('Legenda'), categoria: tx('Categoria'), conteudo: tx('Conteúdo'), nome: 'Nome', cargo: tx('Cargo'), destaque: tx('Destaque'), autor: tx('Autor'), local: 'Local', programa: tx('Programa'), atividade: tx('Actividade'), itens: tx('Itens'), apresentacao: tx('Apresentação'), objetivos: tx('Objectivos'), requisitos: tx('Requisitos'), saidas: tx('Saídas'), plano: tx('Plano'), unidades: tx('Unidades'), periodo: tx('Período'), regime: tx('Regime'), duracao: tx('Duração'), destinatarios: tx('Destinatários'), palavrasChave: tx('Palavras-chave'), area: tx('Área'), tipo: 'Tipo', pergunta: tx('Pergunta'), resposta: tx('Resposta'), etiqueta: tx('Etiqueta'), botao: tx('Botão') }
 // "conteudo.3.texto" -> "Conteúdo › 4 › Texto"
 const rotulo = (c) => c.split('.').map((p) => (/^\d+$/.test(p) ? String(Number(p) + 1) : NOMES[p] || p)).join(' › ')
 
@@ -44,7 +44,7 @@ function Traducoes({ colecao, id, horizontal = false }) {
         <div className={horizontal ? 'd-flex flex-wrap gap-2 p-3' : 'list-group list-group-flush'}>{linhas}</div>
         <div className="px-3 pb-3 pt-2 small text-muted">
           {tx('O site mostra a tradução publicada a quem escolher essa língua; o que faltar aparece em português.')}
-          {d.ia ? tx(' Ao publicar, o tradutor automático ({0}) traduz para as outras línguas; reveja e corrija quando puder.', { 0: d.tradutor }) : tx(' A tradução automática não está ativa no servidor: traduza à mão.')}
+          {d.ia ? tx(' Ao publicar, o tradutor automático ({0}) traduz para as outras línguas; reveja e corrija quando puder.', { 0: d.tradutor }) : tx(' A tradução automática não está activa no servidor: traduza à mão.')}
         </div>
       </Painel>
       {aberta && <EditorTraducao colecao={colecao} id={id} lingua={aberta} d={d} fechar={() => setAberta(null)} recarregar={carregar} />}

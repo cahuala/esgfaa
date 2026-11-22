@@ -61,7 +61,7 @@ function TraducoesDados() {
     <>
       <CabecalhoPagina titulo={tx('Traduções dos dados')} subtitulo={tx('o que o tradutor automático traduziu no portal e no painel')} migalhas={[{ rotulo: tx('Traduções dos dados') }]} />
       <div className="alert alert-info py-2">
-        <i className="fa fa-info-circle me-2" />{tx('Os nomes das cadeiras, os avisos, as notificações e outros dados aparecem em inglês, francês e espanhol pelo tradutor automático. Se uma tradução estiver errada, corrija-a aqui: a correção serve a todos e não volta a ser mudada.')}
+        <i className="fa fa-info-circle me-2" />{tx('Os nomes das cadeiras, os avisos, as notificações e outros dados aparecem em inglês, francês e espanhol pelo tradutor automático. Se uma tradução estiver errada, corrija-a aqui: a correcção serve a todos e não volta a ser mudada.')}
       </div>
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
 
@@ -85,7 +85,7 @@ function TraducoesDados() {
           <div className="table-responsive mt-3">
             <table className="table table-striped align-middle mb-0">
               <thead>
-                <tr><th style={{ width: '40%' }}>{tx('Original (português)')}</th><th>{tx('Tradução')}</th><th className="text-end">{tx('Ações')}</th></tr>
+                <tr><th style={{ width: '40%' }}>{tx('Original (português)')}</th><th>{tx('Tradução')}</th><th className="text-end">{tx('Acções')}</th></tr>
               </thead>
               <tbody>
                 {dados?.itens.length === 0 && <tr><td colSpan={3} className="text-center text-muted py-4">{tx('Sem traduções.')}</td></tr>}

@@ -147,7 +147,7 @@ export class ServicoAprovacoesComandante {
         await this.auditoria.registar(ctx, { acao: 'recusar_publicacao_notas', colecao: 'pautas', alvoId: c.id, alvoTitulo: `${quais} — ${c.nome}`, detalhes: { motivo: m } })
       }
       await this.notificacoes?.notificar(c.docentes.map((d) => d.id), decisao === 'aprovar'
-        ? { tipo: 'notas', titulo: `Publicação aprovada: ${quais}`, texto: `${c.nome}: os estudantes já veem as notas.`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` }
+        ? { tipo: 'notas', titulo: `Publicação aprovada: ${quais}`, texto: `${c.nome}: os estudantes já vêem as notas.`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` }
         : { tipo: 'notas', titulo: `Publicação recusada: ${quais}`, texto: `${c.nome}: ${m}`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` })
       return { decisao }
     }
@@ -160,7 +160,7 @@ export class ServicoAprovacoesComandante {
       await this.auditoria.registar(ctx, { acao: 'recusar_publicacao_notas', colecao: 'pautas', alvoId: c.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${c.nome}`, detalhes: { motivo: m } })
     }
     await this.notificacoes?.notificar(c.docentes.map((d) => d.id), decisao === 'aprovar'
-      ? { tipo: 'notas', titulo: `Publicação aprovada: ${a.tipo} ${a.titulo}`, texto: `${c.nome}: os estudantes já veem as notas.`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` }
+      ? { tipo: 'notas', titulo: `Publicação aprovada: ${a.tipo} ${a.titulo}`, texto: `${c.nome}: os estudantes já vêem as notas.`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` }
       : { tipo: 'notas', titulo: `Publicação recusada: ${a.tipo} ${a.titulo}`, texto: `${c.nome}: ${m}`, ligacao: `/cadeiras/${c.id}?separador=avaliacoes` })
     return { decisao }
   }

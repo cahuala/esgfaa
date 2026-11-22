@@ -92,7 +92,7 @@ export default [
   ["Levante no balcão até {0}.", "Collect at the desk by {0}.", "À retirer au comptoir avant le {0}.", "Recójalo en el mostrador antes del {0}."],
   ["Pedida a {0}.", "Requested on {0}.", "Demandée le {0}.", "Solicitada el {0}."],
   ["onde é regente ou assistente", "where you are lead or assistant", "où vous êtes titulaire ou assistant", "donde es titular o asistente"],
-  ["do ano letivo em curso", "of the current academic year", "de l'année académique en cours", "del año académico en curso"],
+  ["do ano lectivo em curso", "of the current academic year", "de l'année académique en cours", "del año académico en curso"],
   ["Aula", "Class", "Cours", "Clase"],
   ["Entrega de trabalho", "Assignment due", "Remise de travail", "Entrega de trabajo"],
   ["Videoconferência", "Video conference", "Visioconférence", "Videoconferencia"],

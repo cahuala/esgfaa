@@ -17,7 +17,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
 
   // anos letivos: datas do ano e dos semestres, e qual é o atual
   const anos = a.anosLetivos
-  const pAno = z.object({ id: z.string().regex(/^\d{4}-\d{4}$/, 'Ano letivo não encontrado.') })
+  const pAno = z.object({ id: z.string().regex(/^\d{4}-\d{4}$/, 'Ano lectivo não encontrado.') })
   const idAno = (req) => req.dados.params.id.replace('-', '/')
   const datasAno = z.object({ inicio: z.string().max(10), fim: z.string().max(10), semestre1Inicio: z.string().max(10), semestre1Fim: z.string().max(10), semestre2Inicio: z.string().max(10), semestre2Fim: z.string().max(10) })
   r.get('/anos-letivos', async (req, res) => res.json(await anos.listar(ctx(req))))

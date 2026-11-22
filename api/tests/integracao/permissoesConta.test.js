@@ -12,7 +12,7 @@ describe('o Comandante escolhe o que cada conta do painel pode fazer', () => {
   })
   after(() => amb.fechar())
 
-  it('o redator não vê a biblioteca; o Comandante dá-lha e tira-lhe os eventos (vale logo)', async () => {
+  it('o redactor não vê a biblioteca; o Comandante dá-lha e tira-lhe os eventos (vale logo)', async () => {
     const r = amb.com(redator.token)
     await r.get('/api/admin/biblioteca/obras').expect((x) => assert.equal(x.status, 403))
     const eu = (await r.get('/api/admin/eu').expect(200)).body

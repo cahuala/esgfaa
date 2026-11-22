@@ -22,14 +22,14 @@ function EstadoPortal({ e, ligado }) {
   if (!e) return <span className="badge bg-light text-dark border" title="Ainda não foi enviado (falta o e-mail?)">Sem conta</span>
   if (e.envio === 'erro') return <span className="badge bg-danger" title={e.erro}>Erro no envio</span>
   if (!e.conta) return <span className="badge bg-warning text-dark">A enviar…</span>
-  if (e.conta.ativo === false) return <span className="badge bg-secondary">Conta desativada</span>
+  if (e.conta.ativo === false) return <span className="badge bg-secondary">Conta desactivada</span>
   if (!e.conta.ultimoAcesso) return <span className="badge bg-warning text-dark" title="Entregue a ficha de acesso">Nunca entrou</span>
   if (e.conta.deveMudarSenha) return <span className="badge bg-info">Palavra-passe inicial</span>
-  return <span className="badge bg-success">Ativa</span>
+  return <span className="badge bg-success">Activa</span>
 }
 
 // o mesmo estado, em texto (para o filtro, a pesquisa e a exportação)
-const ESTADOS_PORTAL = [['sem', 'Sem conta'], ['erro', 'Erro no envio'], ['nunca', 'Nunca entrou'], ['inicial', 'Palavra-passe inicial'], ['ativa', 'Ativa'], ['desativada', 'Conta desativada']]
+const ESTADOS_PORTAL = [['sem', 'Sem conta'], ['erro', 'Erro no envio'], ['nunca', 'Nunca entrou'], ['inicial', 'Palavra-passe inicial'], ['ativa', 'Activa'], ['desativada', 'Conta desactivada']]
 function estadoPortal(e) {
   if (!e) return 'sem'
   if (e.envio === 'erro') return 'erro'

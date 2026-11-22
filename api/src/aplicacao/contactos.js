@@ -16,7 +16,7 @@ export class ServicoContactos {
       await this.correio.enviar({
         para: this.emailDestino,
         assunto: `[Site ESG] ${m.assunto}`,
-        texto: `Mensagem de ${m.nome} <${m.email}>${m.telefone ? ` · ${m.telefone}` : ''}\n\n${m.mensagem}\n\n— Enviada pelo formulário de contacto do site. Responda diretamente para ${m.email}.`,
+        texto: `Mensagem de ${m.nome} <${m.email}>${m.telefone ? ` · ${m.telefone}` : ''}\n\n${m.mensagem}\n\n— Enviada pelo formulário de contacto do site. Responda directamente para ${m.email}.`,
       }).catch((e) => this.registar?.({ nivel: 'erro', mensagem: 'Contacto: e-mail', erro: e.message }))
     }
     return { ok: true }

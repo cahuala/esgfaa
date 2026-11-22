@@ -55,12 +55,12 @@ function Turmas() {
             {!lista && !erro ? <Carregando /> : (
               <div className="table-responsive">
                 <table className="table table-striped align-middle mb-0">
-                  <thead><tr><th>{tx('Turma')}</th><th>{tx('Curso')}</th><th>{tx('Ano letivo')}</th><th>{tx('Ano curricular')}</th><th className="text-end">{tx('Estudantes')}</th><th className="text-end">{tx('Cadeiras')}</th><th /></tr></thead>
+                  <thead><tr><th>{tx('Turma')}</th><th>{tx('Curso')}</th><th>{tx('Ano lectivo')}</th><th>{tx('Ano curricular')}</th><th className="text-end">{tx('Estudantes')}</th><th className="text-end">{tx('Cadeiras')}</th><th /></tr></thead>
                   <tbody>
                     {lista?.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">{tx('Ainda não há turmas.')}</td></tr>}
                     {lista?.map((t) => (
                       <tr key={t.id}>
-                        <td className="fw-bold">{t.nome} {!t.ativa && <span className="badge bg-secondary ms-1">{tx('Inativa')}</span>}</td>
+                        <td className="fw-bold">{t.nome} {!t.ativa && <span className="badge bg-secondary ms-1">{tx('Inactiva')}</span>}</td>
                         <td>{nomeCurso(t.curso)}</td>
                         <td>{t.anoLetivo}</td>
                         <td>{t.anoCurricular}{tx('.º ano')}</td>
@@ -84,14 +84,14 @@ function Turmas() {
                 <select id="t-curso" className="form-select mb-3" value={f.curso} onChange={(e) => setF({ ...f, curso: e.target.value })} required>
                   {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
-                <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano letivo')}</label>
+                <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano lectivo')}</label>
                 {anos.length ? (
                   <select id="t-ano" className="form-select mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} required>
                     {!anos.some((a) => a.id === f.anoLetivo) && <option value="">—</option>}
                     {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
                   </select>
                 ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
-                <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos letivos e semestres')}</Link></div>
+                <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos lectivos e semestres')}</Link></div>
                 <label className="form-label fw-bold" htmlFor="t-anocur">{tx('Ano curricular')}</label>
                 <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
                   {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}

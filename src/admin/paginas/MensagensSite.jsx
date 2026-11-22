@@ -148,7 +148,7 @@ function MensagensSite() {
 
               {gerir && (
                 <>
-                  <label className="form-label fw-bold" htmlFor="c-notas">{tx('Notas internas')} <small className="fw-normal text-muted">({tx('só se veem aqui')})</small></label>
+                  <label className="form-label fw-bold" htmlFor="c-notas">{tx('Notas internas')} <small className="fw-normal text-muted">({tx('só se vêem aqui')})</small></label>
                   <textarea id="c-notas" className="form-control mb-2" rows={3} maxLength={3000} value={notas} onChange={(e) => setNotas(e.target.value)} placeholder={tx('Ex.: reencaminhado para a Repartição de Administração Escolar.')} />
                   <button type="button" className="btn btn-sm btn-white" disabled={notas === (aberta.notas || '')} onClick={() => mudar({ notas }, tx('Notas guardadas.'))}>{tx('Guardar notas')}</button>
                 </>

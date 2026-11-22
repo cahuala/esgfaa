@@ -15,9 +15,9 @@ export function datasPadrao(id) {
 }
 
 export function validarId(id) {
-  if (!ANO_LETIVO.test(id || '')) throw new ErroValidacao('Ano letivo no formato 2026/2027.', { campo: 'id' })
+  if (!ANO_LETIVO.test(id || '')) throw new ErroValidacao('Ano lectivo no formato 2026/2027.', { campo: 'id' })
   const [a, b] = id.split('/').map(Number)
-  if (b !== a + 1) throw new ErroValidacao('O ano letivo tem dois anos seguidos (ex.: 2026/2027).', { campo: 'id' })
+  if (b !== a + 1) throw new ErroValidacao('O ano lectivo tem dois anos seguidos (ex.: 2026/2027).', { campo: 'id' })
   return id
 }
 
@@ -35,8 +35,8 @@ export function validarDatas(d) {
   antes('semestre1Inicio', 'semestre1Fim', 'O 1.º semestre termina antes de começar.', 'semestre1Fim')
   antes('semestre2Inicio', 'semestre2Fim', 'O 2.º semestre termina antes de começar.', 'semestre2Fim')
   if (r.semestre2Inicio <= r.semestre1Fim) throw new ErroValidacao('O 2.º semestre começa depois do fim do 1.º.', { campo: 'semestre2Inicio' })
-  antes('inicio', 'semestre1Inicio', 'O 1.º semestre começa dentro do ano letivo.', 'semestre1Inicio')
-  antes('semestre2Fim', 'fim', 'O 2.º semestre acaba dentro do ano letivo.', 'semestre2Fim')
+  antes('inicio', 'semestre1Inicio', 'O 1.º semestre começa dentro do ano lectivo.', 'semestre1Inicio')
+  antes('semestre2Fim', 'fim', 'O 2.º semestre acaba dentro do ano lectivo.', 'semestre2Fim')
   return r
 }
 

@@ -68,7 +68,7 @@ describe('traduções do site: IA, revisão e publicação', () => {
   })
   after(() => amb.fechar())
 
-  it('ao publicar traduz sozinho; a revisão da redação mantém-se e só o que muda volta a ser traduzido', async () => {
+  it('ao publicar traduz sozinho; a revisão da redacção mantém-se e só o que muda volta a ser traduzido', async () => {
     const esperar = () => amb.contentor.servicos.traducoes.esvaziar()
     // um rascunho não se traduz
     const rasc = (await admin.post('/api/admin/colecoes/noticias').send({ titulo: 'Rascunho', resumo: 'Por publicar.', data: '2026-09-12', conteudo: [], _estado: 'rascunho' })).body

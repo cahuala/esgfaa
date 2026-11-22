@@ -37,7 +37,7 @@ export class ServicoSessaoPortal {
       }
       throw new NaoAutenticado(CREDENCIAIS_ERRADAS)
     }
-    if (!c.ativo) throw new SemPermissao('Esta conta está desativada. Contacte a Administração Escolar.')
+    if (!c.ativo) throw new SemPermissao('Esta conta está desactivada. Contacte a Administração Escolar.')
     // o docente só entra depois de o Comandante aprovar a distribuição de serviço docente (ou verificar a conta)
     if (this.aprovacaoComandante && c.tipo === 'docente' && !c.verificadoEm) throw new SemPermissao('A sua conta de docente ainda espera a aprovação do Comandante. Quando for aprovada, recebe o acesso por e-mail.')
     // contas antigas cuja palavra-passe inicial era o e-mail (que qualquer colega sabe): só com a ficha de acesso nova
@@ -56,7 +56,7 @@ export class ServicoSessaoPortal {
     const sessao = this.tokens.verificar(token)
     if (!sessao || (await this.sessoes.revogada(sessao.jti))) throw new NaoAutenticado('Sessão expirada. Entre novamente.')
     const conta = await this.contas.porId(sessao.utilizadorId)
-    if (!conta || !conta.ativo) throw new NaoAutenticado('Conta inexistente ou desativada.')
+    if (!conta || !conta.ativo) throw new NaoAutenticado('Conta inexistente ou desactivada.')
     if (conta.versaoToken !== sessao.versao) throw new NaoAutenticado('A sessão foi terminada. Entre novamente.')
     return { conta, sessao }
   }
@@ -81,13 +81,13 @@ export class ServicoSessaoPortal {
   // a palavra-passe nova cumpre a política (10+ caracteres, letras e números, sem o e-mail nem o nome)
   async mudarSenha(ctx, { atual, nova }) {
     const c = await this.contas.porId(ctx.conta.id)
-    if (!(await this.cifra.verificar(atual, c.senha))) throw new ErroValidacao('A palavra-passe atual está errada.', { campo: 'atual' })
+    if (!(await this.cifra.verificar(atual, c.senha))) throw new ErroValidacao('A palavra-passe actual está errada.', { campo: 'atual' })
     try {
       validarSenha(nova, { email: c.email, nome: c.nome })
     } catch (e) {
       throw new ErroValidacao(e.message, { campo: 'nova' })
     }
-    if (nova === atual) throw new ErroValidacao('A nova palavra-passe tem de ser diferente da atual.', { campo: 'nova' })
+    if (nova === atual) throw new ErroValidacao('A nova palavra-passe tem de ser diferente da actual.', { campo: 'nova' })
     c.mudarSenha(await this.cifra.cifrar(nova))
     const guardada = await this.contas.guardar(c)
     await this.sessoes.revogar(ctx.sessao.jti, ctx.sessao.expira)

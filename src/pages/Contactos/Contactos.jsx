@@ -146,7 +146,7 @@ function Contactos() {
         {/* Diretório */}
         <section className={styles.diretorio}>
           <div className={ed.tituloSeccao}>
-            <span className={ed.rotulo}>{t('Diretório')}</span>
+            <span className={ed.rotulo}>{t('Directório')}</span>
             <h2>{t('Contactos por área')}</h2>
           </div>
 

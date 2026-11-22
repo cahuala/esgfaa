@@ -28,7 +28,7 @@ function Catalogo() {
     <>
       <CabecalhoPagina titulo={tx('Biblioteca')} subtitulo={tx('catálogo de obras, exemplares e versões digitais')} migalhas={[{ rotulo: tx('Biblioteca') }, { rotulo: tx('Catálogo') }]}>
         <div className="d-flex gap-2">
-          <button type="button" className="btn btn-white" onClick={() => obterFicheiro('/biblioteca/exportar', 'catalogo-dublin-core.xml').catch((e) => setAviso({ tipo: 'erro', texto: e.message }))} title={tx('Registos Dublin Core (OAI-DC) para repositórios e catálogos coletivos')}><i className="fa fa-file-code me-1" />{tx('Exportar Dublin Core')}</button>
+          <button type="button" className="btn btn-white" onClick={() => obterFicheiro('/biblioteca/exportar', 'catalogo-dublin-core.xml').catch((e) => setAviso({ tipo: 'erro', texto: e.message }))} title={tx('Registos Dublin Core (OAI-DC) para repositórios e catálogos colectivos')}><i className="fa fa-file-code me-1" />{tx('Exportar Dublin Core')}</button>
           {gere && <Link to="/biblioteca/obras/nova" className="btn btn-theme"><i className="fa fa-plus me-1" />{tx('Nova obra')}</Link>}
         </div>
       </CabecalhoPagina>

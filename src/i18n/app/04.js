@@ -71,7 +71,7 @@ export default [
   ["Lançou notas", "Entered grades", "A saisi des notes", "Registró notas"],
   ["Publicou notas", "Published grades", "A publié des notes", "Publicó notas"],
   ["Alocou docentes a uma cadeira", "Assigned faculty to a course unit", "A affecté des enseignants à une unité", "Asignó docentes a una asignatura"],
-  ["Atualizou o programa de uma cadeira", "Updated a course unit syllabus", "A mis à jour le programme d'une unité", "Actualizó el programa de una asignatura"],
+  ["Actualizou o programa de uma cadeira", "Updated a course unit syllabus", "A mis à jour le programme d'une unité", "Actualizó el programa de una asignatura"],
   ["Marcou uma data no calendário académico", "Added a date to the academic calendar", "A ajouté une date au calendrier académique", "Marcó una fecha en el calendario académico"],
   ["Apagou um tópico do fórum", "Deleted a forum topic", "A supprimé un sujet du forum", "Eliminó un tema del foro"],
   ["Publicou um questionário", "Published a quiz", "A publié un questionnaire", "Publicó un cuestionario"],

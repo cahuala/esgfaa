@@ -30,7 +30,7 @@ const artigos = [
       { tipo: 'paragrafo', texto: 'Os programas de intercâmbio de docentes têm um efeito semelhante: ao lecionarem em escolas parceiras, os docentes levam e trazem métodos, casos de estudo e formas de avaliar, contribuindo para uma linguagem comum entre instituições.' },
       { tipo: 'citacao', texto: 'A interoperabilidade começa na sala de aula, muito antes de começar no terreno.' },
       { tipo: 'subtitulo', texto: 'Investigação conjunta' },
-      { tipo: 'paragrafo', texto: 'Projetos de investigação partilhados permitem construir uma leitura comum dos riscos regionais e identificar áreas prioritárias de cooperação, da segurança marítima à resposta a catástrofes.' },
+      { tipo: 'paragrafo', texto: 'Projectos de investigação partilhados permitem construir uma leitura comum dos riscos regionais e identificar áreas prioritárias de cooperação, da segurança marítima à resposta a catástrofes.' },
       { tipo: 'subtitulo', texto: 'Conclusão' },
       { tipo: 'paragrafo', texto: 'As escolas de guerra são um instrumento discreto mas eficaz da defesa cooperativa. Reforçar o seu papel passa por alargar o intercâmbio, financiar investigação conjunta e institucionalizar a partilha de doutrina.' },
       { tipo: 'referencias', itens: [
@@ -52,7 +52,7 @@ const artigos = [
     data: '2026-08-30',
     capa: Curso1,
     conteudo: [
-      { tipo: 'paragrafo', texto: 'Comandar sempre significou decidir com informação incompleta. O que mudou foi a velocidade a que a informação chega, a quantidade de fontes disponíveis e a diversidade de atores envolvidos em cada decisão.' },
+      { tipo: 'paragrafo', texto: 'Comandar sempre significou decidir com informação incompleta. O que mudou foi a velocidade a que a informação chega, a quantidade de fontes disponíveis e a diversidade de actores envolvidos em cada decisão.' },
       { tipo: 'subtitulo', texto: 'Três competências essenciais' },
       { tipo: 'lista', ordenada: true, itens: [
         'Capacidade de síntese perante grandes volumes de informação.',
@@ -78,8 +78,8 @@ const artigos = [
       { tipo: 'paragrafo', texto: 'A metodologia proposta associa a cada fase do planeamento um conjunto de verificações jurídicas, conduzidas pelo assessor jurídico em articulação com o estado-maior.' },
       { tipo: 'lista', itens: [
         'Análise da missão: identificação do quadro jurídico aplicável.',
-        'Desenvolvimento de modalidades de ação: avaliação de proporcionalidade.',
-        'Ordens: redação das regras de empenhamento.',
+        'Desenvolvimento de modalidades de acção: avaliação de proporcionalidade.',
+        'Ordens: redacção das regras de empenhamento.',
       ] },
       { tipo: 'referencias', itens: [
         'Convenções de Genebra de 12 de agosto de 1949.',

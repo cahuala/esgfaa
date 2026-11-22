@@ -71,14 +71,14 @@ describe('controlo centralizado: provas escritas, alteração de notas pelo Coma
 
     const url = `/api/portal/cadeiras/${cadeira.id}/alteracoes-notas`
     assert.equal((await portal('prof').post(url).send({ componente: 'p1', estudanteIds: [contas.ana.id], motivo: 'curto' })).status, 400)
-    const p = await portal('prof').post(url).send({ componente: 'p1', estudanteIds: [contas.ana.id], motivo: 'Erro de soma na correção da pergunta 3.' })
+    const p = await portal('prof').post(url).send({ componente: 'p1', estudanteIds: [contas.ana.id], motivo: 'Erro de soma na correcção da pergunta 3.' })
     assert.equal(p.status, 201, p.body.erro)
     assert.deepEqual(p.body.map((x) => [x.estudante.nome, x.notaAtual, x.estado]), [['Estudante ana Teste', 9.5, 'pendente']])
     assert.equal((await portal('prof').post(url).send({ componente: 'p1', estudanteIds: [contas.ana.id], motivo: 'Outra vez o mesmo pedido.' })).status, 409)
 
     // o Comandante decide (o Director de Ensino e a Repartição veem, mas não decidem)
     const pend = (await cmd.get('/api/admin/academico/alteracoes-notas?estado=pendente')).body
-    assert.deepEqual(pend.map((x) => [x.cadeira.codigo, x.docente, x.motivo]), [['EST101', 'Docente Prof Teste', 'Erro de soma na correção da pergunta 3.']])
+    assert.deepEqual(pend.map((x) => [x.cadeira.codigo, x.docente, x.motivo]), [['EST101', 'Docente Prof Teste', 'Erro de soma na correcção da pergunta 3.']])
     assert.equal((await sec.post('/api/admin/academico/alteracoes-notas/decidir').send({ ids: [pend[0].id], decisao: 'autorizar' })).status, 403)
     assert.equal((await cmd.post('/api/admin/academico/alteracoes-notas/decidir').send({ ids: [pend[0].id], decisao: 'recusar' })).status, 400) // recusar exige fundamento
     assert.equal((await cmd.post('/api/admin/academico/alteracoes-notas/decidir').send({ ids: [pend[0].id], decisao: 'autorizar' })).body.decididos, 1)

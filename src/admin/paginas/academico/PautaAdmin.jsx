@@ -77,7 +77,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const calculada = (k) => Boolean(p.composicoes?.[k])
   const guardarComposicao = async (itens) => {
     aplicar(await api(`/academico/cadeiras/${cadeira.id}/pauta/composicao`, { metodo: 'PUT', corpo: { componente: compor, itens } }))
-    avisar({ texto: itens ? tx('{0}: calculada a partir das atividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
+    avisar({ texto: itens ? tx('{0}: calculada a partir das actividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
   }
 
   const coluna = (k) => {
@@ -98,7 +98,7 @@ function PautaAdmin({ cadeira, avisar }) {
   const celula = (l, k) => {
     const id = l.estudante.id
     const mal = resultados[id].invalidas.includes(k)
-    if (calculada(k)) return <td key={k} className="text-center fw-bold bg-primary bg-opacity-10" title={tx('Calculada a partir das atividades')}>{nota(paraNumero(edicao[id][k]) ?? null)}</td>
+    if (calculada(k)) return <td key={k} className="text-center fw-bold bg-primary bg-opacity-10" title={tx('Calculada a partir das actividades')}>{nota(paraNumero(edicao[id][k]) ?? null)}</td>
     return (
       <td key={k} className="text-center">
         <input
@@ -161,7 +161,7 @@ function PautaAdmin({ cadeira, avisar }) {
         </table>
       </div>
       {compor && <Composicao componente={compor} atividades={p.atividades || []} atual={p.composicoes?.[compor]} guardar={guardarComposicao} fechar={() => setCompor(null)} />}
-      <p className="small text-muted mb-0">{REGRA} {tx('Os estudantes só veem as colunas publicadas. O botão')} <i className="fa fa-calculator" /> {tx('calcula uma coluna a partir de trabalhos e questionários.')}</p>
+      <p className="small text-muted mb-0">{REGRA} {tx('Os estudantes só vêem as colunas publicadas. O botão')} <i className="fa fa-calculator" /> {tx('calcula uma coluna a partir de trabalhos e questionários.')}</p>
     </>
   )
 }

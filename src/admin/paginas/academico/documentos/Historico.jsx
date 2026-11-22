@@ -35,14 +35,14 @@ function Historico() {
   function exportar() {
     const linhas = [...h.anos.flatMap((a) => a.disciplinas.map((d) => [a.turma.anoLetivo, a.turma.nome, d.cadeira.codigo, d.cadeira.nome, d.cadeira.horas, decimal(d.final), SITUACOES[d.situacao]?.texto])),
       ...h.inscricoes.map((d) => [d.cadeira.anoLetivo, `${d.cadeira.turma} (inscrição)`, d.cadeira.codigo, d.cadeira.nome, d.cadeira.horas, decimal(d.final), SITUACOES[d.situacao]?.texto])]
-    descarregarCsv(`historico-${e.numero}`, [[`Histórico académico — ${e.nome} (${e.numero})`], [], ['Ano letivo', 'Turma', 'Código', 'Unidade curricular', 'Horas', 'Nota final', 'Situação'], ...linhas])
+    descarregarCsv(`historico-${e.numero}`, [[`Histórico académico — ${e.nome} (${e.numero})`], [], ['Ano lectivo', 'Turma', 'Código', 'Unidade curricular', 'Horas', 'Nota final', 'Situação'], ...linhas])
   }
 
   return (
     <Documento
       titulo="Histórico académico" voltar={h.anos.length ? `/academico/turmas/${h.anos[h.anos.length - 1].turma.id}` : '/pessoal/registo'}
       acoes={<button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}
-      assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Diretor da Escola']}
+      assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Director da Escola']}
     >
       <div className="of-campos">
         <div><b>Nome:</b> {e.nome}</div>

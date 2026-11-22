@@ -50,7 +50,7 @@ function ProvasImprimir() {
         {!lista && !erro ? <Carregando /> : (
           <div className="table-responsive mt-3">
             <table className="table table-striped align-middle mb-0">
-              <thead><tr><th>{tx('Data da prova')}</th><th>{tx('Cadeira e turma')}</th><th>{tx('Prova')}</th><th>{tx('Docente')}</th><th className="text-center">{tx('Cópias')}</th><th>{tx('Estado')}</th><th className="text-end">{tx('Ações')}</th></tr></thead>
+              <thead><tr><th>{tx('Data da prova')}</th><th>{tx('Cadeira e turma')}</th><th>{tx('Prova')}</th><th>{tx('Docente')}</th><th className="text-center">{tx('Cópias')}</th><th>{tx('Estado')}</th><th className="text-end">{tx('Acções')}</th></tr></thead>
               <tbody>
                 {lista?.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-4">{estado === 'enviado' ? tx('Não há provas por imprimir.') : tx('Sem provas.')}</td></tr>}
                 {lista?.map((p) => (

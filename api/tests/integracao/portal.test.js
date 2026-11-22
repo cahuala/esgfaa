@@ -171,7 +171,7 @@ describe('portal académico', () => {
     assert.match(limpa.body.erro, /peça a alteração ao Comandante/)
   })
 
-  it('trabalhos: entrega dentro do prazo, substituição, correção e prazo fechado', async () => {
+  it('trabalhos: entrega dentro do prazo, substituição, correcção e prazo fechado', async () => {
     const t = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).send({ titulo: 'Ensaio estratégico', enunciado: 'Analise…', prazo: '2026-10-20T23:59:00Z' })).body
     const fechado = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).send({ titulo: 'Já passou', prazo: '2026-10-01T23:59:00Z' })).body
 
@@ -273,15 +273,15 @@ describe('portal académico', () => {
 
   it('programa da cadeira: escrito no portal (HTML filtrado) ou em documento; os estudantes da turma consultam', async () => {
     const url = `/api/admin/academico/cadeiras/${cadeira.id}/programa`
-    const r = await sec().put(url).send({ texto: '<h2>Objetivos</h2><p onclick="x()">Planear</p><script>alert(1)</script>' })
+    const r = await sec().put(url).send({ texto: '<h2>Objectivos</h2><p onclick="x()">Planear</p><script>alert(1)</script>' })
     assert.equal(r.status, 200, r.body.erro)
-    assert.equal(r.body.programa, '<h2>Objetivos</h2><p>Planear</p>')
+    assert.equal(r.body.programa, '<h2>Objectivos</h2><p>Planear</p>')
     const doc = await sec().put(url).attach('ficheiro', PDF, { filename: 'programa.pdf', contentType: 'application/pdf' })
     assert.equal(doc.status, 200, doc.body.erro)
     assert.equal(doc.body.programaFicheiro.nome, 'programa.pdf')
 
     const vista = (await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body
-    assert.equal(vista.programa, '<h2>Objetivos</h2><p>Planear</p>')
+    assert.equal(vista.programa, '<h2>Objectivos</h2><p>Planear</p>')
     assert.equal((await portal('ana').get(`/api/portal/ficheiros/${vista.programaFicheiroId}`)).status, 200)
     assert.equal((await portal('carla').get(`/api/portal/ficheiros/${vista.programaFicheiroId}`)).status, 404) // outra turma
     assert.equal((await portal('prof').put(url).send({ texto: 'x' })).status, 401)
@@ -333,7 +333,7 @@ describe('portal académico', () => {
     assert.equal((await portal('prof').get('/api/portal/percurso')).status, 403)
   })
 
-  it('suspender a matrícula corta o acesso às cadeiras; desativar a conta termina a sessão', async () => {
+  it('suspender a matrícula corta o acesso às cadeiras; desactivar a conta termina a sessão', async () => {
     const turma = (await sec().get(`/api/admin/academico/turmas/${turmaId}`)).body
     const mBruno = turma.matriculas.find((m) => m.estudante.id === contas.bruno.id)
     await sec().put(`/api/admin/academico/matriculas/${mBruno.id}`).send({ estado: 'suspensa' })

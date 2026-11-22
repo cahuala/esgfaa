@@ -112,7 +112,7 @@ function Pauta({ c, avisar }) {
       setP({ ...p, ...r, linhas: p.linhas })
       // na Escola só o Comandante publica: fica o pedido
       const pedida = !r.publicadas.includes(k) && r.cadeira?.publicacaoPedida?.estado === 'pendente' && r.cadeira.publicacaoPedida.componentes.includes(k)
-      avisar({ texto: pedida ? tx('{0}: publicação pedida ao Comandante. Os estudantes veem as notas quando ele aprovar.', { 0: NOMES_COMPONENTES[k] })
+      avisar({ texto: pedida ? tx('{0}: publicação pedida ao Comandante. Os estudantes vêem as notas quando ele aprovar.', { 0: NOMES_COMPONENTES[k] })
         : publicadas.includes(k) ? tx('{0}: publicada aos estudantes.', { 0: NOMES_COMPONENTES[k] }) : tx('{0}: escondida dos estudantes.', { 0: NOMES_COMPONENTES[k] }) })
     } catch (e) {
       avisar({ tipo: 'erro', texto: e.message })
@@ -122,7 +122,7 @@ function Pauta({ c, avisar }) {
   const calculada = (k) => Boolean(p.composicoes?.[k])
   const guardarComposicao = async (itens) => {
     aplicar(await api(`/cadeiras/${c.id}/pauta/composicao`, { metodo: 'PUT', corpo: { componente: compor, itens } }))
-    avisar({ texto: itens ? tx('{0}: calculada a partir das atividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
+    avisar({ texto: itens ? tx('{0}: calculada a partir das actividades.', { 0: NOMES_COMPONENTES[compor] }) : tx('{0}: volta a ser lançada à mão.', { 0: NOMES_COMPONENTES[compor] }) })
   }
 
   // prazo de lançamento definido pela Administração Escolar: fora dele a coluna fica fechada
@@ -136,10 +136,10 @@ function Pauta({ c, avisar }) {
       <th scope="col" key={k}>
         {NOMES_COMPONENTES[k]}
         {prazo(k) && !prazo(k).livre && <div className={`small fw-normal p-sem-impressao ${fechada(k) ? 'text-danger' : 'text-success'}`} title={prazo(k).origem}><i className={`fa ${fechada(k) ? 'fa-lock' : 'fa-lock-open'} me-1`} />{prazo(k).texto}</div>}
-        <button type="button" className={`btn btn-xs ms-1 p-sem-impressao ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} title={calculada(k) ? tx('Calculada a partir das atividades. Clique para mudar.') : tx('Calcular a partir de trabalhos e questionários')} aria-label={tx('Como se calcula: {0}', { 0: NOMES_COMPONENTES[k] })}>
+        <button type="button" className={`btn btn-xs ms-1 p-sem-impressao ${calculada(k) ? 'btn-primary' : 'btn-white'}`} onClick={() => setCompor(k)} title={calculada(k) ? tx('Calculada a partir das actividades. Clique para mudar.') : tx('Calcular a partir de trabalhos e questionários')} aria-label={tx('Como se calcula: {0}', { 0: NOMES_COMPONENTES[k] })}>
           <i className="fa fa-calculator" />
         </button>
-        <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} disabled={espera} aria-pressed={pub} title={pub ? tx('Os estudantes já veem esta coluna. Clique para esconder.') : espera ? tx('A publicação espera a aprovação do Comandante.') : tx('Ainda escondida. Clique para publicar aos estudantes.')}>
+        <button type="button" className={`p-publicar p-sem-impressao ${pub ? 'p-publicada' : ''}`} onClick={() => publicar(k)} disabled={espera} aria-pressed={pub} title={pub ? tx('Os estudantes já vêem esta coluna. Clique para esconder.') : espera ? tx('A publicação espera a aprovação do Comandante.') : tx('Ainda escondida. Clique para publicar aos estudantes.')}>
           {pub ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {pub ? tx('Publicada') : espera ? tx('À espera do Comandante') : tx('Por publicar')}
         </button>
       </th>
@@ -150,7 +150,7 @@ function Pauta({ c, avisar }) {
     const id = l.estudante.id
     const invalida = resultados[id].invalidas.includes(k)
     // componente calculada: mostra o valor, não se escreve
-    if (calculada(k)) return <td className="p-celula-calculada" title={tx('Calculada a partir das atividades')}><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
+    if (calculada(k)) return <td className="p-celula-calculada" title={tx('Calculada a partir das actividades')}><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
     if (fechada(k)) return <td className="p-celula-inativa" title={tx('Prazo de lançamento fechado')}><Nota valor={paraNumero(edicao[id][k]) ?? null} /></td>
     return (
       <td className={desativado && !edicao[id][k] ? 'p-celula-inativa' : ''}>
@@ -225,7 +225,7 @@ function Pauta({ c, avisar }) {
         </div>
       </div>
       {compor && <Composicao componente={compor} atividades={p.atividades || []} atual={p.composicoes?.[compor]} guardar={guardarComposicao} fechar={() => setCompor(null)} />}
-      <p className="p-legenda">{REGRA} {tx('Notas de 0 a 20 (aceita vírgula); campo vazio = sem nota. O botão')} <i className="fa fa-calculator" /> {tx('de cada coluna calcula-a a partir de trabalhos e questionários. O exame fica bloqueado para os dispensados e o recurso só abre para quem reprovou no exame. Os estudantes só veem as colunas publicadas.')}</p>
+      <p className="p-legenda">{REGRA} {tx('Notas de 0 a 20 (aceita vírgula); campo vazio = sem nota. O botão')} <i className="fa fa-calculator" /> {tx('de cada coluna calcula-a a partir de trabalhos e questionários. O exame fica bloqueado para os dispensados e o recurso só abre para quem reprovou no exame. Os estudantes só vêem as colunas publicadas.')}</p>
     </div>
   )
 }

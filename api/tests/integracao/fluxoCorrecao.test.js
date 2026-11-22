@@ -6,7 +6,7 @@ const NOVA = 'Portal2026segura'
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n')
 const anexo = (nome) => [PDF, { filename: nome, contentType: 'application/pdf' }]
 
-describe('fluxo de correção: correção anónima e notas libertadas todas de uma vez', () => {
+describe('fluxo de correcção: correcção anónima e notas libertadas todas de uma vez', () => {
   let amb, cadeira
   const contas = {}
   const tokens = {}

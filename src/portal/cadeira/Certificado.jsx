@@ -20,9 +20,9 @@ export function DocumentoCertificado({ cert }) {
       <p className="mb-1">{tx('Certifica-se que')}</p>
       <p className="p-certificado-nome">{cert.estudante}</p>
       {cert.numero && <p className="small text-muted">{tx('Estudante n.º')} {cert.numero}</p>}
-      <p className="mb-1">{tx('concluiu todas as atividades da unidade curricular')}</p>
+      <p className="mb-1">{tx('concluiu todas as actividades da unidade curricular')}</p>
       <p className="p-certificado-cadeira">{cert.cadeira} <span className="text-muted">({cert.codigoCadeira})</span></p>
-      <p className="mb-0">{[cert.turma, cert.anoLetivo && tx('ano letivo {0}', { 0: cert.anoLetivo }), cert.horas && tx('{0} horas', { 0: cert.horas })].filter(Boolean).join(' · ')}</p>
+      <p className="mb-0">{[cert.turma, cert.anoLetivo && tx('ano lectivo {0}', { 0: cert.anoLetivo }), cert.horas && tx('{0} horas', { 0: cert.horas })].filter(Boolean).join(' · ')}</p>
       <div className="p-certificado-rodape">
         <div><span className="text-muted small d-block">{tx('Emitido em')}</span><b>{data(cert.emitidoEm)}</b></div>
         <div className="text-end"><span className="text-muted small d-block">{tx('Código de verificação')}</span><b className="font-monospace">{agrupado(cert.codigo)}</b></div>
@@ -40,7 +40,7 @@ function Certificado() {
   useEffect(() => { api(`/cadeiras/${id}/conclusao`).then(setR).catch((e) => setErro(e.message)) }, [id])
   if (erro) return <Erro texto={erro} />
   if (!r) return <Carregando />
-  if (!r.certificado) return <Erro texto={tx('Ainda não tem certificado desta cadeira: conclua todas as atividades e peça-o na página da cadeira.')} />
+  if (!r.certificado) return <Erro texto={tx('Ainda não tem certificado desta cadeira: conclua todas as actividades e peça-o na página da cadeira.')} />
   return (
     <>
       <div className="d-flex gap-2 mb-3 p-sem-impressao">

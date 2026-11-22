@@ -219,7 +219,7 @@ function Painel() {
               )}
 
               <Caixa
-                titulo={pode('atividades.ver') ? tx('Atividade recente') : tx('A minha atividade')}
+                titulo={pode('atividades.ver') ? tx('Actividade recente') : tx('A minha actividade')}
                 acoes={pode('atividades.ver') && <Link to="/atividades" className="btn btn-xs btn-default">{tx('Registo')}</Link>}
               >
                 {dados.ultimasAtividades.map((a) => (

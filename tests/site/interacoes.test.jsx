@@ -41,7 +41,7 @@ describe('Interacoes (gostos e comentários no site)', () => {
     expect(JSON.parse(visita[1].body).visitante).toBe(localStorage.getItem('esgfaa-visitante'))
   })
 
-  it('dar gosto atualiza o botão', async () => {
+  it('dar gosto actualiza o botão', async () => {
     const { atualizarEstatisticas } = montar()
     const botao = await screen.findByRole('button', { pressed: false })
     await userEvent.click(botao)

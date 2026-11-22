@@ -90,7 +90,7 @@ function Cursos() {
           ))}
         </ol>
         <p className={styles.nota}>
-          {t('Os requisitos específicos de cada curso estão na respetiva página.')}
+          {t('Os requisitos específicos de cada curso estão na respectiva página.')}
         </p>
       </section>
 

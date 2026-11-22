@@ -14,8 +14,8 @@ const OPCOES = [
   { id: 'ficheiro', icone: 'fa-file-upload', cor: 'bg-primary', nome: 'Ficheiro', texto: tx('PDF, Word, PowerPoint, imagens, vídeo (vários de uma vez)') },
   { id: 'ligacao', icone: 'fa-link', cor: 'bg-info', nome: 'Ligação', texto: tx('Endereço de outro site') },
   { id: 'video', icone: 'fa-play', cor: 'bg-danger', nome: 'Vídeo', texto: tx('YouTube ou outro endereço') },
-  { id: 'trabalho', icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho', texto: tx('Entrega de ficheiros com prazo e correção') },
-  { id: 'questionario', icone: 'fa-question', cor: 'bg-purple', nome: 'Prova online (questionário)', texto: tx('Prova online: escolha única, múltipla, verdadeiro ou falso… com correção automática') },
+  { id: 'trabalho', icone: 'fa-file-signature', cor: 'bg-orange', nome: 'Trabalho', texto: tx('Entrega de ficheiros com prazo e correcção') },
+  { id: 'questionario', icone: 'fa-question', cor: 'bg-purple', nome: 'Prova online (questionário)', texto: tx('Prova online: escolha única, múltipla, verdadeiro ou falso… com correcção automática') },
   { id: 'inquerito', icone: 'fa-clipboard-list', cor: 'bg-indigo', nome: 'Inquérito', texto: tx('Perguntas de opinião como no Google Forms (escolha, escala, grelha, texto), anónimo') },
   { id: 'pagina', icone: 'fa-align-left', cor: 'bg-teal', nome: 'Página', texto: tx('Texto escrito no portal, com títulos, tabelas e vídeos') },
   { id: 'pasta', icone: 'fa-folder-open', cor: 'bg-warning', nome: 'Pasta', texto: tx('Vários ficheiros juntos num só recurso') },
@@ -30,7 +30,7 @@ const OPCOES = [
 ]
 const RESULTADOS = { apos_responder: tx('Depois de responderem'), apos_fecho: tx('Só depois do fecho'), nunca: tx('Nunca (só o docente)') }
 
-// janela "Adicionar atividade ou recurso" (como no Moodle), no modal do tema
+// janela "Adicionar actividade ou recurso" (como no Moodle), no modal do tema
 function NovaAtividade({ c, secaoId, fechar, avisar, criada, abrirInquerito = null, tipoInicial = null }) {
   const [tipo, setTipo] = useState(tipoInicial)
   const [f, setF] = useState({
@@ -145,7 +145,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada, abrirInquerito = nu
         if (secaoId) fd.append('secaoId', String(secaoId))
         if (ficheiros[0]) fd.append('ficheiro', ficheiros[0].ficheiro)
         await enviarComProgresso(`/cadeiras/${c.id}/trabalhos`, fd, { aoProgresso: (p) => progresso(0, p) })
-        avisar({ texto: tx('Trabalho criado. Os estudantes já o veem.') })
+        avisar({ texto: tx('Trabalho criado. Os estudantes já o vêem.') })
         return criada()
       }
       const q = await api(`/cadeiras/${c.id}/questionarios`, { metodo: 'POST', corpo: { titulo: f.titulo, descricao: f.descricao, duracao: Number(f.duracao || 0), tentativas: Number(f.tentativas || 1), secaoId } })
@@ -166,7 +166,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada, abrirInquerito = nu
           <form className="modal-content" onSubmit={guardar}>
             <div className="modal-header">
               <h4 className="modal-title" id="nova-atividade">
-                {opcao ? <><i className={`fa ${opcao.icone} me-2`} />{tx('Novo:')} {opcao.nome.toLowerCase()}</> : tx('Adicionar atividade ou recurso')}
+                {opcao ? <><i className={`fa ${opcao.icone} me-2`} />{tx('Novo:')} {opcao.nome.toLowerCase()}</> : tx('Adicionar actividade ou recurso')}
                 <small className="d-block fs-12px text-muted fw-normal mt-1">{tx('Capítulo:')} {capitulo}</small>
               </h4>
               <button type="button" className="btn-close" onClick={fechar} disabled={aEnviar} aria-label={tx('Fechar')} />
@@ -252,7 +252,7 @@ function NovaAtividade({ c, secaoId, fechar, avisar, criada, abrirInquerito = nu
                         {f.opcoes.length < 10 && <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, opcoes: [...f.opcoes, ''] })}><i className="fa fa-plus me-1" />{tx('Opção')}</button>}
                       </div>
                       <div className="row g-2">
-                        <div className="col-sm-6"><Campo id="na-resultados" rotulo={tx('Os estudantes veem os resultados')}><select id="na-resultados" value={f.mostrarResultados} onChange={(e) => setF({ ...f, mostrarResultados: e.target.value })}>{Object.entries(RESULTADOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo></div>
+                        <div className="col-sm-6"><Campo id="na-resultados" rotulo={tx('Os estudantes vêem os resultados')}><select id="na-resultados" value={f.mostrarResultados} onChange={(e) => setF({ ...f, mostrarResultados: e.target.value })}>{Object.entries(RESULTADOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo></div>
                         <div className="col-sm-6"><Campo id="na-fecha" rotulo={tx('Fecha (opcional)')}><input id="na-fecha" type="datetime-local" value={f.fecha} onChange={(e) => setF({ ...f, fecha: e.target.value })} /></Campo></div>
                       </div>
                       <label className="p-caixa"><input type="checkbox" checked={f.multipla} onChange={(e) => setF({ ...f, multipla: e.target.checked })} /> {tx('Permitir escolher várias opções')}</label>
@@ -317,7 +317,7 @@ function EscolherFerramenta({ f, setF }) {
       <Campo id="na-ferramenta" rotulo={tx('Ferramenta')}>
         <select id="na-ferramenta" value={f.ferramentaId || ''} onChange={(e) => setF({ ...f, ferramentaId: e.target.value })}>{lista.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select>
       </Campo>
-      <Campo id="na-lti-url" rotulo={tx('Endereço de uma atividade concreta dentro da ferramenta (opcional)')}><input id="na-lti-url" type="url" placeholder="https://…" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} /></Campo>
+      <Campo id="na-lti-url" rotulo={tx('Endereço de uma actividade concreta dentro da ferramenta (opcional)')}><input id="na-lti-url" type="url" placeholder="https://…" value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} /></Campo>
     </>
   )
 }

@@ -90,7 +90,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
       const nova = r.avaliacoes?.find((x) => x.id === a.id)
       avisar({ texto: a.publicadaEm ? tx('{0}: escondida.', { 0: a.titulo })
         : espera(a) ? tx('{0}: pedido de publicação retirado.', { 0: a.titulo })
-          : nova && !nova.publicadaEm ? tx('{0}: publicação pedida ao Comandante. Os estudantes veem as notas quando ele aprovar.', { 0: a.titulo })
+          : nova && !nova.publicadaEm ? tx('{0}: publicação pedida ao Comandante. Os estudantes vêem as notas quando ele aprovar.', { 0: a.titulo })
             : tx('{0}: publicada. Abriu o prazo de pedido de recuperação.', { 0: a.titulo }) })
     }).catch(falhou)
   const apagar = (a) => pedir(`${base}/provas/${a.id}`, { metodo: 'DELETE' }).then(aplicar).catch(falhou)

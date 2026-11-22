@@ -60,7 +60,7 @@ function NovaData({ c, avisar, criada }) {
     try {
       await api(`/cadeiras/${c.id}/eventos`, { metodo: 'POST', corpo: f })
       setF(vazio)
-      avisar({ texto: tx('Data marcada. Os estudantes já a veem no calendário.') })
+      avisar({ texto: tx('Data marcada. Os estudantes já a vêem no calendário.') })
       criada()
     } catch (falha) {
       setErro(falha.message)

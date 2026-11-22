@@ -95,7 +95,7 @@ export class ServicoProgresso {
   async emitirCertificado(ctx, cadeiraId) {
     const c = await this.conclusao(ctx, cadeiraId)
     if (c.certificado) return c.certificado
-    if (!c.concluida) throw new Conflito(`Ainda faltam atividades: ${c.feitas} de ${c.total} concluídas.`)
+    if (!c.concluida) throw new Conflito(`Ainda faltam actividades: ${c.feitas} de ${c.total} concluídas.`)
     const cadeira = await this.academico.cadeira(cadeiraId)
     const cert = await this.recursos.emitirCertificado({ estudanteId: ctx.conta.id, cadeiraId: cadeira.id, codigo: novoCodigo() })
     await this.auditoria.registar(ctx, { acao: 'emitir_certificado', colecao: 'certificados', alvoId: cadeira.id, alvoTitulo: `${cert.codigo} — ${cadeira.nome}`, utilizador: quem(ctx.conta) })

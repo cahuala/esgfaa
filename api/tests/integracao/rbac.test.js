@@ -14,13 +14,13 @@ describe('permissões (RBAC) e utilizadores', () => {
   })
   after(() => amb.fechar())
 
-  it('redator só cria rascunhos, mesmo que peça publicação', async () => {
-    const r = await amb.com(redator.token).post('/api/admin/colecoes/noticias').send({ ...noticia({ titulo: 'Rascunho do redator' }), _estado: 'publicado' })
+  it('redactor só cria rascunhos, mesmo que peça publicação', async () => {
+    const r = await amb.com(redator.token).post('/api/admin/colecoes/noticias').send({ ...noticia({ titulo: 'Rascunho do redactor' }), _estado: 'publicado' })
     assert.equal(r.status, 201)
     assert.equal(r.body._estado, 'rascunho')
   })
 
-  it('redator não altera conteúdos já publicados', async () => {
+  it('redactor não altera conteúdos já publicados', async () => {
     const pub = await amb.com(chefe.token).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Publicada pelo chefe' }))
     await amb.aprovar('noticias', pub.body.slug)
     const r = await amb.com(redator.token).put(`/api/admin/colecoes/noticias/${pub.body.slug}`).send(noticia({ titulo: 'Alterada' }))
@@ -38,7 +38,7 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal(log.linhas[0].alvo_id, rasc.body.slug)
   })
 
-  it('responsável de cibersegurança vê o centro de segurança e o registo de atividades, e nada mais', async () => {
+  it('responsável de cibersegurança vê o centro de segurança e o registo de actividades, e nada mais', async () => {
     const ciber = amb.com((await amb.criarUtilizador('ciberseguranca')).token)
     assert.equal((await ciber.get('/api/admin/seguranca')).status, 200)
     assert.equal((await ciber.get('/api/admin/atividades')).status, 200)
@@ -129,7 +129,7 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.deepEqual([depois.papel, depois.aprovacao], ['redator', null])
   })
 
-  it('desativar termina as sessões', async () => {
+  it('desactivar termina as sessões', async () => {
     const u = await amb.criarUtilizador('redator')
     await amb.com(admin).put(`/api/admin/utilizadores/${u.id}`).send({ ativo: false })
     assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 401)
@@ -165,7 +165,7 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal((await amb.com(u.token).get('/api/admin/comentarios')).status, 200)
   })
 
-  it('atividades: filtros, paginação e pesquisa segura', async () => {
+  it('actividades: filtros, paginação e pesquisa segura', async () => {
     const r = await amb.com(admin).get('/api/admin/atividades?acao=entrar&porPagina=2&pagina=1')
     assert.equal(r.status, 200)
     assert.equal(r.body.linhas.length, 2)
@@ -176,7 +176,7 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.equal((await amb.com(admin).get('/api/admin/atividades?porPagina=abc&pagina=-1')).status, 200)
   })
 
-  it('exportar uma tabela (Excel ou PDF) fica no registo de atividades, com o filtro', async () => {
+  it('exportar uma tabela (Excel ou PDF) fica no registo de actividades, com o filtro', async () => {
     const corpo = { tabela: 'Mensagens do site', formato: 'excel', linhas: 3, filtro: 'pesquisa: «Silva»' }
     assert.equal((await amb.http().post('/api/admin/exportacao').send(corpo)).status, 401)
     assert.equal((await amb.com(redator.token).post('/api/admin/exportacao').send({ ...corpo, formato: 'json' })).status, 400)

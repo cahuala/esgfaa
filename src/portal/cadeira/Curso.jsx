@@ -91,7 +91,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     await secao(s.id, { titulo, ...(resumo !== null ? { resumo } : {}) })
   }
   async function apagarCapitulo(s) {
-    if (!(await confirmar(tx('Apagar o capítulo "{0}"? As atividades passam para a secção geral.', { 0: s.titulo }), { titulo: tx('Apagar capítulo'), botao: tx('Apagar'), perigo: true }))) return
+    if (!(await confirmar(tx('Apagar o capítulo "{0}"? As actividades passam para a secção geral.', { 0: s.titulo }), { titulo: tx('Apagar capítulo'), botao: tx('Apagar'), perigo: true }))) return
     await api(`/secoes/${s.id}`, { metodo: 'DELETE' }).then(recarregar).catch(falhou)
   }
   async function novoCapitulo() {
@@ -142,9 +142,9 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
   } : {})
   const moverAtividade = (a, secaoId) => api('/atividades/capitulo', { metodo: 'PUT', corpo: { tipo: a.especie, id: a.id, secaoId: secaoId || null } }).then(recarregar).catch(falhou)
   async function apagarAtividade(a) {
-    if (!(await confirmar(tx('Apagar "{0}"? Não se pode desfazer.', { 0: a.titulo }), { titulo: tx('Apagar atividade'), botao: tx('Apagar'), perigo: true }))) return
+    if (!(await confirmar(tx('Apagar "{0}"? Não se pode desfazer.', { 0: a.titulo }), { titulo: tx('Apagar actividade'), botao: tx('Apagar'), perigo: true }))) return
     const url = { material: `/materiais/${a.id}`, trabalho: `/trabalhos/${a.id}`, questionario: `/questionarios/${a.id}`, inquerito: `/inqueritos/${a.id}`, workshop: `/workshops/${a.id}` }[a.especie]
-    await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: tx('Atividade apagada.') }); recarregar() }).catch(falhou)
+    await api(url, { metodo: 'DELETE' }).then(() => { avisar({ texto: tx('Actividade apagada.') }); recarregar() }).catch(falhou)
   }
 
   const alternar = (id) => setFechados((f) => { const n = new Set(f); if (n.has(id)) n.delete(id); else n.add(id); return n })
@@ -236,7 +236,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
 
   const botaoNova = (secaoId) => edicao && (
     <div className="list-group-item text-center py-2">
-      <button type="button" className="btn btn-sm btn-white" onClick={() => setNova({ secaoId })}><i className="fa fa-plus me-1 text-theme" /> {tx('Adicionar atividade ou recurso')}</button>
+      <button type="button" className="btn btn-sm btn-white" onClick={() => setNova({ secaoId })}><i className="fa fa-plus me-1 text-theme" /> {tx('Adicionar actividade ou recurso')}</button>
     </div>
   )
 
@@ -277,7 +277,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
             <span className="p-atividade-icone bg-gray-600"><i className="fa fa-book-open" /></span>
             <div className="flex-grow-1">
               <button type="button" className="btn btn-link p-0 fw-bold text-decoration-none text-body" onClick={() => irPara({ separador: 'programa' })}>{tx('Programa da cadeira')}</button>
-              <div className="small text-muted">{tx('Objetivos, conteúdos, avaliação e bibliografia')}</div>
+              <div className="small text-muted">{tx('Objectivos, conteúdos, avaliação e bibliografia')}</div>
             </div>
           </div>
         )}
@@ -324,7 +324,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
           <>
             {s.resumo && <div className="panel-body pb-0 text-muted">{s.resumo}</div>}
             <div className="list-group list-group-flush">
-              {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem atividades neste capítulo.')}{eDocente && <> {tx('Ligue o modo de edição para juntar materiais, trabalhos e provas.')}</>}</div>}
+              {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem actividades neste capítulo.')}{eDocente && <> {tx('Ligue o modo de edição para juntar materiais, trabalhos e provas.')}</>}</div>}
               {lista.map(linhaAtividade)}
               {botaoNova(s.id)}
             </div>
@@ -397,7 +397,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
               {edicao && <button type="button" className="btn btn-sm btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-import me-1" />{tx('Importar e cópias')}</button>}
               <button type="button" className="btn btn-sm btn-white" onClick={() => irPara({ ver: 'estudante' })}><i className="fa fa-user-graduate me-1" />{tx('Ver como estudante')}</button>
             </div>
-            {edicao && !escolhido && <div className="w-100 small text-muted"><i className="fa fa-grip-vertical me-1" />{tx('Arraste as atividades entre capítulos e os capítulos para mudar a ordem.')}</div>}
+            {edicao && !escolhido && <div className="w-100 small text-muted"><i className="fa fa-grip-vertical me-1" />{tx('Arraste as actividades entre capítulos e os capítulos para mudar a ordem.')}</div>}
           </div>
         )}
 

@@ -13,7 +13,7 @@ const colunas = [
       { label: 'História', to: '/Institucional#historia' },
       { label: 'Missão, Visão e Valores', to: '/Institucional#missao' },
       { label: 'Organização e Estrutura', to: '/Institucional#estrutura' },
-      { label: 'Direção / Comando', to: '/Institucional#comando' },
+      { label: 'Direcção / Comando', to: '/Institucional#comando' },
     ],
   },
   {

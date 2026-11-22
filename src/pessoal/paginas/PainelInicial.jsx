@@ -163,7 +163,7 @@ export default function PainelInicial() {
               {d.listas.reserva.map((p) => (
                 <Link key={`${p.id}-${p.passagem}`} to={`/pessoas/${p.id}`} className="list-group-item list-group-item-action d-flex">
                   <span className="me-auto"><strong>{p.postoAbreviatura} {p.nome}</strong><div className="small text-muted">{p.passagem === 'reserva' ? 'Reserva' : 'Reforma'} · {p.artigo}</div></span>
-                  <span className={`badge align-self-center ${p.atrasado ? 'bg-danger' : 'bg-warning text-dark'}`} title={p.atrasado ? 'Data já passou: atualize a situação na ficha' : ''}>{p.atrasado ? 'em atraso · ' : ''}{dataPt(p.data)}</span>
+                  <span className={`badge align-self-center ${p.atrasado ? 'bg-danger' : 'bg-warning text-dark'}`} title={p.atrasado ? 'Data já passou: actualize a situação na ficha' : ''}>{p.atrasado ? 'em atraso · ' : ''}{dataPt(p.data)}</span>
                 </Link>
               ))}
               {!d.listas.reserva.length && <div className="list-group-item text-muted">Ninguém nos próximos 5 anos.</div>}

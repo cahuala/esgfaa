@@ -58,11 +58,11 @@ export class RepositorioAcademico {
   }
 
   criarTurma(dados) {
-    return this.prisma.turma.create({ data: dados }).catch(duplicado('Já existe uma turma com este nome neste curso e ano letivo.'))
+    return this.prisma.turma.create({ data: dados }).catch(duplicado('Já existe uma turma com este nome neste curso e ano lectivo.'))
   }
 
   atualizarTurma(id, dados) {
-    return this.prisma.turma.update({ where: { id }, data: dados }).catch(duplicado('Já existe uma turma com este nome neste curso e ano letivo.'))
+    return this.prisma.turma.update({ where: { id }, data: dados }).catch(duplicado('Já existe uma turma com este nome neste curso e ano lectivo.'))
   }
 
   async matriculasDaTurma(turmaId) {

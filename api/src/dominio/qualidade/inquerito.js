@@ -37,7 +37,7 @@ export const MODELOS = {
     descricao: 'Avalie o curso que frequenta. As respostas são anónimas.',
     publico: 'estudantes',
     perguntas: [
-      { tipo: 'escala', texto: 'Os objetivos do curso foram claros desde o início.' },
+      { tipo: 'escala', texto: 'Os objectivos do curso foram claros desde o início.' },
       { tipo: 'escala', texto: 'O plano de estudos está bem organizado.' },
       { tipo: 'escala', texto: 'A carga de trabalho foi adequada.' },
       { tipo: 'escala', texto: 'O curso prepara bem para as funções que vou desempenhar.' },

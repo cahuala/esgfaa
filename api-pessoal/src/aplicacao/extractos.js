@@ -141,7 +141,7 @@ export class ServicoExtractos {
       const p = i.pessoa
       if (['promocao', 'graduacao'].includes(e.tipo)) {
         if (!i.postoNovo) throw invalido(`${p.nome}: indique o posto.`)
-        if (p.tipo !== 'militar' || POSTOS[i.postoNovo].grau <= POSTOS[p.posto].grau) throw invalido(`${p.nome}: o posto indicado não é superior ao atual.`)
+        if (p.tipo !== 'militar' || POSTOS[i.postoNovo].grau <= POSTOS[p.posto].grau) throw invalido(`${p.nome}: o posto indicado não é superior ao actual.`)
       }
       if (e.tipo === 'nomeacao' && !i.cargoId) throw invalido(`${p.nome}: indique o cargo.`)
       if (e.tipo === 'progressao' && !proximaCategoria(p.carreiraCivil, p.categoriaCivil)) throw invalido(`${p.nome}: não há categoria acima.`)

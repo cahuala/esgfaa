@@ -11,7 +11,7 @@ const PALAVRAS = {
   telemovel: 'telemóvel', nivel: 'nível', vinculo: 'vínculo', vinculos: 'vínculos', mae: 'mãe', conjuge: 'cônjuge', genero: 'género',
   habilitacao: 'habilitação', formacao: 'formação', incorporacao: 'incorporação', emissao: 'emissão', sanguineo: 'sanguíneo',
   profissao: 'profissão', servico: 'serviço', classificacao: 'classificação', promocao: 'promoção', nomeacao: 'nomeação',
-  renovacoes: 'renovações', posicao: 'posição', observacao: 'observação', observacoes: 'observações', correcao: 'correção',
+  renovacoes: 'renovações', posicao: 'posição', observacao: 'observação', observacoes: 'observações', correcao: 'correcção',
   comentario: 'comentário', anotacoes: 'anotações', ligacao: 'ligação', notificacoes: 'notificações', matriculas: 'matrículas', inscricoes: 'inscrições',
   emprestimos: 'empréstimos', ultimo: 'último', ultima: 'última', sessao: 'sessão', as: 'às', pais: 'país', avaliacao: 'avaliação',
   presencas: 'presenças', previsao: 'previsão', devolucao: 'devolução', endereco: 'endereço', residencia: 'residência', orgao: 'órgão',
@@ -19,6 +19,9 @@ const PALAVRAS = {
   licencas: 'licenças', ferias: 'férias', mes: 'mês', voluntario: 'voluntário', favoravel: 'favorável', aptidao: 'aptidão',
   fisica: 'física', proximo: 'próximo', elegivel: 'elegível', condicoes: 'condições', condicao: 'condição', representacao: 'representação',
   iliquido: 'ilíquido', liquido: 'líquido', psiquica: 'psíquica', antiguidade: 'antiguidade', biblioteca: 'da biblioteca',
+  // norma usada em Angola (grafia anterior ao Acordo de 1990)
+  ativo: 'activo', ativa: 'activa', ativos: 'activos', atual: 'actual', atuais: 'actuais', letivo: 'lectivo', atividade: 'actividade', atividades: 'actividades',
+  efetivo: 'efectivo', efetividade: 'efectividade', direcao: 'direcção', diretor: 'director', objetivo: 'objectivo', projeto: 'projecto',
   bi: 'BI', nip: 'NIP', iban: 'IBAN', inss: 'INSS', qp: 'QP', fps: 'FPS', email: 'e-mail', p1: 'P1', p2: 'P2',
 }
 

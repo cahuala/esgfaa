@@ -105,7 +105,7 @@ export class ServicoTrabalhos {
 
   // correção anónima e trabalho de grupo não se juntam (o grupo identifica quem entregou)
   #verificarAnonimo(campos) {
-    if (campos.anonimo && campos.emGrupo) throw new ErroValidacao('A correção anónima não se usa em trabalhos de grupo.', { campo: 'anonimo' })
+    if (campos.anonimo && campos.emGrupo) throw new ErroValidacao('A correcção anónima não se usa em trabalhos de grupo.', { campo: 'anonimo' })
   }
 
   async editarTrabalho(ctx, id, dados) {
@@ -209,7 +209,7 @@ export class ServicoTrabalhos {
       if (!e) throw new NaoEncontrado('Entrega não encontrada.')
       t = await this.academico.trabalho(e.trabalhoId)
       cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, t.cadeiraId)
-      dados.correcao = texto(correcao, 'correcao', 'Comentário de correção', { max: 5000, obrigatorio: false })
+      dados.correcao = texto(correcao, 'correcao', 'Comentário de correcção', { max: 5000, obrigatorio: false })
       if (grelha !== undefined && t.grelha?.length) {
         let pontos = grelha
         if (typeof pontos === 'string') {

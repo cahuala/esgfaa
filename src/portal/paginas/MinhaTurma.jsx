@@ -56,7 +56,7 @@ function MinhaTurma() {
           <span className="p-turma-rotulo"><i className="fa fa-users me-2" />{tx('A minha turma')}</span>
           <h1>{turma?.nome || tx('Sem turma')}</h1>
           <p>
-            {saudacao()}, {primeiroNome(conta.nome)}. {turma && tx('Ano letivo {0}', { 0: turma.anoLetivo })}
+            {saudacao()}, {primeiroNome(conta.nome)}. {turma && tx('Ano lectivo {0}', { 0: turma.anoLetivo })}
             {' · '}{tx('{0} cadeira(s)', { 0: daTurma.length })}
             {colegas && ` · ${tx('{0} colega(s)', { 0: colegas.length })}`}
           </p>
@@ -189,7 +189,7 @@ function CartaoEmblemas() {
     <Cartao titulo={<><i className="fa fa-medal me-2" />{tx('Os meus emblemas')} ({d.ganhos.length})</>} acoes={<Link to="/emblemas" className="btn btn-xs btn-white">{tx('Ver todos')}</Link>}>
       {d.ganhos.length > 0
         ? <div className="p-emblemas-linha mb-2">{d.ganhos.slice(-10).map((e) => <Emblema key={e.id} e={e} pequeno />)}</div>
-        : <p className="small text-muted mb-2">{tx('Faça a primeira atividade de uma cadeira para ganhar o primeiro emblema.')}</p>}
+        : <p className="small text-muted mb-2">{tx('Faça a primeira actividade de uma cadeira para ganhar o primeiro emblema.')}</p>}
       {proximo && <div className="small"><span className="text-muted">{tx('Próximo:')}</span> <b>{proximo.titulo}</b> · {tx('{0} de {1}', { 0: proximo.feitas, 1: proximo.total })}</div>}
     </Cartao>
   )

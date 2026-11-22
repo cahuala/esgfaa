@@ -18,7 +18,7 @@ const pessoas = [
   {
     id: 'miguel-santos',
     nome: 'Cor. Miguel Santos',
-    cargo: 'Diretor do Departamento de Investigação',
+    cargo: 'Director do Departamento de Investigação',
     destaque: 'Autor de mais de 15 publicações em estratégia e defesa',
   },
   {
@@ -30,7 +30,7 @@ const pessoas = [
   {
     id: 'jose-manuel',
     nome: 'Cor. José Manuel',
-    cargo: 'Diretor de Cooperação Internacional',
+    cargo: 'Director de Cooperação Internacional',
     destaque: 'Responsável por mais de 20 acordos de cooperação com escolas parceiras',
   },
   {

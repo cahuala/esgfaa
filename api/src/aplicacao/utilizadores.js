@@ -171,13 +171,13 @@ export class ServicoUtilizadores {
     // quem não gere papéis não mexe em contas de administradores
     if (u.papel === ADMINISTRADOR && !ctx.actor.pode('papeis.gerir')) throw new SemPermissao('Só um administrador pode alterar outro administrador.')
     if (papel !== undefined) await this.#garantirPapel(ctx, papel)
-    if (proprio && ativo === false) throw new ErroValidacao('Não pode desativar a sua própria conta.')
+    if (proprio && ativo === false) throw new ErroValidacao('Não pode desactivar a sua própria conta.')
     if (proprio && papel && papel !== u.papel) throw new ErroValidacao('Não pode mudar o seu próprio papel.')
 
     // impede que o sistema fique sem administradores ativos
     const tiraAdmin = u.papel === ADMINISTRADOR && ((papel && papel !== ADMINISTRADOR) || ativo === false)
     if (tiraAdmin && (await this.utilizadores.contarAdministradoresAtivos({ exceto: u.id })) === 0) {
-      throw new ErroValidacao('Tem de existir pelo menos um administrador ativo.')
+      throw new ErroValidacao('Tem de existir pelo menos um administrador activo.')
     }
 
     // à espera do Comandante: não se ativa antes da decisão

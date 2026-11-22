@@ -205,11 +205,11 @@ export class ServicoSessao {
   }
 
   async mudarSenha(u, { atual, nova }, ip = '', navegador = '') {
-    if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe atual está errada.', 'atual')
+    if (!(await this.cifra.verificar(atual, u.senha))) throw invalido('A palavra-passe actual está errada.', 'atual')
     const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { tipo: true, nip: true, numeroAgente: true, bi: true } }) : null
     validarSenha(nova, u.email, identificadorDe(p) ?? p?.nip, p ? NOME_IDENTIFICADOR(p) : 'NIP')
     if (p?.bi && String(nova).trim().toUpperCase() === String(p.bi).toUpperCase()) throw invalido('A palavra-passe não pode ser o BI: escolha uma nova.', 'nova')
-    if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da atual.', 'nova')
+    if (await this.cifra.verificar(nova, u.senha)) throw invalido('A nova palavra-passe tem de ser diferente da actual.', 'nova')
     const g = await this.bd.utilizador.update({ where: { id: u.id }, data: { senha: await this.cifra.cifrar(nova), deveMudar: false, versaoToken: { increment: 1 } } })
     // a palavra-passe nova termina todas as sessões (também as de outros computadores); esta abre outra
     await this.#terminarSessoes({ utilizadorId: u.id })
@@ -379,7 +379,7 @@ export class ServicoSessao {
     const alvo = await this.bd.utilizador.findUnique({ where: { id }, include: { pessoa: { select: { tipo: true, nip: true, numeroAgente: true } } } })
     if (!alvo) throw naoEncontrado('Utilizador não encontrado.')
     if (papel !== undefined && !PAPEIS[papel]) throw invalido('Papel desconhecido.', 'papel')
-    if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desativar a sua conta.')
+    if (alvo.id === u.id && ((papel && papel !== 'administrador') || ativo === false)) throw invalido('Não pode tirar a si próprio o papel de administrador nem desactivar a sua conta.')
     const data = {}
     if (nome !== undefined) data.nome = nome
     // o e-mail (também numa conta que entra com o NIP: a do Comandante precisa dele para o painel de gestão)

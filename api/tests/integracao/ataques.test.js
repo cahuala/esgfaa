@@ -73,7 +73,7 @@ describe('ataques ao portal: tudo tem de ser recusado', () => {
     }
   })
 
-  it('subir de privilégios: estudante a dar-se nota ou a criar atividades; docente a mexer na cadeira de outro', async () => {
+  it('subir de privilégios: estudante a dar-se nota ou a criar actividades; docente a mexer na cadeira de outro', async () => {
     assert.ok([403, 404].includes((await como('ana').put(`/api/portal/entregas/${entregaAna.id}`).send({ nota: 20 })).status))
     assert.ok([403, 404].includes((await como('ana').post(`/api/portal/cadeiras/${c1.id}/trabalhos`).send({ titulo: 'X', prazo: '2030-01-01T00:00:00Z' })).status))
     assert.ok([403, 404].includes((await como('ana').put(`/api/portal/cadeiras/${c1.id}/pauta`).send({ linhas: [{ estudanteId: contas.ana.id, p1: 20 }] })).status))

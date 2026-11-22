@@ -192,7 +192,7 @@ function Papeis() {
               </div>
 
               <div className="small text-muted mt-3">
-                <i className="fa fa-info-circle me-1" /><b>{tx('Publicar')}</b>{tx(': quem não a tem guarda só rascunhos e não altera conteúdos já publicados. Qualquer ação marca automaticamente')} <b>{tx('Ver')}</b>.
+                <i className="fa fa-info-circle me-1" /><b>{tx('Publicar')}</b>{tx(': quem não a tem guarda só rascunhos e não altera conteúdos já publicados. Qualquer acção marca automaticamente')} <b>{tx('Ver')}</b>.
               </div>
 
               {!bloqueado && (

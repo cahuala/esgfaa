@@ -57,7 +57,7 @@ export class Emprestimo {
 
 // o leitor pode levar mais um livro? (lista dos empréstimos ativos dele)
 export function verificarLeitor(conta, ativos, agora) {
-  if (!conta?.ativo) throw new Conflito('Esta conta está desativada.')
+  if (!conta?.ativo) throw new Conflito('Esta conta está desactivada.')
   const atrasados = ativos.filter((e) => e.emAtraso(agora))
   if (atrasados.length) throw new Conflito(`${conta.nome} tem ${atrasados.length} empréstimo(s) em atraso: só pode levar mais depois de devolver.`)
   const maximo = REGRAS_EMPRESTIMO[conta.tipo]?.maximo ?? REGRAS_EMPRESTIMO.estudante.maximo

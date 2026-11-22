@@ -28,11 +28,11 @@ export class ServicoRegistos {
   // o portal diz que o estudante abriu uma atividade (página, pasta, trabalho…)
   async vista(ctx, cadeiraId, { tipo, id }) {
     if (ctx.conta.tipo !== 'estudante') return { registado: false }
-    if (!['material', 'trabalho', 'inquerito', 'questionario'].includes(tipo)) throw new ErroValidacao('Tipo de atividade inválido.', { campo: 'tipo' })
+    if (!['material', 'trabalho', 'inquerito', 'questionario'].includes(tipo)) throw new ErroValidacao('Tipo de actividade inválido.', { campo: 'tipo' })
     const c = await this.acesso.acessivel(ctx.conta, cadeiraId)
     const { acessos } = await this.disponibilidade.acessos(c.id, ctx.conta.id)
     const a = acessos[chave(tipo, id)]
-    if (!a || a.escondida) throw new NaoEncontrado('Atividade não encontrada.')
+    if (!a || a.escondida) throw new NaoEncontrado('Actividade não encontrada.')
     await this.registar(ctx.conta, c.id, tipo, id)
     return { registado: true }
   }
@@ -72,6 +72,6 @@ export class ServicoRegistos {
       this.registos.registos(c.id, { contaId: estudanteId ? Number(estudanteId) : null, antesDe: antesDe ? Number(antesDe) : null }),
       this.#titulos(c.id),
     ])
-    return linhas.map((l) => ({ ...l, titulo: l.tipo === 'cadeira' ? 'Página da cadeira' : l.tipo === 'forum' ? 'Fórum' : titulos[chave(l.tipo, l.alvoId)] || '(atividade apagada)' }))
+    return linhas.map((l) => ({ ...l, titulo: l.tipo === 'cadeira' ? 'Página da cadeira' : l.tipo === 'forum' ? 'Fórum' : titulos[chave(l.tipo, l.alvoId)] || '(actividade apagada)' }))
   }
 }

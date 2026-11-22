@@ -83,7 +83,7 @@ describe('inquéritos institucionais de satisfação', () => {
     assert.equal((await portal('carla').post(`/api/portal/inqueritos-escola/${i.id}/respostas`).send({ respostas: {} })).status, 404)
   })
 
-  it('para docentes: só os docentes veem; os estudantes não podem gerir', async () => {
+  it('para docentes: só os docentes vêem; os estudantes não podem gerir', async () => {
     const i = (await escola.post('/api/admin/academico/satisfacao').send({ titulo: 'Condições de trabalho', publico: 'docentes', fecha: '2027-01-30T22:59:00Z', perguntas: [{ tipo: 'escala', texto: 'Tenho os meios de que preciso.' }] })).body
     await escola.post(`/api/admin/academico/satisfacao/${i.id}/lancar`)
     // recusado com motivo: não chega a ninguém; pode pedir-se de novo

@@ -12,7 +12,7 @@ const itens = [
 const de = (l, id) => l.find((e) => e.id === `7-${id}`)
 
 describe('emblemas', () => {
-  it('primeiros passos, capítulos (só os que têm atividades) e cadeira', () => {
+  it('primeiros passos, capítulos (só os que têm actividades) e cadeira', () => {
     const l = calcularEmblemas({ cadeira, secoes, itens })
     assert.equal(de(l, 'inicio').ganho, true)
     assert.equal(de(l, 'capitulo-1').ganho, true)
@@ -22,7 +22,7 @@ describe('emblemas', () => {
     assert.equal(de(l, 'pontual'), undefined) // menos de dois trabalhos
   })
 
-  it('sempre a tempo: todos dentro do prazo; um atraso tira-o do alcance; sem atividades não há emblemas', () => {
+  it('sempre a tempo: todos dentro do prazo; um atraso tira-o do alcance; sem actividades não há emblemas', () => {
     const certo = calcularEmblemas({ cadeira, secoes, itens, pontualidade: [{ entregue: true, aTempo: true }, { entregue: true, aTempo: true }] })
     assert.equal(de(certo, 'pontual').ganho, true)
     const atraso = calcularEmblemas({ cadeira, secoes, itens, pontualidade: [{ entregue: true, aTempo: true }, { entregue: true, aTempo: false }] })

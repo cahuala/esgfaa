@@ -97,7 +97,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('Alocação guardada.', { exact: false })).toBeVisible()
   await page.getByRole('tab', { name: /Programa/ }).click()
   await page.locator('.doc-folha, .ProseMirror').first().click()
-  await page.keyboard.type('Objetivos: planear operações.')
+  await page.keyboard.type('Objectivos: planear operações.')
   await page.getByRole('button', { name: 'Guardar programa' }).click()
   await expect(page.getByText('Programa guardado.')).toBeVisible()
 
@@ -118,7 +118,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('dialog').getByLabel('Título do novo capítulo').fill('Capítulo 1 — Introdução')
   await page.getByRole('dialog').getByRole('button', { name: 'Criar' }).click()
   await expect(page.getByRole('heading', { name: /Capítulo 1 — Introdução/ })).toBeVisible()
-  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: 'Adicionar actividade ou recurso' }).last().click()
   await page.getByRole('button', { name: /Ligação/ }).click()
   await page.getByLabel('Título').fill('Leitura obrigatória')
   await page.getByLabel('Endereço').fill('https://example.org/leitura')
@@ -128,7 +128,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   // o docente vê a sala como os estudantes a veem e volta ao seu modo
   await page.getByLabel('Modo de edição').uncheck()
   await page.getByRole('button', { name: 'Ver como estudante' }).click()
-  await expect(page.getByText('Está a ver a sala de aula como os estudantes a veem.', { exact: false })).toBeVisible()
+  await expect(page.getByText('Está a ver a sala de aula como os estudantes a vêem.', { exact: false })).toBeVisible()
   // os capítulos do índice só mostram as atividades quando se clica neles
   const previa = page.getByRole('complementary', { name: 'Capítulos da cadeira' })
   await expect(previa.getByRole('button', { name: /Leitura obrigatória/ })).toHaveCount(0)
@@ -152,7 +152,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   // questionário com uma pergunta de verdadeiro ou falso, publicado
   await page.getByRole('tab', { name: /Cadeira/ }).click()
   await page.getByLabel('Modo de edição').check()
-  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: 'Adicionar actividade ou recurso' }).last().click()
   await page.getByRole('button', { name: /^Prova online \(questionário\)/ }).click()
   await page.getByLabel('Título').fill('Teste rápido')
   await page.getByRole('button', { name: 'Criar e juntar perguntas' }).click()
@@ -171,7 +171,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await page.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByText('Restrições guardadas.')).toBeVisible()
   // sondagem aos estudantes
-  await page.getByRole('button', { name: 'Adicionar atividade ou recurso' }).last().click()
+  await page.getByRole('button', { name: 'Adicionar actividade ou recurso' }).last().click()
   await page.getByRole('button', { name: /Sondagem/ }).click()
   await page.getByLabel('Título').fill('Visita de estudo')
   await page.getByLabel('Pergunta').fill('Que dia prefere?')
@@ -221,7 +221,7 @@ test('Administração Escolar matricula; docente publica; estudante consulta e p
   await expect(page.getByText('Resposta registada.')).toBeVisible()
   await expect(page.getByText('1 resposta(s)')).toBeVisible()
   await page.getByRole('tab', { name: 'Programa' }).click()
-  await expect(page.getByText('Objetivos: planear operações.')).toBeVisible()
+  await expect(page.getByText('Objectivos: planear operações.')).toBeVisible()
 
   // fórum: o estudante abre um tópico
   await page.getByRole('tab', { name: 'Fórum' }).click()

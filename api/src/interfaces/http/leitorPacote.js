@@ -113,7 +113,7 @@ const H5P = `
     H5P.externalDispatcher.on('xAPI', function (ev) {
       var st = ev.data && ev.data.statement
       if (!st || !st.result) return
-      // só a atividade principal (as perguntas de dentro de um conjunto têm "parent")
+      // só a actividade principal (as perguntas de dentro de um conjunto têm "parent")
       var ctx = st.context && st.context.contextActivities
       if (ctx && ctx.parent && ctx.parent.length) return
       var esc = st.result.score && typeof st.result.score.scaled === 'number' ? st.result.score.scaled : null

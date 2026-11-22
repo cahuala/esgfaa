@@ -195,7 +195,7 @@ function LeitorPdf({ fonte, titulo, descarregar, nomeFicheiro, protegido = false
         <div className={styles.grupo}>
           <button type="button" className={styles.botao} onClick={() => irPara(atual - 1)} disabled={!doc || atual <= 1} aria-label={t('Página anterior')}><FaChevronLeft aria-hidden="true" /></button>
           <form className={styles.paginaAtual} onSubmit={(e) => { e.preventDefault(); irPara(campo) }}>
-            <input value={campo} onChange={(e) => setCampo(e.target.value.replace(/\D/g, ''))} onBlur={() => irPara(campo)} inputMode="numeric" aria-label={t('Página atual')} disabled={!doc} />
+            <input value={campo} onChange={(e) => setCampo(e.target.value.replace(/\D/g, ''))} onBlur={() => irPara(campo)} inputMode="numeric" aria-label={t('Página actual')} disabled={!doc} />
             <span>/ {total || '…'}</span>
           </form>
           <button type="button" className={styles.botao} onClick={() => irPara(atual + 1)} disabled={!doc || atual >= total} aria-label={t('Página seguinte')}><FaChevronRight aria-hidden="true" /></button>

@@ -37,7 +37,7 @@ function FolhaPresencas() {
   return (
     <Documento
       titulo="Folha de presenças" paisagem voltar={`/academico/cadeiras/${d.cadeira.id}`}
-      subtitulo={`${d.cadeira.codigo} — ${d.cadeira.nome} · ${d.turma.curso} · ${d.turma.nome} · ano letivo ${d.turma.anoLetivo}`}
+      subtitulo={`${d.cadeira.codigo} — ${d.cadeira.nome} · ${d.turma.curso} · ${d.turma.nome} · ano lectivo ${d.turma.anoLetivo}`}
       acoes={(
         <>
           <label className="d-flex align-items-center gap-1 small mb-0">Colunas em branco <input type="number" min={0} max={30} value={branco} onChange={(e) => setBranco(e.target.value)} className="form-control form-control-sm" style={{ width: 70 }} /></label>

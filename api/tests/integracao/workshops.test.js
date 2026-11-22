@@ -49,7 +49,7 @@ describe('avaliação por pares (workshop)', () => {
     const criar = (corpo) => portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/workshops`).send({ titulo: 'Plano de operação', fimSubmissao: '2026-11-15T23:59:00Z', fimAvaliacao: '2026-11-22T23:59:00Z', ...corpo })
     assert.equal((await criar({ grelha: [] })).status, 400)
     assert.equal((await criar({ grelha: [{ criterio: 'Clareza', pontos: 10 }], fimAvaliacao: '2026-11-10T00:00:00Z' })).status, 400)
-    w = (await criar({ grelha: [{ criterio: 'Análise da missão', pontos: 10 }, { criterio: 'Modalidades de ação', pontos: 10 }], avaliacoesPorPar: 2 })).body
+    w = (await criar({ grelha: [{ criterio: 'Análise da missão', pontos: 10 }, { criterio: 'Modalidades de acção', pontos: 10 }], avaliacoesPorPar: 2 })).body
     assert.equal(w.avaliacoesPorPar, 2)
     assert.equal((await portal('ana').get(`/api/portal/cadeiras/${cadeira.id}`)).body.workshops[0].fase, 'submissao')
 

@@ -4,7 +4,7 @@ import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 
 const NOVA = 'Portal2026segura'
 
-describe('questionários completos: tipos novos, banco, ordem aleatória, correção manual e estatísticas', () => {
+describe('questionários completos: tipos novos, banco, ordem aleatória, correcção manual e estatísticas', () => {
   let amb, cadeira, q
   const contas = {}
   const tokens = {}

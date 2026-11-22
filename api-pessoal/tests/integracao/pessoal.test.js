@@ -55,7 +55,7 @@ describe('Sistema de Gestão de Pessoal', () => {
     assert.equal((await c.post('/api/pessoas').send(militar())).status, 403)
   })
 
-  it('o Comandante e o Chefe de Pessoal veem tudo (utilizadores, auditoria, livro de expediente); o Comandante pode fazer tudo', async () => {
+  it('o Comandante e o Chefe de Pessoal vêem tudo (utilizadores, auditoria, livro de expediente); o Comandante pode fazer tudo', async () => {
     const conta = async (email, papel) => {
       await amb.criarConta(adm, { nome: `${papel} Teste`, email, papel, senha: 'Inicial2026x' })
       const t = await amb.entrar(email, 'Inicial2026x')
@@ -300,7 +300,7 @@ describe('Sistema de Gestão de Pessoal', () => {
 })
 
 describe('Envio para o Portal Académico', () => {
-  it('só docentes e estudantes, com assinatura; quem sai vai como inativo', async () => {
+  it('só docentes e estudantes, com assinatura; quem sai vai como inactivo', async () => {
     const pedidos = []
     const assinaturas = []
     const enviar = async (url, op) => {

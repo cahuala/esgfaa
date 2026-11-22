@@ -203,7 +203,7 @@ function AnotarPdf({ ficheiro, iniciais = [], guardar, fechar }) {
         <button type="button" className="btn btn-sm btn-dark" onClick={desfazer} disabled={!anotacoes.length} title={tx('Desfazer (Ctrl+Z)')}><i className="fa fa-undo" /></button>
         <span className="small text-white-50 ms-auto">{tx('{0} anotação(ões)', { 0: anotacoes.length })}</span>
         <button type="button" className="btn btn-sm btn-white" onClick={sair} disabled={aGuardar}>{tx('Cancelar')}</button>
-        <button type="button" className="btn btn-sm btn-theme" onClick={concluir} disabled={aGuardar || !doc}><i className="fa fa-check me-1" />{aGuardar ? tx('A preparar o PDF…') : tx('Concluir correção')}</button>
+        <button type="button" className="btn btn-sm btn-theme" onClick={concluir} disabled={aGuardar || !doc}><i className="fa fa-check me-1" />{aGuardar ? tx('A preparar o PDF…') : tx('Concluir correcção')}</button>
       </div>
       <div className="p-anotar-dica">{{
         caneta: tx('Escreva ou sublinhe com o rato, o dedo ou a caneta do tablet.'),

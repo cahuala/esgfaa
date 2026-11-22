@@ -151,7 +151,7 @@ function Eventos() {
 
           {grupos.length === 0 ? (
             <div className={styles.vazio}>
-              <strong>{t('Sem eventos para esta seleção.')}</strong>
+              <strong>{t('Sem eventos para esta selecção.')}</strong>
               <button onClick={() => { setDia(null); setTipo(TODOS) }}>{t('Ver toda a agenda')}</button>
             </div>
           ) : (

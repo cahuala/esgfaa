@@ -16,7 +16,7 @@ function Cadeiras() {
   }, [eDocente])
   return (
     <>
-      <Titulo rotulo={tx('As minhas cadeiras')} titulo={tx('As minhas cadeiras')} sub={eDocente ? tx('onde é regente ou assistente') : tx('do ano letivo em curso')} />
+      <Titulo rotulo={tx('As minhas cadeiras')} titulo={tx('As minhas cadeiras')} sub={eDocente ? tx('onde é regente ou assistente') : tx('do ano lectivo em curso')} />
       {erro && <Erro texto={erro} />}
       {!lista && !erro ? <Carregando /> : lista && <div className="panel panel-body"><VisaoCadeiras cadeiras={lista} progresso={progresso} /></div>}
     </>

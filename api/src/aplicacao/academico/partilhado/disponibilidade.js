@@ -78,7 +78,7 @@ export class ServicoDisponibilidade {
   async exigir(cadeiraId, estudanteId, tipo, id) {
     const { acessos } = await this.acessos(cadeiraId, estudanteId)
     const a = acessos[chave(tipo, id)]
-    if (!a || a.escondida) throw new NaoEncontrado('Atividade não encontrada.')
-    if (!a.aberta) throw new Conflito(`Esta atividade ainda não está disponível: ${explicarMotivos(a.motivos)}.`)
+    if (!a || a.escondida) throw new NaoEncontrado('Actividade não encontrada.')
+    if (!a.aberta) throw new Conflito(`Esta actividade ainda não está disponível: ${explicarMotivos(a.motivos)}.`)
   }
 }

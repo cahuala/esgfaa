@@ -6,13 +6,13 @@ export const TIPOS_ITEM_NOTA = ['trabalho', 'questionario', 'workshop']
 
 // [{ tipo, id, peso }]: 1 a 20 atividades sem repetir, pesos inteiros de 1 a 100
 export function validarComposicao(itens) {
-  if (!Array.isArray(itens) || itens.length < 1 || itens.length > 20) throw erro('itens', 'Escolha de 1 a 20 atividades.')
+  if (!Array.isArray(itens) || itens.length < 1 || itens.length > 20) throw erro('itens', 'Escolha de 1 a 20 actividades.')
   const vistas = new Set()
   return itens.map((i) => {
-    const tipo = escolha(i.tipo, 'itens', 'Tipo de atividade', TIPOS_ITEM_NOTA)
+    const tipo = escolha(i.tipo, 'itens', 'Tipo de actividade', TIPOS_ITEM_NOTA)
     const id = Number(i.id)
-    if (!Number.isSafeInteger(id) || id < 1) throw erro('itens', 'Atividade inválida.')
-    if (vistas.has(`${tipo}-${id}`)) throw erro('itens', 'A mesma atividade aparece duas vezes.')
+    if (!Number.isSafeInteger(id) || id < 1) throw erro('itens', 'Actividade inválida.')
+    if (vistas.has(`${tipo}-${id}`)) throw erro('itens', 'A mesma actividade aparece duas vezes.')
     vistas.add(`${tipo}-${id}`)
     const peso = Number(i.peso ?? 1)
     if (!Number.isInteger(peso) || peso < 1 || peso > 100) throw erro('itens', 'Os pesos são inteiros de 1 a 100.')

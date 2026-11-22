@@ -22,7 +22,7 @@ export const TIPOS_PROPOSTA = {
 export const ESTADOS_PROPOSTA = { rascunho: 'Em preparação', a_despacho: 'A despacho do Comandante', enviada: 'Enviada ao escalão superior', concluida: 'Concluída (extracto recebido)', indeferida: 'Indeferida', cancelada: 'Cancelada' }
 export const ABERTAS = ['rascunho', 'a_despacho', 'enviada']
 // o despacho do Comandante sobre uma proposta, antes de seguir
-export const DESPACHOS_PROPOSTA = { autorizo: 'Autorizo o envio', devolvo: 'Devolvo para correção' }
+export const DESPACHOS_PROPOSTA = { autorizo: 'Autorizo o envio', devolvo: 'Devolvo para correcção' }
 const INCLUIR = { anexos: { orderBy: { id: 'asc' } }, itens: { include: { pessoa: { include: { cursos: true, eventos: true, graduacoes: true, cargo: true } } }, orderBy: { id: 'asc' } } }
 const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
@@ -348,7 +348,7 @@ export class ServicoPropostas {
   async devolver(u, id, { motivo = '' }) {
     exigir(u, 'decidir')
     const pr = await this.#obter(id)
-    if (pr.estado !== 'enviada') throw invalido('Só volta à preparação uma proposta enviada (ex.: devolvida para correção).')
+    if (pr.estado !== 'enviada') throw invalido('Só volta à preparação uma proposta enviada (ex.: devolvida para correcção).')
     await this.bd.proposta.update({ where: { id }, data: { estado: 'rascunho', motivo } })
     await this.auditoria.registar(u, 'devolver_proposta', `#${id}: ${pr.titulo}`, { motivo })
     return this.obter(u, id)

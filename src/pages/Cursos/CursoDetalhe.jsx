@@ -13,7 +13,7 @@ import { t } from '../../i18n/linguas'
 
 const seccoes = [
   { id: 'apresentacao', label: 'Apresentação' },
-  { id: 'objetivos', label: 'Objetivos' },
+  { id: 'objetivos', label: 'Objectivos' },
   { id: 'plano', label: 'Plano curricular' },
   { id: 'admissao', label: 'Admissão' },
   { id: 'calendario', label: 'Calendário' },
@@ -98,7 +98,7 @@ function CursoDetalhe() {
             </dl>
           </Seccao>
 
-          <Seccao id="objetivos" numero={numero('objetivos')} rotulo={t('Objetivos')} titulo={t('No final do curso, o oficial é capaz de:')}>
+          <Seccao id="objetivos" numero={numero('objetivos')} rotulo={t('Objectivos')} titulo={t('No final do curso, o oficial é capaz de:')}>
             <ol className={ed.listaNumerada}>
               {curso.objetivos.map((o) => <li key={o}>{o}</li>)}
             </ol>

@@ -19,7 +19,7 @@ const revistas = [
     pdf: PdfN2,
     destaque: true,
     sumario: [
-      { titulo: 'Editorial: Pensar o mar, pensar a região', autor: 'Direção da Revista', pagina: 3 },
+      { titulo: 'Editorial: Pensar o mar, pensar a região', autor: 'Direcção da Revista', pagina: 3 },
       { titulo: 'Golfo da Guiné: da vigilância costeira à cooperação entre Estados', autor: 'Cor. Ana Baptista', pagina: 4 },
       { titulo: 'A SADC e a arquitetura de paz e segurança: instituições à prova', autor: 'Cor. Miguel Santos', pagina: 6 },
       { titulo: 'Publicar na Revista: normas para autores', autor: 'Departamento de Investigação', pagina: 8 },
@@ -35,7 +35,7 @@ const revistas = [
     pdf: PdfN1,
     destaque: false,
     sumario: [
-      { titulo: 'Editorial: Uma revista para a Escola', autor: 'Direção da Revista', pagina: 3 },
+      { titulo: 'Editorial: Uma revista para a Escola', autor: 'Direcção da Revista', pagina: 3 },
       { titulo: 'Liderar no século XXI: o que muda e o que permanece no comando militar', autor: 'Cor. Ana Baptista', pagina: 4 },
       { titulo: 'O processo de planeamento de operações: uma leitura prática', autor: 'Cor. Miguel Santos', pagina: 6 },
       { titulo: 'Publicar na Revista: normas para autores', autor: 'Departamento de Investigação', pagina: 8 },

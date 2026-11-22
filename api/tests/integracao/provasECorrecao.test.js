@@ -6,7 +6,7 @@ import { validarAnotacoes } from '../../src/dominio/academico/atividades/anotaco
 
 const NOVA = 'Portal2026segura'
 
-describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, comentário por nota e exceções; correção no PDF', () => {
+describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, comentário por nota e excepções; correcção no PDF', () => {
   let amb, cadeira
   const contas = {}
   const tokens = {}
@@ -43,7 +43,7 @@ describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, c
     let r = await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'lacunas', enunciado: 'Complete.', pontos: 2, opcoes: { texto: 'A capital de Angola é [[Luanda]] e o rio mais longo é o [[Kwanza|Cuanza]].' } })
     assert.equal(r.status, 201, r.body.erro)
     assert.equal((await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'lacunas', enunciado: 'Sem lacunas', opcoes: { texto: 'Não tem nada para preencher.' } })).status, 400)
-    r = await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'ordenar', enunciado: 'Ordene as fases do planeamento.', pontos: 3, opcoes: { itens: ['Receção da missão', 'Análise da missão', 'Modalidades de ação', 'Decisão'] } })
+    r = await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'ordenar', enunciado: 'Ordene as fases do planeamento.', pontos: 3, opcoes: { itens: ['Recepção da missão', 'Análise da missão', 'Modalidades de acção', 'Decisão'] } })
     assert.equal(r.status, 201, r.body.erro)
     r = await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'curta', enunciado: 'Autor de "Da Guerra"?', opcoes: { respostas: ['Clausewitz'] } })
     assert.equal(r.status, 201)
@@ -68,7 +68,7 @@ describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, c
     assert.equal(t.permutacoes, undefined)
     const [pLac, pOrd, pCurta] = t.paginas.map((ids) => t.perguntas.find((p) => p.id === ids[0]))
     assert.deepEqual(pLac.partes.map((x) => ('lacuna' in x ? '_' : 'texto')), ['texto', '_', 'texto', '_', 'texto'])
-    assert.notDeepEqual(pOrd.itens.map((x) => x.texto), ['Receção da missão', 'Análise da missão', 'Modalidades de ação', 'Decisão'])
+    assert.notDeepEqual(pOrd.itens.map((x) => x.texto), ['Recepção da missão', 'Análise da missão', 'Modalidades de acção', 'Decisão'])
 
     // página 1: as lacunas (uma certa, sem contar acentos nem maiúsculas); a resposta da página 2 ainda não conta
     await portal('ana').put(`/api/portal/tentativas/${t.id}/respostas`).send({ respostas: { [pLac.id]: ['luanda', 'Zambeze'], [pCurta.id]: 'Clausewitz' } })
@@ -76,7 +76,7 @@ describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, c
     assert.equal((await portal('ana').put(`/api/portal/tentativas/${t.id}/pagina`).send({ pagina: 1 })).status, 200)
     assert.equal((await portal('ana').put(`/api/portal/tentativas/${t.id}/pagina`).send({ pagina: 0 })).status, 409) // não volta atrás
     // página 2: a ordem certa (pelas posições mostradas); tentar mudar a página 1 não tem efeito
-    const certa = ['Receção da missão', 'Análise da missão', 'Modalidades de ação', 'Decisão'].map((tx) => pOrd.itens.find((x) => x.texto === tx).i)
+    const certa = ['Recepção da missão', 'Análise da missão', 'Modalidades de acção', 'Decisão'].map((tx) => pOrd.itens.find((x) => x.texto === tx).i)
     await portal('ana').put(`/api/portal/tentativas/${t.id}/respostas`).send({ respostas: { [pLac.id]: ['Luanda', 'Kwanza'], [pOrd.id]: certa } })
     assert.equal((await portal('ana').put(`/api/portal/tentativas/${t.id}/pagina`).send({ pagina: 2 })).status, 200)
     const fim = await portal('ana').post(`/api/portal/tentativas/${t.id}/entrega`).send({ respostas: { [pLac.id]: ['Luanda', 'Kwanza'], [pOrd.id]: certa, [pCurta.id]: 'clausewitz' } })
@@ -85,10 +85,10 @@ describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, c
     assert.equal(fim.body.nota, 16.67)
     assert.equal(fim.body.comentarioNota, 'Muito bem, siga para o capítulo 2.')
     const rev = (await portal('ana').get(`/api/portal/tentativas/${t.id}`)).body
-    assert.deepEqual(rev.correcao.find((c) => c.perguntaId === pOrd.id).textos.dadas, ['Receção da missão', 'Análise da missão', 'Modalidades de ação', 'Decisão'])
+    assert.deepEqual(rev.correcao.find((c) => c.perguntaId === pOrd.id).textos.dadas, ['Recepção da missão', 'Análise da missão', 'Modalidades de acção', 'Decisão'])
   })
 
-  it('exceções: outro fecho e mais tentativas só para um estudante da turma', async () => {
+  it('excepções: outro fecho e mais tentativas só para um estudante da turma', async () => {
     const q = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/questionarios`).send({ titulo: 'Teste de ontem', abre: '2026-11-07T08:00:00Z', fecha: '2026-11-08T18:00:00Z', tentativas: 1 })).body
     await portal('prof').post(`/api/portal/questionarios/${q.id}/perguntas`).send({ tipo: 'vf', enunciado: 'A SADC tem sede em Gaborone.', correta: 'verdadeiro' })
     await portal('prof').put(`/api/portal/questionarios/${q.id}`).send({ publicado: true })
@@ -117,7 +117,7 @@ describe('provas: palavra-passe, páginas só para a frente, lacunas, ordenar, c
     assert.equal((await portal('bruno').get(`/api/portal/questionarios/${q.id}`)).body.estado, 'fechado')
   })
 
-  it('correção no PDF: as anotações guardam-se com a correção e só sobre os ficheiros da entrega', async () => {
+  it('correcção no PDF: as anotações guardam-se com a correcção e só sobre os ficheiros da entrega', async () => {
     const t = (await portal('prof').post(`/api/portal/cadeiras/${cadeira.id}/trabalhos`).field('titulo', 'Ensaio').field('prazo', '2026-11-20T23:59:00Z')).body
     const e = await portal('ana').post(`/api/portal/trabalhos/${t.id}/entrega`).attach('ficheiros', pdfComTexto('O meu ensaio sobre a defesa regional.'), { filename: 'ensaio.pdf', contentType: 'application/pdf' })
     assert.equal(e.status, 201, e.body.erro)

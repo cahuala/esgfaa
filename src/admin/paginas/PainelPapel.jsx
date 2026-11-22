@@ -78,7 +78,7 @@ export default function PainelPapel() {
     <>
       <div className="row">
         {ac && <>
-          <Numero cor="esg-w-vermelho" icone="fa-users" titulo={tx('TURMAS ATIVAS')} valor={ac.turmas} extra={tx('Turmas e matrículas')} para="/academico/turmas" />
+          <Numero cor="esg-w-vermelho" icone="fa-users" titulo={tx('TURMAS ACTIVAS')} valor={ac.turmas} extra={tx('Turmas e matrículas')} para="/academico/turmas" />
           <Numero cor="esg-w-preto" icone="fa-user-graduate" titulo={tx('ESTUDANTES MATRICULADOS')} valor={ac.estudantes} extra={tx('Indicadores')} para="/academico/indicadores" />
           <Numero cor="esg-w-dourado" icone="fa-chalkboard-teacher" titulo={tx('DOCENTES')} valor={ac.docentes} extra={homologa ? tx('{0} por verificar', { 0: ac.docentesPorVerificar }) : tx('Alocação de docentes')} para={homologa ? '/academico/docentes' : '/academico/alocacao'} />
           <Numero cor="esg-w-cinza" icone="fa-hourglass-half" titulo={tx('À ESPERA DE DECISÃO')} valor={(tarefas ?? []).reduce((s, t) => s + (t.valor ?? 1), 0)} extra={tx('Ver abaixo')} para="/" />

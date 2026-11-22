@@ -25,37 +25,37 @@ export class ServicoAnosLetivos {
   async criar(ctx, { id, ...datas }) {
     ctx.actor.exigir('academico.gerir')
     validarId(id)
-    if (await this.prisma.anoLetivo.findUnique({ where: { id } })) throw new Conflito(`O ano letivo ${id} já existe.`)
+    if (await this.prisma.anoLetivo.findUnique({ where: { id } })) throw new Conflito(`O ano lectivo ${id} já existe.`)
     const primeiro = !(await this.prisma.anoLetivo.count())
     const a = await this.prisma.anoLetivo.create({ data: { id, ...validarDatas(datas), atual: primeiro } })
-    await this.auditoria.registar(ctx, { acao: 'criar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano letivo ${id}` })
+    await this.auditoria.registar(ctx, { acao: 'criar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
     return publicoAno(a, this.relogio.agora())
   }
 
   async editar(ctx, id, datas) {
     ctx.actor.exigir('academico.gerir')
-    if (!(await this.prisma.anoLetivo.findUnique({ where: { id } }))) throw new NaoEncontrado('Ano letivo não encontrado.')
+    if (!(await this.prisma.anoLetivo.findUnique({ where: { id } }))) throw new NaoEncontrado('Ano lectivo não encontrado.')
     const a = await this.prisma.anoLetivo.update({ where: { id }, data: validarDatas(datas) })
-    await this.auditoria.registar(ctx, { acao: 'editar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano letivo ${id}` })
+    await this.auditoria.registar(ctx, { acao: 'editar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
     return publicoAno(a, this.relogio.agora())
   }
 
   async tornarAtual(ctx, id) {
     ctx.actor.exigir('academico.gerir')
-    if (!(await this.prisma.anoLetivo.findUnique({ where: { id } }))) throw new NaoEncontrado('Ano letivo não encontrado.')
+    if (!(await this.prisma.anoLetivo.findUnique({ where: { id } }))) throw new NaoEncontrado('Ano lectivo não encontrado.')
     await this.prisma.$transaction([
       this.prisma.anoLetivo.updateMany({ where: { atual: true }, data: { atual: false } }),
       this.prisma.anoLetivo.update({ where: { id }, data: { atual: true } }),
     ])
-    await this.auditoria.registar(ctx, { acao: 'ano_letivo_atual', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano letivo ${id}` })
+    await this.auditoria.registar(ctx, { acao: 'ano_letivo_atual', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
     return this.listar(ctx)
   }
 
   async apagar(ctx, id) {
     ctx.actor.exigir('academico.gerir')
-    if (await this.prisma.turma.count({ where: { anoLetivo: id } })) throw new Conflito('Este ano letivo tem turmas: não se pode apagar.')
+    if (await this.prisma.turma.count({ where: { anoLetivo: id } })) throw new Conflito('Este ano lectivo tem turmas: não se pode apagar.')
     await this.prisma.anoLetivo.deleteMany({ where: { id } })
-    await this.auditoria.registar(ctx, { acao: 'apagar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano letivo ${id}` })
+    await this.auditoria.registar(ctx, { acao: 'apagar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
   }
 
   // uma turma nova num ano ainda por configurar: o ano fica registado com as datas habituais (corrigem-se depois)

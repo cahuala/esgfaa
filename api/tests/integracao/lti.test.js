@@ -33,7 +33,7 @@ describe('ferramentas externas por LTI 1.3: o portal é a plataforma', () => {
     contas.prof = (await sec().post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Prof Teste', email: 'prof@esgfaa.gov.ao' })).body
     contas.ana = (await amb.registarEMatricular(sec(), turma.id, { nome: 'Estudante ana Teste', email: 'ana@esgfaa.gov.ao' })).body
     contas.carla = (await amb.registarEMatricular(sec(), outra.id, { nome: 'Estudante carla Teste', email: 'carla@esgfaa.gov.ao' })).body
-    cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'TAT101', nome: 'Tática' })).body
+    cadeira = (await sec().post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'TAT101', nome: 'Táctica' })).body
     await sec().put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente' }] })
     for (const k of ['prof', 'ana', 'carla']) {
       const email = `${k}@esgfaa.gov.ao`
@@ -58,7 +58,7 @@ describe('ferramentas externas por LTI 1.3: o portal é a plataforma', () => {
     assert.ok(!jwks.keys[0].d, 'a chave publicada não pode ter a parte privada')
   })
 
-  it('o docente cria a atividade e o estudante entra na ferramenta já identificado (id_token assinado)', async () => {
+  it('o docente cria a actividade e o estudante entra na ferramenta já identificado (id_token assinado)', async () => {
     assert.deepEqual((await como('prof').get('/api/portal/lti/ferramentas')).body.map((f) => f.nome), ['Simulador de tiro'])
     const m = await como('prof').post(`/api/portal/cadeiras/${cadeira.id}/materiais`).send({ tipo: 'lti', titulo: 'Exercício de tiro', ferramentaId: ferramenta.id })
     assert.equal(m.status, 201, m.body.erro)
@@ -89,7 +89,7 @@ describe('ferramentas externas por LTI 1.3: o portal é a plataforma', () => {
     assert.match(td[`${LTI}/roles`][0], /#Instructor$/)
   })
 
-  it('recusa: outra turma, redirect_uri estranho, pista falsa ou trocada, ferramenta desativada', async () => {
+  it('recusa: outra turma, redirect_uri estranho, pista falsa ou trocada, ferramenta desactivada', async () => {
     assert.ok([403, 404].includes((await como('carla').post(`/api/portal/materiais/${material.id}/lti`)).status))
     const { campos } = (await como('ana').post(`/api/portal/materiais/${material.id}/lti`)).body
     assert.equal((await autorizar(campos, { redirect_uri: 'https://ladrao.exemplo/recolher' })).status, 400)

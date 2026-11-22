@@ -50,7 +50,7 @@ function CopiarTurma({ turma, fechar, concluido }) {
               {!resultado ? (
                 <>
                   <p className="text-muted">
-                    {tx('Cria nesta turma as cadeiras da turma de origem (com o mesmo código) e copia os capítulos, materiais e ficheiros, trabalhos, questionários, datas das provas, programa e composição das notas. As datas avançam os anos que separam os anos letivos. Não se copiam entregas, notas, fórum nem presenças. Cadeiras que já tenham conteúdos ficam como estão.')}
+                    {tx('Cria nesta turma as cadeiras da turma de origem (com o mesmo código) e copia os capítulos, materiais e ficheiros, trabalhos, questionários, datas das provas, programa e composição das notas. As datas avançam os anos que separam os anos lectivos. Não se copiam entregas, notas, fórum nem presenças. Cadeiras que já tenham conteúdos ficam como estão.')}
                   </p>
                   <label className="form-label fw-bold" htmlFor="ct-origem">{tx('Copiar de')}</label>
                   <select id="ct-origem" className="form-select mb-3" value={origem} onChange={(e) => setOrigem(e.target.value)}>

@@ -60,7 +60,7 @@ function ProvasEscritas({ c, avisar }) {
 
   return (
     <Cartao titulo={<><i className="fa fa-print me-2" />{tx('Provas escritas para impressão')}</>}>
-      <p className="small text-muted">{tx('Envie o enunciado da prova à Repartição de Administração Escolar, que imprime uma cópia por estudante. Os estudantes não veem este ficheiro.')}</p>
+      <p className="small text-muted">{tx('Envie o enunciado da prova à Repartição de Administração Escolar, que imprime uma cópia por estudante. Os estudantes não vêem este ficheiro.')}</p>
       <form onSubmit={enviar} className="row g-2 mb-3">
         <div className="col-sm-8"><label className="form-label small fw-bold" htmlFor="pe-titulo">{tx('Prova')}</label><input id="pe-titulo" className="form-control form-control-sm" required minLength={2} value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder={tx('Ex.: 1.º TAI — teste escrito')} /></div>
         <div className="col-sm-4"><label className="form-label small fw-bold" htmlFor="pe-data">{tx('Data da prova')}</label><input id="pe-data" type="date" className="form-control form-control-sm" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></div>
@@ -158,7 +158,7 @@ function AlteracoesNotas({ c, avisar }) {
             </>
           )}
           <label className="form-label small fw-bold" htmlFor="an-motivo">{tx('Motivo')}</label>
-          <textarea id="an-motivo" className="form-control form-control-sm mb-2" rows={2} required minLength={10} value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder={tx('Ex.: erro de soma na correção da pergunta 3')} />
+          <textarea id="an-motivo" className="form-control form-control-sm mb-2" rows={2} required minLength={10} value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} placeholder={tx('Ex.: erro de soma na correcção da pergunta 3')} />
           <div className="d-flex gap-2">
             <button type="submit" className="btn btn-theme btn-sm" disabled={aEnviar || !prova || !f.estudanteIds.length}><i className="fa fa-paper-plane me-1" />{tx('Pedir ao Comandante ({0})', { 0: f.estudanteIds.length })}</button>
             <button type="button" className="btn btn-white btn-sm" onClick={() => setAberto(false)}>{tx('Cancelar')}</button>

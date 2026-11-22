@@ -46,16 +46,16 @@ function AnosLetivos() {
     try {
       if (novo) await api('/academico/anos-letivos', { metodo: 'POST', corpo: { id, ...datas } })
       else await api(`/academico/anos-letivos/${caminho(id)}`, { metodo: 'PUT', corpo: datas })
-      setAviso({ texto: novo ? tx('Ano letivo {0} criado.', { 0: id }) : tx('Datas de {0} guardadas.', { 0: id }) })
+      setAviso({ texto: novo ? tx('Ano lectivo {0} criado.', { 0: id }) : tx('Datas de {0} guardadas.', { 0: id }) })
       setF(null)
       carregar()
     } catch (falha) {
       setErroForm(falha.message)
     }
   }
-  const tornarAtual = (a) => api(`/academico/anos-letivos/${caminho(a.id)}/atual`, { metodo: 'POST' }).then((r) => { setLista(r); setAviso({ texto: tx('{0} é agora o ano letivo atual.', { 0: a.id }) }) }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
+  const tornarAtual = (a) => api(`/academico/anos-letivos/${caminho(a.id)}/atual`, { metodo: 'POST' }).then((r) => { setLista(r); setAviso({ texto: tx('{0} é agora o ano lectivo actual.', { 0: a.id }) }) }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   const apagar = (a) => setConfirmar({
-    titulo: tx('Apagar ano letivo'), texto: tx('Apagar o ano letivo {0}?', { 0: a.id }), botao: tx('Apagar'), perigo: true,
+    titulo: tx('Apagar ano lectivo'), texto: tx('Apagar o ano lectivo {0}?', { 0: a.id }), botao: tx('Apagar'), perigo: true,
     confirmar: async () => {
       setConfirmar(null)
       try { await api(`/academico/anos-letivos/${caminho(a.id)}`, { metodo: 'DELETE' }); carregar() } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
@@ -63,17 +63,17 @@ function AnosLetivos() {
   })
 
   const passos = [
-    [tx('Ano letivo e semestres'), 'fa-calendar', null, atual ? tx('atual: {0}', { 0: atual.id }) : tx('por configurar')],
+    [tx('Ano lectivo e semestres'), 'fa-calendar', null, atual ? tx('actual: {0}', { 0: atual.id }) : tx('por configurar')],
     [tx('Cursos'), 'fa-graduation-cap', '/colecao/cursos', tx('os cursos da Escola')],
-    [tx('Turmas'), 'fa-users', '/academico/turmas', tx('de cada curso e ano letivo')],
+    [tx('Turmas'), 'fa-users', '/academico/turmas', tx('de cada curso e ano lectivo')],
     [tx('Cadeiras e semestre'), 'fa-book', '/academico/turmas', tx('em cada turma: 1.º, 2.º semestre ou anual')],
     [tx('Alocar docentes'), 'fa-chalkboard-teacher', '/academico/alocacao', tx('regente e assistentes de cada cadeira')],
   ]
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Ano letivo e semestres')} subtitulo={tx('as datas do ano; depois os cursos, as turmas, as cadeiras e a alocação dos docentes')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Ano letivo') }]}>
-        {gerir && <button type="button" className="btn btn-theme" onClick={() => { const id = seguinte(lista); setErroForm(''); setF({ novo: true, id, ...padrao(id) }) }}><i className="fa fa-plus me-1" />{tx('Novo ano letivo')}</button>}
+      <CabecalhoPagina titulo={tx('Ano lectivo e semestres')} subtitulo={tx('as datas do ano; depois os cursos, as turmas, as cadeiras e a alocação dos docentes')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Ano lectivo') }]}>
+        {gerir && <button type="button" className="btn btn-theme" onClick={() => { const id = seguinte(lista); setErroForm(''); setF({ novo: true, id, ...padrao(id) }) }}><i className="fa fa-plus me-1" />{tx('Novo ano lectivo')}</button>}
       </CabecalhoPagina>
 
       <div className="row g-2 mb-3">
@@ -91,16 +91,16 @@ function AnosLetivos() {
 
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       {!lista && !erro && <Carregando />}
-      {lista?.length === 0 && <div className="alert alert-warning">{tx('Ainda não há anos letivos. Crie o primeiro com «Novo ano letivo».')}</div>}
+      {lista?.length === 0 && <div className="alert alert-warning">{tx('Ainda não há anos lectivos. Crie o primeiro com «Novo ano lectivo».')}</div>}
 
       {f && (
-        <Painel titulo={f.novo ? tx('Novo ano letivo') : tx('Datas de {0}', { 0: f.id })}>
+        <Painel titulo={f.novo ? tx('Novo ano lectivo') : tx('Datas de {0}', { 0: f.id })}>
           <form onSubmit={guardar}>
             {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
             <div className="row g-2">
               {f.novo && (
                 <div className="col-md-3">
-                  <label className="form-label fw-bold" htmlFor="ano-id">{tx('Ano letivo')}</label>
+                  <label className="form-label fw-bold" htmlFor="ano-id">{tx('Ano lectivo')}</label>
                   <input id="ano-id" className="form-control" value={f.id} placeholder="2026/2027" onChange={(e) => { const id = e.target.value; setF({ ...f, id, ...(/^\d{4}\/\d{4}$/.test(id) ? padrao(id) : {}) }) }} required />
                 </div>
               )}
@@ -112,7 +112,7 @@ function AnosLetivos() {
               ))}
             </div>
             <div className="d-flex gap-2 mt-3">
-              <button type="submit" className="btn btn-theme"><i className="fa fa-save me-1" />{f.novo ? tx('Criar ano letivo') : tx('Guardar')}</button>
+              <button type="submit" className="btn btn-theme"><i className="fa fa-save me-1" />{f.novo ? tx('Criar ano lectivo') : tx('Guardar')}</button>
               <button type="button" className="btn btn-white" onClick={() => setF(null)}>{tx('Cancelar')}</button>
             </div>
           </form>
@@ -122,7 +122,7 @@ function AnosLetivos() {
       <div className="row">
         {lista?.map((a) => (
           <div key={a.id} className="col-xl-4 col-md-6">
-            <Painel titulo={<>{tx('Ano letivo {0}', { 0: a.id })}{a.atual && <span className="badge bg-success ms-2">{tx('Atual')}</span>}</>}>
+            <Painel titulo={<>{tx('Ano lectivo {0}', { 0: a.id })}{a.atual && <span className="badge bg-success ms-2">{tx('Actual')}</span>}</>}>
               <div className="small text-muted mb-2">{data(a.inicio)} – {data(a.fim)} · {tx('{0} turma(s)', { 0: a.turmas })}</div>
               {[['1', a.semestre1Inicio, a.semestre1Fim], ['2', a.semestre2Inicio, a.semestre2Fim]].map(([n, de, ate]) => (
                 <div key={n} className={`d-flex align-items-center gap-2 p-2 rounded mb-1 ${a.semestreAtual === n ? 'bg-success bg-opacity-10 border border-success' : 'bg-light'}`}>
@@ -134,9 +134,9 @@ function AnosLetivos() {
               {gerir && (
                 <div className="d-flex flex-wrap gap-1 mt-2">
                   <button type="button" className="btn btn-xs btn-white" onClick={() => { setErroForm(''); setF({ id: a.id, inicio: a.inicio, fim: a.fim, semestre1Inicio: a.semestre1Inicio, semestre1Fim: a.semestre1Fim, semestre2Inicio: a.semestre2Inicio, semestre2Fim: a.semestre2Fim }) }}><i className="fa fa-pen me-1" />{tx('Datas')}</button>
-                  {!a.atual && <button type="button" className="btn btn-xs btn-white" onClick={() => tornarAtual(a)}><i className="fa fa-star me-1" />{tx('Tornar atual')}</button>}
+                  {!a.atual && <button type="button" className="btn btn-xs btn-white" onClick={() => tornarAtual(a)}><i className="fa fa-star me-1" />{tx('Tornar actual')}</button>}
                   <Link to="/academico/turmas" className="btn btn-xs btn-white"><i className="fa fa-users me-1" />{tx('Turmas')}</Link>
-                  {a.turmas === 0 && <button type="button" className="btn btn-xs btn-white text-danger ms-auto" onClick={() => apagar(a)} aria-label={tx('Apagar o ano letivo {0}', { 0: a.id })}><i className="fa fa-trash-alt" /></button>}
+                  {a.turmas === 0 && <button type="button" className="btn btn-xs btn-white text-danger ms-auto" onClick={() => apagar(a)} aria-label={tx('Apagar o ano lectivo {0}', { 0: a.id })}><i className="fa fa-trash-alt" /></button>}
                 </div>
               )}
             </Painel>

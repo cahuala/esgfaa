@@ -100,7 +100,7 @@ export default function Proposta() {
         {preparacao && pode('propor') && <button type="button" className="btn btn-warning" onClick={() => setModal('enviar')} disabled={!p.itens.length}><i className="fa fa-paper-plane me-1" />Enviar ao escalão superior</button>}
         {p.estado === 'a_despacho' && pode('despachar') && <>
           <button type="button" className="btn btn-success" onClick={() => setModal('autorizar')}><i className="fa fa-stamp me-1" />Autorizo o envio</button>
-          <button type="button" className="btn btn-outline-secondary" onClick={() => setModal('devolvo')}><i className="fa fa-undo me-1" />Devolvo para correção</button>
+          <button type="button" className="btn btn-outline-secondary" onClick={() => setModal('devolvo')}><i className="fa fa-undo me-1" />Devolvo para correcção</button>
         </>}
         {p.estado === 'enviada' && pode('editar') && <button type="button" className="btn btn-success" onClick={() => navegar(`/extractos?proposta=${p.id}&tipo=${p.tipo}`)}><i className="fa fa-file-contract me-1" />Registar o extracto</button>}
         {p.estado === 'enviada' && pode('decidir') && <>
@@ -121,7 +121,7 @@ export default function Proposta() {
             {p.fundamentacao && <p className="small" style={{ whiteSpace: 'pre-wrap' }}>{p.fundamentacao}</p>}
             <dl className="small mb-0">
               <dt>Preparada por</dt><dd>{p.criadoPor} · {dataHoraPt(p.criadoEm)}</dd>
-              {p.despacho?.estado === 'despachado' && <><dt>Despacho do Comandante</dt><dd>{p.despacho.decisao === 'autorizo' ? 'Autorizo o envio' : 'Devolvo para correção'}{p.despacho.texto ? ` — ${p.despacho.texto}` : ''} · {p.despacho.despachadoPor}, {dataHoraPt(p.despacho.despachadoEm)}</dd></>}
+              {p.despacho?.estado === 'despachado' && <><dt>Despacho do Comandante</dt><dd>{p.despacho.decisao === 'autorizo' ? 'Autorizo o envio' : 'Devolvo para correcção'}{p.despacho.texto ? ` — ${p.despacho.texto}` : ''} · {p.despacho.despachadoPor}, {dataHoraPt(p.despacho.despachadoEm)}</dd></>}
               {p.submetidaEm && <><dt>Enviada</dt><dd>{dataHoraPt(p.submetidaEm)}</dd></>}
               {p.documento && <><dt>{p.estado === 'concluida' ? 'Extracto' : p.estado === 'enviada' ? 'Ofício de envio' : 'Documento'}</dt><dd>{p.documento} de {dataPt(p.dataDocumento)}{p.entidade && ` · ${p.entidade}`}</dd></>}
               {p.decididoPor && <><dt>Resposta registada por</dt><dd>{p.decididoPor} · {dataHoraPt(p.decididaEm)}</dd></>}
@@ -161,9 +161,9 @@ export default function Proposta() {
       {modal === 'adicionar' && <Adicionar p={p} cargos={cargos} aoFechar={() => setModal(null)} aoAdicionar={(item) => acao('/itens', item, 'Adicionado à proposta.')} />}
       {modal === 'enviar' && <Decidir titulo="Enviar ao escalão superior" botao="Enviar" cor="warning" campos={['documento']} rotuloDocumento="N.º do ofício de envio (opcional)" aviso="A proposta vai primeiro a despacho do Comandante (Secretária digital); com «Autorizo o envio», segue. Imprima os documentos (para cada militar: a ficha de proposta e a síntese biográfica), assine e envie. Quando chegar a resposta, registe o extracto: é ele que actualiza as fichas." aoFechar={() => setModal(null)} comFicheiro aoConfirmar={(d, ficheiro) => acao('/submeter', d, (r) => (r.estado === 'a_despacho' ? 'Proposta enviada a despacho do Comandante.' : 'Proposta enviada ao escalão superior.'), { ficheiro, titulo: `Ofício de envio${d.documento ? ` n.º ${d.documento}` : ''}` })} />}
       {modal === 'autorizar' && <Decidir titulo="Autorizo o envio" botao="Autorizo o envio" cor="success" campos={['motivo']} rotuloMotivo="Texto do despacho (opcional)" aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/despachar', { decisao: 'autorizo', texto: d.motivo }, 'Despachado: a proposta segue para o escalão superior.')} />}
-      {modal === 'devolvo' && <Decidir titulo="Devolvo para correção" botao="Devolver" cor="secondary" campos={['motivo']} rotuloMotivo="O que há a corrigir" aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/despachar', { decisao: 'devolvo', texto: d.motivo }, 'Despachado: a proposta voltou à preparação.')} />}
+      {modal === 'devolvo' && <Decidir titulo="Devolvo para correcção" botao="Devolver" cor="secondary" campos={['motivo']} rotuloMotivo="O que há a corrigir" aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/despachar', { decisao: 'devolvo', texto: d.motivo }, 'Despachado: a proposta voltou à preparação.')} />}
       {modal === 'indeferir' && <Decidir titulo="Proposta indeferida pelo escalão superior" botao="Registar indeferimento" cor="danger" campos={['motivo', 'documento', 'dataDocumento']} rotuloDocumento="N.º do documento de resposta" aoFechar={() => setModal(null)} comFicheiro aoConfirmar={(d, ficheiro) => acao('/indeferir', d, 'Indeferimento registado.', { ficheiro, titulo: `Resposta do escalão superior (indeferimento)${d.documento ? ` — ${d.documento}` : ''}` })} />}
-      {modal === 'devolver' && <Decidir titulo="Proposta devolvida para correção" botao="Voltar à preparação" cor="secondary" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/devolver', d, 'A proposta voltou à preparação.')} />}
+      {modal === 'devolver' && <Decidir titulo="Proposta devolvida para correcção" botao="Voltar à preparação" cor="secondary" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/devolver', d, 'A proposta voltou à preparação.')} />}
       {modal === 'cancelar' && <Decidir titulo="Cancelar a proposta" botao="Cancelar proposta" cor="danger" campos={['motivo']} aoFechar={() => setModal(null)} aoConfirmar={(d) => acao('/cancelar', d, 'Proposta cancelada.').then(() => navegar('/propostas'))} />}
     </>
   )

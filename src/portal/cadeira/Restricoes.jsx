@@ -61,9 +61,9 @@ function Restricoes({ alvo, secao, atividades = [], fechar, avisar, guardado }) 
               <div className="form-check form-switch">
                 <input id="r-visivel" className="form-check-input" type="checkbox" checked={f.visivel} onChange={(e) => setF({ ...f, visivel: e.target.checked })} />
                 <label className="form-check-label fw-bold" htmlFor="r-visivel">{tx('Visível para os estudantes')}</label>
-                <div className="small text-muted">{secao ? tx('Um capítulo escondido esconde todas as suas atividades.') : tx('Escondida, a atividade não aparece nem conta para o progresso.')}</div>
+                <div className="small text-muted">{secao ? tx('Um capítulo escondido esconde todas as suas actividades.') : tx('Escondida, a actividade não aparece nem conta para o progresso.')}</div>
               </div>
-              <Campo id="r-data" rotulo={tx('Disponível a partir de (opcional)')} ajuda={secao ? tx('Até lá, as atividades do capítulo aparecem fechadas.') : tx('Até lá aparece fechada, com a data de abertura.')}>
+              <Campo id="r-data" rotulo={tx('Disponível a partir de (opcional)')} ajuda={secao ? tx('Até lá, as actividades do capítulo aparecem fechadas.') : tx('Até lá aparece fechada, com a data de abertura.')}>
                 <input id="r-data" type="datetime-local" value={f.disponivelDe} onChange={(e) => setF({ ...f, disponivelDe: e.target.value })} />
               </Campo>
 

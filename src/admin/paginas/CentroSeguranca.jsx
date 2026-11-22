@@ -8,8 +8,8 @@ import './centroSeguranca.css'
 const ATUALIZAR_MS = 10_000
 const NIVEIS = {
   normal: { cor: 'verde', icone: 'fa-shield-alt', titulo: tx('Tudo normal'), texto: tx('Não há sinais de ataque nos últimos 5 minutos.') },
-  atencao: { cor: 'amarelo', icone: 'fa-exclamation-triangle', titulo: tx('Atenção'), texto: tx('Há atividade suspeita nos últimos 5 minutos. Veja quem é, em baixo.') },
-  ataque: { cor: 'vermelho', icone: 'fa-radiation', titulo: tx('Possível ataque'), texto: tx('Muita atividade hostil nos últimos 5 minutos. Os bloqueios estão a funcionar; veja os endereços e bloqueie se for preciso.') },
+  atencao: { cor: 'amarelo', icone: 'fa-exclamation-triangle', titulo: tx('Atenção'), texto: tx('Há actividade suspeita nos últimos 5 minutos. Veja quem é, em baixo.') },
+  ataque: { cor: 'vermelho', icone: 'fa-radiation', titulo: tx('Possível ataque'), texto: tx('Muita actividade hostil nos últimos 5 minutos. Os bloqueios estão a funcionar; veja os endereços e bloqueie se for preciso.') },
 }
 const GRAVES = ['injecao', 'injecao_corpo', 'sondagem', 'conta_bloqueada', 'ip_bloqueado', 'phishing', 'ferramenta_ataque', 'injecao_ia']
 const TIPOS_GRAFICO = ['login_falhado', 'limite', 'acesso_negado', 'sondagem', 'injecao', 'injecao_corpo', 'phishing', 'ferramenta_ataque', 'robo_ia', 'injecao_ia', 'erro_interno']
@@ -278,7 +278,7 @@ function CentroSeguranca() {
       <div className="cs-topo">
         <div>
           <h1 className="cs-titulo"><i className="fa fa-user-shield me-2" />{tx('Centro de segurança')}</h1>
-          <span className="cs-sub">{erro ? <span className="text-danger"><i className="fa fa-plug me-1" />{tx('Sem ligação ao servidor desde {0}', { 0: hora(d.geradoEm) })}</span> : <><span className="cs-pulso" />{tx('Ao vivo · atualizado às {0}', { 0: hora(d.geradoEm) })}</>}</span>
+          <span className="cs-sub">{erro ? <span className="text-danger"><i className="fa fa-plug me-1" />{tx('Sem ligação ao servidor desde {0}', { 0: hora(d.geradoEm) })}</span> : <><span className="cs-pulso" />{tx('Ao vivo · actualizado às {0}', { 0: hora(d.geradoEm) })}</>}</span>
         </div>
         <div className="d-flex gap-2 flex-wrap">
           {gerir && !vigilancia && <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setConfirmar({ titulo: tx('Simular um ataque'), texto: tx('Envia ataques inventados (força bruta, procura de falhas, injeções de SQL e XSS, phishing, uma ferramenta de ataque e robôs de IA) a partir de endereços de documentação, que não existem na internet. Vê o painel a encher-se e os bloqueios a funcionar; a defesa automática não muda o nível durante 5 minutos.'), botao: tx('Simular'), perigo: true, confirmar: () => { setConfirmar(null); api('/seguranca/simular', { metodo: 'POST' }).then(() => { setAviso({ texto: tx('Simulação feita: veja os eventos e os bloqueios.') }); carregar() }).catch((e) => setAviso({ tipo: 'erro', texto: e.message })) } })}><i className="fa fa-bug me-1" />{tx('Simular ataque')}</button>}
@@ -360,7 +360,7 @@ function CentroSeguranca() {
           )}
         </div>
         <div className="cs-cartao cs-lista">
-          <span className="cs-rotulo">{tx('Endereços mais ativos (15 min)')}</span>
+          <span className="cs-rotulo">{tx('Endereços mais activos (15 min)')}</span>
           {d.ipsAtivos.length === 0 ? <div className="cs-vazio">{tx('Sem tráfego.')}</div> : (
             <table className="cs-tabela">
               <thead><tr><th>{tx('Endereço')}</th><th className="text-end">{tx('Pedidos')}</th><th className="text-end">{tx('Suspeitos')}</th><th /></tr></thead>

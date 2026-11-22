@@ -131,7 +131,7 @@ function Entrar() {
 
               <div className="entrada-aviso">
                 <i className="fa fa-shield-alt" aria-hidden="true" />
-                <span>{tx('Acesso exclusivo a pessoal autorizado. Todas as entradas e ações ficam registadas, com data e endereço IP.')}</span>
+                <span>{tx('Acesso exclusivo a pessoal autorizado. Todas as entradas e acções ficam registadas, com data e endereço IP.')}</span>
               </div>
 
               <a href={import.meta.env.BASE_URL} className="entrada-voltar"><i className="fa fa-arrow-left me-2" />{tx('Voltar ao site')}</a>

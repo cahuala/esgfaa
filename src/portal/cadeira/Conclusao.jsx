@@ -28,13 +28,13 @@ function Conclusao({ c, progresso, avisar }) {
       <div className="panel-heading"><h2 className="panel-title"><i className="fa fa-tasks me-2" />{tx('O meu progresso')}</h2></div>
       <div className="panel-body">
         <BarraProgresso p={progresso} />
-        <div className="small text-muted mt-1">{progresso.feitas} {tx('de')} {progresso.total} {tx('atividades concluídas')}</div>
+        <div className="small text-muted mt-1">{progresso.feitas} {tx('de')} {progresso.total} {tx('actividades concluídas')}</div>
         {r?.certificado ? (
           <Link to={`/cadeiras/${c.id}/certificado`} className="btn btn-sm btn-success w-100 mt-3"><i className="fa fa-award me-1" />{tx('Ver o certificado')}</Link>
         ) : r?.concluida ? (
           <button type="button" className="btn btn-sm btn-theme w-100 mt-3" onClick={emitir} disabled={aEmitir}><i className="fa fa-award me-1" />{aEmitir ? tx('A emitir…') : tx('Cadeira concluída: obter certificado')}</button>
         ) : (
-          <div className="small text-muted mt-2"><i className="fa fa-award me-1" />{tx('Conclua todas as atividades para obter o certificado da cadeira.')}</div>
+          <div className="small text-muted mt-2"><i className="fa fa-award me-1" />{tx('Conclua todas as actividades para obter o certificado da cadeira.')}</div>
         )}
       </div>
     </div>
