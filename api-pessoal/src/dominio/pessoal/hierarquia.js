@@ -65,7 +65,7 @@ export function caminhoDaSituacao(situacao, efectividade) {
 // estado operacional (como no SIGP): independente da situação e muda a qualquer momento; um de cada vez
 /*
   Estados operacionais. «Missão de serviço»: o militar indicado para um cargo sem nomeação efectiva (ocupa o cargo,
-  mas pode ser retirado a qualquer momento); fica no fim das listas, seja qual for o posto. Sai ao ser nomeado.
+  mas pode ser retirado a qualquer momento); fica no fim dos militares nas listas (antes dos civis), seja qual for o posto. Sai ao ser nomeado.
 */
 export const ESTADOS = {
   destacado: 'Destacado', em_missao: 'Em missão', em_formacao: 'Em formação', em_substituicao: 'Em substituição',

@@ -14,7 +14,7 @@ describe('ordem hierárquica', () => {
     ]
     assert.deepEqual([...l].sort(cmp).map((x) => x.nome), ['Eva', 'Caio', 'Dino', 'Ana', 'Bia'])
   })
-  it('os militares em Missão de serviço (indicados sem nomeação) ficam no fim, seja qual for o posto', () => {
+  it('os militares em Missão de serviço (indicados sem nomeação) ficam no fim dos militares (antes dos civis), seja qual for o posto', () => {
     const l = [
       { nome: 'Rui', tipo: 'militar', posto: 'coronel', estado: 'missao_servico' },
       { nome: 'Ana', tipo: 'civil', carreiraCivil: 'administrativo' },
@@ -22,7 +22,7 @@ describe('ordem hierárquica', () => {
       { nome: 'Lia', tipo: 'militar', posto: 'tenente', estado: 'missao_servico' },
       { nome: 'Eva', tipo: 'militar', posto: 'coronel', estado: 'em_missao' },
     ]
-    assert.deepEqual([...l].sort(cmp).map((x) => x.nome), ['Eva', 'Caio', 'Ana', 'Rui', 'Lia'])
+    assert.deepEqual([...l].sort(cmp).map((x) => x.nome), ['Eva', 'Caio', 'Rui', 'Lia', 'Ana'])
     // quando «estado» é outra coisa (o processo individual), vem missaoServico
     assert.ok(cmp({ nome: 'A', posto: 'coronel', estado: 'arquivo', missaoServico: true }, { nome: 'B', posto: 'capitao', estado: 'arquivo', missaoServico: false }) > 0)
   })

@@ -9,8 +9,8 @@ import { CARREIRAS_CIVIS } from './civis.js'
      logo seguida das suas subunidades), pela «ordem» de cada unidade;
   3. a função do cargo (comando, direcção/chefia, estado-maior, execução);
   4. a antiguidade no posto (a mais antiga primeiro) e, por fim, o nome.
-  Os militares em «Missão de serviço» (indicados para um cargo sem nomeação efectiva) ficam no fim da lista,
-  seja qual for o posto, e entre eles pela mesma ordem.
+  Os militares em «Missão de serviço» (indicados para um cargo sem nomeação efectiva) ficam no fim dos militares
+  (antes dos civis), seja qual for o posto, e entre eles pela mesma ordem.
 */
 const FUNCAO = { comando: 0, direccao_chefia: 1, estado_maior: 2, execucao: 3 }
 
@@ -39,9 +39,11 @@ export function posicoesDasUnidades(unidades) {
 export function comparadorHierarquico(posicoes) {
   const data = (d) => (d ? new Date(d).getTime() : Infinity)
   // missaoServico vem dado quando «estado» é outra coisa (ex.: o estado do processo individual)
-  const emMissao = (x) => (x.missaoServico ?? x.estado === 'missao_servico') ? 1 : 0
+  const militar = (x) => Boolean(x.posto || x.grau || x.grauEfectivo)
+  const emMissao = (x) => Boolean(x.missaoServico ?? x.estado === 'missao_servico')
+  // 0: militares; 1: militares em missão de serviço; 2: civis
   const chave = (x) => [
-    emMissao(x),
+    !militar(x) ? 2 : emMissao(x) ? 1 : 0,
     -(x.grauEfectivo ?? x.grau ?? (x.posto ? POSTOS[x.posto]?.grau : null) ?? -1),
     x.posto || x.grau || x.grauEfectivo ? 0 : x.vinculo === 'domiciliar' ? 99 : CARREIRAS_CIVIS[x.carreiraCivil]?.nivel ?? 50,
     posicoes.get(x.unidadeId) ?? 1e6,
