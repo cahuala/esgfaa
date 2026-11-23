@@ -113,7 +113,7 @@ export class ServicoOrganica {
     const andar = (uid, nivel) => { const x = unidades.find((y) => y.id === uid); ramo.push({ id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: tipos[x.tipo] ?? '', nivel }); for (const f of unidades.filter((y) => y.paiId === uid)) andar(f.id, nivel + 1) }
     andar(id, 0)
     const ids = ramo.map((x) => x.id)
-    const SELECT = { id: true, nome: true, posto: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } }
+    const SELECT = { id: true, nome: true, posto: true, estado: true, ramo: true, fotoId: true, nip: true, numeroAgente: true, categoriaCivil: true, tipo: true, vinculo: true, genero: true, unidadeId: true, cargoId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } }
     // os cargos pela ordem do quadro orgânico (a ordem em que foram carregados)
     const [cargos, pessoas] = await Promise.all([
       this.bd.cargo.findMany({ where: { unidadeId: { in: ids } }, include: { pessoas: { where: { ativo: true }, select: SELECT } }, orderBy: { id: 'asc' } }),

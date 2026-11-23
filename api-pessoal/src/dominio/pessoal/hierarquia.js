@@ -63,9 +63,13 @@ export function caminhoDaSituacao(situacao, efectividade) {
   return { caminho: [raiz.nome, ramo.nome, EFECTIVIDADES[efectividade].nome], artigo: EFECTIVIDADES[efectividade].artigo }
 }
 // estado operacional (como no SIGP): independente da situação e muda a qualquer momento; um de cada vez
+/*
+  Estados operacionais. «Missão de serviço»: o militar indicado para um cargo sem nomeação efectiva (ocupa o cargo,
+  mas pode ser retirado a qualquer momento); fica no fim das listas, seja qual for o posto. Sai ao ser nomeado.
+*/
 export const ESTADOS = {
   destacado: 'Destacado', em_missao: 'Em missão', em_formacao: 'Em formação', em_substituicao: 'Em substituição',
-  a_cargo_direccao: 'A cargo da Direcção', suspensao_funcoes: 'Suspensão de funções', aguardando_colocacao: 'Aguardando colocação', desaparecido_servico: 'Desaparecido em serviço',
+  missao_servico: 'Missão de serviço', a_cargo_direccao: 'A cargo da Direcção', suspensao_funcoes: 'Suspensão de funções', aguardando_colocacao: 'Aguardando colocação', desaparecido_servico: 'Desaparecido em serviço',
 }
 // funções militares (art. 21.º)
 export const FUNCOES = { comando: 'Comando', direccao_chefia: 'Direcção e Chefia', estado_maior: 'Estado Maior', execucao: 'Execução' }

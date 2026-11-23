@@ -14,7 +14,7 @@ export async function ordenarLinhas(bd, linhas, idDe = (x) => x.pessoaId ?? x.id
   if (!linhas?.length) return linhas ?? []
   const ids = [...new Set(linhas.map(idDe).filter((x) => x !== null && x !== undefined))]
   const [pessoas, posicoes] = await Promise.all([
-    bd.pessoa.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, tipo: true, vinculo: true, posto: true, carreiraCivil: true, unidadeId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } } }),
+    bd.pessoa.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, tipo: true, vinculo: true, posto: true, estado: true, carreiraCivil: true, unidadeId: true, dataAntiguidadePosto: true, cargo: { select: { funcao: true } } } }),
     posicoesUnidades(bd),
   ])
   const porId = new Map(pessoas.map((p) => [p.id, p]))

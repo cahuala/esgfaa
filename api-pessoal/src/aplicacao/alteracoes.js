@@ -18,12 +18,12 @@ export async function aplicarAlteracao(tx, tipo, p, x, data, doc) {
     await tx.evento.create({ data: { ...base, tipo: 'graduacao', data: x.inicio ?? data, postoAnterior: p.posto, postoNovo: x.postoNovo, descricao: x.descricao ?? '' } })
   } else if (tipo === 'nomeacao') {
     const cargo = await tx.cargo.findUnique({ where: { id: x.cargoId } })
-    await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: cargo.id, dataCargo: x.inicio ?? data, ...(cargo.unidadeId ? { unidadeId: cargo.unidadeId } : {}) } })
+    await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: cargo.id, dataCargo: x.inicio ?? data, ...(cargo.unidadeId ? { unidadeId: cargo.unidadeId } : {}), ...(p.estado === 'missao_servico' ? { estado: null } : {}) } })
     if (cargo.unidadeId) await tx.utilizador.updateMany({ where: { pessoaId: p.id }, data: { unidadeId: cargo.unidadeId } })
     if (p.cargo && p.cargo.id !== cargo.id) await tx.evento.create({ data: { ...base, tipo: 'exoneracao', data: x.inicio ?? data, cargoNome: p.cargo.nome, descricao: 'Por nomeação para outro cargo.' } })
     await tx.evento.create({ data: { ...base, tipo: 'nomeacao', data: x.inicio ?? data, cargoNome: cargo.nome, descricao: x.fim ? `Até ${dia(x.fim)}` : '' } })
   } else if (tipo === 'exoneracao') {
-    await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: null, dataCargo: null } })
+    await tx.pessoa.update({ where: { id: p.id }, data: { cargoId: null, dataCargo: null, ...(p.estado === 'missao_servico' ? { estado: null } : {}) } })
     await tx.evento.create({ data: { ...base, tipo: 'exoneracao', data, cargoNome: p.cargo?.nome ?? '', descricao: x.descricao ?? '' } })
   } else if (tipo === 'reserva' || tipo === 'reforma') {
     // na reforma deixa o cargo (art. 9.º, n.º 3); na reserva pode continuar a servir

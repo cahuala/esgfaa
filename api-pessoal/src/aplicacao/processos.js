@@ -49,7 +49,7 @@ export class ServicoProcessos {
     const r = l.map((p) => {
       const falta = dadosEmFalta(p, p.documentos)
       return {
-        posto: p.posto, unidadeId: p.unidadeId, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto,
+        posto: p.posto, missaoServico: p.estado === 'missao_servico', unidadeId: p.unidadeId, funcao: p.cargo?.funcao, dataAntiguidadePosto: p.dataAntiguidadePosto,
         id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, ramo: p.ramo, fotoId: p.fotoId, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || 'Civil',
         unidadeNome: p.unidade?.nome ?? '', numero: p.processo?.numero ?? '', estante: p.processo?.estante ?? '', prateleira: p.processo?.prateleira ?? '', posicao: p.processo?.posicao ?? '', abreviatura: p.posto ? abreviaturaDoPosto(p.posto, p.ramo) : '', localizacao: p.processo ? [p.processo.estante, p.processo.prateleira, p.processo.posicao].filter(Boolean).join(' › ') : '',
         estado: p.processo?.estado ?? '', estadoNome: ESTADOS_PROCESSO[p.processo?.estado] ?? 'Sem processo', documentos: p.documentos.length, emFalta: falta, completo: !falta.length,
