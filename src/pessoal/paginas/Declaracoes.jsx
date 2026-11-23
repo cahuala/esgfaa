@@ -61,7 +61,7 @@ async function comprovantes(lista, utilizador) {
     emblema(doc, brasao, 30, y0 + 6, 18)
     doc.setFont('helvetica', 'bold').setFontSize(11).text('ESCOLA SUPERIOR DE GUERRA', 45, y0 + 13)
     doc.setFont('helvetica', 'normal').setFontSize(9).text('Repartição de Pessoal e Quadros', 45, y0 + 18.5)
-    doc.setFont('helvetica', 'bold').setFontSize(9).text(['Comprovante Nº', x.referencia], 188, y0 + 12, { align: 'right' })
+    doc.setFont('helvetica', 'bold').setFontSize(9).text(['Comprovante Nº', `______/${String(x.ano).slice(-2)}`], 188, y0 + 12, { align: 'right' }) // em branco: escreve-se à mão, como na declaração
     doc.setFontSize(12).text('COMPROVANTE DE EMISSÃO DE DECLARAÇÃO', 105, y0 + 36, { align: 'center' })
     const L = (r, v, xx, y, w = 80) => { doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(110).text(r.toUpperCase(), xx, y).setTextColor(0); doc.setFont('helvetica', 'bold').setFontSize(10.5).text(doc.splitTextToSize(String(v || '—'), w)[0], xx, y + 5.5) }
     L(militar(x.pessoa) ? 'NIP' : 'N.º de agente', x.pessoa.nip || x.pessoa.numeroAgente, 25, y0 + 50); L(militar(x.pessoa) ? 'Posto' : 'Categoria', militar(x.pessoa) ? x.pessoa.postoNome : 'Civil', 110, y0 + 50)
