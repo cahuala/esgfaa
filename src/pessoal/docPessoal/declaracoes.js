@@ -4,7 +4,7 @@ import { M, TAM, cabecalho, caberNaFolha, dataExtenso, kwanzas, kwanzasPorExtens
 /*
   Declarações e guias de marcha, desenhadas como os modelos da ESG (Times 14, dados em maiúsculas).
   Declarações: de efectividade (militar, discente), de salário (militar) e de serviço (civil, empregada(o)
-  domiciliar); numeradas por ano («Nº402/26»), válidas por 90 dias, com a marca-d'água da ESG.
+  domiciliar); numeradas por ano no controlo («Nº402/26»; no papel o número fica em branco), válidas por 90 dias, com a marca-d'água da ESG.
 */
 const militar = (p) => p.tipo === 'militar'
 const ano2 = (ano) => String(ano).slice(-2)
@@ -20,6 +20,9 @@ export function identificacao(p) {
 }
 
 const vencimento = (o, palavra = 'o vencimento mensal') => (o.valor ? [`, auferindo ${palavra} de `, { b: `${kwanzas(o.valor)} KZ (${kwanzasPorExtenso(o.valor)})` }] : [])
+
+// o número da declaração fica em branco no papel (escreve-se à mão); o sistema guarda o seu no controlo das declarações
+const NUMERO_EM_BRANCO = '______'
 
 // «DECLARAÇÃO DE EFECTIVIDADE Nº402/26»: como no modelo, «RA» e o número em itálico
 function tituloDeclaracao(doc, nome, numero, y) {
@@ -46,7 +49,7 @@ function desenharDeclaracao(d, p, o, quem, k) {
   marcaDagua(d, 105, 192, 92, 0.06)
   let y = cabecalho(d)
   const nomes = { efectividade: 'EFECTIVIDADE', salario: 'SALÁRIO', servico: 'SERVIÇO' }
-  tituloDeclaracao(doc, nomes[o.tipo], `Nº${String(o.numero ?? '').padStart(3, '0')}/${ano2(o.ano ?? new Date().getFullYear())}`, y + 9)
+  tituloDeclaracao(doc, nomes[o.tipo], `Nº${NUMERO_EM_BRANCO}/${ano2(o.ano ?? new Date().getFullYear())}`, y + 9)
   y += g(24)
   const domiciliar = p.vinculo === 'domiciliar'
   let corpo
@@ -244,7 +247,7 @@ export function declaracaoBanco(d, p, o, quem) {
   const xb = Math.min(128, 210 - 28 - doc.getTextWidth(b.banco))
   doc.text('AO', xb, y + 4).text(b.banco, xb, y + 10.5).text('LUANDA', xb, y + 17)
   y += 24
-  doc.setFont('times', 'bolditalic').text(`Nº${String(o.numero ?? '').padStart(3, '0')}/${ano2(o.ano ?? new Date().getFullYear())}/RPQ/ESG/EMGFAA`, X, y)
+  doc.setFont('times', 'bolditalic').text(`Nº${NUMERO_EM_BRANCO}/${ano2(o.ano ?? new Date().getFullYear())}/RPQ/ESG/EMGFAA`, X, y)
   y += 9
   const mil = militar(p)
   const nasc = p.dataNascimento ? dataExtenso(p.dataNascimento) : '___/___/______'
