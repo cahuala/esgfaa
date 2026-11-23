@@ -210,9 +210,9 @@ function CarregarPlano({ ano, linhas, unidade, aoFechar, aoCarregar }) {
 
 /*
   Guias de férias do mês, prontas a imprimir: quando o mês chega, o sistema emite sozinho a guia de cada pessoa do
-  plano desse mês (início no dia 1, os dias a que tem direito) e regista a licença e a saída no expediente. Aqui
-  imprimem-se todas de uma vez (as que ainda não se imprimiram, ou todas). Para um mês que ainda não chegou,
-  «Preparar já» emite-as antes.
+  plano desse mês (os dias a que tem direito) e regista a licença e a saída no expediente. Quem vem levantar: selecciona-se
+  a guia (uma, várias ou todas) e imprime-se; o dia da impressão fica a data da guia, o levantamento e o início das
+  férias, e o fim recalcula-se sozinho. Para um mês que ainda não chegou, «Preparar já» emite-as antes.
 */
 function GuiasDoMes() {
   const { pode, avisar } = useSessao()
@@ -240,30 +240,31 @@ function GuiasDoMes() {
     }
   }
 
-  // o dia em que o próprio veio levantar a guia (vazio = ainda não levantou)
-  async function levantou(l, data) {
-    try {
-      await api(`/plano-ferias/guias/${l.guia.id}/levantamento`, { metodo: 'PUT', corpo: { data: data || null } })
-      avisar(data ? `${l.pessoa.nome}: levantou a guia em ${data.split('-').reverse().join('/')}.` : `${l.pessoa.nome}: levantamento apagado.`)
-      recarregar()
-    } catch (e) {
-      avisar(e.message, 'erro')
-    }
-  }
-  const hojeIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
   const levantadas = prontas.filter((l) => l.guia.levantadaEm).length
+  const [marcadas, setMarcadas] = useState(() => new Set())
+  const escolhidas = prontas.filter((l) => marcadas.has(l.guia.id))
+  const todasMarcadas = prontas.length > 0 && escolhidas.length === prontas.length
+  const marcar = (id) => setMarcadas((m) => { const n = new Set(m); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const marcarTodas = () => setMarcadas(todasMarcadas ? new Set() : new Set(prontas.map((l) => l.guia.id)))
+  const dia = (iso) => String(iso ?? '').split('-').reverse().join('/')
 
+  /*
+    Imprimir as guias de quem veio levantar: na primeira impressão o sistema regista o dia de hoje (data da guia e
+    levantamento), as férias começam hoje e o fim recalcula-se pelos dias a que tem direito. Reimprimir não muda as datas.
+  */
   async function imprimir(lista) {
     if (!lista.length) return
     setAFazer(true)
     try {
+      const novos = new Map((await api('/plano-ferias/guias/imprimir', { metodo: 'POST', corpo: { ids: lista.map((l) => l.guia.id) } })).map((g) => [g.id, g.dados]))
       const [quem, ...fichas] = await Promise.all([api('/definicoes/assinaturas'), ...lista.map((l) => api(`/pessoas/${l.pessoa.id}`))])
       const porId = new Map(fichas.map((p) => [p.id, p]))
-      await gerarLote(lista.map((l) => ({ p: porId.get(l.pessoa.id), escolha: { tipo: 'guia_ferias', dados: l.guia.dados }, emitido: {} })), quem, `guias-de-ferias-${MESES_LONGOS[mes - 1].toLowerCase()}-${ano}.pdf`)
-      await api('/declaracoes/impressoes', { metodo: 'POST', corpo: { ids: lista.map((l) => l.guia.id) } })
+      await gerarLote(lista.map((l) => ({ p: porId.get(l.pessoa.id), escolha: { tipo: 'guia_ferias', dados: novos.get(l.guia.id) ?? l.guia.dados }, emitido: {} })), quem, `guias-de-ferias-${MESES_LONGOS[mes - 1].toLowerCase()}-${ano}.pdf`)
+      setMarcadas(new Set())
       recarregar()
     } catch (e) {
       avisar(`Não foi possível fazer as guias: ${e.message}`, 'erro')
+      recarregar()
     } finally {
       setAFazer(false)
     }
@@ -286,38 +287,36 @@ function GuiasDoMes() {
             <span>{linhas.length} pessoa(s) de férias em {MESES_LONGOS[mes - 1]}: <b>{prontas.length} guia(s) pronta(s)</b>{porImprimir.length ? `, ${porImprimir.length} por imprimir` : ''}{semGuia.length ? `, ${semGuia.length} por preparar` : ''}{prontas.length ? `; ${levantadas} levantada(s)` : ''}.</span>
             <span className="flex-grow-1" />
             {pode('editar') && semGuia.length > 0 && <button type="button" className="btn btn-sm btn-white" disabled={aFazer} onClick={preparar}><i className="fa fa-magic me-1" />Preparar já ({semGuia.length})</button>}
-            {porImprimir.length > 0 && <button type="button" className="btn btn-sm btn-theme" disabled={aFazer} onClick={() => imprimir(porImprimir)}><i className="fa fa-print me-1" />Imprimir as por imprimir ({porImprimir.length})</button>}
-            {prontas.length > 0 && <button type="button" className="btn btn-sm btn-white" disabled={aFazer} onClick={() => imprimir(prontas)}><i className="fa fa-print me-1" />Imprimir todas ({prontas.length})</button>}
+            {pode('emitir') && prontas.length > 0 && <button type="button" className="btn btn-sm btn-theme" disabled={aFazer || !escolhidas.length} onClick={() => imprimir(escolhidas)}><i className="fa fa-print me-1" />Imprimir as seleccionadas ({escolhidas.length})</button>}
           </div>
           <div className="table-responsive">
             <table className="table table-sm align-middle mb-0">
-              <thead><tr><th>Nome</th><th>Posto / categoria</th><th>Unidade</th><th>Guia</th><th style={{ minWidth: 190 }}>Levantou em</th></tr></thead>
+              <thead><tr>{pode('emitir') && <th style={{ width: 32 }}><input type="checkbox" className="form-check-input" checked={todasMarcadas} disabled={!prontas.length} onChange={marcarTodas} aria-label="Seleccionar todas as guias" title="Seleccionar todas" /></th>}<th>Nome</th><th>Posto / categoria</th><th>Unidade</th><th>Guia</th><th>Levantou em</th>{pode('emitir') && <th />}</tr></thead>
               <tbody>
                 {linhas.map((l) => (
-                  <tr key={l.pessoa.id}>
+                  <tr key={l.pessoa.id} className={l.guia && marcadas.has(l.guia.id) ? 'table-active' : undefined}>
+                    {pode('emitir') && <td>{l.guia && <input type="checkbox" className="form-check-input" checked={marcadas.has(l.guia.id)} onChange={() => marcar(l.guia.id)} aria-label={`Seleccionar a guia de ${l.pessoa.nome}`} />}</td>}
                     <td><Link to={`/pessoas/${l.pessoa.id}?aba=emitidos`}>{l.pessoa.nome}</Link><div className="small text-muted">{l.pessoa.nip ? `NIP ${l.pessoa.nip}` : l.pessoa.numeroAgente ? `Agente ${l.pessoa.numeroAgente}` : ''}</div></td>
                     <td className="small">{l.pessoa.postoNome}</td>
                     <td className="small">{l.pessoa.unidadeNome}</td>
                     <td className="small">
                       {!l.guia && <span className="badge bg-warning text-dark">Por preparar</span>}
                       {l.guia && (l.guia.impressoes ? <span className="badge bg-success">Impressa</span> : <span className="badge bg-info">Pronta, por imprimir</span>)}
-                      {l.guia && <div className="text-muted">a partir de {String(l.guia.dados?.inicio ?? '').split('-').reverse().join('/')}, {l.guia.dados?.dias} dias</div>}
+                      {l.guia && (l.guia.impressoes && l.guia.dados?.fim
+                        ? <div className="text-muted">de {dia(l.guia.dados.inicio)} a {dia(l.guia.dados.fim)} ({l.guia.dados.dias} dias)</div>
+                        : <div className="text-muted">{l.guia.dados?.dias} dias; começam no dia em que imprimir</div>)}
                     </td>
                     <td className="small">
-                      {l.guia && (pode('editar') ? (
-                        <div className="d-flex gap-1 align-items-center">
-                          <input type="date" className="form-control form-control-sm" style={{ width: 140 }} max={hojeIso()} value={l.guia.levantadaEm ?? ''} onChange={(e) => levantou(l, e.target.value)} aria-label={`Data em que ${l.pessoa.nome} levantou a guia`} />
-                          {!l.guia.levantadaEm && <button type="button" className="btn btn-xs btn-white" onClick={() => levantou(l, hojeIso())} title="Levantou hoje">Hoje</button>}
-                        </div>
-                      ) : l.guia.levantadaEm ? l.guia.levantadaEm.split('-').reverse().join('/') : <span className="text-muted">—</span>)}
+                      {l.guia?.levantadaEm ? dia(l.guia.levantadaEm) : <span className="text-muted">—</span>}
                     </td>
+                    {pode('emitir') && <td className="text-end">{l.guia && <button type="button" className="btn btn-xs btn-white" disabled={aFazer} onClick={() => imprimir([l])} title={l.guia.impressoes ? 'Imprimir outra cópia (as datas não mudam)' : 'Imprimir: as férias começam hoje'}><i className="fa fa-print me-1" />{l.guia.impressoes ? 'Cópia' : 'Imprimir'}</button>}</td>}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </>}
-        <div className="small text-muted mt-2">Quando o mês chega, as guias de quem está no plano preparam-se sozinhas (com a licença de férias e a saída no expediente). As férias adicionais (15 dias) continuam a fazer-se na ficha.</div>
+        <div className="small text-muted mt-2">Quando o mês chega, as guias de quem está no plano preparam-se sozinhas (com a licença de férias e a saída no expediente). Quando o militar vem levantar, seleccione a guia (ou várias, ou todas) e clique em imprimir: o sistema regista o dia, as férias começam nesse dia e o fim conta-se sozinho pelos dias a que tem direito. Uma cópia depois não muda as datas. As férias adicionais (15 dias) continuam a fazer-se na ficha.</div>
       </div>
     </div>
   )

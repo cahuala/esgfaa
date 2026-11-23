@@ -57,4 +57,25 @@ describe('Guias de férias do mês, prontas a imprimir', () => {
     assert.equal(r.preparadas, 1)
     assert.ok((await adm.get(`/api/plano-ferias/guias?${q}`).expect(200)).body.linhas[0].guia)
   })
+
+  it('imprimir quando o militar vem levantar: regista o dia, as férias começam nesse dia e o fim recalcula-se', async () => {
+    const p = (await adm.post('/api/pessoas').send(militar({ nome: 'Capitão Férias Quatro', nip: 'NIPFER4' })).expect(201)).body
+    await adm.put('/api/plano-ferias').send({ ano, pessoaId: p.id, mes }).expect(200)
+    await amb.contentor.servicos.planoFerias.prepararDoMesAtual()
+    const linha = async () => (await adm.get(`/api/plano-ferias/guias?ano=${ano}&mes=${mes}`).expect(200)).body.linhas.find((x) => x.pessoa.id === p.id)
+    const g = (await linha()).guia
+    assert.equal(g.dados.inicio, '2026-10-01')
+    const r = (await adm.post('/api/plano-ferias/guias/imprimir').send({ ids: [g.id] }).expect(200)).body
+    // o relógio dos testes está a 17/10: 30 dias de 17/10 a 15/11
+    assert.deepEqual([r[0].dados.inicio, r[0].dados.fim, r[0].dados.data], ['2026-10-17', '2026-11-15', '2026-10-17'])
+    const depois = (await linha()).guia
+    assert.deepEqual([depois.impressoes, depois.levantadaEm, depois.dados.fim], [1, '2026-10-17', '2026-11-15'])
+    const li = await amb.contentor.bd.licenca.findMany({ where: { pessoaId: p.id, tipo: 'ferias' } })
+    assert.deepEqual(li.map((x) => [x.inicio.toISOString().slice(0, 10), x.fim.toISOString().slice(0, 10)]), [['2026-10-17', '2026-11-15']])
+    // uma cópia depois não muda as datas; a guia continua no mês do plano
+    const copia = (await adm.post('/api/plano-ferias/guias/imprimir').send({ ids: [g.id] }).expect(200)).body
+    assert.equal(copia[0].dados.inicio, '2026-10-17')
+    assert.equal((await linha()).guia.impressoes, 2)
+    assert.equal((await adm.post('/api/plano-ferias/guias/imprimir').send({ ids: [999999] })).status, 404)
+  })
 })

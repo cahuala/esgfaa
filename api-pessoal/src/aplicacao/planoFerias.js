@@ -7,6 +7,10 @@ import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 // quem prepara as guias sozinho, quando chega o mês (fica assim na auditoria e no expediente)
 const AUTOMATICO = { email: 'plano de férias (automático)', nome: 'Plano de férias', papel: 'operador' }
 const doMes = (ano, mes) => `${ano}-${String(mes).padStart(2, '0')}`
+// o último dia das férias: o início mais os dias, contando o próprio dia do início
+const fimDe = (inicio, dias) => new Date(Date.parse(`${inicio}T00:00:00Z`) + (Number(dias) - 1) * 86_400_000).toISOString().slice(0, 10)
+// o mês do plano a que a guia pertence (as de antes guardavam só o início)
+const mesDaGuia = (d) => String(d?.mesPlano ?? d?.inicio ?? '').slice(0, 7)
 
 /*
   Plano de férias (como no SIGP, no Planeamento): por unidade e ano, o mês de férias de cada militar e
@@ -46,7 +50,7 @@ export class ServicoPlanoFerias {
     const erros = []
     for (const x of falta) {
       try {
-        await this.documentos.emitir(u, x.pessoa.id, [{ tipo: 'guia_ferias', dados: { inicio: `${doMes(ano, mes)}-01`, dias: diasDeFerias(x.pessoa), data: hoje, planoFerias: true } }])
+        await this.documentos.emitir(u, x.pessoa.id, [{ tipo: 'guia_ferias', dados: { inicio: `${doMes(ano, mes)}-01`, dias: diasDeFerias(x.pessoa), data: hoje, planoFerias: true, mesPlano: doMes(ano, mes) } }])
         preparadas++
       } catch (e) {
         erros.push(`${x.pessoa.nome}: ${e.message}`)
@@ -54,6 +58,36 @@ export class ServicoPlanoFerias {
     }
     if (preparadas) await this.auditoria.registar(u, 'guias_ferias_preparadas', `${preparadas} guia(s) de ${MESES[mes - 1]} de ${ano}`)
     return { preparadas, erros }
+  }
+
+  /*
+    Imprimir as guias de quem veio levantar (uma, várias ou todas). Na primeira impressão, sem o utilizador
+    escrever nada: a data da guia e o levantamento ficam o dia de hoje, as férias começam hoje (nunca antes do
+    dia 1 do mês planeado), o fim conta-se pelos dias a que tem direito e a licença de férias acompanha.
+    Reimprimir (cópia) não muda as datas. Devolve os dados de cada guia para o documento.
+  */
+  async imprimirGuias(u, ids) {
+    exigir(u, 'emitir')
+    const hoje = this.agora().toISOString().slice(0, 10)
+    const guias = await this.bd.documentoEmitido.findMany({ where: { id: { in: ids }, tipo: 'guia_ferias' }, include: { pessoa: { select: { nome: true } } } })
+    if (guias.length !== new Set(ids).size) throw naoEncontrado('Guia de férias não encontrada.')
+    const r = []
+    for (const g of guias) {
+      let dados = g.dados ?? {}
+      const mudar = { impressoes: { increment: 1 }, ultimaImpressao: this.agora() }
+      if (!g.impressoes && /^\d{4}-\d{2}-\d{2}$/.test(dados.inicio ?? '') && Number(dados.dias) > 0) {
+        const inicio = hoje > dados.inicio ? hoje : dados.inicio
+        const fim = fimDe(inicio, dados.dias)
+        const li = await this.bd.licenca.findFirst({ where: { pessoaId: g.pessoaId, tipo: 'ferias', inicio: new Date(`${dados.inicio}T00:00:00Z`) } })
+        if (li) await this.bd.licenca.update({ where: { id: li.id }, data: { inicio: new Date(`${inicio}T00:00:00Z`), fim: new Date(`${fim}T00:00:00Z`) } })
+        dados = { ...dados, mesPlano: mesDaGuia(dados), inicio, fim, data: hoje }
+        Object.assign(mudar, { dados, ...(g.levantadaEm ? {} : { levantadaEm: new Date(`${hoje}T00:00:00Z`), levantadaPor: u.email }) })
+      }
+      await this.bd.documentoEmitido.update({ where: { id: g.id }, data: mudar })
+      r.push({ id: g.id, pessoaId: g.pessoaId, dados })
+    }
+    await this.auditoria.registar(u, 'imprimir_guias_ferias', guias.map((g) => g.pessoa.nome).join(', ').slice(0, 500), { ids })
+    return r
   }
 
   // o dia em que o próprio veio levantar a guia (null = ainda não levantou)
@@ -90,7 +124,7 @@ export class ServicoPlanoFerias {
     const ids = plano.map((x) => x.pessoaId)
     const emitidas = ids.length ? await this.bd.documentoEmitido.findMany({ where: { tipo: 'guia_ferias', pessoaId: { in: ids } }, orderBy: { criadoEm: 'desc' } }) : []
     const guia = new Map()
-    for (const g of emitidas) if (String(g.dados?.inicio ?? '').startsWith(doMes(ano, mes)) && !guia.has(g.pessoaId)) guia.set(g.pessoaId, g)
+    for (const g of emitidas) if (mesDaGuia(g.dados) === doMes(ano, mes) && !guia.has(g.pessoaId)) guia.set(g.pessoaId, g)
     const pessoa = (p) => ({ id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.categoriaCivil || '', unidadeNome: p.unidade?.nome ?? '' })
     const linhas = plano.map((x) => ({ pessoa: pessoa(x.pessoa), guia: guia.get(x.pessoaId) ?? null }))
     return [linhas.filter((x) => !x.guia), linhas.filter((x) => x.guia)]
