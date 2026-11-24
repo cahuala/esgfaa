@@ -158,6 +158,32 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
     const doc = (await ensino.get(`/api/admin/academico/distribuicao?anoLetivo=${encodeURIComponent(ANO)}`).expect(200)).body
     assert.deepEqual([doc.distribuicao.estado, doc.docentes.find((x) => x.id === d.id).horas], ['aprovada', 20])
   })
+
+  it('o Director do curso proposto pela Administração Escolar só fica com a aprovação do Comandante', async () => {
+    const dir = await amb.criarUtilizador('director_curso')
+    const url = '/api/admin/academico/cursos/curso-de-estado-maior/director'
+    const estado = async () => (await ensino.get('/api/admin/academico/directores-curso').expect(200)).body
+    await ensino.put(url).send({ utilizadorId: dir.id }).expect(200)
+    let e = await estado()
+    assert.equal(e.directores['curso-de-estado-maior'], undefined)
+    assert.equal(e.propostas['curso-de-estado-maior'].utilizadorId, dir.id)
+    const p = (await comandante.get('/api/admin/publicacoes')).body.find((x) => x.colecao === 'director_curso')
+    assert.match(p.titulo, /Director do Curso de Estado-Maior/)
+    // o Ensino não decide; recusar pede o motivo
+    assert.equal((await ensino.post('/api/admin/publicacoes/director_curso/curso-de-estado-maior/decisao').send({ decisao: 'aprovar' })).status, 403)
+    assert.equal((await decidir('director_curso', 'curso-de-estado-maior', { decisao: 'recusar' })).status, 400)
+    await decidir('director_curso', 'curso-de-estado-maior', { decisao: 'recusar', motivo: 'Escolher um oficial superior.' }).expect(200)
+    e = await estado()
+    assert.deepEqual([e.directores['curso-de-estado-maior'], e.recusas['curso-de-estado-maior'].motivo], [undefined, 'Escolher um oficial superior.'])
+    // proposto de novo e aprovado
+    await ensino.put(url).send({ utilizadorId: dir.id }).expect(200)
+    await decidir('director_curso', 'curso-de-estado-maior', { decisao: 'aprovar' }).expect(200)
+    e = await estado()
+    assert.deepEqual([e.directores['curso-de-estado-maior'].utilizadorId, e.propostas['curso-de-estado-maior'], e.recusas['curso-de-estado-maior']], [dir.id, undefined, undefined])
+    // o Comandante designa directamente
+    await comandante.put(url).send({ utilizadorId: null }).expect(200)
+    assert.equal((await estado()).directores['curso-de-estado-maior'], undefined)
+  })
 })
 
 describe('O Pessoal pergunta o que espera pelo Comandante (pedido assinado)', () => {

@@ -37,9 +37,10 @@ function Turmas() {
 
   const carregar = useCallback(() => api('/academico/turmas').then(setLista).catch((e) => setErro(e.message)), [])
   // o Director de cada curso (designado pela Administração Escolar entre as contas do painel que veem o Ensino)
-  const [dirs, setDirs] = useState({ directores: {}, candidatos: [] })
+  const [dirs, setDirs] = useState({ directores: {}, propostas: {}, recusas: {}, candidatos: [] })
+  // a Administração Escolar propõe; vale quando o Comandante aprova (o próprio Comandante designa logo)
   const designar = (curso, valor) => api(`/academico/cursos/${encodeURIComponent(curso)}/director`, { metodo: 'PUT', corpo: { utilizadorId: valor ? Number(valor) : null } })
-    .then((r) => { setDirs(r); setAviso({ texto: valor ? tx('Director do curso designado.') : tx('Director do curso retirado.') }) })
+    .then((r) => { setDirs(r); setAviso({ texto: r.propostas?.[curso] ? tx('Proposto ao Comandante: fica Director do curso quando ele aprovar.') : valor ? tx('Director do curso designado.') : tx('Director do curso retirado.') }) })
     .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   useEffect(() => {
     carregar()
@@ -104,6 +105,8 @@ function Turmas() {
                       {dirs.candidatos.map((u) => <option key={u.utilizadorId} value={u.utilizadorId}>{u.nome}{u.cargo ? ` — ${u.cargo}` : ''} ({u.nomePapel})</option>)}
                     </select>
                   ) : <b>{dirs.directores[c.id]?.nome ?? tx('por designar')}</b>}
+                  {dirs.propostas?.[c.id] && <span className="badge bg-info text-dark" title={tx('Proposto por {0}', { 0: dirs.propostas[c.id].pedidoPor })}><i className="fa fa-hourglass-half me-1" />{dirs.propostas[c.id].nome ? tx('À espera do Comandante: {0}', { 0: dirs.propostas[c.id].nome }) : tx('À espera do Comandante: retirar o Director')}</span>}
+                  {dirs.recusas?.[c.id] && <span className="text-danger"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou: {0}', { 0: dirs.recusas[c.id].motivo })}</span>}
                 </div>
                 {turmas.length === 0 ? <div className="text-muted small p-3">{tx('Ainda sem turmas neste curso.')}</div> : (
                   <div className="table-responsive">

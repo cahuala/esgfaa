@@ -109,7 +109,7 @@ export const PAPEIS_PADRAO = [
   {
     id: 'director_curso',
     nome: 'Director de Curso',
-    descricao: 'Designado pela Repartição de Administração Escolar para um curso: vê tudo o que é do Ensino (as turmas, as pautas e o Conselho de Curso do seu curso), sem alterar.',
+    descricao: 'Proposto pela Repartição de Administração Escolar para um curso e aprovado pelo Comandante: vê tudo o que é do Ensino (as turmas, as pautas e o Conselho de Curso do seu curso), sem alterar.',
     sistema: 0,
     permissoes: VER_ENSINO,
   },

@@ -2,6 +2,7 @@ import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/e
 import { NOMES_COMPONENTES } from '../../../dominio/academico/avaliacao/resultado.js'
 import { senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
 import { ordenarPorHierarquia } from '../../../dominio/academico/pessoas/hierarquia.js'
+import { CHAVE_DIRECTORES } from './turmas.js'
 
 const PAPEIS = { regente: 'regente', assistente: 'assistente' }
 const media = (m) => (m === null ? '—' : m.toFixed(1).replace('.', ','))
@@ -103,12 +104,54 @@ export class ServicoAprovacoesComandante {
         resumo: `${r.notas} nota(s), média ${media(r.media)}, ${r.positivas} positiva(s)`,
       })
     }
-    return [...distribuicoes, ...notas]
+    return [...distribuicoes, ...notas, ...(await this.#directoresPropostos())]
+  }
+
+  // ---------- Director de Curso (proposto pela Administração Escolar) ----------
+
+  async #directoresPropostos() {
+    const guardado = (await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}
+    const pendentes = Object.entries(guardado).filter(([, x]) => x.proposta)
+    if (!pendentes.length) return []
+    const cursos = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, (c.dados ?? c).nome]))
+    const contas = new Map((await this.utilizadores.listar()).map((u) => [u.id, u]))
+    return pendentes.map(([curso, x]) => {
+      const novo = x.proposta.utilizadorId ? contas.get(x.proposta.utilizadorId) : null
+      const antes = x.utilizadorId ? contas.get(x.utilizadorId) : null
+      return {
+        colecao: 'director_curso', id: curso, tipo: 'director_curso',
+        titulo: novo ? `${novo.nome} — Director do ${cursos.get(curso) ?? curso}` : `Retirar o Director do ${cursos.get(curso) ?? curso}`,
+        pedidoPor: x.proposta.pedidoPor, pedidoEm: x.proposta.pedidoEm,
+        resumo: [novo && `Proposto: ${novo.nome}${novo.cargo ? ` (${novo.cargo})` : ''}`, `Director actual: ${antes ? antes.nome : 'nenhum'}`].filter(Boolean).join('\n'),
+      }
+    })
+  }
+
+  async decidirDirectorCurso(ctx, curso, { decisao, motivo }) {
+    ctx.actor.exigir('academico.homologar')
+    const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
+    const x = guardado[curso]
+    if (!x?.proposta) throw new Conflito('Esta designação não está à espera de aprovação.')
+    const agora = this.relogio.agora().toISOString()
+    const m = String(motivo ?? '').trim()
+    if (decisao !== 'aprovar') {
+      if (m.length < 3) throw new ErroValidacao('Indique o motivo (a Administração Escolar vê-o).', { campo: 'motivo' })
+      guardado[curso] = { ...x, proposta: undefined, recusa: { motivo: m, utilizadorId: x.proposta.utilizadorId, decididoPor: ctx.actor.nome ?? '', decididoEm: agora } }
+      await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
+      await this.auditoria.registar(ctx, { acao: 'recusar_director_curso', colecao: 'cursos', alvoId: curso, alvoTitulo: curso, detalhes: { motivo: m } })
+      return { decisao: 'recusar' }
+    }
+    const p = x.proposta
+    guardado[curso] = p.utilizadorId ? { utilizadorId: p.utilizadorId, desde: agora, designadoPor: p.pedidoPor, aprovadoPor: ctx.actor.nome ?? '' } : {}
+    await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
+    await this.auditoria.registar(ctx, { acao: p.utilizadorId ? 'aprovar_director_curso' : 'aprovar_retirar_director_curso', colecao: 'cursos', alvoId: curso, alvoTitulo: curso })
+    return { decisao: 'aprovar' }
   }
 
   async contarParaAprovar(ctx) {
     if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return 0
-    return (await this.controlo.contarDistribuicoesPendentes()) + (await this.controlo.contarPublicacoesPendentes())
+    const directores = Object.values((await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}).filter((x) => x.proposta).length
+    return (await this.controlo.contarDistribuicoesPendentes()) + (await this.controlo.contarPublicacoesPendentes()) + directores
   }
 
   // ---------- decisões do Comandante ----------

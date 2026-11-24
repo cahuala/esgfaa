@@ -22,6 +22,7 @@ const OUTROS = {
   utilizadores: { rotulo: tx('Conta do painel de gestão'), cor: 'bg-dark', feito: tx('«{0}»: aprovado.') },
   comentarios: { rotulo: tx('Comentário de um visitante do site'), cor: 'bg-indigo', feito: tx('«{0}» aprovado: já aparece no site.') },
   distribuicao_docente: { rotulo: tx('Distribuição de serviço docente'), cor: 'bg-orange', etiqueta: tx('Docentes nas cadeiras'), feito: tx('«{0}» aprovada: os docentes já têm as cadeiras.') },
+  director_curso: { rotulo: tx('Director de Curso'), cor: 'bg-primary', etiqueta: tx('Designação'), feito: tx('«{0}»: aprovado.') },
   publicacao_notas: { rotulo: tx('Publicação de notas'), cor: 'bg-red', etiqueta: tx('Notas'), feito: tx('«{0}»: notas publicadas, os estudantes já as vêem.') },
 }
 

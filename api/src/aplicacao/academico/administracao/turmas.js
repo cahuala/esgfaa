@@ -16,8 +16,12 @@ import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
 
 // Turmas e matrículas: a Administração Escolar matricula estudantes já registados pelo Pessoal e Quadros.
-// os directores de curso designados pela Administração Escolar: { [curso]: { utilizadorId, desde, designadoPor } }
-const CHAVE_DIRECTORES = 'directores-de-curso'
+/*
+  Os directores de curso: { [curso]: { utilizadorId, desde, designadoPor, aprovadoPor, proposta?, recusa? } }. A
+  Administração Escolar propõe (proposta: { utilizadorId | null para retirar, pedidoPor, pedidoEm }); só vale quando o
+  Comandante aprova (em «Por aprovar»); se recusar, fica a recusa com o motivo.
+*/
+export const CHAVE_DIRECTORES = 'directores-de-curso'
 
 export class ServicoTurmas {
   constructor(dependencias) {
@@ -96,27 +100,48 @@ export class ServicoTurmas {
     const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
     const contas = await this.#contasDoEnsino()
     const porId = new Map(contas.map((u) => [u.id, u]))
-    const directores = Object.fromEntries(Object.entries(guardado).map(([curso, x]) => [curso, porId.get(x.utilizadorId) ? { ...x, ...this.#resumoConta(porId.get(x.utilizadorId)) } : null]).filter(([, x]) => x))
-    return { directores, candidatos: ctx.actor.pode('academico.gerir') ? contas.map((u) => this.#resumoConta(u)) : [] }
+    const directores = {}
+    const propostas = {}
+    const recusas = {}
+    for (const [curso, x] of Object.entries(guardado)) {
+      if (x.utilizadorId && porId.get(x.utilizadorId)) directores[curso] = { utilizadorId: x.utilizadorId, desde: x.desde, aprovadoPor: x.aprovadoPor ?? '', ...this.#resumoConta(porId.get(x.utilizadorId)) }
+      if (x.proposta) propostas[curso] = { ...x.proposta, ...(x.proposta.utilizadorId && porId.get(x.proposta.utilizadorId) ? this.#resumoConta(porId.get(x.proposta.utilizadorId)) : { nome: x.proposta.utilizadorId ? '(conta já sem acesso)' : null }) }
+      if (x.recusa) recusas[curso] = x.recusa
+    }
+    return { directores, propostas, recusas, aprovacaoComandante: Boolean(this.aprovacaoComandante), candidatos: ctx.actor.pode('academico.gerir') ? contas.map((u) => this.#resumoConta(u)) : [] }
   }
 
+  /*
+    A Administração Escolar propõe o Director do curso (ou retirá-lo: utilizadorId null); o Comandante aprova em
+    «Por aprovar». Sem a aprovação do Comandante ligada (ou se é o próprio Comandante), fica logo.
+  */
   async definirDirectorDeCurso(ctx, cursoId, utilizadorId) {
     ctx.actor.exigir('academico.gerir')
     const curso = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
     if (!curso) throw new NaoEncontrado('Curso não encontrado.')
-    const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
     const nomeCurso = (curso.dados ?? curso).nome
-    if (utilizadorId === null) {
-      delete guardado[cursoId]
+    let u = null
+    if (utilizadorId !== null) {
+      u = (await this.#contasDoEnsino()).find((x) => x.id === utilizadorId)
+      if (!u) throw new ErroValidacao('Escolha uma conta activa do painel que veja o Ensino (o Director de Curso entra com a sua conta).', { campo: 'utilizadorId' })
+    }
+    const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
+    const atual = guardado[cursoId] ?? {}
+    const agora = this.relogio.agora().toISOString()
+    if (!this.aprovacaoComandante || ctx.actor.pode('academico.homologar')) {
+      guardado[cursoId] = u ? { utilizadorId: u.id, desde: agora, designadoPor: ctx.actor.nome ?? '', aprovadoPor: ctx.actor.nome ?? '' } : {}
       await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
-      await this.auditoria.registar(ctx, { acao: 'retirar_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: nomeCurso })
+      await this.auditoria.registar(ctx, { acao: u ? 'designar_director_curso' : 'retirar_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: u ? `${nomeCurso}: ${u.nome}` : nomeCurso })
       return this.directoresDeCurso(ctx)
     }
-    const u = (await this.#contasDoEnsino()).find((x) => x.id === utilizadorId)
-    if (!u) throw new ErroValidacao('Escolha uma conta activa do painel que veja o Ensino (o Director de Curso entra com a sua conta).', { campo: 'utilizadorId' })
-    guardado[cursoId] = { utilizadorId: u.id, desde: this.relogio.agora().toISOString(), designadoPor: ctx.actor.nome ?? '' }
+    if ((atual.utilizadorId ?? null) === utilizadorId) {
+      // volta ao que já está aprovado: a proposta em curso cai
+      guardado[cursoId] = { ...atual, proposta: undefined, recusa: undefined }
+    } else {
+      guardado[cursoId] = { ...atual, proposta: { utilizadorId, pedidoPor: ctx.actor.nome ?? '', pedidoEm: agora }, recusa: undefined }
+    }
     await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
-    await this.auditoria.registar(ctx, { acao: 'designar_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: `${nomeCurso}: ${u.nome}` })
+    await this.auditoria.registar(ctx, { acao: 'propor_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: u ? `${nomeCurso}: ${u.nome}` : `${nomeCurso}: retirar o Director` })
     return this.directoresDeCurso(ctx)
   }
 
