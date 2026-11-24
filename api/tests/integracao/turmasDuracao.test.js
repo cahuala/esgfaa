@@ -45,4 +45,24 @@ describe('Turmas e duração do curso', () => {
     assert.deepEqual(t.matriculas.map((m) => m.estudante.nome), ['Bruno Coronel', 'Abel Major'])
   })
 
+  it('a Administração Escolar designa o Director de cada curso (uma conta que vê o Ensino); fica na lista do curso', async () => {
+    const rae = amb.com((await amb.criarUtilizador('secretaria')).token)
+    const dir = await amb.criarUtilizador('director_curso')
+    const area = await amb.criarUtilizador('area_cientifica')
+    const redactor = await amb.criarUtilizador('redator')
+    const c = (await rae.get('/api/admin/academico/directores-curso').expect(200)).body
+    const ids = c.candidatos.map((x) => x.utilizadorId)
+    assert.ok(ids.includes(dir.id) && ids.includes(area.id) && !ids.includes(redactor.id))
+    // quem não vê o Ensino não pode ser Director de Curso; só a Administração Escolar designa
+    assert.equal((await rae.put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: redactor.id })).status, 400)
+    assert.equal((await amb.com(dir.token).put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: dir.id })).status, 403)
+    const r = (await rae.put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: dir.id }).expect(200)).body
+    assert.equal(r.directores['curso-superior-de-comando-e-direccao'].nome, 'Utilizador director_curso')
+    // o Director de Curso vê o Ensino (sem alterar) e aparece na lista do curso
+    const l = (await amb.com(dir.token).get('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/lista?anoLetivo=2026/2027').expect(200)).body
+    assert.equal(l.director.nome, 'Utilizador director_curso')
+    assert.equal((await amb.com(dir.token).post('/api/admin/academico/turmas').send({ curso: 'curso-superior-de-comando-e-direccao', anoLetivo: '2026/2027', nome: 'X' })).status, 403)
+    await rae.put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: null }).expect(200)
+    assert.equal((await rae.get('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/lista').expect(200)).body.director, null)
+  })
 })

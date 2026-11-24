@@ -11,6 +11,29 @@ const CHEFES_ENSINO = [
   [/^Director (da Direc[çc][ãa]o )?de Ensino\b/i, 'director_ensino'],
   [/^Chefe da Reparti[çc][ãa]o de Administra[çc][ãa]o Escolar\b/i, 'secretaria'],
 ]
+// quem não trabalha com os dados do Ensino (o motorista, o ajudante de campo…) não leva conta no painel
+const APOIO_PESSOAL = /^(Motorista|Condutor|Ajudante de Campo|Estafeta|Mensageiro|Servente|Guarda|Sentinela)\b/i
+/*
+  O papel no painel de gestão de quem trabalha na Direcção de Ensino, pela unidade (e pelo cargo):
+  - o Director de Ensino: director_ensino;
+  - a Repartição de Administração Escolar: secretaria (gere turmas, matrículas, cadeiras, pautas…);
+  - os departamentos e as secções de estudos (a Área Científica): os chefes (Chefe…, Professor-Chefe…) — area_cientifica;
+    os outros professores usam o Portal Académico como docentes;
+  - o resto (órgãos de apoio de direcção, planeamento e coordenação, secretaria de ensino…): gabinete_ensino.
+  A Biblioteca tem o seu sistema. cadeia: os nomes da unidade e das de cima (da mais próxima para a Direcção).
+*/
+export function papelNoEnsino(p, cadeia) {
+  const cargo = p.cargo?.nome ?? ''
+  const chefe = CHEFES_ENSINO.find(([re]) => re.test(cargo))?.[1]
+  if (chefe) return chefe
+  if (APOIO_PESSOAL.test(cargo)) return null
+  const em = (re) => cadeia.some((n) => re.test(n))
+  if (em(/^Biblioteca\b/i)) return null
+  if (em(/^Reparti[çc][ãa]o de Administra[çc][ãa]o Escolar\b/i)) return 'secretaria'
+  if (em(/^(Departamento|Sec[çc][ãa]o de Estudos)\b/i)) return p.tipo === 'civil' || /^(Chefe|Professor-Chefe)\b/i.test(cargo) ? 'area_cientifica' : null
+  // militares só com cargo atribuído; os civis do Ensino (que já tinham conta) ficam no Gabinete
+  return p.tipo === 'civil' || cargo ? 'gabinete_ensino' : null
+}
 import { calcularAssinantes } from './assinantes.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
@@ -153,16 +176,19 @@ export class ServicoSincronizacao {
   async enviarContasEnsino() {
     if (!this.ativa || !this.cifra) return { enviado: false, inativa: true }
     const ids = await unidadesDe(this.bd, /^Direc[çc][ãa]o de Ensino\b/i)
-    // os civis (entram com o BI) e os chefes militares — o Director de Ensino e o Chefe da Repartição de Administração
-    // Escolar (entram com o NIP; o papel no painel vem do cargo)
-    const pessoas = ids.length ? await this.bd.pessoa.findMany({ where: { ativo: true, unidadeId: { in: ids }, OR: [{ tipo: 'civil', vinculo: 'funcionario' }, { tipo: 'militar', cargo: { nome: { contains: 'Ensino', mode: 'insensitive' } } }, { tipo: 'militar', cargo: { nome: { contains: 'Administração Escolar', mode: 'insensitive' } } }] }, select: { id: true, nome: true, email: true, bi: true, tipo: true, nip: true, cargo: { select: { nome: true } } }, orderBy: { id: 'asc' } }) : []
+    // os civis (entram com o BI) e os militares com cargo (entram com o NIP); o papel no painel vem da unidade e do
+    // cargo (papelNoEnsino)
+    const pessoas = ids.length ? await this.bd.pessoa.findMany({ where: { ativo: true, unidadeId: { in: ids }, OR: [{ tipo: 'civil', vinculo: 'funcionario' }, { tipo: 'militar', cargoId: { not: null } }] }, select: { id: true, nome: true, email: true, bi: true, tipo: true, nip: true, unidadeId: true, cargo: { select: { nome: true } } }, orderBy: { id: 'asc' } }) : []
+    const unidades = new Map((await this.bd.unidade.findMany({ select: { id: true, nome: true, paiId: true } })).map((x) => [x.id, x]))
+    const cadeia = (id) => { const l = []; for (let u = unidades.get(id), k = 0; u && k < 30; u = unidades.get(u.paiId), k++) l.push(u.nome); return l }
     const hmac = (t) => crypto.createHmac('sha256', this.config.portal.chave).update(t).digest('hex')
     const comIdent = pessoas.map((p) => {
+      const papel = papelNoEnsino(p, cadeia(p.unidadeId))
+      if (!papel) return null
       if (p.tipo === 'civil') {
         const bi = String(p.bi ?? '').trim().toUpperCase()
-        return BI_ANGOLANO.test(bi) ? { p, ident: bi, impressao: hmac(`bi:${bi}`) } : null
+        return BI_ANGOLANO.test(bi) ? { p, ident: bi, impressao: hmac(`bi:${bi}`), papel } : null
       }
-      const papel = CHEFES_ENSINO.find(([re]) => re.test(p.cargo?.nome ?? ''))?.[1]
       const nip = String(p.nip ?? '').trim().toUpperCase()
       return papel && /^[0-9]{5,12}$/.test(nip) ? { p, ident: nip, impressao: hmac(`nip:${nip}`), papel } : null
     }).filter(Boolean)

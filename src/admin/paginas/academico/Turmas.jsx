@@ -36,8 +36,14 @@ function Turmas() {
   const [aviso, setAviso] = useState(null)
 
   const carregar = useCallback(() => api('/academico/turmas').then(setLista).catch((e) => setErro(e.message)), [])
+  // o Director de cada curso (designado pela Administração Escolar entre as contas do painel que veem o Ensino)
+  const [dirs, setDirs] = useState({ directores: {}, candidatos: [] })
+  const designar = (curso, valor) => api(`/academico/cursos/${encodeURIComponent(curso)}/director`, { metodo: 'PUT', corpo: { utilizadorId: valor ? Number(valor) : null } })
+    .then((r) => { setDirs(r); setAviso({ texto: valor ? tx('Director do curso designado.') : tx('Director do curso retirado.') }) })
+    .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   useEffect(() => {
     carregar()
+    api('/academico/directores-curso').then(setDirs).catch(() => {})
     api('/colecoes/cursos').then((c) => { setCursos(c); setF((x) => ({ ...x, curso: x.curso || c[0]?.id || '' })) }).catch(() => {})
     // o ano letivo escolhe-se dos configurados (o atual por omissão)
     api('/academico/anos-letivos').then((l) => { setAnos(l); const atual = l.find((a) => a.atual); if (atual) setF((x) => ({ ...x, anoLetivo: atual.id })) }).catch(() => {})
@@ -89,6 +95,16 @@ function Turmas() {
                   </span>
                 )}
               >
+                <div className="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom small">
+                  <i className="fa fa-user-tie text-muted" />
+                  <span className="text-muted">{tx('Director do curso:')}</span>
+                  {pode('academico.gerir') ? (
+                    <select className="form-select form-select-sm w-auto" value={dirs.directores[c.id]?.utilizadorId ?? ''} onChange={(e) => designar(c.id, e.target.value)} aria-label={tx('Director do curso')}>
+                      <option value="">{tx('— por designar —')}</option>
+                      {dirs.candidatos.map((u) => <option key={u.utilizadorId} value={u.utilizadorId}>{u.nome}{u.cargo ? ` — ${u.cargo}` : ''} ({u.nomePapel})</option>)}
+                    </select>
+                  ) : <b>{dirs.directores[c.id]?.nome ?? tx('por designar')}</b>}
+                </div>
                 {turmas.length === 0 ? <div className="text-muted small p-3">{tx('Ainda sem turmas neste curso.')}</div> : (
                   <div className="table-responsive">
                     <table className="table table-striped align-middle mb-0">

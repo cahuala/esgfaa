@@ -16,6 +16,9 @@ import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
 
 // Turmas e matrículas: a Administração Escolar matricula estudantes já registados pelo Pessoal e Quadros.
+// os directores de curso designados pela Administração Escolar: { [curso]: { utilizadorId, desde, designadoPor } }
+const CHAVE_DIRECTORES = 'directores-de-curso'
+
 export class ServicoTurmas {
   constructor(dependencias) {
     Object.assign(this, dependencias)
@@ -84,6 +87,51 @@ export class ServicoTurmas {
     Lista do curso: os estudantes com matrícula activa em todas as turmas de um curso num ano lectivo, com a turma de
     cada um, pela ordem hierárquica (posto e, no mesmo posto, nome).
   */
+  /*
+    Directores de curso: a Repartição de Administração Escolar designa, para cada curso, uma das contas do painel que
+    veem o Ensino (o Director de Curso, um chefe de departamento…). Fica na lista do curso, para assinar.
+  */
+  async directoresDeCurso(ctx) {
+    ctx.actor.exigir('academico.ver')
+    const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
+    const contas = await this.#contasDoEnsino()
+    const porId = new Map(contas.map((u) => [u.id, u]))
+    const directores = Object.fromEntries(Object.entries(guardado).map(([curso, x]) => [curso, porId.get(x.utilizadorId) ? { ...x, ...this.#resumoConta(porId.get(x.utilizadorId)) } : null]).filter(([, x]) => x))
+    return { directores, candidatos: ctx.actor.pode('academico.gerir') ? contas.map((u) => this.#resumoConta(u)) : [] }
+  }
+
+  async definirDirectorDeCurso(ctx, cursoId, utilizadorId) {
+    ctx.actor.exigir('academico.gerir')
+    const curso = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
+    if (!curso) throw new NaoEncontrado('Curso não encontrado.')
+    const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
+    const nomeCurso = (curso.dados ?? curso).nome
+    if (utilizadorId === null) {
+      delete guardado[cursoId]
+      await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
+      await this.auditoria.registar(ctx, { acao: 'retirar_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: nomeCurso })
+      return this.directoresDeCurso(ctx)
+    }
+    const u = (await this.#contasDoEnsino()).find((x) => x.id === utilizadorId)
+    if (!u) throw new ErroValidacao('Escolha uma conta activa do painel que veja o Ensino (o Director de Curso entra com a sua conta).', { campo: 'utilizadorId' })
+    guardado[cursoId] = { utilizadorId: u.id, desde: this.relogio.agora().toISOString(), designadoPor: ctx.actor.nome ?? '' }
+    await this.paginas.guardar(CHAVE_DIRECTORES, guardado, ctx.actor.id)
+    await this.auditoria.registar(ctx, { acao: 'designar_director_curso', colecao: 'cursos', alvoId: cursoId, alvoTitulo: `${nomeCurso}: ${u.nome}` })
+    return this.directoresDeCurso(ctx)
+  }
+
+  // as contas activas do painel cujo papel vê o Ensino (sem as de administração técnica)
+  async #contasDoEnsino() {
+    const papeis = new Map((await this.papeis.listar()).map((p) => [p.id, p]))
+    const veEnsino = (u) => (u.permissoes ?? papeis.get(u.papel)?.permissoes ?? []).includes('academico.ver')
+    return (await this.utilizadores.listar()).filter((u) => u.ativo && !u.aprovacao && u.papel !== 'administrador' && veEnsino(u))
+      .map((u) => ({ ...u, nomePapel: papeis.get(u.papel)?.nome ?? u.papel })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
+  }
+
+  #resumoConta(u) {
+    return { utilizadorId: u.id, nome: u.nome, cargo: u.cargo ?? '', papel: u.papel, nomePapel: u.nomePapel }
+  }
+
   async listaDoCurso(ctx, cursoId, anoLetivo) {
     ctx.actor.exigir('academico.ver')
     const curso = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
@@ -94,6 +142,7 @@ export class ServicoTurmas {
     const d = curso.dados ?? curso
     return {
       curso: { id: curso.id, nome: d.nome, sigla: d.sigla ?? '', duracao: d.duracao ?? '' }, anoLetivo: anoLetivo || null,
+      director: (await this.directoresDeCurso(ctx)).directores[curso.id] ?? null,
       turmas: turmas.map((t) => ({ id: t.id, nome: t.nome, anoLetivo: t.anoLetivo, estudantes: t.estudantes })),
       estudantes: ordenarPorHierarquia(estudantes),
     }

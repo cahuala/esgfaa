@@ -193,9 +193,22 @@ describe('Civis da Direcção de Ensino: conta no painel de gestão, com o BI', 
       assert.deepEqual([porRef[`pessoal-${dir.id}`].papel, porRef[`pessoal-${chefe.id}`].papel], ['director_ensino', 'secretaria'])
       assert.equal(porRef[`pessoal-${dir.id}`].bi, crypto.createHmac('sha256', chave).update('nip:10576093').digest('hex'))
       assert.ok(!envios.at(-1).raw.includes('10576093')) // o NIP não sai em claro
-      assert.equal(porRef[`pessoal-${a.id}`].papel, undefined)
+      assert.equal(porRef[`pessoal-${a.id}`].papel, 'secretaria') // civil da Repartição de Administração Escolar
+      // a Área Científica (os chefes dos departamentos) e o Gabinete do Director de Ensino também têm conta, com o seu papel;
+      // um professor do departamento (sem chefia) não: usa o Portal Académico
+      const dep = (await adm.post('/api/unidades').send({ nome: 'Departamento de Estratégia', paiId: de.id }).expect(201)).body
+      const apoio = (await adm.post('/api/unidades').send({ nome: 'Secção de Planeamento e Coordenação', paiId: de.id }).expect(201)).body
+      const cChefeDep = await cargo('Chefe do Departamento de Estratégia da Direcção de Ensino', dep.id)
+      const cProf = await cargo('Professor de Estratégia do Departamento de Estratégia', dep.id)
+      const cPlan = await cargo('Oficial de Planeamento da Secção de Planeamento e Coordenação', apoio.id)
+      const chefeDep = (await adm.post('/api/pessoas').send(militar({ nome: 'Chefe Departamento Teste', nip: '40576096', posto: 'coronel', unidadeId: dep.id, cargoId: cChefeDep.id })).expect(201)).body
+      await adm.post('/api/pessoas').send(militar({ nome: 'Professor Departamento Teste', nip: '50576097', posto: 'major', unidadeId: dep.id, cargoId: cProf.id })).expect(201)
+      const plan = (await adm.post('/api/pessoas').send(militar({ nome: 'Oficial Planeamento Teste', nip: '60576098', posto: 'major', unidadeId: apoio.id, cargoId: cPlan.id })).expect(201)).body
+      await s.enviarContasEnsino()
+      const porRef2 = Object.fromEntries(envios.at(-1).corpo.contas.map((x) => [x.ref, x.papel]))
+      assert.deepEqual([porRef2[`pessoal-${chefeDep.id}`], porRef2[`pessoal-${plan.id}`], Object.keys(porRef2).length], ['area_cientifica', 'gabinete_ensino', 5])
       // sai da Direcção de Ensino: a lista vai vazia (o painel desactiva a conta)
-      await amb.contentor.bd.pessoa.updateMany({ where: { id: { in: [a.id, dir.id, chefe.id] } }, data: { unidadeId: null } })
+      await amb.contentor.bd.pessoa.updateMany({ where: { id: { in: [a.id, dir.id, chefe.id, chefeDep.id, plan.id] } }, data: { unidadeId: null } })
       await s.enviarContasEnsino()
       assert.deepEqual(envios.at(-1).corpo, { contas: [] })
     } finally {

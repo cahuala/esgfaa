@@ -266,6 +266,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       anosLetivos,
       contas: r.contasPortal, academico: r.academico, recursos: r.recursos, conteudos: r.conteudos, pautas, esg, planosCurso: r.planosCurso, notificacoes, copias, copiasRepo: r.copias,
       privados, cifra, auditoria, relogio, dominioEmail: config.dominioEmail, filtroHtml: filtrarHtml, percursos, conclusao: r.conclusao, paginas: r.paginas,
+      utilizadores: r.utilizadores, papeis: r.papeis,
       aprovacaoComandante: config.aprovacaoComandante,
     }
     // distribuição dos docentes e publicação de notas: só valem com a aprovação do Comandante

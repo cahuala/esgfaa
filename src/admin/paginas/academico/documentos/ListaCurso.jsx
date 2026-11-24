@@ -43,7 +43,7 @@ function ListaCurso() {
           <button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
         </>
       )}
-      assinaturas={['O Chefe da Repartição de Administração Escolar', 'O Director de Ensino']}
+      assinaturas={[...(d.director ? [{ cargo: 'O Director do Curso', nome: d.director.nome }] : []), 'O Chefe da Repartição de Administração Escolar', 'O Director de Ensino']}
     >
       <table>
         <thead><tr><th className="of-num">N.º</th><th>Posto</th><th>Nome completo</th><th>N.º de estudante</th><th>Turma</th></tr></thead>

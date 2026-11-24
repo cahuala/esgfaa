@@ -41,7 +41,7 @@ const conteudo = (recursos, acoes) => recursos.flatMap((r) => acoes.map((a) => `
 export const VER_TUDO_COMANDANTE = [...TODAS]
 export const VER_ENSINO = ['academico.ver', 'academico.conselho', 'cursos.ver', 'integridade.ver', 'biblioteca.ver', 'pessoal.ver']
 // o que estes papéis têm sempre (os já criados recebem o que falta ao arrancar)
-export const MINIMOS = { comandante: VER_TUDO_COMANDANTE, director_ensino: VER_ENSINO }
+export const MINIMOS = { comandante: VER_TUDO_COMANDANTE, director_ensino: VER_ENSINO, gabinete_ensino: VER_ENSINO, area_cientifica: VER_ENSINO, director_curso: VER_ENSINO }
 
 export const PAPEIS_PADRAO = [
   {
@@ -89,6 +89,27 @@ export const PAPEIS_PADRAO = [
     id: 'director_ensino',
     nome: 'Director de Ensino',
     descricao: 'Vê tudo o que é do Ensino; juízo ampliativo dos auditores, proposta das classificações finais e confirmação em Conselho de Curso.',
+    sistema: 0,
+    permissoes: VER_ENSINO,
+  },
+  {
+    id: 'gabinete_ensino',
+    nome: 'Gabinete do Director de Ensino',
+    descricao: 'O apoio do Director de Ensino (órgãos de apoio, secretaria de ensino, planeamento e coordenação): vê tudo o que é do Ensino, sem alterar.',
+    sistema: 0,
+    permissoes: VER_ENSINO,
+  },
+  {
+    id: 'area_cientifica',
+    nome: 'Área Científica',
+    descricao: 'Os departamentos e as secções de estudos da Direcção de Ensino: vê os cursos, as turmas, as cadeiras, os programas, as pautas e a originalidade dos trabalhos, sem alterar.',
+    sistema: 0,
+    permissoes: VER_ENSINO,
+  },
+  {
+    id: 'director_curso',
+    nome: 'Director de Curso',
+    descricao: 'Designado pela Repartição de Administração Escolar para um curso: vê tudo o que é do Ensino (as turmas, as pautas e o Conselho de Curso do seu curso), sem alterar.',
     sistema: 0,
     permissoes: VER_ENSINO,
   },

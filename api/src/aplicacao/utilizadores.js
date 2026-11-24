@@ -62,7 +62,8 @@ export class ServicoUtilizadores {
         if (outra) { resultados.push({ ref: c.ref, ok: false, erro: 'Já há uma conta do painel com este BI.' }); continue }
         const real = c.email ? normalizarEmail(c.email) : ''
         const email = real && !(await this.utilizadores.emailEmUso(real)) ? real : `${c.ref}@pessoal.interno`
-        // o papel vem do Pessoal pelo cargo: o Director de Ensino; os outros, a Repartição de Administração Escolar
+        // o papel vem do Pessoal pela unidade e pelo cargo (Director de Ensino, Administração Escolar, Gabinete, Área
+        // Científica); sem ele (versões antigas do Pessoal), a Repartição de Administração Escolar
         u = Utilizador.novo({ nome: c.nome, email, papel: c.papel ?? 'secretaria', senhaCifrada: c.senha, deveMudarSenha: true })
         Object.assign(u, { pessoalRef: c.ref, biHash: c.bi })
         u = await this.utilizadores.criar(u)
