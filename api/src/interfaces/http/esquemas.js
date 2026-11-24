@@ -61,7 +61,8 @@ export const decisaoAlteracaoNota = z.object({ ids: z.array(idNumerico).min(1).m
 export const verificarDocentes = z.object({ ids: z.array(idNumerico).min(1).max(1000) })
 
 // decisão do Comandante sobre uma publicação do site
-export const decisaoPublicacao = z.object({ decisao: z.enum(['aprovar', 'recusar']), motivo: texto(1000).optional() })
+// a distribuição dos docentes tem também «refazer» (volta ao Ensino com as recomendações) e «rejeitar» (a lista é anulada)
+export const decisaoPublicacao = z.object({ decisao: z.enum(['aprovar', 'recusar', 'refazer', 'rejeitar']), motivo: texto(1000).optional() })
 
 // uma tabela exportada no painel (para o registo de atividades)
 export const exportacao = z.object({ tabela: texto(120), formato: z.enum(['excel', 'pdf']), linhas: z.number().int().min(0).max(1_000_000), filtro: texto(300).optional() })

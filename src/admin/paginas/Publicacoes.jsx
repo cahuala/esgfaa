@@ -26,6 +26,30 @@ const OUTROS = {
 }
 
 /*
+  A lista dos docentes nas cadeiras: o Comandante aprova (as recomendações são opcionais), manda refazer (os docentes
+  propostos ficam, o Ensino corrige pelas recomendações) ou rejeita (os propostos saem das cadeiras e faz-se uma lista
+  nova). O Ensino vê as recomendações na Alocação de docentes.
+*/
+function DecisaoDistribuicao({ aoDecidir }) {
+  const [texto, setTexto] = useState('')
+  const [a, setA] = useState(false)
+  const t = texto.trim()
+  const fazer = async (decisao) => { setA(true); try { await aoDecidir(decisao, t || undefined) } finally { setA(false) } }
+  return (
+    <div className="mt-3">
+      <label className="form-label small fw-bold mb-1">{tx('Recomendações ao Ensino')}
+        <textarea className="form-control mt-1 mb-2 fw-normal" rows={2} maxLength={1000} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={tx('Opcional ao aprovar; obrigatório para mandar refazer ou rejeitar')} />
+      </label>
+      <div className="d-flex flex-wrap gap-2">
+        <button type="button" className="btn btn-success" disabled={a} onClick={() => fazer('aprovar')}><i className="fa fa-check me-1" />{tx('Aprovar')}</button>
+        <button type="button" className="btn btn-warning" disabled={a || t.length < 3} onClick={() => fazer('refazer')} title={tx('Volta ao Ensino com as recomendações; os docentes propostos ficam para corrigir')}><i className="fa fa-undo me-1" />{tx('Mandar refazer')}</button>
+        <button type="button" className="btn btn-danger" disabled={a || t.length < 3} onClick={() => fazer('rejeitar')} title={tx('Os docentes propostos saem das cadeiras; o Ensino faz uma lista nova')}><i className="fa fa-times me-1" />{tx('Rejeitar')}</button>
+      </div>
+    </div>
+  )
+}
+
+/*
   À espera do Comandante: notícias, artigos, eventos, revistas, banners, cursos, pessoas e páginas do site que
   alguém quer publicar ou alterar; os avisos gerais e os inquéritos institucionais do portal; as contas novas e as
   mudanças de papel do painel. Pré-visualizar mostra como fica no site; numa alteração, o site continua com a versão
@@ -55,9 +79,10 @@ function Publicacoes() {
       const contas = p.colecao === 'distribuicao_docente' && decisao === 'aprovar' && r?.contasNovas
         ? ` ${r.semEmail ? tx('{0} docente(s) novo(s): sem servidor de e-mail, a Repartição de Pessoal e Quadros entrega a ficha de acesso.', { 0: r.contasNovas }) : tx('{0} docente(s) novo(s) receberam a conta por e-mail.', { 0: r.emails })}`
         : ''
-      setAviso({ texto: decisao === 'aprovar'
+      const dist = { refazer: tx('«{0}» devolvida ao Ensino para refazer, com as suas recomendações.', { 0: p.titulo }), rejeitar: tx('«{0}» rejeitada: os docentes propostos saíram das cadeiras e o Ensino faz uma lista nova.', { 0: p.titulo }) }[decisao]
+      setAviso({ texto: dist ?? (decisao === 'aprovar'
         ? (outro ? outro.feito.replace('{0}', p.titulo) + contas : tx('«{0}» aprovado: já está no site.', { 0: p.titulo }))
-        : (outro ? tx('«{0}» recusado.', { 0: p.titulo }) : tx('«{0}» recusado. Quem o escreveu vê o motivo no editor.', { 0: p.titulo })) })
+        : (outro ? tx('«{0}» recusado.', { 0: p.titulo }) : tx('«{0}» recusado. Quem o escreveu vê o motivo no editor.', { 0: p.titulo }))) })
       setRecusar(null)
       carregar()
       window.dispatchEvent(new Event('esg-publicacoes'))
@@ -90,11 +115,12 @@ function Publicacoes() {
                     ? tx('Revisto pela equipa de comunicação ({0}), {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })
                     : tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>
                 </div>
-                <div className="d-flex flex-wrap gap-2">
+                {p.colecao !== 'distribuicao_docente' && <div className="d-flex flex-wrap gap-2">
                   <button type="button" className="btn btn-success" onClick={() => decidir(p, 'aprovar')}><i className="fa fa-check me-1" />{tx('Aprovar')}</button>
                   <button type="button" className="btn btn-danger" onClick={() => setRecusar({ p, motivo: '' })}><i className="fa fa-times me-1" />{tx('Recusar')}</button>
-                </div>
+                </div>}
               </div>
+              {p.colecao === 'distribuicao_docente' && <DecisaoDistribuicao aoDecidir={(decisao, texto) => decidir(p, decisao, texto)} />}
               {recusar?.p === p && (
                 <div className="d-flex flex-wrap gap-2 mt-3">
                   <input className="form-control flex-grow-1" style={{ minWidth: 240 }} autoFocus value={recusar.motivo} onChange={(e) => setRecusar({ ...recusar, motivo: e.target.value })} placeholder={tx('Motivo da recusa')} aria-label={tx('Motivo da recusa')} />

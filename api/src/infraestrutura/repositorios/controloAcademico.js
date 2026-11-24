@@ -131,6 +131,11 @@ export class RepositorioControloAcademico {
     return [...new Set(l.map((d) => d.docenteId))]
   }
 
+  // a lista rejeitada: os docentes propostos saem das cadeiras (os já aprovados ficam)
+  async removerPropostas(turmaId) {
+    return (await this.prisma.docencia.deleteMany({ where: { estado: 'proposta', cadeira: { turmaId } } })).count
+  }
+
   // ---------- publicação de notas (o Comandante aprova) ----------
 
   cadeirasComPublicacaoPendente() {

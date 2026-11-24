@@ -110,6 +110,32 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
     const h = (await ensino.put(`/api/admin/academico/cadeiras/${cadeira.id}/docentes`).send({ docentes: [{ docenteId: contas.prof.id, papel: 'regente', horas: 40 }] })).body
     assert.deepEqual([h.docentes.length, h.docentesPropostos.length, h.docentes[0].horas], [1, 0, 40])
   })
+
+  it('o Comandante rejeita (os propostos saem), manda refazer com recomendações ou aprova com recomendações', async () => {
+    const d = (await ensino.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Tres Teste', email: 'tres@esgfaa.gov.ao' })).body
+    const uc = (await ensino.post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'HIS103', nome: 'História Militar' })).body
+    const propor = () => ensino.put(`/api/admin/academico/cadeiras/${uc.id}/docentes`).send({ docentes: [{ docenteId: d.id, papel: 'regente', horas: 15 }] }).expect(200)
+    const estado = async () => (await ensino.get('/api/admin/academico/alocacao')).body.turmas.find((t) => t.id === turma.id).distribuicao
+    await propor()
+    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
+    assert.equal((await decidir('distribuicao_docente', turma.id, { decisao: 'rejeitar' })).status, 400) // sem recomendações
+    const rej = (await decidir('distribuicao_docente', turma.id, { decisao: 'rejeitar', motivo: 'Docente sem habilitação para a cadeira.' }).expect(200)).body
+    assert.ok(rej.decisao === 'rejeitar' && rej.retirados >= 1) // todos os propostos da turma saem
+    assert.equal(await amb.contentor.prisma.docencia.count({ where: { estado: 'proposta', cadeira: { turmaId: turma.id } } }), 0)
+    assert.deepEqual([(await estado()).estado, (await estado()).motivo], ['rejeitada', 'Docente sem habilitação para a cadeira.'])
+    assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id } }), 0)
+    // nova lista: manda refazer (os propostos ficam para corrigir)
+    await propor()
+    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
+    await decidir('distribuicao_docente', turma.id, { decisao: 'refazer', motivo: 'Reduzir para 12 horas.' }).expect(200)
+    assert.deepEqual([(await estado()).estado, (await estado()).motivo], ['devolvida', 'Reduzir para 12 horas.'])
+    assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id, estado: 'proposta' } }), 1)
+    // reenviada e aprovada com recomendações
+    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
+    await decidir('distribuicao_docente', turma.id, { decisao: 'aprovar', motivo: 'Acompanhar as primeiras aulas.' }).expect(200)
+    assert.deepEqual([(await estado()).estado, (await estado()).recomendacoes], ['aprovada', 'Acompanhar as primeiras aulas.'])
+    assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id, estado: 'aprovada' } }), 1)
+  })
 })
 
 describe('O Pessoal pergunta o que espera pelo Comandante (pedido assinado)', () => {

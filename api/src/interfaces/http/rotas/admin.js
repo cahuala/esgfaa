@@ -127,15 +127,17 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   r.post('/publicacoes/:colecao/:id/decisao', validar({ params: z.object({ colecao: z.string().max(40), id: z.string().max(200) }), body: E.decisaoPublicacao }), async (req, res) => {
     const { colecao, id } = req.dados.params
     const c = ctx(req)
+    // só a distribuição dos docentes distingue «refazer» de «rejeitar»; nas outras é recusar
+    const corpo = colecao === 'distribuicao_docente' || req.dados.body.decisao === 'aprovar' ? req.dados.body : { ...req.dados.body, decisao: 'recusar' }
     const decidir = {
-      paginas: () => servicos.paginas.decidir(c, id, req.dados.body),
-      avisos_gerais: () => avisosGerais.decidir(c, id, req.dados.body),
-      inqueritos: () => inqueritos.decidir(c, id, req.dados.body),
-      utilizadores: () => servicos.utilizadores.decidir(c, id, req.dados.body),
-      comentarios: () => servicos.interacoes.decidir(c, id, req.dados.body),
-      distribuicao_docente: () => aprovacoesEnsino.decidirDistribuicao(c, id, req.dados.body),
-      publicacao_notas: () => aprovacoesEnsino.decidirNotas(c, id, req.dados.body),
-    }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, req.dados.body))
+      paginas: () => servicos.paginas.decidir(c, id, corpo),
+      avisos_gerais: () => avisosGerais.decidir(c, id, corpo),
+      inqueritos: () => inqueritos.decidir(c, id, corpo),
+      utilizadores: () => servicos.utilizadores.decidir(c, id, corpo),
+      comentarios: () => servicos.interacoes.decidir(c, id, corpo),
+      distribuicao_docente: () => aprovacoesEnsino.decidirDistribuicao(c, id, corpo),
+      publicacao_notas: () => aprovacoesEnsino.decidirNotas(c, id, corpo),
+    }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, corpo))
     enviar(req, res, await decidir())
   })
 

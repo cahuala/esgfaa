@@ -9,7 +9,9 @@ const media = (m) => (m === null ? '—' : m.toFixed(1).replace('.', ','))
   O que o Ensino faz e só vale com a aprovação do Comandante (em «Por aprovar», no painel):
   - a distribuição dos docentes pelas cadeiras de uma turma: o Ensino põe os docentes nas cadeiras (ficam
     propostos, sem acesso), revê e envia a lista; o Comandante aprova (os docentes passam a ter a cadeira e, na
-    primeira aprovação, recebem a conta do portal por e-mail) ou devolve-a com o motivo;
+    primeira aprovação, recebem a conta do portal por e-mail), manda refazer (volta ao Ensino com as recomendações,
+    os docentes propostos ficam para corrigir) ou rejeita (os docentes propostos saem das cadeiras e faz-se uma lista
+    nova). Ao aprovar também pode deixar recomendações; o Ensino vê-as na Alocação de docentes;
   - a publicação das notas (provas parcelares, exames, TAI/TAG): o docente pede e os estudantes só as veem
     quando o Comandante aprova; se recusar, o docente vê o motivo.
 */
@@ -78,19 +80,27 @@ export class ServicoAprovacoesComandante {
     const t = await this.controlo.turmaComDocencias(Number(turmaId))
     if (!t || t.distribuicao?.estado !== 'pendente') throw new Conflito('Esta distribuição não está à espera de aprovação.')
     const agora = this.relogio.agora()
+    const m = String(motivo ?? '').trim()
+    const decisao_ = { decididoPor: ctx.actor.nome ?? '', decididoEm: agora.toISOString() }
     if (decisao !== 'aprovar') {
-      const m = String(motivo ?? '').trim()
-      if (m.length < 3) throw new ErroValidacao('Indique o motivo (o Ensino vê-o para corrigir a lista).', { campo: 'motivo' })
-      await this.controlo.guardarDistribuicao(t.id, { ...t.distribuicao, estado: 'devolvida', motivo: m, decididoPor: ctx.actor.nome ?? '', decididoEm: agora.toISOString() })
+      if (m.length < 3) throw new ErroValidacao('Escreva as recomendações (o Ensino vê-as para corrigir a lista).', { campo: 'motivo' })
+      if (decisao === 'rejeitar') {
+        const retirados = await this.controlo.removerPropostas(t.id)
+        await this.controlo.guardarDistribuicao(t.id, { ...t.distribuicao, estado: 'rejeitada', motivo: m, ...decisao_ })
+        await this.auditoria.registar(ctx, { acao: 'rejeitar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { motivo: m, retirados } })
+        return { decisao: 'rejeitar', retirados }
+      }
+      await this.controlo.guardarDistribuicao(t.id, { ...t.distribuicao, estado: 'devolvida', motivo: m, ...decisao_ })
       await this.auditoria.registar(ctx, { acao: 'devolver_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { motivo: m } })
-      return { decisao: 'recusar' }
+      return { decisao: 'refazer' }
     }
     const ids = await this.controlo.aprovarPropostas(t.id)
-    await this.controlo.guardarDistribuicao(t.id, null)
+    // aprovada: fica só o registo das recomendações (se as houver), que o Ensino vê na Alocação
+    await this.controlo.guardarDistribuicao(t.id, m ? { estado: 'aprovada', recomendacoes: m, ...decisao_ } : null)
     const novos = t.cadeiras.flatMap((c) => c.docentes).filter((d) => ids.includes(d.docente.id)).map((d) => d.docente)
     const { contasNovas: unicos, emails } = await this.libertarDocentes(ctx, novos)
     await this.notificacoes?.notificar(ids, { tipo: 'aviso', titulo: 'Distribuição de serviço docente aprovada', texto: `${t.nome}: o Comandante aprovou as suas cadeiras.`, ligacao: '/cadeiras' })
-    await this.auditoria.registar(ctx, { acao: 'aprovar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { docentes: ids.length, contasEnviadas: emails } })
+    await this.auditoria.registar(ctx, { acao: 'aprovar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { docentes: ids.length, contasEnviadas: emails, ...(m ? { recomendacoes: m } : {}) } })
     return { decisao: 'aprovar', docentes: ids.length, contasNovas: unicos.length, emails, semEmail: !this.correio?.real }
   }
 

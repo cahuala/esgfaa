@@ -58,12 +58,15 @@ export default function Academicos({ tipo }) {
   const [escolhidos, setEscolhidos] = useState(() => new Set())
   const [novo, setNovo] = useState(false)
   const [aImprimir, setAImprimir] = useState(false)
-  const [filtro, setFiltro] = useState({ ramo: '', origem: '', portal: '' })
+  const [filtro, setFiltro] = useState({ ramo: '', origem: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' })
   const ligado = Boolean(dados?.portalLigado)
   const todos = useMemo(() => dados?.pessoas ?? [], [dados])
   const lista = useMemo(() => todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : p.ramo === filtro.ramo))
     && (!filtro.origem || (filtro.origem === 'fora' ? Boolean(p.unidadeOrigem) && !p.unidadeNome : !p.unidadeOrigem || Boolean(p.unidadeNome)))
-    && (!filtro.portal || estadoPortal(p.portal) === filtro.portal)), [todos, filtro])
+    && (!filtro.portal || estadoPortal(p.portal) === filtro.portal)
+    && (!filtro.tipoDocente || (filtro.tipoDocente === 'sem' ? !p.tipoDocente : p.tipoDocente === filtro.tipoDocente))
+    && (!filtro.categoriaDocente || p.categoriaDocente === filtro.categoriaDocente)
+    && (!filtro.genero || p.genero === filtro.genero)), [todos, filtro])
   const mudarFiltro = (k) => (v) => setFiltro((f) => ({ ...f, [k]: v }))
   const comFiltro = Object.values(filtro).some(Boolean)
   const comConta = (p) => p.portal?.conta?.id && p.ativo
@@ -95,7 +98,7 @@ export default function Academicos({ tipo }) {
     { chave: 'ramo', titulo: 'Ramo', valor: (p) => p.ramo || 'Civil', mostrar: (p) => (p.ramo ? <span className={`badge pes-ramo-${p.ramo}`}>{p.ramo}</span> : <span className="badge bg-secondary">Civil</span>) },
     { chave: 'ident', titulo: 'NIP / N.º', valor: (p) => p.nip || p.numeroAgente || '' },
     { chave: 'unidade', titulo: 'Unidade', valor: (p) => p.unidadeNome || p.unidadeOrigem || '', mostrar: (p) => (p.unidadeNome || (p.unidadeOrigem ? <span>{p.unidadeOrigem} <span className="badge bg-light text-dark border">de fora</span></span> : <span className="text-muted">—</span>)) },
-    ...(tipo === 'docente' ? [{ chave: 'tipoDocente', titulo: 'Tipo', valor: (p) => (p.tipoDocente === 'colaborador' ? 'Colaborador' : p.tipoDocente === 'efectivo' ? 'Efectivo' : '') }] : []),
+    ...(tipo === 'docente' ? [{ chave: 'tipoDocente', titulo: 'Tipo', valor: (p) => (p.tipoDocente === 'colaborador' ? 'Colaborador' : p.tipoDocente === 'efectivo' ? 'Efectivo' : '') }, { chave: 'categoriaDocente', titulo: 'Categoria do docente', valor: (p) => p.categoriaDocente || '', oculta: true }] : []),
     { chave: 'conta', titulo: 'N.º no portal', valor: (p) => p.portal?.conta?.numero || '' },
     { chave: 'telefone', titulo: 'Telefone', valor: (p) => p.telefone || '', oculta: true },
     { chave: 'bi', titulo: 'BI', valor: (p) => p.bi || '', oculta: true },
@@ -124,8 +127,11 @@ export default function Academicos({ tipo }) {
           <Escolha valor={ativo} aoMudar={setAtivo} opcoes={[['sim', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']]} vazio={null} aria-label="Quem mostrar" />
           <Escolha valor={filtro.ramo} aoMudar={mudarFiltro('ramo')} opcoes={[...Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]), ['civil', 'Civis']]} vazio="Todos os ramos" aria-label="Ramo" />
           <Escolha valor={filtro.origem} aoMudar={mudarFiltro('origem')} opcoes={[['esg', 'Da ESG'], ['fora', 'De outras unidades']]} vazio="Qualquer unidade" aria-label="Unidade" />
+          {tipo === 'docente' && <Escolha valor={filtro.tipoDocente} aoMudar={mudarFiltro('tipoDocente')} opcoes={[['efectivo', 'Efectivos'], ['colaborador', 'Colaboradores'], ['sem', 'Tipo por indicar']]} vazio="Efectivos e colaboradores" aria-label="Tipo de docente" />}
+          {tipo === 'docente' && <Escolha valor={filtro.categoriaDocente} aoMudar={mudarFiltro('categoriaDocente')} opcoes={[...new Set(todos.map((p) => p.categoriaDocente).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer categoria" aria-label="Categoria do docente" />}
+          <Escolha valor={filtro.genero} aoMudar={mudarFiltro('genero')} opcoes={[['M', 'Masculino'], ['F', 'Feminino']]} vazio="Ambos os géneros" aria-label="Género" />
           {ligado && <Escolha valor={filtro.portal} aoMudar={mudarFiltro('portal')} opcoes={ESTADOS_PORTAL} vazio="Qualquer estado no portal" aria-label="Estado no portal" />}
-          {comFiltro && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setFiltro({ ramo: '', origem: '', portal: '' })}><i className="fa fa-times me-1" />Limpar filtros</button>}
+          {comFiltro && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setFiltro({ ramo: '', origem: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' })}><i className="fa fa-times me-1" />Limpar filtros</button>}
           {editar && ligado && (
             <button type="button" className="btn btn-sm btn-theme ms-auto" disabled={!escolhidos.size || aImprimir} onClick={fichas}>
               <i className="fa fa-print me-1" />{aImprimir ? 'A pedir ao portal…' : `Fichas de acesso${escolhidos.size ? ` (${escolhidos.size})` : ''}`}

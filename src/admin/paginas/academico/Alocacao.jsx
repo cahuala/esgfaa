@@ -111,8 +111,10 @@ function Alocacao() {
                       <td>{t.propostos}</td>
                       <td className="small">
                         {e === 'pendente' && <span className="badge bg-info">{tx('À espera do Comandante desde {0}', { 0: dataHora(t.distribuicao.pedidoEm) })}</span>}
-                        {e === 'devolvida' && <><span className="badge bg-danger">{tx('Devolvida pelo Comandante')}</span><div className="text-danger mt-1">{t.distribuicao.motivo}</div></>}
-                        {!e && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span>
+                        {e === 'devolvida' && <><span className="badge bg-warning text-dark">{tx('Mandada refazer pelo Comandante')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {t.distribuicao.motivo}</div></>}
+                        {e === 'rejeitada' && <><span className="badge bg-danger">{tx('Rejeitada pelo Comandante: faça uma lista nova')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {t.distribuicao.motivo}</div></>}
+                        {e === 'aprovada' && <>{!t.propostos && <span className="badge bg-success">{tx('Aprovada')}</span>}{t.distribuicao.recomendacoes && <div className="mt-1"><b>{tx('Recomendações do Comandante:')}</b> {t.distribuicao.recomendacoes}</div>}</>}
+                        {(!e || (e === 'aprovada' && t.propostos)) && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span>
                           : t.semDocentes >= t.cadeiras ? <span className="badge bg-secondary">{tx('Por distribuir')}</span>
                             : <span className="badge bg-success">{tx('Aprovada')}</span>)}
                       </td>
