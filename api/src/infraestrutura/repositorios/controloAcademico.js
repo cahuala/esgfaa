@@ -10,7 +10,7 @@ const CADEIRA = { select: { id: true, codigo: true, nome: true, turma: { select:
 const TURMA_COM_DOCENCIAS = {
   cadeiras: {
     orderBy: [{ periodo: 'asc' }, { codigo: 'asc' }],
-    select: { id: true, codigo: true, nome: true, horas: true, docentes: { select: { papel: true, horas: true, estado: true, docente: { select: { id: true, nome: true, email: true, numero: true, verificadoEm: true, ultimoAcesso: true, ativo: true } } } } },
+    select: { id: true, codigo: true, nome: true, horas: true, docentes: { select: { papel: true, horas: true, estado: true, docente: { select: { id: true, nome: true, email: true, numero: true, verificadoEm: true, ultimoAcesso: true, ativo: true, dados: true } } } } },
   },
 }
 
@@ -116,8 +116,15 @@ export class RepositorioControloAcademico {
     return this.prisma.turma.findMany({ where: { distribuicao: { path: ['estado'], equals: 'pendente' } }, include: TURMA_COM_DOCENCIAS, orderBy: { id: 'asc' } })
   }
 
-  contarDistribuicoesPendentes() {
-    return this.prisma.turma.count({ where: { distribuicao: { path: ['estado'], equals: 'pendente' } } })
+  // a distribuição vai ao Comandante por ano lectivo: conta os anos à espera
+  async contarDistribuicoesPendentes() {
+    const l = await this.prisma.turma.findMany({ where: { distribuicao: { path: ['estado'], equals: 'pendente' } }, select: { anoLetivo: true }, distinct: ['anoLetivo'] })
+    return l.length
+  }
+
+  // as turmas activas de um ano lectivo, com os docentes de cada cadeira
+  turmasDoAno(anoLetivo) {
+    return this.prisma.turma.findMany({ where: { anoLetivo, ativa: true }, include: TURMA_COM_DOCENCIAS, orderBy: [{ curso: 'asc' }, { nome: 'asc' }] })
   }
 
   guardarDistribuicao(turmaId, pedido) {

@@ -5,6 +5,7 @@ import { criarAmbiente } from '../apoio/ambiente.js'
 
 const CHAVE = 'chave-partilhada-com-o-pessoal-de-32-caracteres-ou-mais'
 const NOVA = 'Nova-senha-2026-forte'
+const ANO = '2026/2027'
 
 /*
   Com APROVACAO_COMANDANTE=sim (como na Escola): o Ensino põe os docentes nas cadeiras e envia a lista; só com
@@ -57,20 +58,24 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
   })
 
   it('o Ensino envia a lista; o Comandante devolve com motivo e depois aprova: o docente recebe a conta por e-mail', async () => {
-    assert.equal((await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`)).status, 200)
-    assert.equal((await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`)).status, 409)
+    assert.equal((await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO })).status, 200)
+    assert.equal((await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO })).status, 409)
     // o Ensino não decide
-    assert.equal((await ensino.post(`/api/admin/publicacoes/distribuicao_docente/${turma.id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
+    assert.equal((await ensino.post(`/api/admin/publicacoes/distribuicao_docente/${encodeURIComponent(ANO)}/decisao`).send({ decisao: 'aprovar' })).status, 403)
     const lista = (await comandante.get('/api/admin/publicacoes')).body
     const p = lista.find((x) => x.colecao === 'distribuicao_docente')
-    assert.match(p.resumo, /EST101 Estratégia: Docente Prof Teste \(regente, 30 h\) — NOVO/)
-    assert.equal((await decidir('distribuicao_docente', turma.id, { decisao: 'recusar' })).status, 400)
-    assert.equal((await decidir('distribuicao_docente', turma.id, { decisao: 'recusar', motivo: 'Falta o assistente.' })).status, 200)
+    // uma só lista por ano lectivo, com o documento para imprimir
+    assert.equal(p.id, ANO)
+    assert.match(p.resumo, /Docente Prof Teste — EST101 Estratégia \(CEM A; regente, 30 h\) — NOVO/)
+    const doc = (await ensino.get(`/api/admin/academico/distribuicao?anoLetivo=${encodeURIComponent(ANO)}`).expect(200)).body
+    assert.deepEqual([doc.anoLetivo, doc.distribuicao.estado, doc.docentes.find((d) => d.nome === 'Docente Prof Teste').cadeiras.map((c) => [c.codigo, c.papel, c.horas])], [ANO, 'pendente', [['EST101', 'regente', 30]]])
+    assert.equal((await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'recusar' })).status, 400)
+    assert.equal((await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'recusar', motivo: 'Falta o assistente.' })).status, 200)
     const al = (await ensino.get('/api/admin/academico/alocacao')).body.turmas.find((t) => t.id === turma.id)
     assert.deepEqual([al.distribuicao.estado, al.distribuicao.motivo], ['devolvida', 'Falta o assistente.'])
     // reenviada e aprovada
-    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
-    const r = (await decidir('distribuicao_docente', turma.id, { decisao: 'aprovar' })).body
+    await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO }).expect(200)
+    const r = (await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'aprovar' })).body
     assert.deepEqual([r.docentes, r.contasNovas, r.emails], [1, 1, 1])
     const email = correio().enviados.find((m) => m.para === 'prof@esgfaa.gov.ao')
     const senha = /Palavra-passe inicial: (\S+)/.exec(email.texto)[1]
@@ -117,24 +122,41 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
     const propor = () => ensino.put(`/api/admin/academico/cadeiras/${uc.id}/docentes`).send({ docentes: [{ docenteId: d.id, papel: 'regente', horas: 15 }] }).expect(200)
     const estado = async () => (await ensino.get('/api/admin/academico/alocacao')).body.turmas.find((t) => t.id === turma.id).distribuicao
     await propor()
-    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
-    assert.equal((await decidir('distribuicao_docente', turma.id, { decisao: 'rejeitar' })).status, 400) // sem recomendações
-    const rej = (await decidir('distribuicao_docente', turma.id, { decisao: 'rejeitar', motivo: 'Docente sem habilitação para a cadeira.' }).expect(200)).body
+    await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO }).expect(200)
+    assert.equal((await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'rejeitar' })).status, 400) // sem recomendações
+    const rej = (await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'rejeitar', motivo: 'Docente sem habilitação para a cadeira.' }).expect(200)).body
     assert.ok(rej.decisao === 'rejeitar' && rej.retirados >= 1) // todos os propostos da turma saem
     assert.equal(await amb.contentor.prisma.docencia.count({ where: { estado: 'proposta', cadeira: { turmaId: turma.id } } }), 0)
     assert.deepEqual([(await estado()).estado, (await estado()).motivo], ['rejeitada', 'Docente sem habilitação para a cadeira.'])
     assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id } }), 0)
     // nova lista: manda refazer (os propostos ficam para corrigir)
     await propor()
-    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
-    await decidir('distribuicao_docente', turma.id, { decisao: 'refazer', motivo: 'Reduzir para 12 horas.' }).expect(200)
+    await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO }).expect(200)
+    await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'refazer', motivo: 'Reduzir para 12 horas.' }).expect(200)
     assert.deepEqual([(await estado()).estado, (await estado()).motivo], ['devolvida', 'Reduzir para 12 horas.'])
     assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id, estado: 'proposta' } }), 1)
     // reenviada e aprovada com recomendações
-    await ensino.post(`/api/admin/academico/turmas/${turma.id}/distribuicao`).expect(200)
-    await decidir('distribuicao_docente', turma.id, { decisao: 'aprovar', motivo: 'Acompanhar as primeiras aulas.' }).expect(200)
+    await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO }).expect(200)
+    await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'aprovar', motivo: 'Acompanhar as primeiras aulas.' }).expect(200)
     assert.deepEqual([(await estado()).estado, (await estado()).recomendacoes], ['aprovada', 'Acompanhar as primeiras aulas.'])
     assert.equal(await amb.contentor.prisma.docencia.count({ where: { cadeiraId: uc.id, estado: 'aprovada' } }), 1)
+  })
+
+  it('várias turmas do mesmo ano lectivo vão ao Comandante numa só lista e aprovam-se de uma vez', async () => {
+    const b = (await ensino.post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: ANO, nome: 'CEM B' })).body
+    const d = (await ensino.post('/api/admin/academico/contas').send({ tipo: 'docente', nome: 'Docente Quatro Teste', email: 'quatro@esgfaa.gov.ao' })).body
+    const ucA = (await ensino.post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'GEO104', nome: 'Geopolítica' })).body
+    const ucB = (await ensino.post(`/api/admin/academico/turmas/${b.id}/cadeiras`).send({ codigo: 'GEO104', nome: 'Geopolítica' })).body
+    for (const uc of [ucA, ucB]) await ensino.put(`/api/admin/academico/cadeiras/${uc.id}/docentes`).send({ docentes: [{ docenteId: d.id, papel: 'regente', horas: 10 }] }).expect(200)
+    await ensino.post('/api/admin/academico/distribuicao').send({ anoLetivo: ANO }).expect(200)
+    const itens = (await comandante.get('/api/admin/publicacoes')).body.filter((x) => x.colecao === 'distribuicao_docente')
+    assert.equal(itens.length, 1)
+    assert.match(itens[0].titulo, /de 2 turma\(s\)/)
+    const r = (await decidir('distribuicao_docente', encodeURIComponent(ANO), { decisao: 'aprovar' }).expect(200)).body
+    assert.equal(r.docentes, 1)
+    assert.equal(await amb.contentor.prisma.docencia.count({ where: { docenteId: d.id, estado: 'aprovada' } }), 2)
+    const doc = (await ensino.get(`/api/admin/academico/distribuicao?anoLetivo=${encodeURIComponent(ANO)}`).expect(200)).body
+    assert.deepEqual([doc.distribuicao.estado, doc.docentes.find((x) => x.id === d.id).horas], ['aprovada', 20])
   })
 })
 

@@ -1,14 +1,15 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { NOMES_COMPONENTES } from '../../../dominio/academico/avaliacao/resultado.js'
 import { senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
+import { ordenarPorHierarquia } from '../../../dominio/academico/pessoas/hierarquia.js'
 
 const PAPEIS = { regente: 'regente', assistente: 'assistente' }
 const media = (m) => (m === null ? '—' : m.toFixed(1).replace('.', ','))
 
 /*
   O que o Ensino faz e só vale com a aprovação do Comandante (em «Por aprovar», no painel):
-  - a distribuição dos docentes pelas cadeiras de uma turma: o Ensino põe os docentes nas cadeiras (ficam
-    propostos, sem acesso), revê e envia a lista; o Comandante aprova (os docentes passam a ter a cadeira e, na
+  - a distribuição dos docentes pelas cadeiras de um ano lectivo (uma só lista para todas as turmas): o Ensino põe
+    os docentes nas cadeiras (ficam propostos, sem acesso), revê, imprime e envia a lista; o Comandante aprova (os docentes passam a ter a cadeira e, na
     primeira aprovação, recebem a conta do portal por e-mail), manda refazer (volta ao Ensino com as recomendações,
     os docentes propostos ficam para corrigir) ou rejeita (os docentes propostos saem das cadeiras e faz-se uma lista
     nova). Ao aprovar também pode deixar recomendações; o Ensino vê-as na Alocação de docentes;
@@ -22,31 +23,68 @@ export class ServicoAprovacoesComandante {
 
   // ---------- distribuição dos docentes (Ensino) ----------
 
-  async enviarDistribuicao(ctx, turmaId) {
+  async enviarDistribuicao(ctx, anoLetivo) {
     ctx.actor.exigir('academico.gerir')
-    const t = await this.controlo.turmaComDocencias(turmaId)
-    if (!t) throw new NaoEncontrado('Turma não encontrada.')
-    if (t.distribuicao?.estado === 'pendente') throw new Conflito('A distribuição desta turma já está à espera do Comandante.')
-    const propostos = t.cadeiras.flatMap((c) => c.docentes.filter((d) => d.estado === 'proposta'))
-    if (!propostos.length) throw new ErroValidacao('Não há docentes propostos nesta turma: ponha primeiro os docentes nas cadeiras.')
-    await this.controlo.guardarDistribuicao(t.id, { estado: 'pendente', pedidoPor: ctx.actor.nome ?? '', pedidoEm: this.relogio.agora().toISOString() })
-    await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { propostos: propostos.length } })
+    const turmas = await this.controlo.turmasDoAno(anoLetivo)
+    if (!turmas.length) throw new NaoEncontrado('Não há turmas activas neste ano lectivo.')
+    if (turmas.some((t) => t.distribuicao?.estado === 'pendente')) throw new Conflito('A distribuição deste ano lectivo já está à espera do Comandante.')
+    const propostos = turmas.flatMap((t) => t.cadeiras.flatMap((c) => c.docentes.filter((d) => d.estado === 'proposta')))
+    if (!propostos.length) throw new ErroValidacao('Não há docentes propostos neste ano lectivo: ponha primeiro os docentes nas cadeiras.')
+    const pedido = { estado: 'pendente', anoLetivo, pedidoPor: ctx.actor.nome ?? '', pedidoEm: this.relogio.agora().toISOString() }
+    for (const t of turmas) await this.controlo.guardarDistribuicao(t.id, pedido)
+    await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_distribuicao', colecao: 'turmas', alvoTitulo: `Ano lectivo ${anoLetivo}`, detalhes: { propostos: propostos.length, turmas: turmas.length } })
     return { enviada: true, propostos: propostos.length }
+  }
+
+  /*
+    A lista para imprimir e assinar (o Director de Ensino em baixo, o Comandante a aprovar em cima): cada docente,
+    pela ordem hierárquica, com as cadeiras e as horas no ano lectivo; no fim, as cadeiras ainda sem docente.
+  */
+  async listaDoAno(ctx, anoLetivo) {
+    ctx.actor.exigir('academico.ver')
+    const turmas = await this.controlo.turmasDoAno(anoLetivo)
+    const porDocente = new Map()
+    const semDocente = []
+    for (const t of turmas) {
+      for (const c of t.cadeiras) {
+        if (!c.docentes.length) semDocente.push({ codigo: c.codigo, nome: c.nome, turma: t.nome })
+        for (const d of c.docentes) {
+          const x = porDocente.get(d.docente.id) ?? { id: d.docente.id, nome: d.docente.nome, numero: d.docente.numero, dados: d.docente.dados, posto: d.docente.dados?.posto ?? '', cadeiras: [], horas: 0 }
+          x.cadeiras.push({ codigo: c.codigo, nome: c.nome, turma: t.nome, papel: PAPEIS[d.papel] ?? d.papel, horas: d.horas, estado: d.estado })
+          x.horas += d.horas
+          porDocente.set(x.id, x)
+        }
+      }
+    }
+    const estados = turmas.map((t) => t.distribuicao).filter(Boolean)
+    const decisao = estados.find((e) => e.estado === 'pendente') ?? estados.sort((a, b) => String(b.decididoEm ?? '').localeCompare(String(a.decididoEm ?? '')))[0] ?? null
+    return {
+      anoLetivo, turmas: turmas.length, distribuicao: decisao, semDocente,
+      docentes: ordenarPorHierarquia([...porDocente.values()]).map(({ dados, ...x }) => (void dados, x)),
+    }
   }
 
   // ---------- o que espera pelo Comandante (lista de «Por aprovar») ----------
 
   async paraAprovar(ctx) {
     if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return []
-    const turmas = await this.controlo.turmasComDistribuicaoPendente()
-    const distribuicoes = turmas.map((t) => ({
-      colecao: 'distribuicao_docente', id: String(t.id), tipo: 'distribuicao',
-      titulo: `${t.nome} (${t.anoLetivo})`, pedidoPor: t.distribuicao.pedidoPor, pedidoEm: t.distribuicao.pedidoEm,
-      resumo: t.cadeiras.map((c) => {
-        const ds = c.docentes.map((d) => `${d.docente.nome} (${PAPEIS[d.papel] ?? d.papel}, ${d.horas} h)${d.estado === 'proposta' ? ' — NOVO' : ''}`)
-        return `${c.codigo} ${c.nome}: ${ds.length ? ds.join('; ') : 'sem docentes'}`
-      }).join('\n'),
-    }))
+    // uma só lista por ano lectivo (todas as turmas)
+    const porAno = new Map()
+    for (const t of await this.controlo.turmasComDistribuicaoPendente()) {
+      const k = t.distribuicao.anoLetivo ?? t.anoLetivo
+      if (!porAno.has(k)) porAno.set(k, [])
+      porAno.get(k).push(t)
+    }
+    const distribuicoes = [...porAno].map(([ano, ts]) => {
+      const linhas = ts.flatMap((t) => t.cadeiras.flatMap((c) => c.docentes.map((d) => ({ d, c, t }))))
+      const docentes = new Set(linhas.map((x) => x.d.docente.id))
+      return {
+        colecao: 'distribuicao_docente', id: ano, tipo: 'distribuicao', ligacao: `/academico/documentos/distribuicao?ano=${encodeURIComponent(ano)}`,
+        titulo: `Ano lectivo ${ano}: ${docentes.size} docente(s) em ${linhas.length} cadeira(s) de ${ts.length} turma(s)`,
+        pedidoPor: ts[0].distribuicao.pedidoPor, pedidoEm: ts[0].distribuicao.pedidoEm,
+        resumo: linhas.map(({ d, c, t }) => `${d.docente.nome} — ${c.codigo} ${c.nome} (${t.nome}; ${PAPEIS[d.papel] ?? d.papel}, ${d.horas} h)${d.estado === 'proposta' ? ' — NOVO' : ''}`).join('\n'),
+      }
+    })
     const notas = []
     for (const c of await this.controlo.cadeirasComPublicacaoPendente()) {
       const p = c.publicacaoPedida
@@ -75,33 +113,41 @@ export class ServicoAprovacoesComandante {
 
   // ---------- decisões do Comandante ----------
 
-  async decidirDistribuicao(ctx, turmaId, { decisao, motivo }) {
+  async decidirDistribuicao(ctx, anoLetivo, { decisao, motivo }) {
     ctx.actor.exigir('academico.homologar')
-    const t = await this.controlo.turmaComDocencias(Number(turmaId))
-    if (!t || t.distribuicao?.estado !== 'pendente') throw new Conflito('Esta distribuição não está à espera de aprovação.')
+    const turmas = (await this.controlo.turmasComDistribuicaoPendente()).filter((t) => (t.distribuicao.anoLetivo ?? t.anoLetivo) === anoLetivo)
+    if (!turmas.length) throw new Conflito('A distribuição deste ano lectivo não está à espera de aprovação.')
     const agora = this.relogio.agora()
     const m = String(motivo ?? '').trim()
-    const decisao_ = { decididoPor: ctx.actor.nome ?? '', decididoEm: agora.toISOString() }
+    const decidido = { anoLetivo, pedidoPor: turmas[0].distribuicao.pedidoPor, pedidoEm: turmas[0].distribuicao.pedidoEm, decididoPor: ctx.actor.nome ?? '', decididoEm: agora.toISOString() }
+    const alvo = `Ano lectivo ${anoLetivo}`
     if (decisao !== 'aprovar') {
       if (m.length < 3) throw new ErroValidacao('Escreva as recomendações (o Ensino vê-as para corrigir a lista).', { campo: 'motivo' })
       if (decisao === 'rejeitar') {
-        const retirados = await this.controlo.removerPropostas(t.id)
-        await this.controlo.guardarDistribuicao(t.id, { ...t.distribuicao, estado: 'rejeitada', motivo: m, ...decisao_ })
-        await this.auditoria.registar(ctx, { acao: 'rejeitar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { motivo: m, retirados } })
+        let retirados = 0
+        for (const t of turmas) {
+          retirados += await this.controlo.removerPropostas(t.id)
+          await this.controlo.guardarDistribuicao(t.id, { ...decidido, estado: 'rejeitada', motivo: m })
+        }
+        await this.auditoria.registar(ctx, { acao: 'rejeitar_distribuicao', colecao: 'turmas', alvoTitulo: alvo, detalhes: { motivo: m, retirados } })
         return { decisao: 'rejeitar', retirados }
       }
-      await this.controlo.guardarDistribuicao(t.id, { ...t.distribuicao, estado: 'devolvida', motivo: m, ...decisao_ })
-      await this.auditoria.registar(ctx, { acao: 'devolver_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { motivo: m } })
+      for (const t of turmas) await this.controlo.guardarDistribuicao(t.id, { ...decidido, estado: 'devolvida', motivo: m })
+      await this.auditoria.registar(ctx, { acao: 'devolver_distribuicao', colecao: 'turmas', alvoTitulo: alvo, detalhes: { motivo: m } })
       return { decisao: 'refazer' }
     }
-    const ids = await this.controlo.aprovarPropostas(t.id)
-    // aprovada: fica só o registo das recomendações (se as houver), que o Ensino vê na Alocação
-    await this.controlo.guardarDistribuicao(t.id, m ? { estado: 'aprovada', recomendacoes: m, ...decisao_ } : null)
-    const novos = t.cadeiras.flatMap((c) => c.docentes).filter((d) => ids.includes(d.docente.id)).map((d) => d.docente)
+    const ids = new Set()
+    for (const t of turmas) {
+      for (const id of await this.controlo.aprovarPropostas(t.id)) ids.add(id)
+      // aprovada: fica o registo (com as recomendações, se as houver), que o Ensino vê na Alocação
+      await this.controlo.guardarDistribuicao(t.id, { ...decidido, estado: 'aprovada', ...(m ? { recomendacoes: m } : {}) })
+    }
+    const porId = new Map(turmas.flatMap((t) => t.cadeiras.flatMap((c) => c.docentes)).map((d) => [d.docente.id, d.docente]))
+    const novos = [...ids].map((id) => porId.get(id)).filter(Boolean)
     const { contasNovas: unicos, emails } = await this.libertarDocentes(ctx, novos)
-    await this.notificacoes?.notificar(ids, { tipo: 'aviso', titulo: 'Distribuição de serviço docente aprovada', texto: `${t.nome}: o Comandante aprovou as suas cadeiras.`, ligacao: '/cadeiras' })
-    await this.auditoria.registar(ctx, { acao: 'aprovar_distribuicao', colecao: 'turmas', alvoId: t.id, alvoTitulo: t.nome, detalhes: { docentes: ids.length, contasEnviadas: emails, ...(m ? { recomendacoes: m } : {}) } })
-    return { decisao: 'aprovar', docentes: ids.length, contasNovas: unicos.length, emails, semEmail: !this.correio?.real }
+    await this.notificacoes?.notificar([...ids], { tipo: 'aviso', titulo: 'Distribuição de serviço docente aprovada', texto: `Ano lectivo ${anoLetivo}: o Comandante aprovou as suas cadeiras.`, ligacao: '/cadeiras' })
+    await this.auditoria.registar(ctx, { acao: 'aprovar_distribuicao', colecao: 'turmas', alvoTitulo: alvo, detalhes: { docentes: ids.size, contasEnviadas: emails, ...(m ? { recomendacoes: m } : {}) } })
+    return { decisao: 'aprovar', docentes: ids.size, contasNovas: unicos.length, emails, semEmail: !this.correio?.real }
   }
 
   /*

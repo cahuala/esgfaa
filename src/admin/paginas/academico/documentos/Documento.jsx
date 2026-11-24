@@ -7,8 +7,18 @@ import { t as tx } from '../../../../i18n/linguas'
   Moldura dos documentos oficiais da Administração Escolar (pautas, listas, histórico, certificado):
   cabeçalho institucional, título, conteúdo, assinaturas e data. A barra de ações não sai na impressão.
   paisagem: imprime na horizontal (tabelas largas).
+  aprovado: { cargo, nome, posto } — «APROVADO» no canto superior esquerdo, para o Comandante assinar (como nos mapas
+  do Pessoal). assinaturas: textos ou { cargo, nome, posto } (o nome e o posto vão por baixo da linha).
 */
-function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, assinaturas = [], children, rodape = true }) {
+const Assinante = ({ a }) => (typeof a === 'string' ? <div>{a}</div> : (
+  <>
+    <div>{a.cargo}</div>
+    {a.nome && <div className="of-assinante-nome">{a.nome}</div>}
+    {a.posto && <div>{a.posto}</div>}
+  </>
+))
+
+function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovado = null, assinaturas = [], children, rodape = true }) {
   // folha na horizontal só enquanto este documento está aberto
   useEffect(() => {
     if (!paisagem) return undefined
@@ -28,6 +38,13 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, assinat
       </div>
       {/* documento oficial: fica sempre em português */}
       <article translate="no" className={`of-folha ${paisagem ? 'of-folha-larga' : ''}`}>
+        {aprovado && (
+          <div className="of-aprovado">
+            <div className="of-aprovado-titulo">Aprovado</div>
+            <div className="of-linha" />
+            <Assinante a={aprovado} />
+          </div>
+        )}
         <header className="of-cabecalho">
           <img src={Brasao} alt="" />
           <div>
@@ -43,7 +60,7 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, assinat
         {assinaturas.length > 0 && (
           <div className="of-assinaturas">
             {assinaturas.map((a) => (
-              <div key={a} className="of-assinatura"><div className="of-linha" /><div>{a}</div></div>
+              <div key={typeof a === 'string' ? a : a.cargo} className="of-assinatura"><div className="of-linha" /><Assinante a={a} /></div>
             ))}
           </div>
         )}

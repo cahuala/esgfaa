@@ -110,7 +110,7 @@ function Publicacoes() {
                     ? <p className="mb-2">{p.email} · {p.tipo === 'conta' ? tx('papel: {0}', { 0: papeis[p.papel] || p.papel }) : tx('de {0} para {1}', { 0: papeis[p.de] || p.de, 1: papeis[p.papel] || p.papel })}</p>
                     : <p className="text-muted mb-2" style={{ whiteSpace: 'pre-wrap' }}>{p.resumo}</p>}
                   {p.destino && <div className="small mb-1"><b>{p.colecao === 'comentarios' ? tx('Em:') : tx('Para:')}</b> {p.destino}</div>}
-                  {p.ligacao && <div className="small mb-1"><Link to={p.ligacao}><i className="fa fa-table me-1" />{tx('Ver a pauta completa')}</Link></div>}
+                  {p.ligacao && <div className="small mb-1"><Link to={p.ligacao}><i className={`fa ${p.colecao === 'distribuicao_docente' ? 'fa-print' : 'fa-table'} me-1`} />{p.colecao === 'distribuicao_docente' ? tx('Ver e imprimir a lista') : tx('Ver a pauta completa')}</Link></div>}
                   <div className="small text-muted">{p.colecao === 'comentarios'
                     ? tx('Revisto pela equipa de comunicação ({0}), {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })
                     : tx('Pedido por {0}, {1}.', { 0: p.pedidoPor || '—', 1: dataHora(p.pedidoEm) })}</div>

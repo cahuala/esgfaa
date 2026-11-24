@@ -11,8 +11,8 @@ const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto
 
 /*
   Alocação de docentes: carga horária de cada docente e cadeiras por alocar (turmas ativas). Quem o Ensino põe
-  numa cadeira fica «proposto» (sem acesso) até o Comandante aprovar a distribuição da turma, que o Ensino lhe
-  envia aqui depois de rever a lista. As cadeiras aparecem agrupadas por turma (abre-se a turma que se quer).
+  numa cadeira fica «proposto» (sem acesso) até o Comandante aprovar a distribuição do ano lectivo (uma só lista,
+  todas as turmas), que o Ensino imprime e lhe envia aqui depois de rever. As cadeiras aparecem agrupadas por turma (abre-se a turma que se quer).
   Quem só vê (o Comandante) não tem os botões de alocar nem de enviar: aprova em «Por aprovar».
 */
 function Alocacao() {
@@ -25,9 +25,10 @@ function Alocacao() {
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
   const carregar = () => api('/academico/alocacao').then(setD).catch((e) => setErro(e.message))
-  const enviar = (t) => {
-    if (!window.confirm(tx('Enviar ao Comandante a distribuição dos docentes de «{0}»? Os docentes propostos só têm a cadeira (e a conta) depois de ele aprovar.', { 0: t.nome }))) return
-    api(`/academico/turmas/${t.id}/distribuicao`, { metodo: 'POST' })
+  // uma só lista por ano lectivo (todas as turmas)
+  const enviar = (anoLetivo, propostos) => {
+    if (!window.confirm(tx('Enviar ao Comandante a distribuição dos docentes do ano lectivo {0} ({1} docente(s) propostos)? Os docentes propostos só têm a cadeira (e a conta) depois de ele aprovar.', { 0: anoLetivo, 1: propostos }))) return
+    api('/academico/distribuicao', { metodo: 'POST', corpo: { anoLetivo } })
       .then((r) => { setAviso({ texto: tx('Enviada ao Comandante ({0} docente(s) propostos).', { 0: r.propostos }) }); carregar() })
       .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   }
@@ -57,6 +58,17 @@ function Alocacao() {
     grupos.get(k)[1].push(c)
   }
   const porTurma = [...grupos.values()]
+  // a distribuição por ano lectivo: soma das turmas; o estado é o pedido em curso ou a última decisão
+  const anosDist = new Map()
+  for (const t of d.turmas) {
+    const x = anosDist.get(t.anoLetivo) ?? { anoLetivo: t.anoLetivo, turmas: 0, cadeiras: 0, propostos: 0, semDocentes: 0, estados: [] }
+    x.turmas++; x.cadeiras += t.cadeiras; x.propostos += t.propostos; x.semDocentes += t.semDocentes
+    if (t.distribuicao) x.estados.push(t.distribuicao)
+    anosDist.set(t.anoLetivo, x)
+  }
+  const porAno = [...anosDist.values()].sort((a, b) => b.anoLetivo.localeCompare(a.anoLetivo)).map(({ estados, ...x }) => ({
+    ...x, distribuicao: estados.find((e) => e.estado === 'pendente') ?? [...estados].sort((a, b) => String(b.decididoEm ?? '').localeCompare(String(a.decididoEm ?? '')))[0] ?? null,
+  }))
 
   const widgets = [
     ['bg-dark', 'fa-chalkboard-teacher', tx('DOCENTES'), d.docentes.length, tx('{0} com cadeiras', { 0: d.docentes.filter((x) => x.cadeiras.length).length })],
@@ -93,32 +105,39 @@ function Alocacao() {
       {!gere && (
         <div className="alert alert-info d-flex align-items-start">
           <i className="fa fa-info-circle fa-lg me-2 mt-1" />
-          <div>{tx('Quem distribui os docentes pelas cadeiras é a Direcção de Ensino (Repartição de Administração Escolar). Depois de rever cada turma, envia-a ao Comandante, que a aprova ou devolve em')} <Link to="/publicacoes" className="fw-bold">{tx('Por aprovar')}</Link>. {tx('Aqui só se consulta.')}</div>
+          <div>{tx('Quem distribui os docentes pelas cadeiras é a Direcção de Ensino (Repartição de Administração Escolar). Depois de rever a lista do ano lectivo, imprime-a e envia-a ao Comandante, que a aprova, manda refazer ou rejeita em')} <Link to="/publicacoes" className="fw-bold">{tx('Por aprovar')}</Link>. {tx('Aqui só se consulta.')}</div>
         </div>
       )}
-      {d.aprovacaoComandante && d.turmas.length > 0 && (
-        <Painel titulo={tx('Distribuição de serviço docente: aprovação do Comandante')} corpo={false}>
+      {d.turmas.length > 0 && (
+        <Painel titulo={tx('Distribuição de serviço docente (uma lista por ano lectivo)')} corpo={false}>
           <div className="table-responsive">
             <table className="table align-middle mb-0">
-              <thead><tr><th>{tx('Turma')}</th><th>{tx('Cadeiras')}</th><th>{tx('Docentes propostos')}</th><th>{tx('Estado')}</th><th /></tr></thead>
+              <thead><tr><th>{tx('Ano lectivo')}</th><th>{tx('Turmas')}</th><th>{tx('Cadeiras')}</th><th>{tx('Docentes propostos')}</th>{d.aprovacaoComandante && <th>{tx('Estado')}</th>}<th /></tr></thead>
               <tbody>
-                {d.turmas.filter((t) => !ano || t.anoLetivo === ano).map((t) => {
-                  const e = t.distribuicao?.estado
+                {porAno.filter((x) => !ano || x.anoLetivo === ano).map((x) => {
+                  const e = x.distribuicao?.estado
                   return (
-                    <tr key={t.id}>
-                      <td className="fw-bold">{t.nome}<div className="small text-muted fw-normal">{t.anoLetivo}</div></td>
-                      <td>{t.cadeiras}{t.semDocentes > 0 && <div className="small text-warning">{tx('{0} sem docentes', { 0: t.semDocentes })}</div>}</td>
-                      <td>{t.propostos}</td>
-                      <td className="small">
-                        {e === 'pendente' && <span className="badge bg-info">{tx('À espera do Comandante desde {0}', { 0: dataHora(t.distribuicao.pedidoEm) })}</span>}
-                        {e === 'devolvida' && <><span className="badge bg-warning text-dark">{tx('Mandada refazer pelo Comandante')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {t.distribuicao.motivo}</div></>}
-                        {e === 'rejeitada' && <><span className="badge bg-danger">{tx('Rejeitada pelo Comandante: faça uma lista nova')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {t.distribuicao.motivo}</div></>}
-                        {e === 'aprovada' && <>{!t.propostos && <span className="badge bg-success">{tx('Aprovada')}</span>}{t.distribuicao.recomendacoes && <div className="mt-1"><b>{tx('Recomendações do Comandante:')}</b> {t.distribuicao.recomendacoes}</div>}</>}
-                        {(!e || (e === 'aprovada' && t.propostos)) && (t.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span>
-                          : t.semDocentes >= t.cadeiras ? <span className="badge bg-secondary">{tx('Por distribuir')}</span>
-                            : <span className="badge bg-success">{tx('Aprovada')}</span>)}
+                    <tr key={x.anoLetivo}>
+                      <td className="fw-bold">{x.anoLetivo}</td>
+                      <td>{x.turmas}</td>
+                      <td>{x.cadeiras}{x.semDocentes > 0 && <div className="small text-warning">{tx('{0} sem docentes', { 0: x.semDocentes })}</div>}</td>
+                      <td>{x.propostos}</td>
+                      {d.aprovacaoComandante && (
+                        <td className="small">
+                          {e === 'pendente' && <span className="badge bg-info">{tx('À espera do Comandante desde {0}', { 0: dataHora(x.distribuicao.pedidoEm) })}</span>}
+                          {e === 'devolvida' && <><span className="badge bg-warning text-dark">{tx('Mandada refazer pelo Comandante')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {x.distribuicao.motivo}</div></>}
+                          {e === 'rejeitada' && <><span className="badge bg-danger">{tx('Rejeitada pelo Comandante: faça uma lista nova')}</span><div className="text-danger mt-1"><b>{tx('Recomendações:')}</b> {x.distribuicao.motivo}</div></>}
+                          {e === 'aprovada' && x.distribuicao.recomendacoes && <div className="mb-1"><b>{tx('Recomendações do Comandante:')}</b> {x.distribuicao.recomendacoes}</div>}
+                          {e !== 'pendente' && (x.propostos ? <span className="badge bg-warning text-dark">{tx('Por enviar')}</span>
+                            : x.semDocentes >= x.cadeiras ? <span className="badge bg-secondary">{tx('Por distribuir')}</span>
+                              : e !== 'devolvida' && e !== 'rejeitada' && <span className="badge bg-success">{tx('Aprovada')}</span>)}
+                        </td>
+                      )}
+                      <td className="text-end text-nowrap">
+                        <Link to={`/academico/documentos/distribuicao?ano=${encodeURIComponent(x.anoLetivo)}`} className="btn btn-sm btn-white me-1"><i className="fa fa-print me-1" />{tx('Imprimir a lista')}</Link>
+                        {d.aprovacaoComandante && aprova && e === 'pendente' && <Link to="/publicacoes" className="btn btn-sm btn-success"><i className="fa fa-check me-1" />{tx('Decidir')}</Link>}
+                        {d.aprovacaoComandante && gere && !aprova && e !== 'pendente' && x.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(x.anoLetivo, x.propostos)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}
                       </td>
-                      <td className="text-end">{aprova && t.propostos > 0 && <Link to="/publicacoes" className="btn btn-sm btn-success me-1"><i className="fa fa-check me-1" />{tx('Aprovar')}</Link>}{gere && !aprova && e !== 'pendente' && t.propostos > 0 && <button type="button" className="btn btn-sm btn-primary" onClick={() => enviar(t)}><i className="fa fa-paper-plane me-1" />{tx('Enviar ao Comandante')}</button>}</td>
                     </tr>
                   )
                 })}
