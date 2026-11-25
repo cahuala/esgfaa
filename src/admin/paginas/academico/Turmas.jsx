@@ -6,6 +6,13 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
 
+// sem anos lectivos configurados: o de agora (começa em Agosto)
+const anoAtual = () => {
+  const d = new Date()
+  const a = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1
+  return `${a}/${a + 1}`
+}
+
 // a duração do curso em meses (do texto da ficha do curso: «10 meses», «2 anos»); sem ela, null
 const mesesDe = (curso) => {
   const t = String(curso?.duracao ?? '').toLowerCase()
@@ -27,7 +34,7 @@ function Turmas() {
   // o ano lectivo de trabalho (escolhido no menu): só as turmas desse ano; a turma nova é desse ano
   const { ano, anos, mudar } = useAnoTrabalho()
   const [erro, setErro] = useState('')
-  const [f, setF] = useState({ curso: '', anoCurricular: '1', nome: '' })
+  const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), anoCurricular: '1', nome: '' })
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
 
@@ -140,7 +147,7 @@ function Turmas() {
                   <select id="t-ano" className="form-select mb-1" value={ano} onChange={(e) => mudar(e.target.value)} required>
                     {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
                   </select>
-                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo ?? ''} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
+                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
                 <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos lectivos e semestres')}</Link></div>
                 {mesesDe(cursoDe(f.curso)) && <div className="form-text mb-3"><i className="fa fa-clock me-1" />{tx('Duração do curso')}: {mesesDe(cursoDe(f.curso))} {tx('meses')}</div>}
                 {/* só nos cursos com mais de 12 meses (os da Escola duram 10 meses) */}
