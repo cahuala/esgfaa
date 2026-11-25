@@ -307,6 +307,9 @@ model AnoLetivo {
   pedidoReabertura Json?     @map("pedido_reabertura")
   // a última reabertura (quem autorizou, porquê) e a última recusa (o motivo, que a Administração Escolar vê)
   reabertura       Json?
+  // fechar também é por ordem do Comandante: { motivo?, pedidoPor, pedidoEm } à espera dele; a última recusa
+  pedidoFecho      Json?     @map("pedido_fecho")
+  recusaFecho      Json?     @map("recusa_fecho")
   recusaReabertura Json?     @map("recusa_reabertura")
   criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 

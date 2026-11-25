@@ -60,8 +60,8 @@ export class ServicoAnosLetivos {
 
   // ---------- fechar e reabrir ----------
   /*
-    Os anos lectivos nascem abertos (para lançar as notas e o resto das actividades). No fim, a Administração
-    Escolar fecha o ano: já não se mexe nas turmas, cadeiras, matrículas, notas e actividades desse ano, nem se
+    Os anos lectivos nascem abertos (para lançar as notas e o resto das actividades). No fim, fecha-se o ano por
+    ordem do Comandante (ele fecha directamente; a Administração Escolar pede e fecha quando ele aprova): já não se mexe nas turmas, cadeiras, matrículas, notas e actividades desse ano, nem se
     emitem documentos dele. Reabre-se por ordem do Comandante — ele reabre directamente; a Administração Escolar
     pede (para lançar notas ou actividades, ou para emitir um documento) e só reabre quando ele aprova («Por
     aprovar»); se recusar, a Administração Escolar vê o motivo. Depois de feito o que era preciso, fecha-se outra vez.
@@ -72,13 +72,25 @@ export class ServicoAnosLetivos {
     return a
   }
 
-  async fechar(ctx, id) {
+  async fechar(ctx, id, { motivo = '' } = {}) {
     ctx.actor.exigir('academico.gerir')
     const a = await this.#ano(id)
     if (a.fechado) throw new Conflito(`O ano lectivo ${id} já está fechado.`)
-    await this.prisma.anoLetivo.update({ where: { id }, data: { fechado: true, fechadoEm: this.relogio.agora(), fechadoPor: ctx.actor.nome ?? '', pedidoReabertura: null } })
-    await this.auditoria.registar(ctx, { acao: 'fechar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
-    return this.listar(ctx)
+    const pedido = { motivo: String(motivo ?? '').trim(), pedidoPor: ctx.actor.nome ?? '', pedidoEm: this.relogio.agora().toISOString() }
+    // o Comandante (ou sem a aprovação do Comandante configurada) fecha logo; a Administração Escolar pede
+    if (!this.aprovacaoComandante || ctx.actor.pode('academico.homologar')) {
+      await this.#fechar(ctx, id, pedido)
+      return { fechado: true, anos: await this.listar(ctx) }
+    }
+    if (a.pedidoFecho) throw new Conflito(`O fecho do ano lectivo ${id} já está à espera do Comandante.`)
+    await this.prisma.anoLetivo.update({ where: { id }, data: { pedidoFecho: pedido, recusaFecho: null } })
+    await this.auditoria.registar(ctx, { acao: 'pedir_fecho_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
+    return { fechado: false, anos: await this.listar(ctx) }
+  }
+
+  async #fechar(ctx, id, pedido) {
+    await this.prisma.anoLetivo.update({ where: { id }, data: { fechado: true, fechadoEm: this.relogio.agora(), fechadoPor: pedido.pedidoPor || (ctx.actor.nome ?? ''), pedidoFecho: null, recusaFecho: null, pedidoReabertura: null } })
+    await this.auditoria.registar(ctx, { acao: 'fechar_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}`, detalhes: { autorizadoPor: ctx.actor.nome ?? '' } })
   }
 
   async pedirReabertura(ctx, id, { motivo, finalidade = 'actividades', documento = '' }) {
@@ -110,6 +122,31 @@ export class ServicoAnosLetivos {
   // o que espera pelo Comandante
   async reaberturasPendentes() {
     return (await this.prisma.anoLetivo.findMany({ where: { fechado: true }, orderBy: { id: 'desc' } })).filter((a) => a.pedidoReabertura)
+  }
+
+  async fechosPendentes() {
+    return (await this.prisma.anoLetivo.findMany({ where: { fechado: false }, orderBy: { id: 'desc' } })).filter((a) => a.pedidoFecho)
+  }
+
+  // a decisão do Comandante: sobre o pedido de fecho (ano aberto) ou de reabertura (ano fechado)
+  async decidir(ctx, id, corpo) {
+    const a = await this.#ano(id)
+    return !a.fechado && a.pedidoFecho ? this.decidirFecho(ctx, id, corpo) : this.decidirReabertura(ctx, id, corpo)
+  }
+
+  async decidirFecho(ctx, id, { decisao, motivo }) {
+    ctx.actor.exigir('academico.homologar')
+    const a = await this.#ano(id)
+    if (a.fechado || !a.pedidoFecho) throw new Conflito('O fecho deste ano lectivo não está à espera de aprovação.')
+    if (decisao === 'aprovar') {
+      await this.#fechar(ctx, id, a.pedidoFecho)
+      return { decisao: 'aprovar' }
+    }
+    const m = String(motivo ?? '').trim()
+    if (m.length < 3) throw new ErroValidacao('Indique o motivo (a Administração Escolar vê-o).', { campo: 'motivo' })
+    await this.prisma.anoLetivo.update({ where: { id }, data: { pedidoFecho: null, recusaFecho: { ...a.pedidoFecho, motivoRecusa: m, decididoPor: ctx.actor.nome ?? '', decididoEm: this.relogio.agora().toISOString() } } })
+    await this.auditoria.registar(ctx, { acao: 'recusar_fecho_ano_letivo', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}`, detalhes: { motivo: m } })
+    return { decisao: 'recusar' }
   }
 
   async decidirReabertura(ctx, id, { decisao, motivo }) {

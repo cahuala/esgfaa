@@ -42,11 +42,19 @@ function AnosLetivos() {
   useEffect(() => { carregar() }, [carregar])
 
   const atual = lista?.find((a) => a.atual)
+  // fechar é por ordem do Comandante: ele fecha logo; a Administração Escolar pede e fecha quando ele aprovar
   const fechar = (a) => setConfirmar({
-    titulo: tx('Fechar o ano lectivo'), texto: tx('Fechar o ano lectivo {0}? Já não se poderão alterar as turmas, cadeiras, matrículas, notas e actividades desse ano, nem emitir documentos dele. Só o Comandante o pode reabrir.', { 0: a.id }), botao: tx('Fechar o ano'), perigo: true,
+    titulo: comandante ? tx('Fechar o ano lectivo') : tx('Pedir ao Comandante o fecho do ano lectivo'),
+    texto: `${comandante ? tx('Fechar o ano lectivo {0}?', { 0: a.id }) : tx('Pedir ao Comandante o fecho do ano lectivo {0}?', { 0: a.id })} ${tx('Fechado, já não se poderão alterar as turmas, cadeiras, matrículas, notas e actividades desse ano, nem emitir documentos dele. Só o Comandante o pode reabrir.')}`,
+    botao: comandante ? tx('Fechar o ano') : tx('Enviar ao Comandante'), perigo: true,
     confirmar: async () => {
       setConfirmar(null)
-      try { setLista(await api(`/academico/anos-letivos/${caminho(a.id)}/fechar`, { metodo: 'POST' })); avisarAnosMudaram(); setAviso({ texto: tx('Ano lectivo {0} fechado.', { 0: a.id }) }) } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
+      try {
+        const r = await api(`/academico/anos-letivos/${caminho(a.id)}/fechar`, { metodo: 'POST', corpo: {} })
+        setLista(r.anos)
+        avisarAnosMudaram()
+        setAviso({ texto: r.fechado ? tx('Ano lectivo {0} fechado.', { 0: a.id }) : tx('Pedido enviado ao Comandante: o ano fecha quando ele aprovar.') })
+      } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
     },
   })
   async function pedirReabertura(e) {
@@ -177,6 +185,8 @@ function AnosLetivos() {
           <div key={a.id} className="col-xl-4 col-md-6">
             <Painel titulo={<>{tx('Ano lectivo {0}', { 0: a.id })}{a.atual && <span className="badge bg-success ms-2">{tx('Actual')}</span>}{a.fechado ? <span className="badge bg-dark ms-2"><i className="fa fa-lock me-1" />{tx('Fechado')}</span> : <span className="badge bg-light text-dark border ms-2"><i className="fa fa-lock-open me-1" />{tx('Aberto')}</span>}</>}>
               {a.fechado && <div className="small mb-2"><i className="fa fa-lock me-1 text-muted" />{tx('Fechado em {0}{1}: só se consulta. Para lançar notas, actividades ou emitir documentos, o Comandante tem de o reabrir.', { 0: data(a.fechadoEm), 1: a.fechadoPor ? tx(' por {0}', { 0: a.fechadoPor }) : '' })}</div>}
+              {a.pedidoFecho && <div className="alert alert-info py-1 px-2 small mb-2"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante: fechar o ano (pedido por {0}).', { 0: a.pedidoFecho.pedidoPor })}</div>}
+              {a.recusaFecho && !a.pedidoFecho && !a.fechado && <div className="small text-danger mb-2"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou o fecho: {0}', { 0: a.recusaFecho.motivoRecusa })}</div>}
               {a.pedidoReabertura && <div className="alert alert-info py-1 px-2 small mb-2"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante: reabrir {0} — {1}', { 0: a.pedidoReabertura.finalidade === 'documento' ? tx('para emitir «{0}»', { 0: a.pedidoReabertura.documento }) : tx('para notas e actividades'), 1: a.pedidoReabertura.motivo })}</div>}
               {a.recusaReabertura && !a.pedidoReabertura && <div className="small text-danger mb-2"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou a reabertura: {0}', { 0: a.recusaReabertura.motivoRecusa })}</div>}
               {!a.fechado && a.reabertura && <div className="small text-muted mb-2"><i className="fa fa-unlock me-1" />{tx('Reaberto por ordem de {0}: {1}. Feche-o outra vez quando terminar.', { 0: a.reabertura.autorizadoPor, 1: a.reabertura.documento ? `${a.reabertura.documento} — ${a.reabertura.motivo}` : a.reabertura.motivo })}</div>}
@@ -193,7 +203,7 @@ function AnosLetivos() {
                   <button type="button" className="btn btn-xs btn-white" onClick={() => { setErroForm(''); setF({ id: a.id, inicio: a.inicio, fim: a.fim, semestre1Inicio: a.semestre1Inicio, semestre1Fim: a.semestre1Fim, semestre2Inicio: a.semestre2Inicio, semestre2Fim: a.semestre2Fim }) }}><i className="fa fa-pen me-1" />{tx('Datas')}</button>
                   {!a.atual && <button type="button" className="btn btn-xs btn-white" onClick={() => tornarAtual(a)}><i className="fa fa-star me-1" />{tx('Tornar actual')}</button>}
                   <Link to="/academico/turmas" className="btn btn-xs btn-white"><i className="fa fa-users me-1" />{tx('Turmas')}</Link>
-                  {!a.fechado && <button type="button" className="btn btn-xs btn-white" onClick={() => fechar(a)}><i className="fa fa-lock me-1" />{tx('Fechar o ano')}</button>}
+                  {!a.fechado && !a.pedidoFecho && <button type="button" className="btn btn-xs btn-white" onClick={() => fechar(a)}><i className="fa fa-lock me-1" />{comandante ? tx('Fechar o ano') : tx('Pedir o fecho ao Comandante')}</button>}
                   {a.fechado && !a.pedidoReabertura && <button type="button" className="btn btn-xs btn-white" onClick={() => setReabrir({ id: a.id, motivo: '', finalidade: 'actividades', documento: '' })}><i className="fa fa-lock-open me-1" />{comandante ? tx('Reabrir') : tx('Pedir reabertura ao Comandante')}</button>}
                   {a.turmas === 0 && <button type="button" className="btn btn-xs btn-white text-danger ms-auto" onClick={() => apagar(a)} aria-label={tx('Apagar o ano lectivo {0}', { 0: a.id })}><i className="fa fa-trash-alt" /></button>}
                 </div>

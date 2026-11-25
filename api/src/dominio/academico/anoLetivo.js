@@ -63,6 +63,7 @@ export const publicoAno = (a, hoje) => ({
   semestreAtual: semestreEm(a, hoje),
   fechado: Boolean(a.fechado), fechadoEm: a.fechadoEm ? new Date(a.fechadoEm).toISOString() : null, fechadoPor: a.fechadoPor ?? '',
   pedidoReabertura: a.pedidoReabertura ?? null, reabertura: a.reabertura ?? null, recusaReabertura: a.recusaReabertura ?? null,
+  pedidoFecho: a.pedidoFecho ?? null, recusaFecho: a.recusaFecho ?? null,
 })
 
 // para que serve reabrir um ano lectivo fechado

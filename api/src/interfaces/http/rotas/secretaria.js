@@ -29,7 +29,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/anos-letivos/:id/atual', validar({ params: pAno }), async (req, res) => res.json(await anos.tornarAtual(ctx(req), idAno(req))))
   r.delete('/anos-letivos/:id', validar({ params: pAno }), async (req, res) => { await anos.apagar(ctx(req), idAno(req)); res.status(204).end() })
   // fechar o ano lectivo; reabrir só por ordem do Comandante (a Administração Escolar pede, ele aprova)
-  r.post('/anos-letivos/:id/fechar', validar({ params: pAno }), async (req, res) => res.json(await anos.fechar(ctx(req), idAno(req))))
+  r.post('/anos-letivos/:id/fechar', validar({ params: pAno, body: z.object({ motivo: z.string().max(1000).optional() }) }), async (req, res) => res.json(await anos.fechar(ctx(req), idAno(req), req.dados.body)))
   r.post('/anos-letivos/:id/reabrir', validar({ params: pAno, body: z.object({ motivo: z.string().max(1000), finalidade: z.enum(['actividades', 'documento']).optional(), documento: z.string().max(300).optional() }) }), async (req, res) => res.json(await anos.pedirReabertura(ctx(req), idAno(req), req.dados.body)))
 
   // controlo centralizado: provas escritas para imprimir (Repartição), alterações de notas e docentes (Comandante)

@@ -25,11 +25,25 @@ describe('Ano lectivo fechado e reaberto por ordem do Comandante', () => {
   })
   after(() => amb.fechar())
 
-  it('nasce aberto; fechado, nada desse ano se altera', async () => {
+  it('nasce aberto; a Administração Escolar pede o fecho e só fecha quando o Comandante aprova', async () => {
     assert.equal((await ano()).fechado, false)
-    const anos = (await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).expect(200)).body
-    assert.equal(anos.find((a) => a.id === '2025/2026').fechado, true)
-    assert.equal((await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`)).status, 409)
+    const p = (await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).send({}).expect(200)).body
+    assert.equal(p.fechado, false)
+    assert.equal((await ano()).fechado, false)
+    assert.equal((await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).send({})).status, 409)
+    assert.equal((await ensino.post(`/api/admin/publicacoes/ano_letivo/${encodeURIComponent('2025/2026')}/decisao`).send({ decisao: 'aprovar' })).status, 403)
+    const item = (await comandante.get('/api/admin/publicacoes').expect(200)).body.find((x) => x.colecao === 'ano_letivo')
+    assert.equal(item.titulo, 'Fechar o ano lectivo 2025/2026')
+    await decidir({ decisao: 'recusar', motivo: 'Faltam as notas do 2.º semestre' }).expect(200)
+    const a = await ano()
+    assert.deepEqual([a.fechado, a.pedidoFecho, a.recusaFecho.motivoRecusa], [false, null, 'Faltam as notas do 2.º semestre'])
+    await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).send({}).expect(200)
+    await decidir({ decisao: 'aprovar' }).expect(200)
+    assert.equal((await ano()).fechado, true)
+  })
+
+  it('fechado, nada desse ano se altera', async () => {
+    assert.equal((await ensino.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).send({})).status, 409)
     const r = await ensino.post(`/api/admin/academico/turmas/${turma.id}/cadeiras`).send({ codigo: 'FEC102', nome: 'Outra' })
     assert.equal(r.status, 409)
     assert.match(r.body.erro, /ano lectivo 2025\/2026 está fechado/)
@@ -64,7 +78,7 @@ describe('Ano lectivo fechado e reaberto por ordem do Comandante', () => {
   })
 
   it('o Comandante fecha e reabre directamente', async () => {
-    await comandante.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).expect(200)
+    assert.equal((await comandante.post(`/api/admin/academico/anos-letivos/${ANO}/fechar`).send({}).expect(200)).body.fechado, true)
     const r = (await comandante.post(`/api/admin/academico/anos-letivos/${ANO}/reabrir`).send({ motivo: 'Ordem do Comandante' }).expect(200)).body
     assert.equal(r.reaberto, true)
     assert.equal((await ano()).reabertura.autorizadoPor.length > 0, true)

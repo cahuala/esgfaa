@@ -111,12 +111,18 @@ export class ServicoAprovacoesComandante {
 
   async #reaberturas() {
     const FINS = { actividades: 'para lançar notas ou outras actividades', documento: 'para emitir um documento' }
-    return ((await this.anosLetivos?.reaberturasPendentes()) ?? []).map((a) => ({
+    const fechos = ((await this.anosLetivos?.fechosPendentes()) ?? []).map((a) => ({
+      colecao: 'ano_letivo', id: a.id, tipo: 'fecho', ligacao: '/academico/anos-letivos',
+      titulo: `Fechar o ano lectivo ${a.id}`,
+      pedidoPor: a.pedidoFecho.pedidoPor, pedidoEm: a.pedidoFecho.pedidoEm,
+      resumo: [a.pedidoFecho.motivo && `Motivo: ${a.pedidoFecho.motivo}`, 'Fechado, já não se alteram as turmas, cadeiras, matrículas, notas e actividades desse ano, nem se emitem documentos dele.'].filter(Boolean).join('\n'),
+    }))
+    return [...fechos, ...((await this.anosLetivos?.reaberturasPendentes()) ?? []).map((a) => ({
       colecao: 'ano_letivo', id: a.id, tipo: 'reabertura', ligacao: '/academico/anos-letivos',
       titulo: `Reabrir o ano lectivo ${a.id} ${FINS[a.pedidoReabertura.finalidade] ?? ''}`.trim(),
       pedidoPor: a.pedidoReabertura.pedidoPor, pedidoEm: a.pedidoReabertura.pedidoEm,
       resumo: [a.pedidoReabertura.documento && `Documento: ${a.pedidoReabertura.documento}`, `Motivo: ${a.pedidoReabertura.motivo}`, a.fechadoPor && `Fechado por ${a.fechadoPor}`].filter(Boolean).join('\n'),
-    }))
+    }))]
   }
 
   // ---------- Director de Curso (proposto pela Administração Escolar) ----------
@@ -163,7 +169,7 @@ export class ServicoAprovacoesComandante {
   async contarParaAprovar(ctx) {
     if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return 0
     const directores = Object.values((await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}).filter((x) => x.proposta).length
-    const reaberturas = ((await this.anosLetivos?.reaberturasPendentes()) ?? []).length
+    const reaberturas = ((await this.anosLetivos?.reaberturasPendentes()) ?? []).length + ((await this.anosLetivos?.fechosPendentes()) ?? []).length
     return (await this.controlo.contarDistribuicoesPendentes()) + (await this.controlo.contarPublicacoesPendentes()) + directores + reaberturas
   }
 
