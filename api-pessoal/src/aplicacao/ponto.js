@@ -1,5 +1,6 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
+import { SO_EFECTIVO } from '../dominio/pessoal/ficha.js'
 import { ordenarLinhas } from './ordem.js'
 import { exigir } from './sessao.js'
 
@@ -176,7 +177,7 @@ export class ServicoPonto {
   // o pessoal civil que marca o ponto (sem as domiciliares, que não são trabalhadores da Escola)
   async #civis(dataRef) {
     const l = await this.bd.pessoa.findMany({
-      where: { tipo: 'civil', NOT: { vinculo: 'domiciliar' }, OR: [{ ativo: true }, ...(dataRef ? [{ marcacoes: { some: { quando: { gte: inicioDoDia(dataRef) } } } }] : [])] },
+      where: { tipo: 'civil', AND: [SO_EFECTIVO], OR: [{ ativo: true }, ...(dataRef ? [{ marcacoes: { some: { quando: { gte: inicioDoDia(dataRef) } } } }] : [])] },
       select: { id: true, nome: true, fotoId: true, carreiraCivil: true, categoriaCivil: true, numeroAgente: true, unidade: { select: { nome: true } }, digitais: { select: { dedo: true } } },
     })
     const ordem = (p) => CARREIRAS_CIVIS[p.carreiraCivil]?.nivel ?? 99
@@ -377,7 +378,7 @@ export class ServicoPonto {
 
   // a lista do pessoal civil no aparelho (número = n.º da ficha); quem saiu deixa de estar no aparelho
   async #enviarPessoal(aparelhoId) {
-    const ativos = await this.bd.pessoa.findMany({ where: { tipo: 'civil', ativo: true, NOT: { vinculo: 'domiciliar' } }, select: { id: true, nome: true } })
+    const ativos = await this.bd.pessoa.findMany({ where: { tipo: 'civil', ativo: true, AND: [SO_EFECTIVO] }, select: { id: true, nome: true } })
     const sairam = await this.bd.digitalPonto.findMany({ where: { aparelhoId, pessoa: { ativo: false } }, select: { pessoaId: true }, distinct: ['pessoaId'] })
     const textos = [
       ...ativos.map((p) => `DATA UPDATE USERINFO PIN=${p.id}\tName=${nomeAparelho(p.nome)}\tPri=0\tPasswd=\tCard=\tGrp=1\tTZ=0000000100000000\tVerify=0`),

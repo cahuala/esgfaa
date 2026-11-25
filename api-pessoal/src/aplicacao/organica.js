@@ -18,6 +18,7 @@ function grauDoCargo(c) {
 const vazio = () => Object.fromEntries(COLUNAS_PLANEAMENTO.map(([k]) => [k, 0]))
 import { exigir } from './sessao.js'
 import { comparadorHierarquico, posicoesDasUnidades } from '../dominio/pessoal/ordem.js'
+import { eEfectivo } from '../dominio/pessoal/ficha.js'
 
 // quadro orgânico da Escola: unidades (órgãos e serviços) e os cargos de cada uma, com os lugares
 export class ServicoOrganica {
@@ -46,7 +47,7 @@ export class ServicoOrganica {
     const [unidades, cargos, pessoas] = await Promise.all([
       this.bd.unidade.findMany({ orderBy: [{ ordem: 'asc' }, { nome: 'asc' }] }),
       this.bd.cargo.findMany({ select: { id: true, unidadeId: true, vagas: true, tipo: true, postoRequerido: true } }),
-      this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, select: { unidadeId: true, cargoId: true, tipo: true, posto: true, genero: true, vinculo: true } }),
+      this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, select: { unidadeId: true, cargoId: true, tipo: true, posto: true, genero: true, vinculo: true, tipoDocente: true } }),
     ])
     const tipos = await this.#tipos()
     const no = new Map(unidades.map((x) => [x.id, { id: x.id, nome: x.nome, sigla: x.sigla, tipo: x.tipo, tipoNome: tipos[x.tipo] ?? '', paiId: x.paiId, filhos: [], previsto: vazio(), existente: vazio(), previstoGraus: grausVazio(), lugares: 0, ocupados: 0, cargos: 0, mulheres: 0, pessoas: 0, estudantes: 0 }]))
@@ -65,6 +66,8 @@ export class ServicoOrganica {
       if (!n) continue
       // os estudantes dos cursos não fazem parte do efectivo da unidade: contam-se à parte
       if (p.vinculo === 'estudante') { n.estudantes++; continue }
+      // os docentes colaboradores (de fora) não contam no efectivo
+      if (!eEfectivo(p)) continue
       n.pessoas++
       if (p.genero === 'F') n.mulheres++
       somar(n, 'existente', categoriaDe(p))
@@ -91,7 +94,7 @@ export class ServicoOrganica {
       for (const g of Object.keys(escola.previstoGraus)) escola.previstoGraus[g] += r.previstoGraus[g]
     }
     // pessoas sem unidade também contam no existente da Escola
-    for (const p of pessoas.filter((x) => !no.has(x.unidadeId))) { if (p.vinculo === 'estudante') { escola.estudantes++; continue } escola.pessoas++; escola.existente[categoriaDe(p)] = (escola.existente[categoriaDe(p)] ?? 0) + 1; if (p.genero === 'F') escola.mulheres++ }
+    for (const p of pessoas.filter((x) => !no.has(x.unidadeId))) { if (p.vinculo === 'estudante') { escola.estudantes++; continue } if (!eEfectivo(p)) continue; escola.pessoas++; escola.existente[categoriaDe(p)] = (escola.existente[categoriaDe(p)] ?? 0) + 1; if (p.genero === 'F') escola.mulheres++ }
     return { escola, colunas: COLUNAS_PLANEAMENTO }
   }
 

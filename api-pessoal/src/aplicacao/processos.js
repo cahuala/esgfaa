@@ -3,6 +3,7 @@ import { emSerie } from '../infraestrutura/bd.js'
 import { abreviaturaDoPosto, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir } from './sessao.js'
 import { ordenarPorHierarquia } from '../dominio/pessoal/ordem.js'
+import { SO_EFECTIVO } from '../dominio/pessoal/ficha.js'
 import { posicoesUnidades } from './ordem.js'
 
 export const TIPOS_DOCUMENTO = {
@@ -45,7 +46,7 @@ export class ServicoProcessos {
 
   async catalogo(u, { incompletos } = {}) {
     exigir(u, 'ver')
-    const l = await this.bd.pessoa.findMany({ where: { ativo: true, vinculo: { not: 'domiciliar' } }, include: { processo: true, unidade: { select: { nome: true } }, cargo: { select: { funcao: true } }, documentos: { select: { tipo: true } } }, orderBy: { nome: 'asc' } })
+    const l = await this.bd.pessoa.findMany({ where: { ativo: true, AND: [SO_EFECTIVO] }, include: { processo: true, unidade: { select: { nome: true } }, cargo: { select: { funcao: true } }, documentos: { select: { tipo: true } } }, orderBy: { nome: 'asc' } })
     const r = l.map((p) => {
       const falta = dadosEmFalta(p, p.documentos)
       return {

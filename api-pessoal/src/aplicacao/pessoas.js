@@ -3,7 +3,7 @@ import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, POSTOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { PROVINCIAS, comDerivados, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
+import { PROVINCIAS, SO_EFECTIVO, comDerivados, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
@@ -85,8 +85,12 @@ export class ServicoPessoas {
     if (f.unidadeId) where.unidadeId = f.unidadeId === 'nenhum' ? null : { in: await this.#comSubunidades(Number(f.unidadeId)) }
     // o vínculo conta também quando é uma das outras funções (o funcionário que também é docente)
     if (f.vinculo) where.OR = [{ vinculo: f.vinculo }, ...(f.vinculo === 'domiciliar' ? [] : [{ outrosVinculos: { has: f.vinculo } }])]
-    // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem
-    if (!f.vinculo) where.vinculo = { not: 'domiciliar' }
+    // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem; os estudantes e os
+    // docentes colaboradores (de fora) também, ou quando se pesquisa por texto (a pesquisa encontra toda a gente)
+    if (!f.vinculo) {
+      if (f.q) where.vinculo = { not: 'domiciliar' }
+      else where.AND = [SO_EFECTIVO]
+    }
     if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
     const hoje = this.agora()
     // campos=resumo: sem os dados pessoais que só a ficha e os documentos impressos precisam (SO_NA_FICHA)
@@ -266,12 +270,13 @@ export class ServicoPessoas {
     if (m._count.domiciliares >= limiteDomiciliares(m.posto)) throw invalido(`${m.nome} já tem ${m._count.domiciliares} empregado(s) domiciliar(es), o limite do posto.`, 'militarAlocadoId')
   }
 
-  async criar(u, dados, { silencioso = false } = {}) {
+  // despachado: o docente já está na relação nominal do corpo docente (carga das listas): não se pede despacho
+  async criar(u, dados, { silencioso = false, despachado = false } = {}) {
     // registar uma ficha nova: quem edita fichas ou quem só regista (o Operador)
     if (!pode(u, 'registar')) exigir(u, 'editar')
     const d = this.#dados(dados)
     // um docente novo só vale depois do despacho do Comandante
-    const pedirDocente = Boolean(this.despachos) && eDocente(d)
+    const pedirDocente = Boolean(this.despachos) && !despachado && eDocente(d)
     if (pedirDocente) d.docentePendente = true
     const problema = problemaNaFicha(d, null, await this.listas?.todas())
     if (problema) throw invalido(problema[1], problema[0])
@@ -399,7 +404,7 @@ export class ServicoPessoas {
   async domiciliares(u) {
     exigir(u, 'ver')
     const posicoes = await posicoesUnidades(this.bd)
-    const oficiais = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { not: 'reforma' } }, include: { cargo: { select: { funcao: true } }, domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, bi: true, dataAdmissao: true, fotoId: true } } } })
+    const oficiais = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { not: 'reforma' }, AND: [SO_EFECTIVO] }, include: { cargo: { select: { funcao: true } }, domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, bi: true, dataAdmissao: true, fotoId: true } } } })
     return ordenarPorHierarquia(oficiais.filter(temDireitoDomiciliar).map((m) => ({
       unidadeId: m.unidadeId, funcao: m.cargo?.funcao, dataAntiguidadePosto: m.dataAntiguidadePosto,
       id: m.id, nome: m.nome, nip: m.nip, ramo: m.ramo, postoNome: nomeDoPosto(m.posto, m.ramo), grau: comDerivados(m).grau, fotoId: m.fotoId,
@@ -536,7 +541,7 @@ export class ServicoPessoas {
   // lista de antiguidade (arts. 26.º e 29.º) dos militares no activo, por posto (ou todos)
   async antiguidade(u, { posto, ramo } = {}) {
     exigir(u, 'ver')
-    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: 'activo', ...(posto ? { posto } : {}), ...(ramo ? { ramo } : {}) }, include: { ...INCLUIR_LISTA, graduacoes: { select: { posto: true } } } })
+    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: 'activo', AND: [SO_EFECTIVO], ...(posto ? { posto } : {}), ...(ramo ? { ramo } : {}) }, include: { ...INCLUIR_LISTA, graduacoes: { select: { posto: true } } } })
     const hoje = this.agora()
     return ordenarAntiguidade(lista).map((p, i) => ({ ordem: i + 1, ...comDerivados(p, hoje), cursos: undefined, eventos: undefined, graduacoes: undefined }))
   }
@@ -545,7 +550,7 @@ export class ServicoPessoas {
   async elegiveis(u, { tipo = 'militar' } = {}) {
     exigir(u, 'ver')
     const hoje = this.agora()
-    const lista = await this.bd.pessoa.findMany({ where: { tipo, ativo: true }, include: { ...INCLUIR_LISTA, eventos: { select: { tipo: true, data: true } } }, orderBy: { nome: 'asc' } })
+    const lista = await this.bd.pessoa.findMany({ where: { tipo, ativo: true, AND: [SO_EFECTIVO] }, include: { ...INCLUIR_LISTA, eventos: { select: { tipo: true, data: true } } }, orderBy: { nome: 'asc' } })
     const emPropostaAberta = new Set((await this.bd.itemProposta.findMany({ where: { proposta: { estado: { in: ['rascunho', 'enviada'] }, tipo: { in: ['promocao', 'progressao'] } } }, select: { pessoaId: true } })).map((i) => i.pessoaId))
     const posicoes = await posicoesUnidades(this.bd)
     return ordenarPorHierarquia(lista.map((p) => {
@@ -560,7 +565,7 @@ export class ServicoPessoas {
     exigir(u, 'ver')
     const hoje = this.agora()
     const limite = `${hoje.getUTCFullYear() + anos}-12-31`
-    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { in: ['activo', 'reserva'] } }, include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } } } })
+    const lista = await this.bd.pessoa.findMany({ where: { tipo: 'militar', ativo: true, situacao: { in: ['activo', 'reserva'] }, AND: [SO_EFECTIVO] }, include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true, funcao: true } } } })
     const r = []
     const cmp = comparadorHierarquico(await posicoesUnidades(this.bd))
     for (const p of lista) {

@@ -1,6 +1,7 @@
 import { invalido, naoEncontrado } from '../erros.js'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
+import { SO_EFECTIVO } from '../dominio/pessoal/ficha.js'
 import { ordenarLinhas } from './ordem.js'
 import { exigir } from './sessao.js'
 
@@ -78,7 +79,7 @@ export class ServicoAusencias {
     const inicio = new Date(Date.UTC(a, m - 1, 1))
     const fim = new Date(Date.UTC(a, m - 1, nDias))
     const pessoas = await this.bd.pessoa.findMany({
-      where: { tipo: 'civil', ativo: true, NOT: { vinculo: 'domiciliar' } },
+      where: { tipo: 'civil', ativo: true, AND: [SO_EFECTIVO] },
       select: { id: true, nome: true, carreiraCivil: true, categoriaCivil: true },
     })
     const ordem = (p) => CARREIRAS_CIVIS[p.carreiraCivil]?.nivel ?? 99

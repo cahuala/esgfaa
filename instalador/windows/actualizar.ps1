@@ -144,11 +144,12 @@ try {
 } finally { Pop-Location }
 Ok 'base de dados actualizada'
 
-# as relações nominais que vêm no pendrive (carregar\relacoes.json): a orgânica que falta e as fichas novas.
+# as relações nominais que vêm no pendrive (carregar\relacoes.json): a orgânica que falta, as fichas novas e os
+# docentes e estudantes das listas (estes uma só vez por versão das listas).
 # Nunca apaga nem altera o que já existe; um problema aqui não desfaz a actualização (fica o relatório)
 $Relacoes = Join-Path $Pen 'carregar\relacoes.json'
 if (Test-Path $Relacoes) {
-  Passo 'A carregar as relações nominais (militares, civis e domiciliares)'
+  Passo 'A carregar as relações nominais (militares, civis, domiciliares, docentes e estudantes)'
   $RelatorioCarga = Join-Path $Reg "CARREGAMENTO-$Carimbo.txt"
   Push-Location "$Destino\sistema"
   try {

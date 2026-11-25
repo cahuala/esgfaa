@@ -1,6 +1,6 @@
 import { CATEGORIAS, EFECTIVIDADES, ESTADOS, FORMAS_SERVICO, GRUPOS, POSTOS, RAMOS, SITUACOES, quadroEspecial } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
-import { GENEROS, HABILITACOES, TIPOS, VINCULOS } from '../dominio/pessoal/ficha.js'
+import { GENEROS, HABILITACOES, TIPOS, VINCULOS, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from './propostas.js'
 import { NOMES_LICENCA } from './licencas.js'
 import { exigir } from './sessao.js'
@@ -43,7 +43,9 @@ export class ServicoPainel {
     // a projecção da reserva corre ao mesmo tempo que a lista (eram uma depois da outra)
     const projecaoPedida = this.pessoas.projecaoReserva(u, { anos: 5 })
     projecaoPedida.catch(() => {})
+    // o efectivo da Escola (a lista sem filtro já deixa de fora os estudantes e os docentes colaboradores)
     const todos = await this.pessoas.listar(u, {})
+    const academicos = await this.bd.pessoa.findMany({ where: { ativo: true, OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }] }, select: { vinculo: true, outrosVinculos: true } })
     const mil = todos.filter((p) => p.tipo === 'militar')
     const mulheres = todos.filter((p) => p.genero === 'F')
     const milF = mil.filter((p) => p.genero === 'F')
@@ -89,7 +91,7 @@ export class ServicoPainel {
     return {
       totais: {
         total: todos.length, militares: mil.length, civis: civ.length,
-        docentes: todos.filter((p) => p.docente).length, estudantes: todos.filter((p) => p.discente).length, funcionarios: todos.filter((p) => p.vinculo === 'funcionario').length,
+        docentes: academicos.filter((p) => vinculosDe(p).includes('docente')).length, estudantes: academicos.filter((p) => vinculosDe(p).includes('estudante')).length, funcionarios: todos.filter((p) => p.vinculo === 'funcionario').length,
         oficiais: mil.filter((p) => p.grupo === 'oficiais').length, sargentos: mil.filter((p) => p.grupo === 'sargentos').length, pracas: mil.filter((p) => p.grupo === 'pracas').length,
         mulheres: mulheres.length, mulheresMilitares: milF.length, mulheresOficiais: milF.filter((p) => p.grupo === 'oficiais').length,
         domiciliares,
