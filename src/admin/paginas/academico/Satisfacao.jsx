@@ -7,6 +7,7 @@ import { confirmar } from '../../../portal/dialogos'
 import { descarregarCsv } from './documentos/csv'
 import EditorInquerito from '../../../portal/inquerito/EditorInquerito'
 import { t as tx, localAtual } from '../../../i18n/linguas'
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 const ESTADOS = { rascunho: ['bg-gray-500', tx('Rascunho')], aberto: ['bg-success', tx('Aberto')], fechado: ['bg-dark', tx('Fechado')] }
 const dataLocal = (iso) => (iso ? new Date(iso).toLocaleDateString(localAtual()) : '—')
@@ -19,14 +20,16 @@ const paraCampo = (iso) => (iso ? new Date(new Date(iso).getTime() - new Date(is
 function Satisfacao() {
   const [d, setD] = useState(null)
   const gere = useSessao().pode('academico.gerir')
-  const [turmas, setTurmas] = useState([])
+  const [todasTurmas, setTodasTurmas] = useState([])
+  const { ano } = useAnoTrabalho()
   const [erro, setErro] = useState('')
   const [editar, setEditar] = useState(null) // formulário em edição
   const [resultados, setResultados] = useState(null)
   const [aviso, setAviso] = useState(null)
   const falhou = useCallback((e) => setAviso({ tipo: 'erro', texto: e.message }), [])
   const carregar = useCallback(() => api('/academico/satisfacao').then(setD).catch((e) => setErro(e.message)), [])
-  useEffect(() => { carregar(); api('/academico/turmas').then((l) => setTurmas(l.filter((t) => t.ativa !== false))).catch(() => {}) }, [carregar])
+  useEffect(() => { carregar(); api('/academico/turmas').then(setTodasTurmas).catch(() => {}) }, [carregar])
+  const turmas = todasTurmas.filter((t) => t.ativa !== false && (!ano || t.anoLetivo === ano))
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
 

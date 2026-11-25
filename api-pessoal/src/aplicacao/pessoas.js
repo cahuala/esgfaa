@@ -3,7 +3,7 @@ import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, POSTOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { PROVINCIAS, SO_EFECTIVO, comDerivados, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
+import { PROVINCIAS, SO_EFECTIVO, comDerivados, origemDe, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
@@ -87,8 +87,10 @@ export class ServicoPessoas {
     if (f.vinculo) where.OR = [{ vinculo: f.vinculo }, ...(f.vinculo === 'domiciliar' ? [] : [{ outrosVinculos: { has: f.vinculo } }])]
     // as empregadas domiciliares não são trabalhadores civis da Escola: só aparecem quando se pedem; os estudantes e os
     // docentes colaboradores (de fora) também, ou quando se pesquisa por texto (a pesquisa encontra toda a gente)
+    // ids: as pessoas de um ano lectivo (docentes ou estudantes desse ano), seja qual for o vínculo de hoje
+    if (f.ids) where.id = { in: f.ids }
     if (!f.vinculo) {
-      if (f.q) where.vinculo = { not: 'domiciliar' }
+      if (f.q || f.ids) where.vinculo = { not: 'domiciliar' }
       else where.AND = [SO_EFECTIVO]
     }
     if (f.militarAlocadoId) where.militarAlocadoId = Number(f.militarAlocadoId)
@@ -172,6 +174,7 @@ export class ServicoPessoas {
         domiciliares: { where: { ativo: true }, select: { id: true, nome: true, numeroAgente: true, telefone: true, fotoId: true } },
         documentos: { orderBy: [{ data: 'desc' }, { id: 'desc' }] },
         cursos: { orderBy: [{ fim: 'desc' }, { id: 'desc' }] },
+        anosAcademicos: { orderBy: [{ anoLetivo: 'desc' }, { id: 'asc' }] },
         eventos: { orderBy: [{ data: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }] },
         graduacoes: { orderBy: { inicio: 'desc' } },
         licencas: { orderBy: { inicio: 'desc' } },
@@ -198,6 +201,7 @@ export class ServicoPessoas {
     f.eventos = p.eventos.map((e) => ({ ...e, tipoNome: TIPOS_EVENTO[e.tipo] ?? e.tipo, postoAnteriorNome: e.postoAnterior ? nomeDoPosto(e.postoAnterior, p.ramo) : '', postoNovoNome: e.postoNovo ? nomeDoPosto(e.postoNovo, p.ramo) : '' }))
     f.graduacoes = p.graduacoes.map((g) => ({ ...g, postoNome: nomeDoPosto(g.posto, p.ramo) }))
     f.cursos = p.cursos.map((c) => ({ ...c, chaveNome: CURSOS_PROMOCAO[c.chave] ?? '' }))
+    f.origem = origemDe(p)
     if (p.tipo === 'militar') {
       f.promocao = verificarPromocao({ ...p, historico: p.eventos }, { hoje })
       f.promocao.postoPropostoNome = f.promocao.postoProposto ? nomeDoPosto(f.promocao.postoProposto, p.ramo) : ''
@@ -215,7 +219,7 @@ export class ServicoPessoas {
       x.efectividade ??= 'comissao_normal'
     }
     for (const k of Object.keys(x)) if ((k.startsWith('data') || k === 'biEmitidoEm' || k === 'biValidade') && x[k]) x[k] = new Date(x[k])
-    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'emailPessoal', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente', 'funcaoActual', 'unidadeOrigem', 'paisNascimento']) if (k in x) x[k] ??= ''
+    for (const k of ['nomeGuerra', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'morada', 'areaFormacao', 'especialidade', 'observacoes', 'municipio', 'bairro', 'rua', 'casa', 'caixaPostal', 'telefoneAlternativo', 'emailPessoal', 'biLocalEmissao', 'grupoSanguineo', 'conjuge', 'conjugeLocalServico', 'inss', 'banco', 'iban', 'numeroConta', 'localIncorporacao', 'categoriaDocente', 'funcaoActual', 'unidadeOrigem', 'postoExterno', 'paisNascimento']) if (k in x) x[k] ??= ''
     if (x.tipoDocente === '') x.tipoDocente = null
     // agregado familiar e vencimento ficam como texto (cifrado na base de dados)
     if ('agregado' in d) x.agregado = d.agregado?.length ? JSON.stringify(d.agregado) : ''
@@ -466,6 +470,79 @@ export class ServicoPessoas {
 
   async #existe(id) {
     if (!(await this.bd.pessoa.count({ where: { id } }))) throw naoEncontrado('Ficha não encontrada.')
+  }
+
+  /*
+    Cada ano lectivo em separado: quantos estudantes e docentes houve (pessoas diferentes), e de onde vieram —
+    FAA por ramo, Polícia Nacional, estrangeiros e civis; nos estudantes, quantos terminaram; nos docentes,
+    efectivos e colaboradores e quantos foram novos nesse ano (não estavam no ano anterior).
+  */
+  async resumoAcademico(u) {
+    exigir(u, 'ver')
+    const l = await this.bd.anoAcademico.findMany({ select: { anoLetivo: true, papel: true, tipoDocente: true, concluido: true, pessoa: { select: { id: true, tipo: true, ramo: true, nacionalidade: true, unidadeOrigem: true, genero: true } } } })
+    const anos = new Map()
+    const vazio = () => ({ total: 0, militares: 0, EXE: 0, FAN: 0, MGA: 0, policia: 0, estrangeiros: 0, civis: 0, mulheres: 0, concluiram: 0, efectivos: 0, colaboradores: 0, novos: 0, ids: new Map() })
+    for (const x of l) {
+      const a = anos.get(x.anoLetivo) ?? { anoLetivo: x.anoLetivo, estudante: vazio(), docente: vazio() }
+      anos.set(x.anoLetivo, a)
+      const g = a[x.papel]
+      if (!g) continue
+      const ja = g.ids.get(x.pessoa.id)
+      if (ja) { if (x.concluido) ja.concluido = true; continue }
+      g.ids.set(x.pessoa.id, { ...x, concluido: Boolean(x.concluido) })
+    }
+    const ordem = [...anos.values()].sort((a, b) => a.anoLetivo.localeCompare(b.anoLetivo))
+    let anteriores = new Set()
+    for (const a of ordem) {
+      for (const papel of ['estudante', 'docente']) {
+        const g = a[papel]
+        for (const x of g.ids.values()) {
+          const p = x.pessoa
+          g.total++
+          const o = origemDe(p)
+          if (o === 'faa') { g.militares++; if (g[p.ramo] !== undefined) g[p.ramo]++ } else if (o === 'policia') g.policia++
+          else if (o === 'estrangeiro') g.estrangeiros++
+          else g.civis++
+          if (p.genero === 'F') g.mulheres++
+          if (x.concluido) g.concluiram++
+          if (x.tipoDocente === 'colaborador') g.colaboradores++
+          else if (papel === 'docente') g.efectivos++
+          if (papel === 'docente' && !anteriores.has(p.id)) g.novos++
+        }
+      }
+      anteriores = new Set(a.docente.ids.keys())
+    }
+    return ordem.reverse().map((a) => ({ anoLetivo: a.anoLetivo, estudantes: { ...a.estudante, ids: undefined }, docentes: { ...a.docente, ids: undefined } }))
+  }
+
+  // os anos lectivos de cada pessoa (para as listas de docentes e estudantes)
+  async anosAcademicosDe(ids) {
+    const l = ids.length ? await this.bd.anoAcademico.findMany({ where: { pessoaId: { in: ids } }, orderBy: [{ anoLetivo: 'desc' }, { id: 'asc' }] }) : []
+    const m = new Map()
+    for (const x of l) m.set(x.pessoaId, [...(m.get(x.pessoaId) ?? []), { id: x.id, anoLetivo: x.anoLetivo, papel: x.papel, curso: x.curso, tipoDocente: x.tipoDocente, concluido: x.concluido }])
+    return m
+  }
+
+  async pessoasDoAno(anoLetivo, papel) {
+    return [...new Set((await this.bd.anoAcademico.findMany({ where: { anoLetivo, papel }, select: { pessoaId: true } })).map((x) => x.pessoaId))]
+  }
+
+  // regista (ou tira) um ano lectivo de docente ou de estudante na ficha
+  async marcarAnoAcademico(u, pessoaId, { anoLetivo, papel, curso = '', tipoDocente = null, concluido = null }) {
+    exigir(u, 'editar')
+    await this.#existe(pessoaId)
+    if (!/^\d{4}\/\d{4}$/.test(anoLetivo) || Number(anoLetivo.slice(5)) !== Number(anoLetivo.slice(0, 4)) + 1) throw invalido('Ano lectivo inválido (ex.: 2026/2027).', 'anoLetivo')
+    const chave = { pessoaId, anoLetivo, papel, curso: String(curso ?? '').trim() }
+    const x = await this.bd.anoAcademico.upsert({ where: { pessoaId_anoLetivo_papel_curso: chave }, create: { ...chave, tipoDocente, concluido }, update: { tipoDocente, concluido } })
+    await this.auditoria.registar(u, 'editar_ficha', `ano lectivo ${anoLetivo} (${papel}) — ficha #${pessoaId}`)
+    return x
+  }
+
+  async tirarAnoAcademico(u, pessoaId, id) {
+    exigir(u, 'editar')
+    const r = await this.bd.anoAcademico.deleteMany({ where: { id, pessoaId } })
+    if (!r.count) throw naoEncontrado('Esse ano lectivo não está na ficha.')
+    await this.auditoria.registar(u, 'editar_ficha', `tirado um ano lectivo — ficha #${pessoaId}`)
   }
 
   // cursos (art. 48.º)

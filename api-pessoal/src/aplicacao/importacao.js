@@ -159,7 +159,7 @@ export class ServicoImportacao {
     if (tem('nomeGuerra')) d.nomeGuerra = nomeProprio(l.nomeGuerra)
     if (tem('bi')) d.bi = String(l.bi).trim().toUpperCase().replace(/\s/g, '')
     if (tem('email')) d.email = String(l.email).trim().toLowerCase()
-    for (const k of ['telefone', 'telefoneAlternativo', 'morada', 'municipio', 'bairro', 'naturalidade', 'nacionalidade', 'paisNascimento', 'biLocalEmissao', 'areaFormacao', 'especialidade', 'funcaoActual', 'unidadeOrigem', 'observacoes']) if (tem(k)) d[k] = String(l[k]).trim()
+    for (const k of ['telefone', 'telefoneAlternativo', 'morada', 'municipio', 'bairro', 'naturalidade', 'nacionalidade', 'paisNascimento', 'biLocalEmissao', 'areaFormacao', 'especialidade', 'funcaoActual', 'unidadeOrigem', 'postoExterno', 'observacoes']) if (tem(k)) d[k] = String(l[k]).trim()
     if (tem('emailPessoal')) d.emailPessoal = String(l.emailPessoal).trim().toLowerCase()
     if (tem('grupoSanguineo')) d.grupoSanguineo = corresponder(String(l.grupoSanguineo).replace(/\s/g, '').toUpperCase().replace('−', '-'), ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((g) => [g, g, g.replace('O', '0')]), 'Grupo sanguíneo')
     if (tem('tipoDocente')) d.tipoDocente = corresponder(l.tipoDocente, [['efectivo', 'efectivo', 'efetivo'], ['colaborador', 'colaborador']], 'Tipo de docente')

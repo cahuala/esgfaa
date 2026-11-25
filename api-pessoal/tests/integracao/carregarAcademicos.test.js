@@ -15,13 +15,13 @@ describe('Carregar os docentes e os estudantes das listas', () => {
     versao: 'teste-1',
     pessoas: [
       // o efectivo que também é docente e está num curso deste ano (NIP mal escrito numa das listas)
-      { nome: 'Coronel Docente Efectivo', tipo: 'militar', posto: 'coronel', ramo: 'EXE', fps: 'QP', nip: 'NIPAC9', outrosNips: ['NIPAC1'], habilitacao: 'mestrado', areaFormacao: 'Direito', docente: { tipo: 'efectivo' }, estudante: { curso: '32.º Curso Superior de Comando e Direcção', anoLetivo: '2026/2027' }, cursos: [{ nome: '32.º Curso Superior de Comando e Direcção (2026/2027)', fim: null, aproveitamento: null }] },
+      { nome: 'Coronel Docente Efectivo', tipo: 'militar', posto: 'coronel', ramo: 'EXE', fps: 'QP', nip: 'NIPAC9', outrosNips: ['NIPAC1'], habilitacao: 'mestrado', areaFormacao: 'Direito', docente: { tipo: 'efectivo' }, estudante: { curso: '32.º Curso Superior de Comando e Direcção', anoLetivo: '2026/2027' }, cursos: [{ nome: '32.º Curso Superior de Comando e Direcção (2026/2027)', fim: null, aproveitamento: null }], anos: [{ anoLetivo: '2026/2027', papel: 'docente', curso: 'Táctica Geral', tipoDocente: 'efectivo' }, { anoLetivo: '2025/2026', papel: 'docente', curso: 'Táctica Geral', tipoDocente: 'efectivo' }, { anoLetivo: '2026/2027', papel: 'estudante', curso: '32.º Curso Superior de Comando e Direcção' }] },
       // docente colaborador que não tem ficha
-      { nome: 'Brigadeiro Colaborador de Fora', tipo: 'militar', posto: 'brigadeiro', ramo: 'FAN', fps: 'QP', nip: 'NIPAC2', docente: { tipo: 'colaborador' }, observacoes: 'Cadeira: Ética' },
+      { nome: 'Brigadeiro Colaborador de Fora', tipo: 'militar', posto: 'brigadeiro', ramo: 'FAN', fps: 'QP', nip: 'NIPAC2', docente: { tipo: 'colaborador' }, observacoes: 'Cadeira: Ética', anos: [{ anoLetivo: '2026/2027', papel: 'docente', curso: 'Ética', tipoDocente: 'colaborador' }] },
       // estudante deste ano (Polícia Nacional: ficha civil, com o número da polícia)
-      { nome: 'Superintendente Estudante Policia', tipo: 'civil', numeroAgente: 'I0001', unidadeOrigem: 'Polícia Nacional', estudante: { curso: '18.º Curso', anoLetivo: '2026/2027' }, cursos: [{ nome: '18.º Curso (2026/2027)' }] },
+      { nome: 'Superintendente Estudante Policia', tipo: 'civil', numeroAgente: 'I0001', unidadeOrigem: 'Polícia Nacional', postoExterno: 'Superintendente', anos: [{ anoLetivo: '2026/2027', papel: 'estudante', curso: '18.º Curso' }], estudante: { curso: '18.º Curso', anoLetivo: '2026/2027' }, cursos: [{ nome: '18.º Curso (2026/2027)' }] },
       // finalista de anos anteriores: fica como saído, com o curso concluído (condição de promoção)
-      { nome: 'Major Finalista Antigo', tipo: 'militar', posto: 'major', ramo: 'MGA', fps: 'QP', nip: 'NIPAC3', ultimoFim: '2023-08-11', cursos: [{ nome: '19.º Curso de Promoção a Oficial Superior (2022/2023)', fim: '2023-08-11', aproveitamento: true }] },
+      { nome: 'Major Finalista Antigo', tipo: 'militar', posto: 'major', ramo: 'MGA', fps: 'QP', nip: 'NIPAC3', ultimoFim: '2023-08-11', anos: [{ anoLetivo: '2022/2023', papel: 'estudante', curso: '19.º Curso de Promoção a Oficial Superior', concluido: true }], cursos: [{ nome: '19.º Curso de Promoção a Oficial Superior (2022/2023)', fim: '2023-08-11', aproveitamento: true }] },
       // o mesmo nome de quem já existe, outro NIP e outro posto, num curso antigo: não se cria (para conferir)
       { nome: 'Capitão Mesmo Nome', tipo: 'militar', posto: 'coronel', ramo: 'FAN', fps: 'QP', nip: 'NIPAC4', ultimoFim: '2022-08-29', cursos: [{ nome: '27.º Curso (2022)', fim: '2022-08-29', aproveitamento: true }] },
       // ... mas na lista deste ano (outro posto ao mesmo tempo) são duas pessoas: entra
@@ -81,6 +81,28 @@ describe('Carregar os docentes e os estudantes das listas', () => {
     const painel = (await adm.get('/api/painel').expect(200)).body.totais
     assert.equal(painel.total, 2)
     assert.deepEqual([painel.docentes, painel.estudantes], [2, 3])
+  })
+
+  it('cada ano lectivo em separado: as listas do ano e quantos de onde vieram', async () => {
+    const nomes = async (q) => (await adm.get(`/api/academicos?${q}`).expect(200)).body.pessoas.map((p) => p.nome).sort()
+    assert.deepEqual(await nomes('tipo=docente&anoLetivo=2026/2027'), ['Brigadeiro Colaborador de Fora', 'Coronel Docente Efectivo'])
+    assert.deepEqual(await nomes('tipo=docente&anoLetivo=2025/2026'), ['Coronel Docente Efectivo'])
+    // o finalista de 2022/2023 já saiu, mas está na lista desse ano
+    assert.deepEqual(await nomes('tipo=estudante&anoLetivo=2022/2023'), ['Major Finalista Antigo'])
+    const pol = (await adm.get('/api/academicos?tipo=estudante&anoLetivo=2026/2027').expect(200)).body.pessoas.find((p) => p.numeroAgente === 'I0001')
+    assert.deepEqual([pol.origem, pol.postoExterno, pol.anos.map((a) => a.curso)], ['policia', 'Superintendente', ['18.º Curso']])
+    const resumo = (await adm.get('/api/academicos/resumo').expect(200)).body
+    assert.deepEqual(resumo.map((a) => a.anoLetivo), ['2026/2027', '2025/2026', '2022/2023'])
+    const [a27, a26] = resumo
+    assert.deepEqual([a27.estudantes.total, a27.estudantes.militares, a27.estudantes.EXE, a27.estudantes.policia], [2, 1, 1, 1])
+    assert.deepEqual([a27.docentes.total, a27.docentes.efectivos, a27.docentes.colaboradores, a27.docentes.novos, a27.docentes.FAN], [2, 1, 1, 1, 1])
+    assert.equal(a26.docentes.total, 1)
+    assert.equal(resumo[2].estudantes.concluiram, 1)
+    // marcar à mão um ano lectivo na ficha (e tirá-lo)
+    const x = (await adm.post(`/api/pessoas/${efectivo.id}/anos-academicos`).send({ anoLetivo: '2024/2025', papel: 'docente', curso: 'Topografia' }).expect(201)).body
+    assert.equal((await adm.post(`/api/pessoas/${efectivo.id}/anos-academicos`).send({ anoLetivo: '2024/2026', papel: 'docente' })).status, 400)
+    assert.ok((await adm.get(`/api/pessoas/${efectivo.id}`).expect(200)).body.anosAcademicos.some((a) => a.anoLetivo === '2024/2025'))
+    await adm.delete(`/api/pessoas/${efectivo.id}/anos-academicos/${x.id}`).expect(204)
   })
 
   it('corre uma só vez: o que se mudar à mão depois não volta', async () => {

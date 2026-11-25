@@ -8,6 +8,8 @@ const TAMANHOS = [10, 25, 50, 100]
 /*
   Tabela de todas as listas: pesquisa em todas as colunas, ordenação ao clicar no título, paginação,
   exportação para Excel e PDF (do que está filtrado, todas as páginas) e linhas clicáveis.
+  classeLinha(linha): classe CSS de uma linha (destacar algumas)
+  ficheiro: o nome da exportação (Excel/PDF), se não for o título (ex.: «Estudantes 2024-2025»)
   colunas: [{ chave, titulo, valor?(linha) (texto/número para ordenar, pesquisar e exportar), mostrar?(linha) (o que se vê),
   ordenarPor?(linha) (outra chave para ordenar, ex.: o grau do posto), alinhar?: 'end' | 'center', exportar?: false, oculta?: true }]
   Sem ordem escolhida, as linhas ficam pela ordem em que vêm (as listas de pessoal vêm pela ordem hierárquica).
@@ -16,7 +18,7 @@ const TAMANHOS = [10, 25, 50, 100]
 */
 const lerEscolha = (k) => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } }
 const guardarEscolha = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch { /* sem armazenamento: fica só nesta visita */ } }
-export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial, pesquisarEm, dica = 'Pesquisar…' }) {
+export default function Tabela({ titulo, ficheiro, subtitulo, colunas: todas, linhas, aoClicar, chave = (l) => l.id, porPagina = 25, acoes, vazio = 'Sem registos.', semExportar = false, ordemInicial, pesquisarEm, dica = 'Pesquisar…', classeLinha }) {
   const [pesquisa, setPesquisa] = useState('')
   const [ordem, setOrdem] = useState(ordemInicial ?? null) // { chave, dir: 1 | -1 }
   const [pagina, setPagina] = useState(1)
@@ -61,8 +63,8 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
   async function exportar(formato) {
     setAExportar(formato)
     try {
-      if (formato === 'excel') await exportarExcel(titulo, exportaveis, filtradas, { filtro: pesquisa && `pesquisa: «${pesquisa}»` })
-      else await exportarPdf(titulo, exportaveis, filtradas, { subtitulo: [subtitulo, pesquisa && `pesquisa: «${pesquisa}»`].filter(Boolean).join(' · ') })
+      if (formato === 'excel') await exportarExcel(ficheiro ?? titulo, exportaveis, filtradas, { filtro: pesquisa && `pesquisa: «${pesquisa}»` })
+      else await exportarPdf(ficheiro ?? titulo, exportaveis, filtradas, { subtitulo: [subtitulo, pesquisa && `pesquisa: «${pesquisa}»`].filter(Boolean).join(' · ') })
     } catch (e) {
       avisar?.(`Não foi possível fazer o ${formato === 'excel' ? 'Excel' : 'PDF'}: ${e.message}`, 'erro')
     } finally {
@@ -129,7 +131,7 @@ export default function Tabela({ titulo, subtitulo, colunas: todas, linhas, aoCl
           </thead>
           <tbody>
             {visiveis.map((l) => (
-              <tr key={chave(l)} onClick={aoClicar ? () => aoClicar(l) : undefined} tabIndex={aoClicar ? 0 : undefined} onKeyDown={aoClicar ? (e) => { if (e.key === 'Enter') aoClicar(l) } : undefined}>
+              <tr key={chave(l)} className={classeLinha?.(l) || undefined} onClick={aoClicar ? () => aoClicar(l) : undefined} tabIndex={aoClicar ? 0 : undefined} onKeyDown={aoClicar ? (e) => { if (e.key === 'Enter') aoClicar(l) } : undefined}>
                 {colunas.map((c) => <td key={c.chave} className={c.alinhar ? `text-${c.alinhar}` : ''}>{c.mostrar ? c.mostrar(l) : valor(c, l) ?? '—'}</td>)}
               </tr>
             ))}

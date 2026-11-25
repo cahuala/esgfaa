@@ -40,6 +40,53 @@ function estadoPortal(e) {
 }
 const nomeEstado = Object.fromEntries(ESTADOS_PORTAL)
 
+// de onde vem: FAA (pelo ramo), Polícia Nacional, estrangeiro (com o país) ou civil
+const ORIGENS = [['faa', 'FAA'], ['policia', 'Polícia Nacional'], ['estrangeiro', 'Estrangeiros'], ['civil', 'Civis']]
+const RAMO_NOME = { EXE: 'Exército', FAN: 'Força Aérea Nacional', MGA: 'Marinha de Guerra Angolana' }
+const textoOrigem = (p) => (p.origem === 'faa' ? `FAA — ${RAMO_NOME[p.ramo] ?? ''}` : p.origem === 'policia' ? 'Polícia Nacional' : p.origem === 'estrangeiro' ? `Estrangeiro — ${p.paisNascimento || p.nacionalidade}` : 'Civil')
+function Origem({ p }) {
+  if (p.origem === 'faa') return <span className={`badge pes-ramo-${p.ramo}`} title={`FAA — ${RAMO_NOME[p.ramo] ?? ''}`}>FAA · {p.ramo}</span>
+  if (p.origem === 'policia') return <span className="badge pes-origem-policia"><i className="fa fa-shield-alt me-1" />Polícia Nacional</span>
+  if (p.origem === 'estrangeiro') return <span className="badge pes-origem-estrangeiro"><i className="fa fa-globe-africa me-1" />Estrangeiro · {p.paisNascimento || p.nacionalidade}</span>
+  return <span className="badge pes-origem-civil">Civil</span>
+}
+// o órgão de onde vem (fora da ESG) ou o país, para os estrangeiros
+const orgaoDe = (p) => (p.origem === 'estrangeiro' ? p.unidadeOrigem || p.paisNascimento : p.unidadeNome || p.unidadeOrigem || '')
+const postoDe = (p) => (p.tipo === 'militar' ? p.postoNome : p.postoExterno || 'Civil')
+
+/*
+  Cada ano lectivo em separado: quantos houve e de onde vieram (FAA por ramo, Polícia Nacional, estrangeiros e
+  civis). Clicar numa linha mostra a lista desse ano.
+*/
+function ResumoAnos({ tipo, resumo, ano, aoEscolher }) {
+  const est = tipo === 'estudante'
+  const g = (a) => (est ? a.estudantes : a.docentes)
+  const linhas = resumo.filter((a) => g(a).total)
+  if (!linhas.length) return null
+  return (
+    <Painel titulo={`${est ? 'Estudantes' : 'Docentes'} por ano lectivo`} icone="fa-calendar-alt" corpo={false}>
+      <div className="table-responsive">
+        <table className="table table-sm table-hover align-middle mb-0 pes-resumo-anos">
+          <thead><tr>
+            <th>Ano lectivo</th><th className="text-end">Total</th><th className="text-end">Militares FAA</th><th className="text-end">Exército</th><th className="text-end">Força Aérea</th><th className="text-end">Marinha</th>
+            <th className="text-end">Polícia Nacional</th><th className="text-end">Estrangeiros</th><th className="text-end">Civis</th>
+            {est ? <th className="text-end">Terminaram</th> : <><th className="text-end">Efectivos</th><th className="text-end">Colaboradores</th><th className="text-end">Novos no ano</th></>}
+          </tr></thead>
+          <tbody>
+            {linhas.map((a) => { const x = g(a); return (
+              <tr key={a.anoLetivo} className={a.anoLetivo === ano ? 'escolhido' : ''} onClick={() => aoEscolher(a.anoLetivo)} title={`Ver a lista de ${a.anoLetivo}`}>
+                <td>{a.anoLetivo}</td><td className="text-end fw-bold">{x.total}</td><td className="text-end">{x.militares}</td><td className="text-end">{x.EXE}</td><td className="text-end">{x.FAN}</td><td className="text-end">{x.MGA}</td>
+                <td className="text-end">{x.policia}</td><td className="text-end">{x.estrangeiros}</td><td className="text-end">{x.civis}</td>
+                {est ? <td className="text-end">{x.concluiram}</td> : <><td className="text-end">{x.efectivos}</td><td className="text-end">{x.colaboradores}</td><td className="text-end">{x.novos}</td></>}
+              </tr>
+            ) })}
+          </tbody>
+        </table>
+      </div>
+    </Painel>
+  )
+}
+
 // tudo o que a pesquisa procura, além das colunas: BI, telefone, nome de guerra, género, idade, naturalidade…
 const pesquisarEm = (p) => [p.bi, p.telefone, p.nomeGuerra, p.postoAbreviatura, p.genero === 'F' ? 'feminino mulher' : p.genero === 'M' ? 'masculino homem' : '', p.idade && `${p.idade} anos`,
   p.naturalidade, p.provincia, p.habilitacao, p.areaFormacao, p.especialidade, p.categoriaDocente, p.funcaoActual, p.nacionalidade, p.dataNascimento].filter(Boolean).join(' ')
@@ -54,15 +101,25 @@ export default function Academicos({ tipo }) {
   const { pode, avisar, ref } = useSessao()
   const editar = pode('editar')
   const [ativo, setAtivo] = useState('sim')
-  const { dados, erro, recarregar } = useDados('/academicos', { tipo, ativo }, { tempoReal: true })
+  // o ano lectivo: a lista desse ano (também quem já saiu); vazio = quem está hoje (ou já saiu)
+  const { dados: resumo, erro: erroResumo } = useDados('/academicos/resumo', {})
+  const [anoEscolhido, setAno] = useState(null)
+  const doTipo = (resumo ?? []).filter((a) => (tipo === 'estudante' ? a.estudantes : a.docentes).total)
+  const ano = anoEscolhido ?? (resumo ? doTipo[0]?.anoLetivo ?? '' : erroResumo ? '' : null)
+  const { dados, erro, recarregar } = useDados(ano === null ? null : '/academicos', { tipo, ativo, ...(ano ? { anoLetivo: ano } : {}) }, { tempoReal: true })
   const [escolhidos, setEscolhidos] = useState(() => new Set())
   const [novo, setNovo] = useState(false)
   const [aImprimir, setAImprimir] = useState(false)
-  const [filtro, setFiltro] = useState({ ramo: '', origem: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' })
+  const SEM_FILTRO = { ramo: '', origem: '', unidade: '', orgao: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' }
+  const [filtro, setFiltro] = useState(SEM_FILTRO)
   const ligado = Boolean(dados?.portalLigado)
   const todos = useMemo(() => dados?.pessoas ?? [], [dados])
+  // o que se fez nesse ano: o curso (estudantes) ou as cadeiras (docentes)
+  const doAno = (p) => (p.anos ?? []).filter((a) => !ano || ano === 'sem' || a.anoLetivo === ano)
   const lista = useMemo(() => todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : p.ramo === filtro.ramo))
-    && (!filtro.origem || (filtro.origem === 'fora' ? Boolean(p.unidadeOrigem) && !p.unidadeNome : !p.unidadeOrigem || Boolean(p.unidadeNome)))
+    && (!filtro.origem || p.origem === filtro.origem)
+    && (!filtro.orgao || orgaoDe(p) === filtro.orgao)
+    && (!filtro.unidade || (filtro.unidade === 'fora' ? Boolean(p.unidadeOrigem) && !p.unidadeNome : !p.unidadeOrigem || Boolean(p.unidadeNome)))
     && (!filtro.portal || estadoPortal(p.portal) === filtro.portal)
     && (!filtro.tipoDocente || (filtro.tipoDocente === 'sem' ? !p.tipoDocente : p.tipoDocente === filtro.tipoDocente))
     && (!filtro.categoriaDocente || p.categoriaDocente === filtro.categoriaDocente)
@@ -94,10 +151,12 @@ export default function Academicos({ tipo }) {
       mostrar: (p) => (comConta(p) ? <input type="checkbox" className="form-check-input" checked={escolhidos.has(p.id)} onClick={(e) => e.stopPropagation()} onChange={() => alternar(p.id)} aria-label={`Escolher ${p.nome}`} /> : null),
     }] : []),
     { chave: 'nome', titulo: 'Nome', valor: (p) => p.nome, mostrar: (p) => <span className="pes-pessoa"><Foto pessoaId={p.id} fotoId={p.fotoId} nome={p.nome} /><span><strong>{p.nome}</strong><div className="small text-muted">{p.email || 'sem e-mail'}</div></span></span> },
-    { chave: 'posto', titulo: 'Posto', valor: (p) => (p.tipo === 'militar' ? p.postoNome : 'Civil') },
-    { chave: 'ramo', titulo: 'Ramo', valor: (p) => p.ramo || 'Civil', mostrar: (p) => (p.ramo ? <span className={`badge pes-ramo-${p.ramo}`}>{p.ramo}</span> : <span className="badge bg-secondary">Civil</span>) },
+    { chave: 'posto', titulo: 'Posto', valor: postoDe },
+    { chave: 'origem', titulo: 'Origem', valor: textoOrigem, mostrar: (p) => <Origem p={p} /> },
     { chave: 'ident', titulo: 'NIP / N.º', valor: (p) => p.nip || p.numeroAgente || '' },
-    { chave: 'unidade', titulo: 'Unidade', valor: (p) => p.unidadeNome || p.unidadeOrigem || '', mostrar: (p) => (p.unidadeNome || (p.unidadeOrigem ? <span>{p.unidadeOrigem} <span className="badge bg-light text-dark border">de fora</span></span> : <span className="text-muted">—</span>)) },
+    { chave: 'unidade', titulo: 'Órgão / unidade de origem', valor: orgaoDe, mostrar: (p) => (p.unidadeNome || (orgaoDe(p) ? <span>{orgaoDe(p)} <span className="badge bg-light text-dark border">de fora</span></span> : <span className="text-muted">—</span>)) },
+    { chave: 'ano', titulo: tipo === 'estudante' ? 'Curso' : 'Cadeiras', valor: (p) => [...new Set(doAno(p).map((a) => a.curso).filter(Boolean))].join('; '), mostrar: (p) => { const l = doAno(p); return l.length ? <span className="small">{[...new Set(l.map((a) => a.curso).filter(Boolean))].join('; ')}{tipo === 'estudante' && l.some((a) => a.concluido) && <span className="badge bg-success ms-1">Terminou</span>}</span> : <span className="text-muted">—</span> } },
+    { chave: 'anos', titulo: 'Anos lectivos', valor: (p) => [...new Set((p.anos ?? []).map((a) => a.anoLetivo))].join(', '), oculta: true },
     ...(tipo === 'docente' ? [{ chave: 'tipoDocente', titulo: 'Tipo', valor: (p) => (p.tipoDocente === 'colaborador' ? 'Colaborador' : p.tipoDocente === 'efectivo' ? 'Efectivo' : '') }, { chave: 'categoriaDocente', titulo: 'Categoria do docente', valor: (p) => p.categoriaDocente || '', oculta: true }] : []),
     { chave: 'conta', titulo: 'N.º no portal', valor: (p) => p.portal?.conta?.numero || '' },
     { chave: 'telefone', titulo: 'Telefone', valor: (p) => p.telefone || '', oculta: true },
@@ -122,16 +181,20 @@ export default function Academicos({ tipo }) {
           <button type="button" className="btn btn-sm btn-white" onClick={() => setEscolhidos(new Set(porEntregar.map((p) => p.id)))}>Escolher esses</button>
         </div>
       )}
-      <Painel titulo={`${t.titulo}${dados ? ` (${comFiltro ? `${lista.length} de ${todos.length}` : todos.length})` : ''}`} icone={t.icone} corpo={false}>
+      {resumo && <ResumoAnos tipo={tipo} resumo={resumo} ano={ano} aoEscolher={setAno} />}
+      <Painel titulo={`${t.titulo}${ano && ano !== 'sem' ? ` do ano lectivo ${ano}` : ''}${dados ? ` (${comFiltro ? `${lista.length} de ${todos.length}` : todos.length})` : ''}`} icone={t.icone} corpo={false}>
         <div className="pes-filtros">
-          <Escolha valor={ativo} aoMudar={setAtivo} opcoes={[['sim', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']]} vazio={null} aria-label="Quem mostrar" />
+          <Escolha valor={ano ?? ''} aoMudar={(v) => setAno(v)} opcoes={[...doTipo.map((a) => [a.anoLetivo, `Ano lectivo ${a.anoLetivo}`]), ['sem', 'Sem ano lectivo registado']]} vazio="Todos os anos" aria-label="Ano lectivo" />
+          {!ano && <Escolha valor={ativo} aoMudar={setAtivo} opcoes={[['sim', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']]} vazio={null} aria-label="Quem mostrar" />}
+          <Escolha valor={filtro.origem} aoMudar={mudarFiltro('origem')} opcoes={ORIGENS} vazio="Todas as origens" aria-label="Origem" />
           <Escolha valor={filtro.ramo} aoMudar={mudarFiltro('ramo')} opcoes={[...Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]), ['civil', 'Civis']]} vazio="Todos os ramos" aria-label="Ramo" />
-          <Escolha valor={filtro.origem} aoMudar={mudarFiltro('origem')} opcoes={[['esg', 'Da ESG'], ['fora', 'De outras unidades']]} vazio="Qualquer unidade" aria-label="Unidade" />
+          <Escolha valor={filtro.orgao} aoMudar={mudarFiltro('orgao')} opcoes={[...new Set(todos.map(orgaoDe).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer órgão de origem" aria-label="Órgão de origem" />
+          <Escolha valor={filtro.unidade} aoMudar={mudarFiltro('unidade')} opcoes={[['esg', 'Da ESG'], ['fora', 'De outras unidades']]} vazio="Da ESG ou de fora" aria-label="Unidade" />
           {tipo === 'docente' && <Escolha valor={filtro.tipoDocente} aoMudar={mudarFiltro('tipoDocente')} opcoes={[['efectivo', 'Efectivos'], ['colaborador', 'Colaboradores'], ['sem', 'Tipo por indicar']]} vazio="Efectivos e colaboradores" aria-label="Tipo de docente" />}
           {tipo === 'docente' && <Escolha valor={filtro.categoriaDocente} aoMudar={mudarFiltro('categoriaDocente')} opcoes={[...new Set(todos.map((p) => p.categoriaDocente).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer categoria" aria-label="Categoria do docente" />}
           <Escolha valor={filtro.genero} aoMudar={mudarFiltro('genero')} opcoes={[['M', 'Masculino'], ['F', 'Feminino']]} vazio="Ambos os géneros" aria-label="Género" />
           {ligado && <Escolha valor={filtro.portal} aoMudar={mudarFiltro('portal')} opcoes={ESTADOS_PORTAL} vazio="Qualquer estado no portal" aria-label="Estado no portal" />}
-          {comFiltro && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setFiltro({ ramo: '', origem: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' })}><i className="fa fa-times me-1" />Limpar filtros</button>}
+          {comFiltro && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setFiltro(SEM_FILTRO)}><i className="fa fa-times me-1" />Limpar filtros</button>}
           {editar && ligado && (
             <button type="button" className="btn btn-sm btn-theme ms-auto" disabled={!escolhidos.size || aImprimir} onClick={fichas}>
               <i className="fa fa-print me-1" />{aImprimir ? 'A pedir ao portal…' : `Fichas de acesso${escolhidos.size ? ` (${escolhidos.size})` : ''}`}
@@ -140,7 +203,7 @@ export default function Academicos({ tipo }) {
         </div>
         <div className="pes-filtros-tabela">
           {erro ? <Erro texto={erro} aoRepetir={recarregar} /> : !dados ? <Carregando /> : (
-            <Tabela titulo={t.titulo} colunas={colunas} linhas={lista} pesquisarEm={pesquisarEm} dica="Pesquisar: nome, NIP, BI, telefone, posto, unidade…" aoClicar={(p) => navegar(`/pessoas/${p.id}`)} vazio={comFiltro ? 'Ninguém corresponde aos filtros.' : `Ainda não há ${t.titulo.toLowerCase()} registados.`} />
+            <Tabela titulo={t.titulo} ficheiro={ano && ano !== 'sem' ? `${t.titulo} ${ano.replace('/', '-')}` : t.titulo} classeLinha={(p) => (p.origem === 'estrangeiro' ? 'pes-linha-estrangeiro' : '')} colunas={colunas} linhas={lista} pesquisarEm={pesquisarEm} dica="Pesquisar: nome, NIP, BI, telefone, posto, unidade…" aoClicar={(p) => navegar(`/pessoas/${p.id}`)} vazio={comFiltro ? 'Ninguém corresponde aos filtros.' : `Ainda não há ${t.titulo.toLowerCase()} registados.`} />
           )}
         </div>
       </Painel>
@@ -150,8 +213,19 @@ export default function Academicos({ tipo }) {
 }
 
 // registo: o essencial, com o BI a vir da base de dados do Estado (o resto da ficha preenche-se depois, se for preciso)
-const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', paisNascimento: 'Angola', pai: '', mae: '', email: '', emailPessoal: '', telefone: '', telefoneAlternativo: '', morada: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '', dataIngresso: '', categoriaDocente: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
+const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', paisNascimento: 'Angola', pai: '', mae: '', email: '', emailPessoal: '', telefone: '', telefoneAlternativo: '', morada: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '', dataIngresso: '', categoriaDocente: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', postoExterno: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
 const BI_VALIDO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
+// o ano lectivo de agora (começa em Setembro) e o registo desse ano na ficha (o curso ou a cadeira)
+const anoDeAgora = () => { const d = new Date(); const a = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; return `${a}/${a + 1}` }
+const registarAno = (id, papel, { anoLetivo, curso }, tipoDocente) => (anoLetivo ? api(`/pessoas/${id}/anos-academicos`, { metodo: 'POST', corpo: { anoLetivo, papel, curso: curso || '', ...(tipoDocente ? { tipoDocente } : {}) } }) : Promise.resolve())
+function CamposAno({ papel, valor, aoMudar }) {
+  return (
+    <div className="row gx-3">
+      <Campo rotulo="Ano lectivo" col="col-md-4" ajuda="Fica na lista desse ano."><input className="form-control form-control-sm" value={valor.anoLetivo} onChange={(e) => aoMudar({ ...valor, anoLetivo: e.target.value })} placeholder="2026/2027" pattern="\d{4}/\d{4}" /></Campo>
+      <Campo rotulo={papel === 'estudante' ? 'Curso' : 'Cadeira(s)'} col="col-md-8"><input className="form-control form-control-sm" value={valor.curso} onChange={(e) => aoMudar({ ...valor, curso: e.target.value })} placeholder={papel === 'estudante' ? 'ex.: 32.º Curso Superior de Comando e Direcção' : 'ex.: Táctica Geral'} /></Campo>
+    </div>
+  )
+}
 const Seccao = ({ icone, children }) => <h6 className="pes-registo-seccao"><i className={`fa ${icone} me-2`} />{children}</h6>
 
 /*
@@ -164,6 +238,7 @@ function EscolherEfectivo({ aoGuardar }) {
   const [q, setQ] = useState('')
   const [p, setP] = useState(null)
   const [d, setD] = useState({ categoriaDocente: '', funcaoActual: '', email: '' })
+  const [anoD, setAnoD] = useState({ anoLetivo: anoDeAgora(), curso: '' })
   const [erro, setErro] = useState('')
   const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? v.target.value : v }))
   const docente = (x) => x.vinculo === 'docente' || (x.outrosVinculos ?? []).includes('docente')
@@ -178,6 +253,7 @@ function EscolherEfectivo({ aoGuardar }) {
     setErro('')
     try {
       const r = await api(`/pessoas/${p.id}`, { metodo: 'PUT', corpo: { outrosVinculos: [...(p.outrosVinculos ?? []), 'docente'], tipoDocente: 'efectivo', categoriaDocente: d.categoriaDocente, funcaoActual: d.funcaoActual, ...(d.email && !p.email ? { email: d.email } : {}) } })
+      await registarAno(p.id, 'docente', anoD, 'efectivo')
       aoGuardar(r)
     } catch (falha) {
       setErro(falha.message)
@@ -213,6 +289,7 @@ function EscolherEfectivo({ aoGuardar }) {
           <Campo rotulo="Função ou cargo actual" col="col-md-6"><input className="form-control form-control-sm" value={d.funcaoActual} onChange={set('funcaoActual')} /></Campo>
           {!p.email && <Campo rotulo="E-mail da Escola" col="col-md-12" ajuda="Ainda não tem: com e-mail, o portal cria a conta sozinho."><input type="email" className="form-control form-control-sm" placeholder="nome.apelido@esgfaa.gov.ao" value={d.email} onChange={set('email')} /></Campo>}
         </div>
+        <CamposAno papel="docente" valor={anoD} aoMudar={setAnoD} />
         <div className="small text-muted">Os dados pessoais e militares já estão na ficha: não se escrevem outra vez.</div>
       </>}
     </form>
@@ -224,6 +301,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
   // o docente efectivo já é da Escola (escolhe-se); o colaborador vem de fora (regista-se)
   const [efectivo, setEfectivo] = useState(tipo === 'docente')
   const [d, setD] = useState({ ...VAZIO, tipoDocente: tipo === 'docente' ? 'colaborador' : '' })
+  const [anoD, setAnoD] = useState({ anoLetivo: anoDeAgora(), curso: '' })
   const [erro, setErro] = useState('')
   const [aGravar, setAGravar] = useState(false)
   const { avisar } = useSessao()
@@ -255,7 +333,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
     e.preventDefault()
     setErro('')
     setAGravar(true)
-    const comuns = ['bi', 'nome', 'dataNascimento', 'genero', 'estadoCivil', 'nacionalidade', 'paisNascimento', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'telefoneAlternativo', 'emailPessoal', 'morada', 'unidadeOrigem', 'habilitacao', 'areaFormacao', 'biLocalEmissao', 'biEmitidoEm', 'biValidade', 'grupoSanguineo']
+    const comuns = ['bi', 'nome', 'dataNascimento', 'genero', 'estadoCivil', 'nacionalidade', 'paisNascimento', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'telefoneAlternativo', 'emailPessoal', 'morada', 'unidadeOrigem', 'postoExterno', 'habilitacao', 'areaFormacao', 'biLocalEmissao', 'biEmitidoEm', 'biValidade', 'grupoSanguineo']
     const corpo = {
       tipo: d.tipo, vinculo: tipo, email: d.email || null,
       ...Object.fromEntries(comuns.map((k) => [k, d[k] ?? ''])),
@@ -264,6 +342,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
     }
     try {
       const r = await api('/pessoas', { metodo: 'POST', corpo })
+      await registarAno(r.id, tipo, anoD, tipo === 'docente' ? d.tipoDocente : null).catch((x) => avisar(`Registado, mas sem o ano lectivo: ${x.message}`, 'erro'))
       if (foto) {
         const fd = new FormData()
         fd.append('foto', await reduzirFoto(foto))
@@ -346,6 +425,14 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
           </div>
         </>}
 
+        {!militar && <>
+          <Seccao icone="fa-shield-alt">Polícia Nacional, outros órgãos ou estrangeiro</Seccao>
+          <div className="row gx-3">
+            <Campo rotulo="Órgão de origem" col="col-md-8" ajuda="ex.: Polícia Nacional, Serviço de Inteligência, ou as Forças Armadas de outro país. Os estrangeiros: escreva a nacionalidade e o país acima."><input {...campo('unidadeOrigem')} /></Campo>
+            <Campo rotulo="Posto (fora das FAA)" col="col-md-4" ajuda="ex.: Superintendente-Chefe."><input {...campo('postoExterno')} /></Campo>
+          </div>
+        </>}
+
         {tipo === 'docente' && <>
           <Seccao icone="fa-chalkboard-teacher">Docência</Seccao>
           <div className="row gx-3">
@@ -353,6 +440,9 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
             <Campo rotulo="Função ou cargo actual" col="col-md-6" ajuda="O colaborador serve fora da Escola: onde e em que função."><input {...campo('funcaoActual')} /></Campo>
           </div>
         </>}
+
+        <Seccao icone="fa-calendar-alt">Ano lectivo</Seccao>
+        <CamposAno papel={tipo} valor={anoD} aoMudar={setAnoD} />
 
         <Seccao icone="fa-address-book">Contactos</Seccao>
         <div className="row gx-3">

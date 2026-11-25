@@ -13,6 +13,17 @@ export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionari
   nem nos mapas (como as domiciliares). O funcionário que também é estudante ou docente continua no efectivo.
 */
 export const SO_EFECTIVO = { OR: [{ vinculo: 'funcionario' }, { vinculo: 'docente', tipoDocente: null }, { vinculo: 'docente', tipoDocente: { not: 'colaborador' } }] }
+/*
+  De onde vem o estudante ou o docente: das FAA (o ramo diz qual), da Polícia Nacional, de forças estrangeiras ou
+  civil. O órgão de origem (Estado-Maior General, Unidade de Segurança Presidencial, Casa Militar…) é a unidadeOrigem.
+*/
+export const ORIGENS = { faa: 'FAA', policia: 'Polícia Nacional', estrangeiro: 'Estrangeiro', civil: 'Civil' }
+export function origemDe(p) {
+  const nac = simples(p.nacionalidade)
+  if (nac && !nac.startsWith('angolan')) return 'estrangeiro'
+  if (simples(p.unidadeOrigem).includes('policia')) return 'policia'
+  return p.tipo === 'militar' ? 'faa' : 'civil'
+}
 export const eEfectivo = (p) => p.vinculo === 'funcionario' || (p.vinculo === 'docente' && p.tipoDocente !== 'colaborador')
 // do mais baixo ao mais alto, com os níveis do Mod. 5/DPQ («base» fica para as fichas antigas, sem o pormenor)
 export const HABILITACOES = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Técnico médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }

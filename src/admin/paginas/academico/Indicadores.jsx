@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx, localAtual } from '../../../i18n/linguas'
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 const NOMES = { p1: tx('1.ª Prova'), p2: tx('2.ª Prova'), exame: tx('Exame'), recurso: tx('Recurso') }
 const MOTIVOS = { faltas: ['bg-warning text-dark', 'fa-user-times'], nota: ['bg-danger', 'fa-arrow-down'], situacao: ['bg-danger', 'fa-exclamation'], acesso: ['bg-gray-500', 'fa-plug'] }
@@ -26,7 +27,7 @@ function Barra({ valor, bom = 75, mau = 50 }) {
   estudantes em risco (faltas, negativas, sem acesso ao portal) e pautas por lançar depois das provas.
 */
 function Indicadores() {
-  const [ano, setAno] = useState('')
+  const { ano, mudar: setAno } = useAnoTrabalho()
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
   const [filtroRisco, setFiltroRisco] = useState('')

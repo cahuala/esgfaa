@@ -4,6 +4,7 @@ import { api } from '../../../api'
 import { Carregando, Erro } from '../../../componentes/Ui'
 import Documento from './Documento'
 import { descarregarCsv } from './csv'
+import { useAnoTrabalho } from '../../../anoTrabalho'
 
 /*
   Lista do curso: os estudantes de todas as turmas de um curso num ano lectivo, com a turma de cada um, pela ordem
@@ -12,7 +13,8 @@ import { descarregarCsv } from './csv'
 function ListaCurso() {
   const { curso } = useParams()
   const [params, setParams] = useSearchParams()
-  const ano = params.get('ano') ?? ''
+  const { ano: anoTrabalho } = useAnoTrabalho()
+  const ano = params.get('ano') ?? anoTrabalho
   const [d, setD] = useState(null)
   const [anos, setAnos] = useState([])
   const [erro, setErro] = useState('')

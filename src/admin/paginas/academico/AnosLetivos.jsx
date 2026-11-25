@@ -5,6 +5,7 @@ import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../../componentes/Ui'
 import { dataCurta as data } from '../../formatar'
 import { t as tx } from '../../../i18n/linguas'
+import { avisarAnosMudaram } from '../../anoTrabalho'
 
 const CAMPOS = [
   ['inicio', tx('Início do ano')], ['fim', tx('Fim do ano')],
@@ -34,7 +35,7 @@ function AnosLetivos() {
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
   const [confirmar, setConfirmar] = useState(null)
-  const carregar = useCallback(() => api('/academico/anos-letivos').then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message)), [])
+  const carregar = useCallback(() => api('/academico/anos-letivos').then((r) => { setErro(''); setLista(r); avisarAnosMudaram() }).catch((e) => setErro(e.message)), [])
   useEffect(() => { carregar() }, [carregar])
 
   const atual = lista?.find((a) => a.atual)
@@ -53,7 +54,7 @@ function AnosLetivos() {
       setErroForm(falha.message)
     }
   }
-  const tornarAtual = (a) => api(`/academico/anos-letivos/${caminho(a.id)}/atual`, { metodo: 'POST' }).then((r) => { setLista(r); setAviso({ texto: tx('{0} é agora o ano lectivo actual.', { 0: a.id }) }) }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
+  const tornarAtual = (a) => api(`/academico/anos-letivos/${caminho(a.id)}/atual`, { metodo: 'POST' }).then((r) => { setLista(r); avisarAnosMudaram(); setAviso({ texto: tx('{0} é agora o ano lectivo actual.', { 0: a.id }) }) }).catch((e) => setAviso({ tipo: 'erro', texto: e.message }))
   const apagar = (a) => setConfirmar({
     titulo: tx('Apagar ano lectivo'), texto: tx('Apagar o ano lectivo {0}?', { 0: a.id }), botao: tx('Apagar'), perigo: true,
     confirmar: async () => {

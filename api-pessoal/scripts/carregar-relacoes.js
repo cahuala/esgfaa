@@ -81,10 +81,16 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
     porNome.set(sem(p.nome), [...(porNome.get(sem(p.nome)) ?? []), p])
   }
   todas.forEach(indexar)
-  const n = { novas: 0, saidas: 0, acrescentadas: 0, iguais: 0, cursos: 0 }
+  const n = { novas: 0, saidas: 0, acrescentadas: 0, iguais: 0, cursos: 0, anos: 0 }
   const conferir = []
   const avisos = []
   const erros = []
+  // os anos lectivos em que foi docente ou estudante (cada lista de cada ano); os repetidos não entram
+  const juntarAnos = async (p, anos = []) => {
+    if (!anos.length) return
+    const r = await bd.anoAcademico.createMany({ data: anos.map((a) => ({ pessoaId: p.id, anoLetivo: a.anoLetivo, papel: a.papel, curso: a.curso ?? '', tipoDocente: a.tipoDocente ?? null, concluido: a.concluido ?? null })), skipDuplicates: true })
+    n.anos += r.count
+  }
   const juntarCursos = async (p, cursos = []) => {
     for (const c of cursos) {
       if ((p.cursos ?? []).some((k) => sem(k.nome) === sem(c.nome))) continue
@@ -118,31 +124,36 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
         const vs = p.vinculo === 'domiciliar' ? ['domiciliar'] : [...new Set([p.vinculo, ...(p.outrosVinculos ?? [])])]
         if (vs.includes('domiciliar')) { conferir.push(`${quem}: a ficha com este nome/número é de uma empregada(o) domiciliar — não se mexeu.`); continue }
         const falta = [x.docente && !vs.includes('docente') && 'docente', x.estudante && !vs.includes('estudante') && 'estudante'].filter(Boolean)
-        if (falta.length && !p.ativo) { conferir.push(`${quem}: a ficha está como saída da Escola; nas listas é ${falta.join(' e ')} — confirme e, se for o caso, ponha-a(o) outra vez na Escola.`); await juntarCursos(p, x.cursos); continue }
+        if (falta.length && !p.ativo) { conferir.push(`${quem}: a ficha está como saída da Escola; nas listas é ${falta.join(' e ')} — confirme e, se for o caso, ponha-a(o) outra vez na Escola.`); await juntarCursos(p, x.cursos); await juntarAnos(p, x.anos); continue }
         const d = {}
         if (falta.length) d.outrosVinculos = [...new Set([...(p.outrosVinculos ?? []), ...falta])].filter((v) => v !== p.vinculo)
         if (x.docente && !p.tipoDocente) d.tipoDocente = x.docente.tipo
         if (x.habilitacao && !p.habilitacao) d.habilitacao = x.habilitacao
         if (x.areaFormacao && !p.areaFormacao) d.areaFormacao = x.areaFormacao
+        if (x.postoExterno && !p.postoExterno) d.postoExterno = x.postoExterno
         if (Object.keys(d).length) {
           await s.pessoas.editar(u, p.id, d, { silencioso: true, despachado: true })
           Object.assign(p, d)
           n.acrescentadas++
         } else n.iguais++
         await juntarCursos(p, x.cursos)
+        await juntarAnos(p, x.anos)
         continue
       }
-      const ativo = Boolean(x.docente || x.estudante)
+      // na Escola: os docentes da lista deste ano e os estudantes deste ano lectivo
+      const ativo = Boolean((x.docente && !x.docente.antigo) || x.estudante)
       const d = { tipo: x.tipo, nome: x.nome, vinculo: x.docente ? 'docente' : 'estudante', outrosVinculos: x.docente && x.estudante ? ['estudante'] : [], ativo }
-      for (const k of ['nomeGuerra', 'nip', 'numeroAgente', 'posto', 'ramo', 'fps', 'situacao', 'unidadeOrigem', 'nacionalidade', 'paisNascimento', 'habilitacao', 'areaFormacao', 'observacoes']) if (x[k]) d[k] = x[k]
+      for (const k of ['nomeGuerra', 'nip', 'numeroAgente', 'posto', 'ramo', 'fps', 'situacao', 'unidadeOrigem', 'postoExterno', 'nacionalidade', 'paisNascimento', 'habilitacao', 'areaFormacao', 'observacoes']) if (x[k]) d[k] = x[k]
       if (x.docente) d.tipoDocente = x.docente.tipo
-      if (!ativo) Object.assign(d, { motivoSaida: 'Fim do curso', dataSaidaEscola: x.ultimoFim ?? null })
+      if (!ativo && x.docente) Object.assign(d, { motivoSaida: x.docente.motivoSaida ?? 'Já não consta da relação do corpo docente' })
+      else if (!ativo) Object.assign(d, { motivoSaida: 'Fim do curso', dataSaidaEscola: x.ultimoFim ?? null })
       const g = await s.pessoas.criar(u, d, { silencioso: true, despachado: true })
       const novo = { ...g, cursos: [] }
       indexar(novo)
       n.novas++
       if (!ativo) n.saidas++
       await juntarCursos(novo, x.cursos)
+      await juntarAnos(novo, x.anos)
     } catch (e) {
       erros.push(`${quem}: ${e.message}`)
     }
@@ -150,7 +161,7 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
   linhas.push(
     `   ${n.novas} ficha(s) nova(s) (${n.novas - n.saidas} na Escola: docentes e estudantes deste ano; ${n.saidas} finalistas de anos anteriores, como saídos).`,
     `   ${n.acrescentadas} ficha(s) que já existiam ficaram também como docente/estudante (ou com a habilitação que faltava); ${n.iguais} já tinham tudo.`,
-    `   ${n.cursos} curso(s) feitos na Escola acrescentados às fichas.`,
+    `   ${n.cursos} curso(s) feitos na Escola acrescentados às fichas; ${n.anos} ano(s) lectivo(s) de docente ou estudante registados.`,
   )
   if (conferir.length) linhas.push(`   Para conferir (${conferir.length}):`, ...conferir.map((t) => `   - ${t}`))
   if (avisos.length) linhas.push(`   Avisos (${avisos.length}):`, ...avisos.map((t) => `   · ${t}`))

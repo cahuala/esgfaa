@@ -152,6 +152,8 @@ export default function Perfil() {
               <Dado r="Especialidade" v={militar ? p.especialidade : p.areaFormacao} />
               <Dado r="Unidade" cheio v={p.unidade && <Link to={`/pessoas?unidadeId=${p.unidadeId}`}>{arvore.caminhoCompleto(p.unidadeId) || p.unidade.nome}</Link>} />
               {p.unidadeOrigem && <Dado r="Unidade de origem (fora da ESG)" cheio v={p.unidadeOrigem} />}
+              {p.origem === 'policia' && <Dado r="Origem" cheio v={<span className="badge pes-origem-policia"><i className="fa fa-shield-alt me-1" />Polícia Nacional{p.postoExterno ? ` — ${p.postoExterno}` : ''}</span>} />}
+              {p.origem === 'estrangeiro' && <Dado r="Origem" cheio v={<span className="badge pes-origem-estrangeiro"><i className="fa fa-globe-africa me-1" />Estrangeiro — {p.paisNascimento || p.nacionalidade}{p.postoExterno ? ` · ${p.postoExterno}` : ''}</span>} />}
               <Dado r="Cargo" cheio v={p.cargo?.nome ? <>{p.cargo.nome}{p.dataCargo && <small className="text-muted ms-2">desde {dataPt(p.dataCargo)}</small>}</> : p.funcaoActual} />
               <Dado r="Na Escola desde" v={dataPt(p.dataEntradaEscola || p.dataCargo || p.dataAdmissao)} />
               {!p.ativo && <Dado r="Saiu da Escola" cheio v={[dataPt(p.dataSaidaEscola), p.motivoSaida, p.destinoSaida && `destino: ${p.destinoSaida}`].filter((x) => x && x !== '—').join(' · ')} />}
@@ -204,6 +206,13 @@ export default function Perfil() {
               </Bloco>
             )}
             {p.docente && <Bloco titulo="Docente" icone="fa-chalkboard-teacher"><Grelha><Dado r="Tipo de docente" v={p.tipoDocenteNome} /><Dado r="Categoria do docente" v={p.categoriaDocente} /><Dado r="Função ou cargo actual" cheio v={p.funcaoActual} /></Grelha></Bloco>}
+            {p.anosAcademicos?.length > 0 && (
+              <Bloco titulo="Anos lectivos na Escola" icone="fa-calendar-alt">
+                <ul className="list-unstyled mb-0 small">
+                  {p.anosAcademicos.map((a) => <li key={a.id}><b>{a.anoLetivo}</b> — {a.papel === 'docente' ? `docente${a.tipoDocente ? ` ${a.tipoDocente}` : ''}` : 'estudante'}{a.curso ? `: ${a.curso}` : ''}{a.concluido && <span className="badge bg-success ms-1">Terminou</span>}</li>)}
+                </ul>
+              </Bloco>
+            )}
             {p.limiteDomiciliares > 0 && (
               <Bloco titulo="Trabalhadores domiciliares" icone="fa-house-user" acoes={<span className="pes-ftab-n">{p.domiciliares.length}/{p.limiteDomiciliares}</span>}>
                 {p.domiciliares.length ? (

@@ -94,14 +94,14 @@ export const ROTAS = [
   // leituras partilhadas por vários ecrãs
   R('GET', '/painel', null), R('GET', '/pessoas', null), R('GET', '/pessoas/:id', null), R('GET', '/pessoas/:id/foto', null), R('GET', '/unidades', null), R('GET', '/cargos', null),
   R('GET', '/organica', null), R('GET', '/organica/:id', null), R('GET', '/listas', null), R('GET', '/definicoes/assinaturas', null), R('GET', '/pedidos-despacho', null),
-  R('GET', '/domiciliares', null), R('GET', '/domiciliares/todas', null), R('GET', '/pessoas-incompletas', 'fichas'), R('PUT', '/domiciliares/:id/oficial', 'fichas'), R('GET', '/academicos', ['academicos', 'fichas']), R('GET', '/propostas/itens', null),
+  R('GET', '/domiciliares', null), R('GET', '/domiciliares/todas', null), R('GET', '/pessoas-incompletas', 'fichas'), R('PUT', '/domiciliares/:id/oficial', 'fichas'), R('GET', '/academicos', ['academicos', 'fichas']), R('GET', '/academicos/resumo', ['academicos', 'fichas']), R('GET', '/propostas/itens', null),
   // pessoal
   R('POST', '/pessoas', ['fichas', 'academicos', 'registarFichas']), R('PUT', '/pessoas/:id', ['fichas', 'academicos']), R('GET', '/bi/:numero', ['fichas', 'academicos']),
   R('POST', '/pessoas/:id/cursos', 'fichas'), R('PUT', '/pessoas/:id/cursos/:sub', 'fichas'), R('DELETE', '/pessoas/:id/cursos/:sub', 'fichas'),
   R('POST', '/pessoas/:id/eventos', 'fichas'), R('DELETE', '/pessoas/:id/eventos/:sub', 'fichas'), R('POST', '/pessoas/:id/graduacoes/:sub/terminar', 'fichas'),
   R('PUT', '/pessoas/:id/foto', ['fichas', 'academicos', 'registarFichas']), R('POST', '/cargos/:id/colocar', 'fichas'), R('POST', '/cargos/:id/retirar', 'fichas'),
   R('POST', '/pessoas/importar', 'importar'), R('POST', '/fotos/lote', 'importar'),
-  R('POST', '/fichas-acesso', 'academicos'), R('POST', '/pessoas/:id/ficha-acesso', 'academicos'),
+  R('POST', '/fichas-acesso', 'academicos'), R('POST', '/pessoas/:id/anos-academicos', ['academicos', 'fichas']), R('DELETE', '/pessoas/:id/anos-academicos/:sub', ['academicos', 'fichas']), R('POST', '/pessoas/:id/ficha-acesso', 'academicos'),
   R('GET', '/processos', 'processos'), R('PUT', '/processos/:id', 'processos'), R('GET', '/pessoas/:id/documentos', 'processos'), R('POST', '/pessoas/:id/documentos', 'processos'),
   R('GET', '/documentos/:id/ficheiro', 'processos'), R('DELETE', '/documentos/:id', 'processos'),
   // carreiras

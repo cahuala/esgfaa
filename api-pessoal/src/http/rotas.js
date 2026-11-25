@@ -12,6 +12,7 @@ import { invalido, semPermissao } from '../erros.js'
 import { AREAS, MODELOS, podeNaRota } from '../dominio/seguranca/areas.js'
 import { exigir, PAPEIS } from '../aplicacao/sessao.js'
 import { referencias } from '../dominio/pessoal/referencias.js'
+import { origemDe } from '../dominio/pessoal/ficha.js'
 import { TIPOS_DOCUMENTO, ESTADOS_PROCESSO } from '../aplicacao/processos.js'
 import { TIPOS_EXTRACTO } from '../aplicacao/extractos.js'
 import { TIPOS_UNIDADE } from '../aplicacao/organica.js'
@@ -345,10 +346,23 @@ export function rotas({ servicos: s, config }) {
   })
   r.get('/portal', async (req, res) => res.json(await s.sincronizacao.estado(u(req))))
   // estudantes e docentes (também os de fora da ESG), com o estado no portal
-  r.get('/academicos', validar({ query: z.object({ tipo: z.enum(['estudante', 'docente']), q: z.string().max(100).optional(), ativo: z.enum(['sim', 'nao', 'todos']).optional() }) }), async (req, res) => {
-    const { tipo, q, ativo } = req.dados.query
-    const lista = await s.pessoas.listar(u(req), { vinculo: tipo, q, ativo })
+  // cada ano lectivo em separado: quantos estudantes e docentes, e de onde vieram
+  r.get('/academicos/resumo', async (req, res) => res.json(await s.pessoas.resumoAcademico(u(req))))
+  const ANO_LETIVO = z.string().regex(/^\d{4}\/\d{4}$/)
+  r.post('/pessoas/:id/anos-academicos', validar({ params: E.pId, body: z.object({ anoLetivo: ANO_LETIVO, papel: z.enum(['docente', 'estudante']), curso: z.string().max(200).optional(), tipoDocente: z.enum(['efectivo', 'colaborador']).nullable().optional(), concluido: z.boolean().nullable().optional() }) }), async (req, res) => res.status(201).json(await s.pessoas.marcarAnoAcademico(u(req), req.dados.params.id, req.dados.body)))
+  r.delete('/pessoas/:id/anos-academicos/:sub', validar({ params: E.pIdSub }), async (req, res) => { await s.pessoas.tirarAnoAcademico(u(req), req.dados.params.id, req.dados.params.sub); res.status(204).end() })
+  // anoLetivo: só os docentes (ou estudantes) desse ano lectivo — também os que já saíram ou que hoje têm outro vínculo
+  r.get('/academicos', validar({ query: z.object({ tipo: z.enum(['estudante', 'docente']), q: z.string().max(100).optional(), ativo: z.enum(['sim', 'nao', 'todos']).optional(), anoLetivo: z.union([ANO_LETIVO, z.literal('sem')]).optional() }) }), async (req, res) => {
+    const { tipo, q, ativo, anoLetivo } = req.dados.query
+    let lista
+    if (anoLetivo && anoLetivo !== 'sem') lista = await s.pessoas.listar(u(req), { ids: await s.pessoas.pessoasDoAno(anoLetivo, tipo), q, ativo: 'todos' })
+    else {
+      lista = await s.pessoas.listar(u(req), { vinculo: tipo, q, ativo })
+      // «sem ano lectivo»: ainda não estão em nenhuma lista de um ano
+      if (anoLetivo === 'sem') { const com = await s.pessoas.anosAcademicosDe(lista.map((p) => p.id)); lista = lista.filter((p) => !(com.get(p.id) ?? []).some((x) => x.papel === tipo)) }
+    }
     const estado = await s.sincronizacao.estadoNoPortal(lista.map((p) => p.id))
+    const anos = await s.pessoas.anosAcademicosDe(lista.map((p) => p.id))
     res.json({
       portalLigado: s.sincronizacao.ativa,
       pessoas: lista.map((p) => ({
@@ -357,7 +371,9 @@ export function rotas({ servicos: s, config }) {
         tipoDocente: p.tipoDocente, categoriaDocente: p.categoriaDocente, funcaoActual: p.funcaoActual, docentePendente: p.docentePendente, portal: estado.get(p.id) ?? null,
         // para a pesquisa e as colunas que se escolhem
         bi: p.bi, telefone: p.telefone, nomeGuerra: p.nomeGuerra, genero: p.genero, idade: p.idade, dataNascimento: p.dataNascimento, naturalidade: p.naturalidade, provincia: p.provincia,
-        nacionalidade: p.nacionalidade, habilitacao: p.habilitacao, areaFormacao: p.areaFormacao, especialidade: p.especialidade,
+        nacionalidade: p.nacionalidade, paisNascimento: p.paisNascimento, habilitacao: p.habilitacao, areaFormacao: p.areaFormacao, especialidade: p.especialidade,
+        // de onde vem (FAA, Polícia Nacional, estrangeiro, civil), o posto fora das FAA e os anos lectivos na Escola
+        origem: origemDe(p), postoExterno: p.postoExterno, anos: (anos.get(p.id) ?? []).filter((x) => x.papel === tipo),
       })),
     })
   })

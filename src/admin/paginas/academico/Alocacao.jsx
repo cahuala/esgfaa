@@ -6,6 +6,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { dataHora } from '../../formatar'
 import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
 import { t as tx } from '../../../i18n/linguas'
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto')}</span>
 
@@ -34,11 +35,13 @@ function Alocacao() {
   }
   const [filtro, setFiltro] = useState('todas')
   // filtros: o ano letivo (o atual por omissão) e o semestre em que a cadeira é dada
-  const [anos, setAnos] = useState([])
-  const [ano, setAno] = useState('')
+  // o ano lectivo de trabalho (do menu); «todos» só nesta página
+  const { ano: anoTrabalho, anos, mudar } = useAnoTrabalho()
+  const [todos, setTodos] = useState(false)
+  const ano = todos ? '' : anoTrabalho
+  const setAno = (v) => { if (v) { setTodos(false); mudar(v) } else setTodos(true) }
   const [semestre, setSemestre] = useState('')
   useEffect(() => { carregar() }, [])
-  useEffect(() => { api('/academico/anos-letivos').then((l) => { setAnos(l); setAno(l.find((a) => a.atual)?.id ?? '') }).catch(() => {}) }, [])
 
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />

@@ -11,6 +11,7 @@ import { API_URL } from '../conteudo/api'
 import { ouvirTempoReal } from '../utils/tempoReal'
 import AvatarConta from './componentes/AvatarConta'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
+import { useAnoTrabalho } from './anoTrabalho'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -24,6 +25,20 @@ function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
         <div className="menu-text">{texto}</div>
         {contador > 0 && <div className="menu-badge"><span className="badge bg-danger">{contador}</span></div>}
       </NavLink>
+    </div>
+  )
+}
+
+// o ano lectivo em que se está a trabalhar (todas as páginas da Administração Escolar seguem-no)
+function SeletorAnoTrabalho() {
+  const { ano, anos, mudar } = useAnoTrabalho()
+  if (!anos.length) return null
+  return (
+    <div className="menu-item px-3 pb-2">
+      <label className="small text-white-50 d-block mb-1" htmlFor="ano-trabalho"><i className="fa fa-calendar-alt me-1" />{tx('Ano lectivo de trabalho')}</label>
+      <select id="ano-trabalho" className="form-select form-select-sm" value={ano} onChange={(e) => mudar(e.target.value)}>
+        {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('actual')})` : ''}</option>)}
+      </select>
     </div>
   )
 }
@@ -223,6 +238,7 @@ function Layout({ children }) {
             {pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Estudantes e docentes')} />}
 
             {pode('academico.ver') && <div className="menu-header">{tx('Administração Escolar')}</div>}
+            {pode('academico.ver') && <SeletorAnoTrabalho />}
             {pode('academico.ver') && <ItemMenu para="/academico/alteracoes-notas" icone="fa-user-shield" texto={tx('Alterações de notas')} contador={pode('academico.homologar') ? pendentes.alteracoesPendentes : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/docentes" icone="fa-user-check" texto={tx('Docentes (verificação)')} contador={pode('academico.homologar') ? pendentes.docentesPorVerificar : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/provas-escritas" icone="fa-print" texto={tx('Provas para imprimir')} contador={pode('academico.gerir') ? pendentes.provasPorImprimir : 0} />}

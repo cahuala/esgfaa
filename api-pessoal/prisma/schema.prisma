@@ -11,30 +11,30 @@ datasource db {
 
 // quem usa o sistema (Repartição de Pessoal e Quadros, chefia, consulta)
 model Utilizador {
-  id              Int              @id @default(autoincrement())
+  id              Int                 @id @default(autoincrement())
   nome            String
-  email           String           @unique
+  email           String              @unique
   senha           String
   papel           String // administrador | chefe | comandante (vê tudo) | operador | consulta | utente (só expediente e mensagens)
-  pessoaId        Int?             @unique @map("pessoa_id")
-  unidadeId       Int?             @map("unidade_id")
-  ativo           Boolean          @default(true)
-  versaoToken     Int              @default(1) @map("versao_token")
-  falhas          Int              @default(0)
-  bloqueadoAte    DateTime?        @map("bloqueado_ate") @db.Timestamptz(3)
-  ultimoAcesso    DateTime?        @map("ultimo_acesso") @db.Timestamptz(3)
-  deveMudar       Boolean          @default(true) @map("deve_mudar")
+  pessoaId        Int?                @unique @map("pessoa_id")
+  unidadeId       Int?                @map("unidade_id")
+  ativo           Boolean             @default(true)
+  versaoToken     Int                 @default(1) @map("versao_token")
+  falhas          Int                 @default(0)
+  bloqueadoAte    DateTime?           @map("bloqueado_ate") @db.Timestamptz(3)
+  ultimoAcesso    DateTime?           @map("ultimo_acesso") @db.Timestamptz(3)
+  deveMudar       Boolean             @default(true) @map("deve_mudar")
   // entra com o BI (civis da Repartição de Pessoal e Quadros): só a impressão (HMAC) do BI, nunca o BI em claro
-  biHash          String?          @unique @map("bi_hash")
+  biHash          String?             @unique @map("bi_hash")
   // conta nova (com papel acima de utente) à espera do despacho do Comandante: ainda não entra
-  aguardaDespacho Boolean          @default(false) @map("aguarda_despacho")
+  aguardaDespacho Boolean             @default(false) @map("aguarda_despacho")
   // o que esta conta pode fazer, ecrã a ecrã ({ área: 'ver' | 'alterar' }); vazio = as do papel
   permissoes      Json?
   // quando tomou conhecimento do aviso de privacidade (Lei n.º 22/11)
-  privacidadeEm   DateTime?        @map("privacidade_em") @db.Timestamptz(3)
-  criadoEm        DateTime         @default(now()) @map("criado_em") @db.Timestamptz(3)
-  pessoa          Pessoa?          @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
-  unidade         Unidade?         @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+  privacidadeEm   DateTime?           @map("privacidade_em") @db.Timestamptz(3)
+  criadoEm        DateTime            @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa          Pessoa?             @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  unidade         Unidade?            @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
   participacoes   Participante[]
   mensagens       Mensagem[]
   doisFatores     DoisFatores?
@@ -196,6 +196,8 @@ model Pessoa {
   // estudante ou docente colaborador militar de fora da ESG: a unidade das FAA de onde vem (os civis não têm)
   unidadeOrigem        String    @default("") @map("unidade_origem")
   paisNascimento       String    @default("Angola") @map("pais_nascimento")
+  // o posto de quem não é das FAA (Polícia Nacional, forças armadas estrangeiras): fica em texto, como na lista
+  postoExterno         String    @default("") @map("posto_externo")
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")
@@ -239,6 +241,7 @@ model Pessoa {
   unidade            Unidade?           @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
   cargo              Cargo?             @relation(fields: [cargoId], references: [id], onDelete: SetNull)
   cursos             Curso[]
+  anosAcademicos     AnoAcademico[]
   eventos            Evento[]
   graduacoes         Graduacao[]
   licencas           Licenca[]
@@ -262,6 +265,24 @@ model Pessoa {
   @@map("pessoas")
 }
 
+// cada ano lectivo em que a pessoa foi docente ou estudante da Escola (das listas de cada ano): o curso que
+// frequentou (e se o terminou) ou a cadeira que leccionou. Assim se vê cada ano lectivo em separado.
+model AnoAcademico {
+  id          Int      @id @default(autoincrement())
+  pessoaId    Int      @map("pessoa_id")
+  anoLetivo   String   @map("ano_letivo") // 2024/2025
+  papel       String // docente | estudante
+  curso       String   @default("") // estudante: o curso; docente: a cadeira (ou a linha de pesquisa)
+  tipoDocente String?  @map("tipo_docente") // efectivo | colaborador (nesse ano)
+  concluido   Boolean? // estudante: terminou o curso (finalista)
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa      Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@unique([pessoaId, anoLetivo, papel, curso])
+  @@index([anoLetivo])
+  @@map("anos_academicos")
+}
+
 // cursos do militar (art. 48.º), incluindo os que são condição de promoção (art. 52.º)
 model Curso {
   id             Int       @id @default(autoincrement())
@@ -281,22 +302,22 @@ model Curso {
 
 // histórico da carreira: promoções, graduações, nomeações, exonerações, mudanças de situação…
 model Evento {
-  id            Int      @id @default(autoincrement())
-  pessoaId      Int      @map("pessoa_id")
+  id            Int       @id @default(autoincrement())
+  pessoaId      Int       @map("pessoa_id")
   tipo          String
   // a data pode não se saber (registos antigos lançados à mão)
   data          DateTime? @db.Date
-  postoAnterior String?  @map("posto_anterior")
-  postoNovo     String?  @map("posto_novo")
-  cargoNome     String   @default("") @map("cargo_nome")
-  descricao     String   @default("")
-  documento     String   @default("") // n.º da ordem, despacho…
-  entidade      String   @default("")
-  pena          String   @default("") // punição ou condenação: a pena aplicada
-  propostaId    Int?     @map("proposta_id")
-  criadoPor     String   @default("") @map("criado_por")
-  criadoEm      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
-  pessoa        Pessoa   @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  postoAnterior String?   @map("posto_anterior")
+  postoNovo     String?   @map("posto_novo")
+  cargoNome     String    @default("") @map("cargo_nome")
+  descricao     String    @default("")
+  documento     String    @default("") // n.º da ordem, despacho…
+  entidade      String    @default("")
+  pena          String    @default("") // punição ou condenação: a pena aplicada
+  propostaId    Int?      @map("proposta_id")
+  criadoPor     String    @default("") @map("criado_por")
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  pessoa        Pessoa    @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
 
   @@index([pessoaId, data])
   @@map("eventos")

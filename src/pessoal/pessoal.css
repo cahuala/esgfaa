@@ -25,6 +25,13 @@
 .pes-ramo-EXE { background: #4b5320; color: #fff; }
 .pes-ramo-FAN { background: #4a90c2; color: #fff; }
 .pes-ramo-MGA { background: #1f3b73; color: #fff; }
+/* de onde vêm os estudantes e docentes de fora das FAA */
+.pes-origem-policia { background: #0b2f6b; color: #fff; }
+.pes-origem-estrangeiro { background: #b45309; color: #fff; }
+.pes-origem-civil { background: #6c757d; color: #fff; }
+.pes-linha-estrangeiro td:first-child { box-shadow: inset 4px 0 0 #b45309; }
+.pes-resumo-anos tr { cursor: pointer; }
+.pes-resumo-anos tr.escolhido td { background: rgba(13, 110, 253, .08); font-weight: 600; }
 .pes-perfil .profile-header-cover { background-image: var(--esg-sede); background-size: cover; background-position: center; }
 .pes-perfil .profile-header-cover::before { background: linear-gradient(to bottom, rgba(0, 0, 0, .1), rgba(0, 0, 0, .75)); }
 .pes-foto { position: relative; display: flex; align-items: center; justify-content: center; background: #f2f3f4; overflow: hidden; }

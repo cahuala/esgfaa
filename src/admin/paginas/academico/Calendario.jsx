@@ -4,6 +4,7 @@ import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 import PrazosNotas from './PrazosNotas'
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 const TIPOS = {
   geral: ['bg-primary', tx('Evento')], feriado: ['bg-teal', tx('Feriado / sem aulas')],
@@ -20,7 +21,8 @@ function CalendarioAcademico() {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
   const [lista, setLista] = useState(null)
-  const [turmas, setTurmas] = useState([])
+  const [todasTurmas, setTodasTurmas] = useState([])
+  const { ano } = useAnoTrabalho()
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
   const vazio = { tipo: 'geral', ambito: '', titulo: '', data: '', inicio: '', fim: '', local: '', descricao: '' }
@@ -30,8 +32,9 @@ function CalendarioAcademico() {
   const carregar = useCallback(() => api('/academico/eventos').then(setLista).catch((e) => setErro(e.message)), [])
   useEffect(() => {
     carregar()
-    api('/academico/turmas').then((l) => setTurmas(l.filter((t) => t.ativa))).catch(() => {})
+    api('/academico/turmas').then(setTodasTurmas).catch(() => {})
   }, [carregar])
+  const turmas = todasTurmas.filter((t) => t.ativa && (!ano || t.anoLetivo === ano))
 
   async function criar(e) {
     e.preventDefault()

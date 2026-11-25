@@ -4,6 +4,7 @@ import { api } from '../../../api'
 import { Carregando, Erro } from '../../../componentes/Ui'
 import Documento from './Documento'
 import { descarregarCsv } from './csv'
+import { useAnoTrabalho } from '../../../anoTrabalho'
 
 const ESTADO = {
   pendente: 'À espera da aprovação do Comandante',
@@ -19,13 +20,12 @@ const ESTADO = {
 */
 function DistribuicaoDocente() {
   const [params, setParams] = useSearchParams()
-  const [anos, setAnos] = useState([])
+  const { ano: anoTrabalho, anos } = useAnoTrabalho()
   const [d, setD] = useState(null)
   const [quem, setQuem] = useState(null)
   const [erro, setErro] = useState('')
-  const ano = params.get('ano') ?? anos.find((a) => a.atual)?.id ?? ''
+  const ano = params.get('ano') ?? anoTrabalho
   useEffect(() => {
-    api('/academico/anos-letivos').then(setAnos).catch(() => {})
     api('/academico/documentos-academicos').then(setQuem).catch(() => setQuem({}))
   }, [])
   useEffect(() => {

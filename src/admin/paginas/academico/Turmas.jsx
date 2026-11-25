@@ -4,12 +4,7 @@ import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx } from '../../../i18n/linguas'
-
-const anoAtual = () => {
-  const d = new Date()
-  const a = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1
-  return `${a}/${a + 1}`
-}
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 // a duração do curso em meses (do texto da ficha do curso: «10 meses», «2 anos»); sem ela, null
 const mesesDe = (curso) => {
@@ -29,9 +24,10 @@ function Turmas() {
   const { pode } = useSessao()
   const [lista, setLista] = useState(null)
   const [cursos, setCursos] = useState([])
-  const [anos, setAnos] = useState([])
+  // o ano lectivo de trabalho (escolhido no menu): só as turmas desse ano; a turma nova é desse ano
+  const { ano, anos, mudar } = useAnoTrabalho()
   const [erro, setErro] = useState('')
-  const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), anoCurricular: '1', nome: '' })
+  const [f, setF] = useState({ curso: '', anoCurricular: '1', nome: '' })
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
 
@@ -46,16 +42,15 @@ function Turmas() {
     carregar()
     api('/academico/directores-curso').then(setDirs).catch(() => {})
     api('/colecoes/cursos').then((c) => { setCursos(c); setF((x) => ({ ...x, curso: x.curso || c[0]?.id || '' })) }).catch(() => {})
-    // o ano letivo escolhe-se dos configurados (o atual por omissão)
-    api('/academico/anos-letivos').then((l) => { setAnos(l); const atual = l.find((a) => a.atual); if (atual) setF((x) => ({ ...x, anoLetivo: atual.id })) }).catch(() => {})
   }, [carregar])
 
   const cursoDe = (id) => cursos.find((c) => c.id === id)
   const variosAnos = (id) => (mesesDe(cursoDe(id)) ?? 0) > 12
   // os cursos (mesmo os que ainda não têm turmas) com as suas turmas; as turmas de um curso que já não existe no fim
+  const doAno = (lista ?? []).filter((t) => !ano || t.anoLetivo === ano)
   const grupos = [
-    ...cursos.map((c) => [c, (lista ?? []).filter((t) => t.curso === c.id)]),
-    ...[...new Set((lista ?? []).map((t) => t.curso).filter((id) => !cursoDe(id)))].map((id) => [{ id, nome: id }, (lista ?? []).filter((t) => t.curso === id)]),
+    ...cursos.map((c) => [c, doAno.filter((t) => t.curso === c.id)]),
+    ...[...new Set(doAno.map((t) => t.curso).filter((id) => !cursoDe(id)))].map((id) => [{ id, nome: id }, doAno.filter((t) => t.curso === id)]),
   ]
   const novaNoCurso = (id) => { setF((x) => ({ ...x, curso: id, anoCurricular: '1' })); document.getElementById('t-nome')?.focus() }
 
@@ -63,7 +58,7 @@ function Turmas() {
     e.preventDefault()
     setErroForm('')
     try {
-      await api('/academico/turmas', { metodo: 'POST', corpo: { ...f, anoCurricular: variosAnos(f.curso) ? f.anoCurricular : '1' } })
+      await api('/academico/turmas', { metodo: 'POST', corpo: { ...f, anoLetivo: ano || f.anoLetivo, anoCurricular: variosAnos(f.curso) ? f.anoCurricular : '1' } })
       setF({ ...f, nome: '' })
       setAviso({ texto: tx('Turma criada.') })
       carregar()
@@ -74,7 +69,7 @@ function Turmas() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Turmas')} subtitulo={tx('matrículas, cadeiras e horários')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Turmas') }]} />
+      <CabecalhoPagina titulo={tx('Turmas')} subtitulo={ano ? tx('ano lectivo {0} — matrículas, cadeiras e horários', { 0: ano }) : tx('matrículas, cadeiras e horários')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Turmas') }]} />
       <div className="row">
         <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
@@ -91,7 +86,7 @@ function Turmas() {
                   <span className="d-flex align-items-center gap-2 small">
                     {meses && <span className="badge bg-light text-dark"><i className="fa fa-clock me-1" />{meses} {tx('meses')}</span>}
                     <span className="badge bg-secondary">{tx('{0} turma(s)', { 0: turmas.length })}</span>
-                    {turmas.length > 0 && <Link to={`/academico/documentos/curso/${encodeURIComponent(c.id)}/lista?ano=${encodeURIComponent(f.anoLetivo)}`} className="btn btn-xs perfil-botao-contorno"><i className="fa fa-list-ol me-1" />{tx('Lista do curso')}</Link>}
+                    {turmas.length > 0 && <Link to={`/academico/documentos/curso/${encodeURIComponent(c.id)}/lista?ano=${encodeURIComponent(ano)}`} className="btn btn-xs perfil-botao-contorno"><i className="fa fa-list-ol me-1" />{tx('Lista do curso')}</Link>}
                     {pode('academico.gerir') && <button type="button" className="btn btn-xs perfil-botao-claro" onClick={() => novaNoCurso(c.id)}><i className="fa fa-plus me-1" />{tx('Nova turma neste curso')}</button>}
                   </span>
                 )}
@@ -142,11 +137,10 @@ function Turmas() {
                 </select>
                 <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano lectivo')}</label>
                 {anos.length ? (
-                  <select id="t-ano" className="form-select mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} required>
-                    {!anos.some((a) => a.id === f.anoLetivo) && <option value="">—</option>}
+                  <select id="t-ano" className="form-select mb-1" value={ano} onChange={(e) => mudar(e.target.value)} required>
                     {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
                   </select>
-                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
+                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo ?? ''} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
                 <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos lectivos e semestres')}</Link></div>
                 {mesesDe(cursoDe(f.curso)) && <div className="form-text mb-3"><i className="fa fa-clock me-1" />{tx('Duração do curso')}: {mesesDe(cursoDe(f.curso))} {tx('meses')}</div>}
                 {/* só nos cursos com mais de 12 meses (os da Escola duram 10 meses) */}
