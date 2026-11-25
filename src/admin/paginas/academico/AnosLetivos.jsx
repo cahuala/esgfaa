@@ -29,6 +29,9 @@ const padrao = (id) => {
 function AnosLetivos() {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
+  // o Comandante reabre directamente; a Administração Escolar pede
+  const comandante = pode('academico.homologar')
+  const [reabrir, setReabrir] = useState(null) // { id, motivo, finalidade, documento }
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [f, setF] = useState(null) // { id, novo, ...datas }
@@ -39,6 +42,25 @@ function AnosLetivos() {
   useEffect(() => { carregar() }, [carregar])
 
   const atual = lista?.find((a) => a.atual)
+  const fechar = (a) => setConfirmar({
+    titulo: tx('Fechar o ano lectivo'), texto: tx('Fechar o ano lectivo {0}? Já não se poderão alterar as turmas, cadeiras, matrículas, notas e actividades desse ano, nem emitir documentos dele. Só o Comandante o pode reabrir.', { 0: a.id }), botao: tx('Fechar o ano'), perigo: true,
+    confirmar: async () => {
+      setConfirmar(null)
+      try { setLista(await api(`/academico/anos-letivos/${caminho(a.id)}/fechar`, { metodo: 'POST' })); avisarAnosMudaram(); setAviso({ texto: tx('Ano lectivo {0} fechado.', { 0: a.id }) }) } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
+    },
+  })
+  async function pedirReabertura(e) {
+    e.preventDefault()
+    try {
+      const r = await api(`/academico/anos-letivos/${caminho(reabrir.id)}/reabrir`, { metodo: 'POST', corpo: { motivo: reabrir.motivo, finalidade: reabrir.finalidade, ...(reabrir.finalidade === 'documento' ? { documento: reabrir.documento } : {}) } })
+      setLista(r.anos)
+      avisarAnosMudaram()
+      setAviso({ texto: r.reaberto ? tx('Ano lectivo {0} reaberto.', { 0: reabrir.id }) : tx('Pedido enviado ao Comandante: o ano reabre quando ele aprovar.') })
+      setReabrir(null)
+    } catch (falha) {
+      setAviso({ tipo: 'erro', texto: falha.message })
+    }
+  }
   const caminho = (id) => id.replace('/', '-')
   async function guardar(e) {
     e.preventDefault()
@@ -120,10 +142,44 @@ function AnosLetivos() {
         </Painel>
       )}
 
+      {reabrir && (
+        <Painel titulo={comandante ? tx('Reabrir o ano lectivo {0}', { 0: reabrir.id }) : tx('Pedir ao Comandante a reabertura de {0}', { 0: reabrir.id })}>
+          <form onSubmit={pedirReabertura}>
+            <div className="row g-2">
+              <div className="col-md-4">
+                <label className="form-label fw-bold" htmlFor="re-fim">{tx('Para quê')}</label>
+                <select id="re-fim" className="form-select" value={reabrir.finalidade} onChange={(e) => setReabrir({ ...reabrir, finalidade: e.target.value })}>
+                  <option value="actividades">{tx('Lançar notas ou outras actividades')}</option>
+                  <option value="documento">{tx('Emitir um documento')}</option>
+                </select>
+              </div>
+              {reabrir.finalidade === 'documento' && (
+                <div className="col-md-8">
+                  <label className="form-label fw-bold" htmlFor="re-doc">{tx('Documento a emitir')}</label>
+                  <input id="re-doc" className="form-control" value={reabrir.documento} onChange={(e) => setReabrir({ ...reabrir, documento: e.target.value })} placeholder={tx('ex.: certificado de curso, declaração de frequência, pauta…')} required minLength={3} />
+                </div>
+              )}
+              <div className="col-12">
+                <label className="form-label fw-bold" htmlFor="re-motivo">{tx('Motivo')}</label>
+                <textarea id="re-motivo" className="form-control" rows={2} value={reabrir.motivo} onChange={(e) => setReabrir({ ...reabrir, motivo: e.target.value })} required minLength={3} placeholder={tx('ex.: pedido do estudante (nome), nota em falta da cadeira…')} />
+              </div>
+            </div>
+            <div className="d-flex gap-2 mt-3">
+              <button type="submit" className="btn btn-theme"><i className="fa fa-lock-open me-1" />{comandante ? tx('Reabrir') : tx('Enviar ao Comandante')}</button>
+              <button type="button" className="btn btn-white" onClick={() => setReabrir(null)}>{tx('Cancelar')}</button>
+            </div>
+          </form>
+        </Painel>
+      )}
+
       <div className="row">
         {lista?.map((a) => (
           <div key={a.id} className="col-xl-4 col-md-6">
-            <Painel titulo={<>{tx('Ano lectivo {0}', { 0: a.id })}{a.atual && <span className="badge bg-success ms-2">{tx('Actual')}</span>}</>}>
+            <Painel titulo={<>{tx('Ano lectivo {0}', { 0: a.id })}{a.atual && <span className="badge bg-success ms-2">{tx('Actual')}</span>}{a.fechado ? <span className="badge bg-dark ms-2"><i className="fa fa-lock me-1" />{tx('Fechado')}</span> : <span className="badge bg-light text-dark border ms-2"><i className="fa fa-lock-open me-1" />{tx('Aberto')}</span>}</>}>
+              {a.fechado && <div className="small mb-2"><i className="fa fa-lock me-1 text-muted" />{tx('Fechado em {0}{1}: só se consulta. Para lançar notas, actividades ou emitir documentos, o Comandante tem de o reabrir.', { 0: data(a.fechadoEm), 1: a.fechadoPor ? tx(' por {0}', { 0: a.fechadoPor }) : '' })}</div>}
+              {a.pedidoReabertura && <div className="alert alert-info py-1 px-2 small mb-2"><i className="fa fa-hourglass-half me-1" />{tx('À espera do Comandante: reabrir {0} — {1}', { 0: a.pedidoReabertura.finalidade === 'documento' ? tx('para emitir «{0}»', { 0: a.pedidoReabertura.documento }) : tx('para notas e actividades'), 1: a.pedidoReabertura.motivo })}</div>}
+              {a.recusaReabertura && !a.pedidoReabertura && <div className="small text-danger mb-2"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou a reabertura: {0}', { 0: a.recusaReabertura.motivoRecusa })}</div>}
+              {!a.fechado && a.reabertura && <div className="small text-muted mb-2"><i className="fa fa-unlock me-1" />{tx('Reaberto por ordem de {0}: {1}. Feche-o outra vez quando terminar.', { 0: a.reabertura.autorizadoPor, 1: a.reabertura.documento ? `${a.reabertura.documento} — ${a.reabertura.motivo}` : a.reabertura.motivo })}</div>}
               <div className="small text-muted mb-2">{data(a.inicio)} – {data(a.fim)} · {tx('{0} turma(s)', { 0: a.turmas })}</div>
               {[['1', a.semestre1Inicio, a.semestre1Fim], ['2', a.semestre2Inicio, a.semestre2Fim]].map(([n, de, ate]) => (
                 <div key={n} className={`d-flex align-items-center gap-2 p-2 rounded mb-1 ${a.semestreAtual === n ? 'bg-success bg-opacity-10 border border-success' : 'bg-light'}`}>
@@ -137,6 +193,8 @@ function AnosLetivos() {
                   <button type="button" className="btn btn-xs btn-white" onClick={() => { setErroForm(''); setF({ id: a.id, inicio: a.inicio, fim: a.fim, semestre1Inicio: a.semestre1Inicio, semestre1Fim: a.semestre1Fim, semestre2Inicio: a.semestre2Inicio, semestre2Fim: a.semestre2Fim }) }}><i className="fa fa-pen me-1" />{tx('Datas')}</button>
                   {!a.atual && <button type="button" className="btn btn-xs btn-white" onClick={() => tornarAtual(a)}><i className="fa fa-star me-1" />{tx('Tornar actual')}</button>}
                   <Link to="/academico/turmas" className="btn btn-xs btn-white"><i className="fa fa-users me-1" />{tx('Turmas')}</Link>
+                  {!a.fechado && <button type="button" className="btn btn-xs btn-white" onClick={() => fechar(a)}><i className="fa fa-lock me-1" />{tx('Fechar o ano')}</button>}
+                  {a.fechado && !a.pedidoReabertura && <button type="button" className="btn btn-xs btn-white" onClick={() => setReabrir({ id: a.id, motivo: '', finalidade: 'actividades', documento: '' })}><i className="fa fa-lock-open me-1" />{comandante ? tx('Reabrir') : tx('Pedir reabertura ao Comandante')}</button>}
                   {a.turmas === 0 && <button type="button" className="btn btn-xs btn-white text-danger ms-auto" onClick={() => apagar(a)} aria-label={tx('Apagar o ano lectivo {0}', { 0: a.id })}><i className="fa fa-trash-alt" /></button>}
                 </div>
               )}

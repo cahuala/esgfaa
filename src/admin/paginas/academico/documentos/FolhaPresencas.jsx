@@ -36,6 +36,7 @@ function FolhaPresencas() {
 
   return (
     <Documento
+      anoLetivo={d.turma.anoLetivo}
       titulo="Folha de presenças" paisagem voltar={`/academico/cadeiras/${d.cadeira.id}`}
       subtitulo={`${d.cadeira.codigo} — ${d.cadeira.nome} · ${d.turma.curso} · ${d.turma.nome} · ano lectivo ${d.turma.anoLetivo}`}
       acoes={(

@@ -61,4 +61,9 @@ export const publicoAno = (a, hoje) => ({
   id: a.id, atual: a.atual, inicio: iso(a.inicio), fim: iso(a.fim),
   semestre1Inicio: iso(a.semestre1Inicio), semestre1Fim: iso(a.semestre1Fim), semestre2Inicio: iso(a.semestre2Inicio), semestre2Fim: iso(a.semestre2Fim),
   semestreAtual: semestreEm(a, hoje),
+  fechado: Boolean(a.fechado), fechadoEm: a.fechadoEm ? new Date(a.fechadoEm).toISOString() : null, fechadoPor: a.fechadoPor ?? '',
+  pedidoReabertura: a.pedidoReabertura ?? null, reabertura: a.reabertura ?? null, recusaReabertura: a.recusaReabertura ?? null,
 })
+
+// para que serve reabrir um ano lectivo fechado
+export const FINALIDADES_REABERTURA = { actividades: 'Lançar notas ou outras actividades', documento: 'Emitir um documento' }

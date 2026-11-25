@@ -2,11 +2,13 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Brasao from '../../../../assets/Logo.png'
 import { t as tx } from '../../../../i18n/linguas'
+import { useAnoTrabalho } from '../../../anoTrabalho'
 
 /*
   Moldura dos documentos oficiais da Administração Escolar (pautas, listas, histórico, certificado):
   cabeçalho institucional, título, conteúdo, assinaturas e data. A barra de ações não sai na impressão.
   paisagem: imprime na horizontal (tabelas largas).
+  anoLetivo: o ano do documento — se está fechado, consulta-se mas não se imprime (só depois de o Comandante o reabrir).
   aprovado: { cargo, nome, posto } — «APROVADO» no canto superior esquerdo, para o Comandante assinar (como nos mapas
   do Pessoal). assinaturas: textos ou { cargo, nome, posto } (o nome e o posto vão por baixo da linha).
 */
@@ -18,7 +20,9 @@ const Assinante = ({ a }) => (typeof a === 'string' ? <div>{a}</div> : (
   </>
 ))
 
-function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovado = null, assinaturas = [], children, rodape = true }) {
+function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovado = null, assinaturas = [], children, rodape = true, anoLetivo = '' }) {
+  const { anos } = useAnoTrabalho()
+  const fechado = Boolean(anoLetivo) && Boolean(anos.find((a) => a.id === anoLetivo)?.fechado)
   // folha na horizontal só enquanto este documento está aberto
   useEffect(() => {
     if (!paisagem) return undefined
@@ -33,11 +37,19 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovad
         {voltar && <Link to={voltar} className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Voltar')}</Link>}
         <div className="ms-auto d-flex flex-wrap gap-2 align-items-center">
           {acoes}
-          <button type="button" className="btn btn-theme" onClick={() => window.print()}><i className="fa fa-print me-1" />{tx('Imprimir / guardar em PDF')}</button>
+          {fechado
+            ? <span className="badge bg-dark p-2"><i className="fa fa-lock me-1" />{tx('Ano lectivo fechado')}</span>
+            : <button type="button" className="btn btn-theme" onClick={() => window.print()}><i className="fa fa-print me-1" />{tx('Imprimir / guardar em PDF')}</button>}
         </div>
       </div>
+      {fechado && (
+        <div className="alert alert-dark of-acoes">
+          <i className="fa fa-lock me-2" />{tx('O ano lectivo {0} está fechado: pode consultar, mas para emitir este documento o Comandante tem de reabrir o ano.', { 0: anoLetivo })} <Link to="/academico/anos-letivos">{tx('Pedir a reabertura')}</Link>
+        </div>
+      )}
+      {fechado && <div className="of-nao-autorizado">{tx('Ano lectivo {0} fechado — documento não autorizado.', { 0: anoLetivo })}</div>}
       {/* documento oficial: fica sempre em português */}
-      <article translate="no" className={`of-folha ${paisagem ? 'of-folha-larga' : ''}`}>
+      <article translate="no" className={`of-folha ${paisagem ? 'of-folha-larga' : ''} ${fechado ? 'of-folha-fechada' : ''}`}>
         {aprovado && (
           <div className="of-aprovado">
             <div className="of-aprovado-titulo">Aprovado</div>

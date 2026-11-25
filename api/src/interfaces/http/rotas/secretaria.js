@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { validar } from '../middlewares/validar.js'
 import { enviarFicheiro, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
 import * as E from '../esquemas.js'
+import { CORPO_SECRETARIA, REGRAS_SECRETARIA, bloquearAnoFechado } from '../middlewares/anoFechado.js'
 
 const pId = z.object({ id: E.idNumerico })
 const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro não encontrado.') })
@@ -17,6 +18,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
 
   // anos letivos: datas do ano e dos semestres, e qual é o atual
   const anos = a.anosLetivos
+  // ano lectivo fechado: não se altera nada dele (reabre-se por ordem do Comandante)
+  r.use(bloquearAnoFechado(anos, REGRAS_SECRETARIA, { doCorpo: CORPO_SECRETARIA }))
   const pAno = z.object({ id: z.string().regex(/^\d{4}-\d{4}$/, 'Ano lectivo não encontrado.') })
   const idAno = (req) => req.dados.params.id.replace('-', '/')
   const datasAno = z.object({ inicio: z.string().max(10), fim: z.string().max(10), semestre1Inicio: z.string().max(10), semestre1Fim: z.string().max(10), semestre2Inicio: z.string().max(10), semestre2Fim: z.string().max(10) })
@@ -25,6 +28,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/anos-letivos/:id', validar({ params: pAno, body: datasAno }), async (req, res) => res.json(await anos.editar(ctx(req), idAno(req), req.dados.body)))
   r.post('/anos-letivos/:id/atual', validar({ params: pAno }), async (req, res) => res.json(await anos.tornarAtual(ctx(req), idAno(req))))
   r.delete('/anos-letivos/:id', validar({ params: pAno }), async (req, res) => { await anos.apagar(ctx(req), idAno(req)); res.status(204).end() })
+  // fechar o ano lectivo; reabrir só por ordem do Comandante (a Administração Escolar pede, ele aprova)
+  r.post('/anos-letivos/:id/fechar', validar({ params: pAno }), async (req, res) => res.json(await anos.fechar(ctx(req), idAno(req))))
+  r.post('/anos-letivos/:id/reabrir', validar({ params: pAno, body: z.object({ motivo: z.string().max(1000), finalidade: z.enum(['actividades', 'documento']).optional(), documento: z.string().max(300).optional() }) }), async (req, res) => res.json(await anos.pedirReabertura(ctx(req), idAno(req), req.dados.body)))
 
   // controlo centralizado: provas escritas para imprimir (Repartição), alterações de notas e docentes (Comandante)
   const ctl = servicos.controlo

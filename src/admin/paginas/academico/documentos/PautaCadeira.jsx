@@ -21,6 +21,7 @@ function PautaCadeira() {
   const regente = c.docentes?.find((d) => d.papel === 'regente')?.nome
   return (
     <Documento
+      anoLetivo={c.turma?.anoLetivo}
       titulo="Pauta" paisagem voltar={`/academico/cadeiras/${c.id}?separador=pauta`}
       subtitulo={`${c.codigo} — ${c.nome} · ${c.turma?.nome || ''} · ${PERIODOS[c.periodo] || ''} · ano lectivo ${c.turma?.anoLetivo || ''}`}
       acoes={<button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(c, p.linhas)}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}

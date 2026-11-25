@@ -12,6 +12,7 @@ import { validar } from '../middlewares/validar.js'
 import { enviarFicheiro, receberCopia, receberFicheiro } from '../middlewares/ficheirosPrivados.js'
 import * as E from '../esquemas.js'
 import { baseUrl } from '../apresentacao.js'
+import { REGRAS_PORTAL, bloquearAnoFechado } from '../middlewares/anoFechado.js'
 
 const pId = z.object({ id: E.idNumerico })
 const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro não encontrado.') })
@@ -20,6 +21,8 @@ const pFicheiro = z.object({ id: z.string().regex(/^[0-9a-f-]{36}$/, 'Ficheiro n
 export function rotasPortal({ servicos, config, privados }) {
   const r = Router()
   r.use(sessaoEmCookie({ nome: COOKIE_PORTAL, caminho: '/api/portal', caminhos: ['/entrar', '/eu/senha'], seguro: config.producao, entreSites: config.sessaoEntreSites }))
+  // ano lectivo fechado: os docentes e estudantes já não alteram nada das cadeiras desse ano
+  if (servicos.administracaoEscolar?.anosLetivos) r.use(bloquearAnoFechado(servicos.administracaoEscolar.anosLetivos, REGRAS_PORTAL))
   const L = config.limites
   const e = servicos.ensino
   const ctx = (req) => req.contexto

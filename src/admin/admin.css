@@ -873,3 +873,10 @@ fieldset:disabled .bloco-topo .btn-group {
   gap: 4px;
   flex: none;
 }
+
+/* documento de um ano lectivo fechado: vê-se no ecrã, mas não se imprime */
+.of-nao-autorizado { display: none; }
+@media print {
+  .of-folha-fechada { display: none !important; }
+  .of-nao-autorizado { display: block; font-size: 18pt; text-align: center; margin-top: 40mm; }
+}

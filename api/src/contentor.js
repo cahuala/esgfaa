@@ -260,7 +260,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     }
   }
   // casos de uso da Administração Escolar (painel)
-  const anosLetivos = new ServicoAnosLetivos({ prisma, auditoria, relogio })
+  const anosLetivos = new ServicoAnosLetivos({ prisma, auditoria, relogio, aprovacaoComandante: config.aprovacaoComandante })
   const administracaoEscolar = () => {
     const d = {
       anosLetivos,

@@ -138,6 +138,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
       distribuicao_docente: () => aprovacoesEnsino.decidirDistribuicao(c, id, corpo),
       publicacao_notas: () => aprovacoesEnsino.decidirNotas(c, id, corpo),
       director_curso: () => aprovacoesEnsino.decidirDirectorCurso(c, id, corpo),
+      ano_letivo: () => servicos.administracaoEscolar.anosLetivos.decidirReabertura(c, id, corpo),
     }[colecao] ?? (() => servicos.conteudos.decidirPublicacao(c, colecao, id, corpo))
     enviar(req, res, await decidir())
   })

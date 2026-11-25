@@ -49,6 +49,7 @@ function DistribuicaoDocente() {
   const assinante = (a, cargo) => ({ cargo: a?.cargo || cargo, nome: a?.nome ?? '', posto: a?.posto ?? '' })
   return (
     <Documento
+      anoLetivo={ano}
       titulo={titulo} voltar="/academico/alocacao"
       subtitulo={`Ano lectivo ${ano} · ${d.docentes.length} docente(s) · ${cadeiras} cadeira(s) em ${d.turmas} turma(s) · ${horas} horas`}
       aprovado={assinante(quem.comandante, 'O Comandante da Escola')}

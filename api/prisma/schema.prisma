@@ -290,15 +290,25 @@ model ContaPortal {
 // turma de um curso num ano letivo (ex.: CEM 2026/2027)
 // ano letivo (ex.: "2026/2027"): datas do ano e dos semestres; as cadeiras são de um semestre (ou anuais)
 model AnoLetivo {
-  id              String   @id
-  inicio          DateTime @db.Date
-  fim             DateTime @db.Date
-  semestre1Inicio DateTime @map("semestre1_inicio") @db.Date
-  semestre1Fim    DateTime @map("semestre1_fim") @db.Date
-  semestre2Inicio DateTime @map("semestre2_inicio") @db.Date
-  semestre2Fim    DateTime @map("semestre2_fim") @db.Date
-  atual           Boolean  @default(false)
-  criadoEm        DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  id               String    @id
+  inicio           DateTime  @db.Date
+  fim              DateTime  @db.Date
+  semestre1Inicio  DateTime  @map("semestre1_inicio") @db.Date
+  semestre1Fim     DateTime  @map("semestre1_fim") @db.Date
+  semestre2Inicio  DateTime  @map("semestre2_inicio") @db.Date
+  semestre2Fim     DateTime  @map("semestre2_fim") @db.Date
+  atual            Boolean   @default(false)
+  // fechado: já não se mexe nas turmas, cadeiras, notas e actividades desse ano (nem se emitem documentos);
+  // reabre-se por ordem do Comandante (ou a pedido da Administração Escolar, quando ele aprova)
+  fechado          Boolean   @default(false)
+  fechadoEm        DateTime? @map("fechado_em") @db.Timestamptz(3)
+  fechadoPor       String    @default("") @map("fechado_por")
+  // { motivo, finalidade: actividades | documento, documento?, pedidoPor, pedidoEm } — à espera do Comandante
+  pedidoReabertura Json?     @map("pedido_reabertura")
+  // a última reabertura (quem autorizou, porquê) e a última recusa (o motivo, que a Administração Escolar vê)
+  reabertura       Json?
+  recusaReabertura Json?     @map("recusa_reabertura")
+  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
 
   @@map("anos_letivos")
 }

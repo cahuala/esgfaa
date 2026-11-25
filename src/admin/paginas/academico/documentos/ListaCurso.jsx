@@ -34,6 +34,7 @@ function ListaCurso() {
   }
   return (
     <Documento
+      anoLetivo={ano}
       titulo={titulo} voltar="/academico/turmas"
       subtitulo={[ano ? `ano lectivo ${ano}` : 'todos os anos lectivos', d.curso.duracao, `${d.turmas.length} turma(s)`, `${d.estudantes.length} estudante(s)`].filter(Boolean).join(' · ')}
       acoes={(

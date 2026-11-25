@@ -28,6 +28,7 @@ function ListaTurma() {
   }
   return (
     <Documento
+      anoLetivo={t.anoLetivo}
       titulo={`Relação nominal dos ${pessoas.toLowerCase()}`} voltar={`/academico/turmas/${t.id}`}
       subtitulo={`${t.nome} · ano lectivo ${t.anoLetivo} · ${linhas.length} ${pessoas.toLowerCase()}`}
       acoes={<button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>}
