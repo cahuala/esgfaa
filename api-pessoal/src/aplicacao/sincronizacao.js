@@ -3,7 +3,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
 import { exigir, unidadesDe } from './sessao.js'
-import { BI_ANGOLANO } from '../dominio/pessoal/ficha.js'
+
+// o posto das FAA equivalente ao posto da Polícia Nacional ou da força estrangeira (só para ordenar as listas)
+const simples = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+function postoEquivalente(p) {
+  const lista = simples(p.unidadeOrigem) === simples(POLICIA_NACIONAL) ? POSTOS_POLICIA : forcaPorNome(p.unidadeOrigem)?.postos ?? []
+  const x = lista.find((y) => simples(y.nome) === simples(p.postoExterno))
+  return x ? nomeDoPosto(x.equivale) : ''
+}
+import { BI_ANGOLANO, origemDe } from '../dominio/pessoal/ficha.js'
+import { POLICIA_NACIONAL, POSTOS_POLICIA, forcaPorNome } from '../dominio/pessoal/forcas.js'
 import { invalido } from '../erros.js'
 
 // os cargos de chefia militar da Direcção de Ensino que têm conta automática no painel de gestão (entram com o NIP)
@@ -77,7 +86,13 @@ export class ServicoSincronizacao {
     const foto = ativo ? this.#foto(p, fotoEnviada) : undefined
     return {
       ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'docente' ? 'docente' : vs.includes('estudante') ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
-      dados: { posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : '', ramo: p.ramo ?? '', nip: p.nip ?? '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '' },
+      // o posto (das FAA; ou o da Polícia Nacional / da força estrangeira, com o equivalente das FAA para ordenar),
+      // a origem (faa, policia, estrangeiro, civil) e o país dos estrangeiros: para as listas e os documentos do ensino
+      dados: {
+        posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.postoExterno ?? '', postoEquivalente: !p.posto && p.postoExterno ? postoEquivalente(p) : '',
+        ramo: p.ramo ?? '', nip: p.nip || p.numeroAgente || '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '',
+        origem: origemDe(p), pais: origemDe(p) === 'estrangeiro' ? p.paisNascimento || p.nacionalidade || '' : '',
+      },
       ...(foto !== undefined ? { foto } : {}),
     }
   }

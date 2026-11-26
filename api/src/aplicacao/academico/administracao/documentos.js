@@ -47,6 +47,41 @@ export class ServicoDocumentos {
     }
   }
 
+  /*
+    Documentos do ano lectivo (os que a Repartição de Administração Escolar tira no fim dos cursos): para cada curso
+    do ano, os discentes (NIP, posto, ramo, órgão de origem), a classificação final e a menção — daqui saem os dados
+    estatísticos, os dados por ramos, o resumo, a relação para a entrega dos diplomas e a lista para os diplomas.
+  */
+  async documentosDoAno(ctx, anoLetivo) {
+    ctx.actor.exigir('academico.ver')
+    const ano = await this.anosLetivos?.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })
+    const turmas = (await this.academico.listarTurmas()).filter((t) => t.anoLetivo === anoLetivo && t.ativa !== false)
+    const cursos = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, c]))
+    const porCurso = new Map()
+    for (const t of turmas) {
+      const c = cursos.get(t.curso)
+      const x = porCurso.get(t.curso) ?? { curso: t.curso, nome: c?.titulo || c?.dados?.nome || t.curso, sigla: c?.dados?.sigla || '', turmas: [], linhas: [] }
+      porCurso.set(t.curso, x)
+      x.turmas.push(t.nome)
+      const matriculas = await this.academico.matriculasDaTurma(t.id)
+      for (const m of matriculas.filter((y) => ['ativa', 'concluida'].includes(y.estado))) {
+        const e = m.estudante
+        const d = e.dados ?? {}
+        const r = await Promise.resolve(this.esg?.resultadoDoEstudante(e.id, t)).catch(() => null)
+        x.linhas.push({
+          id: e.id, numero: e.numero, nome: e.nome, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '', ramo: d.ramo || '', orgao: d.departamento || '',
+          origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
+        })
+      }
+    }
+    const { grauDe, ordenarPorHierarquia } = await import('../../../dominio/academico/pessoas/hierarquia.js')
+    for (const c of porCurso.values()) for (const l of c.linhas) l.grau = grauDe({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })
+    return {
+      anoLetivo, inicio: ano?.inicio ? ano.inicio.toISOString().slice(0, 10) : null, fim: ano?.fim ? ano.fim.toISOString().slice(0, 10) : null,
+      cursos: [...porCurso.values()].map((c) => ({ ...c, linhas: ordenarPorHierarquia(c.linhas, (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })) })),
+    }
+  }
+
   // folha de presenças: estudantes × aulas registadas (com P/F/J), mais colunas em branco se se pedir
   async folhaPresencas(ctx, cadeiraId) {
     ctx.actor.exigir('academico.ver')

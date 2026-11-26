@@ -2,7 +2,8 @@
   Ordem das listas académicas (Lei n.º 13/18): pelo posto, do mais alto para o mais baixo (os postos equivalentes dos
   três ramos contam igual — ex.: Coronel = Capitão-de-Mar-e-Guerra) e, dentro do mesmo posto, por ordem alfabética do
   nome. Os civis (sem posto) vêm depois dos militares, também por ordem alfabética.
-  O posto vem do Sistema de Gestão de Pessoal (dados.posto); nas contas antigas, da abreviatura no nome («Maj. …»).
+  O posto vem do Sistema de Gestão de Pessoal (dados.posto; na Polícia Nacional e nas forças estrangeiras, o posto
+  equivalente das FAA em dados.postoEquivalente); nas contas antigas, da abreviatura no nome («Maj. …»).
 */
 const GRAUS = [
   [20, 'General de Exército', 'General de Aviação', 'Almirante da Armada'],
@@ -35,6 +36,9 @@ const PREFIXOS = [...GRAU.keys()].sort((a, b) => b.length - a.length)
 export function grauDe(pessoa) {
   const p = chave(pessoa?.dados?.posto ?? pessoa?.posto)
   if (p && GRAU.has(p)) return GRAU.get(p)
+  // Polícia Nacional e forças estrangeiras: o posto das FAA da mesma categoria (vem do Pessoal)
+  const eq = chave(pessoa?.dados?.postoEquivalente)
+  if (eq && GRAU.has(eq)) return GRAU.get(eq)
   const n = chave(pessoa?.nome)
   const pre = PREFIXOS.find((x) => n.startsWith(`${x} `))
   return pre ? GRAU.get(pre) : 0

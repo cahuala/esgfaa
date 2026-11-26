@@ -357,7 +357,7 @@ export class ServicoPessoas {
       if (antes.posto && n.posto !== antes.posto) await evento('correcao', 'Posto corrigido na ficha (sem proposta).', { postoAnterior: antes.posto, postoNovo: n.posto })
       if (antes.ativo && !n.ativo) await evento('saida', [n.motivoSaida, n.destinoSaida && `Destino: ${n.destinoSaida}`].filter(Boolean).join(' · ') || d.observacoes || 'Deixou de servir na Escola.')
       if (!antes.ativo && n.ativo) await evento('colocacao', 'Voltou a servir na Escola.')
-      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'ramo', 'telefone', 'nip', 'unidadeId', 'unidadeOrigem', 'ativo', 'docentePendente'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
+      if (vaiParaPortal(n) && ['nome', 'email', 'vinculo', 'outrosVinculos', 'posto', 'postoExterno', 'ramo', 'telefone', 'nip', 'unidadeId', 'unidadeOrigem', 'nacionalidade', 'ativo', 'docentePendente'].some((k) => String(antes[k]) !== String(n[k]))) await this.#marcarSincronizacao(tx, n)
       // deixou de ser docente/estudante ou saiu: o portal desativa a conta
       if (vaiParaPortal(antes) && !vaiParaPortal(n)) {
         await tx.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })

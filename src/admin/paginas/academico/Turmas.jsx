@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
+import { DOCUMENTOS_ANO } from './documentos/tiposDocumentosAno'
 
 // sem anos lectivos configurados: o de agora (começa em Agosto)
 const anoAtual = () => {
@@ -29,6 +30,7 @@ const mesesDe = (curso) => {
 */
 function Turmas() {
   const { pode } = useSessao()
+  const navegar = useNavigate()
   const [lista, setLista] = useState(null)
   const [cursos, setCursos] = useState([])
   // o ano lectivo de trabalho (escolhido no menu): só as turmas desse ano; a turma nova é desse ano
@@ -76,7 +78,14 @@ function Turmas() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Turmas')} subtitulo={ano ? tx('ano lectivo {0} — matrículas, cadeiras e horários', { 0: ano }) : tx('matrículas, cadeiras e horários')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Turmas') }]} />
+      <CabecalhoPagina titulo={tx('Turmas')} subtitulo={ano ? tx('ano lectivo {0} — matrículas, cadeiras e horários', { 0: ano }) : tx('matrículas, cadeiras e horários')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Turmas') }]}>
+        {ano && (
+          <select className="form-select w-auto" value="" onChange={(e) => e.target.value && navegar(`/academico/documentos/ano/${e.target.value}?ano=${encodeURIComponent(ano)}`)} aria-label={tx('Documentos do ano lectivo')}>
+            <option value="">{tx('Documentos do ano lectivo…')}</option>
+            {Object.entries(DOCUMENTOS_ANO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}
+          </select>
+        )}
+      </CabecalhoPagina>
       <div className="row">
         <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
