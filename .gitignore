@@ -50,6 +50,7 @@ docs/PLANOS*
 docs/QUADRO ORGANICO*
 # listas reais dos docentes e dos discentes (nomes e NIP): só no computador e no pendrive
 docs/DOCENTES E DISCENTES/
+docs/ARQUIVO */
 docs/~$*
 
 # contas do servidor de testes (deploy/teste-contas.mjs)
