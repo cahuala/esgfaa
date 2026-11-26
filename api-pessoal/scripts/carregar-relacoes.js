@@ -142,7 +142,11 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
       }
       // na Escola: os docentes da lista deste ano e os estudantes deste ano lectivo
       const ativo = Boolean((x.docente && !x.docente.antigo) || x.estudante)
-      const d = { tipo: x.tipo, nome: x.nome, vinculo: x.docente ? 'docente' : 'estudante', outrosVinculos: x.docente && x.estudante ? ['estudante'] : [], ativo }
+      // o docente efectivo é da Escola: funcionário que também é docente; o de fora é colaborador
+      const efectivo = x.docente?.tipo === 'efectivo'
+      const d = efectivo
+        ? { tipo: x.tipo, nome: x.nome, vinculo: 'funcionario', outrosVinculos: ['docente', ...(x.estudante ? ['estudante'] : [])], ativo }
+        : { tipo: x.tipo, nome: x.nome, vinculo: x.docente ? 'docente' : 'estudante', outrosVinculos: x.docente && x.estudante ? ['estudante'] : [], ativo }
       for (const k of ['nomeGuerra', 'nip', 'numeroAgente', 'posto', 'ramo', 'fps', 'situacao', 'unidadeOrigem', 'postoExterno', 'nacionalidade', 'paisNascimento', 'habilitacao', 'areaFormacao', 'observacoes', 'ramoPorConfirmar']) if (x[k]) d[k] = x[k]
       if (x.docente) d.tipoDocente = x.docente.tipo
       if (!ativo && x.docente) Object.assign(d, { motivoSaida: x.docente.motivoSaida ?? 'Já não consta da relação do corpo docente' })

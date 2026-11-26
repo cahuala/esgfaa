@@ -28,6 +28,7 @@ export const ESPECIALIDADES = [
   'Engenharia de Telecomunicações', 'Engenharia Informática', 'Criptologia', 'Inteligência Militar', 'Reconhecimento e Informação', 'Polícia Militar',
   'Justiça Militar', 'Logística', 'Logística Geral', 'Serviços de Saúde', 'Serviços Técnicos', 'Serviços de Material', 'Armamento e Técnica',
   'Aviação', 'Motor e Fuselagem', 'Defesa Nuclear, Biológica e Química', 'Topografia', 'Condutor Auto', 'Educação Patriótica', 'Comando',
+  'Contra-Inteligência Militar (CIM)',
 ]
 
 // listas que estavam só no navegador

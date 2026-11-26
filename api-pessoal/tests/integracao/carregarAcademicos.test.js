@@ -121,6 +121,15 @@ describe('Carregar os docentes e os estudantes das listas', () => {
     assert.equal((await amb.contentor.bd.pessoa.findUnique({ where: { id: f.id } })).ramoPorConfirmar, false)
   })
 
+  it('quem não pertence à ESG é sempre colaborador; o painel mostra os estudantes e os colaboradores à parte', async () => {
+    const r = (await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'docente', tipoDocente: 'efectivo', nome: 'Docente De Fora Teste' }).expect(201)).body
+    assert.equal((await amb.contentor.bd.pessoa.findUnique({ where: { id: r.id } })).tipoDocente, 'colaborador')
+    const a = (await adm.get('/api/painel').expect(200)).body.academicos
+    assert.ok(a.colaboradores >= 2 && a.estudantes >= 2 && a.docentesEfectivos >= 1)
+    assert.ok(a.estudantesOrigem.some((x) => x.chave === 'policia'))
+    assert.ok(a.colaboradoresOrigem.length > 0 && Array.isArray(a.porAno) && a.porAno.length > 0)
+  })
+
   it('corre uma só vez: o que se mudar à mão depois não volta', async () => {
     const pessoas = await amb.contentor.bd.pessoa.count()
     const cursos = await amb.contentor.bd.curso.count()

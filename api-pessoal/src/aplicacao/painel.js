@@ -1,6 +1,6 @@
 import { CATEGORIAS, EFECTIVIDADES, ESTADOS, FORMAS_SERVICO, GRUPOS, POSTOS, RAMOS, SITUACOES, quadroEspecial } from '../dominio/pessoal/hierarquia.js'
 import { CARREIRAS_CIVIS } from '../dominio/pessoal/civis.js'
-import { GENEROS, HABILITACOES, TIPOS, VINCULOS, vinculosDe } from '../dominio/pessoal/ficha.js'
+import { GENEROS, HABILITACOES, TIPOS, VINCULOS, origemDe, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { ESTADOS_PROPOSTA, TIPOS_PROPOSTA } from './propostas.js'
 import { NOMES_LICENCA } from './licencas.js'
 import { exigir } from './sessao.js'
@@ -39,13 +39,38 @@ export class ServicoPainel {
     return this.#memoria.promessa
   }
 
+  /*
+    Os estudantes (na Escola agora) e os docentes: colaboradores (de fora) e efectivos (funcionários que dão aulas),
+    de onde vêm (FAA por ramo, Polícia Nacional, estrangeiros, civis), os cursos do ano lectivo e cada ano lectivo.
+  */
+  async #academicos(u, lista) {
+    const NOMES = { EXE: 'FAA — Exército', FAN: 'FAA — Força Aérea', MGA: 'FAA — Marinha', policia: 'Polícia Nacional', estrangeiro: 'Estrangeiros', civil: 'Civis' }
+    const chave = (p) => { const o = origemDe(p); return o === 'faa' ? p.ramo ?? 'EXE' : o }
+    const porOrigem = (l) => Object.entries(NOMES).map(([k, rotulo]) => ({ chave: k, rotulo, valor: l.filter((p) => chave(p) === k).length, filtro: { origem: k } })).filter((x) => x.valor)
+    const estudantes = lista.filter((p) => vinculosDe(p).includes('estudante'))
+    const colaboradores = lista.filter((p) => p.vinculo === 'docente')
+    const efectivos = lista.filter((p) => p.vinculo === 'funcionario' && vinculosDe(p).includes('docente'))
+    // os cursos do ano lectivo mais recente com estudantes
+    const ultimo = await this.bd.anoAcademico.findFirst({ where: { papel: 'estudante' }, orderBy: { anoLetivo: 'desc' }, select: { anoLetivo: true } })
+    const cursos = ultimo ? await this.bd.anoAcademico.groupBy({ by: ['curso'], where: { papel: 'estudante', anoLetivo: ultimo.anoLetivo }, _count: { _all: true } }) : []
+    const anos = await this.pessoas.resumoAcademico(u).catch(() => [])
+    return {
+      estudantes: estudantes.length, estudantesMulheres: estudantes.filter((p) => p.genero === 'F').length,
+      colaboradores: colaboradores.length, colaboradoresReformados: colaboradores.filter((p) => p.situacao === 'reforma').length, docentesEfectivos: efectivos.length,
+      estudantesOrigem: porOrigem(estudantes), colaboradoresOrigem: porOrigem(colaboradores),
+      anoLetivo: ultimo?.anoLetivo ?? '',
+      cursos: cursos.map((c) => ({ chave: c.curso, rotulo: c.curso || 'Sem curso', valor: c._count._all, filtro: {} })).sort((a, b) => b.valor - a.valor),
+      porAno: [...anos].reverse().map((a) => ({ anoLetivo: a.anoLetivo, estudantes: a.estudantes.total, docentes: a.docentes.total, colaboradores: a.docentes.colaboradores })),
+    }
+  }
+
   async #calcular(u) {
     // a projecção da reserva corre ao mesmo tempo que a lista (eram uma depois da outra)
     const projecaoPedida = this.pessoas.projecaoReserva(u, { anos: 5 })
     projecaoPedida.catch(() => {})
     // o efectivo da Escola (a lista sem filtro já deixa de fora os estudantes e os docentes colaboradores)
     const todos = await this.pessoas.listar(u, {})
-    const academicos = await this.bd.pessoa.findMany({ where: { ativo: true, OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }] }, select: { vinculo: true, outrosVinculos: true } })
+    const academicos = await this.bd.pessoa.findMany({ where: { ativo: true, OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }] }, select: { id: true, tipo: true, ramo: true, nacionalidade: true, unidadeOrigem: true, situacao: true, genero: true, vinculo: true, outrosVinculos: true } })
     const mil = todos.filter((p) => p.tipo === 'militar')
     const mulheres = todos.filter((p) => p.genero === 'F')
     const milF = mil.filter((p) => p.genero === 'F')
@@ -104,6 +129,8 @@ export class ServicoPainel {
         reservaEsteAno: projecao.filter((x) => x.passagem === 'reserva' && x.data.startsWith(String(anoAtual))).length,
         lugares, lugaresOcupados: ocupados,
       },
+      // estudantes e docentes colaboradores: não contam no efectivo, mas vêem-se aqui à parte
+      academicos: await this.#academicos(u, academicos),
       graficos: {
         tipo: contar(todos, 'tipo', TIPOS),
         vinculo: contar(todos, 'vinculo', VINCULOS),

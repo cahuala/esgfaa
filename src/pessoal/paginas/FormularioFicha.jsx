@@ -286,7 +286,8 @@ export default function FormularioFicha() {
       {atual === 'servico' && ehDocente && (
         <Seccao titulo="Docente" icone="fa-chalkboard-teacher">
           <div className="row">
-            <Campo rotulo="Tipo de docente" col="col-md-3"><Escolha valor={d.tipoDocente} aoMudar={set('tipoDocente')} opcoes={ref.tiposDocente} /></Campo>
+            {/* o vínculo manda: quem não é da Escola (só docente) é colaborador; o funcionário que dá aulas é efectivo */}
+            <Campo rotulo="Tipo de docente" col="col-md-3" ajuda={d.vinculo === 'docente' ? 'Não pertence à ESG: é colaborador.' : d.vinculo === 'funcionario' ? 'Funcionário da ESG que dá aulas: é efectivo.' : undefined}><input className="form-control form-control-sm" readOnly value={d.vinculo === 'docente' ? 'Colaborador' : d.vinculo === 'funcionario' ? 'Efectivo' : ref.tiposDocente?.[d.tipoDocente] ?? ''} aria-label="Tipo de docente" /></Campo>
             <Campo rotulo="Categoria do docente" col="col-md-4"><EscolhaCategoriaDocente valor={d.categoriaDocente} aoMudar={set('categoriaDocente')} referencias={ref} /></Campo>
             <Campo rotulo="Função ou cargo actual" col="col-md-5" ajuda="Onde serve, como na ficha de cadastramento (o colaborador serve fora da Escola): ex.: Chefe do Departamento de Ensino da Força Aérea.">{txt('funcaoActual')}</Campo>
           </div>

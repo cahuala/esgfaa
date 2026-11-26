@@ -10,6 +10,7 @@ import { rotasPacotes } from './rotas/pacotes.js'
 import { rotasLti } from './rotas/lti.js'
 import { rotasIntegracao } from './rotas/integracao.js'
 import { criarCacheConteudo } from './cacheConteudo.js'
+import { soRedeInterna } from './middlewares/redeInterna.js'
 
 // Aplicação Express (sem arrancar o servidor: os testes usam-na diretamente)
 export function criarApp(contentor, { registarErro } = {}) {
@@ -81,7 +82,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     next()
   }
   app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
-  app.use('/api/admin', semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
+  app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
   app.use('/api/pacotes', rotasPacotes({ servicos, config }))
   app.use('/api/lti', semCache, rotasLti({ servicos, config }))
   app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))

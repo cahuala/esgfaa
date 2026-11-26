@@ -3,7 +3,7 @@ import { eDuplicado } from '../infraestrutura/bd.js'
 import { CURSOS_PROMOCAO, ordenarAntiguidade, reservaEReforma, verificarPromocao } from '../dominio/pessoal/carreira.js'
 import { verificarProgressaoCivil } from '../dominio/pessoal/civis.js'
 import { EFECTIVIDADES, ESTADOS, POSTOS, SITUACOES, nomeDoPosto } from '../dominio/pessoal/hierarquia.js'
-import { PROVINCIAS, SO_EFECTIVO, comDerivados, origemDe, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
+import { PROVINCIAS, SO_EFECTIVO, comDerivados, origemDe, tipoDocenteDe, problemaNaFicha, vinculosDe } from '../dominio/pessoal/ficha.js'
 import { vencimentoDoPosto } from '../dominio/pessoal/tabelaSalarial.js'
 import { remuneracaoDaCategoria } from '../dominio/pessoal/civis.js'
 import { diasDeFerias, feriasAdicionais } from './planoFerias.js'
@@ -281,6 +281,8 @@ export class ServicoPessoas {
     // registar uma ficha nova: quem edita fichas ou quem só regista (o Operador)
     if (!pode(u, 'registar')) exigir(u, 'editar')
     const d = this.#dados(dados)
+    // de fora da Escola = colaborador; funcionário que dá aulas = efectivo
+    if (tipoDocenteDe(d) !== (d.tipoDocente ?? null)) d.tipoDocente = tipoDocenteDe(d)
     // um docente novo só vale depois do despacho do Comandante
     const pedirDocente = Boolean(this.despachos) && !despachado && eDocente(d)
     if (pedirDocente) d.docentePendente = true
@@ -308,6 +310,9 @@ export class ServicoPessoas {
     const antes = await this.bd.pessoa.findUnique({ where: { id } })
     if (!antes) throw naoEncontrado('Ficha não encontrada.')
     const d = this.#dados({ ...dados, tipo: dados.tipo ?? antes.tipo })
+    // de fora da Escola = colaborador; funcionário que dá aulas = efectivo (o vínculo manda no tipo de docente)
+    const tipoCerto = tipoDocenteDe({ ...antes, ...d })
+    if (tipoCerto !== null && tipoCerto !== (antes.tipoDocente ?? null) && tipoCerto !== d.tipoDocente) d.tipoDocente = tipoCerto
     // o que precisa do despacho do Comandante não se aplica já: fica num pedido (Secretária digital)
     const pedidos = []
     if (this.despachos && !despachado) {

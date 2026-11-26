@@ -22,6 +22,38 @@ function Cartao({ cor, icone, titulo, valor, detalhe, para }) {
   )
 }
 
+/*
+  Estudantes e docentes colaboradores: vêm de fora, não contam no efectivo da Escola (os números de cima), mas
+  têm aqui as suas estatísticas — de onde vêm, os cursos do ano lectivo e cada ano lectivo.
+*/
+function Academicos({ a }) {
+  const porAno = useMemo(() => ({ rotulos: a.porAno.map((x) => x.anoLetivo), series: [{ rotulo: 'Estudantes', valores: a.porAno.map((x) => x.estudantes), cor: '#1f3b73' }, { rotulo: 'Docentes', valores: a.porAno.map((x) => x.docentes), cor: '#c9a227' }] }), [a])
+  return (
+    <>
+      <h5 className="mt-2 mb-2"><i className="fa fa-user-graduate me-2 pes-ouro" />Estudantes e docentes colaboradores <small className="text-muted fw-normal">— vêm de fora: não contam no efectivo da Escola</small></h5>
+      <div className="row">
+        <Cartao cor="indigo" icone="fa-user-graduate" titulo="Estudantes na Escola" valor={a.estudantes} detalhe={a.anoLetivo ? `ano lectivo ${a.anoLetivo}` : 'ver os estudantes'} para="/estudantes" />
+        <Cartao cor="teal" icone="fa-user-tie" titulo="Docentes colaboradores" valor={a.colaboradores} detalhe={`${a.colaboradoresReformados} reformados · de fora da ESG`} para="/docentes" />
+        <Cartao cor="blue" icone="fa-chalkboard-teacher" titulo="Docentes efectivos" valor={a.docentesEfectivos} detalhe="funcionários da Escola que dão aulas" para="/docentes" />
+      </div>
+      <div className="row">
+        <GraficoGrupo titulo="Estudantes: de onde vêm" icone="fa-globe-africa" dados={a.estudantesOrigem} tipo="doughnut" para={() => '/estudantes'} rotuloSerie="Estudantes" />
+        <GraficoGrupo titulo="Docentes colaboradores: de onde vêm" icone="fa-user-tie" dados={a.colaboradoresOrigem} tipo="pie" para={() => '/docentes'} rotuloSerie="Docentes" />
+        <GraficoGrupo titulo={`Estudantes por curso${a.anoLetivo ? ` (${a.anoLetivo})` : ''}`} icone="fa-graduation-cap" dados={a.cursos} tipo="barH" para={() => '/estudantes'} rotuloSerie="Estudantes" />
+      </div>
+      {a.porAno.length > 0 && (
+        <div className="row">
+          <div className="col-12">
+            <Painel titulo="Estudantes e docentes por ano lectivo" icone="fa-calendar-alt">
+              <Grafico tipo="bar" altura={260} rotulos={porAno.rotulos} series={porAno.series} />
+            </Painel>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // gráfico de um agrupamento do servidor ([{ chave, rotulo, valor, filtro }]); clicar abre a lista com o filtro
 function GraficoGrupo({ titulo, icone, dados, tipo = 'bar', para = lista, altura, col = 'col-xl-4 col-md-6', rotuloSerie = 'Pessoas' }) {
   const navegar = useNavigate()
@@ -57,7 +89,7 @@ export default function PainelInicial() {
       <Cabecalho titulo="Painel do pessoal" subtitulo="militares dos três ramos e pessoal civil da Escola" />
       <div className="row">
         <Cartao cor="teal" icone="fa-users" titulo="Efectivo total" valor={t.total} detalhe={`${t.militares} militares · ${t.civis} civis`} para="/pessoas" />
-        <Cartao cor="blue" icone="fa-chalkboard-teacher" titulo="Docentes" valor={t.docentes} detalhe={`${t.estudantes} estudantes · ${t.funcionarios} funcionários`} para={lista({ vinculo: 'docente' })} />
+        <Cartao cor="blue" icone="fa-chalkboard-teacher" titulo="Docentes" valor={t.docentes} detalhe={`${d.academicos?.docentesEfectivos ?? 0} efectivos · ${d.academicos?.colaboradores ?? 0} colaboradores`} para="/docentes" />
         <Cartao cor="indigo" icone="fa-star" titulo="Oficiais" valor={t.oficiais} detalhe={`${t.sargentos} sargentos · ${t.pracas} praças`} para={lista({ tipo: 'militar', grupo: 'oficiais' })} />
         <Cartao cor="orange" icone="fa-medal" titulo="Em condições de promoção" valor={t.elegiveis} detalhe="Ver quem cumpre a lei" para="/elegiveis" />
         <Cartao cor="red" icone="fa-file-signature" titulo="Propostas enviadas" valor={t.propostasDespacho} detalhe={`${t.propostasPreparacao} em preparação`} para="/propostas?estado=enviada" />
@@ -67,6 +99,8 @@ export default function PainelInicial() {
         <Cartao cor="pink" icone="fa-venus" titulo="Mulheres" valor={t.mulheres} detalhe={`${t.mulheresMilitares} militares · ${t.mulheresOficiais} oficiais (${pct(t.mulheres, t.total)}%)`} para={lista({ genero: 'F' })} />
         <Cartao cor="lime" icone="fa-house-user" titulo="Empregados domiciliares" valor={t.domiciliares} detalhe="Não contam como civis" para="/domiciliares" />
       </div>
+
+      {d.academicos && <Academicos a={d.academicos} />}
 
       <div className="row">
         <GraficoGrupo titulo="Militares por ramo" icone="fa-flag" dados={g.ramo} tipo="doughnut" />

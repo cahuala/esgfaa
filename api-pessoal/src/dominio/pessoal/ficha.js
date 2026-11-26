@@ -9,11 +9,16 @@ export const TIPOS = { militar: 'Militar', civil: 'Civil' }
 export const vinculosDe = (p) => (p.vinculo === 'domiciliar' ? ['domiciliar'] : [...new Set([p.vinculo, ...(p.outrosVinculos ?? [])].filter(Boolean))])
 export const VINCULOS = { docente: 'Docente', estudante: 'Estudante', funcionario: 'Efectivo', domiciliar: 'Empregada(o) domiciliar' }
 /*
-  O efectivo da Escola: quem lá serve (funcionário, ou docente que não é colaborador). Os estudantes dos cursos e os
-  docentes colaboradores vêm de fora: têm ficha, mas não contam no efectivo, nas promoções, na reserva, no ponto
-  nem nos mapas (como as domiciliares). O funcionário que também é estudante ou docente continua no efectivo.
+  O efectivo da Escola: os funcionários (militares e civis que lá servem). Os estudantes dos cursos e os docentes
+  colaboradores vêm de fora: têm ficha, mas não contam no efectivo, nas promoções, na reserva, no ponto nem nos
+  mapas (como as domiciliares). O funcionário que também é estudante ou docente continua no efectivo.
 */
-export const SO_EFECTIVO = { OR: [{ vinculo: 'funcionario' }, { vinculo: 'docente', tipoDocente: null }, { vinculo: 'docente', tipoDocente: { not: 'colaborador' } }] }
+export const SO_EFECTIVO = { vinculo: 'funcionario' }
+/*
+  Docente efectivo ou colaborador: quem não pertence à Escola (o docente que só é docente) é sempre colaborador;
+  o funcionário da Escola que também dá aulas é efectivo. Devolve o tipo certo (ou o que está, se não é docente).
+*/
+export const tipoDocenteDe = (p) => (p.vinculo === 'docente' ? 'colaborador' : p.vinculo === 'funcionario' && (p.outrosVinculos ?? []).includes('docente') ? 'efectivo' : p.tipoDocente ?? null)
 /*
   De onde vem o estudante ou o docente: das FAA (o ramo diz qual), da Polícia Nacional, de forças estrangeiras ou
   civil. O órgão de origem (Estado-Maior General, Unidade de Segurança Presidencial, Casa Militar…) é a unidadeOrigem.
@@ -25,7 +30,7 @@ export function origemDe(p) {
   if (simples(p.unidadeOrigem).includes('policia')) return 'policia'
   return p.tipo === 'militar' ? 'faa' : 'civil'
 }
-export const eEfectivo = (p) => p.vinculo === 'funcionario' || (p.vinculo === 'docente' && p.tipoDocente !== 'colaborador')
+export const eEfectivo = (p) => p.vinculo === 'funcionario'
 // do mais baixo ao mais alto, com os níveis do Mod. 5/DPQ («base» fica para as fichas antigas, sem o pormenor)
 export const HABILITACOES = { sem_instrucao: 'Sem instrução', primaria: 'Primária', primeiro_ciclo: '1.º Ciclo', base: 'Ensino de base', segundo_ciclo: '2.º Ciclo', medio: 'Técnico médio', bacharelato: 'Bacharelato', licenciatura: 'Licenciatura', pos_graduacao: 'Pós-graduação', mestrado: 'Mestrado', doutoramento: 'Doutoramento' }
 export const TIPOS_DOCENTE = { efectivo: 'Efectivo', colaborador: 'Colaborador' }
