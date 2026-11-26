@@ -289,7 +289,7 @@ const nomeCurto = (c, u) => {
 function ImprimirCargos({ escola, inicial, aoFechar }) {
   const { ref, avisar } = useSessao()
   const { dados: cargos, erro } = useDados('/cargos')
-  const [f, setF] = useState({ unidadeId: inicial ?? '', sub: true, estado: 'todos', categorias: [], funcoes: [], posto: '', texto: '', agrupar: true, curto: false })
+  const [f, setF] = useState({ unidadeId: inicial ?? '', sub: true, estado: 'todos', categorias: [], funcoes: [], postos: [], civis: [], texto: '', agrupar: true, curto: false, resumo: true })
   const [aGerar, setAGerar] = useState(false)
   const mudar = (k, v) => setF((x) => ({ ...x, [k]: v }))
   const alternar = (k, v) => setF((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
@@ -303,7 +303,10 @@ function ImprimirCargos({ escola, inicial, aoFechar }) {
     const t = norm(f.texto).trim()
     const ordem = new Map(todas.map((u, i) => [u.id, i]))
     return cargos
-      .filter((c) => ids.has(c.unidadeId) && (!f.categorias.length || f.categorias.includes(c.categoria)) && (!f.funcoes.length || f.funcoes.includes(c.funcao)) && (!f.posto || c.postoRequerido === f.posto) && (!t || norm(c.nome).includes(t)))
+      .filter((c) => ids.has(c.unidadeId) && (!f.categorias.length || f.categorias.includes(c.categoria)) && (!f.funcoes.length || f.funcoes.includes(c.funcao))
+        // vários postos exigidos e várias categorias dos civis de uma vez (nenhum marcado = todos)
+        && (!f.postos.length || f.postos.includes(c.postoRequerido)) && (!f.civis.length || (c.categoria === 'civil' && f.civis.includes(c.categoriaCivil || 'Sem categoria')))
+        && (!t || norm(c.nome).includes(t)))
       .sort((a, b) => ordem.get(a.unidadeId) - ordem.get(b.unidadeId))
       .flatMap((c) => (f.estado === 'vagos' ? (c.livres ? [{ c, o: null }] : []) : f.estado === 'ocupados' ? c.ocupantes.map((o) => ({ c, o })) : [...c.ocupantes.map((o) => ({ c, o })), ...Array.from({ length: c.livres }, () => ({ c, o: null }))]))
   }, [cargos, unidades, todas, f])
@@ -323,7 +326,27 @@ function ImprimirCargos({ escola, inicial, aoFechar }) {
       const seccoes = f.agrupar
         ? unidades.map((u) => ({ titulo: u.nome, colunas, linhas: linhas.filter((l) => l.c.unidadeId === u.id) })).filter((x) => x.linhas.length)
         : [{ colunas, linhas }]
-      const filtros = [f.categorias.map((k) => CATEGORIAS_CARGO[k]).join(', '), f.funcoes.map((k) => ref.funcoes[k]).join(', '), f.posto && `posto exigido ${ref.postos.EXE.find((p) => p.id === f.posto)?.nome}`, f.texto && `«${f.texto}»`].filter(Boolean)
+      // resumo: por posto exigido (militares) e por categoria (civis), os lugares, os ocupados e os vagos
+      if (f.resumo) {
+        const grau = new Map(ref.postos.EXE.map((p, i) => [p.id, i]))
+        const g = new Map()
+        for (const c of new Map(linhas.map((l) => [l.c.id, l.c])).values()) {
+          const k = c.categoria === 'civil' ? `Civil — ${c.categoriaCivil || 'sem categoria'}` : c.postoRequeridoNome || 'Sem posto exigido'
+          const x = g.get(k) ?? { nome: k, ordem: c.categoria === 'civil' ? 999 : grau.get(c.postoRequerido) ?? 998, categoria: CATEGORIAS_CARGO[c.categoria] ?? '', lugares: 0, ocupados: 0, vagos: 0 }
+          x.lugares += c.vagas
+          x.ocupados += Math.min(c.vagas, c.ocupados)
+          x.vagos += c.livres
+          g.set(k, x)
+        }
+        const res = [...g.values()].sort((a, b) => a.ordem - b.ordem || a.nome.localeCompare(b.nome, 'pt'))
+        const total = res.reduce((t, x) => ({ nome: 'TOTAL', categoria: '', lugares: t.lugares + x.lugares, ocupados: t.ocupados + x.ocupados, vagos: t.vagos + x.vagos }), { lugares: 0, ocupados: 0, vagos: 0 })
+        seccoes.push({
+          titulo: 'Resumo por posto e categoria',
+          colunas: [{ titulo: 'Posto exigido / categoria', valor: (x) => x.nome }, { titulo: 'Categoria', valor: (x) => x.categoria, largura: 40 }, { titulo: 'Lugares', valor: (x) => x.lugares, alinhar: 'center', largura: 20 }, { titulo: 'Ocupados', valor: (x) => x.ocupados, alinhar: 'center', largura: 20 }, { titulo: 'Vagos', valor: (x) => x.vagos, alinhar: 'center', largura: 20 }],
+          linhas: [...res, total],
+        })
+      }
+      const filtros = [f.categorias.map((k) => CATEGORIAS_CARGO[k]).join(', '), f.funcoes.map((k) => ref.funcoes[k]).join(', '), f.postos.length > 0 && `posto exigido: ${f.postos.map((id) => ref.postos.EXE.find((p) => p.id === id)?.nome).join(', ')}`, f.civis.length > 0 && `civis: ${f.civis.join(', ')}`, f.texto && `«${f.texto}»`].filter(Boolean)
       const d = { titulo: `${f.estado === 'vagos' ? 'CARGOS VAGOS' : f.estado === 'ocupados' ? 'CARGOS OCUPADOS' : 'CARGOS DO QUADRO ORGÂNICO'} — ${raiz.nome.toLocaleUpperCase('pt')}`, subtitulo: [raiz.id && (f.sub ? 'com as subunidades' : 'só a unidade, sem as subunidades'), ...filtros].filter(Boolean).join(' · '), orientacao: 'landscape', seccoes }
       await (formato === 'excel' ? documentoExcel(d) : documentoPdf(d))
       aoFechar()
@@ -334,6 +357,9 @@ function ImprimirCargos({ escola, inicial, aoFechar }) {
     }
   }
   const lugares = new Set(linhas.map((l) => l.c.id)).size
+  // os postos exigidos e as categorias dos civis que há nos cargos (do mais alto ao mais baixo)
+  const postosHa = useMemo(() => { const h = new Set((cargos ?? []).map((c) => c.postoRequerido).filter(Boolean)); return ref.postos.EXE.filter((p) => h.has(p.id)) }, [cargos, ref])
+  const civisHa = useMemo(() => [...new Set((cargos ?? []).filter((c) => c.categoria === 'civil').map((c) => c.categoriaCivil || 'Sem categoria'))].sort((a, b) => a.localeCompare(b, 'pt')), [cargos])
   return (
     <Modal largo titulo="Imprimir cargos" aoFechar={aoFechar} rodape={<><span className="me-auto small text-muted">{cargos ? `${linhas.length} linha(s) · ${lugares} cargo(s)` : 'A carregar…'}</span><button type="button" className="btn btn-outline-secondary" onClick={aoFechar}>Cancelar</button><button type="button" className="btn btn-outline-theme" disabled={aGerar || !linhas.length} onClick={() => gerar('excel')}><i className="fa fa-file-excel me-1" />Excel</button><button type="button" className="btn btn-theme" disabled={aGerar || !linhas.length} onClick={() => gerar('pdf')}><i className="fa fa-print me-1" />Imprimir (PDF)</button></>}>
       {erro && <div className="alert alert-danger">{erro}</div>}
@@ -349,11 +375,17 @@ function ImprimirCargos({ escola, inicial, aoFechar }) {
         <Campo rotulo="Função (nenhuma marcada = todas)" col="col-12">
           <div className="d-flex flex-wrap gap-3">{Object.entries(ref.funcoes).map(([k, t]) => <div key={k} className="form-check"><input className="form-check-input" type="checkbox" id={`imp-f-${k}`} checked={f.funcoes.includes(k)} onChange={() => alternar('funcoes', k)} /><label className="form-check-label" htmlFor={`imp-f-${k}`}>{t}</label></div>)}</div>
         </Campo>
-        <Campo rotulo="Posto exigido" col="col-md-4"><Escolha valor={f.posto} aoMudar={(v) => mudar('posto', v)} opcoes={ref.postos.EXE.map((p) => [p.id, p.nome])} vazio="Qualquer" /></Campo>
-        <Campo rotulo="O nome do cargo tem" col="col-md-8"><input className="form-control form-control-sm" value={f.texto} onChange={(e) => mudar('texto', e.target.value)} placeholder="Ex.: Professor, Chefe, Condutor, Amanuense…" /></Campo>
+        <Campo rotulo="Posto exigido (nenhum marcado = todos)" col="col-12">
+          <div className="d-flex flex-wrap gap-3">{postosHa.map((p) => <div key={p.id} className="form-check"><input className="form-check-input" type="checkbox" id={`imp-p-${p.id}`} checked={f.postos.includes(p.id)} onChange={() => alternar('postos', p.id)} /><label className="form-check-label" htmlFor={`imp-p-${p.id}`}>{p.nome}</label></div>)}</div>
+        </Campo>
+        {civisHa.length > 0 && <Campo rotulo="Categoria dos civis (nenhuma marcada = todas)" col="col-12">
+          <div className="d-flex flex-wrap gap-3">{civisHa.map((k) => <div key={k} className="form-check"><input className="form-check-input" type="checkbox" id={`imp-cv-${k}`} checked={f.civis.includes(k)} onChange={() => alternar('civis', k)} /><label className="form-check-label" htmlFor={`imp-cv-${k}`}>{k}</label></div>)}</div>
+        </Campo>}
+        <Campo rotulo="O nome do cargo tem" col="col-12"><input className="form-control form-control-sm" value={f.texto} onChange={(e) => mudar('texto', e.target.value)} placeholder="Ex.: Professor, Chefe, Condutor, Amanuense…" /></Campo>
         <Campo rotulo="Apresentação" col="col-12">
           <div className="d-flex flex-wrap gap-3">
             <div className="form-check"><input className="form-check-input" type="checkbox" id="imp-agrupar" checked={f.agrupar} onChange={(e) => mudar('agrupar', e.target.checked)} /><label className="form-check-label" htmlFor="imp-agrupar">Uma secção por unidade (senão, uma lista só com a coluna Unidade)</label></div>
+            <div className="form-check"><input className="form-check-input" type="checkbox" id="imp-resumo" checked={f.resumo} onChange={(e) => mudar('resumo', e.target.checked)} /><label className="form-check-label" htmlFor="imp-resumo">No fim, o resumo por posto e categoria (lugares, ocupados, vagos)</label></div>
             <div className="form-check"><input className="form-check-input" type="checkbox" id="imp-curto" checked={f.curto} onChange={(e) => mudar('curto', e.target.checked)} /><label className="form-check-label" htmlFor="imp-curto">Nome curto do cargo (sem a unidade: «Chefe», «Professor de Estratégia»…)</label></div>
           </div>
         </Campo>
