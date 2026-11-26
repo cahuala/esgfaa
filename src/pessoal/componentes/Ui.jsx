@@ -152,6 +152,8 @@ export function Escolha({ valor, aoMudar, opcoes, vazio = '—', id, disabled, r
   const caixa = useRef(null)
   const escolhida = todas.find(([k]) => k === String(valor ?? ''))
   const rotulo = (v) => v.replace(/^[\s└]+/, '')
+  // a opção vazia com nome («Ao serviço», «Todos os ramos») vê-se escrita no campo; só «—» fica em branco
+  const vazioComNome = vazio !== null && vazio !== '—' && vazio !== ''
   const filtradas = texto ? todas.filter(([, v]) => semAcentos(v).includes(semAcentos(texto))) : todas
   const escolher = (k) => { setAberto(false); setTexto(''); if (k !== String(valor ?? '')) aoMudar(k) }
   const teclas = (e) => {
@@ -167,12 +169,13 @@ export function Escolha({ valor, aoMudar, opcoes, vazio = '—', id, disabled, r
         id={id} type="text" className="form-select form-select-sm" role="combobox" aria-expanded={aberto} aria-autocomplete="list" aria-label={ariaLabel} title={title}
         disabled={disabled} required={required && !valor} autoComplete="off"
         placeholder={escolhida && !aberto ? '' : rotulo(escolhida?.[1] ?? (vazio ?? ''))}
-        value={aberto ? texto : escolhida ? (escolhida[0] === '' ? '' : rotulo(escolhida[1])) : String(valor ?? '')}
+        value={aberto ? texto : escolhida ? (escolhida[0] === '' ? (vazioComNome ? rotulo(vazio) : '') : rotulo(escolhida[1])) : String(valor ?? '')}
         onFocus={() => { setAberto(true); setTexto(''); setRealce(Math.max(0, todas.findIndex(([k]) => k === String(valor ?? '')))) }}
         onClick={() => setAberto(true)}
         onChange={(e) => { setTexto(e.target.value); setAberto(true); setRealce(0) }}
         onKeyDown={teclas}
-        onBlur={() => setTimeout(() => { setAberto(false); setTexto('') }, 150)}
+        // escreveu e saiu do campo (Tab): fica a opção que estava realçada (ex.: «Ao serv» → «Ao serviço»)
+        onBlur={() => setTimeout(() => { if (texto.trim() && filtradas[realce]) escolher(filtradas[realce][0]); else { setAberto(false); setTexto('') } }, 150)}
       />
       {aberto && !disabled && (
         <div role="listbox" className="dropdown-menu show w-100 shadow" style={{ maxHeight: 280, overflowY: 'auto', zIndex: 1080 }}>
