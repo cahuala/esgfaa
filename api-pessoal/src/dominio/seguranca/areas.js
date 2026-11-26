@@ -115,6 +115,8 @@ export const ROTAS = [
   R('POST', '/extractos/:id/itens', 'propostas'), R('PUT', '/extractos/:id/itens/:sub', 'propostas'), R('DELETE', '/extractos/:id/itens/:sub', 'propostas'),
   R('POST', '/extractos/:id/aplicar', 'propostas'), R('DELETE', '/extractos/:id', 'propostas'),
   R('GET', '/licencas', 'licencas'), R('POST', '/licencas/verificar', 'licencas', true), R('POST', '/licencas', 'licencas'), R('DELETE', '/licencas/:id', 'licencas'),
+  // o plano da área (o serviço confirma que é o chefe da área) e o de cada um: qualquer conta
+  R('GET', '/plano-ferias/area', null), R('PUT', '/plano-ferias/area', null), R('GET', '/eu/plano-ferias', null),
   R('GET', '/plano-ferias', 'licencas'), R('PUT', '/plano-ferias', 'licencas'), R('POST', '/plano-ferias/importar', 'licencas'),
   R('GET', '/plano-ferias/guias', 'licencas'), R('POST', '/plano-ferias/guias', 'licencas'), R('POST', '/plano-ferias/guias/imprimir', 'licencas'), R('PUT', '/plano-ferias/guias/:id/levantamento', 'licencas'),
   R('GET', '/ausencias', 'ausencias'), R('POST', '/ausencias', 'ausencias'), R('PUT', '/ausencias/:id', 'ausencias'), R('DELETE', '/ausencias/:id', 'ausencias'),

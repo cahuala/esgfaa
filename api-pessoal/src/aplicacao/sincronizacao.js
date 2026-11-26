@@ -11,7 +11,7 @@ function postoEquivalente(p) {
   const x = lista.find((y) => simples(y.nome) === simples(p.postoExterno))
   return x ? nomeDoPosto(x.equivale) : ''
 }
-import { BI_ANGOLANO, origemDe } from '../dominio/pessoal/ficha.js'
+import { BI_ANGOLANO, HABILITACOES, origemDe } from '../dominio/pessoal/ficha.js'
 import { POLICIA_NACIONAL, POSTOS_POLICIA, forcaPorNome } from '../dominio/pessoal/forcas.js'
 import { invalido } from '../erros.js'
 
@@ -92,6 +92,10 @@ export class ServicoSincronizacao {
         posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.postoExterno ?? '', postoEquivalente: !p.posto && p.postoExterno ? postoEquivalente(p) : '',
         ramo: p.ramo ?? '', nip: p.nip || p.numeroAgente || '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '',
         origem: origemDe(p), pais: origemDe(p) === 'estrangeiro' ? p.paisNascimento || p.nacionalidade || '' : '',
+        // para a ficha académica na Administração Escolar (sem BI, morada, família nem vencimentos)
+        genero: p.genero ?? '', dataNascimento: p.dataNascimento ? new Date(p.dataNascimento).toISOString().slice(0, 10) : '', naturalidade: p.naturalidade ?? '', provincia: p.provincia ?? '',
+        nacionalidade: p.nacionalidade ?? '', habilitacao: HABILITACOES[p.habilitacao] ?? '', areaFormacao: (p.areaFormacao ?? '').slice(0, 120), funcaoActual: (p.funcaoActual ?? '').slice(0, 120),
+        especialidade: p.especialidade ?? '', tipoDocente: p.tipoDocente ?? '', categoriaDocente: p.categoriaDocente ?? '',
       },
       ...(foto !== undefined ? { foto } : {}),
     }

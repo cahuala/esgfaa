@@ -55,6 +55,8 @@ export default function PlanoFerias() {
     { titulo: 'NIP / N.º agente', valor: ident },
     { titulo: 'Mês de férias', valor: (l) => (l.mes ? MESES_LONGOS[l.mes - 1] : '') },
     { titulo: 'Dias', valor: (l) => (l.adicionais ? `${l.dias} + ${l.adicionais}` : l.dias), alinhar: 'center' },
+    // quem marcou: o Pessoal (o e-mail da conta) ou o chefe da área («Nome (Departamento de …)»)
+    { titulo: 'Marcado por', valor: (l) => l.marcadoPor || '' },
   ]
   const titulo = `Plano de Férias — ${unidade?.nome ?? 'Escola Superior de Guerra'} — ${ano}`
   function imprimir() {

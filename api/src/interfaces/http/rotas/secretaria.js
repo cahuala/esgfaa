@@ -44,6 +44,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
 
   r.get('/contas/origem', (req, res) => res.json(p.registo.origem(ctx(req))))
   r.get('/contas', validar({ query: E.filtrosContas }), async (req, res) => res.json(await p.registo.listarContas(ctx(req), req.dados.query)))
+  // a ficha de um estudante ou docente (dados do Pessoal, turmas e cadeiras)
+  r.get('/contas/:id/ficha', validar({ params: pId }), async (req, res) => res.json(await p.registo.ficha(ctx(req), req.dados.params.id)))
   r.get('/contas/:id/foto', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await p.registo.fotoDaConta(ctx(req), req.dados.params.id), { soLeitura: true }))
   r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))
   r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await p.registo.editarConta(ctx(req), req.dados.params.id, req.dados.body)))

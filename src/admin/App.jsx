@@ -53,6 +53,7 @@ import Perfil from './paginas/Perfil'
 import Papeis from './paginas/Papeis'
 import Estatisticas from './paginas/Estatisticas'
 import JanelaDialogo from '../portal/JanelaDialogo'
+import FichaConta from './paginas/pessoal/FichaConta'
 
 // recria a página (e o seu estado) quando muda a coleção, o item ou a página editada
 function PorEndereco({ children }) {
@@ -107,6 +108,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/documentos/estudante/:id/historico" element={<Historico />} />}
         {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/certificado/:estudanteId" element={<CertificadoCurso />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
+        {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo/:id/ficha" element={<FichaConta />} />}
         {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo" element={<Registo />} />}
         <Route path="/academico/contas" element={<Navigate to="/pessoal/registo" replace />} />
         {pode('academico.ver') && <Route path="/academico/pedidos" element={<PedidosAcademicos />} />}

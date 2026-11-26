@@ -135,6 +135,7 @@ export default function Layout({ children }) {
             {<Item para="/permissoes" area="secretaria" icone="fa-user-shield" texto="O que cada conta pode fazer" />}
             <Item para="/expediente" icone="fa-inbox" texto="Expediente" contador={avisos.porReceber} />
             <Item para="/mensagens" icone="fa-comments" texto="Mensagens" contador={avisos.mensagens} />
+            <Item para="/ferias" icone="fa-umbrella-beach" texto="Férias (o meu plano e o da área)" />
             {utilizador.pessoaId && <Item para={`/pessoas/${utilizador.pessoaId}`} icone="fa-id-badge" texto="A minha ficha" />}
 
             <div className="menu-header">Administração</div>

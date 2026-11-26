@@ -34,9 +34,24 @@ export class ServicoRegistoPessoal {
     return this.contas.listar(filtros).then((l) => l.map((c) => ({ ...c.publico(), deveMudarSenha: c.deveMudarSenha })))
   }
 
+  // a ficha de um estudante ou docente (para a Administração Escolar): os dados que vêm do Pessoal e as turmas
+  async ficha(ctx, id) {
+    ctx.actor.exigir('pessoal.ver', 'academico.ver')
+    const c = await this.contas.porId(id)
+    if (!c) throw new NaoEncontrado('Conta não encontrada.')
+    const matriculas = c.tipo === 'estudante' && this.academico ? await this.academico.matriculasDoEstudante(c.id).catch(() => []) : []
+    const cadeiras = c.tipo === 'docente' && this.academico ? await this.academico.cadeirasDoDocente(c.id).catch(() => []) : []
+    return {
+      ...c.publico(), deveMudarSenha: c.deveMudarSenha,
+      turmas: matriculas.map((m) => ({ id: m.turma?.id ?? m.turmaId, nome: m.turma?.nome ?? '', anoLetivo: m.turma?.anoLetivo ?? '', estado: m.estado })),
+      cadeiras: cadeiras.map((x) => ({ id: x.id, codigo: x.codigo, nome: x.nome, turma: x.turma?.nome ?? '', anoLetivo: x.turma?.anoLetivo ?? '' })),
+    }
+  }
+
   async #dadosConta(dados = {}) {
     const d = typeof dados === 'object' && dados && !Array.isArray(dados) ? dados : {}
-    return Object.fromEntries(['posto', 'ramo', 'telefone', 'nip', 'departamento']
+    // o que vem do Pessoal para a ficha académica (sem BI, morada, família nem vencimentos)
+    return Object.fromEntries(['posto', 'ramo', 'telefone', 'nip', 'departamento', 'postoEquivalente', 'origem', 'pais', 'genero', 'dataNascimento', 'naturalidade', 'provincia', 'nacionalidade', 'habilitacao', 'areaFormacao', 'funcaoActual', 'especialidade', 'tipoDocente', 'categoriaDocente']
       .filter((k) => d[k] !== undefined && d[k] !== '')
       .map((k) => [k, limparTexto(d[k]).slice(0, 120)]))
   }

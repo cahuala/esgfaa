@@ -168,13 +168,14 @@ export async function documentoPdf(d) {
     if (c.posto) doc.text(`***${c.posto.toUpperCase()}***`, w - 70, y + 18, { align: 'center' })
   } else if (d.assinatura !== false) {
     if (y > h - 46) { doc.addPage(); y = 25 }
+    // quem assina: o indicado no documento ({ cargo, nome, posto }) ou o Chefe da Repartição de Pessoal e Quadros
     const agora = new Date()
     const resto = ` em ${quem.local || 'Luanda'}, ${agora.getDate()} de ${MESES[agora.getMonth()]} de ${agora.getFullYear()}`
     doc.setFont('helvetica', 'normal').setFontSize(9)
     const w1 = doc.getTextWidth('ESCOLA SUPERIOR DE GUERRA')
     const w2 = doc.getTextWidth(resto)
     doc.text('ESCOLA SUPERIOR DE GUERRA', w / 2 - (w1 + w2) / 2, y + 6).text(resto, w / 2 - (w1 + w2) / 2 + w1, y + 6)
-    const c = quem.chefeRpq ?? {}
+    const c = (d.assinatura && typeof d.assinatura === 'object' ? d.assinatura : null) ?? quem.chefeRpq ?? {}
     doc.text((c.cargo || 'O CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS').toUpperCase(), w / 2, y + 20, { align: 'center' })
     if (c.nome) doc.text(c.nome.toUpperCase(), w / 2, y + 34, { align: 'center' })
     if (c.posto) doc.text(`**${c.posto.toUpperCase()}**`, w / 2, y + 39, { align: 'center' })

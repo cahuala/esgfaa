@@ -121,6 +121,7 @@ function Registo() {
                         <td className="text-nowrap small">{c.ultimoAcesso ? dataHora(c.ultimoAcesso) : tx('Nunca entrou')}</td>
                         <td>{!c.ativo ? <span className="badge bg-secondary">{tx('Desactivada')}</span> : c.deveMudarSenha ? <span className="badge bg-warning text-dark">{tx('Palavra-passe inicial')}</span> : <span className="badge bg-success">{tx('Activa')}</span>}</td>
                         <td className="text-end text-nowrap">
+                          <Link to={`/pessoal/registo/${c.id}/ficha`} className="btn btn-sm btn-white me-1" title={tx('Ficha')} aria-label={tx('Ficha de {0}', { 0: c.nome })}><i className="fa fa-id-card me-1" />{tx('Ficha')}</Link>
                           {registar && (
                             <>
                               {mudar && <button type="button" className="btn btn-sm btn-white me-1" onClick={() => abrirEdicao(c)} title={tx('Editar dados')} aria-label={tx('Editar {0}', { 0: c.nome })}><i className="fa fa-pen" /></button>}

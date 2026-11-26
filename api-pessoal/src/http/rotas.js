@@ -318,6 +318,10 @@ export function rotas({ servicos: s, config }) {
   r.put('/plano-ferias', validar({ body: z.object({ ano: z.number().int().min(2000).max(2100), pessoaId: z.number().int().positive(), mes: z.number().int().min(1).max(12).nullable() }) }), async (req, res) => res.json(await s.planoFerias.definir(u(req), req.dados.body)))
   // as guias de férias de um mês: quem está no plano, com a guia (prontas a imprimir); «preparar» emite as que faltam
   const mesAno = z.object({ ano: z.coerce.number().int().min(2000).max(2100), mes: z.coerce.number().int().min(1).max(12) })
+  // o plano de férias de cada área (pelo chefe da área) e o de cada pessoa (a sua conta)
+  r.get('/plano-ferias/area', validar({ query: z.object({ ano: z.coerce.number().int().min(2000).max(2100) }) }), async (req, res) => res.json(await s.planoFerias.daArea(u(req), req.dados.query)))
+  r.put('/plano-ferias/area', validar({ body: z.object({ ano: z.number().int().min(2000).max(2100), pessoaId: z.number().int().positive(), mes: z.number().int().min(1).max(12).nullable() }) }), async (req, res) => res.json(await s.planoFerias.definirNaArea(u(req), req.dados.body)))
+  r.get('/eu/plano-ferias', async (req, res) => res.json(await s.planoFerias.meu(u(req))))
   r.get('/plano-ferias/guias', validar({ query: mesAno }), async (req, res) => res.json(await s.planoFerias.guiasDoMes(u(req), req.dados.query)))
   r.put('/plano-ferias/guias/:id/levantamento', validar({ params: E.pId, body: z.object({ data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable() }) }), async (req, res) => res.json(await s.planoFerias.registarLevantamento(u(req), req.dados.params.id, req.dados.body.data)))
   r.post('/plano-ferias/guias/imprimir', validar({ body: z.object({ ids: z.array(z.number().int().positive()).min(1).max(500) }) }), async (req, res) => res.json(await s.planoFerias.imprimirGuias(u(req), req.dados.body.ids)))

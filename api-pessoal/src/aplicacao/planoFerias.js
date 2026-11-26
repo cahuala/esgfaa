@@ -1,4 +1,5 @@
-import { invalido, naoEncontrado } from '../erros.js'
+import { conflito, invalido, naoEncontrado, semPermissao } from '../erros.js'
+import { SO_EFECTIVO } from '../dominio/pessoal/ficha.js'
 import { tempoServico } from '../dominio/pessoal/carreira.js'
 import { exigir } from './sessao.js'
 import { ordenarLinhas } from './ordem.js'
@@ -135,10 +136,11 @@ export class ServicoPlanoFerias {
     const lista = await this.pessoas.listar(u, { unidadeId: unidadeId || undefined, tipo: tipo || undefined })
     const plano = await this.bd.planoFerias.findMany({ where: { ano, pessoaId: { in: lista.map((p) => p.id) } } })
     const mes = new Map(plano.map((x) => [x.pessoaId, x.mes]))
+    const por = new Map(plano.map((x) => [x.pessoaId, x.criadoPor]))
     const hoje = this.agora()
     const linhas = lista.map((p) => ({
       id: p.id, nome: p.nome, tipo: p.tipo, nip: p.nip, numeroAgente: p.numeroAgente, postoNome: p.postoNome, postoAbreviatura: p.postoAbreviatura, grau: p.grau ?? 0,
-      categoriaCivil: p.categoriaCivil, unidadeNome: p.unidadeNome, fotoId: p.fotoId, mes: mes.get(p.id) ?? null, dias: diasDeFerias(p, hoje), adicionais: feriasAdicionais(p, hoje), hierarquia: p.hierarquia,
+      categoriaCivil: p.categoriaCivil, unidadeNome: p.unidadeNome, fotoId: p.fotoId, mes: mes.get(p.id) ?? null, marcadoPor: por.get(p.id) ?? '', dias: diasDeFerias(p, hoje), adicionais: feriasAdicionais(p, hoje), hierarquia: p.hierarquia,
     })) // a lista vem já pela ordem hierárquica (posto, unidade, função, antiguidade)
     return { ano, linhas, planeados: linhas.filter((l) => l.mes).length }
   }
@@ -154,6 +156,66 @@ export class ServicoPlanoFerias {
     }
     await this.auditoria.registar(u, 'plano_ferias', `${p.nome}: ${mes ? MESES[mes - 1] : 'retirado'} de ${ano}`)
     return { pessoaId, ano, mes }
+  }
+
+  /*
+    O plano de férias de cada área da Escola (as direcções, os departamentos do Ensino, as repartições…): o chefe
+    — quem ocupa o cargo de comando ou de direcção e chefia da unidade — marca o mês de férias de quem trabalha na
+    sua unidade e nas de baixo. Fica no plano de férias do Pessoal (que vê tudo e pode mudar). Quem já tem a guia
+    desse ano emitida só se muda no Pessoal.
+  */
+  async #minhaArea(u) {
+    const p = u.pessoaId ? await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { id: true, nome: true, ativo: true, posto: true, ramo: true, cargo: { select: { nome: true, funcao: true, unidadeId: true, unidade: { select: { id: true, nome: true } } } } } }) : null
+    const chefia = p?.ativo && p.cargo && ['comando', 'direccao_chefia'].includes(p.cargo.funcao) && p.cargo.unidadeId
+    if (!chefia) throw semPermissao('O plano de férias da área faz-se pela conta do chefe da área (quem ocupa o cargo de comando ou de direcção e chefia da unidade).')
+    const unidades = await this.bd.unidade.findMany({ select: { id: true, paiId: true } })
+    const ids = new Set([p.cargo.unidadeId])
+    for (let mais = true; mais;) { mais = false; for (const x of unidades) if (x.paiId && ids.has(x.paiId) && !ids.has(x.id)) { ids.add(x.id); mais = true } }
+    return { chefe: p, unidade: p.cargo.unidade, ids: [...ids] }
+  }
+
+  async #guiasDoAno(ano, pessoaIds) {
+    const g = pessoaIds.length ? await this.bd.documentoEmitido.findMany({ where: { tipo: 'guia_ferias', pessoaId: { in: pessoaIds } }, select: { pessoaId: true, dados: true } }) : []
+    return new Set(g.filter((x) => mesDaGuia(x.dados).startsWith(`${ano}-`)).map((x) => x.pessoaId))
+  }
+
+  async daArea(u, { ano }) {
+    const { chefe, unidade, ids } = await this.#minhaArea(u)
+    const pessoas = await this.bd.pessoa.findMany({ where: { ativo: true, AND: [SO_EFECTIVO], unidadeId: { in: ids } }, select: { id: true, nome: true, tipo: true, posto: true, ramo: true, categoriaCivil: true, unidade: { select: { nome: true } }, cargo: { select: { nome: true } } } })
+    const plano = await this.bd.planoFerias.findMany({ where: { ano, pessoaId: { in: pessoas.map((x) => x.id) } } })
+    const mes = new Map(plano.map((x) => [x.pessoaId, x]))
+    const comGuia = await this.#guiasDoAno(ano, pessoas.map((x) => x.id))
+    const linhas = await ordenarLinhas(this.bd, pessoas.map((x) => ({
+      id: x.id, nome: x.nome, postoNome: x.posto ? nomeDoPosto(x.posto, x.ramo) : x.categoriaCivil || 'Civil', unidadeNome: x.unidade?.nome ?? '', cargoNome: x.cargo?.nome ?? '',
+      mes: mes.get(x.id)?.mes ?? null, marcadoPor: mes.get(x.id)?.criadoPor ?? '', comGuia: comGuia.has(x.id),
+    })))
+    return { ano, unidade: unidade.nome, chefe: { nome: chefe.nome, cargo: chefe.cargo.nome, posto: chefe.posto ? nomeDoPosto(chefe.posto, chefe.ramo) : '' }, linhas, planeados: linhas.filter((l) => l.mes).length }
+  }
+
+  async definirNaArea(u, { ano, pessoaId, mes }) {
+    const { unidade, ids } = await this.#minhaArea(u)
+    const p = await this.bd.pessoa.findUnique({ where: { id: pessoaId }, select: { id: true, nome: true, ativo: true, unidadeId: true, vinculo: true } })
+    if (!p || !p.ativo || !ids.includes(p.unidadeId) || p.vinculo !== 'funcionario') throw naoEncontrado('Essa pessoa não é da sua área.')
+    if ((await this.#guiasDoAno(ano, [p.id])).size) throw conflito('A guia de férias deste ano já foi emitida: só o Pessoal muda o plano.')
+    const por = `${u.nome} (${unidade.nome})`
+    if (mes === null) await this.bd.planoFerias.deleteMany({ where: { ano, pessoaId } })
+    else await this.bd.planoFerias.upsert({ where: { ano_pessoaId: { ano, pessoaId } }, create: { ano, pessoaId, mes, criadoPor: por }, update: { mes, criadoPor: por } })
+    await this.auditoria.registar(u, 'plano_ferias', `${p.nome}: ${mes ? MESES[mes - 1] : 'retirado'} de ${ano} (pela área ${unidade.nome})`)
+    return { pessoaId, ano, mes }
+  }
+
+  // o meu plano de férias (qualquer conta ligada a uma pessoa): os meses planeados e as guias emitidas
+  async meu(u) {
+    if (!u.pessoaId) return { pessoa: null, plano: [], guias: [] }
+    const p = await this.bd.pessoa.findUnique({ where: { id: u.pessoaId }, select: { id: true, nome: true, tipo: true, dataIngresso: true, posto: true } })
+    if (!p) return { pessoa: null, plano: [], guias: [] }
+    const plano = await this.bd.planoFerias.findMany({ where: { pessoaId: p.id }, orderBy: { ano: 'desc' } })
+    const guias = await this.bd.documentoEmitido.findMany({ where: { tipo: 'guia_ferias', pessoaId: p.id }, orderBy: { criadoEm: 'desc' }, take: 10, select: { id: true, dados: true, criadoEm: true, levantadaEm: true } })
+    return {
+      pessoa: { id: p.id, nome: p.nome, dias: diasDeFerias(p), adicionais: feriasAdicionais(p, this.agora()) },
+      plano: plano.map((x) => ({ ano: x.ano, mes: x.mes, mesNome: MESES[x.mes - 1], marcadoPor: x.criadoPor })),
+      guias: guias.map((g) => ({ id: g.id, inicio: g.dados?.inicio ?? null, fim: g.dados?.fim ?? null, dias: g.dados?.dias ?? null, levantadaEm: g.levantadaEm ? g.levantadaEm.toISOString().slice(0, 10) : null })),
+    }
   }
 
   // linhas de um Excel/CSV: [{ identificador (NIP ou n.º de agente), mes }]
