@@ -23,7 +23,8 @@ const ESQUEMA = z.object({
   DATA_DIR: z.string().default('dados'),
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
   // e-mails das contas do portal académico (vazio = qualquer domínio)
-  EMAIL_DOMINIO_ESCOLA: z.string().regex(/^$|^[a-z0-9.-]+\.[a-z]{2,}$/i, 'EMAIL_DOMINIO_ESCOLA deve ser um domínio (ex.: esgfaa.gov.ao)').default('esgfaa.gov.ao'),
+  // um ou vários, separados por vírgulas (ex.: portal.esg.emfaa.gov.ao,esg.emfaa.gov.ao)
+  EMAIL_DOMINIO_ESCOLA: z.string().regex(/^$|^[a-z0-9.-]+\.[a-z]{2,}(\s*,\s*[a-z0-9.-]+\.[a-z]{2,})*$/i, 'EMAIL_DOMINIO_ESCOLA deve ser um domínio ou vários separados por vírgulas (ex.: portal.esg.emfaa.gov.ao)').default('esgfaa.gov.ao'),
   FUSO_HORARIO: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$|^UTC$/).default('Africa/Luanda'),
   PUBLIC_URL: z.union([z.literal(''), z.url()]).default(''),
   // endereço do painel de gestão (https://DOMINIO/ADMIN_PATH/): o Pessoal mostra-o ao Comandante, com o que o espera

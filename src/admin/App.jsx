@@ -29,6 +29,7 @@ import Historico from './paginas/academico/documentos/Historico'
 import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import DocumentosAno from './paginas/academico/documentos/DocumentosAno'
 import Estrutura from './paginas/academico/Estrutura'
+import Arquivo from './paginas/academico/Arquivo'
 import HorarioMensal from './paginas/academico/documentos/HorarioMensal'
 import Oficios from './paginas/academico/documentos/Oficios'
 import PautaFinal from './paginas/academico/documentos/PautaFinal'
@@ -97,6 +98,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/turmas/:id/oficios" element={<Oficios />} />}
         {pode('academico.ver') && <Route path="/academico/turmas/:id/horario-mensal" element={<HorarioMensal />} />}
         {pode('academico.ver') && <Route path="/academico/estrutura" element={<Estrutura />} />}
+        {pode('academico.ver') && <Route path="/academico/arquivo" element={<Arquivo />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/ano/:tipo" element={<DocumentosAno />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/pauta" element={<PautaTurma />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/turma/:id/lista" element={<ListaTurma />} />}

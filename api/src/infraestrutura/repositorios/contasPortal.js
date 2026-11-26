@@ -74,9 +74,9 @@ export class RepositorioContasPortal {
     return ultimo ? Number(ultimo.numero.slice(prefixo.length)) + 1 : 1
   }
 
-  async criar({ tipo, numero, nome, email, senha, dados }) {
+  async criar({ tipo, numero, nome, email, senha, dados, ativo = true }) {
     try {
-      return paraConta(await this.prisma.contaPortal.create({ data: { tipo, numero, nome, email, senha, dados: dados || {}, deveMudarSenha: true } }))
+      return paraConta(await this.prisma.contaPortal.create({ data: { tipo, numero, nome, email, senha, dados: dados || {}, deveMudarSenha: true, ativo } }))
     } catch (erro) {
       if (eDuplicado(erro)) throw new Conflito(String(erro.meta?.target || '').includes('email') ? 'Já existe uma conta com este e-mail.' : 'Número já usado; tente de novo.')
       throw erro

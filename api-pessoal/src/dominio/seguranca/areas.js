@@ -142,7 +142,7 @@ export const ROTAS = [
   // o registo de cada exportação para Excel/PDF (de qualquer tabela, de qualquer ecrã)
   R('POST', '/auditoria/exportacao', null),
   R('PUT', '/listas/:id', 'configuracoes'), R('POST', '/listas/:id/repor', 'configuracoes'), R('PUT', '/definicoes/assinaturas', 'configuracoes'),
-  R('GET', '/portal', 'configuracoes'), R('POST', '/portal/enviar', 'configuracoes'), R('POST', '/portal/reenviar-todos', 'configuracoes'),
+  R('GET', '/portal', 'configuracoes'), R('POST', '/portal/enviar', 'configuracoes'), R('POST', '/portal/reenviar-todos', 'configuracoes'), R('POST', '/portal/emails-acesso', ['academicos', 'configuracoes']),
   R('GET', '/privacidade/pedidos', 'privacidade'), R('PUT', '/privacidade/pedidos/:id', 'privacidade'),
 ]
 

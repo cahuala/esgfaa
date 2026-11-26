@@ -111,6 +111,7 @@ export default function Academicos({ tipo }) {
   const { dados, erro, recarregar } = useDados(ano === null ? null : '/academicos', { tipo, ativo, ...(ano ? { anoLetivo: ano } : {}) }, { tempoReal: true })
   const [escolhidos, setEscolhidos] = useState(() => new Set())
   const [novo, setNovo] = useState(false)
+  const [emails, setEmails] = useState(false)
   const [aImprimir, setAImprimir] = useState(false)
   const SEM_FILTRO = { ramo: '', origem: '', unidade: '', orgao: '', curso: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' }
   const [filtro, setFiltro] = useState(SEM_FILTRO)
@@ -193,8 +194,10 @@ export default function Academicos({ tipo }) {
   return (
     <>
       <Cabecalho titulo={t.titulo} subtitulo={t.sub} migalhas={[[t.titulo]]}>
+        {editar && <button type="button" className="btn btn-white" onClick={() => setEmails(true)}><i className="fa fa-at me-1" />E-mails de acesso ao portal</button>}
         {editar && <button type="button" className="btn btn-theme" onClick={() => setNovo(true)}><i className="fa fa-user-plus me-1" />Registar {t.um}</button>}
       </Cabecalho>
+      {emails && <EmailsAcesso aoFechar={() => setEmails(false)} aoCriar={() => { setEmails(false); recarregar() }} />}
       {!ligado && dados && <div className="alert alert-warning py-2"><i className="fa fa-plug me-2" />O Pessoal não está ligado ao Portal Académico: as contas e as fichas de acesso não estão disponíveis.</div>}
       {ligado && porEntregar.length > 0 && editar && (
         <div className="alert alert-info py-2 d-flex flex-wrap align-items-center gap-2">
@@ -251,6 +254,43 @@ function CamposAno({ papel, valor, aoMudar }) {
     </div>
   )
 }
+/*
+  E-mails de acesso à plataforma (Portal Académico): os docentes e os estudantes sem e-mail da Escola ficam com
+  nome.apelido@portal.esg.emfaa.gov.ao e seguem para o portal (o antigo estudante fica com a conta inactiva, para
+  o arquivo). Mostra primeiro os que se criariam.
+*/
+function EmailsAcesso({ aoFechar, aoCriar }) {
+  const { avisar } = useSessao()
+  const [d, setD] = useState(null)
+  const [erro, setErro] = useState('')
+  const [aCriar, setACriar] = useState(false)
+  useEffect(() => { api('/portal/emails-acesso', { metodo: 'POST', corpo: { simular: true } }).then(setD).catch((e) => setErro(e.message)) }, [])
+  async function criar() {
+    setACriar(true)
+    try {
+      const r = await api('/portal/emails-acesso', { metodo: 'POST', corpo: { simular: false } })
+      avisar(`${r.total} e-mail(s) de acesso criados (@${r.dominio}); seguem para o portal.`)
+      aoCriar()
+    } catch (e) { setErro(e.message); setACriar(false) }
+  }
+  return (
+    <Modal titulo="E-mails de acesso ao portal" aoFechar={aoFechar} rodape={<>
+      <button type="button" className="btn btn-white" onClick={aoFechar}>Fechar</button>
+      <button type="button" className="btn btn-theme" disabled={!d?.total || aCriar} onClick={criar}><i className={`fa ${aCriar ? 'fa-spinner fa-spin' : 'fa-at'} me-1`} />Criar {d?.total ?? ''} e-mail(s)</button>
+    </>}>
+      {erro && <Erro texto={erro} />}
+      {!d && !erro && <Carregando />}
+      {d && <>
+        <p>Os docentes e os estudantes que ainda não têm e-mail da Escola ficam com <b>nome.apelido@{d.dominio}</b> (sem acentos; se já existir, com o 2.º nome ou um número). É com ele que entram na plataforma. Os e-mails que já existem não mudam.</p>
+        <p className="small text-muted">{d.total ? `${d.total} pessoa(s): ${d.naEscola} na Escola e ${d.total - d.naEscola} antigo(s) estudante(s) (ficam com a conta inactiva no portal, para o arquivo das pautas).` : 'Todos os docentes e estudantes já têm e-mail.'}</p>
+        {d.total > 0 && <div className="table-responsive" style={{ maxHeight: 320 }}><table className="table table-sm"><thead><tr><th>Nome</th><th>E-mail de acesso</th><th>Na Escola</th></tr></thead>
+          <tbody>{d.exemplos.map((x) => <tr key={x.id}><td>{x.nome}</td><td>{x.email}</td><td>{x.ativo ? 'Sim' : 'Já saiu'}</td></tr>)}</tbody></table></div>}
+        {d.total > d.exemplos.length && <p className="small text-muted">… e mais {d.total - d.exemplos.length}.</p>}
+      </>}
+    </Modal>
+  )
+}
+
 const Seccao = ({ icone, children }) => <h6 className="pes-registo-seccao"><i className={`fa ${icone} me-2`} />{children}</h6>
 
 /*

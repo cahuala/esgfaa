@@ -248,6 +248,7 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano lectivo e semestres')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/estrutura" icone="fa-sitemap" texto={tx('Estrutura do ensino (cursos e departamentos)')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
+            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Arquivo (pautas dos anos anteriores)')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
             {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Consultar registo de pessoas')} />}

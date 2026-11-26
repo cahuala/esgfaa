@@ -102,6 +102,7 @@ import { ApoioCadeiras } from './aplicacao/academico/partilhado/apoio.js'
 import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoes.js'
 import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
 import { ServicoDocumentos } from './aplicacao/academico/administracao/documentos.js'
+import { ServicoArquivoAcademico } from './aplicacao/academico/administracao/arquivo.js'
 import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
 import { RepositorioQualidade } from './infraestrutura/repositorios/qualidade.js'
 import { ServicoInqueritosInstitucionais } from './aplicacao/qualidade/inqueritos.js'
@@ -284,6 +285,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       conselhoCurso: new ServicoConselhoCurso(d),
       calendario: new ServicoCalendarioAcademico(d),
       horarioMensal: new ServicoHorarioMensal({ ...d, prisma }),
+      // o arquivo da Administração Escolar (pautas assinadas dos anos anteriores)
+      arquivo: new ServicoArquivoAcademico({ ...d, prisma }),
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),

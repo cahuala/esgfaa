@@ -273,7 +273,7 @@ if (-not $Atualizar) {
     "ADMIN_NAME=$AdminNome", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
     '# o painel de gestão só abre a partir da rede interna (o site e o Portal Académico abrem de qualquer lado)',
     'PAINEL_REDES=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16',
-    'APROVACAO_COMANDANTE=sim', 'EMAIL_DOMINIO_ESCOLA=esg.emfaa.gov.ao',
+    'APROVACAO_COMANDANTE=sim', '# e-mails de acesso dos docentes e estudantes (criados no Sistema de Pessoal: nome.apelido@portal.esg.emfaa.gov.ao)', 'EMAIL_DOMINIO_ESCOLA=portal.esg.emfaa.gov.ao,esg.emfaa.gov.ao',
     '# serviços fora de Angola (IA, pesquisa na internet do anti-plágio): só com autorização da Escola (Lei n.º 22/11)',
     'DADOS_FORA_DE_ANGOLA=nao', 'FONTES_CIENTIFICAS=nao',
     '# e-mail das notificações (smtps://utilizador:senha@servidor:465); vazio = só no portal',

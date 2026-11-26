@@ -175,7 +175,9 @@ export class ServicoRegistoPessoal {
           existente.email = email
         }
         if (!existente) {
-          if (!p.ativo) {
+          // o antigo discente (já saiu da Escola) tem conta inactiva — não entra no portal; guarda o histórico do
+          // arquivo (as turmas, as notas e a pauta do seu curso). O docente que já não está não precisa de conta.
+          if (!p.ativo && t !== 'estudante') {
             resultados.push({ ref: p.ref, ok: true, contaId: null })
             continue
           }
@@ -185,7 +187,7 @@ export class ServicoRegistoPessoal {
           for (let tentativa = 0; !conta; tentativa++) {
             try {
               const ano = this.relogio.agora().getFullYear()
-              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: await this.#dadosConta(p.dados) })
+              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: await this.#dadosConta(p.dados), ativo: Boolean(p.ativo) })
             } catch (erro) {
               if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
             }

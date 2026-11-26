@@ -7,12 +7,14 @@ import { erro } from '../comum/validacao.js'
 export const TIPOS_CONTA = ['estudante', 'docente']
 
 /*
-  O e-mail de entrada é o da Escola (ex.: nome@esgfaa.gov.ao).
-  dominio vazio = aceita qualquer domínio (útil em testes ou instalações sem domínio próprio).
+  O e-mail de entrada é o da Escola (ex.: nome.apelido@portal.esg.emfaa.gov.ao).
+  dominio: um domínio ou vários separados por vírgulas (o 1.º é o que se mostra); vazio = aceita qualquer domínio
+  (útil em testes ou instalações sem domínio próprio).
 */
 export function emailDaEscola(email, dominio) {
   const e = normalizarEmail(email)
-  if (dominio && !e.endsWith(`@${dominio}`)) throw erro('email', `Use o e-mail da Escola (…@${dominio}).`)
+  const dominios = String(dominio ?? '').split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
+  if (dominios.length && !dominios.some((d) => e.endsWith(`@${d}`))) throw erro('email', `Use o e-mail da Escola (…@${dominios[0]}).`)
   return e
 }
 

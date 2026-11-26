@@ -73,7 +73,7 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
   const linhas = ['', `Docentes e estudantes (${ac.versao}):`]
   const feita = await bd.definicao.findUnique({ where: { chave: CHAVE_ACADEMICOS } })
   if (feita?.valor?.versao === ac.versao) return [...linhas, `   já tinham sido carregados em ${String(feita.valor.em ?? '').slice(0, 10)} (não se repete).`]
-  const todas = await bd.pessoa.findMany({ select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, vinculo: true, outrosVinculos: true, tipoDocente: true, habilitacao: true, areaFormacao: true, ativo: true, cursos: { select: { nome: true } } } })
+  const todas = await bd.pessoa.findMany({ select: { id: true, nome: true, nip: true, numeroAgente: true, tipo: true, posto: true, vinculo: true, outrosVinculos: true, tipoDocente: true, habilitacao: true, areaFormacao: true, postoExterno: true, funcaoActual: true, unidadeOrigem: true, telefone: true, dataNascimento: true, ativo: true, cursos: { select: { nome: true } } } })
   const porNumero = new Map()
   const porNome = new Map()
   const indexar = (p) => {
@@ -131,6 +131,9 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
         if (x.habilitacao && !p.habilitacao) d.habilitacao = x.habilitacao
         if (x.areaFormacao && !p.areaFormacao) d.areaFormacao = x.areaFormacao
         if (x.postoExterno && !p.postoExterno) d.postoExterno = x.postoExterno
+        // da relação nominal do arquivo da Administração Escolar: só o que está em branco na ficha
+        for (const k of ['funcaoActual', 'unidadeOrigem', 'telefone']) if (x[k] && !p[k]) d[k] = x[k]
+        if (x.dataNascimento && !p.dataNascimento) d.dataNascimento = x.dataNascimento
         if (Object.keys(d).length) {
           await s.pessoas.editar(u, p.id, d, { silencioso: true, despachado: true })
           Object.assign(p, d)
@@ -147,7 +150,7 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
       const d = efectivo
         ? { tipo: x.tipo, nome: x.nome, vinculo: 'funcionario', outrosVinculos: ['docente', ...(x.estudante ? ['estudante'] : [])], ativo }
         : { tipo: x.tipo, nome: x.nome, vinculo: x.docente ? 'docente' : 'estudante', outrosVinculos: x.docente && x.estudante ? ['estudante'] : [], ativo }
-      for (const k of ['nomeGuerra', 'nip', 'numeroAgente', 'posto', 'ramo', 'fps', 'situacao', 'unidadeOrigem', 'postoExterno', 'nacionalidade', 'paisNascimento', 'habilitacao', 'areaFormacao', 'observacoes', 'ramoPorConfirmar']) if (x[k]) d[k] = x[k]
+      for (const k of ['nomeGuerra', 'nip', 'numeroAgente', 'posto', 'ramo', 'fps', 'situacao', 'unidadeOrigem', 'postoExterno', 'nacionalidade', 'paisNascimento', 'habilitacao', 'areaFormacao', 'observacoes', 'ramoPorConfirmar', 'dataNascimento', 'telefone', 'funcaoActual']) if (x[k]) d[k] = x[k]
       if (x.docente) d.tipoDocente = x.docente.tipo
       if (!ativo && x.docente) Object.assign(d, { motivoSaida: x.docente.motivoSaida ?? 'Já não consta da relação do corpo docente' })
       else if (!ativo) Object.assign(d, { motivoSaida: 'Fim do curso', dataSaidaEscola: x.ultimoFim ?? null })
@@ -164,7 +167,7 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
   }
   linhas.push(
     `   ${n.novas} ficha(s) nova(s) (${n.novas - n.saidas} na Escola: docentes e estudantes deste ano; ${n.saidas} finalistas de anos anteriores, como saídos).`,
-    `   ${n.acrescentadas} ficha(s) que já existiam ficaram também como docente/estudante (ou com a habilitação que faltava); ${n.iguais} já tinham tudo.`,
+    `   ${n.acrescentadas} ficha(s) que já existiam ficaram também como docente/estudante (ou com os dados que faltavam: habilitação, nascimento, telefone, função); ${n.iguais} já tinham tudo.`,
     `   ${n.cursos} curso(s) feitos na Escola acrescentados às fichas; ${n.anos} ano(s) lectivo(s) de docente ou estudante registados.`,
   )
   if (conferir.length) linhas.push(`   Para conferir (${conferir.length}):`, ...conferir.map((t) => `   - ${t}`))

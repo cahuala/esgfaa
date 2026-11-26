@@ -143,4 +143,23 @@ describe('Carregar os docentes e os estudantes das listas', () => {
     assert.equal(await amb.contentor.bd.pessoa.count(), pessoas)
     assert.equal(await amb.contentor.bd.curso.count(), cursos)
   })
+
+  it('o arquivo da Administração Escolar completa só o que está em branco (nascimento, telefone, função, proveniência)', async () => {
+    const vazio = (await adm.post('/api/pessoas').send(militar({ nome: 'Coronel do Arquivo Sem Dados', nip: 'NIPAR1', posto: 'coronel', dataNascimento: null })).expect(201)).body
+    const cheio = (await adm.post('/api/pessoas').send(militar({ nome: 'Coronel do Arquivo Com Dados', nip: 'NIPAR2', posto: 'coronel', dataNascimento: '1970-01-01', telefone: '911111111', funcaoActual: 'Chefe de Repartição' })).expect(201)).body
+    const extra = { tipo: 'militar', posto: 'coronel', ramo: 'EXE', fps: 'QP', dataNascimento: '1964-08-02', telefone: '923000000', funcaoActual: 'Comandante de Brigada', unidadeOrigem: 'Comando do Exército', anos: [{ anoLetivo: '2023/2024', papel: 'estudante', curso: '29.º Curso Superior de Comando e Direcção', concluido: true }] }
+    await carregarAcademicos(amb.contentor, { versao: 'arquivo-1', pessoas: [
+      { ...extra, nome: 'Coronel do Arquivo Sem Dados', nip: 'NIPAR1' },
+      { ...extra, nome: 'Coronel do Arquivo Com Dados', nip: 'NIPAR2' },
+      { ...extra, nome: 'Coronel Novo do Arquivo', nip: 'NIPAR3', ultimoFim: '2024-07-26' },
+    ] }, u)
+    const ver = async (id) => (await adm.get(`/api/pessoas/${id}`).expect(200)).body
+    const v = await ver(vazio.id)
+    assert.deepEqual([v.dataNascimento?.slice(0, 10), v.telefone, v.funcaoActual, v.unidadeOrigem], ['1964-08-02', '923000000', 'Comandante de Brigada', 'Comando do Exército'])
+    const c = await ver(cheio.id)
+    assert.deepEqual([c.dataNascimento?.slice(0, 10), c.telefone, c.funcaoActual], ['1970-01-01', '911111111', 'Chefe de Repartição'])
+    const n = await amb.contentor.bd.pessoa.findFirst({ where: { nip: 'NIPAR3' } })
+    const nf = await ver(n.id)
+    assert.deepEqual([nf.dataNascimento?.slice(0, 10), nf.telefone, nf.funcaoActual, nf.ativo, nf.motivoSaida], ['1964-08-02', '923000000', 'Comandante de Brigada', false, 'Fim do curso'])
+  })
 })

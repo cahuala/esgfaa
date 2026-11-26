@@ -37,6 +37,8 @@ const ESQUEMA = z.object({
   // ligação ao Portal Académico (num só sentido): para onde enviar os docentes e estudantes, e a chave partilhada
   PORTAL_API_URL: z.union([z.literal(''), z.url()]).default(''),
   INTEGRACAO_CHAVE: z.string().default(''),
+  // domínio dos e-mails de acesso à plataforma (docentes e estudantes): nome.apelido@DOMINIO
+  PORTAL_EMAIL_DOMINIO: z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i, 'PORTAL_EMAIL_DOMINIO deve ser um domínio (ex.: portal.esg.emfaa.gov.ao)').default('portal.esg.emfaa.gov.ao'),
   // pasta com a aplicação já construída (dist/pessoal) para servir no mesmo endereço; vazio = não serve
   APP_DIR: z.string().default(''),
   MAX_FOTO_MB: inteiro(5, 1, 50),
@@ -90,7 +92,7 @@ export function criarConfig(env = process.env) {
     origens: e.CORS_ORIGINS,
     confiarProxy: proxy(e.TRUST_PROXY),
     admin: { nome: e.ADMIN_NOME, email: e.ADMIN_EMAIL.toLowerCase(), senha: e.ADMIN_PASSWORD },
-    portal: { url: e.PORTAL_API_URL.replace(/\/$/, ''), chave: e.INTEGRACAO_CHAVE },
+    portal: { url: e.PORTAL_API_URL.replace(/\/$/, ''), chave: e.INTEGRACAO_CHAVE, dominioEmail: e.PORTAL_EMAIL_DOMINIO.toLowerCase() },
     pastaApp: e.APP_DIR ? path.resolve(RAIZ, e.APP_DIR) : '',
     pastaFotos: path.resolve(RAIZ, e.DATA_DIR, 'fotos'),
     maxFoto: e.MAX_FOTO_MB * 1048576,

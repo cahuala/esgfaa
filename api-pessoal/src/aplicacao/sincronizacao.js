@@ -14,6 +14,7 @@ function postoEquivalente(p) {
 import { BI_ANGOLANO, HABILITACOES, origemDe } from '../dominio/pessoal/ficha.js'
 import { POLICIA_NACIONAL, POSTOS_POLICIA, forcaPorNome } from '../dominio/pessoal/forcas.js'
 import { invalido } from '../erros.js'
+import { emailDeAcesso } from '../dominio/pessoal/emailAcesso.js'
 
 // os cargos de chefia militar da Direcção de Ensino que têm conta automática no painel de gestão (entram com o NIP)
 const CHEFES_ENSINO = [
@@ -115,6 +116,40 @@ export class ServicoSincronizacao {
     for (const id of ids) await this.bd.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
     await this.auditoria.registar(u, 'reenviar_portal', `${ids.length} pessoa(s)`)
     return { emFila: ids.length }
+  }
+
+  /*
+    E-mails de acesso à plataforma: os docentes e os estudantes (também os antigos, para o arquivo) que ainda não
+    têm e-mail da Escola ficam com nome.apelido@DOMINIO (PORTAL_EMAIL_DOMINIO) e vão para a fila do portal, que
+    lhes cria a conta (a dos antigos estudantes fica inactiva: guarda o histórico). Os e-mails que já existem não
+    mudam. simular: mostra os que criaria.
+  */
+  async criarEmailsAcesso(u, { simular = true, pessoaIds } = {}) {
+    exigir(u, 'editar')
+    const dominio = this.config.portal.dominioEmail
+    const usados = new Set((await this.bd.pessoa.findMany({ where: { email: { not: null } }, select: { email: true } })).map((p) => p.email.toLowerCase()))
+    const sem = await this.bd.pessoa.findMany({
+      where: { email: null, vinculo: { not: 'domiciliar' }, OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }], ...(pessoaIds?.length ? { id: { in: pessoaIds } } : {}) },
+      select: { id: true, nome: true, ativo: true }, orderBy: { nome: 'asc' },
+    })
+    const novos = []
+    for (const p of sem) {
+      const email = emailDeAcesso(p.nome, dominio, usados)
+      if (!email) continue
+      usados.add(email)
+      novos.push({ id: p.id, nome: p.nome, email, ativo: p.ativo })
+    }
+    if (!simular && novos.length) {
+      for (const n of novos) {
+        await this.bd.$transaction([
+          this.bd.pessoa.update({ where: { id: n.id }, data: { email: n.email } }),
+          this.bd.sincronizacao.upsert({ where: { pessoaId: n.id }, create: { pessoaId: n.id }, update: { estado: 'pendente', tentativas: 0, erro: '' } }),
+        ])
+      }
+      await this.auditoria.registar(u, 'emails_acesso_portal', `${novos.length} e-mail(s) de acesso (@${dominio})`)
+      this.agendar()
+    }
+    return { dominio, simulado: Boolean(simular), total: novos.length, naEscola: novos.filter((n) => n.ativo).length, exemplos: novos.slice(0, 200) }
   }
 
   // depois de uma alteração, envia daí a poucos segundos (junta várias alterações seguidas num só pedido)
