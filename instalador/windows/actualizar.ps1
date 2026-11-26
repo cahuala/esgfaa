@@ -171,7 +171,13 @@ if (-not ($linhas -match '^SERVIDOR_IP=')) {
 }
 # ligação ao Portal Académico: o pendrive preparado com --ligacao-portal traz o endereço e a chave partilhada
 $FicheiroPortal = Join-Path $Pen 'ligacao-portal.txt'
-if (Test-Path $FicheiroPortal) {
+# (se o Portal estiver instalado neste servidor — C:\ESG-Portal — a ligação é a ele, e o ficheiro do pendrive não conta)
+$PortalLocal = 'C:\ESG-Portal\config\portal.env'
+if (Test-Path $PortalLocal) {
+  $chaveLocal = (Select-String -Path $PortalLocal -Pattern '^INTEGRACAO_CHAVE=(.+)$' -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1
+  $portaLocal = (Select-String -Path $PortalLocal -Pattern '^PORT=(\d+)$' -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value } | Select-Object -First 1
+  if ($chaveLocal) { $linhas = @($linhas | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + "PORTAL_API_URL=http://127.0.0.1:$(if ($portaLocal) { $portaLocal } else { 3001 })" + "INTEGRACAO_CHAVE=$chaveLocal"; Ok 'ligação ao portal instalado neste servidor' }
+} elseif (Test-Path $FicheiroPortal) {
   $novas = @(Get-Content $FicheiroPortal -Encoding UTF8 | Where-Object { $_ -match '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=.+' })
   if ($novas.Count -eq 2) { $linhas = @($linhas | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + $novas; Ok "ligação ao portal: $(($novas[0]) -replace '^PORTAL_API_URL=', '')" }
 }

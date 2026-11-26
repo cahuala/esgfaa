@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
@@ -16,6 +17,9 @@ const ESQUEMA = z.object({
   // «Não sou um robô» na entrada (vazio = ligado, menos nos testes automáticos; 0 = desligado)
   VERIFICAR_ROBO: z.enum(['', '0', '1']).default(''),
   PORT: inteiro(3001, 1, 65535),
+  // endereço onde a API escuta (127.0.0.1: só nesta máquina, com o Caddy à frente; vazio: todos)
+  // (o que não for um IP — p. ex. o nome da máquina que alguns terminais põem em HOST — ignora-se)
+  HOST: z.string().default(''),
   DATA_DIR: z.string().default('dados'),
   DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'DATABASE_URL deve ser postgresql://…').optional(),
   // e-mails das contas do portal académico (vazio = qualquer domínio)
@@ -116,6 +120,7 @@ export function criarConfig(env = process.env, extras = {}) {
     producao,
     verificarRobo: e.VERIFICAR_ROBO === '' ? e.NODE_ENV !== 'test' : e.VERIFICAR_ROBO === '1',
     porta: e.PORT,
+    anfitriao: net.isIP(e.HOST) ? e.HOST : '',
     pastaDados,
     urlBaseDados: e.DATABASE_URL || URL_DESENVOLVIMENTO,
     fuso: e.FUSO_HORARIO,

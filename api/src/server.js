@@ -32,8 +32,8 @@ contentor.servicos.traducoes.completar().catch((e) => console.error(JSON.stringi
 contentor.servicos.seguranca.iniciar()
 
 const app = criarApp(contentor)
-const servidor = app.listen(config.porta, () => {
-  console.log(`API ESGFAA a correr em http://localhost:${config.porta}`)
+const servidor = app.listen(config.porta, config.anfitriao || undefined, () => {
+  console.log(`API ESGFAA a correr em http://${config.anfitriao || 'localhost'}:${config.porta}`)
 })
 servidor.headersTimeout = 30_000
 servidor.requestTimeout = 10 * 60_000 // envios de vídeos grandes

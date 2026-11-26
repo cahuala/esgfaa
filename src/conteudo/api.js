@@ -1,5 +1,8 @@
 // Endereço da API (definido no build: VITE_API_URL). Sem ele, o site usa só os conteúdos locais.
-export const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+// «mesma-origem»: a API está no mesmo endereço das páginas (/api), seja qual for o domínio — é o que leva o
+// pacote de instalação da Escola, que só conhece o domínio na instalação.
+const URL_BUILD = import.meta.env.VITE_API_URL || ''
+export const API_URL = (URL_BUILD === 'mesma-origem' ? (typeof window === 'undefined' ? '' : window.location.origin) : URL_BUILD).replace(/\/$/, '')
 
 export async function pedido(caminho, opcoes = {}) {
   if (!API_URL) throw new Error('API não configurada')
