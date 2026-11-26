@@ -15,7 +15,8 @@ const cifrados = await cifrarExistentes(contentor.prismaBase, contentor.cifraDad
 if (cifrados) console.log(`Dados pessoais cifrados em ${cifrados} registo(s).`)
 
 // 1.º arranque: carrega os conteúdos atuais do site para a base de dados
-if ((await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)
+// (só onde se gere o site; os outros sistemas recebem-nos da Gestão do Site)
+if (['completo', 'site'].includes(config.sistema) && (await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)
 
 const { administradorCriado: admin } = await prepararSistema(contentor)
 if (admin) {
@@ -30,6 +31,13 @@ contentor.servicos.traducoes.completar().catch((e) => console.error(JSON.stringi
 
 // Centro de segurança: grava os eventos, carrega os bloqueios e envia os alertas
 contentor.servicos.seguranca.iniciar()
+
+// sistemas separados: os gatilhos da fila e as trocas com o servidor online (nos internos)
+if (contentor.replicacao) {
+  await contentor.replicacao.preparar()
+  contentor.replicacao.iniciar()
+  console.log(`Sistema ${config.sistema}: replicação ${config.sistema === 'online' ? `à espera de ${config.replicacao.pares.join(', ')}` : `com ${config.replicacao.url || '(sem REPLICACAO_URL)'}`}.`)
+}
 
 const app = criarApp(contentor)
 const servidor = app.listen(config.porta, config.anfitriao || undefined, () => {

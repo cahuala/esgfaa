@@ -1,6 +1,6 @@
 import { NaoAutenticado, SemPermissao, ContaBloqueada, ErroValidacao, CodigoEmFalta } from '../dominio/comum/erros.js'
 import { Actor } from '../dominio/identidade/actor.js'
-import { limparPermissoes } from '../dominio/identidade/permissoes.js'
+import { limparPermissoes, permissoesDoSistema } from '../dominio/identidade/permissoes.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../dominio/identidade/utilizador.js'
 import { motivoSenhaFraca, validarSenha } from '../dominio/identidade/politicaSenha.js'
 import { BI_ANGOLANO, NIP, impressaoBi, impressaoNip } from '../dominio/identidade/bi.js'
@@ -10,8 +10,8 @@ const bloqueada = (ate) => new ContaBloqueada(`Conta bloqueada por excesso de te
 
 // Entrar, sair, sessão atual e mudança da própria palavra-passe
 export class ServicoSessao {
-  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null, chaveIntegracao = '', anosLetivosExistem = null }) {
-    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao, anosLetivosExistem })
+  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null, chaveIntegracao = '', anosLetivosExistem = null, sistema = 'completo' }) {
+    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao, anosLetivosExistem, sistema })
   }
 
   // entra-se com o e-mail ou, nas contas que vêm do Pessoal (Direcção de Ensino), com o BI (civis) ou o NIP (militares)
@@ -89,7 +89,7 @@ export class ServicoSessao {
     // as permissões leem-se sempre da base: mudar um papel (ou as da conta) tem efeito imediato;
     // as escolhidas pelo Comandante para esta conta mandam sobre as do papel
     const papel = await this.papeis.porId(u.papel)
-    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, departamento: u.departamento ?? '', permissoes: u.permissoes ? limparPermissoes(u.permissoes) : papel?.permissoes || [] })
+    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, departamento: u.departamento ?? '', permissoes: permissoesDoSistema(u.permissoes ? limparPermissoes(u.permissoes) : papel?.permissoes || [], this.sistema) })
     return { actor, sessao }
   }
 
@@ -97,7 +97,7 @@ export class ServicoSessao {
     const u = await this.utilizadores.porId(ctx.actor.id)
     const papel = await this.papeis.porId(u.papel)
     const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
-    return { ...u.publico(), nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
+    return { ...u.publico(), sistema: this.sistema, nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
   }
 
   // o meu perfil: nome (não nas contas que vêm do Pessoal: muda-se lá), telefone e cargo ou função

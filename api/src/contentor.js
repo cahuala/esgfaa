@@ -1,4 +1,4 @@
-import { criarPrisma } from './infraestrutura/bd/prisma.js'
+import { Prisma, criarPrisma } from './infraestrutura/bd/prisma.js'
 import { CifraDados, comCifra } from './infraestrutura/bd/cifraDados.js'
 import { RepositorioUtilizadores } from './infraestrutura/repositorios/utilizadores.js'
 import { RepositorioPapeis } from './infraestrutura/repositorios/papeis.js'
@@ -103,6 +103,7 @@ import { ServicoInscricoes } from './aplicacao/academico/administracao/inscricoe
 import { ServicoConclusaoCurso } from './aplicacao/academico/administracao/conclusao.js'
 import { ServicoDocumentos } from './aplicacao/academico/administracao/documentos.js'
 import { ServicoArquivoAcademico } from './aplicacao/academico/administracao/arquivo.js'
+import { Replicacao } from './infraestrutura/replicacao/motor.js'
 import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
 import { RepositorioQualidade } from './infraestrutura/repositorios/qualidade.js'
 import { ServicoInqueritosInstitucionais } from './aplicacao/qualidade/inqueritos.js'
@@ -300,7 +301,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   const servicos = {
     auditoria,
     conteudos,
-    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao: config.chaveIntegracaoPessoal, anosLetivosExistem: async (id) => Boolean(await prisma.anoLetivo.findUnique({ where: { id } })) }),
+    sessao: new ServicoSessao({ utilizadores: r.utilizadores, papeis: r.papeis, sessoes: r.sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao: config.chaveIntegracaoPessoal, anosLetivosExistem: async (id) => Boolean(await prisma.anoLetivo.findUnique({ where: { id } })), sistema: config.sistema }),
     doisFatores,
     utilizadores: new ServicoUtilizadores({ utilizadores: r.utilizadores, papeis: r.papeis, atividades: r.atividades, cifra, auditoria, relogio }),
     papeis: new ServicoPapeis({ papeis: r.papeis, utilizadores: r.utilizadores, auditoria }),
@@ -348,6 +349,10 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   servicos.tempoReal = tempoReal
   servicos.avisosComandante = new ServicoAvisosComandante({ utilizadores: r.utilizadores, papeis: r.papeis, correio, registar: (x) => console.error(JSON.stringify(x)) })
   servicos.avisosComandante.ligar(auditoria)
-  const fechar = async () => { await servicos.seguranca.parar(); await prismaBase.$disconnect() }
-  return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio, tempoReal }
+  // sistemas separados: a troca com os outros (o que é de cada um; sem passar pela cifra — vai tal como está guardado)
+  const replicacao = config.sistema !== 'completo' && config.replicacao.chave
+    ? new Replicacao({ prisma: prismaBase, Prisma, sistema: config.sistema, chave: config.replicacao.chave, url: config.replicacao.url, pares: config.replicacao.pares, intervaloS: config.replicacao.intervaloS, privados, pastaUploads: config.pastaUploads, registar: (x) => console.error(JSON.stringify(x)) })
+    : null
+  const fechar = async () => { replicacao?.parar(); await servicos.seguranca.parar(); await prismaBase.$disconnect() }
+  return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio, tempoReal, replicacao }
 }

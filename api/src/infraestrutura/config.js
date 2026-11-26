@@ -59,6 +59,15 @@ const ESQUEMA = z.object({
   // de notas; «nao» desliga (só os testes antigos, que não passam por ele)
   APROVACAO_COMANDANTE: z.enum(['sim', 'nao']).default('sim'),
   PAINEL_REDES: z.string().max(1000).default(''),
+  // sistemas separados (cada um com a sua base de dados): completo = tudo num só (desenvolvimento, servidor de teste);
+  // escolar = Gestão Escolar (interno); site = Gestão do Site (interno); online = o site público e o Portal (internet)
+  SISTEMA: z.enum(['completo', 'escolar', 'site', 'online']).default('completo'),
+  // chave partilhada entre os sistemas (a mesma nos três) e, nos internos, o endereço do servidor online
+  REPLICACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'REPLICACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
+  REPLICACAO_URL: z.union([z.literal(''), z.url()]).default(''),
+  REPLICACAO_INTERVALO_S: inteiro(15, 5, 3600),
+  // no servidor online: os sistemas internos que trocam com ele
+  REPLICACAO_PARES: z.string().default('escolar,site'),
   // chave partilhada com o Sistema de Gestão de Pessoal (rede interna), que envia os docentes e estudantes; vazio = desligado
   INTEGRACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'INTEGRACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   // anti-plágio: pesquisa na internet (Brave Search) e avaliação de IA / traduções (Claude)
@@ -112,6 +121,8 @@ export function criarConfig(env = process.env, extras = {}) {
     throw new Error('JWT_SECRET demasiado curto: use pelo menos 32 caracteres aleatórios.')
   }
 
+  if (e.SISTEMA !== 'completo' && !e.REPLICACAO_CHAVE) throw new Error(`O sistema ${e.SISTEMA} precisa de REPLICACAO_CHAVE (a mesma nos três sistemas).`)
+  if (['escolar', 'site'].includes(e.SISTEMA) && !e.REPLICACAO_URL && producao) throw new Error(`O sistema ${e.SISTEMA} precisa de REPLICACAO_URL (o endereço do servidor online).`)
   if (producao && !e.DADOS_CHAVE) throw new Error('Defina DADOS_CHAVE (32 bytes aleatórios: openssl rand -hex 32) antes de arrancar em produção: encripta os dados pessoais.')
   if (!e.DATABASE_URL && producao) throw new Error('Defina DATABASE_URL (PostgreSQL) antes de arrancar a API em produção.')
   const pastaDados = path.resolve(RAIZ_API, e.DATA_DIR)
@@ -156,6 +167,8 @@ export function criarConfig(env = process.env, extras = {}) {
     aprovacaoComandante: e.APROVACAO_COMANDANTE === 'sim',
     // o painel de gestão só abre a partir destas redes (a rede interna da Escola), ex.: «10.0.0.0/8,192.168.0.0/16»;
     // vazio = de qualquer lado. O site, o Portal Académico e a ligação do Pessoal continuam na internet.
+    sistema: e.SISTEMA,
+    replicacao: { chave: e.REPLICACAO_CHAVE, url: e.REPLICACAO_URL.replace(/\/$/, ''), intervaloS: e.REPLICACAO_INTERVALO_S, pares: e.REPLICACAO_PARES.split(',').map((x) => x.trim()).filter(Boolean) },
     painelRedes: String(e.PAINEL_REDES ?? '').split(',').map((x) => x.trim()).filter(Boolean),
     // serviços externos opcionais (sem chave ficam desligados)
     pesquisaWeb: { chave: e.BRAVE_API_KEY, porDocumento: e.PESQUISAS_WEB_POR_DOCUMENTO },

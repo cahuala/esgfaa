@@ -162,3 +162,18 @@ export function limparPermissoes(lista) {
   }
   return TODAS.filter((p) => validas.has(p))
 }
+
+/*
+  Sistemas separados: cada instalação do painel só trata do que é seu (as contas e os papéis são os mesmos).
+    site    — o Sistema de Gestão do Site: conteúdos, páginas, comentários, mensagens, publicidade, estatísticas;
+    escolar — o Sistema de Gestão Escolar: o ensino, o registo de estudantes e docentes, a biblioteca, a integridade.
+  O que fica nos dois: utilizadores, papéis, actividades, segurança. Na instalação completa, tudo.
+*/
+const DO_SITE = new Set([...CONTEUDOS, 'paginas', 'comentarios', 'contactos', 'estatisticas', 'publicacoes'])
+const DO_ESCOLAR = new Set(['academico', 'pessoal', 'biblioteca', 'integridade'])
+export function permissoesDoSistema(permissoes, sistema = 'completo') {
+  if (sistema !== 'site' && sistema !== 'escolar') return [...permissoes]
+  const fora = sistema === 'site' ? DO_ESCOLAR : DO_SITE
+  // na Gestão Escolar, os cursos vêm do site (só se vêem: escolher o curso de uma turma)
+  return [...permissoes].filter((p) => !fora.has(p.split('.')[0]) || (sistema === 'escolar' && p === 'cursos.ver'))
+}

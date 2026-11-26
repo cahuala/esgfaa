@@ -1,27 +1,37 @@
 ﻿#Requires -Version 5.1
 <#
-  Instalação do PORTAL da Escola (site, Portal Académico, painel de gestão — Administração Escolar, Comando,
-  Direcção de Ensino e departamentos, Biblioteca, gestão do site — e a API) num servidor Windows 10/11 ou
-  Windows Server (64 bits), a partir do pendrive, sem internet. Corre como administrador (o .bat pede).
+  Instalação de um sistema interno da Escola, num servidor Windows 10/11 ou Windows Server (64 bits), a partir do
+  pendrive, sem internet (o .bat pede para correr como administrador):
+    -Sistema escolar  Sistema de Gestão Escolar: Administração Escolar, Direcção de Ensino e departamentos, Comando,
+                      Biblioteca, registo dos estudantes e docentes (recebe-os do Sistema de Pessoal);
+    -Sistema site     Sistema de Gestão do Site: notícias, páginas, cursos, eventos, comentários e mensagens do site.
+  Cada um tem a sua pasta, a sua base de dados e as suas portas (podem ficar no mesmo servidor) e troca os dados com o
+  servidor online (o site público e o Portal dos estudantes e docentes) — REPLICACAO_URL e REPLICACAO_CHAVE.
   Se já estiver instalado, actualiza (os dados, as chaves e a configuração ficam).
-  Pode ficar no mesmo servidor do Sistema de Pessoal (portas e pastas diferentes); nesse caso liga-os sozinho.
-  Em caso de falha escreve no pendrive registos\ERRO-INSTALACAO-PORTAL-<data>.txt com a causa e o que fazer.
+  Em caso de falha escreve no pendrive registos\ERRO-INSTALACAO-<SISTEMA>-<data>.txt com a causa e o que fazer.
 #>
+param([ValidateSet('escolar', 'site')][string]$Sistema = 'escolar')
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
 $Pen = Split-Path -Parent $PSScriptRoot
-$Destino = 'C:\ESG-Portal'
+$N = @{
+  escolar = @{ titulo = 'Sistema de Gestão Escolar'; pasta = 'C:\ESG-Gestao-Escolar'; svc = 'ESG-Escolar'; bd = 5434; api = 3001; dominio = 'escolar.esg.emfaa.gov.ao'; outro = 'site' }
+  site = @{ titulo = 'Sistema de Gestão do Site'; pasta = 'C:\ESG-Gestao-Site'; svc = 'ESG-Site'; bd = 5435; api = 3003; dominio = 'gestao-site.esg.emfaa.gov.ao'; outro = 'escolar' }
+}[$Sistema]
+$Titulo = $N.titulo
+$Svc = $N.svc
+$Destino = $N.pasta
 $Dados = Join-Path $Destino 'dados'
 $Conf = Join-Path $Destino 'config'
-$PortaBd = 5434
-$PortaApi = 3001
+$PortaBd = $N.bd
+$PortaApi = $N.api
 $PessoalEnv = 'C:\ESG-Pessoal\config\pessoal.env'
 $Carimbo = Get-Date -Format 'yyyyMMdd-HHmmss'
 $Reg = Join-Path $Pen 'registos'
 try { New-Item -ItemType Directory -Force $Reg | Out-Null; [IO.File]::WriteAllText((Join-Path $Reg '.escrita'), 'x'); Remove-Item (Join-Path $Reg '.escrita') }
-catch { $Reg = Join-Path $env:PUBLIC 'Documents\ESG-Portal-registos'; New-Item -ItemType Directory -Force $Reg | Out-Null }
-$Log = Join-Path $Reg "instalacao-portal-$Carimbo.log"
+catch { $Reg = Join-Path $env:PUBLIC "Documents\$Svc-registos"; New-Item -ItemType Directory -Force $Reg | Out-Null }
+$Log = Join-Path $Reg "instalacao-$Sistema-$Carimbo.log"
 $script:Passo = 'início'
 $script:Codigo = 'inicio'
 Start-Transcript -Path $Log -Force | Out-Null
@@ -77,16 +87,16 @@ function Descompactar($zip, $pasta) {
 
 function Causas {
   switch ($script:Codigo) {
-    'admin' { '- O instalador não correu como administrador. Use INSTALAR-PORTAL-WINDOWS.bat e aceite o pedido do Windows (Sim).' }
+    'admin' { '- O instalador não correu como administrador. Use o INSTALAR-*.bat e aceite o pedido do Windows (Sim).' }
     'sistema' { '- Este instalador é para Windows 10/11 ou Windows Server 2016+ de 64 bits.' }
-    'pendrive' { '- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt).'; '- Volte a copiar a pasta ESG-PORTAL para o pendrive e repita.' }
+    'pendrive' { '- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt).'; '- Volte a copiar a pasta ESG-GESTAO para o pendrive e repita.' }
     'espaco' { '- Falta espaço no disco C:. São precisos pelo menos 5 GB livres (os vídeos e os materiais das aulas ocupam espaço).' }
-    'portas' { "- Outro programa está a usar uma porta de que o portal precisa ($PortaBd, $PortaApi; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."; '- O instalador não pára nenhum serviço do servidor. Veja quem usa as portas com:  netstat -ano | findstr LISTENING' }
-    'copiar' { '- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta C:\ESG-Portal) ou o pendrive está estragado.' }
+    'portas' { "- Outro programa está a usar uma porta de que o sistema precisa ($PortaBd, $PortaApi; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."; '- O instalador não pára nenhum serviço do servidor. Veja quem usa as portas com:  netstat -ano | findstr LISTENING' }
+    'copiar' { "- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta $Destino) ou o pendrive está estragado." }
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable não instalou.' }
-    'migrar' { '- A base de dados não aceitou a estrutura do portal. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
-    'servicos' { "- Um serviço não arrancou. Veja os registos em $Destino\servicos\*.log e em Serviços (services.msc), «ESG Portal»." }
-    'verificar' { "- O portal não respondeu. Veja $Destino\servicos\ESG-Portal.out.log e ESG-Portal.err.log." }
+    'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
+    'servicos' { "- Um serviço não arrancou. Veja os registos em $Destino\servicos\*.log e em Serviços (services.msc), «$Svc»." }
+    'verificar' { "- O sistema não respondeu. Veja $Destino\servicos\$Svc.out.log e $Svc.err.log." }
     default { "- Veja a mensagem de erro acima e o registo completo: $Log" }
   }
 }
@@ -94,10 +104,10 @@ function Causas {
 trap {
   $erro = $_
   try { Stop-Transcript | Out-Null } catch {}
-  $f = Join-Path $Reg "ERRO-INSTALACAO-PORTAL-$Carimbo.txt"
+  $f = Join-Path $Reg "ERRO-INSTALACAO-$($Sistema.ToUpper())-$Carimbo.txt"
   $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue)
   $linhas = @(
-    'ERRO NA INSTALAÇÃO DO PORTAL DA ESCOLA (Windows)',
+    "ERRO NA INSTALAÇÃO DO $($Titulo.ToUpper()) (Windows)",
     "Data: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')   Computador: $env:COMPUTERNAME   Sistema: $($os.Caption) $($os.Version)",
     '',
     "Passo que falhou: $script:Passo",
@@ -107,7 +117,7 @@ trap {
     'CAUSAS PROVÁVEIS E O QUE FAZER:'
   ) + @(Causas) + @(
     '',
-    'Depois de corrigir, volte a correr o INSTALAR-PORTAL-WINDOWS.bat: continua e não apaga dados.',
+    'Depois de corrigir, volte a correr o mesmo INSTALAR-*.bat: continua e não apaga dados.',
     '',
     "ÚLTIMAS LINHAS DO REGISTO ($Log):"
   ) + @(Get-Content $Log -Tail 60 -ErrorAction SilentlyContinue)
@@ -120,7 +130,7 @@ trap {
   exit 1
 }
 
-Write-Host "Portal da Escola Superior de Guerra — instalação ($((Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join ''))"
+Write-Host "$Titulo da ESG — instalação ($((Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join ''))"
 Write-Host "Registo: $Log"
 
 Passo 'admin' 'A verificar as permissões'
@@ -135,7 +145,7 @@ if ($ver.Major -lt 10) { Falha "Windows demasiado antigo ($ver): é preciso o Wi
 Ok "$((Get-CimInstance Win32_OperatingSystem).Caption) ($ver)"
 
 Passo 'pendrive' 'A conferir os ficheiros do pendrive (MANIFESTO)'
-if (-not (Test-Path (Join-Path $Pen 'MANIFESTO.txt'))) { Falha 'Falta o MANIFESTO.txt: instale a partir da pasta ESG-PORTAL preparada (node instalador/preparar-portal.mjs).' }
+if (-not (Test-Path (Join-Path $Pen 'MANIFESTO.txt'))) { Falha 'Falta o MANIFESTO.txt: instale a partir da pasta ESG-GESTAO preparada (node instalador/preparar-gestao.mjs).' }
 $maus = @()
 foreach ($l in Get-Content (Join-Path $Pen 'MANIFESTO.txt')) {
   if (-not $l.Trim()) { continue }
@@ -151,11 +161,11 @@ $livre = [Math]::Floor((Get-PSDrive C).Free / 1MB)
 if ($livre -lt 5000) { Falha "Só há $livre MB livres no disco C:." }
 Ok "$livre MB livres"
 
-$EnvFicheiro = Join-Path $Conf 'portal.env'
+$EnvFicheiro = Join-Path $Conf "$Sistema.env"
 $Atualizar = Test-Path $EnvFicheiro
-$Servicos = 'ESG-Portal-Copias', 'ESG-Portal-Web', 'ESG-Portal', 'ESG-Portal-BD'
+$Servicos = "$Svc-Copias", "$Svc-Web", $Svc, "$Svc-BD"
 if ($Atualizar) {
-  Write-Host ''; Write-Host '>>> O portal já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam).' -ForegroundColor Yellow
+  Write-Host ''; Write-Host ">>> O $Titulo já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam)." -ForegroundColor Yellow
   foreach ($s in $Servicos) { if (Get-Service $s -ErrorAction SilentlyContinue) { Stop-Service $s -Force -ErrorAction SilentlyContinue } }
 }
 function Guardado($nome) { if ($Atualizar) { (Select-String -Path $EnvFicheiro -Pattern "^$nome=(.*)$" -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1 } }
@@ -176,24 +186,37 @@ if (-not $PortaHttp) { Write-Host "    a porta 80 está ocupada por: $(QuemUsa 8
 foreach ($p in $PortaApi, $PortaBd) { if (-not (Livre $p)) { Falha "A porta $p já está ocupada por: $(QuemUsa $p)" } }
 Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); $PortaApi e $PortaBd livres"
 
-# o endereço do portal (nome no DNS) e o certificado: da autoridade interna (só a rede da Escola) ou público
+# o endereço do sistema (nome no DNS da Escola)
 $Endereco = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { Guardado 'ENDERECO' }
-$Tls = if ($env:ESG_TLS) { $env:ESG_TLS } else { Guardado 'TLS' }
+# os sistemas internos usam o certificado da autoridade interna (só a rede da Escola)
+$Tls = 'interno'
 if (-not $Atualizar) {
   Write-Host ''
-  Write-Host 'ENDEREÇO DO PORTAL' -ForegroundColor Cyan
-  if (-not $Endereco) { $Endereco = "$(Read-Host '  Nome no DNS [portal.esg.emfaa.gov.ao]')".Trim() }
-  if (-not $Endereco) { $Endereco = 'portal.esg.emfaa.gov.ao' }
-  if (-not $Tls) {
-    Write-Host '  Certificado HTTPS:'
-    Write-Host '    I = interno (só a rede da Escola; instala-se o certificado da raiz nos computadores) — recomendado para começar'
-    Write-Host '    P = público (Let''s Encrypt: o nome tem de estar no DNS público a apontar para a Escola e a porta 443 aberta na firewall)'
-    $Tls = if ("$(Read-Host '  I ou P [I]')".Trim() -match '^[pP]') { 'publico' } else { 'interno' }
-  }
+  Write-Host "ENDEREÇO DO $($Titulo.ToUpper()) (nome no DNS da Escola)" -ForegroundColor Cyan
+  if (-not $Endereco) { $Endereco = "$(Read-Host "  Nome no DNS [$($N.dominio)]")".Trim() }
+  if (-not $Endereco) { $Endereco = $N.dominio }
 }
 $Endereco = $Endereco.Trim().ToLower()
-if ($Endereco -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') { Falha "Endereço inválido: $Endereco (ex.: portal.esg.emfaa.gov.ao)" }
-if ($Tls -ne 'publico') { $Tls = 'interno' }
+if ($Endereco -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') { Falha "Endereço inválido: $Endereco (ex.: $($N.dominio))" }
+
+<#
+  A ligação ao servidor online (o site público e o Portal): o endereço, a chave da troca e a chave dos dados pessoais
+  — as duas chaves são as MESMAS nos três sistemas (os dados viajam cifrados). Vêm, por esta ordem: do outro sistema
+  interno já instalado neste servidor, do ficheiro ligacao-online.txt do pendrive, ou criam-se agora (e ficam em
+  config\ligacao-online.txt, para configurar o servidor online e o outro sistema interno).
+#>
+function LerEnv($f) { $h = @{}; if (Test-Path $f) { foreach ($l in Get-Content $f -Encoding UTF8) { if ($l -match '^([A-Z_]+)=(.*)$') { $h[$Matches[1]] = $Matches[2].Trim() } } }; $h }
+$OutroEnv = "C:\ESG-Gestao-$(if ($N.outro -eq 'site') { 'Site' } else { 'Escolar' })\config\$($N.outro).env"
+$Lig = @{}
+foreach ($fonte in @((LerEnv $OutroEnv), (LerEnv (Join-Path $Pen 'ligacao-online.txt')))) {
+  foreach ($k in 'REPLICACAO_URL', 'REPLICACAO_CHAVE', 'DADOS_CHAVE') { if (-not $Lig[$k] -and $fonte[$k]) { $Lig[$k] = $fonte[$k] } }
+}
+if (-not $Atualizar -and -not $Lig.REPLICACAO_URL) {
+  Write-Host ''
+  Write-Host 'SERVIDOR ONLINE (o site público e o Portal dos estudantes e docentes)' -ForegroundColor Cyan
+  $Lig.REPLICACAO_URL = "$(Read-Host '  Endereço (ex.: https://portal.esg.emfaa.gov.ao; Enter = indicar depois)')".Trim().TrimEnd('/')
+}
+if ($Lig.REPLICACAO_URL -and $Lig.REPLICACAO_URL -notmatch '^https?://[^\s/]+') { Falha "Endereço do servidor online inválido: $($Lig.REPLICACAO_URL)" }
 $Url = if ($PortaWeb -eq 443) { "https://$Endereco" } else { "https://${Endereco}:$PortaWeb" }
 $Origens = (@("https://$Endereco", $Url) | Select-Object -Unique) -join ','
 $ip = (Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } | Select-Object -First 1).IPv4Address.IPAddress | Select-Object -First 1
@@ -203,8 +226,8 @@ $SenhaEscolhida = $false
 if (-not $Atualizar) {
   Write-Host ''
   Write-Host 'CONTA DE ADMINISTRADOR DO PAINEL (entra com o e-mail e a palavra-passe; na 1.ª entrada liga a verificação em dois passos)' -ForegroundColor Cyan
-  $AdminNome = if ($env:ESG_ADMIN_NOME) { $env:ESG_ADMIN_NOME } else { Read-Host '  Nome [Administrador do Portal]' }
-  if (-not $AdminNome) { $AdminNome = 'Administrador do Portal' }
+  $AdminNome = if ($env:ESG_ADMIN_NOME) { $env:ESG_ADMIN_NOME } else { Read-Host "  Nome [Administrador do $Titulo]" }
+  if (-not $AdminNome) { $AdminNome = "Administrador do $Titulo" }
   $AdminNome = $AdminNome -replace '"', ''
   do {
     $AdminEmail = if ($env:ESG_ADMIN_EMAIL) { $env:ESG_ADMIN_EMAIL } else { Read-Host '  E-mail [admin@esgfaa.gov.ao]' }
@@ -263,20 +286,22 @@ if (-not $Atualizar) {
   if (Test-Path $PessoalEnv) { $ChaveIntegracao = (Select-String -Path $PessoalEnv -Pattern '^INTEGRACAO_CHAVE=(.{32,})$' -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1 }
   if (-not $ChaveIntegracao) { $ChaveIntegracao = Aleatorio 64 }
   $env_ = @(
-    "# Portal da ESG — criado pelo instalador em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
+    "# $Titulo da ESG — criado pelo instalador em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
     '# GUARDE UMA CÓPIA DESTE FICHEIRO NUM COFRE: sem DADOS_CHAVE os dados pessoais não se lêem; sem COPIAS_CHAVE as cópias não abrem.',
-    'NODE_ENV=production', 'HOST=127.0.0.1', "PORT=$PortaApi", 'TRUST_PROXY=1',
+    'NODE_ENV=production', 'HOST=127.0.0.1', "PORT=$PortaApi", 'TRUST_PROXY=1', "SISTEMA=$Sistema",
+    '# a troca com o servidor online: o endereço e a chave (as mesmas chaves REPLICACAO_CHAVE e DADOS_CHAVE nos três sistemas)',
+    "REPLICACAO_URL=$($Lig.REPLICACAO_URL)", "REPLICACAO_CHAVE=$(if ($Lig.REPLICACAO_CHAVE) { $Lig.REPLICACAO_CHAVE } else { Aleatorio 64 })",
     "ENDERECO=$Endereco", "TLS=$Tls", "PORTA_WEB=$PortaWeb",
     "PUBLIC_URL=$Url", "PORTAL_URL=$Url/portal/", "PAINEL_URL=$Url/painel/", "CORS_ORIGINS=$Origens",
     "DATABASE_URL=postgresql://esgfaa:$BdSenha@127.0.0.1:$PortaBd/esgfaa", "BD_SENHA=$BdSenha",
-    "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(Aleatorio 64)", "COPIAS_CHAVE=$(Aleatorio 64)", "INTEGRACAO_CHAVE=$ChaveIntegracao",
+    "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(if ($Lig.DADOS_CHAVE) { $Lig.DADOS_CHAVE } else { Aleatorio 64 })", "COPIAS_CHAVE=$(Aleatorio 64)", "INTEGRACAO_CHAVE=$ChaveIntegracao",
     "ADMIN_NAME=$AdminNome", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
-    '# o painel de gestão só abre a partir da rede interna (o site e o Portal Académico abrem de qualquer lado)',
+    '# o painel só abre a partir da rede interna da Escola',
     'PAINEL_REDES=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16',
     'APROVACAO_COMANDANTE=sim', '# e-mails de acesso dos docentes e estudantes (criados no Sistema de Pessoal: nome.apelido@portal.esg.emfaa.gov.ao)', 'EMAIL_DOMINIO_ESCOLA=portal.esg.emfaa.gov.ao,esg.emfaa.gov.ao',
     '# serviços fora de Angola (IA, pesquisa na internet do anti-plágio): só com autorização da Escola (Lei n.º 22/11)',
     'DADOS_FORA_DE_ANGOLA=nao', 'FONTES_CIENTIFICAS=nao',
-    '# e-mail das notificações (smtps://utilizador:senha@servidor:465); vazio = só no portal',
+    '# e-mail das notificações (smtps://utilizador:senha@servidor:465); vazio = sem e-mail',
     'SMTP_URL=',
     "DATA_DIR=$Dados\ficheiros",
     "PORTAL_DATABASE_URL=postgresql://esgfaa:$BdSenha@127.0.0.1:$PortaBd/esgfaa", "PORTAL_DADOS=$Dados\ficheiros", "COPIAS_DIR=$Dados\copias",
@@ -288,9 +313,19 @@ if (-not $Atualizar) {
 # numa actualização: a porta do HTTPS pode ter mudado
 $linhasEnv = @(Get-Content $EnvFicheiro -Encoding UTF8)
 $linhasEnv = @($linhasEnv -replace '^PORTA_WEB=.*', "PORTA_WEB=$PortaWeb" -replace '^PUBLIC_URL=.*', "PUBLIC_URL=$Url" -replace '^PORTAL_URL=.*', "PORTAL_URL=$Url/portal/" -replace '^PAINEL_URL=.*', "PAINEL_URL=$Url/painel/" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=$Origens")
+if (-not ($linhasEnv -match '^SISTEMA=')) { $linhasEnv += "SISTEMA=$Sistema" }
+if (-not ($linhasEnv -match '^REPLICACAO_CHAVE=.{32,}')) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^REPLICACAO_CHAVE=' }) + "REPLICACAO_CHAVE=$(if ($Lig.REPLICACAO_CHAVE) { $Lig.REPLICACAO_CHAVE } else { Aleatorio 64 })" }
+# o endereço do servidor online: o que se indicou (ou veio do pendrive) se ainda não havia
+if ($Lig.REPLICACAO_URL -and -not ($linhasEnv -match '^REPLICACAO_URL=.+')) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^REPLICACAO_URL=' }) + "REPLICACAO_URL=$($Lig.REPLICACAO_URL)" }
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$linhasEnv, (New-Object Text.UTF8Encoding $false))
 $Cfg = @{}
 foreach ($l in Get-Content $EnvFicheiro) { if ($l -match '^([A-Z_]+)=(.*)$') { $Cfg[$Matches[1]] = $Matches[2] } }
+# a ligação, para o servidor online e o outro sistema interno (só os administradores lêem esta pasta)
+$FicheiroLigacao = Join-Path $Conf 'ligacao-online.txt'
+[IO.File]::WriteAllLines($FicheiroLigacao, [string[]]@(
+  '# Ligação ao servidor online — as mesmas chaves nos três sistemas (Gestão Escolar, Gestão do Site, servidor online).',
+  '# No servidor online: SISTEMA=online, REPLICACAO_CHAVE e DADOS_CHAVE iguais a estas. NÃO ENVIE POR E-MAIL.',
+  "REPLICACAO_URL=$($Cfg.REPLICACAO_URL)", "REPLICACAO_CHAVE=$($Cfg.REPLICACAO_CHAVE)", "DADOS_CHAVE=$($Cfg.DADOS_CHAVE)"), (New-Object Text.UTF8Encoding $false))
 $AdminEmail = $Cfg.ADMIN_EMAIL
 
 Passo 'bd' "A preparar a base de dados (PostgreSQL na porta $PortaBd, só nesta máquina)"
@@ -304,14 +339,14 @@ if (-not (Test-Path "$BdDir\PG_VERSION")) {
   try { Correr "$PgBin\initdb.exe" @('-D', $BdDir, '-U', 'esgfaa', "--pwfile=$pw", '-E', 'UTF8', '--no-locale', '--auth=scram-sha-256') } finally { Remove-Item $pw -Force -ErrorAction SilentlyContinue }
   Add-Content "$BdDir\postgresql.conf" "`nlisten_addresses = '127.0.0.1'`nport = $PortaBd`nlogging_collector = on`n"
 }
-if (-not (Get-Service 'ESG-Portal-BD' -ErrorAction SilentlyContinue)) {
-  Correr "$PgBin\pg_ctl.exe" @('register', '-N', 'ESG-Portal-BD', '-D', $BdDir, '-S', 'auto')
+if (-not (Get-Service "$Svc-BD" -ErrorAction SilentlyContinue)) {
+  Correr "$PgBin\pg_ctl.exe" @('register', '-N', "$Svc-BD", '-D', $BdDir, '-S', 'auto')
 }
 function RegistoBd {
   Write-Host '    --- fim do registo do PostgreSQL:'
   Get-ChildItem "$BdDir\log" -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1 | ForEach-Object { Get-Content $_.FullName -Tail 25 | ForEach-Object { Write-Host "      $_" } }
 }
-try { Start-Service 'ESG-Portal-BD' -ErrorAction Stop } catch { RegistoBd; Falha "O serviço da base de dados (ESG-Portal-BD) não arrancou: $($_.Exception.Message)" }
+try { Start-Service "$Svc-BD" -ErrorAction Stop } catch { RegistoBd; Falha "O serviço da base de dados ($Svc-BD) não arrancou: $($_.Exception.Message)" }
 $pronto = $false
 for ($i = 0; $i -lt 60 -and -not $pronto; $i++) { & "$PgBin\pg_isready.exe" -h 127.0.0.1 -p $PortaBd -q; $pronto = ($LASTEXITCODE -eq 0); if (-not $pronto) { Start-Sleep 1 } }
 if (-not $pronto) { RegistoBd; Falha 'O PostgreSQL não ficou pronto em 60 segundos.' }
@@ -325,14 +360,14 @@ Push-Location "$Destino\sistema\api"
 Correr $Node @("--env-file=$EnvFicheiro", 'scripts\migrar.js')
 Pop-Location
 
-Passo 'servicos' 'A ligar os serviços (portal, HTTPS e cópias de segurança diárias)'
+Passo 'servicos' 'A ligar os serviços (sistema, HTTPS, cópias de segurança diárias e troca com o servidor online)'
 $Caddyfile = Join-Path $Conf 'Caddyfile'
 $storage = ("$Dados\caddy" -replace '\\', '/')
 $App = ("$Destino\sistema\app" -replace '\\', '/')
 $global_ = if ($Tls -eq 'interno') { "`tskip_install_trust" } else { '' }
 $tlsLinha = if ($Tls -eq 'interno') { "`ttls internal" } else { '' }
 @"
-# Portal da ESG: o site (/), o Portal Académico (/portal/), o painel (/painel/, só da rede interna: PAINEL_REDES)
+# $Titulo da ESG: o painel (/painel/, só da rede interna) e a API (/api, /uploads)$(if ($Sistema -eq 'site') { '; o site em pré-visualização (/)' })
 # e a API (/api, /uploads). Certificado: $Tls
 {
 	storage file_system $storage
@@ -357,7 +392,7 @@ $tlsLinha
 	@paginas path / /index.html /portal/ /portal/index.html /painel/ /painel/index.html
 	header @paginas Cache-Control "no-cache"
 
-	handle /api/* {
+$(if ($Sistema -eq 'escolar') { "`t@raiz path /`n`tredir @raiz /painel/`n" })	handle /api/* {
 		reverse_proxy 127.0.0.1:$PortaApi
 	}
 	handle /uploads/* {
@@ -384,7 +419,7 @@ $(if ($PortaHttp) { "`nhttp://$Endereco {`n`tredir $Url{uri} permanent`n}" })
 
 # este computador encontra o nome sem esperar pelo DNS da Escola
 $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"
-$linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '# esg-portal$' }) + "127.0.0.1 $Endereco # esg-portal"
+$linhas = @(Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch "# esg-$Sistema`$" }) + "127.0.0.1 $Endereco # esg-$Sistema"
 try { [IO.File]::WriteAllLines($hosts, [string[]]$linhas, (New-Object Text.ASCIIEncoding)) }
 catch { Write-Host "    (aviso: não foi possível escrever em $hosts — $($_.Exception.Message))" -ForegroundColor Yellow }
 
@@ -395,12 +430,12 @@ function Servico($id, $nome, $exe, $argumentos, $extra = '', $pasta = "$Destino\
 <service>
   <id>$id</id>
   <name>$nome</name>
-  <description>Portal da Escola Superior de Guerra (site, Portal Académico, painel de gestão)</description>
+  <description>$Titulo da Escola Superior de Guerra</description>
   <executable>$exe</executable>
   <arguments>$argumentos</arguments>
   <workingdirectory>$pasta</workingdirectory>
   <startmode>Automatic</startmode>
-  <depend>ESG-Portal-BD</depend>
+  <depend>$Svc-BD</depend>
   <onfailure action="restart" delay="10 sec"/>
   <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log>
   <logpath>$dir</logpath>
@@ -410,10 +445,10 @@ $extra
 "@ | Set-Content -Path "$dir\$id.xml" -Encoding UTF8
   if (-not (Get-Service $id -ErrorAction SilentlyContinue)) { Correr "$dir\$id.exe" @('install') }
 }
-Servico 'ESG-Portal' 'ESG Portal — site, portal e painel' $Node "--env-file=&quot;$EnvFicheiro&quot; src\server.js"
-Servico 'ESG-Portal-Web' 'ESG Portal — HTTPS (Caddy)' "$Destino\caddy\caddy.exe" "run --config &quot;$Caddyfile&quot; --adapter caddyfile" "  <env name=`"AppData`" value=`"$Dados\caddy`"/>" "$Destino\caddy"
-Servico 'ESG-Portal-Copias' 'ESG Portal — cópias de segurança diárias' $Node "--env-file=&quot;$EnvFicheiro&quot; scripts\copias.mjs agendar --sistema portal" "  <env name=`"PATH`" value=`"$PgBin;%PATH%`"/>" "$Destino\sistema"
-foreach ($s in 'ESG-Portal', 'ESG-Portal-Web', 'ESG-Portal-Copias') {
+Servico $Svc "ESG — $Titulo" $Node "--env-file=&quot;$EnvFicheiro&quot; src\server.js"
+Servico "$Svc-Web" "ESG — $Titulo — HTTPS (Caddy)" "$Destino\caddy\caddy.exe" "run --config &quot;$Caddyfile&quot; --adapter caddyfile" "  <env name=`"AppData`" value=`"$Dados\caddy`"/>" "$Destino\caddy"
+Servico "$Svc-Copias" "ESG — $Titulo — cópias de segurança diárias" $Node "--env-file=&quot;$EnvFicheiro&quot; scripts\copias.mjs agendar --sistema portal" "  <env name=`"PATH`" value=`"$PgBin;%PATH%`"/>" "$Destino\sistema"
+foreach ($s in $Svc, "$Svc-Web", "$Svc-Copias") {
   try { Restart-Service $s -Force -ErrorAction Stop }
   catch {
     Write-Host "    --- fim do registo de ${s}:"
@@ -423,44 +458,44 @@ foreach ($s in 'ESG-Portal', 'ESG-Portal-Web', 'ESG-Portal-Copias') {
 }
 # firewall do Windows: só o HTTPS (e a 80, que encaminha). A abertura à internet (estudantes e docentes em
 # casa) decide-se na firewall da Escola, não aqui.
-$regras = @(, @('ESG Portal (HTTPS)', $PortaWeb))
-if ($PortaHttp) { $regras += , @('ESG Portal (HTTP, encaminha)', $PortaHttp) }
+$regras = @(, @("$Svc (HTTPS)", $PortaWeb))
+if ($PortaHttp) { $regras += , @("$Svc (HTTP, encaminha)", $PortaHttp) }
 foreach ($r in $regras) {
   Remove-NetFirewallRule -DisplayName $r[0] -ErrorAction SilentlyContinue
   New-NetFirewallRule -DisplayName $r[0] -Direction Inbound -Protocol TCP -LocalPort $r[1] -Action Allow -Profile Domain, Private | Out-Null
 }
-Ok 'serviços ligados (services.msc: «ESG Portal»)'
+Ok "serviços ligados (services.msc: «$Svc»)"
 
-Passo 'verificar' 'A verificar se o portal responde'
+Passo 'verificar' 'A verificar se o sistema responde'
 $ok = $false
 # o 1.º arranque carrega os conteúdos do site e cria o administrador: pode demorar
 for ($i = 0; $i -lt 90 -and -not $ok; $i++) {
   try { $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$PortaApi/api/saude" -TimeoutSec 5; $ok = $r.Content -match '"ok":true' } catch { Start-Sleep 2 }
 }
 if (-not $ok) {
-  Get-ChildItem "$Destino\servicos" -Filter 'ESG-Portal.*log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "    [$($_.Name)]"; Get-Content $_.FullName -Tail 30 | ForEach-Object { Write-Host "      $_" } }
-  Falha "O portal não respondeu em http://127.0.0.1:$PortaApi/api/saude"
+  Get-ChildItem "$Destino\servicos" -Filter "$Svc.*log" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "    [$($_.Name)]"; Get-Content $_.FullName -Tail 30 | ForEach-Object { Write-Host "      $_" } }
+  Falha "O sistema não respondeu em http://127.0.0.1:$PortaApi/api/saude"
 }
-Ok 'o portal responde'
+Ok 'o sistema responde'
 if ($Tls -eq 'interno') {
   $raiz = "$Dados\caddy\pki\authorities\local\root.crt"
   for ($i = 0; $i -lt 30 -and -not (Test-Path $raiz); $i++) { Start-Sleep 1 }
   if (Test-Path $raiz) {
-    Copy-Item $raiz "$Destino\certificado\esg-portal-raiz.crt" -Force
-    Copy-Item $raiz (Join-Path $Reg 'esg-portal-raiz.crt') -Force -ErrorAction SilentlyContinue
+    Copy-Item $raiz "$Destino\certificado\esg-$Sistema-raiz.crt" -Force
+    Copy-Item $raiz (Join-Path $Reg "esg-$Sistema-raiz.crt") -Force -ErrorAction SilentlyContinue
     Import-Certificate -FilePath $raiz -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
     Ok 'certificado HTTPS criado e instalado neste computador'
   }
 }
 
-# o Sistema de Pessoal neste servidor: passa a enviar os docentes e os estudantes a este portal
+# o Sistema de Pessoal neste servidor: passa a enviar os docentes e os estudantes à Gestão Escolar (que os passa ao portal)
 $Ligado = $false
-if (Test-Path $PessoalEnv) {
+if ($Sistema -eq 'escolar' -and (Test-Path $PessoalEnv)) {
   $lp = @(Get-Content $PessoalEnv -Encoding UTF8 | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + "PORTAL_API_URL=http://127.0.0.1:$PortaApi" + "INTEGRACAO_CHAVE=$($Cfg.INTEGRACAO_CHAVE)"
   [IO.File]::WriteAllLines($PessoalEnv, [string[]]$lp, (New-Object Text.UTF8Encoding $false))
   if (Get-Service 'ESG-Pessoal' -ErrorAction SilentlyContinue) { Restart-Service 'ESG-Pessoal' -Force -ErrorAction SilentlyContinue }
   $Ligado = $true
-  Ok 'Sistema de Pessoal deste servidor ligado ao portal (envia os docentes e os estudantes)'
+  Ok 'Sistema de Pessoal deste servidor ligado à Gestão Escolar (envia os docentes e os estudantes)'
 }
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
@@ -468,11 +503,9 @@ $AdminSenha = $Cfg.ADMIN_PASSWORD
 [IO.File]::WriteAllLines($EnvFicheiro, [string[]]((Get-Content $EnvFicheiro -Encoding UTF8) -replace '^ADMIN_PASSWORD=.*', 'ADMIN_PASSWORD='), (New-Object Text.UTF8Encoding $false))
 
 $resumo = @(
-  "PORTAL DA ESCOLA SUPERIOR DE GUERRA — instalado em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
+  "$($Titulo.ToUpper()) DA ESCOLA SUPERIOR DE GUERRA — instalado em $(Get-Date -Format 'yyyy-MM-dd HH:mm')",
   '',
-  "Site:                  $Url/",
-  "Portal Académico:      $Url/portal/   (estudantes e docentes)",
-  "Painel de gestão:      $Url/painel/   (Administração Escolar, Comando, Ensino, Biblioteca, site — só da rede interna)",
+  "Painel:                $Url/painel/   (só da rede interna)$(if ($Sistema -eq 'site') { "  ·  pré-visualização do site: $Url/" })",
   "No DNS da Escola:      $Endereco  ->  $ip   (registo A; peça ao responsável pela rede)",
   "Administrador:         $AdminEmail"
 )
@@ -480,16 +513,19 @@ if ($SenhaEscolhida) { $resumo += 'Palavra-passe:         a que escolheu na inst
 elseif ($AdminSenha) { $resumo += "Palavra-passe inicial: $AdminSenha   (muda-se na 1.ª entrada)" }
 $resumo += @(
   '',
-  $(if ($Tls -eq 'interno') { "Certificado:           $Destino\certificado\esg-portal-raiz.crt (cópia no pendrive: registos\esg-portal-raiz.crt) — instale-o nos computadores da Escola" } else { 'Certificado:           público (Let''s Encrypt), renova-se sozinho' }),
-  $(if ($Ligado) { 'Sistema de Pessoal:    ligado (neste servidor)' } else { "Sistema de Pessoal:    noutro servidor — a chave da ligação (INTEGRACAO_CHAVE) está em $EnvFicheiro" }),
-  'Em casa (internet):    só depois de a Escola autorizar, abrir na firewall a porta 443 para este servidor e pôr o nome no DNS público.',
+  "Servidor online:       $(if ($Cfg.REPLICACAO_URL) { "$($Cfg.REPLICACAO_URL) (troca de 15 em 15 segundos)" } else { 'AINDA SEM ENDEREÇO: ponha REPLICACAO_URL em ' + $EnvFicheiro + ' e reinicie o serviço ' + $Svc })",
+  "Ligação (chaves):      $FicheiroLigacao — leve-o (sem e-mail) para o servidor online (SISTEMA=online, as mesmas REPLICACAO_CHAVE e DADOS_CHAVE) e, para instalar o outro sistema interno noutro servidor, para a raiz do pendrive",
+  "Certificado:           $Destino\certificado\esg-$Sistema-raiz.crt (cópia no pendrive: registos\esg-$Sistema-raiz.crt) — instale-o nos computadores da Escola"
+)
+if ($Sistema -eq 'escolar') { $resumo += $(if ($Ligado) { 'Sistema de Pessoal:    ligado (neste servidor)' } else { "Sistema de Pessoal:    noutro servidor — a chave da ligação (INTEGRACAO_CHAVE) está em $EnvFicheiro" }) }
+$resumo += @(
   "Configuração e chaves: $EnvFicheiro — GUARDE UMA CÓPIA NUM COFRE (fora deste computador)",
   "Cópias de segurança:   $Dados\copias (todos os dias às 2h)",
-  'Serviços:              services.msc — ESG-Portal, ESG-Portal-BD, ESG-Portal-Web, ESG-Portal-Copias'
+  "Serviços:              services.msc — $Svc, $Svc-BD, $Svc-Web, $Svc-Copias"
 )
 $fResumo = Join-Path $Conf 'INSTALACAO.txt'
 [IO.File]::WriteAllLines($fResumo, [string[]]$resumo, (New-Object Text.UTF8Encoding $true))
-[IO.File]::WriteAllLines((Join-Path $Reg "INSTALACAO-PORTAL-CONCLUIDA-$Carimbo.txt"), [string[]]($resumo | Where-Object { $_ -notlike 'Palavra-passe inicial*' }), (New-Object Text.UTF8Encoding $true))
+[IO.File]::WriteAllLines((Join-Path $Reg "INSTALACAO-$($Sistema.ToUpper())-CONCLUIDA-$Carimbo.txt"), [string[]]($resumo | Where-Object { $_ -notlike 'Palavra-passe inicial*' }), (New-Object Text.UTF8Encoding $true))
 
 Write-Host 'Instalação concluída.'
 # o registo (no pendrive) fecha antes de mostrar a palavra-passe: ela não fica escrita no pendrive

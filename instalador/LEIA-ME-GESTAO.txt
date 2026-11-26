@@ -1,0 +1,47 @@
+﻿SISTEMAS INTERNOS DA ESCOLA SUPERIOR DE GUERRA — INSTALAÇÃO (Windows, sem internet)
+==================================================================================
+
+OS SISTEMAS (cada um com a sua instalação e a sua base de dados; conversam entre si)
+  - Sistema de Gestão de Pessoal (pendrive ESG-PESSOAL): as fichas; envia os docentes e os estudantes à Gestão Escolar.
+  - Sistema de Gestão Escolar (INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat): Administração Escolar, Direcção de Ensino e
+    departamentos, Comando, Biblioteca, turmas, notas, pautas e documentos. Os dados académicos ficam aqui, na Escola.
+  - Sistema de Gestão do Site (INSTALAR-GESTAO-DO-SITE-WINDOWS.bat): notícias, páginas, cursos, eventos; recebe os
+    comentários e as mensagens dos visitantes.
+  - Servidor online (na internet; não vai neste pendrive): o site público e o Portal dos estudantes e docentes.
+    Recebe da Gestão Escolar as contas, turmas, cadeiras, horários e notas publicadas; devolve-lhe o que os docentes
+    e os estudantes fazem lá (notas lançadas, presenças, materiais, entregas). Recebe da Gestão do Site os conteúdos.
+  Os sistemas internos é que ligam ao servidor online (de 15 em 15 segundos): o servidor online não entra na rede da Escola.
+
+ANTES DE INSTALAR
+  - A instalação nos servidores da Escola precisa da AUTORIZAÇÃO FORMAL do Comando.
+  - Windows 10/11 ou Windows Server 2016+ (64 bits), 5 GB livres no disco C:.
+  - Um nome no DNS da Escola para cada sistema (por omissão escolar.esg.emfaa.gov.ao e gestao-site.esg.emfaa.gov.ao).
+  - O endereço do servidor online (ex.: https://portal.esg.emfaa.gov.ao) e saída para a internet a partir destes servidores.
+
+AS CHAVES (as mesmas nos três: Gestão Escolar, Gestão do Site e servidor online)
+  - O primeiro sistema instalado cria-as e escreve-as em C:\ESG-Gestao-...\config\ligacao-online.txt.
+  - O segundo sistema, no mesmo servidor, encontra-as sozinho; noutro servidor, copie esse ficheiro para a raiz deste
+    pendrive (ESG-GESTAO\ligacao-online.txt) antes de instalar.
+  - No servidor online: SISTEMA=online e as mesmas REPLICACAO_CHAVE e DADOS_CHAVE (os dados pessoais viajam cifrados).
+  - NUNCA envie este ficheiro por e-mail. Guarde uma cópia num cofre: sem a DADOS_CHAVE os dados pessoais não se lêem.
+
+INSTALAR (e ACTUALIZAR: é o mesmo)
+  1. Duplo clique no INSTALAR-...bat do sistema e aceite o pedido do Windows (Sim).
+  2. Na primeira vez pergunta o nome no DNS, o endereço do servidor online e a conta do administrador do painel.
+  3. No fim mostra o endereço do painel e a palavra-passe inicial (muda-se na 1.ª entrada).
+
+PORTAS E PASTAS (podem ficar os dois no mesmo servidor, e também o Pessoal)
+  - Gestão Escolar: C:\ESG-Gestao-Escolar, API 3001 e base de dados 5434 (só nesta máquina); serviços ESG-Escolar*.
+  - Gestão do Site: C:\ESG-Gestao-Site, API 3003 e base de dados 5435 (só nesta máquina); serviços ESG-Site*.
+  - HTTPS na 443 (se estiver ocupada, na 8443, 9443 ou 10443). Nenhum serviço do servidor é desligado.
+
+O PESSOAL
+  - Se estiver no mesmo servidor que a Gestão Escolar (C:\ESG-Pessoal), fica ligado sozinho.
+
+O ANO LECTIVO
+  - Cada utilizador do painel trabalha, por omissão, no ano lectivo actual (configurado pela Administração Escolar em
+    «Ano lectivo e semestres»); outro ano escolhe-se em O meu perfil › Configurações.
+
+SE FALHAR
+  - Abre-se o ficheiro registos\ERRO-INSTALACAO-<SISTEMA>-<data>.txt com a causa e o que fazer. Corrija e corra outra
+    vez o mesmo .bat: continua e não apaga dados.

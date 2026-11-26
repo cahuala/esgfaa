@@ -9,6 +9,7 @@ import { rotasPortal } from './rotas/portal.js'
 import { rotasPacotes } from './rotas/pacotes.js'
 import { rotasLti } from './rotas/lti.js'
 import { rotasIntegracao } from './rotas/integracao.js'
+import { rotasReplicacao } from './rotas/replicacao.js'
 import { criarCacheConteudo } from './cacheConteudo.js'
 import { soRedeInterna } from './middlewares/redeInterna.js'
 
@@ -60,7 +61,12 @@ export function criarApp(contentor, { registarErro } = {}) {
     res.status(fechado.estado).set('Retry-After', '600').json({ erro: fechado.erro, codigo: fechado.codigo, servico: fechado.servico })
   })
   // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
-  app.use('/api/integracao', semCache, rotasIntegracao({ servicos, config }))
+  // o que cada instalação serve: completo = tudo; escolar e site = o painel (rede interna); online = o site e o portal
+  const sistema = config.sistema ?? 'completo'
+  const tem = (...s) => sistema === 'completo' || s.includes(sistema)
+  // a troca entre os sistemas separados (o servidor online recebe; o corpo assina-se tal como vem)
+  if (sistema === 'online') app.use('/api/replicacao', semCache, rotasReplicacao({ contentor }))
+  if (tem('escolar')) app.use('/api/integracao', semCache, rotasIntegracao({ servicos, config }))
   app.use(express.json({ limit: '2mb', strict: true }))
   // ataques no conteúdo dos pedidos: ferramentas de ataque, robôs de IA, injecções no corpo, phishing
   app.use((req, res, next) => {
@@ -74,7 +80,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     app.use('/uploads', express.static(config.pastaUploads, { maxAge: '30d', immutable: true, index: false, dotfiles: 'deny', redirect: false }))
   }
 
-  app.get('/api/saude', (req, res) => res.json({ ok: true }))
+  app.get('/api/saude', (req, res) => res.json({ ok: true, sistema }))
   // o conteúdo do site fica alguns segundos em memória; uma alteração no painel apaga-o (e os comentários e gostos também)
   const cache = criarCacheConteudo()
   const apagarSeMudou = (req, res, next) => {
@@ -82,10 +88,12 @@ export function criarApp(contentor, { registarErro } = {}) {
     next()
   }
   app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
-  app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
-  app.use('/api/pacotes', rotasPacotes({ servicos, config }))
-  app.use('/api/lti', semCache, rotasLti({ servicos, config }))
-  app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))
+  if (tem('escolar', 'site')) app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
+  if (tem('online')) {
+    app.use('/api/pacotes', rotasPacotes({ servicos, config }))
+    app.use('/api/lti', semCache, rotasLti({ servicos, config }))
+    app.use('/api/portal', semCache, rotasPortal({ servicos, config, privados }))
+  }
 
   app.use(naoEncontrado)
   app.use(tratarErros(registarErro ?? ((e) => console.error(JSON.stringify({ t: new Date().toISOString(), id: e.id, erro: e.erro?.stack || String(e.erro) })))))

@@ -1849,3 +1849,31 @@ model ClassificacaoCurso {
   @@id([turmaId, estudanteId])
   @@map("classificacoes_curso")
 }
+
+// ---- replicação entre os sistemas (Gestão Escolar, Gestão do Site, servidor online) ----
+// cada mudança numa tabela replicada (os gatilhos do PostgreSQL escrevem aqui): a tabela e a chave da linha;
+// origem = o sistema de onde veio a mudança (vazio = feita aqui). Envia-se o estado actual da linha.
+model ReplicacaoFila {
+  id       BigInt   @id @default(autoincrement())
+  tabela   String
+  chave    Json
+  origem   String   @default("")
+  criadaEm DateTime @default(now()) @map("criada_em") @db.Timestamptz(3)
+
+  @@map("replicacao_fila")
+}
+
+// até onde já se trocou com cada sistema: enviado = a última linha da fila daqui já enviada; recebido = a última
+// da fila do outro já aplicada aqui
+model ReplicacaoCursor {
+  par          String    @id
+  enviado      BigInt    @default(0)
+  recebido     BigInt    @default(0)
+  // as imagens e os ficheiros públicos (uploads) já enviados: até esta data (ms)
+  uploadsAte   BigInt    @default(0) @map("uploads_ate")
+  ultimaTroca  DateTime? @map("ultima_troca") @db.Timestamptz(3)
+  ultimoErro   String    @default("") @map("ultimo_erro")
+  atualizadoEm DateTime  @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@map("replicacao_cursores")
+}

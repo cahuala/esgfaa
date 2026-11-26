@@ -1,19 +1,22 @@
 #!/usr/bin/env node
 /*
-  Prepara o pendrive de instalação do PORTAL da Escola (servidor da Escola, Windows, sem internet):
-  o site, o Portal Académico (estudantes e docentes), o painel de gestão (Administração Escolar, Comando,
-  Direcção de Ensino e departamentos, Biblioteca, gestão do site) e a API com a base de dados.
+  Prepara o pendrive de instalação dos SISTEMAS INTERNOS da Escola (Windows, sem internet), num só pacote (ESG-GESTAO):
+    INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat  — Sistema de Gestão Escolar (Administração Escolar, Direcção de Ensino e
+                                           departamentos, Comando, Biblioteca, registo dos estudantes e docentes);
+    INSTALAR-GESTAO-DO-SITE-WINDOWS.bat  — Sistema de Gestão do Site (notícias, páginas, cursos, eventos, comentários).
+  Cada um troca os dados com o servidor online (o site público e o Portal dos estudantes e docentes, noutro servidor).
 
-    node instalador/preparar-portal.mjs [--destino <pasta ou pendrive>]
+    node instalador/preparar-gestao.mjs [--destino <pasta ou pendrive>] [--ligacao-online <ligacao-online.txt>]
 
   1. Usa os mesmos componentes do pendrive do Pessoal (Node.js, PostgreSQL, Caddy, WinSW, Visual C++), em cache.
-  2. Constrói as páginas com a API no mesmo endereço (o domínio escolhe-se na instalação); o sistema de
-     pessoal não vai (tem o seu próprio pendrive); o painel fica em /painel/.
+  2. Constrói as páginas com a API no mesmo endereço (o domínio escolhe-se na instalação): o painel em /painel/ e o
+     site em pré-visualização (o Portal dos estudantes não vai: é do servidor online; o Pessoal tem o seu pendrive).
   3. Junta a API com as dependências de produção para Windows x64 (o sharp das imagens é nativo) e os
-     conteúdos iniciais do site (src/data e src/assets), que entram na base no primeiro arranque.
+     conteúdos iniciais do site (src/data e src/assets), que entram na Gestão do Site no primeiro arranque.
   4. Escreve o MANIFESTO (o instalador confere cada ficheiro).
-  Sem dados reais, sem chaves: as chaves criam-se na instalação, no servidor.
-  Por omissão a pasta fica em instalador/pendrive/ESG-PORTAL (fora do git): copie-a para a raiz do pendrive.
+  Com --ligacao-online, leva o endereço do servidor online e as chaves partilhadas (o ficheiro que a primeira
+  instalação escreve em config\ligacao-online.txt): não o envie por e-mail.
+  Por omissão a pasta fica em instalador/pendrive/ESG-GESTAO (fora do git): copie-a para a raiz do pendrive.
 */
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -26,7 +29,7 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url))
 const RAIZ = path.resolve(AQUI, '..')
 const CACHE = path.join(AQUI, '.cache')
 const arg = (n, padrao) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : padrao }
-const DESTINO = path.resolve(arg('--destino', path.join(AQUI, 'pendrive')), 'ESG-PORTAL')
+const DESTINO = path.resolve(arg('--destino', path.join(AQUI, 'pendrive')), 'ESG-GESTAO')
 const passo = (t) => console.log(`\n» ${t}`)
 const sha = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')
 const correr = (cmd, args, opcoes = {}) => execFileSync(cmd, args, { stdio: 'inherit', ...opcoes })
@@ -49,8 +52,9 @@ function paginas(app) {
   correr('npm', ['run', 'build'], { cwd: RAIZ, env: { ...process.env, VITE_API_URL: 'mesma-origem', VITE_AMBIENTE: '', VITE_PESSOAL_API: '' } })
   const dist = path.join(RAIZ, 'dist')
   fs.cpSync(dist, app, { recursive: true })
-  // o sistema de pessoal não vai para este servidor
+  // o sistema de pessoal e o Portal dos estudantes não vão para estes servidores
   fs.rmSync(path.join(app, 'pessoal'), { recursive: true, force: true })
+  fs.rmSync(path.join(app, 'portal'), { recursive: true, force: true })
   fs.renameSync(path.join(app, 'admin'), path.join(app, 'painel'))
 }
 
@@ -111,15 +115,23 @@ async function main() {
 
   passo('A copiar o instalador…')
   fs.mkdirSync(path.join(DESTINO, 'windows'), { recursive: true })
-  fs.copyFileSync(path.join(AQUI, 'windows', 'instalar-portal.ps1'), path.join(DESTINO, 'windows', 'instalar-portal.ps1'))
-  fs.copyFileSync(path.join(AQUI, 'INSTALAR-PORTAL-WINDOWS.bat'), path.join(DESTINO, 'INSTALAR-PORTAL-WINDOWS.bat'))
-  fs.copyFileSync(path.join(AQUI, 'LEIA-ME-PORTAL.txt'), path.join(DESTINO, 'LEIA-ME.txt'))
+  fs.copyFileSync(path.join(AQUI, 'windows', 'instalar-gestao.ps1'), path.join(DESTINO, 'windows', 'instalar-gestao.ps1'))
+  for (const f of ['INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat', 'INSTALAR-GESTAO-DO-SITE-WINDOWS.bat']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
+  fs.copyFileSync(path.join(AQUI, 'LEIA-ME-GESTAO.txt'), path.join(DESTINO, 'LEIA-ME.txt'))
+  // a ligação ao servidor online (endereço e chaves partilhadas), se se deu
+  if (process.argv.includes('--ligacao-online')) {
+    const origem = path.resolve(arg('--ligacao-online', ''))
+    const texto = fs.existsSync(origem) ? fs.readFileSync(origem, 'utf8') : ''
+    if (!/^REPLICACAO_CHAVE=.{32,}$/m.test(texto) || !/^DADOS_CHAVE=.{32,}$/m.test(texto)) throw new Error(`--ligacao-online: ${origem} não tem REPLICACAO_CHAVE e DADOS_CHAVE.`)
+    fs.copyFileSync(origem, path.join(DESTINO, 'ligacao-online.txt'))
+    console.log('  ✓ ligação ao servidor online incluída (ligacao-online.txt)')
+  }
   fs.writeFileSync(path.join(DESTINO, 'VERSAO.txt'), `${execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: RAIZ }).toString().trim()} · ${new Date().toISOString().slice(0, 10)}\n`)
 
   passo('A escrever o manifesto (resumo de cada ficheiro)…')
   manifesto(DESTINO)
   const tam = execFileSync('du', ['-sh', DESTINO]).toString().split('\t')[0]
-  console.log(`\nPacote do Portal pronto em ${DESTINO} (${tam}). Copie a pasta ESG-PORTAL para a raiz do pendrive.`)
+  console.log(`\nPacote dos sistemas internos pronto em ${DESTINO} (${tam}). Copie a pasta ESG-GESTAO para a raiz do pendrive.`)
 }
 
 main().catch((e) => { console.error(`\nERRO: ${e.message}`); process.exit(1) })

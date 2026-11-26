@@ -1,4 +1,6 @@
-# Servidor PÚBLICO da Escola: site, Portal Académico, painel de gestão, API e base de dados.
+# Servidor ONLINE da Escola (SISTEMA=online): o site público e o Portal dos estudantes e docentes, com a sua base de
+# dados. O painel de gestão NÃO está aqui: fica nos sistemas internos (Gestão Escolar e Gestão do Site), que trocam
+# os dados com este servidor (REPLICACAO_CHAVE e DADOS_CHAVE iguais às deles: config\\ligacao-online.txt).
 #   1. cp deploy/portal.env.example deploy/portal.env   e preencha (chaves, domínio, palavra-passe da BD)
 #   2. docker compose -f deploy/docker-compose.portal.yml --env-file deploy/portal.env up -d --build
 # O sistema de pessoal NÃO vai aqui (é só da rede interna: docker-compose.pessoal.yml).
@@ -31,6 +33,7 @@ services:
     env_file: portal.env
     environment:
       NODE_ENV: production
+      SISTEMA: online
       DATABASE_URL: postgresql://esgfaa:${BD_SENHA}@bd:5432/esgfaa
       PUBLIC_URL: https://${DOMINIO}
       PORTAL_URL: https://${DOMINIO}/portal/
@@ -48,7 +51,7 @@ services:
       dockerfile: deploy/web.Dockerfile
       args:
         DOMINIO: ${DOMINIO:?defina DOMINIO}
-        ADMIN_PATH: ${ADMIN_PATH:?defina ADMIN_PATH}
+        ADMIN_PATH: ${ADMIN_PATH:-}
     restart: unless-stopped
     depends_on:
       - api
