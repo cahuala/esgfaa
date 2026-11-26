@@ -2,6 +2,7 @@ import { CATEGORIAS, ESTADOS, FORMAS_SERVICO, POSTOS, RAMOS, SITUACOES, EFECTIVI
 import { idade, proximoPosto, reservaEReforma, tempoNoPosto, tempoServico, verificarPromocao } from './carreira.js'
 import { CARREIRAS_CIVIS, VINCULOS_CIVIS, remuneracaoDaCategoria, verificarProgressaoCivil } from './civis.js'
 import { vencimentoDoPosto } from './tabelaSalarial.js'
+import { problemaPostoExterno } from './forcas.js'
 
 export const TIPOS = { militar: 'Militar', civil: 'Civil' }
 // a função principal e as outras (sem repetir); a domiciliar não acumula
@@ -176,6 +177,8 @@ export function problemaNaFicha(p, antes = null, listas = {}) {
   if (d('biEmitidoEm') && d('biValidade') && d('biValidade') <= d('biEmitidoEm')) return ['biValidade', 'A validade do BI tem de ser depois da emissão.']
   // contactos
   for (const [k, r] of [['telefone', 'O telefone'], ['telefoneAlternativo', 'O telefone alternativo']]) if (p[k] && mudou(k) && !/^\+?[0-9 ()./-]{9,20}$/.test(p[k])) return [k, `${r} só tem algarismos (pelo menos 9; pode ter +, espaços ou hífenes).`]
+  // o posto na Polícia Nacional ou numa força estrangeira: um dos postos dessa força
+  if ((mudou('postoExterno') || mudou('unidadeOrigem')) && problemaPostoExterno(p)) return ['postoExterno', problemaPostoExterno(p)]
   // docente: a categoria é a do Decreto Presidencial n.º 191/18
   if (p.categoriaDocente && mudou('categoriaDocente') && ![...(listas.categoriasDocente ?? CATEGORIAS_DOCENTE), ...(listas.categoriasDocenteContratado ?? CATEGORIAS_DOCENTE_CONTRATADO)].includes(p.categoriaDocente)) return ['categoriaDocente', 'Categoria do docente desconhecida (Decreto Presidencial n.º 191/18).']
   if (p.emailPessoal && p.email && mudou('emailPessoal') && p.emailPessoal.toLowerCase() === String(p.email).toLowerCase()) return ['emailPessoal', 'O e-mail pessoal é o mesmo que o da Escola.']

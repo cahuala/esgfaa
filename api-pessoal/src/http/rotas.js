@@ -373,7 +373,7 @@ export function rotas({ servicos: s, config }) {
         bi: p.bi, telefone: p.telefone, nomeGuerra: p.nomeGuerra, genero: p.genero, idade: p.idade, dataNascimento: p.dataNascimento, naturalidade: p.naturalidade, provincia: p.provincia,
         nacionalidade: p.nacionalidade, paisNascimento: p.paisNascimento, habilitacao: p.habilitacao, areaFormacao: p.areaFormacao, especialidade: p.especialidade,
         // de onde vem (FAA, Polícia Nacional, estrangeiro, civil), o posto fora das FAA e os anos lectivos na Escola
-        origem: origemDe(p), postoExterno: p.postoExterno, anos: (anos.get(p.id) ?? []).filter((x) => x.papel === tipo),
+        origem: origemDe(p), postoExterno: p.postoExterno, ramoPorConfirmar: p.ramoPorConfirmar, anos: (anos.get(p.id) ?? []).filter((x) => x.papel === tipo),
       })),
     })
   })

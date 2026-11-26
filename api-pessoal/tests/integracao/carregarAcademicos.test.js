@@ -105,6 +105,22 @@ describe('Carregar os docentes e os estudantes das listas', () => {
     await adm.delete(`/api/pessoas/${efectivo.id}/anos-academicos/${x.id}`).expect(204)
   })
 
+  it('Polícia Nacional e estrangeiros: só os postos dessa força; o ramo por confirmar confirma-se ao gravar', async () => {
+    const civil = { tipo: 'civil', vinculo: 'estudante', nome: 'Estudante Policia Novo', unidadeOrigem: 'Polícia Nacional' }
+    const mau = await adm.post('/api/pessoas').send({ ...civil, postoExterno: 'Coronel' })
+    assert.equal(mau.status, 400)
+    assert.match(mau.body.erro, /não existe em Polícia Nacional/)
+    await adm.post('/api/pessoas').send({ ...civil, postoExterno: 'Superintendente-Chefe' }).expect(201)
+    await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'estudante', nome: 'Capitao Zambiano Teste', nacionalidade: 'Zambiana', paisNascimento: 'Zâmbia', unidadeOrigem: 'Zambian Army', postoExterno: 'Captain' }).expect(201)
+    assert.equal((await adm.post('/api/pessoas').send({ tipo: 'civil', vinculo: 'estudante', nome: 'Outro Zambiano Teste', unidadeOrigem: 'Zambian Army', postoExterno: 'Capitão' })).status, 400)
+    const ref = (await adm.get('/api/referencias').expect(200)).body
+    assert.ok(ref.postosPolicia.some((x) => x.nome === 'Subcomissário') && ref.orgaosFaa.some((o) => o.sigla === 'USP') && ref.paises['Moçambique'])
+    // ramo por confirmar: some quando se grava o ramo na ficha
+    const f = await amb.contentor.bd.pessoa.create({ data: { tipo: 'militar', nome: 'Major Sem Ramo Teste', nip: 'NIPRAMO1', posto: 'major', ramo: 'EXE', fps: 'QP', vinculo: 'estudante', ramoPorConfirmar: true } })
+    await adm.put(`/api/pessoas/${f.id}`).send({ ramo: 'FAN' }).expect(200)
+    assert.equal((await amb.contentor.bd.pessoa.findUnique({ where: { id: f.id } })).ramoPorConfirmar, false)
+  })
+
   it('corre uma só vez: o que se mudar à mão depois não volta', async () => {
     const pessoas = await amb.contentor.bd.pessoa.count()
     const cursos = await amb.contentor.bd.curso.count()

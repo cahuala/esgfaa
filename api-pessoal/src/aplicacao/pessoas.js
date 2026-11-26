@@ -229,6 +229,8 @@ export class ServicoPessoas {
     // empregados domiciliares têm a categoria própria (Trabalhador Domiciliar)
     if (x.vinculo === 'domiciliar') Object.assign(x, { carreiraCivil: 'trabalhador_domiciliar', categoriaCivil: 'Trabalhador Domiciliar' })
     // outras funções na Escola: sem repetir a principal; a domiciliar não acumula
+    // o ramo gravado na ficha (pelo formulário) fica confirmado
+    if ('ramo' in d && !('ramoPorConfirmar' in d)) x.ramoPorConfirmar = false
     if ('outrosVinculos' in d) x.outrosVinculos = x.vinculo === 'domiciliar' ? [] : [...new Set(d.outrosVinculos ?? [])].filter((v) => v !== x.vinculo)
     for (const k of ['motivoSaida', 'destinoSaida']) if (k in x) x[k] ??= ''
     // saiu da Escola: fica a data de saída (hoje, se não se escreveu outra); voltou: apaga a saída

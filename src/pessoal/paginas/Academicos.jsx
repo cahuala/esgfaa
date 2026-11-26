@@ -43,11 +43,11 @@ const nomeEstado = Object.fromEntries(ESTADOS_PORTAL)
 // de onde vem: FAA (pelo ramo), Polícia Nacional, estrangeiro (com o país) ou civil
 const ORIGENS = [['faa', 'FAA'], ['policia', 'Polícia Nacional'], ['estrangeiro', 'Estrangeiros'], ['civil', 'Civis']]
 const RAMO_NOME = { EXE: 'Exército', FAN: 'Força Aérea Nacional', MGA: 'Marinha de Guerra Angolana' }
-const textoOrigem = (p) => (p.origem === 'faa' ? `FAA — ${RAMO_NOME[p.ramo] ?? ''}` : p.origem === 'policia' ? 'Polícia Nacional' : p.origem === 'estrangeiro' ? `Estrangeiro — ${p.paisNascimento || p.nacionalidade}` : 'Civil')
+const textoOrigem = (p) => (p.origem === 'faa' ? `FAA — ${p.ramoPorConfirmar ? 'ramo por confirmar' : RAMO_NOME[p.ramo] ?? ''}` : p.origem === 'policia' ? 'Polícia Nacional' : p.origem === 'estrangeiro' ? `Estrangeiro — ${p.paisNascimento || p.nacionalidade}` : 'Civil')
 function Origem({ p }) {
-  if (p.origem === 'faa') return <span className={`badge pes-ramo-${p.ramo}`} title={`FAA — ${RAMO_NOME[p.ramo] ?? ''}`}>FAA · {p.ramo}</span>
+  if (p.origem === 'faa') return <>{p.ramoPorConfirmar ? <span className="badge bg-warning text-dark" title="A lista não dizia o ramo (ficou Exército): confirme-o na ficha">FAA · ramo por confirmar</span> : <span className={`badge pes-ramo-${p.ramo}`} title={`FAA — ${RAMO_NOME[p.ramo] ?? ''}`}>FAA · {p.ramo}</span>}</>
   if (p.origem === 'policia') return <span className="badge pes-origem-policia"><i className="fa fa-shield-alt me-1" />Polícia Nacional</span>
-  if (p.origem === 'estrangeiro') return <span className="badge pes-origem-estrangeiro"><i className="fa fa-globe-africa me-1" />Estrangeiro · {p.paisNascimento || p.nacionalidade}</span>
+  if (p.origem === 'estrangeiro') return <span className="badge pes-origem-estrangeiro" title={p.unidadeOrigem}><i className="fa fa-globe-africa me-1" />Estrangeiro · {p.paisNascimento || p.nacionalidade}</span>
   return <span className="badge pes-origem-civil">Civil</span>
 }
 // o órgão de onde vem (fora da ESG) ou o país, para os estrangeiros
@@ -116,7 +116,7 @@ export default function Academicos({ tipo }) {
   const todos = useMemo(() => dados?.pessoas ?? [], [dados])
   // o que se fez nesse ano: o curso (estudantes) ou as cadeiras (docentes)
   const doAno = (p) => (p.anos ?? []).filter((a) => !ano || ano === 'sem' || a.anoLetivo === ano)
-  const lista = useMemo(() => todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : p.ramo === filtro.ramo))
+  const lista = useMemo(() => todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : filtro.ramo === 'porConfirmar' ? p.ramoPorConfirmar : p.ramo === filtro.ramo && !p.ramoPorConfirmar))
     && (!filtro.origem || p.origem === filtro.origem)
     && (!filtro.orgao || orgaoDe(p) === filtro.orgao)
     && (!filtro.unidade || (filtro.unidade === 'fora' ? Boolean(p.unidadeOrigem) && !p.unidadeNome : !p.unidadeOrigem || Boolean(p.unidadeNome)))
@@ -187,7 +187,7 @@ export default function Academicos({ tipo }) {
           <Escolha valor={ano ?? ''} aoMudar={(v) => setAno(v)} opcoes={[...doTipo.map((a) => [a.anoLetivo, `Ano lectivo ${a.anoLetivo}`]), ['sem', 'Sem ano lectivo registado']]} vazio="Todos os anos" aria-label="Ano lectivo" />
           {!ano && <Escolha valor={ativo} aoMudar={setAtivo} opcoes={[['sim', 'Na Escola'], ['nao', 'Já saíram'], ['todos', 'Todos']]} vazio={null} aria-label="Quem mostrar" />}
           <Escolha valor={filtro.origem} aoMudar={mudarFiltro('origem')} opcoes={ORIGENS} vazio="Todas as origens" aria-label="Origem" />
-          <Escolha valor={filtro.ramo} aoMudar={mudarFiltro('ramo')} opcoes={[...Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]), ['civil', 'Civis']]} vazio="Todos os ramos" aria-label="Ramo" />
+          <Escolha valor={filtro.ramo} aoMudar={mudarFiltro('ramo')} opcoes={[...Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]), ['porConfirmar', 'Ramo por confirmar'], ['civil', 'Civis']]} vazio="Todos os ramos" aria-label="Ramo" />
           <Escolha valor={filtro.orgao} aoMudar={mudarFiltro('orgao')} opcoes={[...new Set(todos.map(orgaoDe).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer órgão de origem" aria-label="Órgão de origem" />
           <Escolha valor={filtro.unidade} aoMudar={mudarFiltro('unidade')} opcoes={[['esg', 'Da ESG'], ['fora', 'De outras unidades']]} vazio="Da ESG ou de fora" aria-label="Unidade" />
           {tipo === 'docente' && <Escolha valor={filtro.tipoDocente} aoMudar={mudarFiltro('tipoDocente')} opcoes={[['efectivo', 'Efectivos'], ['colaborador', 'Colaboradores'], ['sem', 'Tipo por indicar']]} vazio="Efectivos e colaboradores" aria-label="Tipo de docente" />}
@@ -213,7 +213,7 @@ export default function Academicos({ tipo }) {
 }
 
 // registo: o essencial, com o BI a vir da base de dados do Estado (o resto da ficha preenche-se depois, se for preciso)
-const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', paisNascimento: 'Angola', pai: '', mae: '', email: '', emailPessoal: '', telefone: '', telefoneAlternativo: '', morada: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '', dataIngresso: '', categoriaDocente: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', postoExterno: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
+const VAZIO = { tipo: 'militar', bi: '', nome: '', dataNascimento: '', genero: '', estadoCivil: '', nacionalidade: 'Angolana', naturalidade: '', provincia: '', paisNascimento: 'Angola', pai: '', mae: '', email: '', emailPessoal: '', telefone: '', telefoneAlternativo: '', morada: '', biEmitidoEm: '', biValidade: '', biLocalEmissao: '', grupoSanguineo: '', dataIngresso: '', categoriaDocente: '', ramo: 'EXE', posto: '', fps: 'QP', nip: '', nomeGuerra: '', especialidade: '', unidadeOrigem: '', postoExterno: '', numeroAgente: '', habilitacao: '', areaFormacao: '', funcaoActual: '' }
 const BI_VALIDO = /^[0-9]{9}[A-Z]{2}[0-9]{3}$/
 // o ano lectivo de agora (começa em Setembro) e o registo desse ano na ficha (o curso ou a cadeira)
 const anoDeAgora = () => { const d = new Date(); const a = d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1; return `${a}/${a + 1}` }
@@ -310,8 +310,22 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
   const previa = useMemo(() => (foto ? URL.createObjectURL(foto) : null), [foto])
   useEffect(() => () => { if (previa) URL.revokeObjectURL(previa) }, [previa])
   const [bi, setBi] = useState({ estado: '', texto: '', visto: '' }) // estado: '' | 'a consultar' | 'ok' | 'erro'
-  const militar = d.tipo === 'militar'
+  // de onde vem: FAA (militar, com o ramo e o órgão), Polícia Nacional, estrangeiro (país, força, posto) ou civil
+  const [prov, setProv] = useState('faa')
+  const militar = prov === 'faa'
   const postos = ref.postos[d.ramo] ?? []
+  const paises = ref.paises ?? {}
+  const forcas = paises[d.paisNascimento]?.forcas ?? []
+  const forca = forcas.find((f) => f.nome === d.unidadeOrigem)
+  const escolherProv = (k) => {
+    setProv(k)
+    setD((x) => ({
+      ...x, tipo: k === 'faa' ? 'militar' : 'civil', postoExterno: '',
+      unidadeOrigem: k === 'policia' ? (ref.policiaNacional ?? 'Polícia Nacional') : '',
+      ...(k === 'estrangeiro' ? { paisNascimento: '', nacionalidade: '' } : { paisNascimento: 'Angola', nacionalidade: 'Angolana' }),
+    }))
+  }
+  const escolherPais = (pais) => setD((x) => ({ ...x, paisNascimento: pais, nacionalidade: paises[pais]?.nacionalidade ?? x.nacionalidade, unidadeOrigem: '', postoExterno: '' }))
   const set = (k) => (v) => setD((x) => ({ ...x, [k]: v?.target ? v.target.value : v }))
   const campo = (k, extra = {}) => ({ value: d[k] ?? '', onChange: set(k), className: 'form-control form-control-sm', ...extra })
 
@@ -336,6 +350,7 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
     const comuns = ['bi', 'nome', 'dataNascimento', 'genero', 'estadoCivil', 'nacionalidade', 'paisNascimento', 'naturalidade', 'provincia', 'pai', 'mae', 'telefone', 'telefoneAlternativo', 'emailPessoal', 'morada', 'unidadeOrigem', 'postoExterno', 'habilitacao', 'areaFormacao', 'biLocalEmissao', 'biEmitidoEm', 'biValidade', 'grupoSanguineo']
     const corpo = {
       tipo: d.tipo, vinculo: tipo, email: d.email || null,
+      ...(!militar && d.numeroAgente ? { numeroAgente: d.numeroAgente } : {}),
       ...Object.fromEntries(comuns.map((k) => [k, d[k] ?? ''])),
       ...(militar ? { ramo: d.ramo, posto: d.posto, fps: d.fps, nip: d.nip, nomeGuerra: d.nomeGuerra, especialidade: d.especialidade, dataIngresso: d.dataIngresso } : {}),
       ...(tipo === 'docente' ? { tipoDocente: d.tipoDocente, categoriaDocente: d.categoriaDocente, funcaoActual: d.funcaoActual } : {}),
@@ -368,9 +383,9 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
       )}
       {efectivo ? <EscolherEfectivo aoGuardar={aoGuardar} /> : <form id="registo-rapido" onSubmit={guardar} className="pes-registo">
         {erro && <div className="alert alert-danger py-2">{erro}</div>}
-        <div className="btn-group w-100 mb-3" role="group" aria-label="Militar ou civil">
-          {[['militar', 'Militar', 'fa-shield-alt'], ['civil', 'Civil', 'fa-user-tie']].map(([k, r, i]) => (
-            <button key={k} type="button" className={`btn ${d.tipo === k ? 'btn-theme' : 'btn-white'}`} aria-pressed={d.tipo === k} onClick={() => setD({ ...d, tipo: k })}><i className={`fa ${i} me-1`} />{r}</button>
+        <div className="btn-group w-100 mb-3 flex-wrap" role="group" aria-label="De onde vem">
+          {[['faa', 'Militar das FAA', 'fa-shield-alt'], ['policia', 'Polícia Nacional', 'fa-user-shield'], ['estrangeiro', 'Estrangeiro', 'fa-globe-africa'], ['civil', 'Civil', 'fa-user-tie']].map(([k, r, i]) => (
+            <button key={k} type="button" className={`btn ${prov === k ? 'btn-theme' : 'btn-white'}`} aria-pressed={prov === k} onClick={() => escolherProv(k)}><i className={`fa ${i} me-1`} />{r}</button>
           ))}
         </div>
 
@@ -421,15 +436,58 @@ function RegistoRapido({ tipo, aoFechar, aoGuardar }) {
             <Campo rotulo="Nome de guerra" col="col-md-4"><input {...campo('nomeGuerra')} /></Campo>
             <Campo rotulo="Especialidade" col="col-md-4"><input {...campo('especialidade')} /></Campo>
             <Campo rotulo="Data de incorporação" col="col-md-4"><InputData {...campo('dataIngresso')} /></Campo>
-            <Campo rotulo="Unidade de origem (fora da ESG)" col="col-md-8" ajuda="Se vem de outra unidade das FAA (ex.: Regimento de Infantaria n.º 10). Se é da ESG, ponha a unidade depois, na ficha."><input {...campo('unidadeOrigem')} /></Campo>
+            <Campo rotulo="Órgão de origem (fora da ESG)" col="col-md-8" ajuda="Escolha o órgão das FAA (Estado-Maior General, ramo, Casa Militar, USP…) ou escreva a unidade (ex.: Regimento de Infantaria n.º 10). Se é da ESG, ponha a unidade depois, na ficha.">
+              <input {...campo('unidadeOrigem', { list: 'orgaos-faa', placeholder: 'ex.: Estado-Maior General das FAA' })} />
+              <datalist id="orgaos-faa">{(ref.orgaosFaa ?? []).map((o) => <option key={o.nome} value={o.nome}>{o.sigla}</option>)}</datalist>
+            </Campo>
           </div>
         </>}
 
-        {!militar && <>
-          <Seccao icone="fa-shield-alt">Polícia Nacional, outros órgãos ou estrangeiro</Seccao>
+        {prov === 'policia' && <>
+          <Seccao icone="fa-user-shield">Polícia Nacional</Seccao>
           <div className="row gx-3">
-            <Campo rotulo="Órgão de origem" col="col-md-8" ajuda="ex.: Polícia Nacional, Serviço de Inteligência, ou as Forças Armadas de outro país. Os estrangeiros: escreva a nacionalidade e o país acima."><input {...campo('unidadeOrigem')} /></Campo>
-            <Campo rotulo="Posto (fora das FAA)" col="col-md-4" ajuda="ex.: Superintendente-Chefe."><input {...campo('postoExterno')} /></Campo>
+            <Campo rotulo="Posto" obrigatorio col="col-md-6" ajuda="Decreto n.º 117/08 e Lei n.º 10/22 (postos da Polícia Nacional).">
+              <select className="form-select form-select-sm" value={d.postoExterno} onChange={set('postoExterno')} required aria-label="Posto na Polícia Nacional">
+                <option value="">—</option>
+                {[...new Set((ref.postosPolicia ?? []).map((x) => x.classe))].map((c) => <optgroup key={c} label={c}>{ref.postosPolicia.filter((x) => x.classe === c).map((x) => <option key={x.nome} value={x.nome}>{x.nome}</option>)}</optgroup>)}
+              </select>
+            </Campo>
+            <Campo rotulo="N.º na Polícia" col="col-md-6"><input {...campo('numeroAgente', { placeholder: 'ex.: I045669' })} /></Campo>
+          </div>
+        </>}
+
+        {prov === 'estrangeiro' && <>
+          <Seccao icone="fa-globe-africa">Estrangeiro: país, força e posto</Seccao>
+          <div className="row gx-3">
+            <Campo rotulo="País" obrigatorio col="col-md-4">
+              <input {...campo('paisNascimento', { list: 'paises-esg', required: true, onChange: (e) => escolherPais(e.target.value) })} />
+              <datalist id="paises-esg">{Object.keys(paises).map((x) => <option key={x} value={x} />)}</datalist>
+            </Campo>
+            <Campo rotulo="Nacionalidade" col="col-md-4"><input {...campo('nacionalidade')} /></Campo>
+            <Campo rotulo="N.º na força (se tiver)" col="col-md-4"><input {...campo('numeroAgente')} /></Campo>
+            <Campo rotulo="Forças armadas ou polícia" obrigatorio col="col-md-6">
+              {forcas.length ? (
+                <select className="form-select form-select-sm" value={d.unidadeOrigem} onChange={(e) => setD((x) => ({ ...x, unidadeOrigem: e.target.value, postoExterno: '' }))} required aria-label="Força">
+                  <option value="">—</option>
+                  {forcas.map((f) => <option key={f.nome} value={f.nome}>{f.nome}</option>)}
+                </select>
+              ) : <input {...campo('unidadeOrigem', { required: true, placeholder: 'ex.: Forças Armadas da Namíbia' })} />}
+            </Campo>
+            <Campo rotulo="Posto (como se escreve no país)" obrigatorio col="col-md-6">
+              {forca?.postos ? (
+                <select className="form-select form-select-sm" value={d.postoExterno} onChange={set('postoExterno')} required aria-label="Posto">
+                  <option value="">—</option>
+                  {forca.postos.map((x) => <option key={x.nome} value={x.nome}>{x.nome}</option>)}
+                </select>
+              ) : <input {...campo('postoExterno', { required: true })} />}
+            </Campo>
+          </div>
+        </>}
+
+        {prov === 'civil' && <>
+          <Seccao icone="fa-building">Órgão de origem</Seccao>
+          <div className="row gx-3">
+            <Campo rotulo="Onde trabalha (fora da ESG)" col="col-md-12" ajuda="ex.: Ministério da Defesa Nacional e dos Veteranos da Pátria, uma universidade…"><input {...campo('unidadeOrigem', { list: 'orgaos-faa' })} /><datalist id="orgaos-faa">{(ref.orgaosFaa ?? []).map((o) => <option key={o.nome} value={o.nome} />)}</datalist></Campo>
           </div>
         </>}
 

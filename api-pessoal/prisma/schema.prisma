@@ -198,6 +198,8 @@ model Pessoa {
   paisNascimento       String    @default("Angola") @map("pais_nascimento")
   // o posto de quem não é das FAA (Polícia Nacional, forças armadas estrangeiras): fica em texto, como na lista
   postoExterno         String    @default("") @map("posto_externo")
+  // militar das listas sem o ramo (ficou Exército): confirma-se na ficha (ao mudar o ramo deixa de estar por confirmar)
+  ramoPorConfirmar     Boolean   @default(false) @map("ramo_por_confirmar")
   habilitacao          String? // base | medio | bacharelato | licenciatura | mestrado | doutoramento
   areaFormacao         String    @default("") @map("area_formacao")
   fotoId               String?   @map("foto_id")
