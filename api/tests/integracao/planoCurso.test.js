@@ -118,4 +118,15 @@ describe('plano de curso da ESG: TAI/TAG, recuperação, blocos e nota final (32
     assert.equal(percurso.planoCurso.nome, '32.º Curso Superior de Comando e Direcção — Plano de Curso 2026/2027')
     assert.equal(percurso.conclusao.concluido, false)
   })
+
+  it('pauta final do curso: as UC de cada bloco (como no plano), as médias e as estatísticas', async () => {
+    const p = (await escola.get(`/api/admin/academico/turmas/${turma.id}/pauta-final`).expect(200)).body
+    assert.equal(p.plano.formula, 'ponderada')
+    const coef = Object.fromEntries(p.blocos.map((b) => [b.sigla, b.coeficiente]))
+    assert.deepEqual([coef.ADM, coef.TAC, coef.ESTR, coef.TII], [2, 3, 2, 2])
+    assert.equal(p.blocos.find((b) => b.sigla === 'ADM').ucs.find((u) => u.codigo === 'GP').creditos, 3)
+    const ana = p.linhas.find((l) => l.estudante.id === contas.ana.id)
+    assert.ok('GP' in ana.ucs)
+    assert.equal(ana.final, null)
+  })
 })

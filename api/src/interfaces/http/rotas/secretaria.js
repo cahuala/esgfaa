@@ -99,6 +99,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/estrutura', validar({ query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.turmas.estruturaDoEnsino(ctx(req), req.dados.query.anoLetivo)))
   r.put('/cadeiras/:id/departamento', validar({ params: pId, body: z.object({ departamento: z.string().max(120) }) }), async (req, res) => res.json(await a.turmas.departamentoDaCadeira(ctx(req), req.dados.params.id, req.dados.body.departamento)))
   r.get('/documentos-do-ano', validar({ query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/) }) }), async (req, res) => res.json(await a.documentos.documentosDoAno(ctx(req), req.dados.query.anoLetivo)))
+  // pauta final do curso: UC por bloco, médias, média final e classificação (PDF e Excel com as fórmulas)
+  r.get('/turmas/:id/pauta-final', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaFinal(ctx(req), req.dados.params.id)))
   r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/folha-presencas', validar({ params: pId }), async (req, res) => res.json(await a.documentos.folhaPresencas(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/lista-prova', validar({ params: pId }), async (req, res) => res.json(await a.documentos.listaProva(ctx(req), req.dados.params.id)))

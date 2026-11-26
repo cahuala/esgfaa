@@ -20,7 +20,9 @@ export const NOTA_MAXIMA_RECUPERACAO = 10
 export const TIPOS_AVALIACAO = { TAI: 'Trabalho de Aplicação Individual', TAG: 'Trabalho de Aplicação de Grupo' }
 export const FORMAS_AVALIACAO = { teste: 'Teste escrito', relatorio: 'Relatório individual', oral: 'Teste oral', trabalho: 'Trabalho' }
 export const TERMOS = { auditor: 'Auditor', discente: 'Discente' }
-export const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
+// ponderada: em cada bloco, a média das UC pesada pelas unidades de crédito (CSCD); blocos: em cada bloco, a média
+// simples das UC (COAMP 2025/2026); nos dois, os blocos pesam pelos coeficientes; media: a média simples de todas as UC
+export const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes (UC pesadas pelos créditos)', blocos: 'Média simples em cada bloco, blocos ponderados pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
 // horas e créditos (Decreto Presidencial n.º 193/18): 1 UCréd = 15 horas; limites por semestre e por ano
 export const CREDITO_HORAS = 15
 export const LIMITES = { creditosSemestre: 40, horasSemestre: 600, creditosAno: 80, horasAno: 1200, horasMinimasUc: 15 }
@@ -214,7 +216,8 @@ export function faltasDoCurso(presencas, horasContacto, percentagem = 10) {
   Devolve { blocos: [{ sigla, nome, coeficiente, nota, aprovado }], media, final, aprovado, concluido, mencao, emFalta }.
 */
 export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
-  const peso = (u) => (u.creditos > 0 ? u.creditos : 1)
+  // em «blocos» todas as UC pesam igual dentro do bloco; nas outras, pelas unidades de crédito
+  const peso = (u) => (plano.formula !== 'blocos' && u.creditos > 0 ? u.creditos : 1)
   const media = (lista) => {
     const comNota = lista.filter((u) => u.final !== null && u.final !== undefined)
     if (!comNota.length || comNota.length < lista.length) return null

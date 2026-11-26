@@ -82,6 +82,39 @@ export class ServicoDocumentos {
     }
   }
 
+  /*
+    Pauta final do curso (como as da Repartição): as UC de cada bloco com as notas finais, a média de cada bloco, a
+    média final, a classificação (Muito Bom, Bom, Regular, Reprovado; Distinto pelo Comandante) e o quadro de
+    estatísticas. Com o plano do curso (blocos, coeficientes, créditos e a fórmula) — o Excel leva as fórmulas.
+  */
+  async pautaFinal(ctx, turmaId) {
+    ctx.actor.exigir('academico.ver')
+    const t = await this.#turma(turmaId)
+    const g = await this.esg?.pautaGeral(t)
+    if (!g) throw new NaoEncontrado('Esta turma ainda não tem o plano de curso da ESG (Turma › Plano de curso).')
+    const { plano } = g
+    const cadeiras = await this.academico.cadeirasDasTurmas([t.id])
+    const blocos = (plano.blocos.length ? plano.blocos : [{ sigla: '', nome: 'Unidades curriculares', coeficiente: 1 }]).map((b) => ({
+      sigla: b.sigla, nome: b.nome, coeficiente: b.coeficiente,
+      ucs: cadeiras.filter((c) => (plano.blocos.length ? c.bloco === b.sigla : true)).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, creditos: c.creditos || 0, tii: Boolean(c.tii) })),
+    })).filter((b) => b.ucs.length)
+    const contas = new Map((await this.academico.matriculasDaTurma(t.id)).map((m) => [m.estudante.id, m.estudante.dados ?? {}]))
+    const linhas = g.linhas.map((l) => {
+      const d = contas.get(l.estudante.id) ?? {}
+      return {
+        estudante: { id: l.estudante.id, nome: l.estudante.nome, numero: l.estudante.numero, posto: d.posto || l.estudante.posto || '', nip: d.nip || '', ramo: d.origem === 'policia' ? 'PNA' : d.ramo || '' },
+        ucs: Object.fromEntries((l.ucs ?? []).map((u) => [u.codigo, u.final ?? null])), blocos: Object.fromEntries((l.blocos ?? []).map((b) => [b.sigla, b.nota])),
+        ajuste: l.ajuste ?? 0, final: l.final ?? null, mencao: l.distinto ? 'Distinto' : l.mencao ?? null, homologado: Boolean(l.homologado),
+      }
+    })
+    const finais = linhas.map((l) => l.final).filter((x) => x !== null && x !== undefined).map(Number)
+    return {
+      turma: { id: t.id, nome: t.nome, anoLetivo: t.anoLetivo, cursoId: t.curso, curso: await this.#curso(t.curso) },
+      plano: { nome: plano.nome, formula: plano.formula, termo: plano.termo, ajusteMaximo: Number(plano.ajusteMaximo) || 0 }, blocos, linhas,
+      estatistica: finais.length ? { media: finais.reduce((a, b) => a + b, 0) / finais.length, maxima: Math.max(...finais), minima: Math.min(...finais) } : null,
+    }
+  }
+
   // folha de presenças: estudantes × aulas registadas (com P/F/J), mais colunas em branco se se pedir
   async folhaPresencas(ctx, cadeiraId) {
     ctx.actor.exigir('academico.ver')

@@ -145,3 +145,23 @@ describe('avaliação pelos planos de curso da ESG', () => {
     }
   })
 })
+
+// as pautas do arquivo: o COAMP 2025/2026 fazia a média simples em cada bloco e pesava os blocos (4, 2, 2, 1 e 3)
+describe('fórmula «blocos»: média simples em cada bloco, blocos ponderados', () => {
+  it('como na pauta final do 11.º COAMP (as notas do 1.º discente)', () => {
+    const plano = { formula: 'blocos', ajusteMaximo: 0, exigirBlocos: false, exigirUcs: false, exigirTii: false, blocos: [{ sigla: 'NUC', nome: 'Nucleares', coeficiente: 4 }, { sigla: 'COMP', nome: 'Complementares', coeficiente: 2 }, { sigla: 'TAC', nome: 'Táctica', coeficiente: 2 }, { sigla: 'GER', nome: 'Gerais', coeficiente: 1 }, { sigla: 'TII', nome: 'TII', coeficiente: 3 }] }
+    const u = (bloco, codigo, final, creditos = 5) => ({ bloco, codigo, nome: codigo, creditos, final, situacao: 'aprovado' })
+    const ucs = [
+      ...[19, 15, 19.66, 19, 17, 18, 20, 17].map((n, i) => u('NUC', `N${i}`, n, i + 1)),
+      ...[18, 18, 15, 19, 20, 19].map((n, i) => u('COMP', `C${i}`, n, i + 2)),
+      ...[14.25, 18, 17.5, 17].map((n, i) => u('TAC', `T${i}`, n)),
+      ...[20, 18.5, 18, 18].map((n, i) => u('GER', `G${i}`, n)),
+      u('TII', 'TII', 18, 13),
+    ]
+    const r = resultadoCurso(plano, ucs)
+    // os créditos não contam: médias simples dos blocos
+    assert.deepEqual(r.blocos.map((b) => b.nota), [18.08, 18.17, 16.69, 18.63, 18])
+    assert.equal(r.final, Math.round(((18.08 * 4 + 18.17 * 2 + 16.69 * 2 + 18.63 + 18 * 3) / 12) * 100) / 100)
+    assert.deepEqual([r.final, r.mencao], [17.89, 'Bom'])
+  })
+})

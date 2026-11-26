@@ -6,7 +6,7 @@ import RegrasPlano from '../../../portal/RegrasPlano'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
 const nota = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString(localAtual(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
-const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
+const FORMULAS = { ponderada: 'Média dos blocos ponderada pelos coeficientes (UC pesadas pelos créditos)', blocos: 'Média simples em cada bloco, blocos ponderados pelos coeficientes', percentagem: 'Média dos blocos com pesos em percentagem', media: 'Média aritmética das unidades curriculares (sem ponderação)' }
 
 /*
   Plano de curso da ESG de uma turma (Administração Escolar): carregar o modelo do plano 2026/2027 (cria o
