@@ -89,6 +89,7 @@ import { ServicoLicoes } from './aplicacao/academico/ensino/licoes.js'
 import { ServicoRegistoPessoal } from './aplicacao/academico/pessoal/registo.js'
 import { ServicoTurmas } from './aplicacao/academico/administracao/turmas.js'
 import { ServicoAnosLetivos } from './aplicacao/academico/administracao/anosLetivos.js'
+import { ServicoHorarioMensal } from './aplicacao/academico/administracao/horarioMensal.js'
 import { ServicoCadeiras } from './aplicacao/academico/administracao/cadeiras.js'
 import { ServicoAprovacoesComandante } from './aplicacao/academico/administracao/aprovacoesComandante.js'
 import { ServicoPautasAdministracao } from './aplicacao/academico/administracao/pautas.js'
@@ -282,6 +283,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       planosCurso: new ServicoPlanosCurso(d),
       conselhoCurso: new ServicoConselhoCurso(d),
       calendario: new ServicoCalendarioAcademico(d),
+      horarioMensal: new ServicoHorarioMensal({ ...d, prisma }),
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),

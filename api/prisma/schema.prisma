@@ -289,6 +289,22 @@ model ContaPortal {
   @@map("contas_portal")
 }
 
+// horário mensal da turma (como na Repartição de Administração Escolar): em cada dia útil e em cada tempo, a cadeira
+// (a sessão S1, S2… conta-se sozinha) ou um texto (Feriado, Ponte, HNC, TAG, Trabalho de campo…)
+model HorarioDia {
+  id        Int      @id @default(autoincrement())
+  turmaId   Int      @map("turma_id")
+  data      DateTime @db.Date
+  bloco     String // "08:30-09:20"
+  cadeiraId Int?     @map("cadeira_id")
+  texto     String   @default("")
+  turma     Turma    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  @@unique([turmaId, data, bloco])
+  @@index([turmaId, data])
+  @@map("horarios_mensais")
+}
+
 // turma de um curso num ano letivo (ex.: CEM 2026/2027)
 // ano letivo (ex.: "2026/2027"): datas do ano e dos semestres; as cadeiras são de um semestre (ou anuais)
 model AnoLetivo {
@@ -337,7 +353,8 @@ model Turma {
   tfcs       TrabalhoFimCurso[]
   diplomas   CertificadoCurso[]
 
-  prazosNotas PrazoNotas[]
+  prazosNotas   PrazoNotas[]
+  horarioMensal HorarioDia[]
 
   @@unique([curso, anoLetivo, nome])
   @@map("turmas")

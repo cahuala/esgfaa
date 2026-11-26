@@ -247,6 +247,8 @@ function Turma() {
             <Link to={`/academico/documentos/turma/${t.id}/lista`} className="btn btn-white"><i className="fa fa-list-ol me-1" />{tx('Relação nominal da turma')}</Link>
             <Link to={`/academico/documentos/curso/${encodeURIComponent(t.curso)}/lista?ano=${encodeURIComponent(t.anoLetivo)}`} className="btn btn-white"><i className="fa fa-users me-1" />{tx('Relação nominal do curso')}</Link>
             <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
+            <Link to={`/academico/turmas/${t.id}/horario-mensal`} className="btn btn-white"><i className="fa fa-calendar-alt me-1" />{tx('Horário mensal')}</Link>
+            <Link to={`/academico/turmas/${t.id}/oficios`} className="btn btn-white"><i className="fa fa-envelope-open-text me-1" />{tx('Ofícios (credenciais, comunicações, nota de envio)')}</Link>
             <span className="text-muted small">{tx('Por cadeira (pauta, folha de presenças, lista para a prova): em «Cadeiras e horário».')}</span>
           </div>
           {gerir && (

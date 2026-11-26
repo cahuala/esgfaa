@@ -52,6 +52,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/turmas', async (req, res) => res.json(await a.turmas.listarTurmas(ctx(req))))
   r.post('/turmas', validar({ body: E.turma }), async (req, res) => res.status(201).json(await a.turmas.criarTurma(ctx(req), req.dados.body)))
   r.get('/turmas/:id', validar({ params: pId }), async (req, res) => res.json(await a.turmas.turma(ctx(req), req.dados.params.id)))
+  // horário mensal da turma: os dias úteis × os tempos, com a cadeira (e a sessão) ou um texto em cada célula
+  r.get('/turmas/:id/horario-mensal', validar({ params: pId, query: z.object({ mes: z.string().regex(/^\d{4}-\d{2}$/) }) }), async (req, res) => res.json(await a.horarioMensal.doMes(ctx(req), req.dados.params.id, req.dados.query.mes)))
+  r.put('/turmas/:id/horario-mensal', validar({ params: pId, body: z.object({ data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), bloco: z.string().max(20), cadeiraId: z.number().int().positive().nullable().optional(), texto: z.string().max(40).optional() }) }), async (req, res) => res.json(await a.horarioMensal.guardar(ctx(req), req.dados.params.id, req.dados.body)))
   // lista do curso (todas as turmas de um curso num ano lectivo), pela ordem hierárquica
   // o Director de cada curso (designado pela Administração Escolar)
   r.get('/directores-curso', async (req, res) => res.json(await a.turmas.directoresDeCurso(ctx(req))))

@@ -880,3 +880,15 @@ fieldset:disabled .bloco-topo .btn-group {
   .of-folha-fechada { display: none !important; }
   .of-nao-autorizado { display: block; font-size: 18pt; text-align: center; margin-top: 40mm; }
 }
+
+/* horário mensal: tabela larga e compacta (cabe em A4 na horizontal) */
+.of-horario { font-size: 9pt; }
+.of-horario th, .of-horario td { padding: 2px 3px !important; }
+
+/* ofícios: no ecrã edita-se o texto; no papel sai o texto, cada ofício na sua folha */
+.of-so-papel { display: none; }
+@media print {
+  .of-so-papel { display: block; }
+  .of-no-ecra { display: none !important; }
+  .of-quebra { break-after: page; }
+}

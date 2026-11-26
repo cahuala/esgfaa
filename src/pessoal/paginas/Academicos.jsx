@@ -10,6 +10,8 @@ import Tabela from '../componentes/Tabela'
 import { Cabecalho, Campo, Carregando, Erro, Escolha, EscolhaCategoriaDocente, InputData, Modal, Painel } from '../componentes/Ui'
 import { imprimirFichas } from '../../admin/paginas/pessoal/fichasAcesso'
 import { textoDespacho } from '../despacho'
+import { documentoExcel, documentoPdf } from '../exportar'
+import { dataPt } from '../formatar'
 
 const TEXTOS = {
   estudante: { titulo: 'Estudantes', um: 'estudante', icone: 'fa-user-graduate', sub: 'quem frequenta os cursos da Escola — também os que vêm de outras unidades' },
@@ -110,20 +112,21 @@ export default function Academicos({ tipo }) {
   const [escolhidos, setEscolhidos] = useState(() => new Set())
   const [novo, setNovo] = useState(false)
   const [aImprimir, setAImprimir] = useState(false)
-  const SEM_FILTRO = { ramo: '', origem: '', unidade: '', orgao: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' }
+  const SEM_FILTRO = { ramo: '', origem: '', unidade: '', orgao: '', curso: '', portal: '', tipoDocente: '', categoriaDocente: '', genero: '' }
   const [filtro, setFiltro] = useState(SEM_FILTRO)
   const ligado = Boolean(dados?.portalLigado)
   const todos = useMemo(() => dados?.pessoas ?? [], [dados])
   // o que se fez nesse ano: o curso (estudantes) ou as cadeiras (docentes)
   const doAno = (p) => (p.anos ?? []).filter((a) => !ano || ano === 'sem' || a.anoLetivo === ano)
-  const lista = useMemo(() => todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : filtro.ramo === 'porConfirmar' ? p.ramoPorConfirmar : p.ramo === filtro.ramo && !p.ramoPorConfirmar))
+  const lista = todos.filter((p) => (!filtro.ramo || (filtro.ramo === 'civil' ? p.tipo === 'civil' : filtro.ramo === 'porConfirmar' ? p.ramoPorConfirmar : p.ramo === filtro.ramo && !p.ramoPorConfirmar))
     && (!filtro.origem || p.origem === filtro.origem)
     && (!filtro.orgao || orgaoDe(p) === filtro.orgao)
+    && (!filtro.curso || (p.anos ?? []).some((a) => a.curso === filtro.curso && (!ano || ano === 'sem' || a.anoLetivo === ano)))
     && (!filtro.unidade || (filtro.unidade === 'fora' ? Boolean(p.unidadeOrigem) && !p.unidadeNome : !p.unidadeOrigem || Boolean(p.unidadeNome)))
     && (!filtro.portal || estadoPortal(p.portal) === filtro.portal)
     && (!filtro.tipoDocente || (filtro.tipoDocente === 'sem' ? !p.tipoDocente : p.tipoDocente === filtro.tipoDocente))
     && (!filtro.categoriaDocente || p.categoriaDocente === filtro.categoriaDocente)
-    && (!filtro.genero || p.genero === filtro.genero)), [todos, filtro])
+    && (!filtro.genero || p.genero === filtro.genero))
   const mudarFiltro = (k) => (v) => setFiltro((f) => ({ ...f, [k]: v }))
   const comFiltro = Object.values(filtro).some(Boolean)
   const comConta = (p) => p.portal?.conta?.id && p.ativo
@@ -156,6 +159,9 @@ export default function Academicos({ tipo }) {
     { chave: 'ident', titulo: 'NIP / N.º', valor: (p) => p.nip || p.numeroAgente || '' },
     { chave: 'unidade', titulo: 'Órgão / unidade de origem', valor: orgaoDe, mostrar: (p) => (p.unidadeNome || (orgaoDe(p) ? <span>{orgaoDe(p)} <span className="badge bg-light text-dark border">de fora</span></span> : <span className="text-muted">—</span>)) },
     { chave: 'ano', titulo: tipo === 'estudante' ? 'Curso' : 'Cadeiras', valor: (p) => [...new Set(doAno(p).map((a) => a.curso).filter(Boolean))].join('; '), mostrar: (p) => { const l = doAno(p); return l.length ? <span className="small">{[...new Set(l.map((a) => a.curso).filter(Boolean))].join('; ')}{tipo === 'estudante' && l.some((a) => a.concluido) && <span className="badge bg-success ms-1">Terminou</span>}</span> : <span className="text-muted">—</span> } },
+    { chave: 'dataNascimento', titulo: 'Data de nascimento', valor: (p) => (p.dataNascimento ? dataPt(p.dataNascimento) : ''), oculta: true },
+    { chave: 'funcaoActual', titulo: 'Função que exerce', valor: (p) => p.funcaoActual || '', oculta: true },
+    { chave: 'areaFormacao', titulo: 'Formação académica', valor: (p) => [ref.habilitacoes?.[p.habilitacao] ?? '', p.areaFormacao].filter(Boolean).join(' — '), oculta: true },
     { chave: 'anos', titulo: 'Anos lectivos', valor: (p) => [...new Set((p.anos ?? []).map((a) => a.anoLetivo))].join(', '), oculta: true },
     ...(tipo === 'docente' ? [{ chave: 'tipoDocente', titulo: 'Tipo', valor: (p) => (p.tipoDocente === 'colaborador' ? 'Colaborador' : p.tipoDocente === 'efectivo' ? 'Efectivo' : '') }, { chave: 'categoriaDocente', titulo: 'Categoria do docente', valor: (p) => p.categoriaDocente || '', oculta: true }] : []),
     { chave: 'conta', titulo: 'N.º no portal', valor: (p) => p.portal?.conta?.numero || '' },
@@ -166,6 +172,22 @@ export default function Academicos({ tipo }) {
     { chave: 'habilitacao', titulo: 'Habilitações', valor: (p) => ref.habilitacoes?.[p.habilitacao] ?? p.habilitacao ?? '', oculta: true },
     { chave: 'portal', titulo: 'Portal', valor: (p) => (p.docentePendente ? 'A aguardar despacho' : nomeEstado[estadoPortal(p.portal)]), mostrar: (p) => (p.docentePendente ? <span className="badge bg-warning text-dark" title="Só conta como docente (e só tem conta no portal) depois do despacho do Comandante"><i className="fa fa-stamp me-1" />A aguardar despacho</span> : <EstadoPortal e={p.portal} ligado={ligado} />) },
   ]
+  /*
+    Quadro estatístico da lista que está à vista (por exemplo, os orientadores e arguentes do ano, ou os discentes
+    de um curso): quantos há de cada posto e de cada origem (FAA por ramo, Polícia Nacional, estrangeiros, civis).
+  */
+  async function quadroPorPosto(formato) {
+    const postos = [...new Set(lista.map(postoDe))]
+    const origens = [...new Set(lista.map((p) => (p.origem === 'faa' ? p.ramo || 'FAA' : p.origem === 'policia' ? 'PNA' : p.origem === 'estrangeiro' ? 'Estrangeiros' : 'Civis')))]
+    const chaveOrigem = (p) => (p.origem === 'faa' ? p.ramo || 'FAA' : p.origem === 'policia' ? 'PNA' : p.origem === 'estrangeiro' ? 'Estrangeiros' : 'Civis')
+    const linhas = postos.map((x) => ({ posto: x, ...Object.fromEntries(origens.map((o) => [o, lista.filter((p) => postoDe(p) === x && chaveOrigem(p) === o).length])), total: lista.filter((p) => postoDe(p) === x).length }))
+    const titulo = `QUADRO ESTATÍSTICO — ${t.titulo.toUpperCase()}${ano && ano !== 'sem' ? ` DO ANO LECTIVO ${ano}` : ''}`
+    const d = {
+      titulo, subtitulo: [filtro.curso, comFiltro && 'com os filtros escolhidos'].filter(Boolean).join(' · '), orientacao: 'portrait',
+      seccoes: [{ colunas: [{ titulo: 'Designação', valor: (l) => l.posto }, ...origens.map((o) => ({ titulo: o, valor: (l) => l[o] || '', alinhar: 'center', largura: 22 })), { titulo: 'Subtotal', valor: (l) => l.total, alinhar: 'center', largura: 22 }], linhas, totais: ['TOTAL', ...origens.map((o) => lista.filter((p) => chaveOrigem(p) === o).length), lista.length] }],
+    }
+    try { await (formato === 'excel' ? documentoExcel(d) : documentoPdf(d)) } catch (e) { avisar(e.message, 'erro') }
+  }
   const porEntregar = lista.filter((p) => comConta(p) && !p.portal.conta.ultimoAcesso)
 
   return (
@@ -189,14 +211,17 @@ export default function Academicos({ tipo }) {
           <Escolha valor={filtro.origem} aoMudar={mudarFiltro('origem')} opcoes={ORIGENS} vazio="Todas as origens" aria-label="Origem" />
           <Escolha valor={filtro.ramo} aoMudar={mudarFiltro('ramo')} opcoes={[...Object.entries(ref.ramos).map(([k, v]) => [k, v.nome]), ['porConfirmar', 'Ramo por confirmar'], ['civil', 'Civis']]} vazio="Todos os ramos" aria-label="Ramo" />
           <Escolha valor={filtro.orgao} aoMudar={mudarFiltro('orgao')} opcoes={[...new Set(todos.map(orgaoDe).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer órgão de origem" aria-label="Órgão de origem" />
+          <Escolha valor={filtro.curso} aoMudar={mudarFiltro('curso')} opcoes={[...new Set(todos.flatMap((p) => doAno(p).map((a) => a.curso)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio={tipo === 'estudante' ? 'Todos os cursos' : 'Todas as cadeiras'} aria-label={tipo === 'estudante' ? 'Curso' : 'Cadeira'} />
           <Escolha valor={filtro.unidade} aoMudar={mudarFiltro('unidade')} opcoes={[['esg', 'Da ESG'], ['fora', 'De outras unidades']]} vazio="Da ESG ou de fora" aria-label="Unidade" />
           {tipo === 'docente' && <Escolha valor={filtro.tipoDocente} aoMudar={mudarFiltro('tipoDocente')} opcoes={[['efectivo', 'Efectivos'], ['colaborador', 'Colaboradores'], ['sem', 'Tipo por indicar']]} vazio="Efectivos e colaboradores" aria-label="Tipo de docente" />}
           {tipo === 'docente' && <Escolha valor={filtro.categoriaDocente} aoMudar={mudarFiltro('categoriaDocente')} opcoes={[...new Set(todos.map((p) => p.categoriaDocente).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'))} vazio="Qualquer categoria" aria-label="Categoria do docente" />}
           <Escolha valor={filtro.genero} aoMudar={mudarFiltro('genero')} opcoes={[['M', 'Masculino'], ['F', 'Feminino']]} vazio="Ambos os géneros" aria-label="Género" />
           {ligado && <Escolha valor={filtro.portal} aoMudar={mudarFiltro('portal')} opcoes={ESTADOS_PORTAL} vazio="Qualquer estado no portal" aria-label="Estado no portal" />}
           {comFiltro && <button type="button" className="btn btn-sm btn-link text-decoration-none" onClick={() => setFiltro(SEM_FILTRO)}><i className="fa fa-times me-1" />Limpar filtros</button>}
+          <button type="button" className="btn btn-sm btn-outline-secondary ms-auto" disabled={!lista.length} onClick={() => quadroPorPosto('pdf')}><i className="fa fa-table me-1" />Quadro por posto</button>
+          <button type="button" className="btn btn-sm btn-outline-secondary" disabled={!lista.length} onClick={() => quadroPorPosto('excel')} aria-label="Quadro por posto em Excel"><i className="fa fa-file-excel" /></button>
           {editar && ligado && (
-            <button type="button" className="btn btn-sm btn-theme ms-auto" disabled={!escolhidos.size || aImprimir} onClick={fichas}>
+            <button type="button" className="btn btn-sm btn-theme" disabled={!escolhidos.size || aImprimir} onClick={fichas}>
               <i className="fa fa-print me-1" />{aImprimir ? 'A pedir ao portal…' : `Fichas de acesso${escolhidos.size ? ` (${escolhidos.size})` : ''}`}
             </button>
           )}
