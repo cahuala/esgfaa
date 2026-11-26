@@ -10,8 +10,8 @@ const bloqueada = (ate) => new ContaBloqueada(`Conta bloqueada por excesso de te
 
 // Entrar, sair, sessão atual e mudança da própria palavra-passe
 export class ServicoSessao {
-  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null, chaveIntegracao = '' }) {
-    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao })
+  constructor({ utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores = null, chaveIntegracao = '', anosLetivosExistem = null }) {
+    Object.assign(this, { utilizadores, papeis, sessoes, cifra, tokens, auditoria, relogio, doisFatores, chaveIntegracao, anosLetivosExistem })
   }
 
   // entra-se com o e-mail ou, nas contas que vêm do Pessoal (Direcção de Ensino), com o BI (civis) ou o NIP (militares)
@@ -116,6 +116,21 @@ export class ServicoSessao {
     if (c !== undefined) u.cargo = c
     await this.utilizadores.guardar(u)
     await this.auditoria.registar(ctx, { acao: 'editar_perfil' })
+    return this.eu(ctx)
+  }
+
+  /*
+    O ano lectivo com que trabalho no painel (nas minhas configurações): as turmas, os estudantes, os docentes, as
+    notas e os documentos vêm desse ano. Vazio = o ano lectivo actual, que a Administração Escolar configura.
+  */
+  async mudarAnoTrabalho(ctx, ano) {
+    const u = await this.utilizadores.porId(ctx.actor.id)
+    const a = String(ano ?? '').trim()
+    if (a && !/^\d{4}\/\d{4}$/.test(a)) throw new ErroValidacao('Ano lectivo no formato 2026/2027.', { campo: 'anoTrabalho' })
+    if (a && this.anosLetivosExistem && !(await this.anosLetivosExistem(a))) throw new ErroValidacao('Esse ano lectivo não está configurado (Administração Escolar › Ano lectivo e semestres).', { campo: 'anoTrabalho' })
+    u.anoTrabalho = a
+    await this.utilizadores.guardar(u)
+    await this.auditoria.registar(ctx, { acao: 'mudar_ano_trabalho', alvoTitulo: a || 'o ano lectivo actual' })
     return this.eu(ctx)
   }
 

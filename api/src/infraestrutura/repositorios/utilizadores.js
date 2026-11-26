@@ -9,7 +9,7 @@ const paraEntidade = (l) => l && new Utilizador({
   criadoEm: iso(l.criadoEm), ultimoAcesso: iso(l.ultimoAcesso), tentativasFalhadas: l.tentativasFalhadas,
   bloqueadoAte: iso(l.bloqueadoAte), versaoToken: l.versaoToken, deveMudarSenha: l.deveMudarSenha, aprovacao: l.aprovacao ?? null, permissoes: Array.isArray(l.permissoes) ? l.permissoes : null,
   geridaPeloPessoal: Boolean(l.geridaPeloPessoal), pessoalRef: l.pessoalRef ?? null, biHash: l.biHash ?? null,
-  foto: l.foto ?? null, telefone: l.telefone ?? null, cargo: l.cargo ?? null, departamento: l.departamento ?? '',
+  foto: l.foto ?? null, telefone: l.telefone ?? null, cargo: l.cargo ?? null, departamento: l.departamento ?? '', anoTrabalho: l.anoTrabalho ?? '',
 })
 
 const colunas = (u) => ({
@@ -18,7 +18,7 @@ const colunas = (u) => ({
   tentativasFalhadas: u.tentativasFalhadas, bloqueadoAte: u.bloqueadoAte ? new Date(u.bloqueadoAte) : null,
   versaoToken: u.versaoToken, deveMudarSenha: Boolean(u.deveMudarSenha), aprovacao: u.aprovacao ?? Prisma.DbNull, permissoes: Array.isArray(u.permissoes) ? u.permissoes : Prisma.DbNull,
   geridaPeloPessoal: Boolean(u.geridaPeloPessoal), pessoalRef: u.pessoalRef ?? null, biHash: u.biHash ?? null,
-  foto: u.foto ?? null, telefone: u.telefone ?? null, cargo: u.cargo ?? null, departamento: u.departamento ?? '',
+  foto: u.foto ?? null, telefone: u.telefone ?? null, cargo: u.cargo ?? null, departamento: u.departamento ?? '', anoTrabalho: u.anoTrabalho ?? '',
 })
 
 export class RepositorioUtilizadores {

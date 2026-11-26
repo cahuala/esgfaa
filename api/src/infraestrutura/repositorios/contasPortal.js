@@ -57,10 +57,18 @@ export class RepositorioContasPortal {
     return linhas.map((l) => ({ ...l, ultimoAcesso: iso(l.ultimoAcesso) }))
   }
 
-  async listar({ tipo, q } = {}) {
+  // anoLetivo: quem está nesse ano (estudantes matriculados, docentes com cadeiras) e quem ainda não tem turma
+  async listar({ tipo, q, anoLetivo } = {}) {
     const termo = q ? { contains: q.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } : undefined
+    const doAno = anoLetivo ? {
+      OR: [
+        { tipo: 'estudante', matriculas: { some: { turma: { anoLetivo } } } },
+        { tipo: 'docente', docencias: { some: { cadeira: { turma: { anoLetivo } } } } },
+        { matriculas: { none: {} }, docencias: { none: {} } },
+      ],
+    } : {}
     const linhas = await this.prisma.contaPortal.findMany({
-      where: { ...(tipo ? { tipo } : {}), ...(termo ? { OR: [{ nome: termo }, { email: termo }, { numero: termo }] } : {}) },
+      where: { AND: [{ ...(tipo ? { tipo } : {}), ...(termo ? { OR: [{ nome: termo }, { email: termo }, { numero: termo }] } : {}) }, doAno] },
       orderBy: { nome: 'asc' },
       take: 2000,
     })

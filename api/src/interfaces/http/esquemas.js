@@ -95,7 +95,7 @@ export const conta = z.object({
   ativo: z.boolean().optional(),
   dados: z.record(z.string(), z.union([z.string().max(200), z.number()])).optional(),
 })
-export const filtrosContas = z.object({ tipo: texto(20).optional(), q: texto(200).optional() })
+export const filtrosContas = z.object({ tipo: texto(20).optional(), q: texto(200).optional(), anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() })
 export const turma = z.object({ curso: texto(120).optional(), anoLetivo: texto(20).optional(), anoCurricular: textoLivre(2), nome: texto(120).optional(), ativa: z.boolean().optional(), anoFinal: z.boolean().optional() })
 export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: texto(20).optional() })
 export const cadeira = z.object({

@@ -6,12 +6,43 @@ import DoisFatores from '../componentes/DoisFatores'
 import AvatarConta from '../componentes/AvatarConta'
 import { dataHora } from '../formatar'
 import { t as tx } from '../../i18n/linguas'
+import { useAnoTrabalho } from '../anoTrabalho'
 
 /*
   O meu perfil (como a página «Profile» do Color Admin): a capa com a fotografia, o nome e o papel; os dados que a
   pessoa muda (nome, telefone, cargo ou função) e a segurança (palavra-passe e verificação em dois passos).
   As contas que vêm do Sistema de Gestão de Pessoal mudam o nome (e o Comandante, a palavra-passe) lá.
 */
+/*
+  Configurações: o ano lectivo com que trabalho. Por omissão é o actual (configurado pela Administração Escolar);
+  escolhendo outro, as turmas, os estudantes, os docentes, as notas e os documentos do painel vêm desse ano.
+*/
+function AnoDeTrabalho() {
+  const { pode } = useSessao()
+  const { anos, escolhido, actual, mudar } = useAnoTrabalho()
+  const [erro, setErro] = useState('')
+  const [aGravar, setAGravar] = useState(false)
+  if (!(pode('academico.ver') || pode('pessoal.ver')) || !anos.length) return null
+  const escolher = async (v) => {
+    setErro(''); setAGravar(true)
+    try { await mudar(v) } catch (e) { setErro(e.message) }
+    setAGravar(false)
+  }
+  return (
+    <div id="ano-lectivo">
+      <Painel titulo={tx('Configurações: ano lectivo')}>
+        <label className="form-label fw-bold" htmlFor="perfil-ano">{tx('Ano lectivo com que trabalho')}</label>
+        <select id="perfil-ano" className="form-select" value={escolhido} disabled={aGravar} onChange={(e) => escolher(e.target.value)}>
+          <option value="">{tx('O ano lectivo actual')}{actual ? ` (${actual})` : ''}</option>
+          {anos.filter((a) => a.id !== actual).map((a) => <option key={a.id} value={a.id}>{a.id}{a.fechado ? ` — ${tx('fechado')}` : ''}</option>)}
+        </select>
+        <div className="form-text">{tx('Os estudantes, os docentes, as turmas, as notas e os documentos vêm deste ano. O ano actual é o que a Administração Escolar configura em «Ano lectivo e semestres».')}</div>
+        {erro && <div className="text-danger small mt-2">{erro}</div>}
+      </Painel>
+    </div>
+  )
+}
+
 function Perfil() {
   const { utilizador, recarregar } = useSessao()
   const [dados, setDados] = useState(() => ({ nome: utilizador.nome ?? '', telefone: utilizador.telefone ?? '', cargo: utilizador.cargo ?? '' }))
@@ -116,6 +147,7 @@ function Perfil() {
               <button type="submit" className="btn btn-theme" disabled={!mudou || aGravar === 'dados'}><i className={`fa ${aGravar === 'dados' ? 'fa-spinner fa-spin' : 'fa-save'} me-1`} />{tx('Guardar')}</button>
             </form>
           </Painel>
+          <AnoDeTrabalho />
         </div>
         <div className="col-lg-6">
           <Painel titulo={tx('Alterar palavra-passe')}>

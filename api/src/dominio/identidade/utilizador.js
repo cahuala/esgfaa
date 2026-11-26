@@ -93,6 +93,7 @@ export class Utilizador {
       telefone: this.telefone ?? null,
       cargo: this.cargo ?? null,
       departamento: this.departamento ?? '',
+      anoTrabalho: this.anoTrabalho ?? '',
     }
   }
 }

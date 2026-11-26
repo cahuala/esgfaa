@@ -224,10 +224,10 @@ export class ServicoControloAcademico {
 
   // ---------- o que espera por decisão (painel) ----------
 
-  async pendentes(ctx) {
+  async pendentes(ctx, { anoLetivo } = {}) {
     const r = {}
     if (ctx.actor.pode('academico.ver')) {
-      Object.assign(r, await this.controlo.resumoAcademico())
+      Object.assign(r, await this.controlo.resumoAcademico({ anoLetivo }), anoLetivo ? { anoLetivo } : {})
       r.provasPorImprimir = await this.controlo.contarEnunciados('enviado')
       r.alteracoesPendentes = await this.controlo.contarPedidos('pendente')
       r.docentesPorVerificar = await this.controlo.contarDocentesPorVerificar()

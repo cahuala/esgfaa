@@ -34,7 +34,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
 
   // controlo centralizado: provas escritas para imprimir (Repartição), alterações de notas e docentes (Comandante)
   const ctl = servicos.controlo
-  r.get('/pendentes', async (req, res) => res.json(await ctl.pendentes(ctx(req))))
+  r.get('/pendentes', validar({ query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await ctl.pendentes(ctx(req), req.dados.query)))
   r.get('/provas-escritas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.paraImprimir(ctx(req), req.dados.query)))
   r.put('/provas-escritas/:id', validar({ params: pId, body: z.object({ impresso: z.boolean() }) }), async (req, res) => res.json(await ctl.marcarImpresso(ctx(req), req.dados.params.id, req.dados.body.impresso)))
   r.get('/alteracoes-notas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.pedidosParaDecidir(ctx(req), req.dados.query)))

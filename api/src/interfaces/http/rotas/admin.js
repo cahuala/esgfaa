@@ -221,6 +221,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
 
   // ---------- o meu perfil (fotografia, nome, telefone, cargo) ----------
 
+  r.put('/eu/ano-trabalho', validar({ body: z.object({ anoTrabalho: z.string().max(9) }) }), async (req, res) => res.json(await servicos.sessao.mudarAnoTrabalho(ctx(req), req.dados.body.anoTrabalho)))
   r.put('/eu/perfil', validar({ body: z.object({ nome: z.string().max(100).optional(), telefone: z.string().max(30).nullable().optional(), cargo: z.string().max(120).nullable().optional() }) }), async (req, res) => {
     res.json(await servicos.sessao.atualizarPerfil(ctx(req), req.dados.body))
   })

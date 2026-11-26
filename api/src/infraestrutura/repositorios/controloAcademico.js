@@ -175,12 +175,13 @@ export class RepositorioControloAcademico {
 
   // ---------- resumo para o painel ----------
 
-  async resumoAcademico() {
+  // anoLetivo: as turmas, os estudantes e os docentes desse ano (o de trabalho de quem vê); sem ele, os activos
+  async resumoAcademico({ anoLetivo } = {}) {
     const p = this.prisma
     const [turmas, estudantes, docentes, pedidosDocumentos, conselhos, revisoes] = await Promise.all([
-      p.turma.count({ where: { ativa: true } }),
-      p.matricula.count({ where: { estado: 'ativa', turma: { ativa: true } } }),
-      p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
+      p.turma.count({ where: anoLetivo ? { anoLetivo } : { ativa: true } }),
+      anoLetivo ? p.matricula.count({ where: { estado: { not: 'anulada' }, turma: { anoLetivo } } }) : p.matricula.count({ where: { estado: 'ativa', turma: { ativa: true } } }),
+      anoLetivo ? p.contaPortal.count({ where: { tipo: 'docente', docencias: { some: { cadeira: { turma: { anoLetivo } } } } } }) : p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
       p.pedido.count({ where: { estado: { in: ['pendente', 'em_tratamento'] } } }),
       p.conselhoCurso.findMany({ where: { estado: { in: ['proposta', 'confirmada'] } }, select: { estado: true, turmaId: true } }),
       p.notaAvaliacaoUc.count({ where: { revisaoPedidaEm: { not: null }, revisaoDecididaEm: null } }),

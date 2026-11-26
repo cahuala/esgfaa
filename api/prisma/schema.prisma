@@ -70,6 +70,8 @@ model Utilizador {
   cargo              String?
   // o departamento de ensino de quem lá trabalha (o chefe e os professores do departamento): vê as cadeiras dele
   departamento       String       @default("")
+  // o ano lectivo com que trabalha (escolhido na sua conta); vazio = o ano lectivo actual da Administração Escolar
+  anoTrabalho        String       @default("") @map("ano_trabalho")
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 

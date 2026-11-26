@@ -1,22 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from './api'
+import { useSessao } from './sessaoContexto'
 
 /*
-  O ano lectivo em que a Administração Escolar está a trabalhar: escolhe-se uma vez (no menu) e todas as páginas do
-  Ensino seguem esse ano — os cursos e as turmas, a alocação das cadeiras aos docentes, os indicadores, as listas e os
-  documentos. Por omissão é o ano lectivo actual. Fica guardado neste navegador (é só uma comodidade de quem
-  trabalha: os dados são sempre do servidor).
+  O ano lectivo com que cada utilizador trabalha no painel (o Comandante, a Direcção de Ensino, a Administração
+  Escolar, os departamentos…): por omissão é o ano lectivo actual, que a Administração Escolar configura em «Ano
+  lectivo e semestres»; quem quiser ver outro ano (estudantes, docentes, turmas, notas, documentos) escolhe-o nas
+  configurações da sua conta (O meu perfil). Fica guardado na conta, no servidor: vale em qualquer computador.
 */
-const CHAVE = 'esg.anoTrabalho'
-const EVENTO = 'esg-ano-trabalho'
 let pedido = null
-
-const guardado = () => { try { return window.localStorage.getItem(CHAVE) || '' } catch { return '' } }
-
-export function mudarAnoTrabalho(ano) {
-  try { window.localStorage.setItem(CHAVE, ano) } catch { /* sem armazenamento: vale só nesta página */ }
-  window.dispatchEvent(new CustomEvent(EVENTO, { detail: ano }))
-}
 
 // os anos lectivos configurados (um só pedido para todas as páginas; volta a pedir depois de mudarem)
 export function anosLetivos({ recarregar = false } = {}) {
@@ -29,20 +21,23 @@ export function avisarAnosMudaram() {
   anosLetivos({ recarregar: true }).then(() => window.dispatchEvent(new CustomEvent('esg-anos-letivos')))
 }
 
-// { ano, anos, mudar }: o ano escolhido (válido entre os configurados) ou o actual
+// { ano, anos, mudar, escolhido, actual }: o ano da conta (se ainda estiver configurado) ou o actual
 export function useAnoTrabalho() {
+  const sessao = useSessao()
   const [anos, setAnos] = useState([])
-  const [escolhido, setEscolhido] = useState(guardado)
   useEffect(() => {
     let vivo = true
-    anosLetivos().then((l) => { if (vivo) setAnos(l ?? []) })
-    const ouvir = (e) => setEscolhido(e.detail ?? guardado())
-    const recarregar = () => anosLetivos().then((l) => { if (vivo) setAnos(l ?? []) })
-    window.addEventListener(EVENTO, ouvir)
-    window.addEventListener('esg-anos-letivos', recarregar)
-    return () => { vivo = false; window.removeEventListener(EVENTO, ouvir); window.removeEventListener('esg-anos-letivos', recarregar) }
+    const carregar = () => anosLetivos().then((l) => { if (vivo) setAnos(l ?? []) })
+    carregar()
+    window.addEventListener('esg-anos-letivos', carregar)
+    return () => { vivo = false; window.removeEventListener('esg-anos-letivos', carregar) }
   }, [])
-  const valido = anos.some((a) => a.id === escolhido)
-  const ano = valido ? escolhido : anos.find((a) => a.atual)?.id ?? anos[0]?.id ?? ''
-  return { ano, anos, mudar: mudarAnoTrabalho, carregado: anos.length > 0 }
+  const daConta = sessao?.utilizador?.anoTrabalho ?? ''
+  const valido = anos.some((a) => a.id === daConta)
+  const actual = anos.find((a) => a.atual)?.id ?? anos[0]?.id ?? ''
+  const mudar = useCallback(async (novo) => {
+    await api('/eu/ano-trabalho', { metodo: 'PUT', corpo: { anoTrabalho: novo === actual ? '' : novo || '' } })
+    await sessao?.recarregar?.()
+  }, [sessao, actual])
+  return { ano: valido ? daConta : actual, anos, mudar, carregado: anos.length > 0, escolhido: valido ? daConta : '', actual }
 }

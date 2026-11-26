@@ -9,6 +9,7 @@ import { confirmar } from '../../../portal/dialogos'
 import ImportarPessoas from './ImportarPessoas'
 import { imprimirFichas } from './fichasAcesso'
 import { t as tx } from '../../../i18n/linguas'
+import { useAnoTrabalho } from '../../anoTrabalho'
 
 const RAMOS = [tx('Exército'), tx('Força Aérea Nacional'), tx('Marinha de Guerra Angolana')]
 const VAZIO = { tipo: 'estudante', nome: '', email: '', posto: '', ramo: '', nip: '', telefone: '', departamento: '' }
@@ -27,6 +28,9 @@ function Registo() {
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [tipo, setTipo] = useState('')
+  // por omissão, quem está no ano lectivo de trabalho (e quem ainda não tem turma); «todos» = todos os anos
+  const { ano } = useAnoTrabalho()
+  const [todosAnos, setTodosAnos] = useState(false)
   const [q, setQ] = useState('')
   const [f, setF] = useState(VAZIO)
   const [editar, setEditar] = useState(null) // id da pessoa em edição
@@ -39,8 +43,9 @@ function Registo() {
     const p = new URLSearchParams()
     if (tipo) p.set('tipo', tipo)
     if (q.trim()) p.set('q', q.trim())
+    if (ano && !todosAnos) p.set('anoLetivo', ano)
     return api(`/academico/contas?${p}`).then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message))
-  }, [tipo, q])
+  }, [tipo, q, ano, todosAnos])
   useEffect(() => {
     const t = setTimeout(carregar, 250)
     return () => clearTimeout(t)
@@ -96,6 +101,10 @@ function Registo() {
                 <span className="input-group-text"><i className="fa fa-search" /></span>
                 <input className="form-control" placeholder={tx('Nome, e-mail ou número…')} value={q} onChange={(e) => setQ(e.target.value)} aria-label={tx('Pesquisar no registo')} />
               </div>
+              {ano && <select className="form-select w-auto" value={todosAnos ? 'todos' : 'ano'} onChange={(e) => setTodosAnos(e.target.value === 'todos')} aria-label={tx('Ano lectivo')}>
+                <option value="ano">{tx('Ano lectivo')} {ano}</option>
+                <option value="todos">{tx('Todos os anos lectivos')}</option>
+              </select>}
               <select className="form-select w-auto" value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label={tx('Tipo')}>
                 <option value="">{tx('Estudantes e docentes')}</option>
                 <option value="estudante">{tx('Estudantes')}</option>
@@ -152,7 +161,7 @@ function Registo() {
                 )}
                 <div className="row g-2">
                   <div className="col-12"><label className="form-label fw-bold" htmlFor="r-nome">{tx('Nome completo')}</label><input id="r-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('Maj. Nome Apelido')} required /></div>
-                  <div className="col-12"><label className="form-label fw-bold" htmlFor="r-email">{tx('E-mail da Escola')}</label><input id="r-email" type="email" className="form-control" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder={tx('nome.apelido@esgfaa.gov.ao')} required /></div>
+                  <div className="col-12"><label className="form-label fw-bold" htmlFor="r-email">{tx('E-mail da Escola')}</label><input id="r-email" type="email" className="form-control" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder={tx('nome.apelido@portal.esg.emfaa.gov.ao')} required /></div>
                   <div className="col-md-6"><label className="form-label" htmlFor="r-posto">{tx('Posto')}</label><input id="r-posto" className="form-control" value={f.posto} onChange={(e) => setF({ ...f, posto: e.target.value })} /></div>
                   <div className="col-md-6"><label className="form-label" htmlFor="r-ramo">{tx('Ramo')}</label><select id="r-ramo" className="form-select" value={f.ramo} onChange={(e) => setF({ ...f, ramo: e.target.value })}><option value="">—</option>{RAMOS.map((r) => <option key={r}>{r}</option>)}</select></div>
                   <div className="col-md-6"><label className="form-label" htmlFor="r-nip">{tx('NIP')}</label><input id="r-nip" className="form-control" value={f.nip} onChange={(e) => setF({ ...f, nip: e.target.value })} /></div>

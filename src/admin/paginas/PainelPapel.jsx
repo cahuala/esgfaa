@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import { useAnoTrabalho } from '../anoTrabalho'
 
 /*
   O painel inicial de quem não trata do site: o que cada papel precisa de ver logo ao entrar.
@@ -37,6 +38,8 @@ function Tarefa({ para, icone, cor, texto, valor }) {
 
 export default function PainelPapel() {
   const { pode } = useSessao()
+  // os números do ano lectivo de trabalho (o actual, ou o escolhido na conta)
+  const { ano } = useAnoTrabalho()
   const [ac, setAc] = useState(null)
   const [bib, setBib] = useState(null)
   const [seg, setSeg] = useState(null)
@@ -48,12 +51,12 @@ export default function PainelPapel() {
   const verPes = pode('pessoal.ver')
   const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
   useEffect(() => {
-    if (verAc) api('/academico/pendentes').then(setAc).catch(() => {})
+    if (verAc && ano) api(`/academico/pendentes?anoLetivo=${encodeURIComponent(ano)}`).then(setAc).catch(() => {})
     if (verBib) api('/biblioteca').then(setBib).catch(() => {})
     if (verSeg) api('/seguranca').then(setSeg).catch(() => {})
-    if (verPes) api('/academico/contas').then(setContas).catch(() => {})
+    if (verPes && ano) api(`/academico/contas?anoLetivo=${encodeURIComponent(ano)}`).then(setContas).catch(() => {})
     if (aprova) api('/publicacoes/contagem').then((r) => setPorAprovar(r.pendentes)).catch(() => {})
-  }, [verAc, verBib, verSeg, verPes, aprova])
+  }, [verAc, verBib, verSeg, verPes, aprova, ano])
 
   const homologa = pode('academico.homologar')
   const conselho = pode('academico.conselho')
@@ -79,7 +82,7 @@ export default function PainelPapel() {
       <div className="row">
         {ac && <>
           <Numero cor="esg-w-vermelho" icone="fa-users" titulo={tx('TURMAS ACTIVAS')} valor={ac.turmas} extra={tx('Turmas e matrículas')} para="/academico/turmas" />
-          <Numero cor="esg-w-preto" icone="fa-user-graduate" titulo={tx('ESTUDANTES MATRICULADOS')} valor={ac.estudantes} extra={tx('Indicadores')} para="/academico/indicadores" />
+          <Numero cor="esg-w-preto" icone="fa-user-graduate" titulo={`${tx('ESTUDANTES MATRICULADOS')} ${ano}`} valor={ac.estudantes} extra={tx('Indicadores')} para="/academico/indicadores" />
           <Numero cor="esg-w-dourado" icone="fa-chalkboard-teacher" titulo={tx('DOCENTES')} valor={ac.docentes} extra={homologa ? tx('{0} por verificar', { 0: ac.docentesPorVerificar }) : tx('Alocação de docentes')} para={homologa ? '/academico/docentes' : '/academico/alocacao'} />
           <Numero cor="esg-w-cinza" icone="fa-hourglass-half" titulo={tx('À ESPERA DE DECISÃO')} valor={(tarefas ?? []).reduce((s, t) => s + (t.valor ?? 1), 0)} extra={tx('Ver abaixo')} para="/" />
         </>}
