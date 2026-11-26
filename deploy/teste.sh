@@ -23,6 +23,7 @@ rsync -az --delete -e "${SSH[*]}" \
   --exclude test-results --exclude playwright-report --exclude 'api/dados' --exclude 'api-pessoal/dados' \
   --exclude '.env' --exclude '*.env' --exclude 'CONTAS-*.md' --exclude 'docs/PLANOS*' --exclude 'docs/QUADRO*' \
   --exclude 'docs/DOCENTES*' --exclude 'docs/ARQUIVO*' --exclude 'docs/formacao' --exclude 'docs/*.docx' --exclude '~$*' \
+  --exclude 'instalador/pendrive' --exclude 'instalador/.cache' --exclude '__pycache__' \
   --exclude 'color_admin_v5.5.2' --exclude '/copias' --exclude '*.esgc' --exclude '*.esgc.json' --exclude '.DS_Store' \
   "$RAIZ/" "$HOST:$DIR/"
 

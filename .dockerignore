@@ -19,3 +19,6 @@ copias
 docs
 tests
 dist-pessoal
+instalador/pendrive
+instalador/.cache
+**/__pycache__
