@@ -30,6 +30,7 @@ const cadeiraLinha = (c) => {
     programa: c.programa ?? '', programaFicheiroId: c.programaFicheiroId ?? null,
     notasPublicadas: c.notasPublicadas ?? [], publicacaoPedida: c.publicacaoPedida ?? null,
     bloco: c.bloco ?? '', creditos: c.creditos ?? 0, horasContacto: c.horasContacto ?? 0, horasNaoContacto: c.horasNaoContacto ?? 0, tii: Boolean(c.tii),
+    departamento: c.departamento ?? '',
     docentes, docente: regente, docentesPropostos: todos.filter((d) => d.estado !== 'aprovada'),
     turma: c.turma ? { id: c.turma.id, nome: c.turma.nome, curso: c.turma.curso, anoLetivo: c.turma.anoLetivo, anoCurricular: c.turma.anoCurricular, distribuicao: c.turma.distribuicao ?? null } : undefined,
   }

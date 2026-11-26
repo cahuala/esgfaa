@@ -15,6 +15,7 @@ import FotoConta from '../../componentes/FotoConta'
 import Exportar from '../../componentes/Exportar'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
+import { DEPARTAMENTOS_ENSINO } from '../../departamentos'
 
 const DIAS = ['', tx('Segunda'), tx('Terça'), tx('Quarta'), tx('Quinta'), tx('Sexta'), tx('Sábado')]
 const ESTADOS = { ativa: ['bg-success', tx('Activa')], suspensa: ['bg-warning text-dark', tx('Suspensa')], concluida: ['bg-info', tx('Concluída')], anulada: ['bg-secondary', tx('Anulada')] }
@@ -373,7 +374,7 @@ function CadeiraTurma({ c, gerir, carregar, avisar }) {
 
 // a cadeira cria-se sem docentes: a alocação (regente e assistentes) faz-se na ficha da cadeira
 function NovaCadeira({ turma, carregar, avisar }) {
-  const vazio = { codigo: '', nome: '', periodo: '1', horas: '' }
+  const vazio = { codigo: '', nome: '', periodo: '1', horas: '', departamento: '' }
   const [f, setF] = useState(vazio)
   const [erro, setErro] = useState('')
   async function criar(e) {
@@ -397,6 +398,7 @@ function NovaCadeira({ turma, carregar, avisar }) {
           <div className="col-md-8"><label className="form-label fw-bold" htmlFor="c-nome">{tx('Nome')}</label><input id="c-nome" className="form-control" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} required /></div>
           <div className="col-md-6"><label className="form-label" htmlFor="c-periodo">{tx('Semestre')}</label><select id="c-periodo" className="form-select" value={f.periodo} onChange={(e) => setF({ ...f, periodo: e.target.value })}>{Object.entries(PERIODOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div>
           <div className="col-md-6"><label className="form-label" htmlFor="c-horas">{tx('Horas')}</label><input id="c-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
+          <div className="col-12"><label className="form-label" htmlFor="c-dep">{tx('Departamento')}</label><select id="c-dep" className="form-select" value={f.departamento} onChange={(e) => setF({ ...f, departamento: e.target.value })}><option value="">{tx('— sem departamento —')}</option>{DEPARTAMENTOS_ENSINO.map((d) => <option key={d} value={d}>{d}</option>)}</select></div>
         </div>
         <button type="submit" className="btn btn-theme w-100 mt-3"><i className="fa fa-plus me-1" /> {tx('Criar cadeira')}</button>
       </form>

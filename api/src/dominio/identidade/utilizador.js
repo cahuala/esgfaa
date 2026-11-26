@@ -92,6 +92,7 @@ export class Utilizador {
       foto: this.foto ?? null,
       telefone: this.telefone ?? null,
       cargo: this.cargo ?? null,
+      departamento: this.departamento ?? '',
     }
   }
 }

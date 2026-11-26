@@ -29,6 +29,8 @@ export class ServicoCadeiras {
       periodo: escolha(String(dados.periodo ?? '1'), 'periodo', 'Período', Object.keys(PERIODOS)),
       nome: texto(dados.nome, 'nome', 'Nome', { min: 3, max: 150 }),
       descricao: texto(dados.descricao, 'descricao', 'Descrição', { max: 2000, obrigatorio: false }),
+      // o departamento de ensino a que pertence
+      departamento: String(dados.departamento ?? '').trim().slice(0, 120),
     }
   }
 

@@ -12,6 +12,7 @@ export function mesesDoCurso(curso) {
 }
 import { ordenarPorHierarquia } from '../../../dominio/academico/pessoas/hierarquia.js'
 import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados.js'
+import { DEPARTAMENTOS_ENSINO, mesmoDepartamento } from '../../../dominio/academico/departamentos.js'
 
 const ANO_LETIVO = /^\d{4}\/\d{4}$/
 
@@ -146,6 +147,53 @@ export class ServicoTurmas {
   }
 
   // as contas activas do painel cujo papel vê o Ensino (sem as de administração técnica)
+  /*
+    Estrutura do ensino num ano lectivo: os cursos (com o Director e as turmas) e os departamentos (com quem lá
+    trabalha e as cadeiras de cada um). Quem é de um departamento (o chefe, os professores) vê só o seu.
+  */
+  async estruturaDoEnsino(ctx, anoLetivo) {
+    ctx.actor.exigir('academico.ver')
+    const turmas = (await this.academico.listarTurmas()).filter((t) => !anoLetivo || t.anoLetivo === anoLetivo)
+    const cadeiras = turmas.length ? await this.academico.cadeirasDasTurmas(turmas.map((t) => t.id)) : []
+    const porTurma = new Map(turmas.map((t) => [t.id, t]))
+    const cursos = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, c]))
+    const nomeCurso = (id) => cursos.get(id)?.titulo || cursos.get(id)?.dados?.nome || id
+    const pessoas = (await this.utilizadores.listar()).filter((u) => u.ativo && u.departamento)
+    const dirs = (await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}
+    const contas = new Map((await this.utilizadores.listar()).map((u) => [u.id, u]))
+    const nomes = [...DEPARTAMENTOS_ENSINO]
+    for (const n of [...cadeiras.map((c) => c.departamento), ...pessoas.map((u) => u.departamento)]) if (n && !nomes.some((x) => mesmoDepartamento(x, n))) nomes.push(n)
+    const linha = (c) => {
+      const t = porTurma.get(c.turmaId)
+      return { id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, turmaId: c.turmaId, turma: t?.nome ?? '', curso: nomeCurso(t?.curso), departamento: c.departamento ?? '', docentes: c.docentes.map((d) => `${d.nome}${d.papel === 'assistente' ? ' (assist.)' : ''}`), propostos: c.docentesPropostos.length }
+    }
+    // o chefe e os professores de um departamento veem o seu; a Administração Escolar e o Comando veem tudo
+    const meu = !ctx.actor.pode('academico.gerir') && ctx.actor.departamento ? ctx.actor.departamento : ''
+    const departamentos = nomes.filter((n) => !meu || mesmoDepartamento(n, meu)).map((n) => ({
+      nome: n,
+      pessoas: pessoas.filter((u) => mesmoDepartamento(u.departamento, n)).map((u) => ({ id: u.id, nome: u.nome, cargo: u.cargo ?? '' })),
+      cadeiras: cadeiras.filter((c) => mesmoDepartamento(c.departamento, n)).map(linha),
+    }))
+    return {
+      anoLetivo: anoLetivo ?? '', meuDepartamento: meu,
+      departamentos, semDepartamento: meu ? [] : cadeiras.filter((c) => !nomes.some((n) => mesmoDepartamento(c.departamento, n))).map(linha),
+      cursos: meu ? [] : [...new Set(turmas.map((t) => t.curso))].map((id) => {
+        const d = dirs[id]?.utilizadorId ? contas.get(dirs[id].utilizadorId) : null
+        return { id, nome: nomeCurso(id), sigla: cursos.get(id)?.dados?.sigla ?? '', director: d ? { nome: d.nome, cargo: d.cargo ?? '' } : null, turmas: turmas.filter((t) => t.curso === id).map((t) => ({ id: t.id, nome: t.nome, estudantes: t.estudantes ?? 0, cadeiras: t.cadeiras ?? 0 })) }
+      }),
+    }
+  }
+
+  // muda o departamento de uma cadeira (a Administração Escolar)
+  async departamentoDaCadeira(ctx, cadeiraId, departamento) {
+    ctx.actor.exigir('academico.gerir')
+    const c = await this.academico.cadeira(cadeiraId)
+    if (!c) throw new NaoEncontrado('Cadeira não encontrada.')
+    await this.academico.atualizarCadeira(c.id, { departamento: String(departamento ?? '').trim().slice(0, 120) })
+    await this.auditoria.registar(ctx, { acao: 'editar_cadeira', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome, detalhes: { departamento } })
+    return { id: c.id, departamento: String(departamento ?? '').trim() }
+  }
+
   async #contasDoEnsino() {
     const papeis = new Map((await this.papeis.listar()).map((p) => [p.id, p]))
     const veEnsino = (u) => (u.permissoes ?? papeis.get(u.papel)?.permissoes ?? []).includes('academico.ver')

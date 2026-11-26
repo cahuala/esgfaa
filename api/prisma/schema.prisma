@@ -68,6 +68,8 @@ model Utilizador {
   foto               String?
   telefone           String?
   cargo              String?
+  // o departamento de ensino de quem lá trabalha (o chefe e os professores do departamento): vê as cadeiras dele
+  departamento       String       @default("")
   edicoes            Item[]       @relation("edicoes")
   doisFatores        DoisFatores?
 
@@ -376,6 +378,8 @@ model UnidadeCurricular {
   horasContacto      Int      @default(0) @map("horas_contacto")
   horasNaoContacto   Int      @default(0) @map("horas_nao_contacto")
   tii                Boolean  @default(false)
+  // o departamento de ensino a que a cadeira pertence (ex.: «Departamento de Estratégia»)
+  departamento       String   @default("")
 
   turma            Turma              @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   docentes         Docencia[]

@@ -92,6 +92,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/turmas/:id/certificados/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }) }), async (req, res) => res.status(201).json(await a.conclusao.emitirCertificado(ctx(req), req.dados.params.id, req.dados.params.estudanteId)))
   r.get('/estudantes/:id/historico', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.historico(ctx(req), req.dados.params.id)))
   // documentos do ano lectivo: dados estatísticos, dados por ramos, resumo, entrega dos diplomas, lista para os diplomas
+  // estrutura do ensino: os cursos com o Director e os departamentos com as suas cadeiras (e quem lá trabalha)
+  r.get('/estrutura', validar({ query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.turmas.estruturaDoEnsino(ctx(req), req.dados.query.anoLetivo)))
+  r.put('/cadeiras/:id/departamento', validar({ params: pId, body: z.object({ departamento: z.string().max(120) }) }), async (req, res) => res.json(await a.turmas.departamentoDaCadeira(ctx(req), req.dados.params.id, req.dados.body.departamento)))
   r.get('/documentos-do-ano', validar({ query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/) }) }), async (req, res) => res.json(await a.documentos.documentosDoAno(ctx(req), req.dados.query.anoLetivo)))
   r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))
   r.get('/cadeiras/:id/folha-presencas', validar({ params: pId }), async (req, res) => res.json(await a.documentos.folhaPresencas(ctx(req), req.dados.params.id)))

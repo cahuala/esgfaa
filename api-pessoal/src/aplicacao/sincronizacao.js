@@ -207,7 +207,9 @@ export class ServicoSincronizacao {
       const nip = String(p.nip ?? '').trim().toUpperCase()
       return papel && /^[0-9]{5,12}$/.test(nip) ? { p, ident: nip, impressao: hmac(`nip:${nip}`), papel } : null
     }).filter(Boolean)
-    const contas = comIdent.map(({ p, impressao, papel }) => ({ ref: `pessoal-${p.id}`, nome: p.nome, ...(p.email ? { email: p.email } : {}), bi: impressao, ...(papel ? { papel } : {}) }))
+    // o departamento de ensino (a unidade «Departamento de …» onde trabalha) e o cargo: o portal mostra-lhe as cadeiras dele
+    const departamentoDe = (id) => cadeia(id).find((n) => /^Departamento\b/i.test(n)) ?? ''
+    const contas = comIdent.map(({ p, impressao, papel }) => ({ ref: `pessoal-${p.id}`, nome: p.nome, ...(p.email ? { email: p.email } : {}), bi: impressao, ...(papel ? { papel } : {}), departamento: departamentoDe(p.unidadeId), ...(p.cargo?.nome ? { cargo: p.cargo.nome.slice(0, 200) } : {}) }))
     // só a lista (sem as palavras-passe, que mudam de sal a cada cálculo) decide se volta a ir
     const marca = JSON.stringify(contas)
     if (marca === this.ultimasContasEnsino) return { enviado: false, igual: true }

@@ -8,6 +8,7 @@ import { PAPEIS_DOCENCIA, PERIODOS } from './comum'
 import PautaAdmin from './PautaAdmin'
 import Inscricoes from './Inscricoes'
 import { t as tx } from '../../../i18n/linguas'
+import { DEPARTAMENTOS_ENSINO } from '../../departamentos'
 
 const SEPARADORES = [
   ['dados', 'fa-info-circle', tx('Dados')],
@@ -112,7 +113,7 @@ function CopiarConteudos({ c, recarregar, avisar }) {
 }
 
 function Dados({ c, gerir, recarregar, avisar }) {
-  const [f, setF] = useState({ codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, descricao: c.descricao })
+  const [f, setF] = useState({ codigo: c.codigo, nome: c.nome, periodo: c.periodo, horas: c.horas, descricao: c.descricao, departamento: c.departamento ?? '' })
   const [erro, setErro] = useState('')
   async function guardar(e) {
     e.preventDefault()
@@ -140,6 +141,13 @@ function Dados({ c, gerir, recarregar, avisar }) {
           </div>
         </div>
         <div className="col-md-6"><label className="form-label fw-bold" htmlFor="d-horas">{tx('Carga horária total (h)')}</label><input id="d-horas" type="number" min={0} className="form-control" value={f.horas} onChange={(e) => setF({ ...f, horas: e.target.value })} /></div>
+        <div className="col-12">
+          <label className="form-label fw-bold" htmlFor="d-dep">{tx('Departamento')}</label>
+          <select id="d-dep" className="form-select" value={f.departamento} onChange={(e) => setF({ ...f, departamento: e.target.value })}>
+            <option value="">{tx('— sem departamento —')}</option>
+            {[...DEPARTAMENTOS_ENSINO, ...(f.departamento && !DEPARTAMENTOS_ENSINO.includes(f.departamento) ? [f.departamento] : [])].map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
         <div className="col-12"><label className="form-label fw-bold" htmlFor="d-desc">{tx('Descrição curta')}</label><textarea id="d-desc" rows={3} className="form-control" value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} /></div>
         {gerir && <div className="col-12"><button type="submit" className="btn btn-theme"><i className="fa fa-save me-1" /> {tx('Guardar')}</button></div>}
       </fieldset>

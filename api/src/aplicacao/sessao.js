@@ -89,7 +89,7 @@ export class ServicoSessao {
     // as permissões leem-se sempre da base: mudar um papel (ou as da conta) tem efeito imediato;
     // as escolhidas pelo Comandante para esta conta mandam sobre as do papel
     const papel = await this.papeis.porId(u.papel)
-    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, permissoes: u.permissoes ? limparPermissoes(u.permissoes) : papel?.permissoes || [] })
+    const actor = new Actor({ id: u.id, nome: u.nome, email: u.email, papel: u.papel, departamento: u.departamento ?? '', permissoes: u.permissoes ? limparPermissoes(u.permissoes) : papel?.permissoes || [] })
     return { actor, sessao }
   }
 

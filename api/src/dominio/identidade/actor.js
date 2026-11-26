@@ -2,8 +2,10 @@ import { SemPermissao } from '../comum/erros.js'
 
 // Quem está a fazer o pedido (utilizador autenticado + permissões do seu papel)
 export class Actor {
-  constructor({ id, nome, email, papel, permissoes = [] }) {
+  constructor({ id, nome, email, papel, permissoes = [], departamento = '' }) {
     this.id = id
+    // o departamento de ensino (o chefe e os professores do departamento veem as cadeiras dele)
+    this.departamento = departamento
     this.nome = nome
     this.email = email
     this.papel = papel

@@ -101,6 +101,7 @@ export const matricula = z.object({ estudanteId: idNumerico.optional(), estado: 
 export const cadeira = z.object({
   codigo: texto(40).optional(), nome: texto(200).optional(), periodo: texto(10).optional(), horas: textoLivre(6), descricao: texto(3000).optional(),
   bloco: texto(12).optional(), creditos: textoLivre(4), horasContacto: textoLivre(5), horasNaoContacto: textoLivre(5), tii: z.boolean().optional(),
+  departamento: texto(120).optional(),
 })
 export const alocacao = z.object({
   docentes: z.array(z.object({ docenteId: idNumerico, papel: texto(20).optional(), horas: textoLivre(6) })).max(20),

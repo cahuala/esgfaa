@@ -65,7 +65,7 @@ export class ServicoUtilizadores {
         // o papel vem do Pessoal pela unidade e pelo cargo (Director de Ensino, Administração Escolar, Gabinete, Área
         // Científica); sem ele (versões antigas do Pessoal), a Repartição de Administração Escolar
         u = Utilizador.novo({ nome: c.nome, email, papel: c.papel ?? 'secretaria', senhaCifrada: c.senha, deveMudarSenha: true })
-        Object.assign(u, { pessoalRef: c.ref, biHash: c.bi })
+        Object.assign(u, { pessoalRef: c.ref, biHash: c.bi, departamento: c.departamento ?? '', ...(c.cargo ? { cargo: c.cargo } : {}) })
         u = await this.utilizadores.criar(u)
         await this.auditoria.registar(ctx, { acao: 'conta_ensino_do_pessoal', colecao: 'utilizadores', alvoId: u.id, alvoTitulo: u.nome, detalhes: { criada: true } })
         resultados.push({ ref: c.ref, ok: true, criada: true })
@@ -73,9 +73,13 @@ export class ServicoUtilizadores {
       }
       // o nome, o BI (ou o NIP) e o papel acompanham a ficha (uma conta desactivada fica: reactiva-a o administrador)
       const papel = c.papel ?? 'secretaria'
-      if (u.nome !== c.nome || u.biHash !== c.bi || u.papel !== papel) {
+      // o departamento (e o cargo) também vêm do Pessoal
+      const departamento = c.departamento ?? u.departamento ?? ''
+      if (u.nome !== c.nome || u.biHash !== c.bi || u.papel !== papel || (u.departamento ?? '') !== departamento || (c.cargo && u.cargo !== c.cargo)) {
         u.definirNome(c.nome)
         u.biHash = c.bi
+        u.departamento = departamento
+        if (c.cargo) u.cargo = c.cargo
         if (u.papel !== papel) { u.papel = papel; u.invalidarSessoes() }
         await this.utilizadores.guardar(u)
       }
