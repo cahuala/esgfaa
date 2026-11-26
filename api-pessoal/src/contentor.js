@@ -27,9 +27,11 @@ import { ServicoPrivacidade } from './aplicacao/privacidade.js'
 import { ServicoPonto } from './aplicacao/ponto.js'
 import { ServicoListas } from './aplicacao/listas.js'
 import { ServicoDespachos } from './aplicacao/despachos.js'
+import { ServicoCopias } from './aplicacao/copias.js'
+import { RAIZ } from './config.js'
 
 // liga as peças: base de dados, segurança e serviços (os testes passam outro esquema, relógio e envio)
-export function criarContentor(config, { esquema = null, agora, enviar, enviarBi } = {}) {
+export function criarContentor(config, { esquema = null, agora, enviar, enviarBi, copias } = {}) {
   const base = criarPrisma(config.urlBaseDados, { esquema, maximoLigacoes: config.ligacoesBd })
   const cifraDados = new CifraDados(config.chaveDados)
   // os dados pessoais sensíveis vão cifrados para a base de dados e voltam decifrados (cifraDados.js)
@@ -48,6 +50,8 @@ export function criarContentor(config, { esquema = null, agora, enviar, enviarBi
   const ausencias = new ServicoAusencias({ bd, auditoria, ...relogio })
   const servicos = {
     auditoria,
+    // cópias de segurança feitas à mão (as diárias são do serviço ESG-Pessoal-Copias)
+    copias: new ServicoCopias({ raiz: RAIZ, auditoria, ...(copias ?? {}) }),
     sessao: new ServicoSessao({ bd, auditoria, cifra: new CifraSenhas(), tokens: new Tokens({ segredo: config.segredoJwt, duracao: config.duracaoSessao }), inactividadeMin: config.inactividadeMin, doisFatores, despachos, chaveBi: config.chaveDados, ...relogio }),
     despachos,
     doisFatores,

@@ -29,7 +29,7 @@ export const AREAS = {
   secretaria: { grupo: 'Comunicação', nome: 'Secretária digital (despachar como o Comandante)', soAlterar: true, alterar: ['despachar'] },
   utilizadores: { grupo: 'Administração', nome: 'Utilizadores e permissões', ver: ['supervisionar'], alterar: ['administrar'] },
   auditoria: { grupo: 'Administração', nome: 'Auditoria e livro de expediente', soVer: true, ver: ['supervisionar'] },
-  configuracoes: { grupo: 'Administração', nome: 'Listas do sistema, assinaturas e ligação ao portal', alterar: ['administrar'] },
+  configuracoes: { grupo: 'Administração', nome: 'Listas do sistema, assinaturas, ligação ao portal e cópias de segurança', alterar: ['administrar'] },
   privacidade: { grupo: 'Administração', nome: 'Pedidos sobre dados pessoais (Lei n.º 22/11)', alterar: ['editar'] },
 }
 
@@ -101,7 +101,7 @@ export const ROTAS = [
   R('POST', '/pessoas/:id/eventos', 'fichas'), R('DELETE', '/pessoas/:id/eventos/:sub', 'fichas'), R('POST', '/pessoas/:id/graduacoes/:sub/terminar', 'fichas'),
   R('PUT', '/pessoas/:id/foto', ['fichas', 'academicos', 'registarFichas']), R('POST', '/cargos/:id/colocar', 'fichas'), R('POST', '/cargos/:id/retirar', 'fichas'),
   R('POST', '/pessoas/importar', 'importar'), R('POST', '/fotos/lote', 'importar'),
-  R('POST', '/fichas-acesso', 'academicos'), R('POST', '/pessoas/:id/anos-academicos', ['academicos', 'fichas']), R('DELETE', '/pessoas/:id/anos-academicos/:sub', ['academicos', 'fichas']), R('POST', '/pessoas/:id/ficha-acesso', 'academicos'),
+  R('GET', '/copias', 'configuracoes'), R('POST', '/copias', 'configuracoes'), R('GET', '/copias/:nome', 'configuracoes'), R('POST', '/fichas-acesso', 'academicos'), R('POST', '/pessoas/:id/anos-academicos', ['academicos', 'fichas']), R('DELETE', '/pessoas/:id/anos-academicos/:sub', ['academicos', 'fichas']), R('POST', '/pessoas/:id/ficha-acesso', 'academicos'),
   R('GET', '/processos', 'processos'), R('PUT', '/processos/:id', 'processos'), R('GET', '/pessoas/:id/documentos', 'processos'), R('POST', '/pessoas/:id/documentos', 'processos'),
   R('GET', '/documentos/:id/ficheiro', 'processos'), R('DELETE', '/documentos/:id', 'processos'),
   // carreiras

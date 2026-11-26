@@ -344,6 +344,13 @@ export function rotas({ servicos: s, config }) {
     await s.auditoria.registar(u(req), 'exportar', req.dados.body.tabela, { formato: req.dados.body.formato, linhas: req.dados.body.linhas }, ip(req))
     res.status(204).end()
   })
+  // cópias de segurança: a lista, fazer uma agora e descarregar uma (o ficheiro cifrado)
+  r.get('/copias', async (req, res) => res.json(await s.copias.listar(u(req))))
+  r.post('/copias', async (req, res) => res.json(await s.copias.fazer(u(req))))
+  r.get('/copias/:nome', validar({ params: z.object({ nome: z.string().max(120) }) }), async (req, res) => {
+    const f = await s.copias.ficheiro(u(req), req.dados.params.nome)
+    res.download(f, path.basename(f), { dotfiles: 'deny' })
+  })
   r.get('/portal', async (req, res) => res.json(await s.sincronizacao.estado(u(req))))
   // estudantes e docentes (também os de fora da ESG), com o estado no portal
   // cada ano lectivo em separado: quantos estudantes e docentes, e de onde vieram

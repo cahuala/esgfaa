@@ -48,6 +48,7 @@ import Utilizadores from './paginas/Utilizadores'
 import Auditoria from './paginas/Auditoria'
 import { definirListas } from './listasAtuais'
 import Portal from './paginas/Portal'
+import Copias from './paginas/Copias'
 
 // o formulário recomeça quando se muda de ficha (sem ficar com os dados da anterior)
 function FichaPorId() {
@@ -174,6 +175,7 @@ export default function App() {
           <Route path="/utilizadores" element={<Area id="utilizadores"><Utilizadores /></Area>} />
           <Route path="/auditoria" element={<Area id="auditoria"><Auditoria /></Area>} />
           <Route path="/portal" element={<Area id="configuracoes"><Portal /></Area>} />
+          <Route path="/copias" element={<Area id="configuracoes"><Copias /></Area>} />
           <Route path="/senha" element={<MudarSenha />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/pedidos-dados" element={<Area id="privacidade"><PedidosDados /></Area>} />

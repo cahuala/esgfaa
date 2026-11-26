@@ -143,6 +143,7 @@ export default function Layout({ children }) {
             {<Item para="/assinaturas" area="configuracoes" icone="fa-signature" texto="Assinaturas dos documentos" />}
             {<Item para="/auditoria" area="auditoria" icone="fa-shield-alt" texto="Auditoria" />}
             {<Item para="/portal" area="configuracoes" icone="fa-exchange-alt" texto="Ligação ao portal" />}
+            {<Item para="/copias" area="configuracoes" icone="fa-shield-alt" texto="Cópias de segurança" />}
             {<Item para="/pedidos-dados" area="privacidade" icone="fa-user-lock" texto="Pedidos sobre dados pessoais" />}
             {/* quem não administra vê aqui só o seu perfil (palavra-passe, verificação em dois passos) e o manual */}
             {algum('utilizadores', 'configuracoes', 'auditoria', 'privacidade') && <Item para="/privacidade" icone="fa-user-shield" texto="Privacidade" />}
