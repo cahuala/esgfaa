@@ -224,15 +224,20 @@ function QuemUsa($p) { (@(Get-NetTCPConnection -State Listen -LocalPort $p -Erro
 # o HTTPS fica na 443; se estiver ocupada (p. ex. pela VPN ou pelo Sistema de Pessoal), na primeira livre de
 # 8443, 9443, 10443. Nenhum serviço do servidor é desligado.
 $PortaWeb = $null
-foreach ($c in @(@(Guardado 'PORTA_WEB') + 443, 8443, 9443, 10443 | Where-Object { $_ } | Select-Object -Unique)) {
-  if (Livre $c) { $PortaWeb = [int]$c; break }
-  Write-Host "    a porta $c está ocupada por: $(QuemUsa $c) — fica como está" -ForegroundColor Yellow
+# numa actualização, as portas são as deste sistema (estão ocupadas por ele próprio, que está a funcionar): ficam
+$PortaGuardada = Guardado 'PORTA_WEB'
+if ($Atualizar -and $PortaGuardada) { $PortaWeb = [int]$PortaGuardada; Write-Host "    HTTPS na porta $PortaWeb (a deste sistema; fica)" }
+else {
+  foreach ($c in @(@($PortaGuardada) + 443, 8443, 9443, 10443 | Where-Object { $_ } | Select-Object -Unique)) {
+    if (Livre $c) { $PortaWeb = [int]$c; break }
+    Write-Host "    a porta $c está ocupada por: $(QuemUsa $c) — fica como está" -ForegroundColor Yellow
+  }
 }
 if (-not $PortaWeb) { Falha 'As portas 443, 8443, 9443 e 10443 estão todas ocupadas: não há porta para o HTTPS.' }
 $PortaHttp = if (Livre 80) { 80 } else { $null }
 if (-not $PortaHttp) { Write-Host "    a porta 80 está ocupada por: $(QuemUsa 80) — fica como está (escreve-se o endereço completo, https://…)" -ForegroundColor Yellow }
-foreach ($p in $PortaApi, $PortaBd) { if (-not (Livre $p)) { Falha "A porta $p já está ocupada por: $(QuemUsa $p)" } }
-Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); $PortaApi e $PortaBd livres"
+if (-not $Atualizar) { foreach ($p in $PortaApi, $PortaBd) { if (-not (Livre $p)) { Falha "A porta $p já está ocupada por: $(QuemUsa $p)" } } }
+Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); $PortaApi e $PortaBd $(if ($Atualizar) { '(as deste sistema)' } else { 'livres' })"
 
 # o endereço do sistema (nome no DNS da Escola)
 $Endereco = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { Guardado 'ENDERECO' }
@@ -663,11 +668,16 @@ if ($Tls -eq 'interno') {
 # o Sistema de Pessoal neste servidor: passa a enviar os docentes e os estudantes à Gestão Escolar (que os passa ao portal)
 $Ligado = $false
 if ($Sistema -eq 'escolar' -and (Test-Path $PessoalEnv)) {
-  $lp = @(Get-Content $PessoalEnv -Encoding UTF8 | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + "PORTAL_API_URL=http://127.0.0.1:$PortaApi" + "INTEGRACAO_CHAVE=$($Cfg.INTEGRACAO_CHAVE)"
-  [IO.File]::WriteAllLines($PessoalEnv, [string[]]$lp, (New-Object Text.UTF8Encoding $false))
-  if (Get-Service 'ESG-Pessoal' -ErrorAction SilentlyContinue) { Restart-Service 'ESG-Pessoal' -Force -ErrorAction SilentlyContinue }
+  # o Pessoal está em produção: só se mexe na configuração dele (e só se reinicia) se a ligação mudou
+  $actual = @(Get-Content $PessoalEnv -Encoding UTF8)
+  $querida = @("PORTAL_API_URL=http://127.0.0.1:$PortaApi", "INTEGRACAO_CHAVE=$($Cfg.INTEGRACAO_CHAVE)")
+  if (@($querida | Where-Object { $actual -notcontains $_ }).Count) {
+    $lp = @($actual | Where-Object { $_ -notmatch '^(PORTAL_API_URL|INTEGRACAO_CHAVE)=' }) + $querida
+    [IO.File]::WriteAllLines($PessoalEnv, [string[]]$lp, (New-Object Text.UTF8Encoding $false))
+    if (Get-Service 'ESG-Pessoal' -ErrorAction SilentlyContinue) { Restart-Service 'ESG-Pessoal' -Force -ErrorAction SilentlyContinue }
+    Ok 'Sistema de Pessoal deste servidor ligado à Gestão Escolar (envia os docentes e os estudantes)'
+  } else { Ok 'Sistema de Pessoal já ligado à Gestão Escolar (não se mexeu nele)' }
   $Ligado = $true
-  Ok 'Sistema de Pessoal deste servidor ligado à Gestão Escolar (envia os docentes e os estudantes)'
 }
 
 # a palavra-passe inicial já criou o administrador: não fica no ficheiro de configuração
