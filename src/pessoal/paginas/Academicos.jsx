@@ -107,7 +107,8 @@ export default function Academicos({ tipo }) {
   const { dados: resumo, erro: erroResumo } = useDados('/academicos/resumo', {})
   const [anoEscolhido, setAno] = useState(null)
   const doTipo = (resumo ?? []).filter((a) => (tipo === 'estudante' ? a.estudantes : a.docentes).total)
-  const ano = anoEscolhido ?? (resumo ? doTipo[0]?.anoLetivo ?? '' : erroResumo ? '' : null)
+  // por omissão o ano lectivo actual (de Setembro a Agosto); sem ninguém nesse ano, o mais recente com dados
+  const ano = anoEscolhido ?? (resumo ? (doTipo.find((a) => a.anoLetivo === anoDeAgora()) ?? doTipo[0])?.anoLetivo ?? '' : erroResumo ? '' : null)
   const { dados, erro, recarregar } = useDados(ano === null ? null : '/academicos', { tipo, ativo, ...(ano ? { anoLetivo: ano } : {}) }, { tempoReal: true })
   const [escolhidos, setEscolhidos] = useState(() => new Set())
   const [novo, setNovo] = useState(false)

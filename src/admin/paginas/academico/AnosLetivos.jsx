@@ -45,7 +45,7 @@ function AnosLetivos() {
   // fechar é por ordem do Comandante: ele fecha logo; a Administração Escolar pede e fecha quando ele aprovar
   const fechar = (a) => setConfirmar({
     titulo: comandante ? tx('Fechar o ano lectivo') : tx('Pedir ao Comandante o fecho do ano lectivo'),
-    texto: `${comandante ? tx('Fechar o ano lectivo {0}?', { 0: a.id }) : tx('Pedir ao Comandante o fecho do ano lectivo {0}?', { 0: a.id })} ${tx('Fechado, já não se poderão alterar as turmas, cadeiras, matrículas, notas e actividades desse ano, nem emitir documentos dele. Só o Comandante o pode reabrir.')}`,
+    texto: `${comandante ? tx('Fechar o ano lectivo {0}?', { 0: a.id }) : tx('Pedir ao Comandante o fecho do ano lectivo {0}?', { 0: a.id })} ${tx('Fechado, já não se poderão alterar as turmas, cadeiras, matrículas, notas e actividades desse ano, nem emitir documentos dele. Só o Comandante o pode reabrir.')} ${tx('Antes de fechar, imprima todos os diplomas, certificados e declarações desse ano.')}`,
     botao: comandante ? tx('Fechar o ano') : tx('Enviar ao Comandante'), perigo: true,
     confirmar: async () => {
       setConfirmar(null)

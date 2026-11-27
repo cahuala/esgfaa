@@ -26,6 +26,7 @@ function Tabela({ cadeiras, gerir, nomes, mudar }) {
               <td className="text-end text-nowrap">
                 <Link to={`/academico/documentos/cadeira/${c.id}/pauta`} className="btn btn-xs btn-white me-1"><i className="fa fa-print me-1" />{tx('Pauta')}</Link>
                 <Link to={`/academico/documentos/cadeira/${c.id}/presencas`} className="btn btn-xs btn-white"><i className="fa fa-user-check me-1" />{tx('Presenças')}</Link>
+                {c.turmaId && <Link to={`/academico/turmas/${c.turmaId}/horario-mensal`} className="btn btn-xs btn-white ms-1"><i className="fa fa-calendar me-1" />{tx('Horário')}</Link>}
               </td>
               {gerir && (
                 <td><select className="form-select form-select-sm" value={c.departamento} onChange={(e) => mudar(c, e.target.value)} aria-label={tx('Departamento de {0}', { 0: c.nome })}>
