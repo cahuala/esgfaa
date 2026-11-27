@@ -24,7 +24,7 @@ SE PRECISAR DE VOLTAR A CARREGAR (Gestão Escolar › Administração Escolar �
   b) ESG-GESTAO\CARREGAR\gestao-pautas-do-arquivo.json — as pautas assinadas de 2021/2022 a 2025/2026.
   Os discentes e docentes que ainda não tinham conta entram quando o Pessoal os enviar: volte a carregar o mesmo
   ficheiro (não repete nada).
-  Para conferir: CONFERENCIA-arquivo-x-listas.xlsx e CONFERIR-carga-do-Pessoal.xlsx (na mesma pasta).
+  Para conferir: ESG-GESTAO\CONFERIR\CONFERENCIA-arquivo-x-listas.xlsx e CONFERIR-carga-do-Pessoal.xlsx.
 
 NO PAINEL: «Cibersegurança e monitorização (todos os sistemas)» mostra cada sistema com o seu domínio, se
 responde, a saúde do servidor, a segurança e as trocas com o servidor online.
