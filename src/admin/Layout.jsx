@@ -12,6 +12,7 @@ import { ouvirTempoReal } from '../utils/tempoReal'
 import AvatarConta from './componentes/AvatarConta'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
 import { useAnoTrabalho } from './anoTrabalho'
+import { nomeDoSistema, useSistema } from './sistema'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -30,14 +31,19 @@ function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
 }
 
 // o ano lectivo em que se está a trabalhar (todas as páginas da Administração Escolar seguem-no)
-// o ano lectivo com que se trabalha (da conta; por omissão o actual): muda-se nas configurações da conta
+// o ano lectivo com que se trabalha (da conta; por omissão o actual): escolhe-se aqui, no menu, qualquer um dos anos
+// configurados; fica guardado na conta (vale em qualquer computador) e todas as páginas o seguem
 function SeletorAnoTrabalho() {
-  const { ano, anos, escolhido } = useAnoTrabalho()
+  const { ano, anos, actual, mudar } = useAnoTrabalho()
+  const [aMudar, setAMudar] = useState(false)
   if (!anos.length) return null
   return (
     <div className="menu-item px-3 pb-2 small text-white-50">
-      <i className="fa fa-calendar-alt me-1" />{tx('Ano lectivo')}: <b className="text-white">{ano}</b>{!escolhido && ` (${tx('actual')})`}
-      {' · '}<Link to="/perfil#ano-lectivo" className="text-white-50">{tx('mudar')}</Link>
+      <label htmlFor="ano-trabalho" className="d-block mb-1"><i className="fa fa-calendar-alt me-1" />{tx('Ano lectivo')}</label>
+      <select id="ano-trabalho" className="form-select form-select-sm" value={ano} disabled={aMudar}
+        onChange={async (e) => { setAMudar(true); try { await mudar(e.target.value) } finally { setAMudar(false) } }}>
+        {[...anos].sort((a, b) => b.id.localeCompare(a.id)).map((a) => <option key={a.id} value={a.id}>{a.id}{a.id === actual ? ` (${tx('actual')})` : ''}{a.fechado ? ` — ${tx('fechado')}` : ''}</option>)}
+      </select>
     </div>
   )
 }
@@ -48,6 +54,7 @@ const aceitarPrivacidade = () => api('/eu/privacidade', { metodo: 'POST' })
 
 function Layout({ children }) {
   const { utilizador, pode, sair } = useSessao()
+  const sistema = useSistema(utilizador?.sistema ?? '')
   const { pathname } = useLocation()
   // os menus guardam o endereço em que foram abertos: ao mudar de página ficam fechados
   const [menuMovelEm, setMenuMovelEm] = useState(null)
@@ -134,7 +141,7 @@ function Layout({ children }) {
           <Link to="/" className="navbar-brand">
             <img src={Brasao} alt="" className="admin-brasao" />
             <span className="esg-cabecalho-titulo">
-              <b>{tx('Painel de gestão')}</b>
+              <b>{tx(nomeDoSistema(sistema))}</b>
               <small>{tx('Escola Superior de Guerra')}</small>
             </span>
           </Link>
@@ -247,7 +254,7 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano lectivo e semestres')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/estrutura" icone="fa-sitemap" texto={tx('Estrutura do ensino (cursos e departamentos)')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
-            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Arquivo e arranque do ano')} />}
+            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Carregar o arquivo e as turmas do ano')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
             {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}

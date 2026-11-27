@@ -178,6 +178,7 @@ export function permissoesDoSistema(permissoes, sistema = 'completo') {
   if (sistema === 'ciberseguranca') return [...permissoes].filter((p) => ['seguranca', 'utilizadores', 'papeis', 'atividades'].includes(p.split('.')[0]))
   if (!['site', 'escolar', 'biblioteca'].includes(sistema)) return [...permissoes]
   const fora = new Set([...(sistema === 'site' ? [] : DO_SITE), ...(sistema === 'escolar' ? [] : DO_ESCOLAR), ...(sistema === 'biblioteca' ? [] : DA_BIBLIOTECA)])
-  // na Gestão Escolar, os cursos vêm do site (só se vêem: escolher o curso de uma turma)
-  return [...permissoes].filter((p) => !fora.has(p.split('.')[0]) || (sistema === 'escolar' && p === 'cursos.ver'))
+  // na Gestão Escolar, os cursos vêm do site (só se vêem: escolher o curso de uma turma); as pessoas registam-se só
+  // no Sistema de Pessoal (a Gestão Escolar consulta as fichas, não regista ninguém)
+  return [...permissoes].filter((p) => (!fora.has(p.split('.')[0]) || (sistema === 'escolar' && p === 'cursos.ver')) && !(sistema === 'escolar' && p === 'pessoal.registar'))
 }

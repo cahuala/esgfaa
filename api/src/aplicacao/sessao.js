@@ -97,7 +97,7 @@ export class ServicoSessao {
     const u = await this.utilizadores.porId(ctx.actor.id)
     const papel = await this.papeis.porId(u.papel)
     const doisFatores = this.doisFatores ? await this.doisFatores.ativo(u.id) : false
-    return { ...u.publico(), sistema: this.sistema, nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores) }
+    return { ...u.publico(), sistema: this.sistema, nomePapel: papel?.nome || u.papel, permissoes: [...ctx.actor.permissoes], deveMudarSenha: u.deveMudarSenha, doisFatores, deveAtivar2fa: Boolean(this.doisFatores?.obrigatorio(u.papel) && !doisFatores), doisFatoresDisponivel: Boolean(this.doisFatores) }
   }
 
   // o meu perfil: nome (não nas contas que vêm do Pessoal: muda-se lá), telefone e cargo ou função

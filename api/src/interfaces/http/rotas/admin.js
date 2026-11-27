@@ -92,7 +92,7 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   const LIVRES_2FA = new Set(['/eu', '/eu/2fa', '/eu/2fa/iniciar', '/eu/2fa/confirmar', '/eu/senha', '/eu/privacidade', '/sair', '/traduzir'])
   r.use(async (req, res, next) => {
     const a = ctx(req).actor
-    if (!LIVRES_2FA.has(req.path) && df.obrigatorio(a.papel) && !(await df.ativo(a.id))) return next(new DoisFatoresPorAtivar())
+    if (!config.doisFatoresDesligado && !LIVRES_2FA.has(req.path) && df.obrigatorio(a.papel) && !(await df.ativo(a.id))) return next(new DoisFatoresPorAtivar())
     next()
   })
   r.post('/utilizadores/:id/2fa/repor', validar({ params: pNumero }), async (req, res) => res.json(await df.repor(ctx(req), req.dados.params.id)))

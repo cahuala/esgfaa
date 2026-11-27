@@ -47,7 +47,10 @@ function Arquivo() {
   const porCarregar = r?.turmas.filter((t) => ['por carregar', 'por criar', 'completar'].includes(t.estado)).length ?? 0
   return (
     <>
-      <CabecalhoPagina titulo="Arquivo e arranque do ano" subtitulo="as pautas assinadas dos anos anteriores; as turmas, cadeiras, departamentos e docentes do ano lectivo" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Arquivo' }]} />
+      <CabecalhoPagina titulo="Carregar o arquivo e as turmas do ano" subtitulo="as pautas assinadas dos anos anteriores; as turmas, cadeiras, departamentos e docentes do ano lectivo" migalhas={[{ rotulo: 'Administração Escolar' }, { rotulo: 'Carregar o arquivo' }]} />
+      <div className="alert alert-info small">
+        <i className="fa fa-info-circle me-1" /><b>Para que serve:</b> a instalação já carregou sozinha os dados que vieram no pendrive (as pautas do arquivo de 2021/2022 a 2025/2026 e as turmas de 2026/2027). Esta página só é precisa para carregar outra vez (por exemplo, quando o Pessoal enviar discentes que ainda não tinham conta) ou para um ano lectivo novo. Repetir não duplica nada. Para <b>ver outro ano lectivo</b>, escolha-o no menu, em «Ano lectivo».
+      </div>
       {aviso && <Aviso {...aviso} />}
       <Painel titulo="Ficheiro das pautas do arquivo">
         <p className="small text-muted">O ficheiro (.json) vem do conversor das pautas do arquivo (docs/ARQUIVO 2023-2024, 2024-2025, 2025-2026). Os discentes entram pela conta do portal que o Sistema de Pessoal criou; quem ainda não tem conta fica para depois — volte a carregar o mesmo ficheiro quando o Pessoal os tiver enviado (não se repete nada).</p>

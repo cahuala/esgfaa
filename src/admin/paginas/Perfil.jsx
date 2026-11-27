@@ -170,7 +170,7 @@ function Perfil() {
               </form>
             )}
           </Painel>
-          <DoisFatores aoMudar={recarregar} />
+          {utilizador?.doisFatoresDisponivel !== false && <DoisFatores aoMudar={recarregar} />}
         </div>
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />

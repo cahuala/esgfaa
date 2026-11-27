@@ -13,7 +13,7 @@
   Se já estiver instalado, actualiza (os dados, as chaves e a configuração ficam).
   Em caso de falha escreve no pendrive registos\ERRO-INSTALACAO-<SISTEMA>-<data>.txt com a causa e o que fazer.
 #>
-param([ValidateSet('escolar', 'site', 'biblioteca', 'ciberseguranca')][string]$Sistema = 'escolar')
+param([ValidateSet('escolar', 'site', 'biblioteca', 'ciberseguranca')][string]$Sistema = 'escolar', [switch]$SoActualizar)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
@@ -208,6 +208,8 @@ Ok "$livre MB livres"
 
 $EnvFicheiro = Join-Path $Conf "$Sistema.env"
 $Atualizar = Test-Path $EnvFicheiro
+# o ACTUALIZAR-*.bat só actualiza: se o sistema ainda não estiver instalado, não instala nada
+if ($SoActualizar -and -not $Atualizar) { Falha "O $Titulo ainda não está instalado neste servidor ($EnvFicheiro não existe): use o INSTALAR-*.bat." }
 $Servicos = "$Svc-Copias", "$Svc-Web", $Svc, "$Svc-BD"
 if ($Atualizar) {
   Write-Host ''; Write-Host ">>> O $Titulo já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam)." -ForegroundColor Yellow
@@ -272,7 +274,7 @@ if (-not $ip) { $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Silentl
 $SenhaEscolhida = $false
 if (-not $Atualizar) {
   Write-Host ''
-  Write-Host 'CONTA DE ADMINISTRADOR DO PAINEL (entra com o e-mail e a palavra-passe; na 1.ª entrada liga a verificação em dois passos)' -ForegroundColor Cyan
+  Write-Host "CONTA DE ADMINISTRADOR DO PAINEL (entra com o e-mail e a palavra-passe$(if ($Sistema -ne 'escolar') { '; na 1.ª entrada liga a verificação em dois passos' }))" -ForegroundColor Cyan
   $AdminNome = if ($env:ESG_ADMIN_NOME) { $env:ESG_ADMIN_NOME } else { Read-Host "  Nome [Administrador do $Titulo]" }
   if (-not $AdminNome) { $AdminNome = "Administrador do $Titulo" }
   $AdminNome = $AdminNome -replace '"', ''
@@ -446,6 +448,8 @@ if (-not $Atualizar) {
 $linhasEnv = @(Get-Content $EnvFicheiro -Encoding UTF8)
 $linhasEnv = @($linhasEnv -replace '^PORTA_WEB=.*', "PORTA_WEB=$PortaWeb" -replace '^PUBLIC_URL=.*', "PUBLIC_URL=$Url" -replace '^PORTAL_URL=.*', "PORTAL_URL=$Url/portal/" -replace '^PAINEL_URL=.*', "PAINEL_URL=$Url/painel/" -replace '^CORS_ORIGINS=.*', "CORS_ORIGINS=$Origens")
 if (-not ($linhasEnv -match '^SISTEMA=')) { $linhasEnv += "SISTEMA=$Sistema" }
+# a Gestão Escolar não usa a verificação em dois passos (decisão da Escola): também nas instalações já feitas
+if ($Sistema -eq 'escolar' -and -not ($linhasEnv -match '^DOIS_FATORES=')) { $linhasEnv += 'DOIS_FATORES=nao' }
 if (-not ($linhasEnv -match '^REPLICACAO_CHAVE=.{32,}')) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^REPLICACAO_CHAVE=' }) + "REPLICACAO_CHAVE=$(if ($Lig.REPLICACAO_CHAVE) { $Lig.REPLICACAO_CHAVE } else { Aleatorio 64 })" }
 # o endereço do servidor online: o que se indicou (ou veio do pendrive) se ainda não havia
 if ($Lig.REPLICACAO_URL -and -not ($linhasEnv -match '^REPLICACAO_URL=.+')) { $linhasEnv = @($linhasEnv | Where-Object { $_ -notmatch '^REPLICACAO_URL=' }) + "REPLICACAO_URL=$($Lig.REPLICACAO_URL)" }

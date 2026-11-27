@@ -6,6 +6,7 @@ import { COLECOES, NOMES_ACOES } from '../esquemas'
 import { Carregando, Erro, Painel as Caixa } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 import PainelPapel from './PainelPapel'
+import { nomeDoSistema } from '../sistema'
 import { t as tx, localAtual } from '../../i18n/linguas'
 
 const NOMES_COLECOES = { noticias: tx('Notícia'), eventos: tx('Evento'), artigos: tx('Artigo'), cursos: tx('Curso'), pessoas: tx('Pessoa'), revistas: tx('Número da revista'), publicidade: tx('Banner') }
@@ -103,7 +104,7 @@ function Painel() {
         <div>
           <div className="esg-boas-vindas-data">{hojePorExtenso()}</div>
           <h1>{saudacao()}, {utilizador.nome.split(' ')[0]}.</h1>
-          <p>{tx('Painel de gestão da Escola Superior de Guerra ·')} {tx(utilizador.nomePapel)}</p>
+          <p>{utilizador.sistema && utilizador.sistema !== 'completo' ? `${tx(nomeDoSistema(utilizador.sistema))} da Escola Superior de Guerra ·` : tx('Painel de gestão da Escola Superior de Guerra ·')} {tx(utilizador.nomePapel)}</p>
         </div>
         <div className="esg-atalhos">
           {ATALHOS.filter((a) => pode(a.perm)).slice(0, 4).map((a) => (

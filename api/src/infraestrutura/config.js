@@ -35,6 +35,8 @@ const ESQUEMA = z.object({
   DADOS_CHAVE: z.string().default(''),
   // papéis do painel que têm de usar a verificação em dois passos (em produção, por omissão, o administrador)
   DOIS_FATORES_PAPEIS: z.string().optional(),
+  // nao = sem verificação em dois passos neste sistema (nem pedida na entrada, nem obrigatória)
+  DOIS_FATORES: z.enum(['sim', 'nao']).default('sim'),
   // a API num domínio diferente do das páginas (ex.: páginas em esgfaa.gov.ao, API noutro alojamento)
   SESSAO_ENTRE_SITES: z.enum(['sim', 'nao']).default('nao'),
   SESSION_TTL: z.string().regex(/^\d+[smhd]$/, 'SESSION_TTL deve ser como 8h, 30m ou 1d').default('8h'),
@@ -146,6 +148,7 @@ export function criarConfig(env = process.env, extras = {}) {
     origens: e.CORS_ORIGINS,
     segredoJwt,
     sessaoEntreSites: e.SESSAO_ENTRE_SITES === 'sim',
+    doisFatoresDesligado: e.DOIS_FATORES === 'nao',
     doisFatoresPapeis: (e.DOIS_FATORES_PAPEIS ?? (producao ? 'administrador,comandante,director_ensino' : '')).split(',').map((x) => x.trim()).filter(Boolean),
     // em desenvolvimento e testes, uma chave fixa (os dados de demonstração não são reais)
     chaveDados: e.DADOS_CHAVE || crypto.createHash('sha256').update('portal-desenvolvimento-dados').digest('hex'),

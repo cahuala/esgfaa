@@ -42,6 +42,7 @@ A ORDEM (podem ficar todos no mesmo servidor; cada um tem a sua pasta, a sua bas
    segurança, a comunicação entre os sistemas e as actualizações do site e do Portal.
 
 PARA ACTUALIZAR MAIS TARDE (uma versão nova no pendrive)
+  Gestão Escolar já instalada: ESG-GESTAO\ACTUALIZAR-GESTAO-ESCOLAR-WINDOWS.bat (só actualiza; se não estiver instalada, não faz nada).
   Os mesmos .bat, pela mesma ordem (o Pessoal sempre com ACTUALIZAR-WINDOWS.bat). Cada um vê que já está
   instalado e actualiza: prepara a versão nova com o sistema a funcionar, faz a cópia da base de dados
   (dados\copias\antes-da-actualizacao-*.dump; ficam as 5 últimas), pára alguns segundos, troca e confirma que

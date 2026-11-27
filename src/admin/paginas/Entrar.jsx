@@ -7,10 +7,12 @@ import { t as tx } from '../../i18n/linguas'
 import LinguasEntrada from '../../i18n/LinguasEntrada'
 import NaoSouRobo from '../../components/NaoSouRobo/NaoSouRobo'
 import { api } from '../api'
+import { nomeDoSistema, useSistema } from '../sistema'
 
 // Página de entrada: base "login with news feed" do Color Admin, com a identidade da Escola
 function Entrar() {
   const { entrar } = useSessao()
+  const sistema = useSistema()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [verSenha, setVerSenha] = useState(false)
@@ -62,7 +64,7 @@ function Entrar() {
             <img src={Brasao} alt={tx('Brasão da Escola Superior de Guerra')} className="entrada-brasao" />
             <div>
               <span className="entrada-sobretitulo">{tx('Área reservada')}</span>
-              <h1>{tx('Painel de gestão')}</h1>
+              <h1>{tx(nomeDoSistema(sistema))}</h1>
               <p>{tx('Escola Superior de Guerra · FAA')}</p>
             </div>
           </div>

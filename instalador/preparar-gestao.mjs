@@ -118,7 +118,7 @@ async function main() {
   passo('A copiar o instalador…')
   fs.mkdirSync(path.join(DESTINO, 'windows'), { recursive: true })
   for (const f of ['instalar-gestao.ps1', 'diagnostico-gestao.ps1']) fs.copyFileSync(path.join(AQUI, 'windows', f), path.join(DESTINO, 'windows', f))
-  for (const f of ['INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat', 'INSTALAR-GESTAO-DO-SITE-WINDOWS.bat', 'INSTALAR-BIBLIOTECA-WINDOWS.bat', 'INSTALAR-CIBERSEGURANCA-WINDOWS.bat', 'DIAGNOSTICAR-E-LIMPAR-GESTAO-ESCOLAR.bat']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
+  for (const f of ['INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat', 'INSTALAR-GESTAO-DO-SITE-WINDOWS.bat', 'INSTALAR-BIBLIOTECA-WINDOWS.bat', 'INSTALAR-CIBERSEGURANCA-WINDOWS.bat', 'DIAGNOSTICAR-E-LIMPAR-GESTAO-ESCOLAR.bat', 'ACTUALIZAR-GESTAO-ESCOLAR-WINDOWS.bat']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
   fs.copyFileSync(path.join(AQUI, 'LEIA-ME-GESTAO.txt'), path.join(DESTINO, 'LEIA-ME.txt'))
   fs.copyFileSync(path.join(AQUI, 'LEIA-PRIMEIRO-ORDEM.txt'), path.join(DESTINO, 'LEIA-PRIMEIRO-ORDEM.txt'))
   // a ligação ao servidor online (endereço e chaves partilhadas), se se deu
