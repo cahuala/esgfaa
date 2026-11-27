@@ -28,9 +28,6 @@ A ORDEM (podem ficar todos no mesmo servidor; cada um tem a sua pasta, a sua bas
    CARREGAR: as turmas de 2026/2027 (cadeiras, matrículas, departamentos e docentes de cada cadeira) e as
    pautas do arquivo de 2021/2022 a 2025/2026, com as contas dos discentes desses anos. Relatório:
    registos\CARGA-GESTAO-ESCOLAR-*.txt.   Fica em C:\ESG-Gestao-Escolar (porta 3001).
-   No servidor onde já está o Sistema de Pessoal, a Gestão Escolar (e o Site, a Biblioteca e a Cibersegurança)
-   usa o PostgreSQL do Pessoal, cada um com a SUA base de dados (esgfaa_escolar, …): só se acrescentam; a base
-   do Pessoal não se lê nem se muda e o serviço dele não pára.
 
 2. SISTEMA DE PESSOAL (já em produção: ACTUALIZAR) — C:\INSTALACAO-ESG\ESG-PESSOAL\ACTUALIZAR-WINDOWS.bat
    Use o ACTUALIZAR (não o INSTALAR). Faz a cópia de segurança, prepara o código novo com o sistema a
