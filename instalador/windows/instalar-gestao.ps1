@@ -119,14 +119,14 @@ function Reverter {
   Write-Host '    >>> a voltar à versão anterior (o sistema continua como estava)…' -ForegroundColor Yellow
   Stop-Service "$Svc-Copias", $Svc -Force -ErrorAction SilentlyContinue
   if ($script:Migrado -and $script:Copia -and (Test-Path $script:Copia)) {
-    & "$PgBin\pg_restore.exe" -h 127.0.0.1 -p $PortaBd -U esgfaa -d esgfaa --clean --if-exists --no-owner --single-transaction $script:Copia 2>&1 | Out-Null
+    & "$PgBin\pg_restore.exe" -h 127.0.0.1 -p $PortaBd -U $BdUser -d $BdNome --clean --if-exists --no-owner --single-transaction $script:Copia 2>&1 | Out-Null
     $script:BaseReposta = ($LASTEXITCODE -eq 0)
   }
   if ($script:Trocado -and (Test-Path "$Destino\sistema.anterior")) {
     if (Test-Path "$Destino\sistema") { Rename-Item "$Destino\sistema" "sistema.falhada-$Carimbo" -ErrorAction SilentlyContinue }
     Rename-Item "$Destino\sistema.anterior" 'sistema' -ErrorAction SilentlyContinue
   }
-  foreach ($s in "$Svc-BD", $Svc, "$Svc-Web", "$Svc-Copias") { Start-Service $s -ErrorAction SilentlyContinue }
+  foreach ($s in $SvcBd, $Svc, "$Svc-Web", "$Svc-Copias") { Start-Service $s -ErrorAction SilentlyContinue }
   $script:Voltou = $false
   for ($i = 0; $i -lt 45 -and -not $script:Voltou; $i++) {
     try { $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$PortaApi/api/saude" -TimeoutSec 5; $script:Voltou = $r.Content -match '"ok":true' } catch { Start-Sleep 2 }
@@ -216,6 +216,25 @@ if ($Atualizar) {
 }
 function Guardado($nome) { if ($Atualizar) { (Select-String -Path $EnvFicheiro -Pattern "^$nome=(.*)$" -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1 } }
 
+<#
+  A base de dados: no servidor onde já está o Sistema de Pessoal, usa-se o PostgreSQL dele (que já funciona e que o
+  Windows deixa correr), com um utilizador e uma base de dados PRÓPRIOS deste sistema (esg_<sistema> e
+  esgfaa_<sistema>). Só se acrescentam esse utilizador e essa base: a base do Pessoal não se lê nem se muda, e o
+  serviço do PostgreSQL do Pessoal não se pára nem se reinicia. Sem o Pessoal neste servidor, PostgreSQL próprio.
+#>
+$PessoalBd = 'ESG-Pessoal-BD'
+$PessoalPg = 'C:\ESG-Pessoal\postgresql\bin'
+$Partilhada = if ($Atualizar) { (Guardado 'BD_PARTILHADA') -eq 'pessoal' } else { [bool]((Test-Path $PessoalEnv) -and (Get-Service $PessoalBd -ErrorAction SilentlyContinue) -and (Test-Path "$PessoalPg\psql.exe")) }
+if ($Partilhada) {
+  $urlPes = (Select-String -Path $PessoalEnv -Pattern '^DATABASE_URL=postgresql://([^:]+):[^@]*@[^:/]+:(\d+)/' -ErrorAction SilentlyContinue).Matches | Select-Object -First 1
+  if (-not $urlPes) { Falha "Não se encontrou a ligação à base de dados do Sistema de Pessoal em $PessoalEnv." }
+  $PesUtilizador = $urlPes.Groups[1].Value
+  $PortaBd = [int]$urlPes.Groups[2].Value
+  $BdUser = "esg_$Sistema"; $BdNome = "esgfaa_$Sistema"; $SvcBd = $PessoalBd
+  $Servicos = "$Svc-Copias", "$Svc-Web", $Svc
+  Write-Host "    base de dados: no PostgreSQL do Sistema de Pessoal (porta $PortaBd), numa base própria ($BdNome) — a do Pessoal não se mexe" -ForegroundColor Cyan
+} else { $BdUser = 'esgfaa'; $BdNome = 'esgfaa'; $SvcBd = "$Svc-BD" }
+
 Passo 'portas' 'A verificar as portas'
 function Livre($p) { -not (Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue) }
 function QuemUsa($p) { (@(Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName }) | Select-Object -Unique) -join ', ' }
@@ -229,8 +248,9 @@ foreach ($c in @(@(Guardado 'PORTA_WEB') + 443, 8443, 9443, 10443 | Where-Object
 if (-not $PortaWeb) { Falha 'As portas 443, 8443, 9443 e 10443 estão todas ocupadas: não há porta para o HTTPS.' }
 $PortaHttp = if (Livre 80) { 80 } else { $null }
 if (-not $PortaHttp) { Write-Host "    a porta 80 está ocupada por: $(QuemUsa 80) — fica como está (escreve-se o endereço completo, https://…)" -ForegroundColor Yellow }
-foreach ($p in $PortaApi, $PortaBd) { if (-not (Livre $p)) { Falha "A porta $p já está ocupada por: $(QuemUsa $p)" } }
-Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); $PortaApi e $PortaBd livres"
+$PortasMinhas = if ($Partilhada) { @($PortaApi) } else { @($PortaApi, $PortaBd) }
+if (-not $Atualizar) { foreach ($p in $PortasMinhas) { if (-not (Livre $p)) { Falha "A porta $p já está ocupada por: $(QuemUsa $p)" } } }
+Ok "HTTPS na porta $PortaWeb$(if ($PortaHttp) { ' (e 80 para encaminhar)' }); $($PortasMinhas -join ' e ') livres$(if ($Partilhada) { " (base de dados: a do PostgreSQL do Pessoal, porta $PortaBd)" })"
 
 # o endereço do sistema (nome no DNS da Escola)
 $Endereco = if ($env:ESG_ENDERECO) { $env:ESG_ENDERECO } else { Guardado 'ENDERECO' }
@@ -303,7 +323,8 @@ Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Desti
 foreach ($d in $Destino, $Dados, $Conf, "$Dados\ficheiros", "$Dados\copias", "$Dados\caddy", "$Destino\servicos", "$Destino\certificado") { New-Item -ItemType Directory -Force $d | Out-Null }
 $C = Join-Path $Pen 'componentes'
 # os componentes (Node.js, PostgreSQL, Caddy): numa actualização só se trocam se mudaram (estão a ser usados)
-$SomaComp = (@(Get-FileHash "$C\node-windows.zip", "$C\postgresql-windows.zip", "$C\caddy-windows.zip" -Algorithm SHA256) | ForEach-Object { $_.Hash }) -join ','
+$ZipsComp = @("$C\node-windows.zip", "$C\caddy-windows.zip") + $(if ($Partilhada) { @() } else { @("$C\postgresql-windows.zip") })
+$SomaComp = (@(Get-FileHash $ZipsComp -Algorithm SHA256) | ForEach-Object { $_.Hash }) -join ','
 $CompFicheiro = Join-Path $Destino 'componentes.txt'
 $TrocarComp = (-not $Atualizar) -or (-not (Test-Path "$Destino\node\node.exe")) -or (((Get-Content $CompFicheiro -ErrorAction SilentlyContinue) -join '').Trim() -ne $SomaComp)
 if ($TrocarComp) {
@@ -314,7 +335,7 @@ if ($TrocarComp) {
   }
   Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Write-Host "    a parar $($_.ProcessName) (PID $($_.Id)), que corria de $Destino"; Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
   Descompactar "$C\node-windows.zip" "$Destino\node"
-  Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql"
+  if (-not $Partilhada) { Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql" }
   Descompactar "$C\caddy-windows.zip" "$Destino\caddy"
   Set-Content -Path $CompFicheiro -Value $SomaComp -Encoding ASCII
 } else { Ok 'Node.js, PostgreSQL e Caddy iguais aos instalados (não se mexe neles)' }
@@ -331,7 +352,7 @@ if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtim
   if ($p.ExitCode -notin 0, 1638, 3010) { Falha "O Visual C++ Redistributable não instalou (código $($p.ExitCode))." }
 }
 $Node = "$Destino\node\node.exe"
-$PgBin = "$Destino\postgresql\bin"
+$PgBin = if ($Partilhada) { $PessoalPg } else { "$Destino\postgresql\bin" }
 # os programas acabados de descompactar: sem a marca «vindo de outro computador»
 Get-ChildItem "$Destino\node", "$Destino\postgresql", "$Destino\caddy" -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
 
@@ -367,7 +388,7 @@ function ProgramaCorre($exe, [string[]]$argumentos) {
   Falha "O Windows recusou correr $exe ($($ultimo.Exception.Message)). Veja o diagnóstico acima."
 }
 ProgramaCorre $Node @('-v')
-ProgramaCorre "$PgBin\postgres.exe" @('--version')
+if ($Partilhada) { ProgramaCorre "$PgBin\psql.exe" @('--version') } else { ProgramaCorre "$PgBin\postgres.exe" @('--version') }
 ProgramaCorre "$Destino\caddy\caddy.exe" @('version')
 Ok 'componentes no lugar'
 
@@ -387,7 +408,7 @@ if (-not $Atualizar) {
     "REPLICACAO_URL=$($Lig.REPLICACAO_URL)", "REPLICACAO_CHAVE=$(if ($Lig.REPLICACAO_CHAVE) { $Lig.REPLICACAO_CHAVE } else { Aleatorio 64 })",
     "ENDERECO=$Endereco", "TLS=$Tls", "PORTA_WEB=$PortaWeb",
     "PUBLIC_URL=$Url", "PORTAL_URL=$Url/portal/", "PAINEL_URL=$Url/painel/", "CORS_ORIGINS=$Origens",
-    "DATABASE_URL=postgresql://esgfaa:$BdSenha@127.0.0.1:$PortaBd/esgfaa", "BD_SENHA=$BdSenha",
+    "DATABASE_URL=postgresql://${BdUser}:$BdSenha@127.0.0.1:$PortaBd/$BdNome", "BD_SENHA=$BdSenha", "BD_PARTILHADA=$(if ($Partilhada) { 'pessoal' })",
     "JWT_SECRET=$(Aleatorio 64)", "DADOS_CHAVE=$(if ($Lig.DADOS_CHAVE) { $Lig.DADOS_CHAVE } else { Aleatorio 64 })", "COPIAS_CHAVE=$(Aleatorio 64)", "INTEGRACAO_CHAVE=$ChaveIntegracao",
     "ADMIN_NAME=$AdminNome", "ADMIN_EMAIL=$AdminEmail", "ADMIN_PASSWORD=$AdminSenha",
     '# o painel só abre a partir da rede interna da Escola',
@@ -398,7 +419,7 @@ if (-not $Atualizar) {
     '# e-mail das notificações (smtps://utilizador:senha@servidor:465); vazio = sem e-mail',
     'SMTP_URL=',
     "DATA_DIR=$Dados\ficheiros",
-    "PORTAL_DATABASE_URL=postgresql://esgfaa:$BdSenha@127.0.0.1:$PortaBd/esgfaa", "PORTAL_DADOS=$Dados\ficheiros", "COPIAS_DIR=$Dados\copias",
+    "PORTAL_DATABASE_URL=postgresql://${BdUser}:$BdSenha@127.0.0.1:$PortaBd/$BdNome", "PORTAL_DADOS=$Dados\ficheiros", "COPIAS_DIR=$Dados\copias",
     'FUSO_HORARIO=Africa/Luanda', 'TZ=Africa/Luanda'
   )
   [IO.File]::WriteAllLines($EnvFicheiro, [string[]]$env_, (New-Object Text.UTF8Encoding $false))
@@ -422,6 +443,27 @@ $FicheiroLigacao = Join-Path $Conf 'ligacao-online.txt'
   "REPLICACAO_URL=$($Cfg.REPLICACAO_URL)", "REPLICACAO_CHAVE=$($Cfg.REPLICACAO_CHAVE)", "DADOS_CHAVE=$($Cfg.DADOS_CHAVE)"), (New-Object Text.UTF8Encoding $false))
 $AdminEmail = $Cfg.ADMIN_EMAIL
 
+if ($Partilhada) {
+  Passo 'bd' "A preparar a base de dados própria ($BdNome) no PostgreSQL do Sistema de Pessoal (porta $PortaBd)"
+  # o serviço do Pessoal não se liga nem se desliga daqui: tem de estar a funcionar
+  if ((Get-Service $PessoalBd -ErrorAction SilentlyContinue).Status -ne 'Running') { Falha "A base de dados do Sistema de Pessoal ($PessoalBd) não está a funcionar. Ligue o Sistema de Pessoal (services.msc) e repita." }
+  & "$PgBin\pg_isready.exe" -h 127.0.0.1 -p $PortaBd -q
+  if ($LASTEXITCODE -ne 0) { Falha "O PostgreSQL do Sistema de Pessoal não responde na porta $PortaBd." }
+  $PesSenha = (Select-String -Path $PessoalEnv -Pattern '^BD_SENHA=(.+)$' -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1
+  if (-not $PesSenha) { Falha "Não se encontrou a palavra-passe da base de dados do Pessoal em $PessoalEnv." }
+  # o utilizador e a base deste sistema (só se criam; se já existem, o utilizador fica com a palavra-passe deste sistema)
+  $env:PGPASSWORD = $PesSenha
+  $sql = "DO `$`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$BdUser') THEN CREATE ROLE `"$BdUser`" LOGIN PASSWORD '$($Cfg.BD_SENHA)'; ELSE ALTER ROLE `"$BdUser`" LOGIN PASSWORD '$($Cfg.BD_SENHA)'; END IF; END `$`$;"
+  $sql | & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U $PesUtilizador -d postgres -v ON_ERROR_STOP=1 -q -f - 2>&1 | Out-Null
+  if ($LASTEXITCODE -ne 0) { $env:PGPASSWORD = $null; Falha "Não foi possível criar o utilizador $BdUser no PostgreSQL do Pessoal." }
+  $existe = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U $PesUtilizador -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$BdNome'"
+  if ("$existe".Trim() -ne '1') { Correr "$PgBin\createdb.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', $PesUtilizador, '-O', $BdUser, '-E', 'UTF8', '-T', 'template0', $BdNome) }
+  $env:PGPASSWORD = $null
+  # daqui em diante, só com o utilizador deste sistema (e só na base dele)
+  $env:PGPASSWORD = $Cfg.BD_SENHA
+  $ok1 = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U $BdUser -d $BdNome -tAc 'SELECT 1'
+  if ("$ok1".Trim() -ne '1') { Falha "O utilizador $BdUser não entra na base $BdNome." }
+} else {
 Passo 'bd' "A preparar a base de dados (PostgreSQL na porta $PortaBd, só nesta máquina)"
 $BdDir = "$Dados\bd"
 if (-not (Test-Path "$BdDir\PG_VERSION")) {
@@ -445,8 +487,9 @@ $pronto = $false
 for ($i = 0; $i -lt 60 -and -not $pronto; $i++) { & "$PgBin\pg_isready.exe" -h 127.0.0.1 -p $PortaBd -q; $pronto = ($LASTEXITCODE -eq 0); if (-not $pronto) { Start-Sleep 1 } }
 if (-not $pronto) { RegistoBd; Falha 'O PostgreSQL não ficou pronto em 60 segundos.' }
 $env:PGPASSWORD = $Cfg.BD_SENHA
-$existe = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U esgfaa -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='esgfaa'"
-if ("$existe".Trim() -ne '1') { Correr "$PgBin\createdb.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', 'esgfaa', 'esgfaa') }
+$existe = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U $BdUser -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$BdNome'"
+if ("$existe".Trim() -ne '1') { Correr "$PgBin\createdb.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', $BdUser, $BdNome) }
+}
 Ok 'base de dados pronta'
 
 if ($Atualizar) {
@@ -456,7 +499,7 @@ if ($Atualizar) {
   $script:Parado = $true
   New-Item -ItemType Directory -Force "$Dados\copias" | Out-Null
   $script:Copia = "$Dados\copias\antes-da-actualizacao-$Carimbo.dump"
-  Correr "$PgBin\pg_dump.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', 'esgfaa', '-d', 'esgfaa', '-Fc', '-f', $script:Copia)
+  Correr "$PgBin\pg_dump.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', $BdUser, '-d', $BdNome, '-Fc', '-f', $script:Copia)
   if (-not ((Test-Path $script:Copia) -and (Get-Item $script:Copia).Length -gt 0)) { Falha 'A cópia de segurança da base de dados ficou vazia: a actualização não continua.' }
   # ficam as 5 cópias de antes das actualizações mais recentes
   Get-ChildItem "$Dados\copias" -Filter 'antes-da-actualizacao-*.dump' | Sort-Object LastWriteTime -Descending | Select-Object -Skip 5 | Remove-Item -Force -ErrorAction SilentlyContinue
@@ -549,7 +592,7 @@ function Servico($id, $nome, $exe, $argumentos, $extra = '', $pasta = "$Destino\
   <arguments>$argumentos</arguments>
   <workingdirectory>$pasta</workingdirectory>
   <startmode>Automatic</startmode>
-  <depend>$Svc-BD</depend>
+$(if (-not $Partilhada) { "  <depend>$SvcBd</depend>" })
   <onfailure action="restart" delay="10 sec"/>
   <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log>
   <logpath>$dir</logpath>
@@ -651,7 +694,7 @@ if ($Sistema -eq 'escolar') { $resumo += $(if ($Ligado) { 'Sistema de Pessoal:  
 $resumo += @(
   "Configuração e chaves: $EnvFicheiro — GUARDE UMA CÓPIA NUM COFRE (fora deste computador)",
   "Cópias de segurança:   $Dados\copias (todos os dias às 2h)",
-  "Serviços:              services.msc — $Svc, $Svc-BD, $Svc-Web, $Svc-Copias"
+  "Serviços:              services.msc — $Svc, $Svc-Web, $Svc-Copias$(if ($Partilhada) { " (base de dados: $BdNome no PostgreSQL do Pessoal, $PessoalBd)" } else { ", $Svc-BD" })"
 )
 $fResumo = Join-Path $Conf 'INSTALACAO.txt'
 [IO.File]::WriteAllLines($fResumo, [string[]]$resumo, (New-Object Text.UTF8Encoding $true))
