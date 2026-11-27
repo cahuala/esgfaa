@@ -47,7 +47,7 @@ export function papelNoEnsino(p, cadeia) {
 import { calcularAssinantes } from './assinantes.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
-const LOTE = 25
+const LOTE = 50
 const MAX_TENTATIVAS = 10
 const SEM_LIGACAO = 'Sem ligação ao portal'
 
@@ -270,7 +270,7 @@ export class ServicoSincronizacao {
     const d = await this.bd.definicao.findUnique({ where: { chave: 'assinaturas' } })
     const a = await calcularAssinantes(this.bd, d?.valor ?? {}, this.agora())
     const so = ({ cargo, nome, posto, origem }) => ({ cargo, nome, posto, origem })
-    const corpo = JSON.stringify({ assinaturas: { comandante: so(a.comandante), directorEnsino: so(a.directorEnsino), chefeRpq: so(a.chefeRpq) } })
+    const corpo = JSON.stringify({ assinaturas: { comandante: so(a.comandante), directorEnsino: so(a.directorEnsino), chefeRpq: so(a.chefeRpq), chefeRae: so(a.chefeRae) } })
     if (corpo === this.ultimasAssinaturas) return { enviado: false, igual: true }
     const data = String(Math.floor(this.agora().getTime() / 1000))
     const r = await this.enviar(`${this.config.portal.url}/api/integracao/pessoal/assinaturas`, {

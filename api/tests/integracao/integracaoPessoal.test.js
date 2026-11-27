@@ -84,6 +84,13 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await adm.get(`/api/admin/academico/contas/${contaId}/foto`)).status, 404)
   })
 
+  it('o docente de anos anteriores (já não está na Escola) entra com a conta inactiva, para o histórico', async () => {
+    const r = (await enviar([{ ref: 'pessoal-70', tipo: 'docente', nome: 'Coronel Docente Antigo', email: 'docente.antigo@esgfaa.gov.ao', ativo: false, dados: { nip: 'ANT070' } }]).expect(200)).body.resultados[0]
+    assert.ok(r.contaId)
+    const c = await amb.contentor.repositorios.contasPortal.porId(r.contaId)
+    assert.deepEqual([c.tipo, c.ativo], ['docente', false])
+  })
+
   it('o número de uma conta de outro sistema que aqui é de outra pessoa não a muda: cria-se a conta certa', async () => {
     const outra = (await enviar([{ ref: 'pessoal-60', tipo: 'docente', nome: 'Coronel Outra Pessoa Antiga', email: 'outra.antiga@esgfaa.gov.ao', ativo: true, dados: { nip: 'OUT060' } }]).expect(200)).body.resultados[0].contaId
     const r = (await enviar([{ ref: 'pessoal-61', contaId: outra, tipo: 'docente', nome: 'Major Pessoa Nova Diferente', email: 'pessoa.diferente@esgfaa.gov.ao', ativo: true, dados: { nip: 'NOV061' } }]).expect(200)).body.resultados[0]

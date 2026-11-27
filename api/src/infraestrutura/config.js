@@ -68,7 +68,8 @@ const ESQUEMA = z.object({
   // chave partilhada entre os sistemas (a mesma nos três) e, nos internos, o endereço do servidor online
   REPLICACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'REPLICACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   REPLICACAO_URL: z.union([z.literal(''), z.url()]).default(''),
-  REPLICACAO_INTERVALO_S: inteiro(15, 5, 3600),
+  // a volta periódica (o que se faz aqui troca logo, pelo aviso do PostgreSQL)
+  REPLICACAO_INTERVALO_S: inteiro(3, 2, 3600),
   // no servidor online: os sistemas internos que trocam com ele
   REPLICACAO_PARES: z.string().default('escolar,site,biblioteca'),
   // chave partilhada com o Sistema de Gestão de Pessoal (rede interna), que envia os docentes e estudantes; vazio = desligado

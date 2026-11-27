@@ -105,6 +105,7 @@ import { ServicoDocumentos } from './aplicacao/academico/administracao/documento
 import { ServicoArquivoAcademico } from './aplicacao/academico/administracao/arquivo.js'
 import { Replicacao } from './infraestrutura/replicacao/motor.js'
 import { ServicoMonitorizacao } from './aplicacao/monitorizacao.js'
+import { ServicoDocentesHorarios } from './aplicacao/academico/administracao/docentesHorarios.js'
 import { ServicoPercursos } from './aplicacao/academico/partilhado/percursos.js'
 import { RepositorioQualidade } from './infraestrutura/repositorios/qualidade.js'
 import { ServicoInqueritosInstitucionais } from './aplicacao/qualidade/inqueritos.js'
@@ -290,6 +291,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       horarioMensal: new ServicoHorarioMensal({ ...d, prisma }),
       // o arquivo da Administração Escolar (pautas assinadas dos anos anteriores)
       arquivo: new ServicoArquivoAcademico({ ...d, prisma, aprovacaoComandante: config.aprovacaoComandante }),
+      // os docentes de cada cadeira tirados dos horários do arquivo (a Repartição confirma)
+      docentesHorarios: new ServicoDocentesHorarios({ prisma, paginas: r.paginas, auditoria, aprovacaoComandante: config.aprovacaoComandante }),
       prazosNotas: new ServicoPrazosNotas({ ...d, prazosNotas: r.prazosNotas }),
       pedidos: new ServicoPedidos(d),
       avisos: new ServicoAvisosGerais(d),
@@ -354,7 +357,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // sistemas separados: a troca com os outros (o que é de cada um; sem passar pela cifra — vai tal como está guardado)
   // o Sistema de Cibersegurança só observa (não troca dados): usa a chave só para assinar as consultas
   const replicacao = !['completo', 'ciberseguranca'].includes(config.sistema) && config.replicacao.chave
-    ? new Replicacao({ prisma: prismaBase, Prisma, sistema: config.sistema, chave: config.replicacao.chave, url: config.replicacao.url, pares: config.replicacao.pares, intervaloS: config.replicacao.intervaloS, privados, pastaUploads: config.pastaUploads, registar: (x) => console.error(JSON.stringify(x)),
+    ? new Replicacao({ prisma: prismaBase, Prisma, sistema: config.sistema, chave: config.replicacao.chave, url: config.replicacao.url, pares: config.replicacao.pares, intervaloS: config.replicacao.intervaloS, urlBaseDados: config.urlBaseDados, privados, pastaUploads: config.pastaUploads, registar: (x) => console.error(JSON.stringify(x)),
       // no servidor online: os avisos que chegam da Gestão Escolar vão logo para os telemóveis e as páginas abertas
       aoCriar: config.sistema === 'online' ? (modelo, d) => (modelo === 'Notificacao' ? notificacoes.avisarRecebido(d) : null) : null })
     : null

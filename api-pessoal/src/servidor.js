@@ -39,9 +39,25 @@ const guiasFerias = () => contentor.servicos.planoFerias.prepararDoMesAtual().th
 await guiasFerias()
 const intervaloGuias = setInterval(guiasFerias, 3_600_000)
 
-// envio para o portal de minuto a minuto
+// envio para a Gestão Escolar quase instantâneo: de 3 em 3 segundos vê se há alguém por enviar e manda tudo de
+// seguida (lotes de 50); uma volta de cada vez; pára no lote em que nada foi (sem ligação ou só com erros)
 const sinc = contentor.servicos.sincronizacao
-const intervalo = sinc.ativa ? setInterval(() => sinc.enviarPendentes().catch((e) => console.error('Envio para o portal:', e.message)), 60_000) : null
+let aEnviar = false
+async function enviarTudo() {
+  if (aEnviar) return
+  aEnviar = true
+  try {
+    for (let i = 0; i < 60; i++) {
+      const r = await sinc.enviarPendentes()
+      if (!r.enviados) break
+    }
+  } catch (e) {
+    console.error('Envio para o portal:', e.message)
+  } finally {
+    aEnviar = false
+  }
+}
+const intervalo = sinc.ativa ? setInterval(enviarTudo, 3_000) : null
 
 async function parar() {
   clearInterval(intervalo)

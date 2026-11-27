@@ -98,7 +98,7 @@ export class ServicoDocumentos {
     const cadeiras = await this.academico.cadeirasDasTurmas([t.id])
     const blocos = (plano.blocos.length ? plano.blocos : [{ sigla: '', nome: 'Unidades curriculares', coeficiente: 1 }]).map((b) => ({
       sigla: b.sigla, nome: b.nome, coeficiente: b.coeficiente,
-      ucs: cadeiras.filter((c) => (plano.blocos.length ? c.bloco === b.sigla : true)).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, creditos: c.creditos || 0, tii: Boolean(c.tii) })),
+      ucs: cadeiras.filter((c) => (plano.blocos.length ? c.bloco === b.sigla : true)).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, creditos: c.creditos || 0, tii: Boolean(c.tii), horas: Number(c.horasContacto || 0) + Number(c.horasNaoContacto || 0) || Number(c.horas || 0) })),
     })).filter((b) => b.ucs.length)
     const contas = new Map((await this.academico.matriculasDaTurma(t.id)).map((m) => [m.estudante.id, m.estudante.dados ?? {}]))
     const linhas = g.linhas.map((l) => {

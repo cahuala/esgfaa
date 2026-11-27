@@ -17,6 +17,11 @@ export const ASSINANTES = {
     substituto: /^Oficial de Pessoal e Quadros da Repartição de Pessoal e Quadros\b/i, rotuloSubstituto: 'PELO CHEFE DA REPARTIÇÃO DE PESSOAL E QUADROS',
     usos: 'Assina as listas e os mapas do menu Documentos.',
   },
+  chefeRae: {
+    titulo: 'Chefe da Repartição de Administração Escolar', rotulo: 'O CHEFE DA REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR', cargo: /^Chefe da Reparti[çc][ãa]o de Administra[çc][ãa]o Escolar\b/i,
+    substituto: null, rotuloSubstituto: 'PELO CHEFE DA REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR',
+    usos: 'Assina as listas, as pautas e as declarações da Administração Escolar (enviado à Gestão Escolar).',
+  },
   directorEnsino: {
     titulo: 'Director de Ensino', rotulo: 'O DIRECTOR DE ENSINO', cargo: /^Director da Direcção de Ensino\b/i,
     substituto: null, rotuloSubstituto: 'PELO DIRECTOR DE ENSINO',

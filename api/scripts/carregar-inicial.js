@@ -25,6 +25,12 @@ export async function carregarInicial(contentor, pasta) {
   for (const f of [...ficheiros.filter((x) => x.startsWith('arranque')), ...ficheiros.filter((x) => !x.startsWith('arranque'))]) {
     const j = JSON.parse(fs.readFileSync(path.join(pasta, f), 'utf8'))
     try {
+      // os docentes dos horários do arquivo: ficam guardados para a Repartição confirmar (Docentes dos horários)
+      if (j.tipo === 'docentes-horarios') {
+        const g = await contentor.servicos.administracaoEscolar.docentesHorarios.guardar(ctx, { linhas: j.linhas ?? [] })
+        linhas.push(`${f}: ${g.linhas} linha(s) dos horários guardadas — a Repartição confirma os docentes em «Docentes dos horários do arquivo».`, '')
+        continue
+      }
       const r = j.tipo === 'arranque-ano-lectivo'
         ? await arq.arrancar(ctx, { anoLetivo: j.anoLetivo, cadeiras: j.cadeiras ?? [], turmas: j.turmas ?? [], simular: false })
         : await arq.importar(ctx, { turmas: j.turmas ?? [], simular: false })

@@ -683,11 +683,11 @@ fieldset:disabled .bloco-topo .btn-group {
 /* ---------- documentos oficiais para imprimir (Administração Escolar) ---------- */
 .of-folha { background: #fff; color: #111; max-width: 900px; margin: 0 auto 24px; padding: 36px 40px; box-shadow: 0 2px 10px rgba(0, 0, 0, .08); font-size: 13px; }
 .of-folha-larga { max-width: 1250px; }
-.of-cabecalho { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 14px; text-transform: uppercase; font-size: 11px; letter-spacing: .06em; line-height: 1.5; }
-.of-cabecalho img { width: 62px; }
-.of-escola { font-weight: 700; font-size: 13px; }
-.of-repar { color: #555; }
-.of-titulo { font-size: 20px; text-align: center; margin: 12px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
+.of-cabecalho { display: flex; flex-direction: column; align-items: center; text-align: center; text-transform: uppercase; font-weight: 700; font-size: 12px; letter-spacing: .04em; line-height: 1.45; margin-bottom: 6px; }
+.of-cabecalho img { height: 74px; width: auto; margin-bottom: 6px; }
+.of-escola { font-weight: 700; }
+.of-repar { font-weight: 400; text-transform: none; font-size: 12px; letter-spacing: 0; }
+.of-titulo { font-size: 17px; font-weight: 700; text-align: center; margin: 12px 0 2px; padding-bottom: 6px; border-bottom: 1.5px solid #111; text-transform: uppercase; letter-spacing: .03em; }
 .of-subtitulo { text-align: center; color: #444; margin-bottom: 16px; }
 .of-folha table { width: 100%; border-collapse: collapse; margin: 8px 0; }
 .of-folha th, .of-folha td { border: 1px solid #555; padding: 4px 6px; vertical-align: middle; }
@@ -695,12 +695,16 @@ fieldset:disabled .bloco-topo .btn-group {
 .of-folha .of-num { width: 32px; text-align: center; }
 .of-folha .of-centro { text-align: center; }
 .of-folha .of-assinar { width: 32%; height: 30px; }
-.of-assinaturas { display: flex; justify-content: space-around; gap: 30px; margin-top: 46px; }
-.of-assinatura { text-align: center; min-width: 200px; }
-.of-linha { border-top: 1px solid #111; margin-bottom: 4px; height: 0; }
-.of-rodape { margin-top: 26px; text-align: right; color: #444; }
-.of-aprovado { width: 250px; text-align: center; margin-bottom: 14px; text-transform: uppercase; font-size: 11px; line-height: 1.45; }
-.of-aprovado-titulo { font-weight: 700; font-size: 12px; letter-spacing: .08em; margin-bottom: 30px; }
+.of-assinaturas { display: flex; justify-content: space-around; gap: 30px; margin-top: 22px; }
+.of-assinatura { text-align: center; min-width: 220px; }
+.of-assinante-cargo { font-weight: 700; text-transform: uppercase; font-size: 11.5px; margin-bottom: 40px; }
+.of-linha { border-top: 1px solid #111; margin: 0 auto 4px; width: 75%; height: 0; }
+.of-assinante-posto { text-transform: uppercase; font-size: 11.5px; }
+.of-rodape { margin-top: 26px; text-align: right; }
+.of-folha { position: relative; }
+.of-aprovado { position: absolute; left: 40px; top: 30px; width: 230px; text-align: center; text-transform: uppercase; font-size: 11px; line-height: 1.45; }
+.of-aprovado-titulo { font-weight: 700; font-size: 12px; letter-spacing: .08em; margin-bottom: 4px; }
+.of-aprovado .of-assinante-cargo { margin-bottom: 34px; }
 .of-assinante-nome { font-weight: 700; }
 .of-folha .of-docente td { background: #f4f4f4; font-weight: 600; }
 .of-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 20px; margin-bottom: 10px; }

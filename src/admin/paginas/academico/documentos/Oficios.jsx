@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api'
 import { Carregando, Erro } from '../../../componentes/Ui'
-import Brasao from '../../../../assets/Logo.png'
+import Brasao from '../../../../assets/emblema-faa.png'
 import { useAnoTrabalho } from '../../../anoTrabalho'
 
 /*
@@ -21,7 +21,7 @@ function Cabecalho() {
   return (
     <header className="of-cabecalho">
       <img src={Brasao} alt="" />
-      <div><div>Forças Armadas Angolanas</div><div>Estado-Maior General</div><div className="of-escola">Escola Superior de Guerra</div></div>
+      <div>República de Angola</div><div>Forças Armadas Angolanas</div><div>Estado-Maior General</div><div className="of-escola">Escola Superior de Guerra</div>
     </header>
   )
 }

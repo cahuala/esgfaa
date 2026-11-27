@@ -180,12 +180,8 @@ export class ServicoRegistoPessoal {
           existente.email = email
         }
         if (!existente) {
-          // o antigo discente (já saiu da Escola) tem conta inactiva — não entra no portal; guarda o histórico do
-          // arquivo (as turmas, as notas e a pauta do seu curso). O docente que já não está não precisa de conta.
-          if (!p.ativo && t !== 'estudante') {
-            resultados.push({ ref: p.ref, ok: true, contaId: null })
-            continue
-          }
+          // quem já saiu da Escola (o antigo discente e o docente de anos anteriores) tem conta inactiva — não entra no
+          // portal; guarda o histórico do arquivo (as turmas, as notas, as cadeiras que leccionou)
           const nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
           // a palavra-passe fica desconhecida: a Repartição dá a ficha de acesso com «Repor a palavra-passe»
           let conta

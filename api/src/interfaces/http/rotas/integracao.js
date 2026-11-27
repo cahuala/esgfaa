@@ -11,7 +11,7 @@ const pessoa = z.object({
 })
 const corpo = z.object({ pessoas: z.array(pessoa).max(200) })
 const assinante = z.object({ cargo: z.string().max(120), nome: z.string().max(150), posto: z.string().max(60), origem: z.string().max(20) })
-const corpoAssinaturas = z.object({ assinaturas: z.object({ comandante: assinante, directorEnsino: assinante, chefeRpq: assinante.optional() }) })
+const corpoAssinaturas = z.object({ assinaturas: z.object({ comandante: assinante, directorEnsino: assinante, chefeRpq: assinante.optional(), chefeRae: assinante.optional() }) })
 
 /*
   Entrada do Sistema de Gestão de Pessoal (que corre na rede interna e só envia, nunca recebe).

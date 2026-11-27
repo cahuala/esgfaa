@@ -4,9 +4,10 @@ Os docentes de cada cadeira, tirados da legenda dos horários mensais do arquivo
 seguinte, «n-Posto-Nome/Posto-Nome…» (os docentes, como estão escritos: abreviados, com «Ass.Portuguesa»,
 «Conferencista», «Director do Curso»…). Não se ligam sozinhos às fichas: sai uma folha para a Repartição conferir.
 
-  python3 horarios.py <pasta docs> <saida.xlsx>
+  python3 horarios.py <pasta docs> <saida.xlsx> [carga.json]
+  (o carga.json vai para CARREGAR: a Gestão Escolar procura cada docente nas fichas do Pessoal e a Repartição confirma)
 """
-import sys, os, re, glob
+import sys, os, re, glob, json
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 
@@ -58,7 +59,7 @@ def nomes(texto):
     return [p for p in limpas if p and not NAO_PESSOA.search(p)]
 
 
-def main(docs, saida):
+def main(docs, saida, carga=None):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'Docentes por cadeira'
@@ -67,6 +68,7 @@ def main(docs, saida):
     for c in ws[1]:
         c.font = Font(bold=True, color='FFFFFF'); c.fill = PatternFill('solid', fgColor='861D0C'); c.alignment = Alignment(wrap_text=True)
     n = 0
+    para_carga = []
     for f in sorted(glob.glob(os.path.join(docs, 'ARQUIVO *', 'HORÁRIO MENSAL', '*.xlsx'))):
         if os.path.basename(f).startswith('~$'):
             continue
@@ -79,13 +81,19 @@ def main(docs, saida):
             continue
         for sig, cad, doc in pares:
             ws.append([ano, curso, mes, sig, cad, doc, '; '.join(nomes(doc)), '', os.path.relpath(f, docs)])
+            if nomes(doc):
+                para_carga.append({'anoLetivo': ano, 'curso': curso, 'mes': mes, 'sigla': sig, 'cadeira': cad, 'texto': doc, 'nomes': nomes(doc)})
             n += 1
     for col, w in zip('ABCDEFGHI', [11, 46, 12, 9, 46, 60, 50, 50, 50]):
         ws.column_dimensions[col].width = w
     ws.freeze_panes = 'A2'
     wb.save(saida)
     print(f'{n} linha(s) em {saida}')
+    if carga:
+        with open(carga, 'w', encoding='utf-8') as fj:
+            json.dump({'tipo': 'docentes-horarios', 'linhas': para_carga}, fj, ensure_ascii=False, indent=1)
+        print(f'{len(para_carga)} linha(s) com docentes em {carga}')
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)

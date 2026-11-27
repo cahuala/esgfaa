@@ -249,6 +249,30 @@ describe('Sistemas separados: Gestão Escolar, Gestão do Site e servidor online
     }
   })
 
+  it('aviso imediato: uma mudança feita aqui avisa o motor (LISTEN); a que chega de outro sistema não', async () => {
+    const { default: pg } = await import('pg')
+    const c = new pg.Client({ connectionString: escolar.contentor.config.urlBaseDados })
+    await c.connect()
+    const avisos = []
+    c.on('notification', (n) => avisos.push(n.payload))
+    await c.query('LISTEN replicacao_mudou')
+    try {
+      await p(escolar).turma.create({ data: { curso: 'curso-aviso', anoLetivo: '2026/2027', nome: 'Turma do aviso' } })
+      await new Promise((r) => setTimeout(r, 300))
+      assert.ok(avisos.includes('turmas'), JSON.stringify(avisos))
+      avisos.length = 0
+      // a que vem do servidor online (com a origem marcada) não avisa: não fica a trocar em ciclo
+      await p(escolar).$transaction(async (tx) => {
+        await tx.$queryRawUnsafe("SELECT set_config('replicacao.origem', 'online', true)")
+        await tx.turma.create({ data: { curso: 'curso-aviso', anoLetivo: '2026/2027', nome: 'Turma vinda do online' } })
+      })
+      await new Promise((r) => setTimeout(r, 300))
+      assert.deepEqual(avisos, [])
+    } finally {
+      await c.end()
+    }
+  })
+
   it('o estado da replicação diz até onde se trocou', async () => {
     const e = await escolar.contentor.replicacao.estado()
     assert.equal(e.pares[0].par, 'online')

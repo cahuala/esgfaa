@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Brasao from '../../../../assets/Logo.png'
+import Brasao from '../../../../assets/emblema-faa.png'
+import { api } from '../../../api'
 import { t as tx } from '../../../../i18n/linguas'
 import { useAnoTrabalho } from '../../../anoTrabalho'
 
@@ -12,16 +13,38 @@ import { useAnoTrabalho } from '../../../anoTrabalho'
   aprovado: { cargo, nome, posto } — «APROVADO» no canto superior esquerdo, para o Comandante assinar (como nos mapas
   do Pessoal). assinaturas: textos ou { cargo, nome, posto } (o nome e o posto vão por baixo da linha).
 */
-const Assinante = ({ a }) => (typeof a === 'string' ? <div>{a}</div> : (
+/*
+  Quem assina, como no Pessoal: quem ocupa hoje o cargo (vem do Sistema de Pessoal — o Comandante, o Director de
+  Ensino, o Chefe da Repartição de Administração Escolar). Uma assinatura escrita só com o cargo («O Director de
+  Ensino») fica com o nome e o posto de quem o ocupa; sem isso, só o cargo e a linha.
+*/
+let pedidoAssinantes = null
+const assinantesDaEscola = () => (pedidoAssinantes ??= api('/academico/documentos-academicos').catch(() => { pedidoAssinantes = null; return {} }))
+const CARGOS = [[/comandante/i, 'comandante'], [/director\s+de\s+ensino/i, 'directorEnsino'], [/administra[çc][ãa]o\s+escolar/i, 'chefeRae']]
+function completar(a, quem) {
+  if (typeof a !== 'string') return a
+  const k = CARGOS.find(([re]) => re.test(a))?.[1]
+  const p = k && quem?.[k]
+  return p?.nome ? { cargo: a, nome: p.nome, posto: p.posto } : { cargo: a }
+}
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const dataPorExtenso = (d = new Date()) => `Luanda, aos ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`
+const Assinante = ({ a }) => (
   <>
-    <div>{a.cargo}</div>
+    <div className="of-assinante-cargo">{a.cargo}</div>
+    <div className="of-linha" />
     {a.nome && <div className="of-assinante-nome">{a.nome}</div>}
-    {a.posto && <div>{a.posto}</div>}
+    {a.posto && <div className="of-assinante-posto">{a.posto}</div>}
   </>
-))
+)
 
 function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovado = null, assinaturas = [], children, rodape = true, anoLetivo = '' }) {
   const { anos } = useAnoTrabalho()
+  const [quem, setQuem] = useState(null)
+  useEffect(() => { let vivo = true; assinantesDaEscola().then((q) => { if (vivo) setQuem(q) }); return () => { vivo = false } }, [])
+  // «APROVADO» do Comandante: aprovado = true (ou o cargo) fica com quem o ocupa hoje
+  const visto = aprovado === true ? completar('O COMANDANTE DA ESG', quem) : typeof aprovado === 'string' ? completar(aprovado, quem) : aprovado
+  const quemAssina = assinaturas.map((a) => completar(a, quem))
   const fechado = Boolean(anoLetivo) && Boolean(anos.find((a) => a.id === anoLetivo)?.fechado)
   // folha na horizontal só enquanto este documento está aberto
   useEffect(() => {
@@ -50,33 +73,29 @@ function Documento({ titulo, subtitulo, voltar, acoes, paisagem = false, aprovad
       {fechado && <div className="of-nao-autorizado">{tx('Ano lectivo {0} fechado — documento não autorizado.', { 0: anoLetivo })}</div>}
       {/* documento oficial: fica sempre em português */}
       <article translate="no" className={`of-folha ${paisagem ? 'of-folha-larga' : ''} ${fechado ? 'of-folha-fechada' : ''}`}>
-        {aprovado && (
+        {visto && (
           <div className="of-aprovado">
             <div className="of-aprovado-titulo">Aprovado</div>
-            <div className="of-linha" />
-            <Assinante a={aprovado} />
+            <Assinante a={visto} />
           </div>
         )}
+        {/* o cabeçalho como no Pessoal: o emblema ao centro e a cadeia hierárquica */}
         <header className="of-cabecalho">
           <img src={Brasao} alt="" />
-          <div>
-            <div>República de Angola</div>
-            <div>Forças Armadas Angolanas</div>
-            <div className="of-escola">Escola Superior de Guerra</div>
-            <div className="of-repar">Administração Escolar</div>
-          </div>
+          <div>República de Angola</div>
+          <div>Forças Armadas Angolanas</div>
+          <div className="of-escola">Escola Superior de Guerra</div>
+          <div className="of-repar">Direcção de Ensino — Repartição de Administração Escolar</div>
         </header>
         <h1 className="of-titulo">{titulo}</h1>
         {subtitulo && <div className="of-subtitulo">{subtitulo}</div>}
         {children}
-        {assinaturas.length > 0 && (
+        {rodape && <div className="of-rodape">{dataPorExtenso()}</div>}
+        {quemAssina.length > 0 && (
           <div className="of-assinaturas">
-            {assinaturas.map((a) => (
-              <div key={typeof a === 'string' ? a : a.cargo} className="of-assinatura"><div className="of-linha" /><Assinante a={a} /></div>
-            ))}
+            {quemAssina.map((a) => <div key={a.cargo} className="of-assinatura"><Assinante a={a} /></div>)}
           </div>
         )}
-        {rodape && <footer className="of-rodape">Luanda, {new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}</footer>}
       </article>
     </div>
   )

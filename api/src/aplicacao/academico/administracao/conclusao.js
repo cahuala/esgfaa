@@ -11,6 +11,7 @@ const CHAVE_ASSINATURAS_PESSOAL = 'assinaturas-do-pessoal'
 const PADRAO_DOCUMENTOS = {
   directorEnsino: { cargo: 'O DIRECTOR DE ENSINO', nome: '', posto: '' },
   comandante: { cargo: 'O COMANDANTE DA ESG', nome: '', posto: '' },
+  chefeRae: { cargo: 'O CHEFE DA REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR', nome: '', posto: '' },
   turmas: {}, // { [turmaId]: { edicao: '17.º', inicio: 'AAAA-MM-DD', fim: 'AAAA-MM-DD' } }
 }
 
@@ -88,7 +89,7 @@ export class ServicoConclusaoCurso {
       const p = doPessoal?.assinaturas?.[k]
       return p?.nome && p.origem !== 'manual' ? { cargo: p.cargo, nome: p.nome, posto: p.posto, origem: 'pessoal', substituto: p.origem === 'substituto' } : { ...guardado[k], origem: 'manual' }
     }
-    return { ...guardado, directorEnsino: efectivo('directorEnsino'), comandante: efectivo('comandante'), manual: { directorEnsino: guardado.directorEnsino, comandante: guardado.comandante }, doPessoalEm: doPessoal?.recebidoEm ?? null }
+    return { ...guardado, directorEnsino: efectivo('directorEnsino'), comandante: efectivo('comandante'), chefeRae: efectivo('chefeRae'), manual: { directorEnsino: guardado.directorEnsino, comandante: guardado.comandante, chefeRae: guardado.chefeRae }, doPessoalEm: doPessoal?.recebidoEm ?? null }
   }
 
   async guardarDocumentosAcademicos(ctx, dados) {
@@ -96,7 +97,7 @@ export class ServicoConclusaoCurso {
     const atual = { ...PADRAO_DOCUMENTOS, ...((await this.paginas.ler(CHAVE_DOCUMENTOS)) ?? {}) }
     // só se guardam os nomes escritos à mão (os do Pessoal não se sobrepõem)
     const limpo = (x) => (x ? { cargo: x.cargo ?? '', nome: x.nome ?? '', posto: x.posto ?? '' } : undefined)
-    const novo = { ...atual, ...(dados.directorEnsino && dados.directorEnsino.origem !== 'pessoal' ? { directorEnsino: limpo(dados.directorEnsino) } : {}), ...(dados.comandante && dados.comandante.origem !== 'pessoal' ? { comandante: limpo(dados.comandante) } : {}), turmas: { ...atual.turmas, ...(dados.turmas ?? {}) } }
+    const novo = { ...atual, ...(dados.directorEnsino && dados.directorEnsino.origem !== 'pessoal' ? { directorEnsino: limpo(dados.directorEnsino) } : {}), ...(dados.comandante && dados.comandante.origem !== 'pessoal' ? { comandante: limpo(dados.comandante) } : {}), ...(dados.chefeRae && dados.chefeRae.origem !== 'pessoal' ? { chefeRae: limpo(dados.chefeRae) } : {}), turmas: { ...atual.turmas, ...(dados.turmas ?? {}) } }
     await this.paginas.guardar(CHAVE_DOCUMENTOS, novo, ctx.actor.id)
     return this.documentosAcademicos(ctx)
   }

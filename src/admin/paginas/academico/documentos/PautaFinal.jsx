@@ -70,7 +70,7 @@ function PautaFinal() {
       celulas.push(l.mencao === 'Distinto' ? C('Distinto') : C(`=IF(${refFinal}>=18,"Muito Bom",IF(${refFinal}>=14,"Bom",IF(${refFinal}>=10,"Regular","Reprovado")))`, { type: 'Formula' }))
       return celulas
     })
-    const legenda = [[], [C('Legenda', { fontWeight: 'bold' })], ...ucs.map((u) => [C(u.codigo, { fontWeight: 'bold' }), C(u.nome), C(formula === 'ponderada' || formula === 'percentagem' ? `${u.creditos || 1} UCréd` : '')])]
+    const legenda = [[], [C('Legenda', { fontWeight: 'bold' })], [C('Sigla', { fontWeight: 'bold' }), C('Disciplina', { fontWeight: 'bold' }), C('Carga horária', { fontWeight: 'bold' }), C(formula === 'ponderada' || formula === 'percentagem' ? 'Créditos' : '', { fontWeight: 'bold' })], ...ucs.map((u) => [C(u.codigo, { fontWeight: 'bold' }), C(u.nome), C(u.horas ? `${u.horas} h` : ''), C(formula === 'ponderada' || formula === 'percentagem' ? `${u.creditos || 1} UCréd` : '')])]
     const n = d.linhas.length
     const colFinal = coluna(cab2.length - 2)
     const estat = n ? [[], [C('Quadro de estatísticas', { fontWeight: 'bold' })], [C('Média'), C(`=ROUND(AVERAGE(${colFinal}${linha0 + 1}:${colFinal}${linha0 + n}),2)`, { type: 'Formula', format: '0.00' })], [C('Nota mais alta'), C(`=MAX(${colFinal}${linha0 + 1}:${colFinal}${linha0 + n})`, { type: 'Formula', format: '0.00' })], [C('Nota mais baixa'), C(`=MIN(${colFinal}${linha0 + 1}:${colFinal}${linha0 + n})`, { type: 'Formula', format: '0.00' })]] : []
@@ -119,7 +119,12 @@ function PautaFinal() {
           </tbody>
         </table>
       )}
-      <div className="mt-2 small"><b>Legenda:</b> {ucs.map((u) => `${u.codigo} — ${u.nome}`).join('; ')}.</div>
+      {/* a legenda, como no Excel do arquivo: a sigla, a disciplina por extenso e a carga horária */}
+      <table className="mt-2" style={{ width: 'auto' }}>
+        <thead><tr><th>Sigla</th><th>Disciplina</th><th className="of-centro">Carga horária</th></tr></thead>
+        <tbody>{ucs.map((u) => <tr key={u.id}><td><b>{u.codigo}</b></td><td>{u.nome}</td><td className="of-centro">{u.horas ? `${u.horas} h` : '—'}</td></tr>)}</tbody>
+        {ucs.some((u) => u.horas) && <tfoot><tr><th colSpan={2} className="text-end">Total</th><th className="of-centro">{ucs.reduce((t, u) => t + (u.horas || 0), 0)} h</th></tr></tfoot>}
+      </table>
     </Documento>
   )
 }

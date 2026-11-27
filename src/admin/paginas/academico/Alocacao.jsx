@@ -82,7 +82,9 @@ function Alocacao() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Alocação de docentes')} subtitulo={tx('regentes, assistentes e carga horária')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Alocação de docentes') }]} />
+      <CabecalhoPagina titulo={tx('Docentes nas cadeiras')} subtitulo={tx('regentes, assistentes e carga horária')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Docentes nas cadeiras') }]}>
+        <Link to="/academico/docentes-horarios" className="btn btn-white"><i className="fa fa-user-tag me-1" />{tx('Docentes dos horários do arquivo')}</Link>
+      </CabecalhoPagina>
       <div className="d-flex flex-wrap gap-2 mb-3">
         <select className="form-select w-auto" value={ano} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano lectivo')}>
           <option value="">{tx('Todos os anos lectivos')}</option>

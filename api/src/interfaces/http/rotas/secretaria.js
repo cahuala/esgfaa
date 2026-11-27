@@ -107,6 +107,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   // pauta final do curso: UC por bloco, médias, média final e classificação (PDF e Excel com as fórmulas)
   // o arquivo da Administração Escolar: as pautas assinadas dos anos anteriores (simular primeiro)
   r.post('/arquivo/arrancar', validar({ body: z.object({ anoLetivo: z.string().max(9), cadeiras: z.array(z.record(z.string(), z.unknown())).max(500).optional(), turmas: z.array(z.record(z.string(), z.unknown())).max(100).optional(), simular: z.boolean().optional() }) }), async (req, res) => res.json(await a.arquivo.arrancar(ctx(req), req.dados.body)))
+  r.get('/arquivo/docentes-horarios', async (req, res) => res.json(await a.docentesHorarios.sugestoes(ctx(req))))
+  r.post('/arquivo/docentes-horarios', validar({ body: z.object({ escolhas: z.array(z.object({ cadeiraId: E.idNumerico, docenteId: E.idNumerico })).min(1).max(1000) }) }), async (req, res) => res.json(await a.docentesHorarios.confirmar(ctx(req), req.dados.body.escolhas)))
   r.post('/arquivo/importar', validar({ body: z.object({ turmas: z.array(z.record(z.string(), z.unknown())).min(1).max(200), simular: z.boolean().optional() }) }), async (req, res) => res.json(await a.arquivo.importar(ctx(req), req.dados.body)))
   r.get('/turmas/:id/pauta-final', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaFinal(ctx(req), req.dados.params.id)))
   r.get('/turmas/:id/pauta-geral', validar({ params: pId }), async (req, res) => res.json(await a.documentos.pautaDaTurma(ctx(req), req.dados.params.id)))

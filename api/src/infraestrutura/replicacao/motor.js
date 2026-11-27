@@ -43,8 +43,8 @@ function descodificar(campo, v, nuloJson) {
 }
 
 export class Replicacao {
-  constructor({ prisma, sistema, chave, url = '', pares = ['escolar', 'site', 'biblioteca'], privados = null, pastaUploads = '', intervaloS = 15, registar = () => {}, aoCriar = null, fetch: buscar = globalThis.fetch, Prisma }) {
-    Object.assign(this, { aoCriar, prisma, sistema, chave, url: url.replace(/\/$/, ''), pares, privados, pastaUploads, intervaloS, registar, buscar, Prisma })
+  constructor({ prisma, sistema, chave, url = '', pares = ['escolar', 'site', 'biblioteca'], privados = null, pastaUploads = '', intervaloS = 3, registar = () => {}, aoCriar = null, fetch: buscar = globalThis.fetch, Prisma, urlBaseDados = '' }) {
+    Object.assign(this, { aoCriar, prisma, sistema, chave, url: url.replace(/\/$/, ''), pares, privados, pastaUploads, intervaloS, registar, buscar, Prisma, urlBaseDados })
     this.esquema = lerEsquema()
     this.porTabela = new Map(Object.values(this.esquema).map((m) => [m.tabela, m]))
     this.aTrocar = false
@@ -64,6 +64,19 @@ export class Replicacao {
       if (!comGatilho.has(m.nome)) continue
       const cols = m.pk.map((k) => `'${m.campos[k].coluna}'`).join(', ')
       await p.$executeRawUnsafe(`CREATE TRIGGER replicacao AFTER INSERT OR UPDATE OR DELETE ON "${m.tabela}" FOR EACH ROW EXECUTE FUNCTION replicacao_registar(${cols})`)
+    }
+    /*
+      O aviso imediato: uma mudança feita aqui (não a que chega de outro sistema) avisa logo o motor, que troca sem
+      esperar pela volta seguinte (a actualização entre os sistemas fica quase instantânea).
+    */
+    await p.$executeRawUnsafe(`CREATE OR REPLACE FUNCTION replicacao_avisar() RETURNS trigger LANGUAGE plpgsql AS $f$
+BEGIN
+  IF coalesce(current_setting('replicacao.origem', true), '') = '' THEN PERFORM pg_notify('replicacao_mudou', TG_TABLE_NAME); END IF;
+  RETURN NULL;
+END $f$`)
+    for (const m of Object.values(this.esquema)) {
+      await p.$executeRawUnsafe(`DROP TRIGGER IF EXISTS replicacao_aviso ON "${m.tabela}"`)
+      if (comGatilho.has(m.nome)) await p.$executeRawUnsafe(`CREATE TRIGGER replicacao_aviso AFTER INSERT OR UPDATE OR DELETE ON "${m.tabela}" FOR EACH STATEMENT EXECUTE FUNCTION replicacao_avisar()`)
     }
     if (this.sistema === 'online') {
       for (const m of Object.values(this.esquema).filter((x) => x.autoincremento && x.pk.length === 1 && comGatilho.has(x.nome))) {
@@ -314,17 +327,47 @@ export class Replicacao {
     }
   }
 
+  // uma troca de cada vez; se chegar outro aviso durante a troca, faz-se mais uma no fim
+  #correr() {
+    if (this.aTrocar) { this.deNovo = true; return }
+    this.trocar().catch((e) => this.registar({ nivel: 'erro', mensagem: 'Replicação com o servidor online', erro: e.message }))
+      .finally(() => { if (this.deNovo) { this.deNovo = false; this.#correr() } })
+  }
+
+  // ouve os avisos do PostgreSQL (LISTEN): cada mudança feita aqui troca logo (com uma pausa de 300 ms para juntar)
+  async #ouvir() {
+    if (!this.urlBaseDados || this.parado) return
+    try {
+      const { default: pg } = await import('pg')
+      const c = new pg.Client({ connectionString: this.urlBaseDados })
+      c.on('error', () => { c.end().catch(() => {}); this.ouvinte = null; if (!this.parado) setTimeout(() => this.#ouvir(), 10_000).unref?.() })
+      c.on('notification', () => { clearTimeout(this.espera); this.espera = setTimeout(() => this.#correr(), 300); this.espera.unref?.() })
+      await c.connect()
+      await c.query('LISTEN replicacao_mudou')
+      this.ouvinte = c
+    } catch (e) {
+      this.registar({ nivel: 'aviso', mensagem: 'Replicação: sem o aviso imediato (fica a volta periódica)', erro: e.message })
+      if (!this.parado) setTimeout(() => this.#ouvir(), 30_000).unref?.()
+    }
+  }
+
   iniciar() {
     if (this.sistema === 'online' || !this.url || this.temporizador) return
-    const correr = () => this.trocar().catch((e) => this.registar({ nivel: 'erro', mensagem: 'Replicação com o servidor online', erro: e.message }))
-    this.temporizador = setInterval(correr, this.intervaloS * 1000)
+    this.parado = false
+    // a volta periódica: traz o que mudou no servidor online (ele não entra na rede da Escola) e é a rede de segurança
+    this.temporizador = setInterval(() => this.#correr(), this.intervaloS * 1000)
     this.temporizador.unref?.()
-    setTimeout(correr, 2000).unref?.()
+    setTimeout(() => this.#correr(), 2000).unref?.()
+    this.#ouvir()
   }
 
   parar() {
+    this.parado = true
     clearInterval(this.temporizador)
+    clearTimeout(this.espera)
     this.temporizador = null
+    this.ouvinte?.end().catch(() => {})
+    this.ouvinte = null
   }
 }
 

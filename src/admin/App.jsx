@@ -31,6 +31,7 @@ import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import DiplomasTurma from './paginas/academico/documentos/DiplomasTurma'
 import Pautas from './paginas/academico/Pautas'
 import Matriculas from './paginas/academico/Matriculas'
+import DocentesHorarios from './paginas/academico/DocentesHorarios'
 import Declaracao from './paginas/academico/documentos/Declaracao'
 import DocumentosInicio from './paginas/academico/documentos/DocumentosInicio'
 import DocumentosAno from './paginas/academico/documentos/DocumentosAno'
@@ -120,6 +121,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/pautas" element={<Pautas />} />}
         {pode('academico.ver') && <Route path="/academico/lancar-notas" element={<Pautas lancar key="lancar" />} />}
         {pode('academico.ver') && <Route path="/academico/matriculas" element={<Matriculas />} />}
+        {pode('academico.ver') && <Route path="/academico/docentes-horarios" element={<DocentesHorarios />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/conta/:id/declaracao" element={<Declaracao />} />}
         {pode('academico.ver') && <Route path="/academico/documentos" element={<DocumentosInicio />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
