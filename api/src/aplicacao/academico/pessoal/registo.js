@@ -1,6 +1,7 @@
 import { Conflito, ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { limparTexto } from '../../../dominio/comum/texto.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
+import { emailDeAcesso } from '../../../dominio/academico/pessoas/emailAcesso.js'
 import { emailDaEscola, numeroConta, senhaInicial, TIPOS_CONTA } from '../../../dominio/academico/pessoas/contas.js'
 
 /*
@@ -97,8 +98,10 @@ export class ServicoRegistoPessoal {
   }
 
   // dá uma palavra-passe inicial nova (para a ficha de acesso) e termina as sessões abertas
+  // a ficha de acesso ao portal (palavra-passe inicial nova): quem regista e a Administração Escolar (que entrega as
+  // contas aos estudantes e aos docentes; não regista ninguém)
   async reporSenha(ctx, id) {
-    ctx.actor.exigir('pessoal.registar')
+    ctx.actor.exigir('pessoal.registar', 'academico.gerir')
     return this.#reporSenha(ctx, id)
   }
 
@@ -158,14 +161,31 @@ export class ServicoRegistoPessoal {
     return { caminho: this.privados.absoluto(f.fotoCaminho), tipo: f.fotoCaminho.endsWith('.png') ? 'image/png' : f.fotoCaminho.endsWith('.webp') ? 'image/webp' : 'image/jpeg', nome: 'foto' }
   }
 
+  // o e-mail de acesso de quem vem do Pessoal sem o e-mail da Escola (nome.apelido@domínio, sem repetir)
+  async #emailDeAcesso(nome) {
+    const dominio = String(this.dominioEmail ?? '').split(',').map((d) => d.trim()).filter(Boolean)[0]
+    if (!dominio) return null
+    const usados = new Set()
+    for (let i = 0; i < 6; i++) {
+      const e = emailDeAcesso(nome, dominio, usados)
+      if (!e) return null
+      if (!(await this.contas.porEmail(e))) return e
+      usados.add(e)
+    }
+    return null
+  }
+
   async sincronizarDoPessoal(ctx, pessoas) {
     const resultados = []
     let criadas = 0
     let atualizadas = 0
     for (const p of pessoas) {
       try {
-        const email = emailDaEscola(p.email, this.dominioEmail)
         const t = escolha(p.tipo, 'tipo', 'Tipo de conta', TIPOS_CONTA)
+        // o e-mail da Escola; quem vem sem ele (sem e-mail, ou com um pessoal ou antigo) não fica de fora: reconhece-se
+        // pela ficha do Pessoal ou pelo NIP e, se for novo, fica com o e-mail de acesso (a mesma regra do Pessoal)
+        let email = null
+        try { email = emailDaEscola(p.email, this.dominioEmail) } catch { email = null }
         // a conta já enviada reconhece-se pelo id (assim uma mudança de e-mail não cria outra conta)
         const porId = p.contaId ? await this.contas.porId(p.contaId) : null
         // a conta já enviada reconhece-se pelo id; depois pelo e-mail; e, a de um discente que a Gestão Escolar criou
@@ -173,7 +193,9 @@ export class ServicoRegistoPessoal {
         // pelo id só se for a mesma pessoa (o mesmo e-mail ou o mesmo NIP): um id de outro sistema pode ser de outra pessoa
         const refDe = (c) => c?.dados?.pessoalRef ?? ''
         const mesma = porId && porId.tipo === t && (refDe(porId) === p.ref || porId.email === email || (p.dados?.nip && String(porId.dados?.nip ?? '') === String(p.dados.nip)) || (!refDe(porId) && porId.nome === p.nome))
-        const existente = (mesma ? porId : null) ?? await this.contas.porEmail(email) ?? (p.dados?.nip && this.contas.porNip ? await this.contas.porNip(t, p.dados.nip) : null)
+        const existente = (mesma ? porId : null) ?? (email ? await this.contas.porEmail(email) : null) ?? (this.contas.porPessoalRef ? await this.contas.porPessoalRef(t, p.ref) : null) ?? (p.dados?.nip && this.contas.porNip ? await this.contas.porNip(t, p.dados.nip) : null)
+        if (!email) email = existente?.email ?? await this.#emailDeAcesso(p.nome)
+        if (!email) throw new ErroValidacao('Sem e-mail da Escola e sem nome para o e-mail de acesso.')
         if (existente && existente.email !== email) {
           const outra = await this.contas.porEmail(email)
           if (outra && outra.id !== existente.id) throw new ErroValidacao('Já existe outra conta no portal com o novo e-mail.')

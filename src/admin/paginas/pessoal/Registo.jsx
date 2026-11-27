@@ -7,7 +7,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { dataHora } from '../../formatar'
 import { confirmar } from '../../../portal/dialogos'
 import ImportarPessoas from './ImportarPessoas'
-import { imprimirFichas } from './fichasAcesso'
+import FichaAcesso from './FichaAcesso'
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
 
@@ -21,6 +21,8 @@ const VAZIO = { tipo: 'estudante', nome: '', email: '', posto: '', ramo: '', nip
 function Registo() {
   const { pode } = useSessao()
   const registar = pode('pessoal.registar')
+  // a Administração Escolar entrega as contas do portal (a ficha de acesso), mesmo sem registar ninguém
+  const darAcesso = registar || pode('academico.gerir')
   // com o Sistema de Gestão de Pessoal ligado, regista-se e muda-se lá; aqui fica a consulta e a ficha de acesso
   const [noPessoal, setNoPessoal] = useState(false)
   useEffect(() => { api('/academico/contas/origem').then((r) => setNoPessoal(r.noPessoal)).catch(() => {}) }, [])
@@ -87,7 +89,7 @@ function Registo() {
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Registo de estudantes e docentes')} subtitulo={tx('Repartição de Pessoal e Quadros')} migalhas={[{ rotulo: tx('Pessoal e Quadros') }, { rotulo: tx('Registo') }]}>
+      <CabecalhoPagina titulo={registar ? tx('Registo de estudantes e docentes') : tx('Estudantes e docentes')} subtitulo={registar ? tx('Repartição de Pessoal e Quadros') : tx('as fichas (do Sistema de Pessoal) e as contas do portal: o número, o e-mail de entrada, o último acesso e a ficha de acesso')} migalhas={[{ rotulo: registar ? tx('Pessoal e Quadros') : tx('Administração Escolar') }, { rotulo: registar ? tx('Registo') : tx('Estudantes e docentes') }]}>
         {mudar && <button type="button" className="btn btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" /> {tx('Registar a partir de Excel/CSV')}</button>}
       </CabecalhoPagina>
       {noPessoal && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Os estudantes e os docentes registam-se e mudam-se no Sistema de Gestão de Pessoal (também os de outras unidades e os civis colaboradores); chegam aqui sozinhos. Aqui consulta-se e imprime-se a ficha de acesso ao portal (a chave).')}</div>}
@@ -131,10 +133,10 @@ function Registo() {
                         <td>{!c.ativo ? <span className="badge bg-secondary">{tx('Desactivada')}</span> : c.deveMudarSenha ? <span className="badge bg-warning text-dark">{tx('Palavra-passe inicial')}</span> : <span className="badge bg-success">{tx('Activa')}</span>}</td>
                         <td className="text-end text-nowrap">
                           <Link to={`/pessoal/registo/${c.id}/ficha`} className="btn btn-sm btn-white me-1" title={tx('Ficha')} aria-label={tx('Ficha de {0}', { 0: c.nome })}><i className="fa fa-id-card me-1" />{tx('Ficha')}</Link>
+                          {darAcesso && <button type="button" className="btn btn-sm btn-white me-1" onClick={() => repor(c)} title={tx('Ficha de acesso ao portal (palavra-passe inicial nova)')} aria-label={tx('Ficha de acesso de {0}', { 0: c.nome })}><i className="fa fa-key me-1" />{tx('Acesso')}</button>}
                           {registar && (
                             <>
                               {mudar && <button type="button" className="btn btn-sm btn-white me-1" onClick={() => abrirEdicao(c)} title={tx('Editar dados')} aria-label={tx('Editar {0}', { 0: c.nome })}><i className="fa fa-pen" /></button>}
-                              <button type="button" className="btn btn-sm btn-white me-1" onClick={() => repor(c)} title={tx('Repor a palavra-passe')} aria-label={tx('Repor a palavra-passe de {0}', { 0: c.nome })}><i className="fa fa-key" /></button>
                               {mudar && <button type="button" className={`btn btn-sm ${c.ativo ? 'btn-white text-danger' : 'btn-success'}`} onClick={() => ativar(c)}>{c.ativo ? tx('Desactivar') : tx('Activar')}</button>}
                             </>
                           )}
@@ -182,34 +184,6 @@ function Registo() {
       {importar && <ImportarPessoas fechar={() => setImportar(false)} concluido={carregar} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
-  )
-}
-
-// a palavra-passe inicial só se vê aqui (uma vez): imprime-se a ficha para entregar em mão
-function FichaAcesso({ c, fechar }) {
-  return (
-    <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h4 className="modal-title" id="ficha-titulo"><i className="fa fa-id-card me-2" />{tx('Ficha de acesso ao portal')}</h4>
-          </div>
-          <div className="modal-body">
-            <dl className="row mb-2">
-              <dt className="col-5">{tx('Nome')}</dt><dd className="col-7">{c.nome}</dd>
-              <dt className="col-5">{tx('Número')}</dt><dd className="col-7 font-monospace">{c.numero}</dd>
-              <dt className="col-5">{tx('E-mail (entrada)')}</dt><dd className="col-7">{c.email}</dd>
-              <dt className="col-5">{tx('Palavra-passe inicial')}</dt><dd className="col-7 font-monospace fs-5 fw-bold">{c.senhaInicial}</dd>
-            </dl>
-            <div className="alert alert-warning py-2 small mb-0"><i className="fa fa-exclamation-triangle me-1" />{tx('Esta palavra-passe não volta a ser mostrada. Imprima a ficha e entregue-a em mão; se se perder, use «Repor a palavra-passe».')}</div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-white" onClick={fechar}>{tx('Fechar')}</button>
-            <button type="button" className="btn btn-theme" onClick={() => imprimirFichas([c])}><i className="fa fa-print me-1" />{tx('Imprimir ficha (PDF)')}</button>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 

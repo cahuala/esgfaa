@@ -4,6 +4,9 @@ import { api } from '../../api'
 import { Carregando, Erro } from '../../componentes/Ui'
 import FotoConta from '../../componentes/FotoConta'
 import './ficha.css'
+import FichaAcesso from './FichaAcesso'
+import { useSessao } from '../../sessaoContexto'
+import { confirmar } from '../../../portal/dialogos'
 
 /*
   Ficha do estudante ou do docente para a Administração Escolar, com o aspecto da ficha do Sistema de Gestão de
@@ -36,6 +39,13 @@ function FichaConta() {
   const [c, setC] = useState(null)
   const [erro, setErro] = useState('')
   const [aba, setAba] = useState('identificacao')
+  const [acesso, setAcesso] = useState(null)
+  const { pode } = useSessao()
+  const darAcesso = pode('pessoal.registar') || pode('academico.gerir')
+  async function fichaDeAcesso() {
+    if (!(await confirmar(`${c.nome} recebe uma palavra-passe inicial nova (na ficha de acesso) e terá de a mudar ao entrar. A antiga deixa de servir.`, { titulo: 'Ficha de acesso ao portal', botao: 'Dar a ficha de acesso' }))) return
+    api(`/academico/contas/${c.id}/repor-senha`, { metodo: 'POST' }).then(setAcesso).catch((e) => setErro(e.message))
+  }
   useEffect(() => { api(`/academico/contas/${id}/ficha`).then(setC).catch((e) => setErro(e.message)) }, [id])
   if (erro) return <Erro texto={erro} />
   if (!c) return <Carregando />
@@ -70,6 +80,7 @@ function FichaConta() {
         <div className="fc-acoes">
           <button type="button" className="fc-btn" onClick={() => navegar(-1)}><i className="fa fa-arrow-left" />Voltar</button>
           {!docente && <Link to={`/academico/documentos/estudante/${c.id}/historico`} className="fc-btn"><i className="fa fa-scroll" />Histórico académico</Link>}
+          {darAcesso && <button type="button" className="fc-btn" onClick={fichaDeAcesso}><i className="fa fa-key" />Ficha de acesso ao portal</button>}
           <button type="button" className="fc-btn" onClick={() => window.print()}><i className="fa fa-print" />Imprimir</button>
         </div>
       </div>
@@ -93,7 +104,8 @@ function FichaConta() {
             </Bloco>
             <Bloco titulo="Contactos e conta" icone="fa-address-book">
               <div className="fc-grelha">
-                <Dado r="Telefone" v={d.telefone} /><Dado r="E-mail" v={c.email} /><Dado r="N.º no portal" v={c.numero} />
+                <Dado r="Telefone" v={d.telefone} /><Dado r="E-mail de entrada no portal" v={c.email} /><Dado r="N.º no portal" v={c.numero} />
+                <Dado r="Último acesso ao portal" v={c.ultimoAcesso ? new Date(c.ultimoAcesso).toLocaleString('pt-PT') : 'Nunca entrou'} /><Dado r="Conta" v={!c.ativo ? 'Desactivada' : c.deveMudarSenha ? 'Com a palavra-passe inicial' : 'Activa'} />
               </div>
             </Bloco>
           </div>
@@ -160,6 +172,7 @@ function FichaConta() {
         </Bloco>
       )}
 
+      {acesso && <FichaAcesso c={acesso} fechar={() => setAcesso(null)} />}
       <p className="small text-muted">Os dados vêm do Sistema de Gestão de Pessoal (Repartição de Pessoal e Quadros); as alterações fazem-se lá.</p>
     </>
   )

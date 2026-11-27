@@ -60,7 +60,8 @@ function resumoDocente(p) {
   return `${posto}${p.nome}${tipo ? ` — docente ${tipo}` : ''}${p.categoriaDocente ? ` (${p.categoriaDocente})` : ''}${p.funcaoActual ? ` · ${p.funcaoActual}` : ''}`
 }
 // o docente novo à espera do despacho do Comandante ainda não vai para o portal
-const vaiParaPortal = (p) => p.ativo && vinculosDe(p).some((v) => (v === 'docente' && !p.docentePendente) || v === 'estudante') && Boolean(p.email)
+// também quem ainda não tem e-mail: a Gestão Escolar dá-lhe o e-mail de acesso (a mesma regra)
+const vaiParaPortal = (p) => p.ativo && vinculosDe(p).some((v) => (v === 'docente' && !p.docentePendente) || v === 'estudante')
 const eDocente = (p) => vinculosDe(p).includes('docente')
 
 export class ServicoPessoas {

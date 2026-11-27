@@ -84,7 +84,7 @@ export class ServicoSincronizacao {
     // o militar que é funcionário e também docente ou aluno tem conta no portal (aluno, se estiver num curso)
     // o docente novo à espera do despacho do Comandante ainda não conta
     const vs = [p.vinculo, ...(p.outrosVinculos ?? [])].filter((v) => !(v === 'docente' && p.docentePendente))
-    const ativo = p.ativo && vs.some((v) => ['docente', 'estudante'].includes(v)) && Boolean(p.email)
+    const ativo = p.ativo && vs.some((v) => ['docente', 'estudante'].includes(v))
     const foto = ativo ? this.#foto(p, fotoEnviada) : undefined
     return {
       ref: `pessoal-${p.id}`, contaId: contaId ?? undefined, tipo: p.vinculo === 'docente' ? 'docente' : vs.includes('estudante') ? 'estudante' : 'docente', nome: p.nome, email: p.email, ativo,
@@ -113,7 +113,7 @@ export class ServicoSincronizacao {
   // volta a pôr na fila todos os docentes e estudantes (ex.: depois de ligar o portal pela primeira vez)
   async reenviarTodos(u) {
     exigir(u, 'administrar')
-    const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }], email: { not: null } }, select: { id: true } })).map((p) => p.id)
+    const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }] }, select: { id: true } })).map((p) => p.id)
     for (const id of ids) await this.bd.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: { estado: 'pendente', tentativas: 0, erro: '' } })
     await this.auditoria.registar(u, 'reenviar_portal', `${ids.length} pessoa(s)`)
     return { emFila: ids.length }
@@ -357,7 +357,7 @@ export class ServicoSincronizacao {
     if (this.destinoConfirmado === url) return
     const d = await this.bd.definicao.findUnique({ where: { chave: 'portal-destino' } })
     if ((d?.valor?.url ?? null) !== url) {
-      const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }], email: { not: null } }, select: { id: true } })).map((p) => p.id)
+      const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }] }, select: { id: true } })).map((p) => p.id)
       for (const id of ids) await this.bd.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: {} })
       const n = await this.bd.sincronizacao.updateMany({ data: { estado: 'pendente', tentativas: 0, erro: '', contaPortalId: null, fotoEnviada: '' } })
       await this.bd.definicao.upsert({ where: { chave: 'portal-destino' }, create: { chave: 'portal-destino', valor: { url, desde: this.agora().toISOString() } }, update: { valor: { url, desde: this.agora().toISOString() } } })

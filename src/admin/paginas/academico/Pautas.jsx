@@ -43,7 +43,7 @@ function Cadeiras({ turmaId, lancar }) {
 }
 
 function Pautas({ lancar = false }) {
-  const { ano } = useAnoTrabalho()
+  const { ano, mudar } = useAnoTrabalho()
   const [turmas, setTurmas] = useState(null)
   const [cursos, setCursos] = useState([])
   const [aberta, setAberta] = useState(null)
@@ -60,6 +60,17 @@ function Pautas({ lancar = false }) {
   return (
     <>
       <CabecalhoPagina titulo={lancar ? tx('Lançar notas') : tx('Pautas')} subtitulo={lancar ? tx('ano lectivo {0} — escolha a turma e a cadeira (o ano muda-se no menu)', { 0: ano }) : tx('ano lectivo {0} — por curso, turma e cadeira (o ano muda-se no menu)', { 0: ano })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: lancar ? tx('Lançar notas') : tx('Pautas') }]} />
+      {/* os outros anos lectivos com turmas (as notas do arquivo estão nos anos anteriores): muda-se com um clique */}
+      {(() => {
+        const outros = [...new Set(turmas.map((t) => t.anoLetivo))].sort((a, b) => b.localeCompare(a))
+        return outros.length > 1 && (
+          <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span className="small text-muted">{tx('Ano lectivo:')}</span>
+            {outros.map((a) => <button key={a} type="button" className={`btn btn-sm ${a === ano ? 'btn-theme' : 'btn-white'}`} onClick={() => mudar(a)}>{a}</button>)}
+            <span className="small text-muted">{tx('(as notas do arquivo estão nos anos anteriores)')}</span>
+          </div>
+        )
+      })()}
       {porCurso.length === 0 && <Painel titulo={tx('Pautas')}><p className="text-muted mb-0">{tx('Não há turmas no ano lectivo {0}. Escolha outro ano no menu.', { 0: ano })}</p></Painel>}
       {porCurso.map(([curso, ts]) => (
         <Painel key={curso} titulo={nomeCurso(curso)} corpo={false}>

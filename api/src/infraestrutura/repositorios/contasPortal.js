@@ -76,6 +76,13 @@ export class RepositorioContasPortal {
   }
 
   // a conta pelo NIP (ou n.º de agente; sem o «I» e os zeros da frente), só se houver uma
+  // a conta que veio de uma ficha do Sistema de Pessoal («pessoal-N»)
+  async porPessoalRef(tipo, ref) {
+    if (!ref) return null
+    const c = await this.prisma.contaPortal.findFirst({ where: { tipo, dados: { path: ['pessoalRef'], equals: String(ref) } } })
+    return c ? paraConta(c) : null
+  }
+
   async porNip(tipo, nip) {
     const norm = (n) => String(n ?? '').toUpperCase().replace(/\s/g, '').replace(/^I/, '').replace(/^0+/, '')
     const alvo = norm(nip)

@@ -108,12 +108,20 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await amb.contentor.repositorios.contasPortal.porEmail('carlos.mendes@esgfaa.gov.ao')).id, contaId)
   })
 
-  it('e-mail de fora da Escola volta como erro dessa pessoa, sem parar as outras', async () => {
+  it('sem o e-mail da Escola (pessoal, antigo ou nenhum): entra na mesma, com o e-mail de acesso; depois reconhece-se pela ficha', async () => {
     const r = await enviar([
       { ref: 'pessoal-2', tipo: 'estudante', nome: 'Pessoa de Fora Qualquer', email: 'x@gmail.com', ativo: true },
       { ref: 'pessoal-3', tipo: 'estudante', nome: 'Capitão Pedro Neto Lopes', email: 'pedro.lopes@esgfaa.gov.ao', ativo: true },
+      { ref: 'pessoal-4', tipo: 'docente', nome: 'Coronel Sem Email Nenhum', email: null, ativo: true, dados: { nip: 'SEM004' } },
     ]).expect(200)
-    assert.deepEqual(r.body.resultados.map((x) => x.ok), [false, true])
+    assert.deepEqual(r.body.resultados.map((x) => x.ok), [true, true, true])
+    const fora = await amb.contentor.repositorios.contasPortal.porId(r.body.resultados[0].contaId)
+    assert.match(fora.email, /^pessoa\.qualquer@/)
+    const sem = await amb.contentor.repositorios.contasPortal.porId(r.body.resultados[2].contaId)
+    assert.match(sem.email, /^coronel\.nenhum@/)
+    // enviado outra vez (ainda sem e-mail da Escola): é a mesma conta, não se cria outra
+    const de = (await enviar([{ ref: 'pessoal-4', tipo: 'docente', nome: 'Coronel Sem Email Nenhum', email: null, ativo: true, dados: { nip: 'SEM004' } }]).expect(200)).body.resultados[0]
+    assert.equal(de.contaId, sem.id)
   })
 
   it('recusa assinatura errada, pedido antigo (repetição) e corpo alterado', async () => {

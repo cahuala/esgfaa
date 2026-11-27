@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 const JANELA_S = 300
 const pessoa = z.object({
-  ref: z.string().max(40), contaId: z.number().int().positive().optional(), tipo: z.enum(['docente', 'estudante']), nome: z.string().max(150), email: z.string().max(200), ativo: z.boolean(),
+  ref: z.string().max(40), contaId: z.number().int().positive().optional(), tipo: z.enum(['docente', 'estudante']), nome: z.string().max(150), email: z.string().max(200).nullable().default(null), ativo: z.boolean(),
   dados: z.record(z.string(), z.string().max(120)).default({}),
   // a fotografia (só quando muda): { id, dados em base64 } ou null para a apagar
   foto: z.union([z.object({ id: z.string().max(80), dados: z.string().max(4_000_000) }), z.null()]).optional(),
