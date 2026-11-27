@@ -900,3 +900,25 @@ fieldset:disabled .bloco-topo .btn-group {
 /* as ligações dentro das páginas: a cor do sistema, não o azul do navegador (os botões e os separadores ficam como estão) */
 .app-content a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link):not(.fc-btn) { color: #861d0c; font-weight: 600; text-decoration: none; }
 .app-content a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link):not(.fc-btn):hover { color: #a01510; text-decoration: underline; }
+
+/* documentos no ecrã: as tabelas largas deslizam dentro da folha; no telemóvel e no tablet, sem as margens grandes
+   (a impressão fica como está) */
+@media screen {
+  .of-folha { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .of-folha table { min-width: max-content; }
+  .of-folha .of-campos, .of-folha p { min-width: 0; }
+  .of-acoes { position: sticky; top: 60px; z-index: 5; background: var(--bs-body-bg, #f2f3f4); padding: 6px 0; }
+}
+@media screen and (max-width: 991px) {
+  .of-folha { padding: 20px 16px; font-size: 12px; }
+  .of-aprovado { position: static; width: auto; margin-bottom: 10px; }
+  .of-assinaturas { flex-wrap: wrap; gap: 18px; }
+  .of-assinatura { min-width: 160px; flex: 1 1 160px; }
+  .of-titulo { font-size: 15px; }
+  .of-cabecalho img { height: 56px; }
+}
+@media screen and (max-width: 575px) {
+  .of-acoes { flex-direction: column; align-items: stretch !important; }
+  .of-acoes > .ms-auto { margin-left: 0 !important; }
+  .of-acoes .form-select, .of-acoes .form-control, .of-acoes .btn { width: 100% !important; }
+}
