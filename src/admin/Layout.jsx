@@ -246,12 +246,14 @@ function Layout({ children }) {
             {/* o dia-a-dia da Administração Escolar: o ano lectivo, as turmas, as pautas, os documentos e as fichas */}
             {pode('academico.ver') && <div className="menu-header">{tx('Administração Escolar')}</div>}
             {(pode('academico.ver') || pode('pessoal.ver')) && <SeletorAnoTrabalho />}
-            {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e estudantes')} />}
+            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/matriculas" icone="fa-user-plus" texto={tx('Matrículas')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Docentes nas cadeiras')} />}
+            {pode('academico.notas') && <ItemMenu para="/academico/lancar-notas" icone="fa-pen" texto={tx('Lançar notas')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/pautas" icone="fa-table" texto={tx('Pautas (por curso e cadeira)')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/documentos" icone="fa-print" texto={tx('Documentos')} />}
-            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Docentes nas cadeiras')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} contador={pode('academico.gerir') ? pendentes.pedidosDocumentos ?? 0 : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alteracoes-notas" icone="fa-user-shield" texto={tx('Alterações de notas')} contador={pode('academico.homologar') ? pendentes.alteracoesPendentes : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/provas-escritas" icone="fa-print" texto={tx('Provas para imprimir')} contador={pode('academico.gerir') ? pendentes.provasPorImprimir : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}

@@ -1,6 +1,6 @@
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
-import { ESTADOS_PEDIDO } from '../../../dominio/academico/secretaria/pedidos.js'
+import { ESTADOS_PEDIDO, TIPOS_PEDIDO } from '../../../dominio/academico/secretaria/pedidos.js'
 
 // Pedidos de documentos dos estudantes, tratados pela Administração Escolar.
 export class ServicoPedidos {
@@ -11,6 +11,25 @@ export class ServicoPedidos {
   listarPedidos(ctx, { estado } = {}) {
     ctx.actor.exigir('academico.ver')
     return this.academico.pedidos({ estado })
+  }
+
+  // a Repartição regista um pedido em nome do estudante (feito ao balcão, por ofício ou por telefone)
+  async criarPedido(ctx, { estudanteId, tipo, motivo }) {
+    ctx.actor.exigir('academico.gerir')
+    const e = await this.contas.porId(Number(estudanteId))
+    if (!e || e.tipo !== 'estudante') throw new NaoEncontrado('Estudante não encontrado.')
+    const p = await this.academico.criarPedido({
+      estudanteId: e.id,
+      tipo: escolha(tipo, 'tipo', 'Tipo de documento', TIPOS_PEDIDO),
+      motivo: texto(motivo, 'motivo', 'Motivo', { max: 1000, obrigatorio: tipo === 'Outro', min: tipo === 'Outro' ? 5 : 1 }),
+    })
+    await this.auditoria.registar(ctx, { acao: 'pedido_documento_balcao', colecao: 'pedidos', alvoId: p.id, alvoTitulo: `${p.tipo} — ${e.nome}` })
+    return p
+  }
+
+  tiposPedido(ctx) {
+    ctx.actor.exigir('academico.ver')
+    return TIPOS_PEDIDO
   }
 
   async tratarPedido(ctx, id, { estado, resposta }, ficheiro) {

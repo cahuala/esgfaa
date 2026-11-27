@@ -41,7 +41,17 @@ function FichaConta() {
   if (!c) return <Carregando />
   const d = c.dados ?? {}
   const docente = c.tipo === 'docente'
-  const abas = [['identificacao', 'Identificação', 'fa-id-card'], ['formacao', 'Formação e função', 'fa-graduation-cap'], docente ? ['cadeiras', `Cadeiras que lecciona (${c.cadeiras?.length ?? 0})`, 'fa-chalkboard-teacher'] : ['academico', `Percurso académico (${c.turmas?.length ?? 0})`, 'fa-school']]
+  const abas = [['identificacao', 'Identificação', 'fa-id-card'], ['formacao', 'Formação e função', 'fa-graduation-cap'], docente ? ['cadeiras', `Cadeiras que lecciona (${c.cadeiras?.length ?? 0})`, 'fa-chalkboard-teacher'] : ['academico', `Percurso académico (${c.turmas?.length ?? 0})`, 'fa-school'], ['documentos', 'Documentos', 'fa-file-signature']]
+  // os documentos individuais (como no Pessoal): as declarações, o histórico e, de quem concluiu, o certificado e o diploma
+  const concluidas = (c.turmas ?? []).filter((t) => t.estado === 'concluida')
+  const documentos = docente
+    ? [[`/academico/documentos/conta/${c.id}/declaracao?tipo=docente`, 'fa-file-alt', 'Declaração de serviço docente', 'as cadeiras que lecciona no ano lectivo']]
+    : [
+        [`/academico/documentos/conta/${c.id}/declaracao?tipo=matricula`, 'fa-file-alt', 'Declaração de matrícula', 'a turma e o ano lectivo'],
+        [`/academico/documentos/conta/${c.id}/declaracao?tipo=frequencia`, 'fa-file-alt', 'Declaração de frequência', 'a turma e o ano lectivo'],
+        [`/academico/documentos/estudante/${c.id}/historico`, 'fa-scroll', 'Histórico académico (certificado de notas)', 'todas as cadeiras e notas'],
+        ...concluidas.map((t) => [`/academico/documentos/turma/${t.id}/certificado/${c.id}`, 'fa-award', `Certificado e diploma — ${t.nome}`, 'com a aprovação do Comandante']),
+      ]
   return (
     <>
       <div className="fc-hdr">
@@ -126,6 +136,27 @@ function FichaConta() {
               ))}</tbody>
             </table></div>
           )}
+        </Bloco>
+      )}
+
+      {aba === 'documentos' && (
+        <Bloco titulo="Documentos individuais" icone="fa-file-signature">
+          <div className="row g-2">
+            {documentos.map(([para, icone, titulo, sub]) => (
+              <div key={para} className="col-md-6">
+                <Link to={para} className="btn btn-white w-100 text-start py-3 d-flex align-items-center gap-3">
+                  <i className={`fa ${icone} fa-2x`} style={{ color: '#861d0c', width: 34 }} />
+                  <span><b className="d-block">{titulo}</b><span className="small text-muted">{sub}</span></span>
+                </Link>
+              </div>
+            ))}
+            <div className="col-md-6">
+              <button type="button" className="btn btn-white w-100 text-start py-3 d-flex align-items-center gap-3" onClick={() => window.print()}>
+                <i className="fa fa-id-card fa-2x" style={{ color: '#861d0c', width: 34 }} />
+                <span><b className="d-block">Ficha {docente ? 'do docente' : 'do discente'}</b><span className="small text-muted">esta ficha, para imprimir</span></span>
+              </button>
+            </div>
+          </div>
         </Bloco>
       )}
 

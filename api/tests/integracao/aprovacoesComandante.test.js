@@ -161,6 +161,8 @@ describe('Aprovações do Comandante: distribuição dos docentes e publicação
 
   it('o Director do curso proposto pela Administração Escolar só fica com a aprovação do Comandante', async () => {
     const dir = await amb.criarUtilizador('director_curso')
+    // o Director do curso é um docente
+    await amb.contentor.prisma.contaPortal.create({ data: { tipo: 'docente', numero: 'D-direst', nome: 'Utilizador director_curso', email: 'direst@esgfaa.gov.ao', senha: 'x', dados: {} } })
     const url = '/api/admin/academico/cursos/curso-de-estado-maior/director'
     const estado = async () => (await ensino.get('/api/admin/academico/directores-curso').expect(200)).body
     await ensino.put(url).send({ utilizadorId: dir.id }).expect(200)

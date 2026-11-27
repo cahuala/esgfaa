@@ -116,7 +116,7 @@ function Turmas() {
                   <span className="text-muted">{tx('Director do curso:')}</span>
                   {pode('academico.gerir') ? (
                     <select className="form-select form-select-sm w-auto" value={dirs.directores[c.id]?.utilizadorId ?? ''} onChange={(e) => designar(c.id, e.target.value)} aria-label={tx('Director do curso')}>
-                      <option value="">{tx('— por designar —')}</option>
+                      <option value="">{dirs.candidatos.length ? tx('— por designar —') : tx('— nenhum docente com conta no painel —')}</option>
                       {dirs.candidatos.map((u) => <option key={u.utilizadorId} value={u.utilizadorId}>{u.nome}{u.cargo ? ` — ${u.cargo}` : ''} ({u.nomePapel})</option>)}
                     </select>
                   ) : <b>{dirs.directores[c.id]?.nome ?? tx('por designar')}</b>}

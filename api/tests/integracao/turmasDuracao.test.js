@@ -45,14 +45,19 @@ describe('Turmas e duração do curso', () => {
     assert.deepEqual(t.matriculas.map((m) => m.estudante.nome), ['Bruno Coronel', 'Abel Major'])
   })
 
-  it('a Administração Escolar designa o Director de cada curso (uma conta que vê o Ensino); fica na lista do curso', async () => {
+  it('a Administração Escolar designa o Director de cada curso (um docente com conta que vê o Ensino); fica na lista do curso', async () => {
     const rae = amb.com((await amb.criarUtilizador('secretaria')).token)
     const dir = await amb.criarUtilizador('director_curso')
     const area = await amb.criarUtilizador('area_cientifica')
+    const gabinete = await amb.criarUtilizador('gabinete_ensino')
     const redactor = await amb.criarUtilizador('redator')
+    // o Director de Curso e o chefe de departamento são docentes; o gabinete vê o Ensino mas não é docente
+    await amb.contentor.prisma.contaPortal.create({ data: { tipo: 'docente', numero: 'D-dircur', nome: 'Utilizador director_curso', email: 'dircur@esgfaa.gov.ao', senha: 'x', dados: {} } })
+    await amb.contentor.prisma.contaPortal.create({ data: { tipo: 'docente', numero: 'D-areaci', nome: 'Utilizador area_cientifica', email: 'areaci@esgfaa.gov.ao', senha: 'x', dados: {} } })
     const c = (await rae.get('/api/admin/academico/directores-curso').expect(200)).body
     const ids = c.candidatos.map((x) => x.utilizadorId)
-    assert.ok(ids.includes(dir.id) && ids.includes(area.id) && !ids.includes(redactor.id))
+    assert.ok(ids.includes(dir.id) && ids.includes(area.id) && !ids.includes(redactor.id) && !ids.includes(gabinete.id))
+    assert.equal((await rae.put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: gabinete.id })).status, 400)
     // quem não vê o Ensino não pode ser Director de Curso; só a Administração Escolar designa
     assert.equal((await rae.put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: redactor.id })).status, 400)
     assert.equal((await amb.com(dir.token).put('/api/admin/academico/cursos/curso-superior-de-comando-e-direccao/director').send({ utilizadorId: dir.id })).status, 403)

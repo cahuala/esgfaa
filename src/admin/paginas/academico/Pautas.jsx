@@ -9,7 +9,7 @@ import { t as tx } from '../../../i18n/linguas'
   As pautas do ano lectivo (o do menu), por curso: cada turma com a pauta da turma e a pauta final do curso e, ao
   abrir, as cadeiras com a pauta de cada uma (o departamento e os docentes ao lado).
 */
-function Cadeiras({ turmaId }) {
+function Cadeiras({ turmaId, lancar }) {
   const [t, setT] = useState(null)
   const [erro, setErro] = useState('')
   useEffect(() => { api(`/academico/turmas/${turmaId}`).then(setT).catch((e) => setErro(e.message)) }, [turmaId])
@@ -27,8 +27,12 @@ function Cadeiras({ turmaId }) {
               <td className="small">{c.departamento || <span className="text-muted">—</span>}</td>
               <td className="small">{(c.docentes ?? []).map((d) => d.nome).join(', ') || <span className="text-muted">{tx('por alocar')}</span>}</td>
               <td className="text-end text-nowrap">
-                <Link to={`/academico/documentos/cadeira/${c.id}/pauta`} className="btn btn-xs btn-theme me-1"><i className="fa fa-table me-1" />{tx('Pauta da cadeira')}</Link>
-                <Link to={`/academico/cadeiras/${c.id}`} className="btn btn-xs btn-white"><i className="fa fa-pen me-1" />{tx('Notas')}</Link>
+                {lancar
+                  ? <Link to={`/academico/cadeiras/${c.id}?separador=pauta`} className="btn btn-xs btn-theme me-1"><i className="fa fa-pen me-1" />{tx('Lançar notas')}</Link>
+                  : <Link to={`/academico/documentos/cadeira/${c.id}/pauta`} className="btn btn-xs btn-theme me-1"><i className="fa fa-table me-1" />{tx('Pauta da cadeira')}</Link>}
+                {lancar
+                  ? <Link to={`/academico/documentos/cadeira/${c.id}/pauta`} className="btn btn-xs btn-white"><i className="fa fa-print me-1" />{tx('Imprimir a pauta')}</Link>
+                  : <Link to={`/academico/cadeiras/${c.id}?separador=pauta`} className="btn btn-xs btn-white"><i className="fa fa-pen me-1" />{tx('Lançar notas')}</Link>}
               </td>
             </tr>
           ))}
@@ -38,7 +42,7 @@ function Cadeiras({ turmaId }) {
   )
 }
 
-function Pautas() {
+function Pautas({ lancar = false }) {
   const { ano } = useAnoTrabalho()
   const [turmas, setTurmas] = useState(null)
   const [cursos, setCursos] = useState([])
@@ -55,7 +59,7 @@ function Pautas() {
   const porCurso = [...new Set(doAno.map((t) => t.curso))].map((c) => [c, doAno.filter((t) => t.curso === c)]).sort((a, b) => nomeCurso(a[0]).localeCompare(nomeCurso(b[0])))
   return (
     <>
-      <CabecalhoPagina titulo={tx('Pautas')} subtitulo={tx('ano lectivo {0} — por curso, turma e cadeira (o ano muda-se no menu)', { 0: ano })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Pautas') }]} />
+      <CabecalhoPagina titulo={lancar ? tx('Lançar notas') : tx('Pautas')} subtitulo={lancar ? tx('ano lectivo {0} — escolha a turma e a cadeira (o ano muda-se no menu)', { 0: ano }) : tx('ano lectivo {0} — por curso, turma e cadeira (o ano muda-se no menu)', { 0: ano })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: lancar ? tx('Lançar notas') : tx('Pautas') }]} />
       {porCurso.length === 0 && <Painel titulo={tx('Pautas')}><p className="text-muted mb-0">{tx('Não há turmas no ano lectivo {0}. Escolha outro ano no menu.', { 0: ano })}</p></Painel>}
       {porCurso.map(([curso, ts]) => (
         <Painel key={curso} titulo={nomeCurso(curso)} corpo={false}>
@@ -66,10 +70,10 @@ function Pautas() {
                 <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-sm btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
                 <Link to={`/academico/turmas/${t.id}/pauta-final`} className="btn btn-sm btn-white"><i className="fa fa-file-alt me-1" />{tx('Pauta final do curso')}</Link>
                 <button type="button" className={`btn btn-sm ${aberta === t.id ? 'btn-dark' : 'btn-theme'}`} onClick={() => setAberta(aberta === t.id ? null : t.id)} aria-expanded={aberta === t.id}>
-                  <i className={`fa ${aberta === t.id ? 'fa-chevron-up' : 'fa-chevron-down'} me-1`} />{tx('Pautas das cadeiras')}
+                  <i className={`fa ${aberta === t.id ? 'fa-chevron-up' : 'fa-chevron-down'} me-1`} />{lancar ? tx('Cadeiras') : tx('Pautas das cadeiras')}
                 </button>
               </div>
-              {aberta === t.id && <div className="bg-light border-top"><Cadeiras turmaId={t.id} /></div>}
+              {aberta === t.id && <div className="bg-light border-top"><Cadeiras turmaId={t.id} lancar={lancar} /></div>}
             </div>
           ))}
         </Painel>

@@ -162,6 +162,8 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.post('/cadeiras/:id/horarios', validar({ params: pId, body: E.horario }), async (req, res) => res.status(201).json(await a.cadeiras.criarHorario(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/horarios/:id', validar({ params: pId }), async (req, res) => { await a.cadeiras.apagarHorario(ctx(req), req.dados.params.id); res.status(204).end() })
 
+  r.get('/pedidos/tipos', async (req, res) => res.json(a.pedidos.tiposPedido(ctx(req))))
+  r.post('/pedidos', validar({ body: E.pedidoNovo.extend({ estudanteId: E.idNumerico }) }), async (req, res) => res.status(201).json(await a.pedidos.criarPedido(ctx(req), req.dados.body)))
   r.get('/pedidos', validar({ query: E.filtroEstado }), async (req, res) => res.json(await a.pedidos.listarPedidos(ctx(req), req.dados.query)))
   r.put('/pedidos/:id', ficheiro, validar({ params: pId, body: E.tratarPedido }), async (req, res) => res.json(await a.pedidos.tratarPedido(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.get('/ficheiros/:id', validar({ params: pFicheiro }), async (req, res) => enviarFicheiro(req, res, await a.pedidos.ficheiro(ctx(req), req.dados.params.id)))

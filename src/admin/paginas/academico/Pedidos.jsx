@@ -7,7 +7,57 @@ import { t as tx } from '../../../i18n/linguas'
 
 const ESTADOS = { pendente: ['bg-secondary', tx('Pendente')], em_tratamento: ['bg-warning text-dark', tx('Em tratamento')], pronto: ['bg-success', tx('Pronto')], recusado: ['bg-danger', tx('Recusado')] }
 
-// pedidos de documentos feitos pelos estudantes no portal
+// um pedido feito ao balcão, por ofício ou por telefone: a Repartição regista-o em nome do estudante
+function NovoPedido({ aoCriar, aoFechar }) {
+  const [tipos, setTipos] = useState([])
+  const [estudantes, setEstudantes] = useState(null)
+  const [f, setF] = useState({ q: '', estudanteId: '', tipo: '', motivo: '' })
+  const [erro, setErro] = useState('')
+  const [aGravar, setAGravar] = useState(false)
+  useEffect(() => {
+    api('/academico/pedidos/tipos').then((t) => { setTipos(t); setF((x) => ({ ...x, tipo: x.tipo || t[0] || '' })) }).catch((e) => setErro(e.message))
+    api('/academico/contas?tipo=estudante').then(setEstudantes).catch((e) => setErro(e.message))
+  }, [])
+  const sem = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const termos = sem(f.q).split(/\s+/).filter(Boolean)
+  const achados = (estudantes ?? []).filter((e) => termos.length && termos.every((x) => sem([e.nome, e.numero, e.dados?.nip].join(' ')).includes(x))).slice(0, 12)
+  const escolhido = (estudantes ?? []).find((e) => String(e.id) === String(f.estudanteId))
+  async function criar(ev) {
+    ev.preventDefault()
+    setAGravar(true); setErro('')
+    try { await api('/academico/pedidos', { metodo: 'POST', corpo: { estudanteId: Number(f.estudanteId), tipo: f.tipo, ...(f.motivo.trim() ? { motivo: f.motivo.trim() } : {}) } }); aoCriar() } catch (e) { setErro(e.message) } finally { setAGravar(false) }
+  }
+  return (
+    <Painel titulo={tx('Novo pedido de documento')}>
+      <form onSubmit={criar}>
+        {erro && <div className="alert alert-danger py-2">{erro}</div>}
+        <div className="row g-2">
+          <div className="col-md-6">
+            <label className="form-label fw-bold" htmlFor="np-q">{tx('1. Estudante')}</label>
+            {escolhido
+              ? <div className="d-flex align-items-center gap-2 border rounded p-2"><b className="me-auto">{[escolhido.dados?.posto, escolhido.nome].filter(Boolean).join(' ')}</b><button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, estudanteId: '' })}>{tx('Mudar')}</button></div>
+              : <>
+                <input id="np-q" className="form-control" placeholder={tx('Escreva o nome ou o NIP')} value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} autoFocus />
+                <div className="list-group mt-1">{achados.map((e) => <button key={e.id} type="button" className="list-group-item list-group-item-action py-1 small" onClick={() => setF({ ...f, estudanteId: e.id, q: '' })}>{[e.dados?.posto, e.nome].filter(Boolean).join(' ')}{e.dados?.nip ? ` · NIP ${e.dados.nip}` : ''}</button>)}</div>
+              </>}
+          </div>
+          <div className="col-md-6">
+            <label className="form-label fw-bold" htmlFor="np-tipo">{tx('2. Documento')}</label>
+            <select id="np-tipo" className="form-select mb-2" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>{tipos.map((t) => <option key={t} value={t}>{tx(t)}</option>)}</select>
+            <label className="form-label" htmlFor="np-motivo">{tx('Motivo / observação')}{f.tipo === 'Outro' && ' *'}</label>
+            <textarea id="np-motivo" className="form-control" rows={2} maxLength={1000} value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })} />
+          </div>
+        </div>
+        <div className="d-flex gap-2 mt-3">
+          <button type="button" className="btn btn-white" onClick={aoFechar}>{tx('Cancelar')}</button>
+          <button type="submit" className="btn btn-theme ms-auto" disabled={!f.estudanteId || !f.tipo || aGravar}><i className={`fa ${aGravar ? 'fa-spinner fa-spin' : 'fa-paper-plane'} me-1`} />{tx('Registar o pedido')}</button>
+        </div>
+      </form>
+    </Painel>
+  )
+}
+
+// pedidos de documentos: os feitos pelos estudantes no portal e os registados aqui pela Repartição
 function Pedidos() {
   const { pode } = useSessao()
   const [lista, setLista] = useState(null)
@@ -15,13 +65,17 @@ function Pedidos() {
   const [estado, setEstado] = useState('')
   const [aberto, setAberto] = useState(null)
   const [aviso, setAviso] = useState(null)
+  const [novo, setNovo] = useState(false)
 
   const carregar = useCallback(() => api(`/academico/pedidos${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message)), [estado])
   useEffect(() => { carregar() }, [carregar])
 
   return (
     <>
-      <CabecalhoPagina titulo={tx('Pedidos de documentos')} subtitulo={tx('feitos no portal')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Pedidos') }]} />
+      <CabecalhoPagina titulo={tx('Pedidos de documentos')} subtitulo={tx('feitos no portal ou registados pela Repartição')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Pedidos') }]}>
+        {pode('academico.gerir') && !novo && <button type="button" className="btn btn-theme" onClick={() => setNovo(true)}><i className="fa fa-plus me-1" />{tx('Novo pedido')}</button>}
+      </CabecalhoPagina>
+      {novo && <NovoPedido aoFechar={() => setNovo(false)} aoCriar={() => { setNovo(false); setAviso({ texto: tx('Pedido registado.') }); carregar() }} />}
       {erro && <Erro texto={erro} onRepetir={carregar} />}
       <Painel titulo={`Pedidos${lista ? ` (${lista.length})` : ''}`} corpo={false}>
         <div className="panel-body pb-0">

@@ -109,7 +109,10 @@ export class ServicoTurmas {
       if (x.proposta) propostas[curso] = { ...x.proposta, ...(x.proposta.utilizadorId && porId.get(x.proposta.utilizadorId) ? this.#resumoConta(porId.get(x.proposta.utilizadorId)) : { nome: x.proposta.utilizadorId ? '(conta já sem acesso)' : null }) }
       if (x.recusa) recusas[curso] = x.recusa
     }
-    return { directores, propostas, recusas, aprovacaoComandante: Boolean(this.aprovacaoComandante), candidatos: ctx.actor.pode('academico.gerir') ? contas.map((u) => this.#resumoConta(u)) : [] }
+    // o Director de um curso é um docente: só as contas do painel que são de um docente (a mesma ficha do Pessoal ou
+    // o mesmo nome)
+    const candidatos = ctx.actor.pode('academico.gerir') ? (await this.#soDocentes(contas)).map((u) => this.#resumoConta(u)) : []
+    return { directores, propostas, recusas, aprovacaoComandante: Boolean(this.aprovacaoComandante), candidatos }
   }
 
   /*
@@ -123,8 +126,8 @@ export class ServicoTurmas {
     const nomeCurso = (curso.dados ?? curso).nome
     let u = null
     if (utilizadorId !== null) {
-      u = (await this.#contasDoEnsino()).find((x) => x.id === utilizadorId)
-      if (!u) throw new ErroValidacao('Escolha uma conta activa do painel que veja o Ensino (o Director de Curso entra com a sua conta).', { campo: 'utilizadorId' })
+      u = (await this.#soDocentes(await this.#contasDoEnsino())).find((x) => x.id === utilizadorId)
+      if (!u) throw new ErroValidacao('O Director do curso tem de ser um docente com conta no painel (a conta vem do Sistema de Pessoal).', { campo: 'utilizadorId' })
     }
     const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
     const atual = guardado[cursoId] ?? {}
@@ -199,6 +202,15 @@ export class ServicoTurmas {
     const veEnsino = (u) => (u.permissoes ?? papeis.get(u.papel)?.permissoes ?? []).includes('academico.ver')
     return (await this.utilizadores.listar()).filter((u) => u.ativo && !u.aprovacao && u.papel !== 'administrador' && veEnsino(u))
       .map((u) => ({ ...u, nomePapel: papeis.get(u.papel)?.nome ?? u.papel })).sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
+  }
+
+  // das contas do painel, só as que são de um docente (pela ficha do Pessoal ou, sem ela, pelo nome)
+  async #soDocentes(contas) {
+    const docentes = await this.contas.listar({ tipo: 'docente' }).catch(() => [])
+    const sem = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^(\S+\.\s+)+/, '').replace(/\s+/g, ' ').trim()
+    const refs = new Set(docentes.map((d) => d.dados?.pessoalRef).filter(Boolean))
+    const nomes = new Set(docentes.map((d) => sem(d.nome)))
+    return contas.filter((u) => (u.pessoalRef && refs.has(u.pessoalRef)) || nomes.has(sem(u.nome)))
   }
 
   #resumoConta(u) {

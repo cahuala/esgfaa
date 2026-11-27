@@ -30,6 +30,8 @@ import Historico from './paginas/academico/documentos/Historico'
 import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
 import DiplomasTurma from './paginas/academico/documentos/DiplomasTurma'
 import Pautas from './paginas/academico/Pautas'
+import Matriculas from './paginas/academico/Matriculas'
+import Declaracao from './paginas/academico/documentos/Declaracao'
 import DocumentosInicio from './paginas/academico/documentos/DocumentosInicio'
 import DocumentosAno from './paginas/academico/documentos/DocumentosAno'
 import Estrutura from './paginas/academico/Estrutura'
@@ -116,6 +118,9 @@ function App() {
         {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/certificado/:estudanteId" element={<CertificadoCurso />} />}
         {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/diplomas" element={<DiplomasTurma />} />}
         {pode('academico.ver') && <Route path="/academico/pautas" element={<Pautas />} />}
+        {pode('academico.ver') && <Route path="/academico/lancar-notas" element={<Pautas lancar key="lancar" />} />}
+        {pode('academico.ver') && <Route path="/academico/matriculas" element={<Matriculas />} />}
+        {pode('academico.ver') && <Route path="/academico/documentos/conta/:id/declaracao" element={<Declaracao />} />}
         {pode('academico.ver') && <Route path="/academico/documentos" element={<DocumentosInicio />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
         {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo/:id/ficha" element={<FichaConta />} />}

@@ -36,6 +36,71 @@ function Tarefa({ para, icone, cor, texto, valor }) {
   )
 }
 
+// os atalhos do trabalho de todos os dias da Administração Escolar (como o painel do Pessoal e Quadros)
+const ATALHOS_ENSINO = [
+  ['/pessoal/registo', 'fa-id-card', 'Fichas', 'estudantes e docentes', 'academico.ver'],
+  ['/academico/turmas', 'fa-users', 'Turmas', 'e os seus estudantes', 'academico.ver'],
+  ['/academico/matriculas', 'fa-user-plus', 'Matrículas', 'quem está em que turma', 'academico.ver'],
+  ['/academico/lancar-notas', 'fa-pen', 'Lançar notas', 'por cadeira', 'academico.notas'],
+  ['/academico/pautas', 'fa-table', 'Pautas', 'por curso e cadeira', 'academico.ver'],
+  ['/academico/documentos', 'fa-print', 'Documentos', 'listas, diplomas, ofícios…', 'academico.ver'],
+  ['/academico/pedidos', 'fa-file-signature', 'Pedidos', 'de documentos', 'academico.ver'],
+  ['/academico/alocacao', 'fa-chalkboard-teacher', 'Docentes', 'nas cadeiras', 'academico.ver'],
+]
+function Atalhos({ pode }) {
+  return (
+    <div className="panel panel-inverse">
+      <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-bolt me-2" />{tx('Trabalho do dia')}</h4></div>
+      <div className="panel-body">
+        <div className="row g-2">
+          {ATALHOS_ENSINO.filter((a) => pode(a[4])).map(([para, icone, titulo, sub]) => (
+            <div key={para} className="col-xl-3 col-md-4 col-6">
+              <Link to={para} className="btn btn-white w-100 h-100 text-start py-3 d-flex align-items-center gap-3">
+                <i className={`fa ${icone} fa-2x`} style={{ color: '#861d0c', width: 36 }} />
+                <span><b className="d-block">{tx(titulo)}</b><span className="small text-muted">{tx(sub)}</span></span>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+// o ano lectivo por curso: as turmas, os estudantes e as cadeiras
+function PorCurso({ ano }) {
+  const [turmas, setTurmas] = useState(null)
+  const [cursos, setCursos] = useState([])
+  useEffect(() => {
+    api('/academico/turmas').then(setTurmas).catch(() => setTurmas([]))
+    api('/colecoes/cursos').then(setCursos).catch(() => {})
+  }, [])
+  if (!turmas) return null
+  const doAno = turmas.filter((t) => t.anoLetivo === ano)
+  if (!doAno.length) return null
+  const nome = (id) => cursos.find((c) => c.id === id)?.nome ?? id
+  const linhas = [...new Set(doAno.map((t) => t.curso))].map((c) => {
+    const ts = doAno.filter((t) => t.curso === c)
+    return { c, turmas: ts.length, estudantes: ts.reduce((a, t) => a + (t.estudantes ?? 0), 0), cadeiras: ts.reduce((a, t) => a + (t.cadeiras ?? 0), 0) }
+  }).sort((a, b) => nome(a.c).localeCompare(nome(b.c)))
+  return (
+    <div className="panel panel-inverse">
+      <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-graduation-cap me-2" />{tx('O ano lectivo {0} por curso', { 0: ano })}</h4></div>
+      <div className="table-responsive">
+        <table className="table table-striped align-middle mb-0">
+          <thead><tr><th>{tx('Curso')}</th><th className="text-end">{tx('Turmas')}</th><th className="text-end">{tx('Estudantes')}</th><th className="text-end">{tx('Cadeiras')}</th><th /></tr></thead>
+          <tbody>
+            {linhas.map((l) => (
+              <tr key={l.c}><td className="fw-bold">{nome(l.c)}</td><td className="text-end">{l.turmas}</td><td className="text-end">{l.estudantes}</td><td className="text-end">{l.cadeiras}</td>
+                <td className="text-end"><Link to="/academico/pautas" className="btn btn-xs btn-white"><i className="fa fa-table me-1" />{tx('Pautas')}</Link></td></tr>
+            ))}
+            <tr className="fw-bold"><td>{tx('Total')}</td><td className="text-end">{linhas.reduce((a, l) => a + l.turmas, 0)}</td><td className="text-end">{linhas.reduce((a, l) => a + l.estudantes, 0)}</td><td className="text-end">{linhas.reduce((a, l) => a + l.cadeiras, 0)}</td><td /></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function PainelPapel() {
   const { pode } = useSessao()
   // os números do ano lectivo de trabalho (o actual, ou o escolhido na conta)
@@ -102,6 +167,7 @@ export default function PainelPapel() {
           <Numero cor="esg-w-cinza" icone="fa-ban" titulo={tx('ENDEREÇOS BLOQUEADOS')} valor={seg.bloqueios.length} extra={tx('Centro de segurança')} para="/seguranca" />
         </>}
       </div>
+      {verAc && <Atalhos pode={pode} />}
       {tarefas?.length > 0 && (
         <div className="panel panel-inverse">
           <div className="panel-heading"><h4 className="panel-title"><i className="fa fa-tasks me-2" />{tx('À sua espera')}</h4></div>
@@ -110,6 +176,7 @@ export default function PainelPapel() {
           </div>
         </div>
       )}
+      {verAc && ano && <PorCurso ano={ano} />}
     </>
   )
 }

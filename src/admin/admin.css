@@ -892,3 +892,7 @@ fieldset:disabled .bloco-topo .btn-group {
   .of-no-ecra { display: none !important; }
   .of-quebra { break-after: page; }
 }
+
+/* as ligações dentro das páginas: a cor do sistema, não o azul do navegador (os botões e os separadores ficam como estão) */
+.app-content a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link):not(.fc-btn) { color: #861d0c; font-weight: 600; text-decoration: none; }
+.app-content a:not(.btn):not(.nav-link):not(.dropdown-item):not(.list-group-item):not(.page-link):not(.fc-btn):hover { color: #a01510; text-decoration: underline; }
