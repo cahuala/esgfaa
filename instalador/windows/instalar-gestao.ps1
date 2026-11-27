@@ -299,6 +299,33 @@ if (-not $Atualizar) {
   }
 }
 
+# uma instalação nova que falhou antes (sem configuração nem base de dados) pode ter deixado a pasta com as permissões
+# a meio: os administradores retomam-na e as permissões voltam às do disco antes de começar (não há dados lá)
+if (-not $Atualizar -and (Test-Path $Destino)) {
+  if (Test-Path "$Destino\dados\bd\PG_VERSION") { Falha "Em $Destino há uma base de dados mas não há configuração ($EnvFicheiro): não se mexe. Traga o ficheiro deste erro." }
+  Passo 'copiar' "A retomar a pasta $Destino de uma tentativa anterior (não tem dados)"
+  Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
+  foreach ($a in @(@($Destino, '/setowner', '*S-1-5-32-544', '/T', '/C', '/Q'), @($Destino, '/reset', '/T', '/C', '/Q'), @($Destino, '/grant', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F', '/T', '/C', '/Q'))) {
+    Calado icacls $a | ForEach-Object { Write-Host "    icacls: $_" }
+  }
+  Ok 'pasta retomada'
+}
+
+# o antivírus (Windows Defender) costuma bloquear os programas acabados de descompactar (postgres.exe: «Access is
+# denied»): numa instalação nova pergunta-se, antes de descompactar, se pode permitir a pasta do sistema
+$mp = try { Get-MpComputerStatus -ErrorAction Stop } catch { $null }
+if (-not $Atualizar -and $mp -and $mp.RealTimeProtectionEnabled) {
+  $permitidas = try { @((Get-MpPreference -ErrorAction Stop).ExclusionPath) } catch { @() }
+  if ($permitidas -notcontains $Destino) {
+    Write-Host ''
+    Write-Host 'WINDOWS DEFENDER: costuma bloquear o PostgreSQL acabado de instalar.' -ForegroundColor Cyan
+    $r = if ($env:ESG_PERMITIR_DEFENDER) { $env:ESG_PERMITIR_DEFENDER } else { Read-Host "  Permitir a pasta $Destino no Windows Defender? (S/N) [S]" }
+    if (-not "$r".Trim() -or "$r".Trim().ToUpper().StartsWith('S')) {
+      try { Add-MpPreference -ExclusionPath $Destino -ErrorAction Stop; Ok "pasta $Destino permitida no Windows Defender" } catch { Write-Host "    (não foi possível: $($_.Exception.Message))" -ForegroundColor Yellow }
+    }
+  }
+}
+
 Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Destino"
 foreach ($d in $Destino, $Dados, $Conf, "$Dados\ficheiros", "$Dados\copias", "$Dados\caddy", "$Destino\servicos", "$Destino\certificado") { New-Item -ItemType Directory -Force $d | Out-Null }
 $C = Join-Path $Pen 'componentes'
@@ -322,9 +349,9 @@ if ($TrocarComp) {
 LimparPasta "$Destino\sistema.novo"
 Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema.novo"
 # só o sistema (SYSTEM) e os administradores entram na pasta; quem instala e o NETWORK SERVICE (PostgreSQL) lêem
-Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', '/T', '/C', '/Q') | Out-Null
+Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', '/T', '/C', '/Q') | ForEach-Object { Write-Host "    icacls: $_" }
 $EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-Calado icacls @($Destino, '/grant', "*${EuSid}:(OI)(CI)RX", '*S-1-5-20:(OI)(CI)RX', '/T', '/C', '/Q') | Out-Null
+Calado icacls @($Destino, '/grant', "*${EuSid}:(OI)(CI)RX", '*S-1-5-20:(OI)(CI)RX', '/T', '/C', '/Q') | ForEach-Object { Write-Host "    icacls: $_" }
 if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -ErrorAction SilentlyContinue).Installed) {
   Write-Host '    a instalar o Visual C++ Redistributable (x64)…'
   $p = Start-Process -FilePath "$C\vcredist-windows.exe" -ArgumentList '/install', '/quiet', '/norestart' -Wait -PassThru
