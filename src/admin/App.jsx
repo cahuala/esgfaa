@@ -76,7 +76,8 @@ function App() {
     <Layout>
       <JanelaDialogo />
       <Routes>
-        <Route path="/" element={<Painel />} />
+        {/* no Sistema de Cibersegurança, a página inicial é o centro de monitorização */}
+        <Route path="/" element={utilizador?.sistema === 'ciberseguranca' ? <Monitorizacao /> : <Painel />} />
         <Route path="/colecao/:colecao" element={<PorEndereco><ListaColecao /></PorEndereco>} />
         <Route path="/colecao/:colecao/novo" element={<PorEndereco><EditarItem /></PorEndereco>} />
         <Route path="/colecao/:colecao/:id" element={<PorEndereco><EditarItem /></PorEndereco>} />

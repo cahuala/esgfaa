@@ -62,7 +62,7 @@ const ESQUEMA = z.object({
   // sistemas separados (cada um com a sua base de dados): completo = tudo num só (desenvolvimento, servidor de teste);
   // escolar = Gestão Escolar (interno); site = Gestão do Site (interno); biblioteca = Biblioteca (interna);
   // online = o site público e o Portal (internet)
-  SISTEMA: z.enum(['completo', 'escolar', 'site', 'biblioteca', 'online']).default('completo'),
+  SISTEMA: z.enum(['completo', 'escolar', 'site', 'biblioteca', 'online', 'ciberseguranca']).default('completo'),
   // chave partilhada entre os sistemas (a mesma nos três) e, nos internos, o endereço do servidor online
   REPLICACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'REPLICACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   REPLICACAO_URL: z.union([z.literal(''), z.url()]).default(''),

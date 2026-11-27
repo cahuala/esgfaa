@@ -352,7 +352,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   servicos.avisosComandante = new ServicoAvisosComandante({ utilizadores: r.utilizadores, papeis: r.papeis, correio, registar: (x) => console.error(JSON.stringify(x)) })
   servicos.avisosComandante.ligar(auditoria)
   // sistemas separados: a troca com os outros (o que é de cada um; sem passar pela cifra — vai tal como está guardado)
-  const replicacao = config.sistema !== 'completo' && config.replicacao.chave
+  // o Sistema de Cibersegurança só observa (não troca dados): usa a chave só para assinar as consultas
+  const replicacao = !['completo', 'ciberseguranca'].includes(config.sistema) && config.replicacao.chave
     ? new Replicacao({ prisma: prismaBase, Prisma, sistema: config.sistema, chave: config.replicacao.chave, url: config.replicacao.url, pares: config.replicacao.pares, intervaloS: config.replicacao.intervaloS, privados, pastaUploads: config.pastaUploads, registar: (x) => console.error(JSON.stringify(x)),
       // no servidor online: os avisos que chegam da Gestão Escolar vão logo para os telemóveis e as páginas abertas
       aoCriar: config.sistema === 'online' ? (modelo, d) => (modelo === 'Notificacao' ? notificacoes.avisarRecebido(d) : null) : null })

@@ -16,6 +16,11 @@ Os sistemas internos instalam-se nos servidores da Escola, por esta ordem (podem
    «E-mails de acesso ao portal» e crie os e-mails nome.apelido@portal.esg.emfaa.gov.ao.
 3. SISTEMA DE GESTÃO DO SITE — ESG-GESTAO\INSTALAR-GESTAO-DO-SITE-WINDOWS.bat
 4. SISTEMA DE BIBLIOTECA — ESG-GESTAO\INSTALAR-BIBLIOTECA-WINDOWS.bat
+5. SISTEMA DE CIBERSEGURANÇA — ESG-GESTAO\INSTALAR-CIBERSEGURANCA-WINDOWS.bat
+   Vigia todos os sistemas de minuto a minuto: se respondem (e a disponibilidade das últimas 24 horas), o servidor
+   (processador, memória, disco, base de dados), a segurança (ataques, IP bloqueados), a comunicação entre os
+   sistemas (cada troca: quem enviou, quanto e o quê) e as actualizações do site (notícias…) e do Portal.
+   Usa a mesma chave da ligação (ligacao-online.txt); só a equipa de cibersegurança entra (papel «Cibersegurança»).
 
 SE PRECISAR DE VOLTAR A CARREGAR (Gestão Escolar › Administração Escolar › Arquivo e arranque do ano)
   a) ESG-GESTAO\CARREGAR\arranque-2026-2027.json — as turmas de 2026/2027 com as cadeiras dos planos,
@@ -26,8 +31,8 @@ SE PRECISAR DE VOLTAR A CARREGAR (Gestão Escolar › Administração Escolar �
   ficheiro (não repete nada).
   Para conferir: ESG-GESTAO\CONFERIR\CONFERENCIA-arquivo-x-listas.xlsx e CONFERIR-carga-do-Pessoal.xlsx.
 
-NO PAINEL: «Cibersegurança e monitorização (todos os sistemas)» mostra cada sistema com o seu domínio, se
-responde, a saúde do servidor, a segurança e as trocas com o servidor online.
+NO PAINEL DE CADA SISTEMA: «Cibersegurança e monitorização (todos os sistemas)» mostra o mesmo ecrã; no Sistema
+de Cibersegurança é a página inicial e a vigilância é contínua (mesmo sem ninguém a ver).
 
 ATENÇÃO: esta pasta tem dados pessoais reais (CARREGAR) e as chaves (ligacao-online.txt). Não a envie
 por e-mail; depois de instalar, guarde o pendrive em lugar seguro. A instalação precisa da autorização do Comando.

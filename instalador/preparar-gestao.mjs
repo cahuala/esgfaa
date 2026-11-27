@@ -5,6 +5,7 @@
                                            departamentos, Comando, Biblioteca, registo dos estudantes e docentes);
     INSTALAR-GESTAO-DO-SITE-WINDOWS.bat  — Sistema de Gestão do Site (notícias, páginas, cursos, eventos, comentários);
     INSTALAR-BIBLIOTECA-WINDOWS.bat      — Sistema de Biblioteca (catálogo, exemplares, empréstimos; os livros leem-se no portal).
+    INSTALAR-CIBERSEGURANCA-WINDOWS.bat  — Sistema de Cibersegurança (vigia todos os sistemas, a comunicação e as actualizações).
   Cada um troca os dados com o servidor online (o site público e o Portal dos estudantes e docentes, noutro servidor).
 
     node instalador/preparar-gestao.mjs [--destino <pasta ou pendrive>] [--ligacao-online <ligacao-online.txt>]
@@ -117,7 +118,7 @@ async function main() {
   passo('A copiar o instalador…')
   fs.mkdirSync(path.join(DESTINO, 'windows'), { recursive: true })
   fs.copyFileSync(path.join(AQUI, 'windows', 'instalar-gestao.ps1'), path.join(DESTINO, 'windows', 'instalar-gestao.ps1'))
-  for (const f of ['INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat', 'INSTALAR-GESTAO-DO-SITE-WINDOWS.bat', 'INSTALAR-BIBLIOTECA-WINDOWS.bat']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
+  for (const f of ['INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat', 'INSTALAR-GESTAO-DO-SITE-WINDOWS.bat', 'INSTALAR-BIBLIOTECA-WINDOWS.bat', 'INSTALAR-CIBERSEGURANCA-WINDOWS.bat']) fs.copyFileSync(path.join(AQUI, f), path.join(DESTINO, f))
   fs.copyFileSync(path.join(AQUI, 'LEIA-ME-GESTAO.txt'), path.join(DESTINO, 'LEIA-ME.txt'))
   fs.copyFileSync(path.join(AQUI, 'LEIA-PRIMEIRO-ORDEM.txt'), path.join(DESTINO, 'LEIA-PRIMEIRO-ORDEM.txt'))
   // a ligação ao servidor online (endereço e chaves partilhadas), se se deu

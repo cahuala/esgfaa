@@ -40,6 +40,12 @@ if (contentor.replicacao) {
   console.log(`Sistema ${config.sistema}: replicação ${config.sistema === 'online' ? `à espera de ${config.replicacao.pares.join(', ')}` : `com ${config.replicacao.url || '(sem REPLICACAO_URL)'}`}.`)
 }
 
+// o Sistema de Cibersegurança vigia todos os sistemas de minuto a minuto (a disponibilidade e as mudanças de estado)
+if (config.sistema === 'ciberseguranca') {
+  contentor.servicos.monitorizacao.iniciarVigilancia(60)
+  console.log('Sistema de Cibersegurança: a vigiar os sistemas de minuto a minuto.')
+}
+
 const app = criarApp(contentor)
 const servidor = app.listen(config.porta, config.anfitriao || undefined, () => {
   console.log(`API ESGFAA a correr em http://${config.anfitriao || 'localhost'}:${config.porta}`)

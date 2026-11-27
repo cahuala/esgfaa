@@ -208,6 +208,47 @@ describe('Sistemas separados: Gestão Escolar, Gestão do Site e servidor online
     assert.equal((await escolar.http().get('/api/admin/monitorizacao').set('Authorization', `Bearer ${prof.token}`)).status, 403)
   })
 
+  it('Sistema de Cibersegurança: só observa, vigia todos e mostra a comunicação e as actualizações', async () => {
+    const ciber = await criarAmbiente({ env: { SISTEMA: 'ciberseguranca', REPLICACAO_CHAVE: CHAVE, REPLICACAO_URL: 'https://portal.teste.ao' } })
+    try {
+      assert.equal(ciber.contentor.replicacao, null)
+      // pela «rede»: a Gestão Escolar e o servidor online respondem ao pedido assinado
+      ciber.contentor.servicos.monitorizacao.buscar = async (url, op = {}) => {
+        const amb = url.startsWith('https://portal.teste.ao') ? online : url.startsWith('http://127.0.0.1:3001') ? escolar : null
+        if (!amb) throw Object.assign(new Error('ligação recusada'), { cause: { code: 'ECONNREFUSED' } })
+        let pedido = amb.http().get(new URL(url).pathname)
+        for (const [k, v] of Object.entries(op.headers ?? {})) pedido = pedido.set(k, v)
+        const r = await pedido
+        return { ok: r.status < 400, status: r.status, json: async () => r.body }
+      }
+      const u = await ciber.criarUtilizador('ciberseguranca')
+      const auth = { Authorization: `Bearer ${u.token}` }
+      const eu = (await ciber.http().get('/api/admin/eu').set(auth).expect(200)).body
+      assert.equal(eu.sistema, 'ciberseguranca')
+      assert.ok(eu.permissoes.every((x) => ['seguranca', 'utilizadores', 'papeis', 'atividades'].includes(x.split('.')[0])), eu.permissoes.join())
+      await ciber.http().put('/api/admin/monitorizacao/sistemas').set(auth).send({ sistemas: [
+        { nome: 'Sistema de Cibersegurança', tipo: 'ciberseguranca', dominio: 'ciberseguranca.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3005' },
+        { nome: 'Sistema de Gestão Escolar', tipo: 'escolar', dominio: 'escolar.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3001' },
+        { nome: 'Servidor online', tipo: 'online', dominio: 'portal.teste.ao', endereco: 'https://portal.teste.ao' },
+        { nome: 'Sistema de Biblioteca', tipo: 'biblioteca', dominio: 'biblioteca.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3004' },
+      ] }).expect(200)
+      const m = (await ciber.http().get('/api/admin/monitorizacao').set(auth).expect(200)).body
+      assert.deepEqual(m.sistemas.map((x) => x.ok), [true, true, true, false])
+      // a comunicação: as trocas que a Gestão Escolar e o servidor online registaram, de quem para quem e o quê
+      assert.ok(m.trocas.some((t) => t.de === 'escolar' && t.para === 'online'), JSON.stringify(m.trocas.slice(0, 2)))
+      assert.ok(m.trocas.some((t) => t.para === 'online' && Object.keys({ ...t.enviado, ...t.recebido }).length))
+      assert.ok(m.mudancas.some((x) => x.n > 0))
+      assert.ok(Array.isArray(m.actualizacoes) && Array.isArray(m.actividade))
+      // a disponibilidade conta-se a cada verificação; a que deixou de responder fica no registo de actividades
+      const id = m.sistemas[3].id
+      assert.equal(m.disponibilidade[id].percentagem, 0)
+      // só o painel: o site público e o Portal não são deste sistema
+      assert.equal((await ciber.http().get('/api/portal/eu')).status, 404)
+    } finally {
+      await ciber.fechar()
+    }
+  })
+
   it('o estado da replicação diz até onde se trocou', async () => {
     const e = await escolar.contentor.replicacao.estado()
     assert.equal(e.pares[0].par, 'online')

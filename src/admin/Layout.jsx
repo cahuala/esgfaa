@@ -250,7 +250,7 @@ function Layout({ children }) {
             {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Arquivo e arranque do ano')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
-            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Consultar registo de pessoas')} />}
+            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto={tx('Avisos do portal')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/lti" icone="fa-plug" texto={tx('Ferramentas externas (LTI)')} />}

@@ -9,6 +9,9 @@ OS SISTEMAS (cada um com a sua instalação e a sua base de dados; conversam ent
     comentários e as mensagens dos visitantes.
   - Sistema de Biblioteca (INSTALAR-BIBLIOTECA-WINDOWS.bat): catálogo, exemplares, empréstimos e reservas; os livros
     (e as versões digitais) ficam disponíveis nas contas dos estudantes e docentes no Portal.
+  - Sistema de Cibersegurança (INSTALAR-CIBERSEGURANCA-WINDOWS.bat): vigia todos os sistemas de minuto a minuto —
+    se respondem, o servidor, a segurança, a comunicação entre eles e as actualizações do site e do Portal. Só observa
+    (não troca dados); usa a mesma REPLICACAO_CHAVE para assinar as consultas. Porta 3005, pasta C:\ESG-Ciberseguranca.
   - Servidor online (na internet; não vai neste pendrive): o site público e o Portal dos estudantes e docentes.
     Recebe da Gestão Escolar as contas, turmas, cadeiras, horários e notas publicadas; devolve-lhe o que os docentes
     e os estudantes fazem lá (notas lançadas, presenças, materiais, entregas). Recebe da Gestão do Site os conteúdos.
@@ -18,7 +21,7 @@ ANTES DE INSTALAR
   - A instalação nos servidores da Escola precisa da AUTORIZAÇÃO FORMAL do Comando.
   - Windows 10/11 ou Windows Server 2016+ (64 bits), 5 GB livres no disco C:.
   - Um nome no DNS da Escola para cada sistema (por omissão escolar.esg.emfaa.gov.ao, gestao-site.esg.emfaa.gov.ao e
-    biblioteca.esg.emfaa.gov.ao).
+    biblioteca.esg.emfaa.gov.ao e ciberseguranca.esg.emfaa.gov.ao).
   - O endereço do servidor online (ex.: https://portal.esg.emfaa.gov.ao) e saída para a internet a partir destes servidores.
 
 AS CHAVES (as mesmas nos três: Gestão Escolar, Gestão do Site e servidor online)

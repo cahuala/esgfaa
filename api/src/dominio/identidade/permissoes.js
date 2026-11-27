@@ -167,13 +167,15 @@ export function limparPermissoes(lista) {
   Sistemas separados: cada instalação do painel só trata do que é seu (as contas e os papéis são os mesmos).
     site    — o Sistema de Gestão do Site: conteúdos, páginas, comentários, mensagens, publicidade, estatísticas;
     escolar — o Sistema de Gestão Escolar: o ensino, o registo de estudantes e docentes, a integridade;
-    biblioteca — o Sistema de Biblioteca: o catálogo, os exemplares, os empréstimos e as reservas.
-  O que fica nos dois: utilizadores, papéis, actividades, segurança. Na instalação completa, tudo.
+    biblioteca — o Sistema de Biblioteca: o catálogo, os exemplares, os empréstimos e as reservas;
+    ciberseguranca — o Sistema de Cibersegurança: só a segurança e a monitorização de todos os sistemas.
+  O que fica em todos: utilizadores, papéis, actividades, segurança. Na instalação completa, tudo.
 */
 const DO_SITE = new Set([...CONTEUDOS, 'paginas', 'comentarios', 'contactos', 'estatisticas', 'publicacoes'])
 const DO_ESCOLAR = new Set(['academico', 'pessoal', 'integridade'])
 const DA_BIBLIOTECA = new Set(['biblioteca'])
 export function permissoesDoSistema(permissoes, sistema = 'completo') {
+  if (sistema === 'ciberseguranca') return [...permissoes].filter((p) => ['seguranca', 'utilizadores', 'papeis', 'atividades'].includes(p.split('.')[0]))
   if (!['site', 'escolar', 'biblioteca'].includes(sistema)) return [...permissoes]
   const fora = new Set([...(sistema === 'site' ? [] : DO_SITE), ...(sistema === 'escolar' ? [] : DO_ESCOLAR), ...(sistema === 'biblioteca' ? [] : DA_BIBLIOTECA)])
   // na Gestão Escolar, os cursos vêm do site (só se vêem: escolher o curso de uma turma)

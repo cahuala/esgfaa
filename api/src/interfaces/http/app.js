@@ -62,7 +62,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     res.status(fechado.estado).set('Retry-After', '600').json({ erro: fechado.erro, codigo: fechado.codigo, servico: fechado.servico })
   })
   // o Sistema de Gestão de Pessoal assina o corpo tal como vem: esta rota lê-o antes do express.json
-  // o que cada instalação serve: completo = tudo; escolar e site = o painel (rede interna); online = o site e o portal
+  // o que cada instalação serve: completo = tudo; escolar, site, biblioteca e ciberseguranca = o painel (rede interna); online = o site e o portal
   const sistema = config.sistema ?? 'completo'
   const tem = (...s) => sistema === 'completo' || s.includes(sistema)
   // a troca entre os sistemas separados (o servidor online recebe; o corpo assina-se tal como vem)
@@ -96,7 +96,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     next()
   }
   app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
-  if (tem('escolar', 'site', 'biblioteca')) app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
+  if (tem('escolar', 'site', 'biblioteca', 'ciberseguranca')) app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
   if (tem('online')) {
     app.use('/api/pacotes', rotasPacotes({ servicos, config }))
     app.use('/api/lti', semCache, rotasLti({ servicos, config }))

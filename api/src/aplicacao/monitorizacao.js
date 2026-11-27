@@ -10,7 +10,9 @@ import { assinar } from '../infraestrutura/replicacao/motor.js'
   só diz se responde (/api/saude). A lista dos sistemas (nome, domínio e o endereço para os contactar) muda-se no ecrã.
 */
 const CHAVE_LISTA = 'monitorizacao-sistemas'
-const TIPOS = { pessoal: 'Sistema de Gestão de Pessoal', escolar: 'Sistema de Gestão Escolar', site: 'Sistema de Gestão do Site', biblioteca: 'Sistema de Biblioteca', online: 'Servidor online (site público e Portal)', completo: 'Sistema completo' }
+const TIPOS = { pessoal: 'Sistema de Gestão de Pessoal', escolar: 'Sistema de Gestão Escolar', site: 'Sistema de Gestão do Site', biblioteca: 'Sistema de Biblioteca', online: 'Servidor online (site público e Portal)', ciberseguranca: 'Sistema de Cibersegurança', completo: 'Sistema completo' }
+// os conteúdos do site que se acompanham (notícias, eventos, páginas…)
+const COLECOES_SITE = { noticias: 'Notícia', eventos: 'Evento', artigos: 'Artigo', cursos: 'Curso', pessoas: 'Pessoa', revistas: 'Revista', publicidade: 'Publicidade' }
 
 // a lista por omissão: os sistemas da Escola (no mesmo servidor, pelo endereço interno; o online, pelo da internet)
 export function sistemasPorOmissao(config) {
@@ -21,6 +23,7 @@ export function sistemasPorOmissao(config) {
     { id: 'site', nome: TIPOS.site, tipo: 'site', dominio: 'gestao-site.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3003' },
     { id: 'biblioteca', nome: TIPOS.biblioteca, tipo: 'biblioteca', dominio: 'biblioteca.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3004' },
     { id: 'online', nome: TIPOS.online, tipo: 'online', dominio: new URL(online).host, endereco: online },
+    { id: 'ciberseguranca', nome: TIPOS.ciberseguranca, tipo: 'ciberseguranca', dominio: 'ciberseguranca.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3005' },
   ]
 }
 
@@ -31,15 +34,23 @@ export class ServicoMonitorizacao {
 
   // o estado deste sistema (o que os outros pedem, e o que o ecrã mostra deste)
   async estadoLocal() {
-    const [seg, bd, rep] = await Promise.all([
+    const sistema = this.config.sistema ?? 'completo'
+    const comSite = ['site', 'online', 'completo'].includes(sistema)
+    const [seg, bd, rep, itens, actividade] = await Promise.all([
       this.seguranca.resumoParaMonitor(),
       this.prisma.$queryRawUnsafe('SELECT pg_database_size(current_database())::bigint AS tamanho, (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database())::int AS ligacoes').then((r) => r[0]).catch(() => null),
       this.replicacao ? this.replicacao.estado() : null,
+      // as últimas actualizações do site (notícias, eventos, páginas…)
+      comSite ? this.prisma.item.findMany({ where: { colecao: { in: Object.keys(COLECOES_SITE) } }, orderBy: { atualizadoEm: 'desc' }, take: 15, select: { colecao: true, id: true, dados: true, estado: true, atualizadoEm: true } }).catch(() => []) : [],
+      // o que se fez aqui nas últimas horas (registo de actividades)
+      this.prisma.atividade.findMany({ orderBy: { data: 'desc' }, take: 25, select: { acao: true, colecao: true, alvoTitulo: true, utilizadorNome: true, data: true } }).catch(() => []),
     ])
     return {
       sistema: this.config.sistema ?? 'completo', nome: TIPOS[this.config.sistema ?? 'completo'], dominio: this.config.urlPublico ? new URL(this.config.urlPublico).host : '',
       ...seg, baseDados: { ...seg.saude.baseDados, tamanho: bd ? Number(bd.tamanho) : null, ligacoes: bd?.ligacoes ?? null },
-      replicacao: rep ? { url: rep.url, porEnviar: rep.porEnviar, pares: rep.pares } : null,
+      replicacao: rep ? { url: rep.url, porEnviar: rep.porEnviar, pares: rep.pares, trocas: rep.trocas ?? [], mudancas24h: rep.mudancas24h ?? [] } : null,
+      actualizacoes: itens.map((i) => ({ tipo: COLECOES_SITE[i.colecao] ?? i.colecao, titulo: String(i.dados?.titulo ?? i.dados?.nome ?? i.id).slice(0, 160), estado: i.estado, quando: i.atualizadoEm })),
+      actividade: actividade.map((a) => ({ acao: a.acao, colecao: a.colecao, alvo: String(a.alvoTitulo ?? '').slice(0, 160), quem: a.utilizadorNome ?? 'sistema', quando: a.data })),
     }
   }
 
@@ -103,7 +114,55 @@ export class ServicoMonitorizacao {
         else if (p.ultimaTroca && Date.now() - new Date(p.ultimaTroca).getTime() > 10 * 60_000) alertas.push({ nivel: 'medio', sistema: s.nome, texto: `sem trocar com ${p.par} há ${Math.round((Date.now() - new Date(p.ultimaTroca).getTime()) / 60_000)} min` })
       }
     }
-    return { geradoEm: new Date().toISOString(), sistemas, alertas, podeEditar: ctx.actor.pode('seguranca.gerir') }
+    this.#anotarDisponibilidade(sistemas)
+    // a comunicação entre os sistemas (as trocas que cada um registou) e as actualizações de todos
+    const trocas = sistemas.flatMap((s) => (s.estado?.replicacao?.trocas ?? []).map((t) => ({ ...t, registadoPor: s.nome }))).sort((a, b) => String(b.quando).localeCompare(String(a.quando))).slice(0, 120)
+    const mudancas = sistemas.flatMap((s) => (s.estado?.replicacao?.mudancas24h ?? []).map((m) => ({ ...m, sistema: s.nome })))
+    const actualizacoes = sistemas.flatMap((s) => (s.estado?.actualizacoes ?? []).map((a) => ({ ...a, sistema: s.nome }))).sort((a, b) => String(b.quando).localeCompare(String(a.quando))).slice(0, 40)
+    const actividade = sistemas.flatMap((s) => (s.estado?.actividade ?? []).map((a) => ({ ...a, sistema: s.nome }))).sort((a, b) => String(b.quando).localeCompare(String(a.quando))).slice(0, 60)
+    const disponibilidade = Object.fromEntries(sistemas.map((s) => [s.id, this.#disponibilidade(s.id)]))
+    return { geradoEm: new Date().toISOString(), sistemas, alertas, trocas, mudancas, actualizacoes, actividade, disponibilidade, vigilancia: Boolean(this.temporizador), podeEditar: ctx.actor.pode('seguranca.gerir') }
+  }
+
+  // ---------- vigilância contínua (no Sistema de Cibersegurança): de minuto a minuto, todos os sistemas ----------
+
+  #anotarDisponibilidade(sistemas) {
+    if (!this.historia) this.historia = new Map()
+    const agora = Date.now()
+    for (const s of sistemas) {
+      const h = this.historia.get(s.id) ?? []
+      const antes = h.at(-1)
+      h.push({ t: agora, ok: s.ok, ms: s.ms })
+      while (h.length && agora - h[0].t > 86_400_000) h.shift()
+      this.historia.set(s.id, h)
+      // a mudança de estado fica no registo de actividades (deixou de responder / voltou)
+      if (antes && antes.ok !== s.ok) {
+        this.auditoria.registar({ actor: null, ip: null, agente: 'monitorizacao' }, { acao: s.ok ? 'sistema_voltou' : 'sistema_sem_resposta', colecao: 'monitorizacao', alvoTitulo: `${s.nome}${s.ok ? '' : ` — ${s.erro || 'sem resposta'}`}`, utilizador: null }).catch(() => {})
+      }
+    }
+  }
+
+  // nas últimas 24 h: a percentagem do tempo em que respondeu, o tempo médio e as últimas 60 verificações
+  #disponibilidade(id) {
+    const h = this.historia?.get(id) ?? []
+    if (!h.length) return null
+    const ok = h.filter((x) => x.ok)
+    const tempos = ok.map((x) => x.ms).filter((x) => typeof x === 'number')
+    return { verificacoes: h.length, percentagem: Math.round((ok.length / h.length) * 1000) / 10, msMedio: tempos.length ? Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length) : null, ultimas: h.slice(-60).map((x) => (x.ok ? 1 : 0)), desde: new Date(h[0].t).toISOString() }
+  }
+
+  iniciarVigilancia(intervaloS = 60) {
+    if (this.temporizador) return
+    const ctx = { actor: { id: null, nome: 'Vigilância', pode: () => true, exigir: () => {} } }
+    const correr = () => this.painel(ctx).catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: 'Vigilância dos sistemas', erro: e.message })))
+    this.temporizador = setInterval(correr, intervaloS * 1000)
+    this.temporizador.unref?.()
+    setTimeout(correr, 3000).unref?.()
+  }
+
+  pararVigilancia() {
+    clearInterval(this.temporizador)
+    this.temporizador = null
   }
 }
 

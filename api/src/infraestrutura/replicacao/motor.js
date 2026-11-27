@@ -233,8 +233,16 @@ export class Replicacao {
     return n
   }
 
+  // ---------- o que se trocou (para o centro de cibersegurança): as últimas 200 trocas, em memória ----------
+  #anotar(x) {
+    if (!this.historico) this.historico = []
+    this.historico.push({ quando: new Date().toISOString(), ...x })
+    if (this.historico.length > 200) this.historico.splice(0, this.historico.length - 200)
+  }
+
   // ---------- servidor online: responde a cada troca de um sistema interno ----------
   async servirTroca(origem, { linhas = [], desde = '0', ficheiros = [] } = {}) {
+    const inicio = Date.now()
     const aplicado = await this.aplicar(origem, linhas)
     aplicado.ficheiros = this.#gravarUploads(ficheiros)
     const resposta = await this.paraEnviar(origem, desde)
@@ -245,6 +253,7 @@ export class Replicacao {
       const minimo = pares.reduce((a, c) => (c.recebido < a ? c.recebido : a), pares[0].recebido)
       await this.prisma.replicacaoFila.deleteMany({ where: { id: { lte: minimo }, criadaEm: { lt: new Date(Date.now() - 86_400_000) } } })
     }
+    this.#anotar({ par: origem, de: origem, para: this.sistema, enviadas: (resposta.linhas ?? []).length, recebidas: linhas.length, ficheiros: aplicado.ficheiros, ms: Date.now() - inicio, erros: aplicado.erros.length, erro: aplicado.erros[0]?.slice(0, 200) ?? '', recebido: contarModelos(linhas), enviado: contarModelos(resposta.linhas) })
     return { aplicado, ...resposta }
   }
 
@@ -252,7 +261,8 @@ export class Replicacao {
   async trocar() {
     if (this.aTrocar || !this.url) return null
     this.aTrocar = true
-    const total = { enviadas: 0, recebidas: 0, erros: [] }
+    const total = { enviadas: 0, recebidas: 0, erros: [], enviado: {}, recebido: {} }
+    const inicio = Date.now()
     try {
       for (let volta = 0; volta < 50; volta++) {
         const cursor = await this.prisma.replicacaoCursor.upsert({ where: { par: 'online' }, create: { par: 'online' }, update: {} })
@@ -272,6 +282,8 @@ export class Replicacao {
         total.erros.push(...deles.erros)
         total.enviadas += minhas.linhas.length
         total.recebidas += (resp.linhas ?? []).length
+        somarModelos(total.enviado, minhas.linhas)
+        somarModelos(total.recebido, resp.linhas)
         await this.prisma.replicacaoCursor.update({ where: { par: 'online' }, data: { enviado: BigInt(minhas.ate), recebido: BigInt(resp.ate ?? cursor.recebido), uploadsAte: BigInt(up.ate), ultimaTroca: new Date(), ultimoErro: total.erros.slice(0, 3).join(' | ').slice(0, 1000) } })
         total.ficheiros = (total.ficheiros ?? 0) + up.ficheiros.length
         if (!minhas.mais && !resp.mais && !up.mais) break
@@ -279,8 +291,10 @@ export class Replicacao {
       // a fila já enviada não faz falta
       const c = await this.prisma.replicacaoCursor.findUnique({ where: { par: 'online' } })
       if (c) await this.prisma.replicacaoFila.deleteMany({ where: { id: { lte: c.enviado }, criadaEm: { lt: new Date(Date.now() - 86_400_000) } } })
+      this.#anotar({ par: 'online', de: this.sistema, para: 'online', enviadas: total.enviadas, recebidas: total.recebidas, ficheiros: total.ficheiros ?? 0, ms: Date.now() - inicio, erros: total.erros.length, erro: total.erros[0]?.slice(0, 200) ?? '', enviado: total.enviado, recebido: total.recebido })
       return total
     } catch (e) {
+      this.#anotar({ par: 'online', de: this.sistema, para: 'online', enviadas: total.enviadas, recebidas: total.recebidas, ficheiros: total.ficheiros ?? 0, ms: Date.now() - inicio, erros: 1, erro: e.message.slice(0, 200), enviado: total.enviado, recebido: total.recebido })
       await this.prisma.replicacaoCursor.upsert({ where: { par: 'online' }, create: { par: 'online', ultimoErro: e.message.slice(0, 1000) }, update: { ultimoErro: e.message.slice(0, 1000) } }).catch(() => {})
       throw e
     } finally {
@@ -290,7 +304,14 @@ export class Replicacao {
 
   async estado() {
     const [cursores, porEnviar] = await Promise.all([this.prisma.replicacaoCursor.findMany(), this.prisma.replicacaoFila.count({ where: { origem: '' } })])
-    return { sistema: this.sistema, url: this.url, porEnviar, pares: cursores.map((c) => ({ par: c.par, enviado: c.enviado.toString(), recebido: c.recebido.toString(), ultimaTroca: c.ultimaTroca, ultimoErro: c.ultimoErro })) }
+    // as mudanças das últimas 24 h, por tabela (o que se actualizou aqui e o que veio de outros)
+    const mudancas = await this.prisma.$queryRawUnsafe("SELECT tabela, origem, count(*)::int AS n FROM replicacao_fila WHERE criada_em > now() - interval '24 hours' GROUP BY tabela, origem").catch(() => [])
+    return {
+      sistema: this.sistema, url: this.url, porEnviar,
+      pares: cursores.map((c) => ({ par: c.par, enviado: c.enviado.toString(), recebido: c.recebido.toString(), ultimaTroca: c.ultimaTroca, ultimoErro: c.ultimoErro })),
+      trocas: [...(this.historico ?? [])].reverse().slice(0, 60),
+      mudancas24h: mudancas.map((x) => ({ tabela: x.tabela, origem: x.origem || this.sistema, n: x.n })),
+    }
   }
 
   iniciar() {
@@ -306,3 +327,10 @@ export class Replicacao {
     this.temporizador = null
   }
 }
+
+// quantas linhas de cada modelo (o que foi numa troca)
+function somarModelos(conta, linhas = []) {
+  for (const l of linhas ?? []) conta[l.m] = (conta[l.m] ?? 0) + 1
+  return conta
+}
+const contarModelos = (linhas) => somarModelos({}, linhas)

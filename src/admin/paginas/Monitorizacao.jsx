@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
 
@@ -6,8 +7,22 @@ import { CabecalhoPagina, Carregando, Erro, Painel } from '../componentes/Ui'
   Centro de cibersegurança e monitorização: todos os sistemas da Escola Superior de Guerra num só ecrã — o domínio de
   cada um, se responde (e em quanto tempo), a saúde do servidor (processador, memória, disco, base de dados), a
   segurança (alerta, eventos das últimas 24 horas, IP bloqueados, nível de protecção) e as trocas entre os sistemas.
-  Actualiza-se sozinho de 30 em 30 segundos.
+  Separadores: os sistemas (com a disponibilidade das últimas 24 h), a comunicação entre eles (cada troca: quem
+  enviou, quanto e o quê), as actualizações (notícias e conteúdos do site, o que mudou no Portal e na Gestão
+  Escolar) e o registo de actividades de todos. Actualiza-se sozinho de 30 em 30 segundos.
 */
+// o nome das tabelas que se trocam, para se ler bem
+const TABELAS = {
+  Item: 'Conteúdos do site (notícias, eventos…)', Pagina: 'Páginas do site', Ficheiro: 'Ficheiros', ContaPortal: 'Contas do Portal', Turma: 'Turmas', Matricula: 'Matrículas',
+  UnidadeCurricular: 'Cadeiras', Docencia: 'Docentes nas cadeiras', NotaAvaliacaoUc: 'Notas', AvaliacaoUc: 'Avaliações', Nota: 'Notas (pauta)', Notificacao: 'Notificações e avisos',
+  AvisoGeral: 'Avisos gerais', Submissao: 'Trabalhos entregues', Material: 'Materiais das cadeiras', Obra: 'Livros (catálogo)', Exemplar: 'Exemplares', Emprestimo: 'Empréstimos', Reserva: 'Reservas',
+  CertificadoCurso: 'Diplomas e certificados', Presenca: 'Presenças', Aula: 'Aulas', Mensagem: 'Mensagens', Comentario: 'Comentários do site',
+  itens: 'Conteúdos do site (notícias, eventos…)', paginas: 'Páginas do site', contas_portal: 'Contas do Portal', notas_avaliacao_uc: 'Notas', notificacoes: 'Notificações e avisos', submissoes: 'Trabalhos entregues',
+}
+const nomeTabela = (t) => TABELAS[t] ?? t
+const ACCOES = { sistema_sem_resposta: 'Deixou de responder', sistema_voltou: 'Voltou a responder', publicar: 'Publicou', criar: 'Criou', editar: 'Editou', apagar: 'Apagou', entrar: 'Entrou', sair: 'Saiu' }
+const hora = (v) => (v ? new Date(v).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'medium' }) : '—')
+const resumoModelos = (o) => Object.entries(o ?? {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${nomeTabela(k)} ${n}`).join(' · ')
 const NIVEL = { critico: 'danger', alto: 'danger', medio: 'warning' }
 const bytes = (n) => (n === null || n === undefined ? '—' : n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : `${Math.round(n / 1e6)} MB`)
 const tempo = (desde) => {
@@ -32,7 +47,7 @@ function Barra({ titulo, valor, texto }) {
   )
 }
 
-function CartaoSistema({ s }) {
+function CartaoSistema({ s, disp }) {
   const e = s.estado
   const m = e?.saude?.memoria
   const d = e?.saude?.disco
@@ -50,6 +65,12 @@ function CartaoSistema({ s }) {
           <span className={`badge bg-${s.ok ? 'success' : 'danger'}`}>{s.ok ? (s.local ? 'este sistema' : `${s.ms} ms`) : 'sem resposta'}</span>
         </div>
         <div className="card-body small">
+          {disp && (
+            <div className="mb-2" title={`Desde ${hora(disp.desde)}: ${disp.verificacoes} verificação(ões)`}>
+              <div className="d-flex justify-content-between"><span>Disponibilidade (24 h)</span><b className={disp.percentagem >= 99 ? 'text-success' : disp.percentagem >= 95 ? 'text-warning' : 'text-danger'}>{disp.percentagem.toLocaleString('pt-PT')} %{disp.msMedio !== null ? ` · ${disp.msMedio} ms` : ''}</b></div>
+              <div className="d-flex gap-px mt-1" style={{ gap: 1 }} aria-hidden="true">{disp.ultimas.map((x, i) => <span key={i} style={{ flex: 1, height: 10, background: x ? '#2e7d32' : '#c62828', borderRadius: 1 }} />)}</div>
+            </div>
+          )}
           {!s.ok && <p className="text-danger mb-2"><i className="fa fa-exclamation-triangle me-1" />{s.erro || 'Não responde.'} <span className="text-muted">({s.endereco})</span></p>}
           {s.ok && !e && <p className="text-muted mb-0">Responde. {s.tipo === 'pessoal' ? 'O Sistema de Pessoal só diz se está ligado.' : 'Sem a chave da troca não se lê o estado completo.'}</p>}
           {e && <>
@@ -78,20 +99,98 @@ function CartaoSistema({ s }) {
   )
 }
 
+function Comunicacao({ d }) {
+  const [so, setSo] = useState('')
+  const lista = d.trocas.filter((t) => !so || (so === 'erros' ? t.erros : t.de === so || t.para === so))
+  const sistemas = [...new Set(d.trocas.flatMap((t) => [t.de, t.para]))]
+  return (
+    <>
+      <Painel titulo="Mudanças das últimas 24 horas (o que cada sistema actualizou e recebeu)" corpo={false}>
+        <div className="table-responsive"><table className="table table-sm table-striped mb-0">
+          <thead><tr><th>Sistema</th><th>O quê</th><th>Origem</th><th className="text-end">Linhas</th></tr></thead>
+          <tbody>
+            {d.mudancas.length === 0 && <tr><td colSpan={4} className="text-center text-muted py-3">Sem mudanças nas últimas 24 horas (ou os sistemas ainda não trocam).</td></tr>}
+            {[...d.mudancas].sort((a, b) => b.n - a.n).map((m, i) => <tr key={i}><td>{m.sistema}</td><td>{nomeTabela(m.tabela)}</td><td>{m.origem}</td><td className="text-end">{m.n}</td></tr>)}
+          </tbody>
+        </table></div>
+      </Painel>
+      <Painel titulo="Trocas entre os sistemas (as mais recentes primeiro)" acoes={
+        <select className="form-select form-select-sm w-auto" value={so} onChange={(e) => setSo(e.target.value)} aria-label="Filtrar">
+          <option value="">Todas</option><option value="erros">Só com erros</option>
+          {sistemas.map((x) => <option key={x} value={x}>{x}</option>)}
+        </select>
+      } corpo={false}>
+        <div className="table-responsive"><table className="table table-sm table-striped align-middle mb-0">
+          <thead><tr><th>Quando</th><th>De → para</th><th className="text-end">Enviadas</th><th className="text-end">Recebidas</th><th>O quê</th><th className="text-end">Tempo</th><th>Estado</th></tr></thead>
+          <tbody>
+            {lista.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-3">Sem trocas registadas desde que os sistemas arrancaram.</td></tr>}
+            {lista.map((t, i) => (
+              <tr key={i}>
+                <td className="text-nowrap small">{hora(t.quando)}</td>
+                <td className="text-nowrap"><b>{t.de}</b> → <b>{t.para}</b></td>
+                <td className="text-end">{t.enviadas}</td>
+                <td className="text-end">{t.recebidas}{t.ficheiros ? <span className="text-muted small"> + {t.ficheiros} fich.</span> : ''}</td>
+                <td className="small">{[resumoModelos(t.de === t.par ? t.recebido : t.enviado), resumoModelos(t.de === t.par ? t.enviado : t.recebido)].filter(Boolean).join(' ⇄ ') || <span className="text-muted">nada de novo</span>}</td>
+                <td className="text-end small">{t.ms} ms</td>
+                <td>{t.erros ? <span className="badge bg-danger" title={t.erro}>{t.erros} erro(s)</span> : <span className="badge bg-success">ok</span>}{t.erro && <div className="small text-danger text-break">{t.erro}</div>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
+      </Painel>
+    </>
+  )
+}
+
+function Actualizacoes({ d }) {
+  return (
+    <Painel titulo="Actualizações do site (notícias, eventos, artigos…)" corpo={false}>
+      <div className="table-responsive"><table className="table table-sm table-striped mb-0">
+        <thead><tr><th>Quando</th><th>Tipo</th><th>Título</th><th>Estado</th><th>Onde</th></tr></thead>
+        <tbody>
+          {d.actualizacoes.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-3">Sem actualizações do site.</td></tr>}
+          {d.actualizacoes.map((a, i) => <tr key={i}><td className="text-nowrap small">{hora(a.quando)}</td><td>{a.tipo}</td><td>{a.titulo}</td><td><span className={`badge bg-${a.estado === 'publicado' ? 'success' : 'secondary'}`}>{a.estado}</span></td><td className="small">{a.sistema}</td></tr>)}
+        </tbody>
+      </table></div>
+      <div className="small text-muted p-2">O que muda no Portal dos estudantes e docentes (notas, trabalhos, avisos, contas) vê-se em «Comunicação», nas mudanças das últimas 24 horas.</div>
+    </Painel>
+  )
+}
+
+function Actividade({ d }) {
+  const [so, setSo] = useState('')
+  const lista = d.actividade.filter((a) => !so || a.sistema === so)
+  return (
+    <Painel titulo="O que se fez em cada sistema (registo de actividades)" acoes={
+      <select className="form-select form-select-sm w-auto" value={so} onChange={(e) => setSo(e.target.value)} aria-label="Sistema">
+        <option value="">Todos os sistemas</option>{[...new Set(d.actividade.map((a) => a.sistema))].map((x) => <option key={x}>{x}</option>)}
+      </select>
+    } corpo={false}>
+      <div className="table-responsive"><table className="table table-sm table-striped mb-0">
+        <thead><tr><th>Quando</th><th>Sistema</th><th>Quem</th><th>O quê</th><th>Sobre</th></tr></thead>
+        <tbody>
+          {lista.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-3">Sem actividade registada.</td></tr>}
+          {lista.map((a, i) => <tr key={i} className={a.acao === 'sistema_sem_resposta' ? 'table-danger' : ''}><td className="text-nowrap small">{hora(a.quando)}</td><td className="small">{a.sistema}</td><td>{a.quem}</td><td>{ACCOES[a.acao] ?? a.acao.replace(/_/g, ' ')}</td><td className="small">{a.alvo}</td></tr>)}
+        </tbody>
+      </table></div>
+    </Painel>
+  )
+}
+
 function EditarLista({ sistemas, aoGuardar, aoFechar }) {
   const [l, setL] = useState(() => sistemas.map(({ id, nome, tipo, dominio, endereco }) => ({ id, nome, tipo, dominio, endereco })))
   const [erro, setErro] = useState('')
   const mudar = (i, k, v) => setL((x) => x.map((s, j) => (j === i ? { ...s, [k]: v } : s)))
   return (
     <Painel titulo="Sistemas a acompanhar">
-      <p className="small text-muted">O domínio é o que as pessoas escrevem; o endereço é por onde este sistema os contacta (no mesmo servidor: http://127.0.0.1:porta — Pessoal 3002, Gestão Escolar 3001, Gestão do Site 3003, Biblioteca 3004; o servidor online: https://…).</p>
+      <p className="small text-muted">O domínio é o que as pessoas escrevem; o endereço é por onde este sistema os contacta (no mesmo servidor: http://127.0.0.1:porta — Pessoal 3002, Gestão Escolar 3001, Gestão do Site 3003, Biblioteca 3004, Cibersegurança 3005; o servidor online: https://…).</p>
       {erro && <Erro texto={erro} />}
       <div className="table-responsive"><table className="table table-sm align-middle">
         <thead><tr><th>Nome</th><th>Tipo</th><th>Domínio</th><th>Endereço</th><th /></tr></thead>
         <tbody>{l.map((s, i) => (
           <tr key={i}>
             <td><input className="form-control form-control-sm" value={s.nome} onChange={(e) => mudar(i, 'nome', e.target.value)} aria-label="Nome" /></td>
-            <td><select className="form-select form-select-sm" value={s.tipo} onChange={(e) => mudar(i, 'tipo', e.target.value)} aria-label="Tipo">{['pessoal', 'escolar', 'site', 'biblioteca', 'online', 'completo'].map((t) => <option key={t}>{t}</option>)}</select></td>
+            <td><select className="form-select form-select-sm" value={s.tipo} onChange={(e) => mudar(i, 'tipo', e.target.value)} aria-label="Tipo">{['pessoal', 'escolar', 'site', 'biblioteca', 'online', 'ciberseguranca', 'completo'].map((t) => <option key={t}>{t}</option>)}</select></td>
             <td><input className="form-control form-control-sm" value={s.dominio} onChange={(e) => mudar(i, 'dominio', e.target.value)} aria-label="Domínio" /></td>
             <td><input className="form-control form-control-sm" value={s.endereco} onChange={(e) => mudar(i, 'endereco', e.target.value)} aria-label="Endereço" /></td>
             <td><button type="button" className="btn btn-sm btn-white" onClick={() => setL((x) => x.filter((_, j) => j !== i))} aria-label="Tirar"><i className="fa fa-trash" /></button></td>
@@ -111,6 +210,7 @@ function Monitorizacao() {
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
   const [editar, setEditar] = useState(false)
+  const [aba, setAba] = useState('sistemas')
   const carregar = useCallback(() => api('/monitorizacao').then((x) => { setErro(''); setD(x) }).catch((e) => setErro(e.message)), [])
   useEffect(() => {
     carregar()
@@ -123,6 +223,7 @@ function Monitorizacao() {
     <>
       <CabecalhoPagina titulo="Cibersegurança e monitorização" subtitulo="todos os sistemas da Escola Superior de Guerra: domínio, estado, servidor, segurança e trocas" migalhas={[{ rotulo: 'Segurança' }, { rotulo: 'Monitorização' }]}>
         <button type="button" className="btn btn-white" onClick={carregar}><i className="fa fa-sync me-1" />Actualizar</button>
+        <Link to="/seguranca" className="btn btn-white"><i className="fa fa-shield-alt me-1" />Centro de segurança</Link>
         {d?.podeEditar && <button type="button" className="btn btn-white" onClick={() => setEditar(true)}><i className="fa fa-cog me-1" />Sistemas</button>}
       </CabecalhoPagina>
       {erro && <Erro texto={erro} onRepetir={carregar} />}
@@ -142,7 +243,18 @@ function Monitorizacao() {
             <ul className="list-unstyled mb-0">{d.alertas.map((a, i) => <li key={i} className="mb-1"><span className={`badge bg-${NIVEL[a.nivel] ?? 'secondary'} me-2`}>{a.nivel}</span><b>{a.sistema}</b>: {a.texto}</li>)}</ul>
           </Painel>
         )}
-        <div className="row">{d.sistemas.map((s) => <CartaoSistema key={s.id ?? s.nome} s={s} />)}</div>
+        <ul className="nav nav-tabs mb-3">
+          {[['sistemas', 'fa-server', `Sistemas (${d.sistemas.length})`], ['comunicacao', 'fa-exchange-alt', `Comunicação (${d.trocas.length})`], ['actualizacoes', 'fa-newspaper', 'Actualizações'], ['actividade', 'fa-list', 'Actividade']].map(([k, ic, n]) => (
+            <li className="nav-item" key={k}><button type="button" className={`nav-link ${aba === k ? 'active' : ''}`} onClick={() => setAba(k)}><i className={`fa ${ic} me-1`} />{n}</button></li>
+          ))}
+        </ul>
+        {aba === 'sistemas' && <>
+          {!d.vigilancia && <div className="small text-muted mb-2"><i className="fa fa-info-circle me-1" />A disponibilidade conta-se a cada consulta deste ecrã; no Sistema de Cibersegurança, a vigilância é contínua (de minuto a minuto).</div>}
+          <div className="row">{d.sistemas.map((s) => <CartaoSistema key={s.id ?? s.nome} s={s} disp={d.disponibilidade?.[s.id]} />)}</div>
+        </>}
+        {aba === 'comunicacao' && <Comunicacao d={d} />}
+        {aba === 'actualizacoes' && <Actualizacoes d={d} />}
+        {aba === 'actividade' && <Actividade d={d} />}
       </>}
     </>
   )
