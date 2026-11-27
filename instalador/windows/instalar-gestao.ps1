@@ -305,7 +305,7 @@ if (-not $Atualizar -and (Test-Path $Destino)) {
   if (Test-Path "$Destino\dados\bd\PG_VERSION") { Falha "Em $Destino há uma base de dados mas não há configuração ($EnvFicheiro): não se mexe. Traga o ficheiro deste erro." }
   Passo 'copiar' "A retomar a pasta $Destino de uma tentativa anterior (não tem dados)"
   Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
-  foreach ($a in @(@($Destino, '/setowner', '*S-1-5-32-544', '/T', '/C', '/Q'), @($Destino, '/reset', '/T', '/C', '/Q'), @($Destino, '/grant', '*S-1-5-32-544:(OI)(CI)F', '*S-1-5-18:(OI)(CI)F', '/T', '/C', '/Q'))) {
+  foreach ($a in @(@($Destino, '/setowner', '*S-1-5-32-544', '/T', '/C', '/Q'), @($Destino, '/reset', '/T', '/C', '/Q'))) {
     Calado icacls $a | ForEach-Object { Write-Host "    icacls: $_" }
   }
   Ok 'pasta retomada'
@@ -348,10 +348,21 @@ if ($TrocarComp) {
 # o código novo prepara-se ao lado, em sistema.novo (o sistema continua a funcionar); troca-se antes das tabelas
 LimparPasta "$Destino\sistema.novo"
 Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema.novo"
-# só o sistema (SYSTEM) e os administradores entram na pasta; quem instala e o NETWORK SERVICE (PostgreSQL) lêem
-Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', '/T', '/C', '/Q') | ForEach-Object { Write-Host "    icacls: $_" }
+<#
+  As permissões: só na pasta de cima — o sistema (SYSTEM) e os administradores mandam; quem instala e o NETWORK
+  SERVICE (o PostgreSQL) lêem — e os programas lá dentro HERDAM-nas. Não se escrevem ficheiro a ficheiro: num
+  servidor da Escola isso deixou o postgres.exe sem nenhuma permissão («Access is denied» até ao administrador).
+  As pastas dos dados e da configuração não se tocam (têm as suas permissões próprias).
+#>
 $EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-Calado icacls @($Destino, '/grant', "*${EuSid}:(OI)(CI)RX", '*S-1-5-20:(OI)(CI)RX', '/T', '/C', '/Q') | ForEach-Object { Write-Host "    icacls: $_" }
+Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', "*${EuSid}:(OI)(CI)RX", '*S-1-5-20:(OI)(CI)RX', '/C') | ForEach-Object { Write-Host "    icacls: $_" }
+foreach ($sub in 'node', 'postgresql', 'caddy', 'sistema.novo', 'sistema', 'servicos', 'certificado') {
+  $q = Join-Path $Destino $sub
+  if (Test-Path $q) { Calado icacls @($q, '/reset', '/T', '/C', '/Q') | ForEach-Object { Write-Host "    icacls ($sub): $_" } }
+}
+foreach ($exe in "$Destino\node\node.exe", "$Destino\postgresql\bin\postgres.exe") {
+  if (Test-Path $exe) { Write-Host "    permissões de $([IO.Path]::GetFileName($exe)): $((Calado icacls @($exe)) -join ' | ')" }
+}
 if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64' -ErrorAction SilentlyContinue).Installed) {
   Write-Host '    a instalar o Visual C++ Redistributable (x64)…'
   $p = Start-Process -FilePath "$C\vcredist-windows.exe" -ArgumentList '/install', '/quiet', '/norestart' -Wait -PassThru
