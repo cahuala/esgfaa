@@ -28,6 +28,7 @@ import FolhaPresencas from './paginas/academico/documentos/FolhaPresencas'
 import ListaProva from './paginas/academico/documentos/ListaProva'
 import Historico from './paginas/academico/documentos/Historico'
 import CertificadoCurso from './paginas/academico/documentos/CertificadoCurso'
+import DiplomasTurma from './paginas/academico/documentos/DiplomasTurma'
 import DocumentosAno from './paginas/academico/documentos/DocumentosAno'
 import Estrutura from './paginas/academico/Estrutura'
 import Arquivo from './paginas/academico/Arquivo'
@@ -110,6 +111,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/documentos/cadeira/:id/prova" element={<ListaProva />} />}
         {pode('academico.ver') && <Route path="/academico/documentos/estudante/:id/historico" element={<Historico />} />}
         {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/certificado/:estudanteId" element={<CertificadoCurso />} />}
+        {pode('academico.gerir') && <Route path="/academico/documentos/turma/:turmaId/diplomas" element={<DiplomasTurma />} />}
         {pode('academico.ver') && <Route path="/academico/calendario" element={<CalendarioAcademico />} />}
         {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo/:id/ficha" element={<FichaConta />} />}
         {(pode('pessoal.ver') || pode('academico.ver')) && <Route path="/pessoal/registo" element={<Registo />} />}

@@ -254,3 +254,22 @@ export async function gerarDiplomas(c, o, documentos, { previa = false } = {}) {
   d.doc.save(`${nome}-${documentos.join('-')}.pdf`)
   return null
 }
+
+/*
+  Os de vários estudantes num só PDF (para imprimir de uma vez): primeiro todos os certificados, depois todos os
+  diplomas (cada um no seu papel). O modelo do diploma vai pelo posto de cada um; o do certificado, o da turma.
+*/
+export async function gerarDiplomasDeVarios(lista, o, documentos, { nomeFicheiro = 'diplomas-e-certificados', abrir = false } = {}) {
+  const d = await novo()
+  const m = (c) => ({ ...modelosDe(c.curso, c.estudante.dados?.posto), ...(o.modeloCertificado ? { certificado: o.modeloCertificado } : {}) })
+  for (const c of lista) {
+    if (documentos.includes('certificado')) await prepararModelo(d, m(c).certificado)
+    if (documentos.includes('diploma') && m(c).diploma === 'atesta') await prepararModelo(d, 'atesta')
+    if (documentos.includes('diploma') && m(c).diploma === 'outorga') await prepararGenerais(d)
+  }
+  if (documentos.includes('certificado')) for (const c of lista) (m(c).certificado === 'tabela' ? certificadoTabela : certificadoLista)(d, c, o)
+  if (documentos.includes('diploma')) for (const c of lista) (m(c).diploma === 'outorga' ? diplomaOutorga : diplomaAtesta)(d, c, o)
+  if (abrir) return d.doc.output('bloburl')
+  d.doc.save(`${nomeFicheiro}.pdf`)
+  return null
+}

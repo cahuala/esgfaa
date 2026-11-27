@@ -94,6 +94,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/turmas/:id/tfc/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }), body: E.tfc }), async (req, res) => res.json(await a.conclusao.lancarTfc(ctx(req), req.dados.params.id, req.dados.params.estudanteId, req.dados.body)))
   r.get('/documentos-academicos', async (req, res) => res.json(await a.conclusao.documentosAcademicos(ctx(req))))
   r.put('/documentos-academicos', validar({ body: E.documentosAcademicos }), async (req, res) => res.json(await a.conclusao.guardarDocumentosAcademicos(ctx(req), req.dados.body)))
+  // os diplomas e certificados da turma de uma só vez (a situação de cada estudante; enviar vários ao Comandante)
+  r.get('/turmas/:id/certificados', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.certificadosDaTurma(ctx(req), req.dados.params.id)))
+  r.post('/turmas/:id/certificados', validar({ params: pId, body: z.object({ estudanteIds: z.array(E.idNumerico).min(1).max(500) }) }), async (req, res) => res.json(await a.conclusao.pedirCertificados(ctx(req), req.dados.params.id, req.dados.body.estudanteIds)))
   r.post('/turmas/:id/certificados/:estudanteId', validar({ params: z.object({ id: E.idNumerico, estudanteId: E.idNumerico }), body: z.object({ pedir: z.boolean().optional() }).optional() }), async (req, res) => res.status(201).json(await a.conclusao.emitirCertificado(ctx(req), req.dados.params.id, req.dados.params.estudanteId, { pedir: Boolean(req.dados.body?.pedir) })))
   r.get('/estudantes/:id/historico', validar({ params: pId }), async (req, res) => res.json(await a.conclusao.historico(ctx(req), req.dados.params.id)))
   // documentos do ano lectivo: dados estatísticos, dados por ramos, resumo, entrega dos diplomas, lista para os diplomas

@@ -22,7 +22,7 @@ function Finalistas({ turma, gerir, avisar, mostrar, termos = PADRAO }) {
 
   const concluidos = d ? d.linhas.filter((l) => l.conclusao.concluido).length : 0
   return (
-    <Painel titulo={tx('Finalistas: {0} e conclusão{1}', { 0: tx(termos.trabalho.nome).toLowerCase(), 1: d ? tx(' ({0} de {1} concluídos)', { 0: concluidos, 1: d.linhas.length }) : '' })} corpo={false}>
+    <Painel titulo={tx('Finalistas: {0} e conclusão{1}', { 0: tx(termos.trabalho.nome).toLowerCase(), 1: d ? tx(' ({0} de {1} concluídos)', { 0: concluidos, 1: d.linhas.length }) : '' })} acoes={gerir && concluidos > 0 ? <Link to={`/academico/documentos/turma/${turma.id}/diplomas`} className="btn btn-xs btn-success"><i className="fa fa-award me-1" />{tx('Diplomas e certificados de todos')}</Link> : null} corpo={false}>
       <div className="table-responsive">
         <table className="table table-striped align-middle mb-0">
           <thead><tr><th>{tx(termos.pessoa)}</th><th>{tx(termos.trabalho.nome)}</th><th className="text-center">{tx('Nota {0}', { 0: termos.trabalho.sigla })}</th><th className="text-center">{tx('Cadeiras')}</th><th>{tx('Conclusão')}</th><th /></tr></thead>

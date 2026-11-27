@@ -11,6 +11,7 @@ import PlanoCursoTurma from './PlanoCursoTurma'
 import ImportarEstudantes from './ImportarEstudantes'
 import Finalistas from './Finalistas'
 import PassagemAno from './PassagemAno'
+import EscolherDocumento from './documentos/EscolherDocumento'
 import FotoConta from '../../componentes/FotoConta'
 import Exportar from '../../componentes/Exportar'
 import { confirmar } from '../../../portal/dialogos'
@@ -49,6 +50,7 @@ function Turma() {
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
   const [importar, setImportar] = useState(false)
+  const [escolherDoc, setEscolherDoc] = useState(false)
   const [passagem, setPassagem] = useState(false)
   const [matricular, setMatricular] = useState(false)
   const [conclusao, setConclusao] = useState(new Map())
@@ -244,6 +246,8 @@ function Turma() {
       {aba === 'documentos' && (
         <Painel titulo={tx('Documentos da turma')}>
           <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
+            {gerir && <Link to={`/academico/documentos/turma/${t.id}/diplomas`} className="btn btn-success"><i className="fa fa-award me-1" />{tx('Diplomas e certificados (todos de uma vez)')}</Link>}
+            <button type="button" className="btn btn-white" onClick={() => setEscolherDoc(true)}><i className="fa fa-calendar-alt me-1" />{tx('Documentos de outro ano lectivo…')}</button>
             <Link to={`/academico/documentos/turma/${t.id}/lista`} className="btn btn-white"><i className="fa fa-list-ol me-1" />{tx('Relação nominal da turma')}</Link>
             <Link to={`/academico/documentos/curso/${encodeURIComponent(t.curso)}/lista?ano=${encodeURIComponent(t.anoLetivo)}`} className="btn btn-white"><i className="fa fa-users me-1" />{tx('Relação nominal do curso')}</Link>
             <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
@@ -265,6 +269,7 @@ function Turma() {
       {aba === 'plano' && <PlanoCursoTurma turma={t} gerir={gerir} avisar={setAviso} aoMudar={carregar} />}
       {aba === 'avaliacao' && t.cadeiras.length > 0 && <AvaliacaoDocentes turma={t} gerir={gerir} avisar={setAviso} />}
 
+      {escolherDoc && <EscolherDocumento gerir={gerir} fechar={() => setEscolherDoc(false)} />}
       {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
       {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}

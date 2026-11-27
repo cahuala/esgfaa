@@ -56,4 +56,37 @@ describe('Diplomas e certificados: só ficam disponíveis com a aprovação do C
     assert.equal((await amb.http().get(`/api/publico/certificados/${aprovado.codigo}`).expect(200)).body.estudante, 'Estudante Ana Diploma')
     assert.equal(await pendente(), undefined)
   })
+
+  it('vários de uma vez: um só pedido, o Comandante aprova uma vez para todos; quem não concluiu fica de fora', async () => {
+    const tudo = amb.com((await amb.criarUtilizador('administrador')).token)
+    const t = (await tudo.post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2025/2026', nome: 'CEM Anterior', anoCurricular: 1 })).body
+    await tudo.put(`/api/admin/academico/turmas/${t.id}`).send({ anoFinal: true })
+    const cad = (await tudo.post(`/api/admin/academico/turmas/${t.id}/cadeiras`).send({ codigo: 'HIS', nome: 'História Militar', horas: 30 })).body
+    const est = []
+    for (const [n, nota] of [['Um', 14], ['Dois', 16], ['Tres', 5]]) {
+      const e = (await amb.registarEMatricular(tudo, t.id, { nome: `Discente ${n} Lote`, email: `lote.${n.toLowerCase()}@esgfaa.gov.ao` })).body
+      await tudo.put(`/api/admin/academico/cadeiras/${cad.id}/pauta`).send({ linhas: [{ estudanteId: e.id, p1: nota, p2: nota, ...(nota < 10 ? { exame: 4, recurso: 4 } : {}) }] })
+      await tudo.put(`/api/admin/academico/turmas/${t.id}/tfc/${e.id}`).send({ tema: `Tema ${n}`, dataDefesa: '2026-07-05', nota: 15 }).expect(200)
+      est.push(e)
+    }
+    const lista = (await rae.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)).body
+    assert.equal(lista.direto, false)
+    assert.deepEqual(lista.estudantes.map((x) => x.estado).sort(), ['nao concluido', 'por pedir', 'por pedir'])
+    // consultar não cria nada, nem quando é o Comandante a ver
+    await comandante.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)
+    assert.equal(await amb.contentor.prisma.certificadoCurso.count({ where: { turmaId: t.id } }), 0)
+    const r = (await rae.post(`/api/admin/academico/turmas/${t.id}/certificados`).send({ estudanteIds: est.map((e) => e.id) }).expect(200)).body
+    assert.equal(r.enviados, 2)
+    assert.equal(r.erros.length, 1)
+    assert.match(r.erros[0], /Discente Tres Lote/)
+    const item = (await comandante.get('/api/admin/publicacoes').expect(200)).body.filter((x) => x.colecao === 'certificados_curso' && x.id === String(t.id))
+    assert.equal(item.length, 1)
+    assert.match(item[0].titulo, /2 estudantes/)
+    const d = (await comandante.post(`/api/admin/publicacoes/certificados_curso/${t.id}/decisao`).send({ decisao: 'aprovar' }).expect(200)).body
+    assert.equal(d.certificados, 2)
+    const depois = (await rae.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)).body
+    const aprovados = depois.estudantes.filter((x) => x.estado === 'aprovado')
+    assert.equal(aprovados.length, 2)
+    assert.ok(aprovados.every((x) => x.percurso), 'os aprovados levam o percurso para o PDF (2.ª via)')
+  })
 })

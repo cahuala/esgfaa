@@ -116,8 +116,53 @@ export class ServicoConclusaoCurso {
   */
   async emitirCertificado(ctx, turmaId, estudanteId, { pedir = false } = {}) {
     ctx.actor.exigir('academico.gerir')
+    return this.#documentos(ctx, await this.#turma(turmaId), await this.#estudante(estudanteId), { pedir })
+  }
+
+  /*
+    Os diplomas e certificados de uma turma de uma só vez (também os de anos anteriores, para a 2.ª via): a situação
+    de cada estudante e, para os aprovados, o percurso com que se geram os PDF.
+  */
+  async certificadosDaTurma(ctx, turmaId) {
+    ctx.actor.exigir('academico.gerir')
     const turma = await this.#turma(turmaId)
-    const estudante = await this.#estudante(estudanteId)
+    const estudantes = []
+    for (const e of await this.academico.estudantesDaPauta(turma.id)) {
+      const estudante = await this.#estudante(e.id)
+      try {
+        estudantes.push(await this.#documentos(ctx, turma, estudante, { consultar: true }))
+      } catch (falha) {
+        if (!(falha instanceof Conflito)) throw falha
+        estudantes.push({ estado: 'nao concluido', motivo: falha.message, estudante, percurso: null })
+      }
+    }
+    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    return { turma: { id: turma.id, nome: turma.nome, anoLetivo: turma.anoLetivo, curso: turma.curso }, direto, estudantes }
+  }
+
+  // envia ao Comandante os de vários estudantes da turma (um só pedido e um só aviso)
+  async pedirCertificados(ctx, turmaId, estudanteIds) {
+    ctx.actor.exigir('academico.gerir')
+    const turma = await this.#turma(turmaId)
+    const daTurma = new Set((await this.academico.estudantesDaPauta(turma.id)).map((e) => e.id))
+    let enviados = 0
+    const erros = []
+    for (const id of [...new Set(estudanteIds)].filter((x) => daTurma.has(x))) {
+      const estudante = await this.#estudante(id)
+      try {
+        const r = await this.#documentos(ctx, turma, estudante, { pedir: true, aviso: false })
+        if (r.novo) enviados++
+      } catch (falha) {
+        if (!(falha instanceof Conflito)) throw falha
+        erros.push(`${estudante.nome}: ${falha.message}`)
+      }
+    }
+    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    if (enviados && !direto) await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_certificado', colecao: 'certificados', alvoTitulo: `${turma.nome} (${turma.anoLetivo}): ${enviados} estudante(s)` })
+    return { enviados, erros, ...(await this.certificadosDaTurma(ctx, turma.id)) }
+  }
+
+  async #documentos(ctx, turma, estudante, { pedir = false, aviso = true, consultar = false } = {}) {
     const percurso = await this.percursos.de(estudante.id, { publicadas: false, estudante })
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
     if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
@@ -126,23 +171,28 @@ export class ServicoConclusaoCurso {
     const agora = this.relogio.agora().toISOString()
     const pedido = { pedidoPor: ctx.actor.nome ?? '', pedidoEm: agora, ...(direto ? { decididoPor: ctx.actor.nome ?? '', decididoEm: agora } : {}) }
     const estado = direto ? 'aprovado' : 'pendente'
+    // o aviso por e-mail ao Comandante vai com o pedido de um só; nos de vários, vai um no fim
+    const acaoPedido = direto ? 'emitir_certificado_curso' : aviso ? 'pedir_aprovacao_certificado' : 'pedir_certificado_curso'
+    let novo = false
     let cert = existente
     if (!cert) {
-      if (!direto && !pedir) return { estado: 'por pedir', estudante, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso), media: percurso.mediaFinal, percurso: null }
+      if ((!direto && !pedir) || consultar) return { estado: 'por pedir', direto, estudante, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso), media: percurso.mediaFinal, percurso: null }
       cert = await this.conclusao.emitirCertificado({
         codigo: novoCodigo(), estudanteId: estudante.id, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso),
         media: percurso.mediaFinal, notaTfc: percurso.tfc?.nota ?? percurso.planoCurso?.ucs?.find((u) => u.tii)?.final ?? null, emitidoEm: this.relogio.agora(),
         estado, aprovacao: pedido,
       })
-      await this.auditoria.registar(ctx, { acao: direto ? 'emitir_certificado_curso' : 'pedir_aprovacao_certificado', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+      await this.auditoria.registar(ctx, { acao: acaoPedido, colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+      novo = true
     } else if (cert.estado === 'recusado' && pedir) {
       await this.conclusao.mudarEstadoCertificado(cert.codigo, { de: 'recusado', para: estado, aprovacao: pedido })
       cert = { ...cert, estado, aprovacao: pedido }
-      await this.auditoria.registar(ctx, { acao: direto ? 'emitir_certificado_curso' : 'pedir_aprovacao_certificado', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+      await this.auditoria.registar(ctx, { acao: acaoPedido, colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+      novo = true
     }
     // só o aprovado leva o percurso (com que se gera o PDF)
-    if (cert.estado !== 'aprovado') return { ...cert, estudante, percurso: null }
-    return { ...cert, estudante, percurso: percurso.paraJSON() }
+    if (cert.estado !== 'aprovado') return { ...cert, estudante, percurso: null, novo }
+    return { ...cert, estudante, percurso: percurso.paraJSON(), novo }
   }
 
   // ---------- o que espera pelo Comandante ----------

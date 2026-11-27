@@ -6,6 +6,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componen
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { DOCUMENTOS_ANO } from './documentos/tiposDocumentosAno'
+import EscolherDocumento from './documentos/EscolherDocumento'
 
 // sem anos lectivos configurados: o de agora (começa em Agosto)
 const anoAtual = () => {
@@ -39,6 +40,7 @@ function Turmas() {
   const [f, setF] = useState({ curso: '', anoLetivo: anoAtual(), anoCurricular: '1', nome: '' })
   const [erroForm, setErroForm] = useState('')
   const [aviso, setAviso] = useState(null)
+  const [escolherDoc, setEscolherDoc] = useState(false)
 
   const carregar = useCallback(() => api('/academico/turmas').then(setLista).catch((e) => setErro(e.message)), [])
   // o Director de cada curso (designado pela Administração Escolar entre as contas do painel que veem o Ensino)
@@ -85,7 +87,9 @@ function Turmas() {
             {Object.entries(DOCUMENTOS_ANO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}
           </select>
         )}
+        <button type="button" className="btn btn-white" onClick={() => setEscolherDoc(true)}><i className="fa fa-calendar-alt me-1" />{tx('Documentos de anos anteriores (2.ª via)…')}</button>
       </CabecalhoPagina>
+      {escolherDoc && <EscolherDocumento gerir={pode('academico.gerir')} fechar={() => setEscolherDoc(false)} />}
       <div className="row">
         <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
           {erro && <Erro texto={erro} onRepetir={carregar} />}
