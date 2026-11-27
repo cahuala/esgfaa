@@ -76,5 +76,45 @@ if remoto "grep -qx 'DADOS_CHAVE=$CHAVE_DEV' deploy/teste.env"; then
     sed -i \"s/^DADOS_CHAVE=.*/DADOS_CHAVE=\$NOVA/\" deploy/teste.env"
 fi
 
-echo "→ arrancar"
-remoto "$C up -d --build && $C ps"
+if [ "${1:-}" = primeira ]; then
+  echo "→ arrancar"
+  remoto "$C up -d --build && $C ps"
+  exit 0
+fi
+
+# ---------- actualizar sem perder nada e quase sem sair do ar ----------
+# 1) as imagens novas constroem-se com o sistema antigo a funcionar;
+# 2) cópia das bases de dados antes de trocar (ficam as 5 últimas em copias/);
+# 3) troca-se (só os segundos de arrancar) e confirma-se que responde pela internet;
+# 4) se não responder em 3 minutos, volta sozinho às imagens anteriores (as bases ficam; a cópia está em copias/).
+echo "→ construir as imagens novas (o sistema continua a funcionar)"
+remoto "$C build api pessoal web"
+echo "→ cópia de segurança das bases de dados"
+CARIMBO=$(date +%Y%m%d-%H%M%S)
+remoto "set -e; mkdir -p copias; umask 077; BD=\$(grep '^BD_NOME=' deploy/teste.env | cut -d= -f2); BD=\${BD:-esgfaa}; \
+  $C exec -T bd pg_dump -U esgfaa -d \$BD -Fc > copias/antes-da-actualizacao-$CARIMBO-portal.dump; \
+  $C exec -T bd-pessoal pg_dump -U pessoal -d esgfaa_pessoal -Fc > copias/antes-da-actualizacao-$CARIMBO-pessoal.dump; \
+  test -s copias/antes-da-actualizacao-$CARIMBO-portal.dump && test -s copias/antes-da-actualizacao-$CARIMBO-pessoal.dump; \
+  ls -t copias/antes-da-actualizacao-*-portal.dump | tail -n +6 | xargs -r rm --; ls -t copias/antes-da-actualizacao-*-pessoal.dump | tail -n +6 | xargs -r rm --"
+echo "→ trocar"
+# as imagens que estão a correr (para voltar atrás, se for preciso)
+ANTES=$(remoto "for s in api pessoal web; do id=\$($C ps -q \$s); [ -n \"\$id\" ] && echo \"\$s=\$(docker inspect --format '{{.Image}}' \$id)\"; done" || true)
+remoto "$C up -d --no-build && $C ps"
+echo "→ confirmar que responde (https://$DOMINIO e https://$DOMINIO_PESSOAL)"
+ok=0
+for i in $(seq 1 36); do
+  if remoto "curl -fsS -m 5 https://$DOMINIO/api/saude >/dev/null && curl -fsS -m 5 https://$DOMINIO_PESSOAL/api/saude >/dev/null"; then ok=1; break; fi
+  sleep 5
+done
+if [ "$ok" = 1 ]; then
+  echo "✓ actualizado e a responder (cópia das bases: copias/antes-da-actualizacao-$CARIMBO-*.dump no servidor)"
+  exit 0
+fi
+echo "✗ o sistema novo não respondeu em 3 minutos: a voltar às imagens anteriores" >&2
+for linha in $ANTES; do
+  s=${linha%%=*}; img=${linha#*=}
+  remoto "docker tag $img esgteste-$s:latest"
+done
+remoto "$C up -d --no-build && $C ps"
+echo "Voltou à versão anterior. As bases não se mexeram; se for preciso, a cópia de antes está em copias/antes-da-actualizacao-$CARIMBO-*.dump." >&2
+exit 1

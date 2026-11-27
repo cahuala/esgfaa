@@ -1,38 +1,66 @@
-﻿ORDEM PARA COMEÇAR A USAR OS SISTEMAS NA ESCOLA SUPERIOR DE GUERRA
-==================================================================
+﻿ORDEM PARA INSTALAR E ACTUALIZAR OS SISTEMAS DA ESCOLA SUPERIOR DE GUERRA
+==========================================================================
+
+NENHUM DOS INSTALADORES APAGA DADOS. Num sistema que já existe (o Pessoal, que está em produção), o mesmo
+.bat ACTUALIZA: a base de dados, os ficheiros, as chaves e a configuração ficam. Antes de trocar, faz uma cópia
+de segurança da base de dados; se alguma coisa falhar, volta sozinho à versão anterior e o sistema continua
+a funcionar. A instalação nos servidores da Escola precisa da AUTORIZAÇÃO FORMAL do Comando.
 
 O servidor online (o site público e o Portal dos estudantes e docentes) já está na internet:
   https://esg.imnoove.com            (o site)          https://esg.imnoove.com/portal/   (o Portal)
-Os sistemas internos instalam-se nos servidores da Escola, por esta ordem (podem ficar todos no mesmo servidor):
+  Não se instala na Escola; quando os sistemas internos se ligarem, passam a trocar dados com ele.
 
-1. SISTEMA DE GESTÃO ESCOLAR — ESG-GESTAO\INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat
-   Leva já a ligação ao servidor online (ligacao-online.txt: as chaves partilhadas — não envie por e-mail) e
-   carrega sozinha os dados da pasta CARREGAR: as turmas de 2026/2027 (cadeiras, matrículas, departamentos e
-   docentes de cada cadeira) e as pautas do arquivo de 2021/2022 a 2025/2026, com as contas dos discentes desses
-   anos (para entrarem no Portal e verem as notas). O relatório fica em registos\CARGA-GESTAO-ESCOLAR-*.txt.
-2. SISTEMA DE PESSOAL — ESG-PESSOAL\ACTUALIZAR-WINDOWS.bat
-   Carrega as listas de docentes e discentes (e o arquivo de 2023/2024) e passa a enviar os docentes e os
-   estudantes à Gestão Escolar deste servidor. No Pessoal, em Estudantes (e em Docentes), carregue em
-   «E-mails de acesso ao portal» e crie os e-mails nome.apelido@portal.esg.emfaa.gov.ao.
-3. SISTEMA DE GESTÃO DO SITE — ESG-GESTAO\INSTALAR-GESTAO-DO-SITE-WINDOWS.bat
-4. SISTEMA DE BIBLIOTECA — ESG-GESTAO\INSTALAR-BIBLIOTECA-WINDOWS.bat
-5. SISTEMA DE CIBERSEGURANÇA — ESG-GESTAO\INSTALAR-CIBERSEGURANCA-WINDOWS.bat
-   Vigia todos os sistemas de minuto a minuto: se respondem (e a disponibilidade das últimas 24 horas), o servidor
-   (processador, memória, disco, base de dados), a segurança (ataques, IP bloqueados), a comunicação entre os
-   sistemas (cada troca: quem enviou, quanto e o quê) e as actualizações do site (notícias…) e do Portal.
-   Usa a mesma chave da ligação (ligacao-online.txt); só a equipa de cibersegurança entra (papel «Cibersegurança»).
+ANTES DE COMEÇAR (em cada servidor)
+  1. Crie a pasta C:\INSTALACAO-ESG  (uma pasta À PARTE — nunca extraia para C:\ nem para C:\ESG-Pessoal:
+     no Windows, C:\ESG-PESSOAL e C:\ESG-Pessoal são a MESMA pasta, a do sistema que está a funcionar).
+  2. Copie do pendrive para C:\INSTALACAO-ESG os ficheiros ESG-PESSOAL.zip e ESG-GESTAO.zip.
+  3. Botão direito em cada um › Extrair tudo… › para C:\INSTALACAO-ESG
+     (ficam C:\INSTALACAO-ESG\ESG-PESSOAL e C:\INSTALACAO-ESG\ESG-GESTAO).
+  4. Faça os passos seguintes a partir dessas pastas. Os instaladores recusam-se a correr se o pacote estiver
+     dentro da pasta de um sistema instalado (não mexem em nada).
+  5. De preferência fora das horas de serviço: na actualização, cada sistema pára só alguns segundos.
+
+A ORDEM (podem ficar todos no mesmo servidor; cada um tem a sua pasta, a sua base de dados e as suas portas)
+
+1. SISTEMA DE GESTÃO ESCOLAR (novo) — C:\INSTALACAO-ESG\ESG-GESTAO\INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat
+   É o primeiro porque o Pessoal passa a enviar-lhe os docentes e os estudantes. Leva a ligação ao servidor
+   online (ligacao-online.txt: as chaves partilhadas — não envie por e-mail) e carrega sozinha os dados da pasta
+   CARREGAR: as turmas de 2026/2027 (cadeiras, matrículas, departamentos e docentes de cada cadeira) e as
+   pautas do arquivo de 2021/2022 a 2025/2026, com as contas dos discentes desses anos. Relatório:
+   registos\CARGA-GESTAO-ESCOLAR-*.txt.   Fica em C:\ESG-Gestao-Escolar (porta 3001).
+
+2. SISTEMA DE PESSOAL (já em produção: ACTUALIZAR) — C:\INSTALACAO-ESG\ESG-PESSOAL\ACTUALIZAR-WINDOWS.bat
+   Use o ACTUALIZAR (não o INSTALAR). Faz a cópia de segurança, prepara o código novo com o sistema a
+   funcionar, pára alguns segundos para trocar e volta a ligar. Não apaga nem altera nenhuma ficha: as listas
+   de docentes e discentes só acrescentam quem falta. Liga-se sozinho à Gestão Escolar deste servidor.
+   Depois, no Pessoal, em Estudantes (e em Docentes): «E-mails de acesso ao portal».
+
+3. SISTEMA DE GESTÃO DO SITE (novo) — ESG-GESTAO\INSTALAR-GESTAO-DO-SITE-WINDOWS.bat   (C:\ESG-Gestao-Site, porta 3003)
+4. SISTEMA DE BIBLIOTECA (novo) — ESG-GESTAO\INSTALAR-BIBLIOTECA-WINDOWS.bat            (C:\ESG-Biblioteca, porta 3004)
+5. SISTEMA DE CIBERSEGURANÇA (novo) — ESG-GESTAO\INSTALAR-CIBERSEGURANCA-WINDOWS.bat     (C:\ESG-Ciberseguranca, porta 3005)
+   O último, para já encontrar todos os outros. Vigia-os de minuto a minuto: se respondem, o servidor, a
+   segurança, a comunicação entre os sistemas e as actualizações do site e do Portal.
+
+PARA ACTUALIZAR MAIS TARDE (uma versão nova no pendrive)
+  Os mesmos .bat, pela mesma ordem (o Pessoal sempre com ACTUALIZAR-WINDOWS.bat). Cada um vê que já está
+  instalado e actualiza: prepara a versão nova com o sistema a funcionar, faz a cópia da base de dados
+  (dados\copias\antes-da-actualizacao-*.dump; ficam as 5 últimas), pára alguns segundos, troca e confirma que
+  responde. Enquanto um sistema interno actualiza, o site e o Portal continuam no ar e o que ele tem para enviar
+  fica na fila: segue sozinho quando ele volta.
+
+SE DER ERRO
+  - Aparece o ficheiro registos\ERRO-INSTALACAO-<SISTEMA>-*.txt (ou ERRO-ACTUALIZACAO-*.txt no Pessoal) com o passo
+    que falhou, a causa provável, o que fazer e se o sistema voltou à versão anterior.
+  - Numa instalação nova não se mexeu em nada do que já existia; numa actualização, ou o erro foi antes de parar
+    (continua tudo como estava) ou o sistema voltou sozinho à versão anterior (e, se as tabelas já tinham
+    mudado, a base de dados voltou à cópia feita no início).
+  - Corrija o que o ficheiro diz e corra outra vez o mesmo .bat: continua e não apaga dados.
 
 SE PRECISAR DE VOLTAR A CARREGAR (Gestão Escolar › Administração Escolar › Arquivo e arranque do ano)
-  a) ESG-GESTAO\CARREGAR\arranque-2026-2027.json — as turmas de 2026/2027 com as cadeiras dos planos,
-     as matrículas, o departamento de cada cadeira e os docentes de cada cadeira (mostra tudo antes de gravar;
-     a distribuição dos docentes segue para o Comandante em Alocação de docentes).
+  a) ESG-GESTAO\CARREGAR\arranque-2026-2027.json — as turmas de 2026/2027 (mostra tudo antes de gravar).
   b) ESG-GESTAO\CARREGAR\gestao-pautas-do-arquivo.json — as pautas assinadas de 2021/2022 a 2025/2026.
-  Os discentes e docentes que ainda não tinham conta entram quando o Pessoal os enviar: volte a carregar o mesmo
-  ficheiro (não repete nada).
-  Para conferir: ESG-GESTAO\CONFERIR\CONFERENCIA-arquivo-x-listas.xlsx e CONFERIR-carga-do-Pessoal.xlsx.
+  Repetir não duplica nada. Para conferir: ESG-GESTAO\CONFERIR\*.xlsx.
 
-NO PAINEL DE CADA SISTEMA: «Cibersegurança e monitorização (todos os sistemas)» mostra o mesmo ecrã; no Sistema
-de Cibersegurança é a página inicial e a vigilância é contínua (mesmo sem ninguém a ver).
-
-ATENÇÃO: esta pasta tem dados pessoais reais (CARREGAR) e as chaves (ligacao-online.txt). Não a envie
-por e-mail; depois de instalar, guarde o pendrive em lugar seguro. A instalação precisa da autorização do Comando.
+ATENÇÃO: estes pacotes têm dados pessoais reais (CARREGAR, carregar) e as chaves (ligacao-online.txt). Não os
+envie por e-mail. Os relatórios de cada instalação ficam na pasta registos de cada pacote
+(C:\INSTALACAO-ESG\ESG-GESTAO\registos e ...\ESG-PESSOAL\registos): guarde-os. Guarde o pendrive em lugar seguro.

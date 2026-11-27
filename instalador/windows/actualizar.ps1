@@ -80,6 +80,12 @@ trap {
 Write-Host "Sistema de Gestão de Pessoal e Quadros — actualização para $((Get-Content (Join-Path $Pen 'VERSAO.txt') -Encoding UTF8 -ErrorAction SilentlyContinue) -join '')"
 Write-Host "Registo: $Log"
 
+# o pacote não pode estar dentro da pasta onde o sistema fica instalado (C:\ESG-PESSOAL e C:\ESG-Pessoal são a
+# mesma pasta no Windows): misturava-se o pacote com o sistema que está a funcionar
+$PenAbs = [IO.Path]::GetFullPath($Pen).TrimEnd('\')
+if ($PenAbs -ieq $Destino -or $PenAbs.StartsWith("$Destino\", [StringComparison]::OrdinalIgnoreCase)) {
+  Falha "O pacote está dentro da pasta da instalação ($Destino). Extraia o ZIP para uma pasta à parte — C:\INSTALACAO-ESG — e corra o .bat a partir de lá. Nada foi mexido."
+}
 Passo 'A verificar a instalação'
 $eu = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $eu.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { Falha 'Tem de correr como administrador (use ACTUALIZAR-WINDOWS.bat).' }
@@ -110,6 +116,12 @@ Push-Location "$Destino\sistema"
 try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\copias.mjs', 'copiar', '--sistema', 'pessoal') } finally { Pop-Location }
 Ok "cópia em $Dados\copias"
 
+# o código novo copia-se ao lado (sistema.novo) com o sistema a funcionar: a paragem fica só para a troca
+Passo 'A preparar o código novo (o sistema continua a funcionar)'
+if (Test-Path "$Destino\sistema.novo") { Remove-Item -Recurse -Force "$Destino\sistema.novo" }
+Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema.novo"
+Ok 'código novo preparado'
+
 Passo 'A trocar o código do sistema'
 # pára os três serviços do sistema (só os dele): o do HTTPS também, porque nas instalações até 37358cd o
 # Caddy corria com a pasta de trabalho em sistema\ e o Windows não deixa mudar o nome de uma pasta em uso
@@ -133,7 +145,7 @@ for ($i = 1; ; $i++) {
   }
 }
 $script:Trocado = $true
-Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema"
+Rename-Item "$Destino\sistema.novo" 'sistema' -ErrorAction Stop
 Ok 'código novo no lugar (o anterior ficou em sistema.anterior)'
 
 Passo 'A actualizar as tabelas da base de dados'

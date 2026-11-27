@@ -99,7 +99,9 @@ function Causas {
     'portas' { "- Outro programa está a usar uma porta de que o sistema precisa ($PortaBd, $PortaApi; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."; '- O instalador não pára nenhum serviço do servidor. Veja quem usa as portas com:  netstat -ano | findstr LISTENING' }
     'copiar' { "- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta $Destino) ou o pendrive está estragado." }
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable não instalou.' }
-    'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
+    'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização, o instalador já tentou voltar sozinho à versão anterior e à cópia da base de dados (veja acima).' }
+    'copia' { '- Não foi possível fazer a cópia da base de dados antes de actualizar (disco cheio?). Nada foi mudado: o sistema voltou a ligar-se na versão anterior.' }
+    'trocar' { '- Não foi possível trocar a pasta do sistema (o antivírus ou uma janela aberta na pasta). Feche-a e repita; o sistema voltou a ligar-se na versão anterior.' }
     'servicos' { "- Um serviço não arrancou. Veja os registos em $Destino\servicos\*.log e em Serviços (services.msc), «$Svc»." }
     'carregar' { '- Um ficheiro de CARREGAR não entrou: veja o relatório CARGA-GESTAO-ESCOLAR-*.txt nos registos. O sistema fica instalado; pode carregar o ficheiro depois no painel (Administração Escolar › Arquivo e arranque do ano).' }
     'verificar' { "- O sistema não respondeu. Veja $Destino\servicos\$Svc.out.log e $Svc.err.log." }
@@ -107,8 +109,32 @@ function Causas {
   }
 }
 
+<#
+  Numa actualização que falha depois de o sistema parar: volta a base de dados à cópia feita antes (se as tabelas já
+  tinham mudado), volta o código anterior e liga tudo outra vez — o sistema continua a funcionar como estava.
+#>
+function Reverter {
+  Write-Host ''
+  Write-Host '    >>> a voltar à versão anterior (o sistema continua como estava)…' -ForegroundColor Yellow
+  Stop-Service "$Svc-Copias", $Svc -Force -ErrorAction SilentlyContinue
+  if ($script:Migrado -and $script:Copia -and (Test-Path $script:Copia)) {
+    & "$PgBin\pg_restore.exe" -h 127.0.0.1 -p $PortaBd -U esgfaa -d esgfaa --clean --if-exists --no-owner --single-transaction $script:Copia 2>&1 | Out-Null
+    $script:BaseReposta = ($LASTEXITCODE -eq 0)
+  }
+  if ($script:Trocado -and (Test-Path "$Destino\sistema.anterior")) {
+    if (Test-Path "$Destino\sistema") { Rename-Item "$Destino\sistema" "sistema.falhada-$Carimbo" -ErrorAction SilentlyContinue }
+    Rename-Item "$Destino\sistema.anterior" 'sistema' -ErrorAction SilentlyContinue
+  }
+  foreach ($s in "$Svc-BD", $Svc, "$Svc-Web", "$Svc-Copias") { Start-Service $s -ErrorAction SilentlyContinue }
+  $script:Voltou = $false
+  for ($i = 0; $i -lt 45 -and -not $script:Voltou; $i++) {
+    try { $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$PortaApi/api/saude" -TimeoutSec 5; $script:Voltou = $r.Content -match '"ok":true' } catch { Start-Sleep 2 }
+  }
+}
+
 trap {
   $erro = $_
+  if ($Atualizar -and $script:Parado) { try { Reverter } catch { Write-Host "    (a volta atrás não terminou: $($_.Exception.Message))" -ForegroundColor Red } }
   try { Stop-Transcript | Out-Null } catch {}
   $f = Join-Path $Reg "ERRO-INSTALACAO-$($Sistema.ToUpper())-$Carimbo.txt"
   $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue)
@@ -119,6 +145,12 @@ trap {
     "Passo que falhou: $script:Passo",
     "Erro: $($erro.Exception.Message)",
     "Onde: $($erro.InvocationInfo.PositionMessage)",
+    '',
+    $(if (-not $Atualizar) { 'Era uma instalação nova: nada do que já existia foi mexido.' }
+      elseif ($script:Pronto) { 'ACTUALIZAÇÃO: o sistema novo JÁ ESTÁ A FUNCIONAR; o erro foi num passo final (veja abaixo) — corrija e repita o mesmo .bat.' }
+      elseif (-not $script:Parado) { 'ACTUALIZAÇÃO: o erro foi antes de parar o sistema — continua a funcionar na versão anterior, sem nada mudado.' }
+      elseif ($script:Voltou) { "ACTUALIZAÇÃO: o sistema VOLTOU À VERSÃO ANTERIOR e está a funcionar$(if ($script:Migrado) { if ($script:BaseReposta) { ' (a base de dados voltou à cópia de antes)' } else { ' (atenção: a base de dados NÃO voltou à cópia; está em ' + $script:Copia + ')' } })." }
+      else { "ACTUALIZAÇÃO: tentou-se voltar à versão anterior, mas o sistema ainda não responde. A cópia da base de dados de antes está em $($script:Copia). Veja services.msc ($Svc)." }),
     '',
     'CAUSAS PROVÁVEIS E O QUE FAZER:'
   ) + @(Causas) + @(
@@ -144,6 +176,12 @@ $eu = New-Object Security.Principal.WindowsPrincipal([Security.Principal.Windows
 if (-not $eu.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { Falha 'Tem de correr como administrador.' }
 Ok 'administrador'
 
+# o pacote não pode estar dentro da pasta onde o sistema fica instalado (C:\ESG-PESSOAL e C:\ESG-Pessoal são a
+# mesma pasta no Windows): misturava-se o pacote com o sistema que está a funcionar
+$PenAbs = [IO.Path]::GetFullPath($Pen).TrimEnd('\')
+if ($PenAbs -ieq $Destino -or $PenAbs.StartsWith("$Destino\", [StringComparison]::OrdinalIgnoreCase)) {
+  Falha "O pacote está dentro da pasta da instalação ($Destino). Extraia o ZIP para uma pasta à parte — C:\INSTALACAO-ESG — e corra o .bat a partir de lá. Nada foi mexido."
+}
 Passo 'sistema' 'A verificar o computador'
 if (-not [Environment]::Is64BitOperatingSystem) { Falha 'O Windows não é de 64 bits.' }
 $ver = [Environment]::OSVersion.Version
@@ -172,7 +210,8 @@ $Atualizar = Test-Path $EnvFicheiro
 $Servicos = "$Svc-Copias", "$Svc-Web", $Svc, "$Svc-BD"
 if ($Atualizar) {
   Write-Host ''; Write-Host ">>> O $Titulo já está instalado: vai ser ACTUALIZADO (os dados, as chaves e a configuração ficam)." -ForegroundColor Yellow
-  foreach ($s in $Servicos) { if (Get-Service $s -ErrorAction SilentlyContinue) { Stop-Service $s -Force -ErrorAction SilentlyContinue } }
+  Write-Host '    O sistema continua a funcionar enquanto se prepara a versão nova; só pára alguns segundos para trocar.' -ForegroundColor Yellow
+  Write-Host '    Antes de trocar faz-se uma cópia da base de dados; se alguma coisa falhar, volta sozinho à versão anterior.' -ForegroundColor Yellow
 }
 function Guardado($nome) { if ($Atualizar) { (Select-String -Path $EnvFicheiro -Pattern "^$nome=(.*)$" -ErrorAction SilentlyContinue).Matches | ForEach-Object { $_.Groups[1].Value.Trim() } | Select-Object -First 1 } }
 
@@ -261,14 +300,26 @@ if (-not $Atualizar) {
 
 Passo 'copiar' "A instalar os componentes (Node.js, PostgreSQL, Caddy) em $Destino"
 foreach ($d in $Destino, $Dados, $Conf, "$Dados\ficheiros", "$Dados\copias", "$Dados\caddy", "$Destino\servicos", "$Destino\certificado") { New-Item -ItemType Directory -Force $d | Out-Null }
-Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Write-Host "    a parar $($_.ProcessName) (PID $($_.Id)), que corria de $Destino"; Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
 $C = Join-Path $Pen 'componentes'
-Descompactar "$C\node-windows.zip" "$Destino\node"
-Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql"
-Descompactar "$C\caddy-windows.zip" "$Destino\caddy"
-LimparPasta "$Destino\sistema.anterior"
-if (Test-Path "$Destino\sistema") { try { Rename-Item "$Destino\sistema" 'sistema.anterior' -ErrorAction Stop } catch { LimparPasta "$Destino\sistema" } }
-Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema"
+# os componentes (Node.js, PostgreSQL, Caddy): numa actualização só se trocam se mudaram (estão a ser usados)
+$SomaComp = (@(Get-FileHash "$C\node-windows.zip", "$C\postgresql-windows.zip", "$C\caddy-windows.zip" -Algorithm SHA256) | ForEach-Object { $_.Hash }) -join ','
+$CompFicheiro = Join-Path $Destino 'componentes.txt'
+$TrocarComp = (-not $Atualizar) -or (-not (Test-Path "$Destino\node\node.exe")) -or (((Get-Content $CompFicheiro -ErrorAction SilentlyContinue) -join '').Trim() -ne $SomaComp)
+if ($TrocarComp) {
+  if ($Atualizar) {
+    Write-Host '    os componentes mudaram nesta versão: o sistema pára enquanto se trocam (alguns minutos)' -ForegroundColor Yellow
+    foreach ($s in $Servicos) { if (Get-Service $s -ErrorAction SilentlyContinue) { Stop-Service $s -Force -ErrorAction SilentlyContinue } }
+    $script:Parado = $true
+  }
+  Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path -like "$Destino\*" } | ForEach-Object { Write-Host "    a parar $($_.ProcessName) (PID $($_.Id)), que corria de $Destino"; Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
+  Descompactar "$C\node-windows.zip" "$Destino\node"
+  Descompactar "$C\postgresql-windows.zip" "$Destino\postgresql"
+  Descompactar "$C\caddy-windows.zip" "$Destino\caddy"
+  Set-Content -Path $CompFicheiro -Value $SomaComp -Encoding ASCII
+} else { Ok 'Node.js, PostgreSQL e Caddy iguais aos instalados (não se mexe neles)' }
+# o código novo prepara-se ao lado, em sistema.novo (o sistema continua a funcionar); troca-se antes das tabelas
+LimparPasta "$Destino\sistema.novo"
+Copy-Item -Recurse (Join-Path $Pen 'sistema') "$Destino\sistema.novo"
 # só o sistema (SYSTEM) e os administradores entram na pasta; quem instala e o NETWORK SERVICE (PostgreSQL) lêem
 Calado icacls @($Destino, '/inheritance:r', '/grant:r', '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F', '/T', '/C', '/Q') | Out-Null
 $EuSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -362,10 +413,30 @@ $existe = & "$PgBin\psql.exe" -h 127.0.0.1 -p $PortaBd -U esgfaa -d postgres -tA
 if ("$existe".Trim() -ne '1') { Correr "$PgBin\createdb.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', 'esgfaa', 'esgfaa') }
 Ok 'base de dados pronta'
 
+if ($Atualizar) {
+  Passo 'copia' 'A parar o sistema por alguns segundos e a fazer a cópia de segurança da base de dados'
+  # pára só o sistema e as cópias diárias (a base de dados e o HTTPS continuam); daqui até ao fim, pouco tempo
+  Stop-Service "$Svc-Copias", $Svc -Force -ErrorAction SilentlyContinue
+  $script:Parado = $true
+  New-Item -ItemType Directory -Force "$Dados\copias" | Out-Null
+  $script:Copia = "$Dados\copias\antes-da-actualizacao-$Carimbo.dump"
+  Correr "$PgBin\pg_dump.exe" @('-h', '127.0.0.1', '-p', "$PortaBd", '-U', 'esgfaa', '-d', 'esgfaa', '-Fc', '-f', $script:Copia)
+  if (-not ((Test-Path $script:Copia) -and (Get-Item $script:Copia).Length -gt 0)) { Falha 'A cópia de segurança da base de dados ficou vazia: a actualização não continua.' }
+  # ficam as 5 cópias de antes das actualizações mais recentes
+  Get-ChildItem "$Dados\copias" -Filter 'antes-da-actualizacao-*.dump' | Sort-Object LastWriteTime -Descending | Select-Object -Skip 5 | Remove-Item -Force -ErrorAction SilentlyContinue
+  Ok "cópia em $script:Copia"
+}
+Passo 'trocar' 'A pôr o código novo no lugar'
+LimparPasta "$Destino\sistema.anterior"
+if (Test-Path "$Destino\sistema") { try { Rename-Item "$Destino\sistema" 'sistema.anterior' -ErrorAction Stop } catch { Falha "Não foi possível trocar a pasta do sistema (algum programa a usa?): $($_.Exception.Message)" } }
+try { Rename-Item "$Destino\sistema.novo" 'sistema' -ErrorAction Stop } catch { if (Test-Path "$Destino\sistema.anterior") { Rename-Item "$Destino\sistema.anterior" 'sistema' -ErrorAction SilentlyContinue }; Falha "Não foi possível pôr o código novo no lugar: $($_.Exception.Message)" }
+$script:Trocado = $true
+Ok 'código novo no lugar (o anterior fica em sistema.anterior)'
+
 Passo 'migrar' 'A criar/actualizar as tabelas'
+$script:Migrado = $true
 Push-Location "$Destino\sistema\api"
-Correr $Node @("--env-file=$EnvFicheiro", 'scripts\migrar.js')
-Pop-Location
+try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\migrar.js') } finally { Pop-Location }
 
 Passo 'servicos' 'A ligar os serviços (sistema, HTTPS, cópias de segurança diárias e troca com o servidor online)'
 $Caddyfile = Join-Path $Conf 'Caddyfile'
@@ -484,6 +555,9 @@ if (-not $ok) {
   Falha "O sistema não respondeu em http://127.0.0.1:$PortaApi/api/saude"
 }
 Ok 'o sistema responde'
+# daqui em diante a versão nova fica (um erro num passo final já não a desfaz)
+$script:Pronto = $true
+$script:Parado = $false
 
 # a Gestão Escolar: os dados reais que vêm no pendrive (o arranque do ano lectivo e as pautas do arquivo) entram já;
 # repetir não duplica nada e o que já está no sistema não muda
@@ -492,8 +566,10 @@ if ($Sistema -eq 'escolar' -and (Test-Path $Carregar)) {
   Passo 'carregar' 'A carregar os dados da Escola (turmas do ano lectivo, cadeiras, docentes, pautas do arquivo)'
   $RelCarga = Join-Path $Reg "CARGA-GESTAO-ESCOLAR-$Carimbo.txt"
   Push-Location "$Destino\sistema\api"
-  try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\carregar-inicial.js', $Carregar, $RelCarga) } finally { Pop-Location }
-  Ok "dados carregados (o relatório: $RelCarga)"
+  # um erro na carga não desfaz a instalação: o relatório diz o que faltou (repetir não duplica)
+  try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\carregar-inicial.js', $Carregar, $RelCarga); Ok "dados carregados (o relatório: $RelCarga)" }
+  catch { Write-Host "    (aviso: a carga dos dados não terminou — $($_.Exception.Message). O sistema está a funcionar; veja $RelCarga e repita o .bat)" -ForegroundColor Yellow }
+  finally { Pop-Location }
 }
 if ($Tls -eq 'interno') {
   $raiz = "$Dados\caddy\pki\authorities\local\root.crt"

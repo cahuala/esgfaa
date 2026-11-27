@@ -300,6 +300,29 @@ describe('Sistema de Gestão de Pessoal', () => {
 })
 
 describe('Envio para o Portal Académico', () => {
+  it('a Gestão Escolar em baixo muito tempo: quando volta, o que ficou por enviar segue sozinho', async () => {
+    let fora = true
+    const enviar = async (url, op) => {
+      if (fora) throw new Error('connect ECONNREFUSED')
+      const corpo = JSON.parse(op.body)
+      if (url.endsWith('/contas')) return { ok: true, status: 200, json: async () => ({ resultados: corpo.pessoas.map((p, i) => ({ ref: p.ref, ok: true, contaId: 500 + i })) }) }
+      return { ok: true, status: 200, json: async () => ({ resultados: [], ok: true }) }
+    }
+    const amb = await criarAmbiente({ env: { PORTAL_API_URL: 'http://portal.interno:3001', INTEGRACAO_CHAVE: 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais' }, enviar })
+    try {
+      const adm = amb.com(await amb.entrar())
+      await adm.post('/api/pessoas').send(militar({ nip: 'NIP0900', vinculo: 'docente', email: 'em.espera@esgfaa.gov.ao' })).expect(201)
+      await amb.deferirTudo()
+      // muito mais do que as 10 tentativas: a falta de ligação não as gasta
+      for (let i = 0; i < 15; i++) assert.equal((await amb.contentor.servicos.sincronizacao.enviarPendentes()).enviados, 0)
+      fora = false
+      const r = await amb.contentor.servicos.sincronizacao.enviarPendentes()
+      assert.ok(r.enviados >= 1, JSON.stringify(r))
+    } finally {
+      await amb.fechar()
+    }
+  })
+
   it('só docentes e estudantes, com assinatura; quem sai vai como inactivo', async () => {
     const pedidos = []
     const assinaturas = []

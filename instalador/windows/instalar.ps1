@@ -131,6 +131,12 @@ $eu = New-Object Security.Principal.WindowsPrincipal([Security.Principal.Windows
 if (-not $eu.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { Falha 'Tem de correr como administrador.' }
 Ok 'administrador'
 
+# o pacote não pode estar dentro da pasta onde o sistema fica instalado (C:\ESG-PESSOAL e C:\ESG-Pessoal são a
+# mesma pasta no Windows): misturava-se o pacote com o sistema que está a funcionar
+$PenAbs = [IO.Path]::GetFullPath($Pen).TrimEnd('\')
+if ($PenAbs -ieq $Destino -or $PenAbs.StartsWith("$Destino\", [StringComparison]::OrdinalIgnoreCase)) {
+  Falha "O pacote está dentro da pasta da instalação ($Destino). Extraia o ZIP para uma pasta à parte — C:\INSTALACAO-ESG — e corra o .bat a partir de lá. Nada foi mexido."
+}
 Passo 'sistema' 'A verificar o computador'
 if (-not [Environment]::Is64BitOperatingSystem) { Falha 'O Windows não é de 64 bits.' }
 $ver = [Environment]::OSVersion.Version

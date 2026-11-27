@@ -49,6 +49,7 @@ import { calcularAssinantes } from './assinantes.js'
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
 const LOTE = 25
 const MAX_TENTATIVAS = 10
+const SEM_LIGACAO = 'Sem ligação ao portal'
 
 // assinatura do pedido: HMAC-SHA256 de "<data>.<corpo>" com a chave partilhada (o portal recusa pedidos com mais de 5 min)
 export const assinar = (chave, data, corpo) => crypto.createHmac('sha256', chave).update(`${data}.${corpo}`).digest('hex')
@@ -351,7 +352,8 @@ export class ServicoSincronizacao {
     await this.enviarAssinaturas().catch(() => {})
     await this.enviarComandante().catch(() => {})
     await this.enviarContasEnsino().catch(() => {})
-    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
+    // as que falharam só por falta de ligação voltam sempre a ir (quando a Gestão Escolar voltar, seguem sozinhas)
+    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }, { estado: 'erro', erro: { startsWith: SEM_LIGACAO } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
     const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada)) })
     const data = String(Math.floor(this.agora().getTime() / 1000))
@@ -365,8 +367,9 @@ export class ServicoSincronizacao {
       if (!r.ok) throw new Error(j.erro || `O portal respondeu ${r.status}.`)
       resultados = new Map((j.resultados || []).map((x) => [x.ref, x]))
     } catch (e) {
-      const erro = `Sem ligação ao portal: ${e.message}`.slice(0, 300)
-      await this.bd.sincronizacao.updateMany({ where: { pessoaId: { in: fila.map((s) => s.pessoaId) } }, data: { estado: 'erro', erro, tentativas: { increment: 1 }, ultimaTentativa: this.agora() } })
+      // sem ligação (a Gestão Escolar em baixo ou a actualizar) não conta como tentativa: volta a ir no minuto seguinte
+      const erro = `${SEM_LIGACAO}: ${e.message}`.slice(0, 300)
+      await this.bd.sincronizacao.updateMany({ where: { pessoaId: { in: fila.map((s) => s.pessoaId) } }, data: { estado: 'erro', erro, ultimaTentativa: this.agora() } })
       return { enviados: 0, erros: fila.length, erro }
     }
     let enviados = 0
