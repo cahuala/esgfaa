@@ -347,8 +347,28 @@ export class ServicoSincronizacao {
     return { nome: j.nome, numero: j.numero, email: j.email, senhaInicial: j.senhaInicial, portal: j.portal || '' }
   }
 
+  /*
+    O destino dos envios mudou (ex.: do servidor de testes para a Gestão Escolar da Escola, que começa vazia): todos
+    os docentes e estudantes voltam a ir, com a fotografia, e sem o número da conta do destino antigo (lá, o mesmo
+    número pode ser de outra pessoa). Não se apaga nem se muda nenhuma ficha: só a fila de envio.
+  */
+  async #confirmarDestino() {
+    const url = this.config.portal.url
+    if (this.destinoConfirmado === url) return
+    const d = await this.bd.definicao.findUnique({ where: { chave: 'portal-destino' } })
+    if ((d?.valor?.url ?? null) !== url) {
+      const ids = (await this.bd.pessoa.findMany({ where: { OR: [{ vinculo: { in: ['docente', 'estudante'] } }, { outrosVinculos: { hasSome: ['docente', 'estudante'] } }], email: { not: null } }, select: { id: true } })).map((p) => p.id)
+      for (const id of ids) await this.bd.sincronizacao.upsert({ where: { pessoaId: id }, create: { pessoaId: id }, update: {} })
+      const n = await this.bd.sincronizacao.updateMany({ data: { estado: 'pendente', tentativas: 0, erro: '', contaPortalId: null, fotoEnviada: '' } })
+      await this.bd.definicao.upsert({ where: { chave: 'portal-destino' }, create: { chave: 'portal-destino', valor: { url, desde: this.agora().toISOString() } }, update: { valor: { url, desde: this.agora().toISOString() } } })
+      console.log(`Envio para ${url}: destino novo — ${n.count} docente(s) e estudante(s) voltam a ir, com a fotografia.`)
+    }
+    this.destinoConfirmado = url
+  }
+
   async enviarPendentes() {
     if (!this.ativa) return { enviados: 0, erros: 0, inativa: true }
+    await this.#confirmarDestino()
     await this.enviarAssinaturas().catch(() => {})
     await this.enviarComandante().catch(() => {})
     await this.enviarContasEnsino().catch(() => {})

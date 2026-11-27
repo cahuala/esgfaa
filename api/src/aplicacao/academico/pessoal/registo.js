@@ -170,7 +170,10 @@ export class ServicoRegistoPessoal {
         const porId = p.contaId ? await this.contas.porId(p.contaId) : null
         // a conta já enviada reconhece-se pelo id; depois pelo e-mail; e, a de um discente que a Gestão Escolar criou
         // com o arquivo (antes de o Pessoal o enviar), pelo NIP — não se cria outra
-        const existente = (porId && porId.tipo === t ? porId : null) ?? await this.contas.porEmail(email) ?? (p.dados?.nip && this.contas.porNip ? await this.contas.porNip(t, p.dados.nip) : null)
+        // pelo id só se for a mesma pessoa (o mesmo e-mail ou o mesmo NIP): um id de outro sistema pode ser de outra pessoa
+        const refDe = (c) => c?.dados?.pessoalRef ?? ''
+        const mesma = porId && porId.tipo === t && (refDe(porId) === p.ref || porId.email === email || (p.dados?.nip && String(porId.dados?.nip ?? '') === String(p.dados.nip)) || (!refDe(porId) && porId.nome === p.nome))
+        const existente = (mesma ? porId : null) ?? await this.contas.porEmail(email) ?? (p.dados?.nip && this.contas.porNip ? await this.contas.porNip(t, p.dados.nip) : null)
         if (existente && existente.email !== email) {
           const outra = await this.contas.porEmail(email)
           if (outra && outra.id !== existente.id) throw new ErroValidacao('Já existe outra conta no portal com o novo e-mail.')
@@ -189,7 +192,7 @@ export class ServicoRegistoPessoal {
           for (let tentativa = 0; !conta; tentativa++) {
             try {
               const ano = this.relogio.agora().getFullYear()
-              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: await this.#dadosConta(p.dados), ativo: Boolean(p.ativo) })
+              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: { ...(await this.#dadosConta(p.dados)), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }, ativo: Boolean(p.ativo) })
             } catch (erro) {
               if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
             }
@@ -201,7 +204,8 @@ export class ServicoRegistoPessoal {
         }
         if (existente.tipo !== t) throw new ErroValidacao(`Já existe uma conta de ${existente.tipo} com este e-mail.`)
         if (p.nome) existente.nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
-        existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)) }
+        // a ficha do Pessoal a que a conta corresponde (para a reconhecer depois, mesmo com outro e-mail)
+        existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }
         if (Boolean(p.ativo) !== existente.ativo) {
           existente.ativo = Boolean(p.ativo)
           if (!existente.ativo) existente.invalidarSessoes()

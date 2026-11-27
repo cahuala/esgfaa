@@ -135,7 +135,11 @@ function Turmas() {
                             {variosAnos(c.id) && <td>{t.anoCurricular}{tx('.º ano')}</td>}
                             <td className="text-end">{t.estudantes}</td>
                             <td className="text-end">{t.cadeiras}</td>
-                            <td className="text-end"><Link to={`/academico/turmas/${t.id}`} className="btn btn-sm btn-primary">{tx('Abrir')}</Link></td>
+                            <td className="text-end text-nowrap">
+                              <Link to={`/academico/turmas/${t.id}?aba=estudantes`} className="btn btn-sm btn-theme me-1"><i className="fa fa-user-graduate me-1" />{tx('Estudantes')}</Link>
+                              <Link to={`/academico/turmas/${t.id}?aba=cadeiras`} className="btn btn-sm btn-white me-1"><i className="fa fa-book me-1" />{tx('Cadeiras e pautas')}</Link>
+                              <Link to={`/academico/turmas/${t.id}?aba=documentos`} className="btn btn-sm btn-white"><i className="fa fa-print me-1" />{tx('Documentos')}</Link>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

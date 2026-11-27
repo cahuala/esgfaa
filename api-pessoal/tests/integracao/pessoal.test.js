@@ -300,6 +300,39 @@ describe('Sistema de Gestão de Pessoal', () => {
 })
 
 describe('Envio para o Portal Académico', () => {
+  it('o destino muda (a Gestão Escolar nova, vazia): todos voltam a ir, com a fotografia e sem o número da conta antiga', async () => {
+    const enviados = []
+    const enviar = async (url, op) => {
+      const corpo = JSON.parse(op.body)
+      if (url.endsWith('/contas')) { enviados.push(...corpo.pessoas); return { ok: true, status: 200, json: async () => ({ resultados: corpo.pessoas.map((p, i) => ({ ref: p.ref, ok: true, contaId: 700 + i })) }) } }
+      return { ok: true, status: 200, json: async () => ({ resultados: [], ok: true }) }
+    }
+    const chave = 'chave-partilhada-com-o-portal-de-32-caracteres-ou-mais'
+    const amb = await criarAmbiente({ env: { PORTAL_API_URL: 'http://portal.antigo:3001', INTEGRACAO_CHAVE: chave }, enviar })
+    try {
+      const adm = amb.com(await amb.entrar())
+      const d = (await adm.post('/api/pessoas').send(militar({ nip: 'NIP0950', vinculo: 'docente', email: 'muda.destino@esgfaa.gov.ao' })).expect(201)).body
+      const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 1)])
+      await adm.put(`/api/pessoas/${d.id}/foto`).attach('foto', jpg, 'f.jpg').expect(200)
+      await amb.deferirTudo()
+      const s = amb.contentor.servicos.sincronizacao
+      await s.enviarPendentes()
+      assert.ok(enviados.some((p) => p.email === 'muda.destino@esgfaa.gov.ao' && p.foto))
+      // já foi: no mesmo destino não volta a ir
+      enviados.length = 0
+      await s.enviarPendentes()
+      assert.equal(enviados.length, 0)
+      // o destino muda: volta a ir, com a fotografia e sem o número da conta do destino antigo
+      s.config.portal.url = 'http://127.0.0.1:3001'
+      await s.enviarPendentes()
+      const outra = enviados.find((p) => p.email === 'muda.destino@esgfaa.gov.ao')
+      assert.ok(outra && outra.foto, 'vai outra vez com a fotografia')
+      assert.equal(outra.contaId, undefined)
+    } finally {
+      await amb.fechar()
+    }
+  })
+
   it('a Gestão Escolar em baixo muito tempo: quando volta, o que ficou por enviar segue sozinho', async () => {
     let fora = true
     const enviar = async (url, op) => {

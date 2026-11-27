@@ -243,23 +243,29 @@ function Layout({ children }) {
             {pode('pessoal.ver') && <div className="menu-header">{tx('Pessoal e Quadros')}</div>}
             {pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Estudantes e docentes')} />}
 
+            {/* o dia-a-dia da Administração Escolar: o ano lectivo, as turmas, as pautas, os documentos e as fichas */}
             {pode('academico.ver') && <div className="menu-header">{tx('Administração Escolar')}</div>}
             {(pode('academico.ver') || pode('pessoal.ver')) && <SeletorAnoTrabalho />}
+            {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e estudantes')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/pautas" icone="fa-table" texto={tx('Pautas (por curso e cadeira)')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/documentos" icone="fa-print" texto={tx('Documentos')} />}
+            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Docentes nas cadeiras')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alteracoes-notas" icone="fa-user-shield" texto={tx('Alterações de notas')} contador={pode('academico.homologar') ? pendentes.alteracoesPendentes : 0} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/docentes" icone="fa-user-check" texto={tx('Docentes (verificação)')} contador={pode('academico.homologar') ? pendentes.docentesPorVerificar : 0} />}
             {pode('academico.ver') && <ItemMenu para="/academico/provas-escritas" icone="fa-print" texto={tx('Provas para imprimir')} contador={pode('academico.gerir') ? pendentes.provasPorImprimir : 0} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto={tx('Avisos do portal')} />}
+
+            {/* o que se configura poucas vezes */}
+            {pode('academico.ver') && <div className="menu-header">{tx('Configuração do ensino')}</div>}
+            {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Anos lectivos e semestres')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/estrutura" icone="fa-sitemap" texto={tx('Cursos e departamentos')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/docentes" icone="fa-user-check" texto={tx('Docentes (verificação)')} contador={pode('academico.homologar') ? pendentes.docentesPorVerificar : 0} />}
+            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Carregar o arquivo e as turmas do ano')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto={tx('Indicadores académicos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto={tx('Inquéritos de satisfação')} />}
             {pode('integridade.ver') && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Integridade académica')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano lectivo e semestres')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/estrutura" icone="fa-sitemap" texto={tx('Estrutura do ensino (cursos e departamentos)')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
-            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Carregar o arquivo e as turmas do ano')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
-            {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Fichas dos estudantes e docentes')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/pedidos" icone="fa-file-signature" texto={tx('Pedidos de documentos')} />}
-            {pode('academico.ver') && <ItemMenu para="/academico/avisos" icone="fa-bullhorn" texto={tx('Avisos do portal')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/lti" icone="fa-plug" texto={tx('Ferramentas externas (LTI)')} />}
 
             {(pode('comentarios.ver') || pode('publicidade.ver') || verContactos) && <div className="menu-header">{tx('Interação e publicidade')}</div>}

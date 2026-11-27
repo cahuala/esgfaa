@@ -84,6 +84,14 @@ describe('Entrada do Sistema de Gestão de Pessoal', () => {
     assert.equal((await adm.get(`/api/admin/academico/contas/${contaId}/foto`)).status, 404)
   })
 
+  it('o número de uma conta de outro sistema que aqui é de outra pessoa não a muda: cria-se a conta certa', async () => {
+    const outra = (await enviar([{ ref: 'pessoal-60', tipo: 'docente', nome: 'Coronel Outra Pessoa Antiga', email: 'outra.antiga@esgfaa.gov.ao', ativo: true, dados: { nip: 'OUT060' } }]).expect(200)).body.resultados[0].contaId
+    const r = (await enviar([{ ref: 'pessoal-61', contaId: outra, tipo: 'docente', nome: 'Major Pessoa Nova Diferente', email: 'pessoa.diferente@esgfaa.gov.ao', ativo: true, dados: { nip: 'NOV061' } }]).expect(200)).body.resultados[0]
+    assert.notEqual(r.contaId, outra)
+    const c = await amb.contentor.repositorios.contasPortal.porId(outra)
+    assert.deepEqual([c.nome, c.email], ['Coronel Outra Pessoa Antiga', 'outra.antiga@esgfaa.gov.ao'])
+  })
+
   it('mudança de e-mail: a conta é reconhecida pelo id e não se cria outra', async () => {
     const p = { ref: 'pessoal-50', tipo: 'docente', nome: 'Major Carlos Mendes Neto', email: 'c.mendes@esgfaa.gov.ao', ativo: true }
     const contaId = (await enviar([p]).expect(200)).body.resultados[0].contaId
