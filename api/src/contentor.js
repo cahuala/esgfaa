@@ -274,10 +274,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
       aprovacaoComandante: config.aprovacaoComandante,
     }
     // distribuição dos docentes e publicação de notas: só valem com a aprovação do Comandante
-    const aprovacoes = new ServicoAprovacoesComandante({ ...d, planos: r.planosCurso, controlo: r.controlo, correio, urlPortal: config.urlPortal })
+    const conclusaoCurso = new ServicoConclusaoCurso(d)
+    const aprovacoes = new ServicoAprovacoesComandante({ ...d, planos: r.planosCurso, controlo: r.controlo, correio, urlPortal: config.urlPortal, certificadosCurso: conclusaoCurso })
     return {
       inscricoes: new ServicoInscricoes(d),
-      conclusao: new ServicoConclusaoCurso(d),
+      conclusao: conclusaoCurso,
       documentos: new ServicoDocumentos(d),
       turmas: new ServicoTurmas(d),
       anosLetivos,

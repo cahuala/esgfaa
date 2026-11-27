@@ -1330,11 +1330,15 @@ model CertificadoCurso {
   media       Decimal  @db.Decimal(4, 2)
   notaTfc     Decimal? @map("nota_tfc") @db.Decimal(4, 2)
   emitidoEm   DateTime @default(now()) @map("emitido_em") @db.Timestamptz(3)
+  // o diploma e o certificado só ficam disponíveis com a aprovação do Comandante: pendente | aprovado | recusado
+  estado      String   @default("aprovado")
+  aprovacao   Json? // { pedidoPor, pedidoEm, decididoPor?, decididoEm?, motivo? }
 
   estudante ContaPortal @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
   turma     Turma       @relation(fields: [turmaId], references: [id], onDelete: Cascade)
 
   @@unique([estudanteId, turmaId])
+  @@index([estado])
   @@map("certificados_curso")
 }
 

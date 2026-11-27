@@ -10,6 +10,7 @@ const paraTfc = (t) => t && {
 }
 const paraCertificado = (c) => c && {
   codigo: c.codigo, estudanteId: c.estudanteId, turmaId: c.turmaId, curso: c.curso, media: num(c.media), notaTfc: num(c.notaTfc), emitidoEm: iso(c.emitidoEm),
+  estado: c.estado ?? 'aprovado', aprovacao: c.aprovacao ?? null,
   ...(c.estudante ? { estudante: c.estudante } : {}), ...(c.turma ? { turma: { id: c.turma.id, nome: c.turma.nome, anoLetivo: c.turma.anoLetivo, curso: c.turma.curso } } : {}),
 }
 
@@ -51,6 +52,21 @@ export class RepositorioConclusao {
       if (!eDuplicado(e)) throw e
       return paraCertificado(await this.prisma.certificadoCurso.findUnique({ where: onde, include: { turma: true } }))
     }
+  }
+
+  // os diplomas e certificados à espera do Comandante (com o estudante e a turma)
+  async certificadosPendentes() {
+    return (await this.prisma.certificadoCurso.findMany({ where: { estado: 'pendente' }, include: { estudante: conta, turma: true }, orderBy: { emitidoEm: 'asc' } })).map(paraCertificado)
+  }
+
+  async contarCertificadosPendentes() {
+    return this.prisma.certificadoCurso.count({ where: { estado: 'pendente' } })
+  }
+
+  // muda o estado de um certificado, só se estiver no estado esperado; devolve se mudou
+  async mudarEstadoCertificado(codigo, { de, para, aprovacao }) {
+    const r = await this.prisma.certificadoCurso.updateMany({ where: { codigo, estado: de }, data: { estado: para, aprovacao } })
+    return r.count === 1
   }
 
   async certificado(codigo) {

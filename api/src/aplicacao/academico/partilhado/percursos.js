@@ -48,7 +48,7 @@ export class ServicoPercursos {
     // o curso pelo plano da ESG: a turma mais recente com plano
     const ultima = [...matriculas].reverse().find((m) => comPlano.has(m.turma.id))
     const planoCurso = ultima ? await this.esg.resultadoDoEstudante(estudanteId, ultima.turma, { publicadas }) : null
-    return new PercursoAcademico({ estudante, anos, inscricoes: avulsas, tfc, certificado: certificados[0] || null, planoCurso })
+    return new PercursoAcademico({ estudante, anos, inscricoes: avulsas, tfc, certificado: certificados.find((c) => c.estado === 'aprovado') || null, planoCurso })
   }
 
   #todas(n, a = null) {

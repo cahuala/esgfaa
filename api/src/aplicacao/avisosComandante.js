@@ -11,6 +11,7 @@ export const AVISOS = {
   pedir_aprovacao_conta: { permissao: 'utilizadores.aprovar', assunto: (x) => `Conta nova do painel por aprovar: ${x.alvoTitulo}`, onde: 'Por aprovar' },
   pedir_mudanca_papel: { permissao: 'utilizadores.aprovar', assunto: (x) => `Mudança de papel por aprovar: ${x.alvoTitulo}`, onde: 'Por aprovar' },
   pedir_alteracao_nota: { permissao: 'academico.homologar', assunto: (x) => `Pedido de alteração de notas: ${x.alvoTitulo}`, onde: 'Alterações de notas' },
+  pedir_aprovacao_certificado: { permissao: 'academico.homologar', assunto: (x) => `Diploma e certificado por aprovar: ${x.alvoTitulo}`, onde: 'Por aprovar' },
   criar_conta_portal: { permissao: 'academico.homologar', so: (x) => x.detalhes?.tipo === 'docente', assunto: (x) => `Docente novo por verificar: ${x.alvoTitulo}`, onde: 'Docentes (verificação)' },
 }
 

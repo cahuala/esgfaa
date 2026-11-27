@@ -24,8 +24,9 @@ function CertificadoCurso() {
   const [estado, setEstado] = useState('')
   const quadro = useRef(null)
 
+  const [pedindo, setPedindo] = useState(false)
   useEffect(() => {
-    Promise.all([api(`/academico/turmas/${turmaId}/certificados/${estudanteId}`, { metodo: 'POST' }), api(`/academico/turmas/${turmaId}`), api('/academico/documentos-academicos')])
+    Promise.all([api(`/academico/turmas/${turmaId}/certificados/${estudanteId}`, { metodo: 'POST', corpo: {} }), api(`/academico/turmas/${turmaId}`), api('/academico/documentos-academicos')])
       .then(([cert, t, d]) => { setC(cert); setTurma(t); setCfg(d); setModelos({ ...modelosDe(cert.curso, cert.estudante.dados?.posto), ...(d.turmas?.[turmaId]?.modeloCertificado ? { certificado: d.turmas[turmaId].modeloCertificado } : {}) }) })
       .catch((e) => setErro(e.message))
   }, [turmaId, estudanteId])
@@ -36,7 +37,7 @@ function CertificadoCurso() {
 
   // a pré-visualização acompanha o que se escreve (meio segundo depois de parar)
   useEffect(() => {
-    if (!c || !opcoes || !escolhidos.length) return undefined
+    if (!c?.percurso || !opcoes || !escolhidos.length) return undefined
     let url = ''
     const t = setTimeout(() => gerarDiplomas(c, opcoes, escolhidos, { previa: true }).then((u) => { url = u; setPrevia(u) }).catch((e) => setErro(e.message)), 500)
     return () => { clearTimeout(t); if (url) URL.revokeObjectURL(url) }
@@ -45,6 +46,34 @@ function CertificadoCurso() {
 
   if (erro) return <><Erro texto={erro} /><Link to={`/academico/turmas/${turmaId}`} className="btn btn-white mt-2"><i className="fa fa-arrow-left me-1" />{tx('Voltar à turma')}</Link></>
   if (!c || !cfg || !turma || !modelos) return <Carregando />
+
+  // só com a aprovação do Comandante se imprime: antes, envia-se e espera-se
+  if (c.estado !== 'aprovado') {
+    const pedir = async () => {
+      setPedindo(true)
+      try { setC(await api(`/academico/turmas/${turmaId}/certificados/${estudanteId}`, { metodo: 'POST', corpo: { pedir: true } })) } catch (falha) { setErro(falha.message) } finally { setPedindo(false) }
+    }
+    const ap = c.aprovacao ?? {}
+    const quando = (v) => (v ? new Date(v).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '')
+    return (
+      <>
+        <CabecalhoPagina titulo={tx('Certificado e diploma')} subtitulo={`${c.estudante.nome} · ${c.curso ?? ''}`} migalhas={[{ rotulo: tx('Turmas'), para: '/academico/turmas' }, { rotulo: turma.nome, para: `/academico/turmas/${turmaId}` }, { rotulo: tx('Certificado e diploma') }]}>
+          <Link to={`/academico/turmas/${turmaId}`} className="btn btn-white"><i className="fa fa-arrow-left me-1" />{tx('Voltar à turma')}</Link>
+        </CabecalhoPagina>
+        <Painel titulo={tx('Aprovação do Comandante')}>
+          {c.estado === 'por pedir' && <>
+            <p>{tx('O curso está concluído (média final {0}). O diploma e o certificado só ficam disponíveis para imprimir depois de o Comandante os aprovar.', { 0: c.media === null || c.media === undefined ? '—' : Number(c.media).toLocaleString('pt-PT', { minimumFractionDigits: 2 }) })}</p>
+            <button type="button" className="btn btn-theme" disabled={pedindo} onClick={pedir}><i className={`fa ${pedindo ? 'fa-spinner fa-spin' : 'fa-paper-plane'} me-1`} />{tx('Enviar ao Comandante')}</button>
+          </>}
+          {c.estado === 'pendente' && <div className="alert alert-info mb-0"><i className="fa fa-hourglass-half me-1" />{tx('Enviado ao Comandante em {0}, por {1}. Fica disponível para imprimir quando ele aprovar.', { 0: quando(ap.pedidoEm), 1: ap.pedidoPor || '—' })}</div>}
+          {c.estado === 'recusado' && <>
+            <div className="alert alert-danger"><i className="fa fa-times-circle me-1" />{tx('O Comandante recusou ({0}): {1}', { 0: [ap.decididoPor, quando(ap.decididoEm)].filter(Boolean).join(', '), 1: ap.motivo || '—' })}</div>
+            <button type="button" className="btn btn-theme" disabled={pedindo} onClick={pedir}><i className={`fa ${pedindo ? 'fa-spinner fa-spin' : 'fa-paper-plane'} me-1`} />{tx('Corrigido: enviar de novo ao Comandante')}</button>
+          </>}
+        </Painel>
+      </>
+    )
+  }
 
   const mudarTurma = (campo, v) => setCfg({ ...cfg, turmas: { ...cfg.turmas, [turmaId]: { ...daTurma, [campo]: v } } })
   const mudarQuem = (quem, campo, v) => setCfg({ ...cfg, [quem]: { ...cfg[quem], [campo]: v } })

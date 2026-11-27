@@ -15,7 +15,9 @@ const media = (m) => (m === null ? '—' : m.toFixed(1).replace('.', ','))
     os docentes propostos ficam para corrigir) ou rejeita (os docentes propostos saem das cadeiras e faz-se uma lista
     nova). Ao aprovar também pode deixar recomendações; o Ensino vê-as na Alocação de docentes;
   - a publicação das notas (provas parcelares, exames, TAI/TAG): o docente pede e os estudantes só as veem
-    quando o Comandante aprova; se recusar, o docente vê o motivo.
+    quando o Comandante aprova; se recusar, o docente vê o motivo;
+  - os diplomas e certificados de conclusão do curso: a Administração Escolar envia e só ficam disponíveis
+    quando o Comandante aprova (por turma).
 */
 export class ServicoAprovacoesComandante {
   constructor(dependencias) {
@@ -104,7 +106,7 @@ export class ServicoAprovacoesComandante {
         resumo: `${r.notas} nota(s), média ${media(r.media)}, ${r.positivas} positiva(s)`,
       })
     }
-    return [...distribuicoes, ...notas, ...(await this.#directoresPropostos()), ...(await this.#reaberturas())]
+    return [...distribuicoes, ...notas, ...(await this.#directoresPropostos()), ...(await this.#reaberturas()), ...((await this.certificadosCurso?.paraAprovar()) ?? [])]
   }
 
   // ---------- reabrir um ano lectivo fechado (pedido da Administração Escolar) ----------
@@ -170,7 +172,8 @@ export class ServicoAprovacoesComandante {
     if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return 0
     const directores = Object.values((await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}).filter((x) => x.proposta).length
     const reaberturas = ((await this.anosLetivos?.reaberturasPendentes()) ?? []).length + ((await this.anosLetivos?.fechosPendentes()) ?? []).length
-    return (await this.controlo.contarDistribuicoesPendentes()) + (await this.controlo.contarPublicacoesPendentes()) + directores + reaberturas
+    const certificados = (await this.certificadosCurso?.contarParaAprovar()) ?? 0
+    return (await this.controlo.contarDistribuicoesPendentes()) + (await this.controlo.contarPublicacoesPendentes()) + directores + reaberturas + certificados
   }
 
   // ---------- decisões do Comandante ----------

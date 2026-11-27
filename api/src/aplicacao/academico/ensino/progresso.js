@@ -109,7 +109,8 @@ export class ServicoProgresso {
     const c = await this.recursos.certificado(n)
     if (c) return { tipo: 'cadeira', ...c }
     const curso = await this.certificadosCurso?.certificado(n)
-    if (curso) {
+    // só o aprovado pelo Comandante existe para fora
+    if (curso && curso.estado === 'aprovado') {
       return {
         tipo: 'curso', codigo: curso.codigo, emitidoEm: curso.emitidoEm, estudante: curso.estudante.nome, numero: curso.estudante.numero,
         curso: curso.curso, media: curso.media, notaTfc: curso.notaTfc, turma: curso.turma?.nome, anoLetivo: curso.turma?.anoLetivo,

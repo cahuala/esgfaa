@@ -1,4 +1,4 @@
-import { NaoEncontrado, Conflito } from '../../../dominio/comum/erros.js'
+import { NaoEncontrado, Conflito, ErroValidacao } from '../../../dominio/comum/erros.js'
 import { TrabalhoFimCurso } from '../../../dominio/academico/conclusao/tfc.js'
 import { novoCodigo } from '../../../dominio/academico/conclusao/codigo.js'
 
@@ -108,7 +108,13 @@ export class ServicoConclusaoCurso {
     return { ok: true }
   }
 
-  async emitirCertificado(ctx, turmaId, estudanteId) {
+  /*
+    O diploma e o certificado de conclusão do curso: a Administração Escolar envia ao Comandante e só ficam
+    disponíveis (para imprimir, no percurso do estudante e na verificação pública) quando ele aprovar. Quando é
+    o próprio Comandante a emitir, ou sem a aprovação do Comandante configurada, ficam logo aprovados.
+    Abrir a página não envia nada: só «pedir» envia (e reenvia um que foi recusado).
+  */
+  async emitirCertificado(ctx, turmaId, estudanteId, { pedir = false } = {}) {
     ctx.actor.exigir('academico.gerir')
     const turma = await this.#turma(turmaId)
     const estudante = await this.#estudante(estudanteId)
@@ -116,11 +122,62 @@ export class ServicoConclusaoCurso {
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
     if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
     if (!existente && percurso.planoCurso && !percurso.planoCurso.homologado) throw new Conflito('A classificação final ainda não foi homologada pelo Comandante (Conselho de Curso).')
-    const cert = existente || await this.conclusao.emitirCertificado({
-      codigo: novoCodigo(), estudanteId: estudante.id, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso),
-      media: percurso.mediaFinal, notaTfc: percurso.tfc?.nota ?? percurso.planoCurso?.ucs?.find((u) => u.tii)?.final ?? null, emitidoEm: this.relogio.agora(),
-    })
-    if (!existente) await this.auditoria.registar(ctx, { acao: 'emitir_certificado_curso', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome}` })
+    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    const agora = this.relogio.agora().toISOString()
+    const pedido = { pedidoPor: ctx.actor.nome ?? '', pedidoEm: agora, ...(direto ? { decididoPor: ctx.actor.nome ?? '', decididoEm: agora } : {}) }
+    const estado = direto ? 'aprovado' : 'pendente'
+    let cert = existente
+    if (!cert) {
+      if (!direto && !pedir) return { estado: 'por pedir', estudante, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso), media: percurso.mediaFinal, percurso: null }
+      cert = await this.conclusao.emitirCertificado({
+        codigo: novoCodigo(), estudanteId: estudante.id, turmaId: turma.id, curso: await this.#nomeDoCurso(turma.curso),
+        media: percurso.mediaFinal, notaTfc: percurso.tfc?.nota ?? percurso.planoCurso?.ucs?.find((u) => u.tii)?.final ?? null, emitidoEm: this.relogio.agora(),
+        estado, aprovacao: pedido,
+      })
+      await this.auditoria.registar(ctx, { acao: direto ? 'emitir_certificado_curso' : 'pedir_aprovacao_certificado', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+    } else if (cert.estado === 'recusado' && pedir) {
+      await this.conclusao.mudarEstadoCertificado(cert.codigo, { de: 'recusado', para: estado, aprovacao: pedido })
+      cert = { ...cert, estado, aprovacao: pedido }
+      await this.auditoria.registar(ctx, { acao: direto ? 'emitir_certificado_curso' : 'pedir_aprovacao_certificado', colecao: 'certificados', alvoId: estudante.id, alvoTitulo: `${cert.codigo} — ${estudante.nome} (${turma.nome})` })
+    }
+    // só o aprovado leva o percurso (com que se gera o PDF)
+    if (cert.estado !== 'aprovado') return { ...cert, estudante, percurso: null }
     return { ...cert, estudante, percurso: percurso.paraJSON() }
+  }
+
+  // ---------- o que espera pelo Comandante ----------
+
+  // por turma: os diplomas e certificados enviados pela Administração Escolar
+  async paraAprovar() {
+    const porTurma = new Map()
+    for (const c of await this.conclusao.certificadosPendentes()) {
+      if (!porTurma.has(c.turmaId)) porTurma.set(c.turmaId, [])
+      porTurma.get(c.turmaId).push(c)
+    }
+    return [...porTurma].map(([turmaId, cs]) => ({
+      colecao: 'certificados_curso', id: String(turmaId), tipo: 'certificados', ligacao: `/academico/turmas/${turmaId}`,
+      titulo: `Diplomas e certificados — ${cs[0].turma?.nome ?? ''} (${cs[0].turma?.anoLetivo ?? ''}): ${cs.length} ${cs.length === 1 ? 'estudante' : 'estudantes'}`,
+      pedidoPor: cs[0].aprovacao?.pedidoPor ?? '', pedidoEm: cs[0].aprovacao?.pedidoEm ?? cs[0].emitidoEm,
+      resumo: cs.map((c) => `${c.estudante?.nome ?? ''} — média final ${c.media === null ? '—' : c.media.toFixed(2).replace('.', ',')} (código ${c.codigo})`).join('\n'),
+    }))
+  }
+
+  async contarParaAprovar() {
+    return this.conclusao.contarCertificadosPendentes()
+  }
+
+  // o Comandante aprova (ficam disponíveis) ou recusa (com o motivo, que a Administração Escolar vê) os de uma turma
+  async decidirCertificados(ctx, turmaId, { decisao, motivo }) {
+    ctx.actor.exigir('academico.homologar')
+    const cs = (await this.conclusao.certificadosPendentes()).filter((c) => String(c.turmaId) === String(turmaId))
+    if (!cs.length) throw new Conflito('Estes diplomas e certificados não estão à espera de aprovação.')
+    const m = String(motivo ?? '').trim()
+    if (decisao !== 'aprovar' && m.length < 3) throw new ErroValidacao('Indique o motivo (a Administração Escolar vê-o).', { campo: 'motivo' })
+    const agora = this.relogio.agora().toISOString()
+    const para = decisao === 'aprovar' ? 'aprovado' : 'recusado'
+    let n = 0
+    for (const c of cs) if (await this.conclusao.mudarEstadoCertificado(c.codigo, { de: 'pendente', para, aprovacao: { ...c.aprovacao, decididoPor: ctx.actor.nome ?? '', decididoEm: agora, ...(m ? { motivo: m } : {}) } })) n++
+    await this.auditoria.registar(ctx, { acao: decisao === 'aprovar' ? 'aprovar_certificados_curso' : 'recusar_certificados_curso', colecao: 'certificados', alvoTitulo: `${cs[0].turma?.nome ?? ''}: ${n} diploma(s) e certificado(s)`, detalhes: { turmaId: Number(turmaId), quantos: n, ...(m ? { motivo: m } : {}) } })
+    return { decisao: decisao === 'aprovar' ? 'aprovar' : 'recusar', certificados: n }
   }
 }
