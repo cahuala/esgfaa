@@ -98,6 +98,7 @@ function Causas {
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable não instalou.' }
     'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização: reponha a última cópia de segurança.' }
     'servicos' { "- Um serviço não arrancou. Veja os registos em $Destino\servicos\*.log e em Serviços (services.msc), «$Svc»." }
+    'carregar' { '- Um ficheiro de CARREGAR não entrou: veja o relatório CARGA-GESTAO-ESCOLAR-*.txt nos registos. O sistema fica instalado; pode carregar o ficheiro depois no painel (Administração Escolar › Arquivo e arranque do ano).' }
     'verificar' { "- O sistema não respondeu. Veja $Destino\servicos\$Svc.out.log e $Svc.err.log." }
     default { "- Veja a mensagem de erro acima e o registo completo: $Log" }
   }
@@ -480,6 +481,17 @@ if (-not $ok) {
   Falha "O sistema não respondeu em http://127.0.0.1:$PortaApi/api/saude"
 }
 Ok 'o sistema responde'
+
+# a Gestão Escolar: os dados reais que vêm no pendrive (o arranque do ano lectivo e as pautas do arquivo) entram já;
+# repetir não duplica nada e o que já está no sistema não muda
+$Carregar = Join-Path $Pen 'CARREGAR'
+if ($Sistema -eq 'escolar' -and (Test-Path $Carregar)) {
+  Passo 'carregar' 'A carregar os dados da Escola (turmas do ano lectivo, cadeiras, docentes, pautas do arquivo)'
+  $RelCarga = Join-Path $Reg "CARGA-GESTAO-ESCOLAR-$Carimbo.txt"
+  Push-Location "$Destino\sistema\api"
+  try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\carregar-inicial.js', $Carregar, $RelCarga) } finally { Pop-Location }
+  Ok "dados carregados (o relatório: $RelCarga)"
+}
 if ($Tls -eq 'interno') {
   $raiz = "$Dados\caddy\pki\authorities\local\root.crt"
   for ($i = 0; $i -lt 30 -and -not (Test-Path $raiz); $i++) { Start-Sleep 1 }

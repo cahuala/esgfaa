@@ -101,6 +101,28 @@ function DocumentosAno() {
         </section>
       )
     })
+  } else if (tipo === 'finais') {
+    // como no arquivo: matriculados, terminaram com aproveitamento, baixas, média, menções e % de aproveitamento
+    const linhas = cursos.map((c) => {
+      const n = Object.fromEntries(MENCOES.map((m) => [m, c.linhas.filter((l) => l.mencao === m).length]))
+      const aprovados = c.linhas.filter((l) => l.mencao && l.mencao !== 'Reprovado').length
+      const matriculados = c.linhas.length + (c.baixas || 0)
+      return { c, n, aprovados, matriculados, media: media(c.linhas), percentagem: matriculados ? (aprovados / matriculados) * 100 : null }
+    })
+    excel = [['Curso', 'Matriculados', 'Terminaram com aproveitamento', 'Baixas', 'Média do curso', ...MENCOES, '% de aproveitamento'], ...linhas.map((x) => [nomeCurso(x.c), x.matriculados, x.aprovados, x.c.baixas || 0, decimal(x.media?.toFixed(2)), ...MENCOES.map((m) => x.n[m]), decimal(x.percentagem?.toFixed(1))])]
+    corpo = (
+      <>
+        {linhas.map((x) => (
+          <div key={x.c.curso} className="mb-3">
+            <div className="fw-bold text-uppercase">{nomeCurso(x.c)}</div>
+            <div>Matriculados: {x.matriculados} — terminaram com aproveitamento {x.aprovados}.{x.c.baixas ? ` ${x.c.baixas} baixa(s) de curso.` : ''}</div>
+            <div>Média do curso: {fmt(x.media)}</div>
+            <div>{MENCOES.map((m) => `${m} – ${String(x.n[m]).padStart(2, '0')}`).join(' | ')}</div>
+            <div>% de aproveitamento: {x.percentagem === null ? '—' : `${x.percentagem.toFixed(1).replace('.', ',')} %`}</div>
+          </div>
+        ))}
+      </>
+    )
   } else if (tipo === 'resumo') {
     const linhas = cursos.map((c, i) => {
       const n = Object.fromEntries(MENCOES.map((m) => [m, c.linhas.filter((l) => l.mencao === m).length]))
@@ -164,7 +186,7 @@ function DocumentosAno() {
       anoLetivo={ano}
       titulo={titulo.toUpperCase()} voltar="/academico/turmas"
       subtitulo={`Ano lectivo ${ano} · ${cursos.length} curso(s) · ${cursos.reduce((s, c) => s + c.linhas.length, 0)} discente(s)`}
-      assinaturas={tipo === 'ramos' || tipo === 'resumo' || tipo === 'estatistica' ? [director] : []}
+      assinaturas={['ramos', 'resumo', 'estatistica', 'finais'].includes(tipo) ? [director] : []}
       paisagem={tipo === 'estatistica' || tipo === 'ramos'}
       acoes={(
         <>

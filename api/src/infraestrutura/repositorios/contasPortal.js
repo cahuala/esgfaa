@@ -75,6 +75,15 @@ export class RepositorioContasPortal {
     return linhas.map(paraConta)
   }
 
+  // a conta pelo NIP (ou n.º de agente; sem o «I» e os zeros da frente), só se houver uma
+  async porNip(tipo, nip) {
+    const norm = (n) => String(n ?? '').toUpperCase().replace(/\s/g, '').replace(/^I/, '').replace(/^0+/, '')
+    const alvo = norm(nip)
+    if (!alvo) return null
+    const l = (await this.prisma.contaPortal.findMany({ where: { tipo } })).map(paraConta).filter((c) => norm(c.dados?.nip) === alvo || norm(c.dados?.numeroAgente) === alvo)
+    return l.length === 1 ? l[0] : null
+  }
+
   // próximo número sequencial do ano (E2026-0001, …)
   async proximaSequencia(tipo, ano) {
     const prefixo = `${tipo === 'docente' ? 'D' : 'E'}${ano}-`

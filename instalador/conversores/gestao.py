@@ -40,6 +40,18 @@ for q in acad:
         k = curso_de(a_['curso'])
         if k and a_['papel'] == 'estudante': no_curso.setdefault(k, []).append(q)
 
+AQUI = __import__('os').path.dirname(__import__('os').path.abspath(__file__))
+PLANOS = json.load(open(f'{AQUI}/planos_2026.json'))       # os nomes oficiais dos planos de curso (por sigla do curso)
+SIGLAS = json.load(open(f'{AQUI}/siglas_cadeiras.json'))  # as siglas do arquivo que não têm nome noutro lado
+PART2 = {'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'em', 'na', 'no', 'nas', 'nos', 'para', 'ao', 'aos', 'às', 'à'}
+def extenso(t):
+    """«DIREITO INTERNACIONAL PÚBLICO» → «Direito Internacional Público» (as siglas como FAA ficam)."""
+    t = re.sub(r'\s+', ' ', str(t)).strip().strip('\\').strip()
+    if t != t.upper(): return t[:1].upper() + t[1:]
+    cap = lambda w: '-'.join(x[:1] + x[1:].lower() for x in w.split('-'))
+    return ' '.join(w if w in ('FAA', 'EMG', 'ONU', 'TII', 'TFC') else (w.lower() if i and w.lower() in PART2 else cap(w)) for i, w in enumerate(t.split(' ')))
+avisos = []
+
 saida = []
 for t in arq['turmas']:
     p = t.get('pauta')
@@ -47,20 +59,31 @@ for t in arq['turmas']:
     nomes_uc = {chave(k): v['nome'] for k, v in t['cadeiras'].items() if v.get('nome')}
     # legenda no fim da pauta: «CRPP - Comunicação, Relações Públicas e Protocolo»
     for l in p.get('legenda', []):
-        m = re.match(r'^([A-Za-z.]{2,10})\s*[-–—:]\s*(.+)$', l)
-        if m: nomes_uc.setdefault(chave(m.group(1)), m.group(2).strip())
-    usados = set()
+        for m in re.finditer(r'([A-Za-z.]{2,10})\s*[-–—:]\s*(.+?)(?=\s+[A-Za-z.]{2,10}\s*[-–—:]\s|$)', l):
+            nomes_uc.setdefault(chave(m.group(1)), m.group(2).strip().rstrip(';,'))
+    # os códigos do plano ficam para as cadeiras com esse nome (as outras não os apanham pelas iniciais)
+    usados = {c for c, n in PLANOS.get(t['sigla'], {}).items() if any(sem(n) == sem(u['codigo']) for u in p['ucs'])}
     ucs = []
     for u in p['ucs']:
         rot = u['codigo'].strip()
+        if len(rot) <= 6 and ' ' in rot: rot = rot.replace(' ', '')  # «T OCC» é a sigla TOCC
         if ' ' in rot or len(rot) > 10:
-            codigo, nome = iniciais(rot, usados), rot
+            do_plano = next((c for c, n in PLANOS.get(t['sigla'], {}).items() if sem(n) == sem(rot) and c not in [x['codigo'] for x in ucs]), None)
+            codigo, nome = (do_plano, PLANOS[t['sigla']][do_plano]) if do_plano else (iniciais(rot, usados), rot)
+            usados.add(codigo)
         else:
             codigo = re.sub(r'[^A-Z0-9]', '', sem(rot))[:20] or iniciais(rot, usados)
             usados.add(codigo)
-            nome = nomes_uc.get(chave(rot)) or nomes_curso.get((t['sigla'], chave(rot))) or rot
-        nome = re.sub(r'^(TAI|TAG|TA)\s*[-–]+\s*', '', nome).strip().rstrip('\\').strip()
-        nome = nome[:1].upper() + nome[1:].lower() if nome.isupper() and len(nome) > 6 else nome
+            # o nome por extenso: o do plano de curso (a mesma sigla), o da pauta da cadeira, o da tabela das siglas
+            # (o da tabela das siglas foi revisto; depois o da pauta dessa cadeira nesse ano; o do plano de 2026/2027 só se não houver outro)
+            nome = SIGLAS.get(t['sigla'], {}).get(codigo) or nomes_uc.get(chave(rot)) or PLANOS.get(t['sigla'], {}).get(codigo) or nomes_curso.get((t['sigla'], chave(rot))) or rot
+            if nome.endswith('?'):
+                nome = nome[:-1]
+                avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): «{rot}» ficou «{nome}» (deduzido da sigla) — confirme o nome da cadeira.")
+            elif nome == rot and len(rot) <= 10:
+                avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): a cadeira «{rot}» não tem o nome por extenso em nenhum documento — corrija em Turma › Cadeiras.")
+        nome = extenso(re.sub(r'^(TAI|TAG|TA)\s*[-–]+\s*', '', nome).strip())
+        if re.search(r'm[ée]dia do curso', nome, re.I): nome = re.split(r'\s+m[ée]dia do curso', nome, flags=re.I)[0]
         ucs.append({'codigo': codigo, 'nome': nome, 'bloco': u['bloco'] if u['bloco'] and not re.match(r'^(M[EÉ]DIA|TOT|DISCIP)', sem(u['bloco'])) else '', 'rotulo': rot})
     estudantes = []
     for e in p['estudantes']:
@@ -70,8 +93,8 @@ for t in arq['turmas']:
             if len(m) == 1 and (m[0].get('nip') or m[0].get('numeroAgente')): e = dict(e, nip=m[0].get('nip') or m[0].get('numeroAgente'), nomeNaRelacao=m[0]['nome'])
         estudantes.append({'nip': e['nip'], 'nome': e.get('nomeNaRelacao') or e['nome'], 'posto': e['posto'], 'ramo': e['ramo'],
                            'notas': {u['codigo']: e['notas'].get(u['rotulo']) for u in ucs}, 'final': e['final'], 'mencao': e['mencao']})
-    saida.append({'sigla': t['sigla'], 'edicao': t['edicao'], 'anoLetivo': t['anoLetivo'], 'curso': t['curso'], 'ficheiro': f"{p['ficheiro']} «{p['folha']}»",
+    saida.append({'sigla': t['sigla'], 'edicao': t['edicao'], 'anoLetivo': t['anoLetivo'], 'curso': t['curso'], 'nome': t['curso'], 'ficheiro': f"{p['ficheiro']} «{p['folha']}»",
                   'ucs': [{k: v for k, v in u.items() if k != 'rotulo'} for u in ucs], 'estudantes': estudantes})
-json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-26', 'turmas': saida}, open(SAIDA, 'w'), ensure_ascii=False)
+json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-27', 'turmas': saida, 'avisos': sorted(set(avisos))}, open(SAIDA, 'w'), ensure_ascii=False)
 for t in saida:
     print(f"{t['anoLetivo']} {t['edicao']}.º {t['sigla']}: {len(t['estudantes'])} discentes ({sum(1 for e in t['estudantes'] if e['nip'])} com NIP), {len(t['ucs'])} cadeiras: " + ', '.join(f"{u['codigo']}={u['nome'][:22]}" for u in t['ucs'][:6]) + '…')

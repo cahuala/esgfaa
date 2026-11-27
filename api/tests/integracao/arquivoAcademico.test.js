@@ -39,14 +39,14 @@ describe('Carregar o arquivo da Administração Escolar (pautas dos anos anterio
 
   it('simula primeiro (não grava) e diz quem ainda não tem conta', async () => {
     const r = (await adm.post('/api/admin/academico/arquivo/importar').send({ turmas: [pauta()], simular: true }).expect(200)).body
-    assert.deepEqual([r.simulado, r.turmas[0].estado, r.turmas[0].comConta, r.turmas[0].semConta], [true, 'por carregar', 2, ['Sem Conta no Portal (ARQ999)']])
+    assert.deepEqual([r.simulado, r.turmas[0].estado, r.turmas[0].comConta, r.turmas[0].contasNovas], [true, 'por carregar', 2, ['Sem Conta no Portal (ARQ999)']])
     assert.equal(await amb.contentor.prisma.turma.count({ where: { anoLetivo: '2023/2024' } }), 0)
   })
 
   it('carrega a turma, as cadeiras, as notas e o resultado da pauta; a pauta final sai igual à do arquivo', async () => {
     const r = (await adm.post('/api/admin/academico/arquivo/importar').send({ turmas: [pauta()], simular: false }).expect(200)).body
     assert.equal(r.turmas[0].estado, 'carregada')
-    const t = await amb.contentor.prisma.turma.findFirst({ where: { anoLetivo: '2023/2024', nome: '29.º CSCD' } })
+    const t = await amb.contentor.prisma.turma.findFirst({ where: { anoLetivo: '2023/2024', nome: '29.º Curso Superior de Comando e Direcção' } })
     assert.deepEqual([t.ativa, t.anoFinal], [false, true])
     const p = (await adm.get(`/api/admin/academico/turmas/${t.id}/pauta-final`).expect(200)).body
     const um = p.linhas.find((l) => l.estudante.nome === 'Coronel Arquivo Um')
@@ -56,7 +56,11 @@ describe('Carregar o arquivo da Administração Escolar (pautas dos anos anterio
     assert.deepEqual(p.blocos.map((b) => b.nome), ['Administração', 'Táctica', 'Unidades curriculares'].filter((x) => p.blocos.some((b) => b.nome === x)))
     // o ano lectivo fica configurado e as matrículas como concluídas
     assert.ok(await amb.contentor.prisma.anoLetivo.findUnique({ where: { id: '2023/2024' } }))
-    assert.equal(await amb.contentor.prisma.matricula.count({ where: { turmaId: t.id, estado: 'concluida' } }), 2)
+    assert.equal(await amb.contentor.prisma.matricula.count({ where: { turmaId: t.id, estado: 'concluida' } }), 3)
+    // quem não tinha conta passou a ter (activa, com o e-mail de acesso), para entrar e ver as notas
+    const nova = await amb.contentor.prisma.contaPortal.findFirst({ where: { nome: 'Sem Conta no Portal' } })
+    assert.deepEqual([nova.ativo, nova.dados.nip ?? null, /@/.test(nova.email)], [true, 'ARQ999', true])
+    assert.equal(p.linhas.find((l) => l.estudante.nome === 'Sem Conta no Portal')?.final, 15)
   })
 
   it('volta a correr sem repetir nada; uma turma com notas lançadas no sistema não se toca', async () => {
@@ -67,12 +71,22 @@ describe('Carregar o arquivo da Administração Escolar (pautas dos anos anterio
     // uma turma do mesmo curso e ano, criada no sistema e com matrículas: o arquivo não entra
     const outra = { ...pauta(), anoLetivo: '2024/2025', edicao: 30 }
     const conta = await amb.contentor.repositorios.contasPortal.porEmail('arquivo.um@esgfaa.gov.ao')
-    const cursoId = (await amb.contentor.prisma.turma.findFirst({ where: { nome: '29.º CSCD' } })).curso
+    const cursoId = (await amb.contentor.prisma.turma.findFirst({ where: { nome: '29.º Curso Superior de Comando e Direcção' } })).curso
     const t = await amb.contentor.prisma.turma.create({ data: { curso: cursoId, anoLetivo: '2024/2025', nome: 'Turma única' } })
     await amb.contentor.prisma.matricula.create({ data: { turmaId: t.id, estudanteId: conta.id } })
     const r = (await adm.post('/api/admin/academico/arquivo/importar').send({ turmas: [outra], simular: false }).expect(200)).body
     assert.equal(r.turmas[0].estado, 'já existe')
     assert.match(r.turmas[0].motivo, /Turma única/)
+  })
+
+  it('o Pessoal envia depois o discente a quem a Gestão criou a conta: reconhece-o pelo NIP (não há outra conta)', async () => {
+    const antes = await amb.contentor.prisma.contaPortal.count()
+    const corpo = JSON.stringify({ pessoas: [{ ref: 'pessoal-799', tipo: 'estudante', nome: 'Sem Conta no Portal', email: 'sem.portal@esgfaa.gov.ao', ativo: true, dados: { nip: 'ARQ999', posto: 'Major' } }] })
+    const data = String(Math.floor(Date.now() / 1000))
+    await amb.http().post('/api/integracao/pessoal/contas').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinar(data, corpo)).send(corpo).expect(200)
+    assert.equal(await amb.contentor.prisma.contaPortal.count(), antes)
+    const c = await amb.contentor.prisma.contaPortal.findFirst({ where: { nome: 'Sem Conta no Portal' } })
+    assert.equal(c.email, 'sem.portal@esgfaa.gov.ao')
   })
 
   it('um curso que não existe ou um ano fechado ficam de fora, com o motivo', async () => {

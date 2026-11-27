@@ -142,7 +142,8 @@ for g in grupos:
 cadeiras.sort(key=lambda c: (c['departamento'] or 'zzz', c['nome']))
 
 # ---------- as turmas de 2026/2027 (os discentes das listas) ----------
-MODELOS = {('CSCD', 32): 'cscd-2026', ('CEMC', 2): 'cemc-2026', ('CEAO', 18): 'ceao-2026', ('COAMP', 12): 'coamp-2026'}
+# o plano de curso de 2026/2027 de cada curso (a edição fica a das listas: não se muda)
+MODELOS = {'CSCD': 'cscd-2026', 'CEMC': 'cemc-2026', 'CEAO': 'ceao-2026', 'COAMP': 'coamp-2026'}
 SIGLA = [('CSCD', r'superior de comando'), ('CEAO', r'estrategia e arte'), ('COAMP', r'asseguramento|apoio moral'), ('CEMC', r'estado-maior conjunto|estado maior conjunto')]
 turmas = collections.OrderedDict()
 for p in json.load(open(ACADEMICOS))['pessoas']:
@@ -153,12 +154,10 @@ for p in json.load(open(ACADEMICOS))['pessoas']:
         sig = next((s for s, rx in SIGLA if re.search(rx, sem(m.group(2)))), None)
         if not sig: continue
         ed = int(m.group(1))
-        if sig == 'COAMP' and ed == 18:
-            ed = 12  # na lista vem «18.º»: pela sequência (11.º em 2025/2026) e pelo plano, é o 12.º
-            avisos.append('COAMP 2026/2027: a lista dos discentes diz «18.º Curso…»; pela sequência e pelo plano de curso é o 12.º — confirme.')
-        t = turmas.setdefault((sig, ed), {'sigla': sig, 'edicao': ed, 'anoLetivo': ANO, 'curso': a['curso'], 'modelo': MODELOS.get((sig, ed), ''), 'estudantes': []})
+        # o nome da turma por extenso, como vem na lista («18.º Curso de Organização do Asseguramento…»)
+        t = turmas.setdefault((sig, ed), {'sigla': sig, 'edicao': ed, 'anoLetivo': ANO, 'curso': a['curso'], 'nome': a['curso'], 'modelo': MODELOS.get(sig, ''), 'estudantes': []})
         num = p.get('nip') or p.get('numeroAgente') or ''
-        if not any(e['nome'] == p['nome'] for e in t['estudantes']): t['estudantes'].append({'nip': num, 'nome': p['nome']})
+        if not any(e['nome'] == p['nome'] for e in t['estudantes']): t['estudantes'].append({'nip': num, 'nome': p['nome'], 'posto': p.get('posto') or p.get('postoExterno') or '', 'ramo': p.get('ramo') or ''})
 for t in turmas.values():
     if not t['modelo']: avisos.append(f"{t['curso']} ({ANO}): não há modelo do plano de curso no sistema — a turma entra sem cadeiras (carregue o plano em Turma › Plano de curso).")
 

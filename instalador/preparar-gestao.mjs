@@ -70,7 +70,7 @@ function api(sis) {
   fs.cpSync(path.join(origem, 'prisma'), path.join(destino, 'prisma'), { recursive: true })
   fs.mkdirSync(path.join(destino, 'scripts'), { recursive: true })
   // só o que corre na Escola: migrações, conteúdos iniciais do site, troca de chave; nada de demonstração
-  for (const f of ['migrar.js', 'semear.js', 'carregador-dados.js', 'nomes.js', 'trocar-chave.js']) fs.copyFileSync(path.join(origem, 'scripts', f), path.join(destino, 'scripts', f))
+  for (const f of ['migrar.js', 'semear.js', 'carregador-dados.js', 'nomes.js', 'trocar-chave.js', 'carregar-inicial.js']) fs.copyFileSync(path.join(origem, 'scripts', f), path.join(destino, 'scripts', f))
   // os conteúdos actuais do site (entram na base no 1.º arranque) e o package.json da raiz (módulos ES)
   fs.copyFileSync(path.join(RAIZ, 'package.json'), path.join(sis, 'package.json'))
   fs.mkdirSync(path.join(sis, 'src'), { recursive: true })

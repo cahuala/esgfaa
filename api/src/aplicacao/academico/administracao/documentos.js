@@ -60,10 +60,12 @@ export class ServicoDocumentos {
     const porCurso = new Map()
     for (const t of turmas) {
       const c = cursos.get(t.curso)
-      const x = porCurso.get(t.curso) ?? { curso: t.curso, nome: c?.titulo || c?.dados?.nome || t.curso, sigla: c?.dados?.sigla || '', turmas: [], linhas: [] }
+      const x = porCurso.get(t.curso) ?? { curso: t.curso, nome: c?.titulo || c?.dados?.nome || t.curso, sigla: c?.dados?.sigla || '', turmas: [], linhas: [], baixas: 0 }
       porCurso.set(t.curso, x)
       x.turmas.push(t.nome)
       const matriculas = await this.academico.matriculasDaTurma(t.id)
+      // as baixas de curso (matrícula anulada ou suspensa): para os dados estatísticos finais
+      x.baixas += matriculas.filter((y) => ['anulada', 'suspensa'].includes(y.estado)).length
       for (const m of matriculas.filter((y) => ['ativa', 'concluida'].includes(y.estado))) {
         const e = m.estudante
         const d = e.dados ?? {}

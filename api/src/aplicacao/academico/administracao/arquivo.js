@@ -1,6 +1,8 @@
 import { ErroValidacao } from '../../../dominio/comum/erros.js'
 import { MODELOS_PLANO, mencao, NOTA_MINIMA, resultadoCurso, validarPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
 import { noCatalogo } from '../../../dominio/academico/cadeirasCatalogo.js'
+import { emailDeAcesso } from '../../../dominio/academico/pessoas/emailAcesso.js'
+import { numeroConta, senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
 
 export const CHAVE_CATALOGO = 'cadeiras-catalogo'
 
@@ -37,7 +39,8 @@ const siglaBloco = (nome, usadas) => {
 }
 
 export class ServicoArquivoAcademico {
-  constructor({ prisma, conteudos, anosLetivos, auditoria, paginas = null, aprovacaoComandante = false }) {
+  constructor({ prisma, conteudos, anosLetivos, auditoria, paginas = null, aprovacaoComandante = false, contas = null, cifra = null, dominioEmail = '', relogio = null }) {
+    Object.assign(this, { contas, cifra, relogio, dominio: String(dominioEmail || '').split(',').map((x) => x.trim()).find(Boolean) || 'portal.esg.emfaa.gov.ao' })
     this.paginas = paginas
     this.aprovacaoComandante = aprovacaoComandante
     this.prisma = prisma
@@ -65,11 +68,12 @@ export class ServicoArquivoAcademico {
     }
     if (!ucs.length) throw new ErroValidacao(`${edicao}.º ${sigla} (${anoLetivo}): a pauta não tem cadeiras.`)
     const estudantes = (t.estudantes ?? []).map((e) => ({
-      nip: txt(e?.nip, 20), nome: txt(e?.nome, 200),
+      nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20),
       notas: Object.fromEntries(ucs.map((u) => [u.codigo, nota(e?.notas?.[u.codigo])])),
       final: nota(e?.final), mencao: txt(e?.mencao, 30),
     })).filter((e) => e.nome)
-    return { sigla, edicao, anoLetivo, nome: `${edicao}.º ${sigla}`, blocos, ucs, estudantes, ficheiro: txt(t.ficheiro, 300) }
+    // o nome da turma por extenso (o do curso: «29.º Curso Superior de Comando e Direcção»); sem ele, vem do curso
+    return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, ficheiro: txt(t.ficheiro, 300) }
   }
 
   async importar(ctx, { turmas, simular = true } = {}) {
@@ -93,6 +97,8 @@ export class ServicoArquivoAcademico {
       resultado.push(r)
       const curso = porSigla.get(t.sigla)
       if (!curso) { Object.assign(r, { estado: 'sem curso', motivo: `O curso ${t.sigla} não está em Conteúdos › Cursos (crie-o com esta sigla e volte a carregar).` }); continue }
+      if (!t.nome) t.nome = `${t.edicao}.º ${curso.dados?.nome || curso.titulo || t.sigla}`
+      r.turma = `${t.nome} (${t.anoLetivo})`
       const ano = await this.prisma.anoLetivo.findUnique({ where: { id: t.anoLetivo } })
       if (ano?.fechado) { Object.assign(r, { estado: 'ano fechado', motivo: `O ano lectivo ${t.anoLetivo} está fechado: peça a reabertura ao Comandante.` }); continue }
       // o que já está no sistema não se toca
@@ -102,14 +108,22 @@ export class ServicoArquivoAcademico {
       if (outras.length) { Object.assign(r, { estado: 'já existe', motivo: `Já há no sistema a turma ${outras.map((x) => x.nome).join(', ')} deste curso em ${t.anoLetivo}, com matrículas: fica como está.` }); continue }
       if (daqui && await this.#temNotasDoSistema(daqui.id)) { Object.assign(r, { estado: 'já existe', motivo: `A turma ${t.nome} já tem notas lançadas no sistema: fica como está.` }); continue }
       const linhas = []
+      const faltam = []
       for (const e of t.estudantes) {
         const c = (e.nip ? porNumero.get(norm(e.nip)) : null) ?? (!e.nip ? porNome.get(nomeChave(e.nome)) : null)
         if (c) linhas.push({ ...e, conta: c })
-        else r.semConta.push(`${e.nome}${e.nip ? ` (${e.nip})` : ''}`)
+        else faltam.push(e)
       }
       r.comConta = linhas.length
+      // quem ainda não tem conta (o Pessoal ainda não o enviou): a conta cria-se já, para poder entrar e ver as notas
+      r.contasNovas = faltam.map((e) => `${e.nome}${e.nip ? ` (${e.nip})` : ''}`)
       r.estado = simular ? 'por carregar' : 'carregada'
       if (simular) continue
+      for (const e of faltam) {
+        const c = await this.#criarConta(e)
+        if (c) { linhas.push({ ...e, conta: c }); for (const n of [e.nip]) if (n) porNumero.set(norm(n), c) }
+        else r.semConta.push(`${e.nome}${e.nip ? ` (${e.nip})` : ''}`)
+      }
       await this.anosLetivos.garantir(t.anoLetivo)
       await this.prisma.$transaction(async (tx) => this.#gravar(tx, t, curso, daqui, linhas, ctx), { timeout: 120_000 })
       gravadas++
@@ -208,11 +222,13 @@ export class ServicoArquivoAcademico {
     for (const t of turmas) {
       const sigla = txt(t?.sigla, 10).toUpperCase()
       const edicao = Number(t?.edicao)
-      const nome = `${edicao}.º ${sigla}`
-      const r = { turma: `${nome} (${anoLetivo})`, estado: '', motivo: '', discentes: 0, comConta: 0, semConta: [], cadeiras: [] }
+      const r = { turma: `${edicao}.º ${sigla} (${anoLetivo})`, estado: '', motivo: '', discentes: 0, comConta: 0, semConta: [], contasNovas: [], cadeiras: [] }
       resultado.push(r)
       const curso = porSigla.get(sigla)
       if (!curso) { Object.assign(r, { estado: 'sem curso', motivo: `O curso ${sigla} não está em Conteúdos › Cursos (Gestão do Site).` }); continue }
+      // o nome da turma por extenso: o da lista («18.º Curso de Organização…»), senão a edição e o nome do curso
+      const nome = txt(t?.nome, 150) || `${edicao}.º ${curso.dados?.nome || curso.titulo || sigla}`
+      r.turma = `${nome} (${anoLetivo})`
       const modelo = MODELOS_PLANO[t?.modelo]
       let turma = await this.prisma.turma.findFirst({ where: { curso: curso.id, anoLetivo }, orderBy: { id: 'asc' } })
       const ucs = turma ? await this.prisma.unidadeCurricular.findMany({ where: { turmaId: turma.id }, include: { docentes: true } }) : []
@@ -222,7 +238,14 @@ export class ServicoArquivoAcademico {
       const comConta = estudantes.map((e) => ({ e, c: conta('estudante', e.nip, e.nome) }))
       r.discentes = estudantes.length
       r.comConta = comConta.filter((x) => x.c).length
-      r.semConta = comConta.filter((x) => !x.c).map((x) => `${x.e.nome}${x.e.nip ? ` (${x.e.nip})` : ''}`)
+      r.contasNovas = comConta.filter((x) => !x.c).map((x) => `${x.e.nome}${x.e.nip ? ` (${x.e.nip})` : ''}`)
+      if (!simular) {
+        for (const x of comConta.filter((y) => !y.c)) {
+          x.c = await this.#criarConta(x.e)
+          if (x.c) contas.push({ ...x.c, tipo: 'estudante' })
+          else r.semConta.push(`${x.e.nome}${x.e.nip ? ` (${x.e.nip})` : ''}`)
+        }
+      }
       for (const c of todas) {
         const k = noCatalogo(c.nome, catalogo)
         const propostos = (k?.docentes ?? []).map((d) => ({ d, conta: conta('docente', d.nip, d.nome) }))
@@ -263,4 +286,28 @@ export class ServicoArquivoAcademico {
     if (!simular) await this.auditoria.registar(ctx, { acao: 'arranque_ano_letivo', colecao: 'turmas', alvoTitulo: `${anoLetivo}: ${resultado.length} turma(s), ${catalogo.length} cadeira(s) no catálogo` })
     return { simulado: Boolean(simular), anoLetivo, catalogo: catalogo.length, turmas: resultado }
   }
+
+  /*
+    A conta de um discente que o Pessoal ainda não enviou: activa (entra no portal e vê as suas notas), com o e-mail de
+    acesso nome.apelido@portal.esg.emfaa.gov.ao (a mesma regra do Pessoal) e uma palavra-passe que ninguém sabe — a
+    Repartição entrega a ficha de acesso («Repor a palavra-passe»). Quando o Pessoal o enviar, reconhece-o pelo NIP.
+  */
+  async #criarConta(e) {
+    if (!this.contas || !this.cifra) return null
+    if (!this.emails) this.emails = new Set((await this.prisma.contaPortal.findMany({ select: { email: true } })).map((c) => c.email.toLowerCase()))
+    const email = emailDeAcesso(e.nome, this.dominio, this.emails)
+    if (!email) return null
+    this.emails.add(email)
+    const ano = (this.relogio?.agora() ?? new Date()).getFullYear()
+    for (let tentativa = 0; tentativa < 4; tentativa++) {
+      try {
+        const c = await this.contas.criar({ tipo: 'estudante', numero: numeroConta('estudante', ano, await this.contas.proximaSequencia('estudante', ano)), nome: e.nome, email, senha: await this.cifra.cifrar(senhaInicial()), dados: { nip: e.nip || '', posto: e.posto || '', ramo: e.ramo || '' } })
+        return { id: c.id, nome: c.nome, dados: c.dados }
+      } catch (erro) {
+        if (!/Número/.test(erro.message)) throw erro
+      }
+    }
+    return null
+  }
+
 }
