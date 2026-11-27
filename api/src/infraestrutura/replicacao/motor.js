@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { lerEsquema, ondeChave } from './esquema.js'
-import { DONOS, camposDe, escreve, interessa } from '../../dominio/replicacao/donos.js'
+import { DONOS, camposDe, encaminha, escreve, interessa } from '../../dominio/replicacao/donos.js'
 
 /*
   Replicação entre os sistemas separados (cada um com a sua base de dados, a mesma estrutura):
@@ -43,8 +43,8 @@ function descodificar(campo, v, nuloJson) {
 }
 
 export class Replicacao {
-  constructor({ prisma, sistema, chave, url = '', pares = ['escolar', 'site'], privados = null, pastaUploads = '', intervaloS = 15, registar = () => {}, fetch: buscar = globalThis.fetch, Prisma }) {
-    Object.assign(this, { prisma, sistema, chave, url: url.replace(/\/$/, ''), pares, privados, pastaUploads, intervaloS, registar, buscar, Prisma })
+  constructor({ prisma, sistema, chave, url = '', pares = ['escolar', 'site', 'biblioteca'], privados = null, pastaUploads = '', intervaloS = 15, registar = () => {}, aoCriar = null, fetch: buscar = globalThis.fetch, Prisma }) {
+    Object.assign(this, { aoCriar, prisma, sistema, chave, url: url.replace(/\/$/, ''), pares, privados, pastaUploads, intervaloS, registar, buscar, Prisma })
     this.esquema = lerEsquema()
     this.porTabela = new Map(Object.values(this.esquema).map((m) => [m.tabela, m]))
     this.aTrocar = false
@@ -99,7 +99,7 @@ export class Replicacao {
       const m = this.porTabela.get(f.tabela)
       if (!m || !interessa(m.nome, destino)) continue
       // só o que é deste sistema; o online passa adiante o que veio de outro (a Gestão do Site → a Gestão Escolar)
-      if (!(f.origem === '' ? escreve(m.nome, this.sistema) : this.sistema === 'online')) continue
+      if (!(f.origem === '' ? escreve(m.nome, this.sistema) : this.sistema === 'online' && encaminha(m.nome, f.origem, destino))) continue
       const chave = Object.fromEntries(m.pk.map((k) => [k, f.chave[m.campos[k].coluna]]))
       const id = `${m.nome}|${JSON.stringify(chave)}`
       if (vistas.has(id)) continue
@@ -134,6 +134,8 @@ export class Replicacao {
           const feito = await this.#aplicarLinha(origem, l)
           if (feito) r.aplicadas++
           else r.ignoradas++
+          // uma linha nova de outro sistema (ex.: um aviso para um estudante): quem precisa de saber é avisado
+          if (feito === 'criada' && this.aoCriar) Promise.resolve(this.aoCriar(l.m, l.d)).catch((e) => this.registar({ nivel: 'aviso', mensagem: 'Depois de receber uma linha', erro: e.message }))
         } catch (e) {
           falharam.push({ l, erro: e })
         }
@@ -153,7 +155,8 @@ export class Replicacao {
     const pode = camposDe(m.nome, origem)
     if (!pode.todas && !pode.so.length) return false
     const onde = ondeChave(m, this.#tipar(m, l.k))
-    return this.prisma.$transaction(async (tx) => {
+    let criada = false
+    const feito = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRawUnsafe('SELECT set_config(\'replicacao.origem\', $1, true)', origem)
       const atual = await tx[m.delegate].findUnique({ where: onde })
       if (l.d === null) {
@@ -180,6 +183,7 @@ export class Replicacao {
         // só quem é dono (ou quando as duas partes criam) cria a linha
         if (!pode.todas) return false
         await tx[m.delegate].create({ data: { ...dados, ...this.#tipar(m, l.k) } })
+        criada = true
       }
       if (l.f && m.nome === 'Ficheiro' && this.privados && l.d.caminho) {
         const destino = this.privados.absoluto(l.d.caminho)
@@ -188,6 +192,7 @@ export class Replicacao {
       }
       return true
     }, { timeout: 60_000 })
+    return feito && criada ? 'criada' : feito
   }
 
   // os ficheiros públicos (imagens das notícias, capas…) mudados depois de «desde» (ms), por ordem, até ao limite

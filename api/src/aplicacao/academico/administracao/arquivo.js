@@ -1,5 +1,8 @@
 import { ErroValidacao } from '../../../dominio/comum/erros.js'
-import { mencao, NOTA_MINIMA, resultadoCurso } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { MODELOS_PLANO, mencao, NOTA_MINIMA, resultadoCurso, validarPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { noCatalogo } from '../../../dominio/academico/cadeirasCatalogo.js'
+
+export const CHAVE_CATALOGO = 'cadeiras-catalogo'
 
 /*
   Carga do arquivo da Repartição de Administração Escolar (as pautas finais dos anos anteriores, já assinadas):
@@ -34,7 +37,9 @@ const siglaBloco = (nome, usadas) => {
 }
 
 export class ServicoArquivoAcademico {
-  constructor({ prisma, conteudos, anosLetivos, auditoria }) {
+  constructor({ prisma, conteudos, anosLetivos, auditoria, paginas = null, aprovacaoComandante = false }) {
+    this.paginas = paginas
+    this.aprovacaoComandante = aprovacaoComandante
     this.prisma = prisma
     this.conteudos = conteudos
     this.anosLetivos = anosLetivos
@@ -166,5 +171,96 @@ export class ServicoArquivoAcademico {
       create: { turmaId: turma.id, estado: 'homologada', homologadaPor: `${ORIGEM} (carregado por ${quem})`, homologadaEm: new Date(), observacoes: `Pauta do arquivo${t.ficheiro ? `: ${t.ficheiro}` : ''}` },
       update: { estado: 'homologada' },
     })
+  }
+
+  /*
+    Arranque do ano lectivo (das relações do corpo docente e das listas dos discentes):
+      - o catálogo das cadeiras (o departamento e os docentes habituais de cada uma) fica guardado: as cadeiras que se
+        criarem depois recebem o departamento sozinhas;
+      - cada turma do ano (o curso pela sigla): cria-se, com as cadeiras do modelo do plano de curso, e matriculam-se
+        os discentes que já têm conta (pelo NIP); numa turma que já existe, só se completa o que falta;
+      - em cada cadeira: o departamento (se estiver em branco) e os docentes habituais, como proposta para o Comandante
+        aprovar na distribuição (ou logo aprovados, sem a aprovação dele ligada). Os docentes que já lá estão ficam.
+    simular: mostra o que faria (as ligações das cadeiras ao catálogo, para conferir), sem gravar.
+  */
+  async arrancar(ctx, { anoLetivo, cadeiras = [], turmas = [], simular = true } = {}) {
+    ctx.actor.exigir('academico.gerir')
+    if (!ANO.test(String(anoLetivo ?? ''))) throw new ErroValidacao('Indique o ano lectivo (2026/2027).')
+    const catalogo = cadeiras.map((c) => ({
+      nome: txt(c?.nome, 200), departamento: txt(c?.departamento, 120),
+      docentes: (c?.docentes ?? []).map((d) => ({ nip: txt(d?.nip, 20), nome: txt(d?.nome, 200), tipo: d?.tipo === 'colaborador' ? 'colaborador' : 'efectivo' })).filter((d) => d.nome),
+    })).filter((c) => c.nome)
+    const ano = await this.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })
+    if (ano?.fechado) throw new ErroValidacao(`O ano lectivo ${anoLetivo} está fechado: peça a reabertura ao Comandante.`)
+    const cursos = await this.conteudos.listar('cursos')
+    const porSigla = new Map(cursos.map((c) => [String(c.dados?.sigla ?? '').toUpperCase(), c]).filter(([k]) => k))
+    const contas = await this.prisma.contaPortal.findMany({ select: { id: true, tipo: true, nome: true, dados: true } })
+    const nomeChave = (n) => String(n ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ')
+    const conta = (tipo, nip, nome) => {
+      const l = contas.filter((c) => c.tipo === tipo)
+      return (nip && l.find((c) => norm(c.dados?.nip) === norm(nip) || norm(c.dados?.numeroAgente) === norm(nip))) || (() => { const m = l.filter((c) => nomeChave(c.nome) === nomeChave(nome)); return m.length === 1 ? m[0] : null })()
+    }
+    if (!simular) {
+      await this.anosLetivos.garantir(anoLetivo)
+      if (catalogo.length && this.paginas) await this.paginas.guardar(CHAVE_CATALOGO, { anoLetivo, cadeiras: catalogo }, ctx.actor?.id ?? null)
+    }
+    const resultado = []
+    for (const t of turmas) {
+      const sigla = txt(t?.sigla, 10).toUpperCase()
+      const edicao = Number(t?.edicao)
+      const nome = `${edicao}.º ${sigla}`
+      const r = { turma: `${nome} (${anoLetivo})`, estado: '', motivo: '', discentes: 0, comConta: 0, semConta: [], cadeiras: [] }
+      resultado.push(r)
+      const curso = porSigla.get(sigla)
+      if (!curso) { Object.assign(r, { estado: 'sem curso', motivo: `O curso ${sigla} não está em Conteúdos › Cursos (Gestão do Site).` }); continue }
+      const modelo = MODELOS_PLANO[t?.modelo]
+      let turma = await this.prisma.turma.findFirst({ where: { curso: curso.id, anoLetivo }, orderBy: { id: 'asc' } })
+      const ucs = turma ? await this.prisma.unidadeCurricular.findMany({ where: { turmaId: turma.id }, include: { docentes: true } }) : []
+      const doModelo = modelo ? modelo.cadeiras.filter((c) => !ucs.some((u) => u.codigo === c.codigo)) : []
+      const todas = [...ucs.map((u) => ({ codigo: u.codigo, nome: u.nome, departamento: u.departamento, docentes: u.docentes, existe: u })), ...doModelo.map((c) => ({ codigo: c.codigo, nome: c.nome, departamento: '', docentes: [], modelo: c }))]
+      const estudantes = (t?.estudantes ?? []).map((e) => ({ nip: txt(e?.nip, 20), nome: txt(e?.nome, 200) })).filter((e) => e.nome)
+      const comConta = estudantes.map((e) => ({ e, c: conta('estudante', e.nip, e.nome) }))
+      r.discentes = estudantes.length
+      r.comConta = comConta.filter((x) => x.c).length
+      r.semConta = comConta.filter((x) => !x.c).map((x) => `${x.e.nome}${x.e.nip ? ` (${x.e.nip})` : ''}`)
+      for (const c of todas) {
+        const k = noCatalogo(c.nome, catalogo)
+        const propostos = (k?.docentes ?? []).map((d) => ({ d, conta: conta('docente', d.nip, d.nome) }))
+        r.cadeiras.push({
+          codigo: c.codigo, nome: c.nome, catalogo: k?.nome ?? null, departamento: c.departamento || k?.departamento || '',
+          docentes: propostos.filter((x) => x.conta).map((x) => x.conta.nome), docentesSemConta: propostos.filter((x) => !x.conta).map((x) => x.d.nome),
+        })
+      }
+      r.estado = simular ? (turma ? 'completar' : 'por criar') : turma ? 'completada' : 'criada'
+      r.motivo = modelo ? '' : 'Sem modelo do plano de curso: a turma fica sem cadeiras (carregue o plano em Turma › Plano de curso).'
+      if (simular) continue
+      await this.prisma.$transaction(async (tx) => {
+        if (!turma) turma = await tx.turma.create({ data: { curso: curso.id, anoLetivo, nome, anoFinal: true, ativa: true } })
+        if (modelo && !(await tx.planoCurso.findUnique({ where: { curso_anoLetivo: { curso: curso.id, anoLetivo } } }))) {
+          await tx.planoCurso.create({ data: validarPlano({ ...modelo.plano, curso: curso.id, anoLetivo }) })
+        }
+        for (const x of comConta.filter((y) => y.c)) await tx.matricula.upsert({ where: { estudanteId_turmaId: { estudanteId: x.c.id, turmaId: turma.id } }, create: { estudanteId: x.c.id, turmaId: turma.id, estado: 'ativa' }, update: {} })
+        for (const [i, c] of todas.entries()) {
+          const info = r.cadeiras[i]
+          let uc = c.existe
+          if (!uc) {
+            const m = c.modelo
+            uc = await tx.unidadeCurricular.create({ data: { turmaId: turma.id, codigo: m.codigo, nome: m.nome, periodo: m.periodo, bloco: m.bloco, creditos: m.creditos, horasContacto: m.horasContacto, horasNaoContacto: m.horasNaoContacto, horas: m.horasContacto + m.horasNaoContacto, tii: Boolean(m.tii), departamento: info.departamento } })
+          } else if (!uc.departamento && info.departamento) await tx.unidadeCurricular.update({ where: { id: uc.id }, data: { departamento: info.departamento } })
+          const ja = new Set((c.docentes ?? []).map((d) => d.docenteId))
+          const k = noCatalogo(c.nome, catalogo)
+          let primeiro = ja.size === 0
+          for (const d of k?.docentes ?? []) {
+            const cd = conta('docente', d.nip, d.nome)
+            if (!cd || ja.has(cd.id)) continue
+            await tx.docencia.create({ data: { cadeiraId: uc.id, docenteId: cd.id, papel: primeiro && d.tipo === 'efectivo' ? 'regente' : 'assistente', estado: this.aprovacaoComandante ? 'proposta' : 'aprovada' } })
+            if (d.tipo === 'efectivo') primeiro = false
+            ja.add(cd.id)
+          }
+        }
+      }, { timeout: 120_000 })
+    }
+    if (!simular) await this.auditoria.registar(ctx, { acao: 'arranque_ano_letivo', colecao: 'turmas', alvoTitulo: `${anoLetivo}: ${resultado.length} turma(s), ${catalogo.length} cadeira(s) no catálogo` })
+    return { simulado: Boolean(simular), anoLetivo, catalogo: catalogo.length, turmas: resultado }
   }
 }

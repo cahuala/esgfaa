@@ -247,7 +247,7 @@ function Layout({ children }) {
             {pode('academico.ver') && <ItemMenu para="/academico/anos-letivos" icone="fa-calendar-check" texto={tx('Ano lectivo e semestres')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/estrutura" icone="fa-sitemap" texto={tx('Estrutura do ensino (cursos e departamentos)')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/turmas" icone="fa-users" texto={tx('Turmas e matrículas')} />}
-            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Arquivo (pautas dos anos anteriores)')} />}
+            {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Arquivo e arranque do ano')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/alocacao" icone="fa-chalkboard-teacher" texto={tx('Alocação de docentes')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/calendario" icone="fa-calendar-alt" texto={tx('Calendário académico')} />}
             {pode('academico.ver') && !pode('pessoal.ver') && <ItemMenu para="/pessoal/registo" icone="fa-id-card" texto={tx('Consultar registo de pessoas')} />}
@@ -261,6 +261,7 @@ function Layout({ children }) {
             {pode('publicidade.ver') && <ItemMenu para="/colecao/publicidade" icone="fa-bullhorn" texto={tx('Publicidade')} />}
 
             {(pode('utilizadores.ver') || pode('papeis.ver') || pode('atividades.ver') || pode('seguranca.ver')) && <div className="menu-header">{tx('Segurança')}</div>}
+            {pode('seguranca.ver') && <ItemMenu para="/monitorizacao" icone="fa-heart-pulse" texto={tx('Cibersegurança e monitorização (todos os sistemas)')} />}
             {pode('seguranca.ver') && <ItemMenu para="/seguranca" icone="fa-user-shield" texto={tx('Centro de segurança')} />}
             {pode('utilizadores.ver') && <ItemMenu para="/utilizadores" icone="fa-users-cog" texto={tx('Utilizadores')} />}
             {(pode('papeis.ver') || pode('papeis.gerir')) && <ItemMenu para="/papeis" icone="fa-user-shield" texto={tx('Papéis e permissões')} />}

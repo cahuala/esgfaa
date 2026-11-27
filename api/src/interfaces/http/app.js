@@ -10,6 +10,7 @@ import { rotasPacotes } from './rotas/pacotes.js'
 import { rotasLti } from './rotas/lti.js'
 import { rotasIntegracao } from './rotas/integracao.js'
 import { rotasReplicacao } from './rotas/replicacao.js'
+import { pedidoDeMonitorValido } from '../../aplicacao/monitorizacao.js'
 import { criarCacheConteudo } from './cacheConteudo.js'
 import { soRedeInterna } from './middlewares/redeInterna.js'
 
@@ -81,6 +82,13 @@ export function criarApp(contentor, { registarErro } = {}) {
   }
 
   app.get('/api/saude', (req, res) => res.json({ ok: true, sistema }))
+  // o estado deste sistema para o centro de monitorização de outro (pedido assinado com a chave partilhada)
+  app.get('/api/monitor/estado', semCache, async (req, res, next) => {
+    try {
+      if (!pedidoDeMonitorValido(config.replicacao?.chave, req.get('x-sistema'), req.get('x-data'), req.get('x-assinatura'))) return res.status(401).json({ erro: 'Pedido não assinado.' })
+      res.json(await servicos.monitorizacao.estadoLocal())
+    } catch (e) { next(e) }
+  })
   // o conteúdo do site fica alguns segundos em memória; uma alteração no painel apaga-o (e os comentários e gostos também)
   const cache = criarCacheConteudo()
   const apagarSeMudou = (req, res, next) => {
@@ -88,7 +96,7 @@ export function criarApp(contentor, { registarErro } = {}) {
     next()
   }
   app.use('/api/publico', apagarSeMudou, rotasPublicas({ servicos, config, cache }))
-  if (tem('escolar', 'site')) app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
+  if (tem('escolar', 'site', 'biblioteca')) app.use('/api/admin', soRedeInterna(config.painelRedes), semCache, apagarSeMudou, rotasAdmin({ servicos, config, armazenamento, privados }))
   if (tem('online')) {
     app.use('/api/pacotes', rotasPacotes({ servicos, config }))
     app.use('/api/lti', semCache, rotasLti({ servicos, config }))

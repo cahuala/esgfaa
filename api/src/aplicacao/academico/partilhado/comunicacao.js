@@ -38,6 +38,18 @@ export class ServicoComunicacao {
     }
   }
 
+  /*
+    Um aviso que nasceu noutro sistema (a Gestão Escolar publica as notas, aprova um pedido…) e chegou pela troca:
+    já está na base e o e-mail já foi enviado de lá; aqui, onde estão os telemóveis e as páginas abertas, avisa-se.
+  */
+  async avisarRecebido(n) {
+    const id = Number(n?.contaId)
+    if (!id) return
+    const limpo = { tipo: n.tipo, titulo: String(n.titulo ?? '').slice(0, 200), texto: String(n.texto || '').slice(0, 500), ligacao: n.ligacao || '' }
+    this.tempoReal?.emitir('portal', { tipo: limpo.tipo }, { contas: [id] })
+    if (this.push) await this.#enviarPush([id], limpo)
+  }
+
   // avisos no telemóvel: um por aparelho; os aparelhos que já não aceitam saem da lista
   async #enviarPush(ids, n) {
     for (const s of await this.comunicacao.subscricoesDe(ids)) {

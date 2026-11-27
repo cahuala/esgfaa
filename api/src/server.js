@@ -15,8 +15,9 @@ const cifrados = await cifrarExistentes(contentor.prismaBase, contentor.cifraDad
 if (cifrados) console.log(`Dados pessoais cifrados em ${cifrados} registo(s).`)
 
 // 1.º arranque: carrega os conteúdos atuais do site para a base de dados
-// (só onde se gere o site; os outros sistemas recebem-nos da Gestão do Site)
-if (['completo', 'site'].includes(config.sistema) && (await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)
+// (em todos os sistemas: o site público não fica em branco e a Gestão Escolar tem logo os cursos; quando a Gestão
+// do Site enviar os seus, actualizam estes — a chave é o nome, não um número)
+if ((await contentor.repositorios.conteudos.contarTodos()) === 0) await semear(contentor)
 
 const { administradorCriado: admin } = await prepararSistema(contentor)
 if (admin) {

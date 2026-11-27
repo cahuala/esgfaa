@@ -1,0 +1,30 @@
+﻿ORDEM PARA COMEÇAR A USAR OS SISTEMAS NA ESCOLA SUPERIOR DE GUERRA
+==================================================================
+
+O servidor online (o site público e o Portal dos estudantes e docentes) já está na internet:
+  https://esg.imnoove.com            (o site)          https://esg.imnoove.com/portal/   (o Portal)
+Os sistemas internos instalam-se nos servidores da Escola, por esta ordem (podem ficar todos no mesmo servidor):
+
+1. SISTEMA DE GESTÃO ESCOLAR — ESG-GESTAO\INSTALAR-GESTAO-ESCOLAR-WINDOWS.bat
+   Leva já a ligação ao servidor online (ligacao-online.txt: as chaves partilhadas — não envie por e-mail).
+2. SISTEMA DE PESSOAL — ESG-PESSOAL\ACTUALIZAR-WINDOWS.bat
+   Carrega as listas de docentes e discentes (e o arquivo de 2023/2024) e passa a enviar os docentes e os
+   estudantes à Gestão Escolar deste servidor. No Pessoal, em Estudantes (e em Docentes), carregue em
+   «E-mails de acesso ao portal» e crie os e-mails nome.apelido@portal.esg.emfaa.gov.ao.
+3. SISTEMA DE GESTÃO DO SITE — ESG-GESTAO\INSTALAR-GESTAO-DO-SITE-WINDOWS.bat
+4. SISTEMA DE BIBLIOTECA — ESG-GESTAO\INSTALAR-BIBLIOTECA-WINDOWS.bat
+
+DEPOIS, NO PAINEL DA GESTÃO ESCOLAR (Administração Escolar › Arquivo e arranque do ano)
+  a) ESG-GESTAO\CARREGAR-NO-PAINEL\arranque-2026-2027.json — as turmas de 2026/2027 com as cadeiras dos planos,
+     as matrículas, o departamento de cada cadeira e os docentes de cada cadeira (mostra tudo antes de gravar;
+     a distribuição dos docentes segue para o Comandante em Alocação de docentes).
+  b) ESG-GESTAO\CARREGAR-NO-PAINEL\gestao-pautas-do-arquivo.json — as pautas assinadas de 2021/2022 a 2025/2026.
+  Os discentes e docentes que ainda não tinham conta entram quando o Pessoal os enviar: volte a carregar o mesmo
+  ficheiro (não repete nada).
+  Para conferir: CONFERENCIA-arquivo-x-listas.xlsx e CONFERIR-carga-do-Pessoal.xlsx (na mesma pasta).
+
+NO PAINEL: «Cibersegurança e monitorização (todos os sistemas)» mostra cada sistema com o seu domínio, se
+responde, a saúde do servidor, a segurança e as trocas com o servidor online.
+
+ATENÇÃO: esta pasta tem dados pessoais reais (CARREGAR-NO-PAINEL) e as chaves (ligacao-online.txt). Não a envie
+por e-mail; depois de instalar, guarde o pendrive em lugar seguro. A instalação precisa da autorização do Comando.

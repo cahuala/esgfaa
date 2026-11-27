@@ -22,6 +22,16 @@ const CALMA_PARA_VOLTAR_MS = 30 * 60_000
   desligam um a um; com a defesa automática ligada, o próprio sistema sobe de nível durante um ataque e
   volta ao normal quando ele pára. Os endereços de confiança nunca são bloqueados nem fechados.
 */
+// uso do processador (%) entre a leitura anterior e esta (no Windows não há carga média)
+let amostra = null
+function usoProcessador() {
+  const t = os.cpus().reduce((a, c) => { const x = c.times; a.ocupado += x.user + x.nice + x.sys + x.irq; a.total += x.user + x.nice + x.sys + x.irq + x.idle; return a }, { ocupado: 0, total: 0 })
+  const antes = amostra
+  amostra = t
+  if (!antes || t.total === antes.total) return 0
+  return Math.round(((t.ocupado - antes.ocupado) / (t.total - antes.total)) * 100)
+}
+
 export class ServicoSeguranca {
   constructor({ monitor, seguranca, correio, emailAlerta = '', auditoria, pastaDados, registar, versao = '' }) {
     Object.assign(this, { monitor, seguranca, correio, emailAlerta, auditoria, pastaDados, registar, versao })
@@ -221,11 +231,21 @@ export class ServicoSeguranca {
     const nucleos = os.cpus().length || 1
     return {
       ligadoDesde: new Date(this.monitor.arranque).toISOString(), versaoNode: process.version, versao: this.versao,
-      processador: { carga: Math.round((os.loadavg()[0] / nucleos) * 100), nucleos },
+      // a carga média (no Windows não existe: mede-se o uso entre duas leituras)
+      processador: { carga: os.loadavg()[0] > 0 ? Math.round((os.loadavg()[0] / nucleos) * 100) : usoProcessador(), nucleos },
       // memória da API (e o máximo que pode usar) e a livre no computador
       memoria: { processo: m.rss, heap: m.heapUsed, limite: v8.getHeapStatistics().heap_size_limit, total: os.totalmem(), livre: os.freemem() },
       disco, atrasoMs: this.monitor.atrasoMs(),
     }
+  }
+
+  // para a monitorização de todos os sistemas (sem sessão: o pedido vem assinado de outro sistema)
+  async resumoParaMonitor() {
+    const agora = Date.now()
+    let baseDados
+    try { baseDados = { ligada: true, ms: Math.round((await this.seguranca.pingMs()) * 10) / 10 } } catch { baseDados = { ligada: false, ms: null } }
+    const [dia, bloqueios] = await Promise.all([this.seguranca.resumo(new Date(agora - DIA)), this.seguranca.bloqueios()])
+    return { saude: { ...this.#saude(), baseDados }, alerta: nivelDeAlerta(this.monitor.contagens(5)), dia, bloqueios: bloqueios.length, protecao: this.protecao.nivel, trafego: this.monitor.trafego(5) }
   }
 
   async painel(ctx) {

@@ -1,3 +1,5 @@
+import { noCatalogo } from '../../../dominio/academico/cadeirasCatalogo.js'
+import { CHAVE_CATALOGO } from './arquivo.js'
 import { ErroValidacao, NaoEncontrado } from '../../../dominio/comum/erros.js'
 import { escolha, texto } from '../../../dominio/academico/comum/validacao.js'
 import { PERIODOS, validarAlocacao } from '../../../dominio/academico/organizacao/cadeira.js'
@@ -45,7 +47,13 @@ export class ServicoCadeiras {
     ctx.actor.exigir('academico.gerir')
     const t = await this.academico.turma(turmaId)
     if (!t) throw new NaoEncontrado('Turma não encontrada.')
-    const c = await this.academico.criarCadeira({ turmaId: t.id, ...this.#camposCadeira(dados) })
+    const campos = this.#camposCadeira(dados)
+    // sem departamento escolhido: o do catálogo das cadeiras (das relações do corpo docente), se a conhecer
+    if (!campos.departamento && this.paginas) {
+      const k = noCatalogo(campos.nome, (await this.paginas.ler(CHAVE_CATALOGO))?.cadeiras ?? [])
+      if (k?.departamento) campos.departamento = k.departamento
+    }
+    const c = await this.academico.criarCadeira({ turmaId: t.id, ...campos })
     await this.auditoria.registar(ctx, { acao: 'criar_cadeira', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: `${c.nome} (${t.nome})` })
     return this.academico.cadeira(c.id)
   }

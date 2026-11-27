@@ -4,13 +4,14 @@
   pendrive, sem internet (o .bat pede para correr como administrador):
     -Sistema escolar  Sistema de Gestão Escolar: Administração Escolar, Direcção de Ensino e departamentos, Comando,
                       Biblioteca, registo dos estudantes e docentes (recebe-os do Sistema de Pessoal);
-    -Sistema site     Sistema de Gestão do Site: notícias, páginas, cursos, eventos, comentários e mensagens do site.
+    -Sistema site     Sistema de Gestão do Site: notícias, páginas, cursos, eventos, comentários e mensagens do site;
+    -Sistema biblioteca  Sistema de Biblioteca: catálogo, exemplares, empréstimos (os livros leem-se no portal).
   Cada um tem a sua pasta, a sua base de dados e as suas portas (podem ficar no mesmo servidor) e troca os dados com o
   servidor online (o site público e o Portal dos estudantes e docentes) — REPLICACAO_URL e REPLICACAO_CHAVE.
   Se já estiver instalado, actualiza (os dados, as chaves e a configuração ficam).
   Em caso de falha escreve no pendrive registos\ERRO-INSTALACAO-<SISTEMA>-<data>.txt com a causa e o que fazer.
 #>
-param([ValidateSet('escolar', 'site')][string]$Sistema = 'escolar')
+param([ValidateSet('escolar', 'site', 'biblioteca')][string]$Sistema = 'escolar')
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
@@ -18,6 +19,7 @@ $Pen = Split-Path -Parent $PSScriptRoot
 $N = @{
   escolar = @{ titulo = 'Sistema de Gestão Escolar'; pasta = 'C:\ESG-Gestao-Escolar'; svc = 'ESG-Escolar'; bd = 5434; api = 3001; dominio = 'escolar.esg.emfaa.gov.ao'; outro = 'site' }
   site = @{ titulo = 'Sistema de Gestão do Site'; pasta = 'C:\ESG-Gestao-Site'; svc = 'ESG-Site'; bd = 5435; api = 3003; dominio = 'gestao-site.esg.emfaa.gov.ao'; outro = 'escolar' }
+  biblioteca = @{ titulo = 'Sistema de Biblioteca'; pasta = 'C:\ESG-Biblioteca'; svc = 'ESG-Biblioteca'; bd = 5436; api = 3004; dominio = 'biblioteca.esg.emfaa.gov.ao'; outro = 'escolar' }
 }[$Sistema]
 $Titulo = $N.titulo
 $Svc = $N.svc
@@ -206,9 +208,10 @@ if ($Endereco -notmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-
   config\ligacao-online.txt, para configurar o servidor online e o outro sistema interno).
 #>
 function LerEnv($f) { $h = @{}; if (Test-Path $f) { foreach ($l in Get-Content $f -Encoding UTF8) { if ($l -match '^([A-Z_]+)=(.*)$') { $h[$Matches[1]] = $Matches[2].Trim() } } }; $h }
-$OutroEnv = "C:\ESG-Gestao-$(if ($N.outro -eq 'site') { 'Site' } else { 'Escolar' })\config\$($N.outro).env"
+# os outros sistemas internos que já estejam neste servidor
+$Outros = @('C:\ESG-Gestao-Escolar\config\escolar.env', 'C:\ESG-Gestao-Site\config\site.env', 'C:\ESG-Biblioteca\config\biblioteca.env') | Where-Object { $_ -ne (Join-Path $N.pasta "config\$Sistema.env") }
 $Lig = @{}
-foreach ($fonte in @((LerEnv $OutroEnv), (LerEnv (Join-Path $Pen 'ligacao-online.txt')))) {
+foreach ($fonte in @(($Outros | ForEach-Object { LerEnv $_ }) + @(LerEnv (Join-Path $Pen 'ligacao-online.txt')))) {
   foreach ($k in 'REPLICACAO_URL', 'REPLICACAO_CHAVE', 'DADOS_CHAVE') { if (-not $Lig[$k] -and $fonte[$k]) { $Lig[$k] = $fonte[$k] } }
 }
 if (-not $Atualizar -and -not $Lig.REPLICACAO_URL) {
@@ -392,7 +395,7 @@ $tlsLinha
 	@paginas path / /index.html /portal/ /portal/index.html /painel/ /painel/index.html
 	header @paginas Cache-Control "no-cache"
 
-$(if ($Sistema -eq 'escolar') { "`t@raiz path /`n`tredir @raiz /painel/`n" })	handle /api/* {
+$(if ($Sistema -ne 'site') { "`t@raiz path /`n`tredir @raiz /painel/`n" })	handle /api/* {
 		reverse_proxy 127.0.0.1:$PortaApi
 	}
 	handle /uploads/* {

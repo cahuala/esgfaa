@@ -19,17 +19,20 @@ const pelaRede = (online) => async (url, op) => {
 }
 
 describe('Sistemas separados: Gestão Escolar, Gestão do Site e servidor online', () => {
-  let escolar, site, online
+  let escolar, site, online, biblioteca
+  const avisos = []
   const p = (amb) => amb.contentor.prisma
   before(async () => {
-    online = await criarAmbiente({ env: { SISTEMA: 'online', REPLICACAO_CHAVE: CHAVE } })
+    online = await criarAmbiente({ env: { SISTEMA: 'online', REPLICACAO_CHAVE: CHAVE }, externos: { push: { chavePublica: 'x', enviar: async (s, n) => { avisos.push({ s: s.endpoint, ...n }); return 'ok' } } } })
     escolar = await criarAmbiente({ env: { SISTEMA: 'escolar', REPLICACAO_CHAVE: CHAVE, REPLICACAO_URL: 'https://portal.teste.ao' } })
     site = await criarAmbiente({ env: { SISTEMA: 'site', REPLICACAO_CHAVE: CHAVE, REPLICACAO_URL: 'https://portal.teste.ao' } })
-    for (const a of [online, escolar, site]) await a.contentor.replicacao.preparar()
+    biblioteca = await criarAmbiente({ env: { SISTEMA: 'biblioteca', REPLICACAO_CHAVE: CHAVE, REPLICACAO_URL: 'https://portal.teste.ao' } })
+    for (const a of [online, escolar, site, biblioteca]) await a.contentor.replicacao.preparar()
+    biblioteca.contentor.replicacao.buscar = pelaRede(online)
     escolar.contentor.replicacao.buscar = pelaRede(online)
     site.contentor.replicacao.buscar = pelaRede(online)
   })
-  after(async () => { for (const a of [online, escolar, site]) await a?.fechar() })
+  after(async () => { for (const a of [online, escolar, site, biblioteca]) await a?.fechar() })
 
   it('cada instalação só serve o que é seu (o painel não está no servidor online)', async () => {
     assert.equal((await online.http().post('/api/admin/entrar').send({ email: 'x@y.ao', senha: 'z' })).status, 404)
@@ -130,6 +133,40 @@ describe('Sistemas separados: Gestão Escolar, Gestão do Site e servidor online
     assert.equal((await site.contentor.replicacao.trocar()).ficheiros, 0)
   })
 
+  it('a Biblioteca: o catálogo chega ao portal (os estudantes leem e reservam); as contas chegam à Biblioteca', async () => {
+    const conta = await p(escolar).contaPortal.findFirst({ where: { numero: 'E2026-0001' } })
+    // as contas dos estudantes chegam à Biblioteca (vindas da Gestão Escolar, pelo servidor online)
+    await escolar.contentor.replicacao.trocar()
+    await biblioteca.contentor.replicacao.trocar()
+    assert.ok(await p(biblioteca).contaPortal.findUnique({ where: { id: conta.id } }), 'a conta chegou à Biblioteca')
+    assert.equal(await p(biblioteca).turma.count(), 0, 'as turmas não vão para a Biblioteca')
+    const obra = await p(biblioteca).obra.create({ data: { tipo: 'livro', titulo: 'Arte da Guerra', autores: ['Sun Tzu'] } })
+    await p(biblioteca).exemplar.create({ data: { obraId: obra.id, codigo: 'T-0001' } })
+    await biblioteca.contentor.replicacao.trocar()
+    assert.equal((await p(online).obra.findUnique({ where: { id: obra.id } }))?.titulo, 'Arte da Guerra')
+    // o estudante reserva no portal; a Biblioteca recebe e põe «pronta»; o portal vê
+    const r = await p(online).reserva.create({ data: { obraId: obra.id, contaId: conta.id, criadaEm: new Date() } })
+    await biblioteca.contentor.replicacao.trocar()
+    assert.ok(await p(biblioteca).reserva.findUnique({ where: { id: r.id } }))
+    await p(biblioteca).reserva.update({ where: { id: r.id }, data: { estado: 'pronta', prontaEm: new Date() } })
+    await biblioteca.contentor.replicacao.trocar()
+    assert.equal((await p(online).reserva.findUnique({ where: { id: r.id } })).estado, 'pronta')
+    // a Gestão Escolar não recebe a biblioteca
+    await escolar.contentor.replicacao.trocar()
+    assert.equal(await p(escolar).obra.count(), 0)
+    const eu = (await biblioteca.http().get('/api/admin/eu').set('Authorization', `Bearer ${(await biblioteca.criarUtilizador('comandante')).token}`).expect(200)).body
+    assert.ok(eu.permissoes.includes('biblioteca.gerir') && !eu.permissoes.some((x) => x.startsWith('academico.')))
+  })
+
+  it('um aviso criado na Gestão Escolar vai para o telemóvel do estudante (as subscrições estão no portal)', async () => {
+    const conta = await p(escolar).contaPortal.findFirst({ where: { numero: 'E2026-0001' } })
+    await p(online).subscricaoPush.create({ data: { contaId: conta.id, endpoint: 'https://push.teste/aparelho-1', p256dh: 'p', auth: 'a' } })
+    await p(escolar).notificacao.create({ data: { contaId: conta.id, tipo: 'notas', titulo: 'Notas publicadas: GP', texto: 'Já pode ver a nota.' } })
+    await escolar.contentor.replicacao.trocar()
+    await new Promise((r) => setTimeout(r, 50))
+    assert.deepEqual(avisos.map((a) => [a.s, a.titulo]), [['https://push.teste/aparelho-1', 'Notas publicadas: GP']])
+  })
+
   it('o painel de cada sistema só trata do que é seu (o Comandante vê tudo o que lá está)', async () => {
     const cmdtEscolar = await escolar.criarUtilizador('comandante')
     const eu = (await escolar.http().get('/api/admin/eu').set('Authorization', `Bearer ${cmdtEscolar.token}`).expect(200)).body
@@ -139,6 +176,36 @@ describe('Sistemas separados: Gestão Escolar, Gestão do Site e servidor online
     const cmdtSite = await site.criarUtilizador('comandante')
     const doSite = (await site.http().get('/api/admin/eu').set('Authorization', `Bearer ${cmdtSite.token}`).expect(200)).body
     assert.ok(doSite.permissoes.includes('publicacoes.aprovar') && !doSite.permissoes.some((x) => x.startsWith('academico.')))
+  })
+
+  it('o centro de cibersegurança vê todos os sistemas (domínio, se respondem, servidor, segurança, trocas)', async () => {
+    const cmdt = await escolar.criarUtilizador('comandante')
+    const auth = { Authorization: `Bearer ${cmdt.token}` }
+    // pela «rede»: o servidor online responde; o Pessoal (endereço sem ninguém) não
+    escolar.contentor.servicos.monitorizacao.buscar = async (url, op = {}) => {
+      if (!url.startsWith('https://portal.teste.ao')) throw Object.assign(new Error('ligação recusada'), { cause: { code: 'ECONNREFUSED' } })
+      let pedido = online.http().get(new URL(url).pathname)
+      for (const [k, v] of Object.entries(op.headers ?? {})) pedido = pedido.set(k, v)
+      const r = await pedido
+      return { ok: r.status < 400, status: r.status, json: async () => r.body }
+    }
+    await escolar.http().put('/api/admin/monitorizacao/sistemas').set(auth).send({ sistemas: [
+      { nome: 'Sistema de Gestão Escolar', tipo: 'escolar', dominio: 'escolar.esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:3001' },
+      { nome: 'Servidor online', tipo: 'online', dominio: 'portal.teste.ao', endereco: 'https://portal.teste.ao' },
+      { nome: 'Sistema de Gestão de Pessoal', tipo: 'pessoal', dominio: 'esg.emfaa.gov.ao', endereco: 'http://127.0.0.1:9' },
+    ] }).expect(200)
+    const m = (await escolar.http().get('/api/admin/monitorizacao').set(auth).expect(200)).body
+    const [eu, on, pes] = m.sistemas
+    assert.deepEqual([eu.ok, eu.local, eu.estado.sistema, eu.dominio], [true, true, 'escolar', 'escolar.esg.emfaa.gov.ao'])
+    assert.ok(eu.estado.saude.memoria.total > 0 && eu.estado.baseDados.tamanho > 0)
+    assert.deepEqual([on.ok, on.estado.sistema], [true, 'online'])
+    assert.equal(pes.ok, false)
+    assert.ok(m.alertas.some((x) => x.nivel === 'critico' && x.sistema === 'Sistema de Gestão de Pessoal'))
+    // sem assinatura, o estado do servidor não se mostra a ninguém
+    assert.equal((await online.http().get('/api/monitor/estado')).status, 401)
+    // só quem tem a segurança vê
+    const prof = await escolar.criarUtilizador('director_ensino')
+    assert.equal((await escolar.http().get('/api/admin/monitorizacao').set('Authorization', `Bearer ${prof.token}`)).status, 403)
   })
 
   it('o estado da replicação diz até onde se trocou', async () => {

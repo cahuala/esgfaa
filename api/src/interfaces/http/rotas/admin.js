@@ -252,6 +252,9 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   // ---------- Centro de segurança ----------
 
   r.get('/seguranca', async (req, res) => res.json(await servicos.seguranca.painel(ctx(req))))
+  // o centro de cibersegurança e monitorização de todos os sistemas
+  r.get('/monitorizacao', async (req, res) => res.json(await servicos.monitorizacao.painel(ctx(req))))
+  r.put('/monitorizacao/sistemas', validar({ body: z.object({ sistemas: z.array(z.object({ id: z.string().max(40).optional(), nome: z.string().max(80), tipo: z.string().max(20), dominio: z.string().max(120), endereco: z.string().max(200) })).max(20) }) }), async (req, res) => res.json(await servicos.monitorizacao.guardarLista(ctx(req), req.dados.body.sistemas)))
   r.post('/seguranca/bloqueios', validar({ body: z.object({ ip: z.string().max(45), horas: z.number().optional(), motivo: z.string().max(300).optional() }) }), async (req, res) => {
     res.status(201).json(await servicos.seguranca.bloquear(ctx(req), req.dados.body, req.ip))
   })

@@ -60,14 +60,15 @@ const ESQUEMA = z.object({
   APROVACAO_COMANDANTE: z.enum(['sim', 'nao']).default('sim'),
   PAINEL_REDES: z.string().max(1000).default(''),
   // sistemas separados (cada um com a sua base de dados): completo = tudo num só (desenvolvimento, servidor de teste);
-  // escolar = Gestão Escolar (interno); site = Gestão do Site (interno); online = o site público e o Portal (internet)
-  SISTEMA: z.enum(['completo', 'escolar', 'site', 'online']).default('completo'),
+  // escolar = Gestão Escolar (interno); site = Gestão do Site (interno); biblioteca = Biblioteca (interna);
+  // online = o site público e o Portal (internet)
+  SISTEMA: z.enum(['completo', 'escolar', 'site', 'biblioteca', 'online']).default('completo'),
   // chave partilhada entre os sistemas (a mesma nos três) e, nos internos, o endereço do servidor online
   REPLICACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'REPLICACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   REPLICACAO_URL: z.union([z.literal(''), z.url()]).default(''),
   REPLICACAO_INTERVALO_S: inteiro(15, 5, 3600),
   // no servidor online: os sistemas internos que trocam com ele
-  REPLICACAO_PARES: z.string().default('escolar,site'),
+  REPLICACAO_PARES: z.string().default('escolar,site,biblioteca'),
   // chave partilhada com o Sistema de Gestão de Pessoal (rede interna), que envia os docentes e estudantes; vazio = desligado
   INTEGRACAO_CHAVE: z.union([z.literal(''), z.string().min(32, 'INTEGRACAO_CHAVE deve ter pelo menos 32 caracteres.')]).default(''),
   // anti-plágio: pesquisa na internet (Brave Search) e avaliação de IA / traduções (Claude)
@@ -122,7 +123,7 @@ export function criarConfig(env = process.env, extras = {}) {
   }
 
   if (e.SISTEMA !== 'completo' && !e.REPLICACAO_CHAVE) throw new Error(`O sistema ${e.SISTEMA} precisa de REPLICACAO_CHAVE (a mesma nos três sistemas).`)
-  if (['escolar', 'site'].includes(e.SISTEMA) && !e.REPLICACAO_URL && producao) throw new Error(`O sistema ${e.SISTEMA} precisa de REPLICACAO_URL (o endereço do servidor online).`)
+  if (['escolar', 'site', 'biblioteca'].includes(e.SISTEMA) && !e.REPLICACAO_URL && producao) throw new Error(`O sistema ${e.SISTEMA} precisa de REPLICACAO_URL (o endereço do servidor online).`)
   if (producao && !e.DADOS_CHAVE) throw new Error('Defina DADOS_CHAVE (32 bytes aleatórios: openssl rand -hex 32) antes de arrancar em produção: encripta os dados pessoais.')
   if (!e.DATABASE_URL && producao) throw new Error('Defina DATABASE_URL (PostgreSQL) antes de arrancar a API em produção.')
   const pastaDados = path.resolve(RAIZ_API, e.DATA_DIR)

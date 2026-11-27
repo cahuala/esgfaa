@@ -56,7 +56,11 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://esgfaa:${BD_SENHA}@bd:5432/esgfaa
+      # SISTEMA_TESTE=online: este servidor é o servidor online (site público e Portal) dos sistemas da Escola;
+      # BD_NOME: a base de dados (a do modo completo fica guardada com o nome antigo)
+      SISTEMA: ${SISTEMA_TESTE:-completo}
+      REPLICACAO_CHAVE: ${REPLICACAO_CHAVE:-}
+      DATABASE_URL: postgresql://esgfaa:${BD_SENHA}@bd:5432/${BD_NOME:-esgfaa}
       PUBLIC_URL: https://${DOMINIO}
       PORTAL_URL: https://${DOMINIO}/portal/
       PAINEL_URL: https://${DOMINIO}/${ADMIN_PATH}/
@@ -116,7 +120,8 @@ services:
       dockerfile: deploy/web.Dockerfile
       args:
         DOMINIO: ${DOMINIO:?defina DOMINIO}
-        ADMIN_PATH: ${ADMIN_PATH:?defina ADMIN_PATH}
+        # vazio no modo online (o painel fica nos sistemas internos da Escola)
+        ADMIN_PATH: ${ADMIN_PATH:-}
         VITE_AMBIENTE: teste
     restart: unless-stopped
     depends_on:

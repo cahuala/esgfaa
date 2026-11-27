@@ -12,6 +12,7 @@ import TraducoesDados from './paginas/TraducoesDados'
 import MensagensSite from './paginas/MensagensSite'
 import FerramentasLti from './paginas/academico/FerramentasLti'
 import CentroSeguranca from './paginas/CentroSeguranca'
+import Monitorizacao from './paginas/Monitorizacao'
 import Turmas from './paginas/academico/Turmas'
 import AnosLetivos from './paginas/academico/AnosLetivos'
 import Turma from './paginas/academico/Turma'
@@ -128,6 +129,7 @@ function App() {
         {pode('atividades.ver') && <Route path="/atividades" element={<Atividades />} />}
         {pode('atividades.ver') && <Route path="/privacidade" element={<PedidosDados />} />}
         {pode('seguranca.ver') && <Route path="/seguranca" element={<CentroSeguranca />} />}
+        {pode('seguranca.ver') && <Route path="/monitorizacao" element={<Monitorizacao />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
