@@ -135,7 +135,20 @@ function Reverter {
 
 trap {
   $erro = $_
-  if ($Atualizar -and $script:Parado) { try { Reverter } catch { Write-Host "    (a volta atrás não terminou: $($_.Exception.Message))" -ForegroundColor Red } }
+  $reverteu = $false
+  if ($Atualizar -and $script:Parado) { $reverteu = $true; try { Reverter } catch { Write-Host "    (a volta atrás não terminou: $($_.Exception.Message))" -ForegroundColor Red } }
+  # como ficou o sistema (decidido aqui, passo a passo)
+  $comoFicou = 'Era uma instalação nova: nada do que já existia foi mexido.'
+  if ($Atualizar) {
+    if ($reverteu) {
+      if ($script:Voltou) {
+        $comoFicou = 'ACTUALIZAÇÃO: o sistema VOLTOU À VERSÃO ANTERIOR e está a funcionar'
+        if ($script:Migrado) { if ($script:BaseReposta) { $comoFicou += ' (a base de dados voltou à cópia de antes)' } else { $comoFicou += " (atenção: a base de dados NÃO voltou à cópia; está em $($script:Copia))" } }
+        $comoFicou += '.'
+      } else { $comoFicou = "ACTUALIZAÇÃO: tentou-se voltar à versão anterior, mas o sistema ainda não responde. A cópia da base de dados de antes está em $($script:Copia). Veja services.msc ($Svc)." }
+    } elseif ($script:Pronto) { $comoFicou = 'ACTUALIZAÇÃO: o sistema novo JÁ ESTÁ A FUNCIONAR; o erro foi num passo final (veja abaixo) — corrija e repita o mesmo .bat.' }
+    else { $comoFicou = 'ACTUALIZAÇÃO: o erro foi antes de parar o sistema — continua a funcionar na versão anterior, sem nada mudado.' }
+  }
   try { Stop-Transcript | Out-Null } catch {}
   $f = Join-Path $Reg "ERRO-INSTALACAO-$($Sistema.ToUpper())-$Carimbo.txt"
   $os = (Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue)
@@ -147,11 +160,7 @@ trap {
     "Erro: $($erro.Exception.Message)",
     "Onde: $($erro.InvocationInfo.PositionMessage)",
     '',
-    $(if (-not $Atualizar) { 'Era uma instalação nova: nada do que já existia foi mexido.' }
-      elseif ($script:Pronto) { 'ACTUALIZAÇÃO: o sistema novo JÁ ESTÁ A FUNCIONAR; o erro foi num passo final (veja abaixo) — corrija e repita o mesmo .bat.' }
-      elseif (-not $script:Parado) { 'ACTUALIZAÇÃO: o erro foi antes de parar o sistema — continua a funcionar na versão anterior, sem nada mudado.' }
-      elseif ($script:Voltou) { "ACTUALIZAÇÃO: o sistema VOLTOU À VERSÃO ANTERIOR e está a funcionar$(if ($script:Migrado) { if ($script:BaseReposta) { ' (a base de dados voltou à cópia de antes)' } else { ' (atenção: a base de dados NÃO voltou à cópia; está em ' + $script:Copia + ')' } })." }
-      else { "ACTUALIZAÇÃO: tentou-se voltar à versão anterior, mas o sistema ainda não responde. A cópia da base de dados de antes está em $($script:Copia). Veja services.msc ($Svc)." }),
+    $comoFicou,
     '',
     'CAUSAS PROVÁVEIS E O QUE FAZER:'
   ) + @(Causas) + @(
@@ -517,9 +526,15 @@ $script:Trocado = $true
 Ok 'código novo no lugar (o anterior fica em sistema.anterior)'
 
 Passo 'migrar' 'A criar/actualizar as tabelas'
+# se falhar a meio, a base pode ter mudado: conta como mudada; se correr bem, só conta se aplicou alguma migração
 $script:Migrado = $true
 Push-Location "$Destino\sistema\api"
-try { Correr $Node @("--env-file=$EnvFicheiro", 'scripts\migrar.js') } finally { Pop-Location }
+try {
+  $saidaMigrar = @(& $Node "--env-file=$EnvFicheiro" 'scripts\migrar.js' | ForEach-Object { "$_" })
+  $saidaMigrar | ForEach-Object { Write-Host $_ }
+  if ($LASTEXITCODE -ne 0) { Falha "migrar.js terminou com o código $LASTEXITCODE" }
+  $script:Migrado = [bool]($saidaMigrar -match 'aplicada')
+} finally { Pop-Location }
 
 Passo 'servicos' 'A ligar os serviços (sistema, HTTPS, cópias de segurança diárias e troca com o servidor online)'
 $Caddyfile = Join-Path $Conf 'Caddyfile'
@@ -586,7 +601,13 @@ catch { Write-Host "    (aviso: não foi possível escrever em $hosts — $($_.E
 
 function Servico($id, $nome, $exe, $argumentos, $extra = '', $pasta = "$Destino\sistema\api") {
   $dir = "$Destino\servicos"
-  Copy-Item (Join-Path $Pen 'componentes\winsw.exe') "$dir\$id.exe" -Force
+  # o programa do serviço só se copia se mudou (com o serviço a correr, o Windows não o deixa trocar)
+  $origemSvc = Join-Path $Pen 'componentes\winsw.exe'
+  $alvoSvc = "$dir\$id.exe"
+  if (-not (Test-Path $alvoSvc) -or (Get-FileHash $alvoSvc -Algorithm SHA256).Hash -ne (Get-FileHash $origemSvc -Algorithm SHA256).Hash) {
+    if (Get-Service $id -ErrorAction SilentlyContinue) { Stop-Service $id -Force -ErrorAction SilentlyContinue; Start-Sleep 2 }
+    Copy-Item $origemSvc $alvoSvc -Force
+  }
   @"
 <service>
   <id>$id</id>
