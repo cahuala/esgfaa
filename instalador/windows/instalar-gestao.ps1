@@ -97,6 +97,7 @@ function Causas {
     'pendrive' { '- A cópia no pendrive está incompleta ou estragada (um ficheiro não confere com o MANIFESTO.txt).'; '- Volte a copiar a pasta ESG-GESTAO para o pendrive e repita.' }
     'espaco' { '- Falta espaço no disco C:. São precisos pelo menos 5 GB livres (os vídeos e os materiais das aulas ocupam espaço).' }
     'portas' { "- Outro programa está a usar uma porta de que o sistema precisa ($PortaBd, $PortaApi; para o HTTPS usa-se a 443 ou, se estiver ocupada, a 8443, 9443 ou 10443)."; '- O instalador não pára nenhum serviço do servidor. Veja quem usa as portas com:  netstat -ano | findstr LISTENING' }
+    'programas' { "- O Windows não deixou correr um dos programas do sistema (Node.js, PostgreSQL ou Caddy): quase sempre o antivírus (Windows Defender) ou uma política de segurança do servidor."; "- Peça ao responsável de informática para permitir a pasta $Destino no antivírus (no Windows Defender, numa janela do PowerShell como administrador: Add-MpPreference -ExclusionPath '$Destino') e volte a correr o mesmo .bat."; '- O diagnóstico (permissões, assinatura, o que o Defender detectou) está nas últimas linhas abaixo.' }
     'copiar' { "- Não foi possível descompactar os componentes. O antivírus pode ter bloqueado (permita a pasta $Destino) ou o pendrive está estragado." }
     'bd' { "- O PostgreSQL não arrancou. Veja o registo em $Dados\bd\log e no Visualizador de Eventos (Aplicação, origem PostgreSQL)."; '- Causas comuns: antivírus a bloquear postgres.exe, porta ocupada, o Visual C++ Redistributable não instalou.' }
     'migrar' { '- A base de dados não aceitou a estrutura do sistema. Veja a mensagem acima. Numa actualização, o instalador já tentou voltar sozinho à versão anterior e à cópia da base de dados (veja acima).' }
@@ -331,8 +332,43 @@ if (-not (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtim
 }
 $Node = "$Destino\node\node.exe"
 $PgBin = "$Destino\postgresql\bin"
-Correr $Node @('-v')
-Correr "$PgBin\postgres.exe" @('--version')
+# os programas acabados de descompactar: sem a marca «vindo de outro computador»
+Get-ChildItem "$Destino\node", "$Destino\postgresql", "$Destino\caddy" -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
+
+# o que pode estar a impedir um programa de correr (fica no registo e no ficheiro do erro)
+function Diagnostico($exe) {
+  Write-Host "    --- diagnóstico de $exe"
+  try { Write-Host "    permissões: $((& icacls $exe 2>&1) -join ' | ')" } catch {}
+  try { $a = Get-AuthenticodeSignature $exe; Write-Host "    assinatura: $($a.Status) $($a.SignerCertificate.Subject)" } catch {}
+  try { Get-MpThreatDetection -ErrorAction Stop | Sort-Object InitialDetectionTime -Descending | Select-Object -First 5 | ForEach-Object { Write-Host "    Windows Defender detectou: $($_.Resources -join ', ') em $($_.InitialDetectionTime)" } } catch { Write-Host '    (Windows Defender: sem detecções ou sem acesso)' }
+  try { $m = Get-MpPreference -ErrorAction Stop; Write-Host "    Defender: pastas permitidas: $(@($m.ExclusionPath) -join ', ') · acesso controlado a pastas: $($m.EnableControlledFolderAccess) · regras ASR: $(@($m.AttackSurfaceReductionRules_Ids).Count)" } catch {}
+  try { $al = Get-AppLockerPolicy -Effective -ErrorAction Stop; Write-Host "    AppLocker: $(@($al.RuleCollections | Where-Object { $_.Count }).Count) colecção(ões) de regras activas" } catch {}
+}
+# corre um programa; se o Windows o recusar (antivírus a analisar o ficheiro novo), tenta durante meio minuto e,
+# se continuar recusado, pergunta se pode permitir a pasta do sistema no Windows Defender e tenta outra vez
+function ProgramaCorre($exe, [string[]]$argumentos) {
+  for ($i = 1; $i -le 6; $i++) {
+    try { Correr $exe $argumentos; return } catch { $ultimo = $_; if ($i -lt 6) { Write-Host "    ($([IO.Path]::GetFileName($exe)) recusado pelo Windows; nova tentativa daqui a 5 s…)"; Start-Sleep 5 } }
+  }
+  Diagnostico $exe
+  $temDefender = Get-Command Add-MpPreference -ErrorAction SilentlyContinue
+  if ($temDefender) {
+    Write-Host ''
+    Write-Host "O Windows não deixa correr $([IO.Path]::GetFileName($exe)) (provavelmente o antivírus / Windows Defender)." -ForegroundColor Yellow
+    $r = if ($env:ESG_PERMITIR_DEFENDER) { $env:ESG_PERMITIR_DEFENDER } else { Read-Host "  Permitir a pasta $Destino no Windows Defender e tentar outra vez? (S/N)" }
+    if ("$r".Trim().ToUpper().StartsWith('S')) {
+      Add-MpPreference -ExclusionPath $Destino -ErrorAction Stop
+      Write-Host "    pasta $Destino permitida no Windows Defender" -ForegroundColor Green
+      Start-Sleep 3
+      try { Correr $exe $argumentos; return } catch { $ultimo = $_; Diagnostico $exe }
+    }
+  }
+  $script:Codigo = 'programas'
+  Falha "O Windows recusou correr $exe ($($ultimo.Exception.Message)). Veja o diagnóstico acima."
+}
+ProgramaCorre $Node @('-v')
+ProgramaCorre "$PgBin\postgres.exe" @('--version')
+ProgramaCorre "$Destino\caddy\caddy.exe" @('version')
 Ok 'componentes no lugar'
 
 if (-not $Atualizar) {
