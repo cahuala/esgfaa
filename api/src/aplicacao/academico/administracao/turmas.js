@@ -11,6 +11,7 @@ export function mesesDoCurso(curso) {
   return a ? Number(a[1]) * 12 : null
 }
 import { ordenarPorHierarquia } from '../../../dominio/academico/pessoas/hierarquia.js'
+import { senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
 import { ESTADOS_MATRICULA } from '../../../dominio/academico/matriculas/estados.js'
 import { DEPARTAMENTOS_ENSINO, mesmoDepartamento } from '../../../dominio/academico/departamentos.js'
 
@@ -266,6 +267,29 @@ export class ServicoTurmas {
     }
   }
 
+  /*
+    A conta do portal do estudante matriculado: fica activa e, se ainda não recebeu o acesso (nunca entrou nem se lhe
+    deu a ficha), ganha a palavra-passe inicial — a ficha de acesso sai logo para imprimir e entregar em mão.
+  */
+  async #acesso(ctx, conta) {
+    const c = await this.contas.porId(conta.id)
+    if (!c) return null
+    let mudou = false
+    if (c.ativo === false) { c.ativo = true; mudou = true }
+    let ficha = null
+    if (!c.ultimoAcesso && !c.dados?.acessoEntregueEm && this.cifra) {
+      const inicial = senhaInicial()
+      c.mudarSenha(await this.cifra.cifrar(inicial))
+      c.deveMudarSenha = true
+      c.dados = { ...(c.dados ?? {}), acessoEntregueEm: this.relogio.agora().toISOString() }
+      ficha = { ...c.publico(), senhaInicial: inicial }
+      mudou = true
+    }
+    if (mudou) await this.contas.guardar(c)
+    if (ficha) await this.auditoria.registar(ctx, { acao: 'conta_portal_matricula', colecao: 'contas_portal', alvoId: c.id, alvoTitulo: `${c.nome} (${c.numero})` })
+    return ficha
+  }
+
   async matricular(ctx, turmaId, { estudanteId }) {
     ctx.actor.exigir('academico.gerir')
     const t = await this.academico.turma(turmaId)
@@ -274,7 +298,8 @@ export class ServicoTurmas {
     if (!e || e.tipo !== 'estudante') throw new ErroValidacao('Escolha um estudante.', { campo: 'estudanteId' })
     const m = await this.academico.matricular(e.id, t.id)
     await this.auditoria.registar(ctx, { acao: 'matricular', colecao: 'matriculas', alvoId: m.id, alvoTitulo: `${e.nome} → ${t.nome}` })
-    return m
+    const ficha = await this.#acesso(ctx, e)
+    return { ...m, fichas: ficha ? [ficha] : [] }
   }
 
   // matricula vários estudantes já registados (escolhidos da lista do Pessoal e Quadros)
@@ -285,18 +310,21 @@ export class ServicoTurmas {
     const ids = [...new Set((estudanteIds || []).map(Number))]
     if (!ids.length || ids.length > 300) throw new ErroValidacao('Escolha de 1 a 300 estudantes.', { campo: 'estudanteIds' })
     let matriculados = 0
+    const fichas = []
     for (const id of ids) {
       const e = await this.contas.porId(id)
       if (!e || e.tipo !== 'estudante') throw new ErroValidacao('A lista tem quem não é estudante registado.', { campo: 'estudanteIds' })
       try {
         await this.academico.matricular(e.id, t.id)
         matriculados += 1
+        const ficha = await this.#acesso(ctx, e)
+        if (ficha) fichas.push(ficha)
       } catch (erro) {
         if (!(erro instanceof Conflito)) throw erro
       }
     }
     await this.auditoria.registar(ctx, { acao: 'matricular', colecao: 'matriculas', alvoId: t.id, alvoTitulo: `${matriculados} estudante(s) → ${t.nome}` })
-    return { matriculados, jaMatriculados: ids.length - matriculados }
+    return { matriculados, jaMatriculados: ids.length - matriculados, fichas }
   }
 
   /*

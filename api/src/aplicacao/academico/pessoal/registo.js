@@ -73,7 +73,7 @@ export class ServicoRegistoPessoal {
     for (let tentativa = 0; !conta; tentativa++) {
       try {
         const numero = numeroConta(t, ano, await this.contas.proximaSequencia(t, ano))
-        conta = await this.contas.criar({ tipo: t, numero, nome: n, email: e, senha, dados: await this.#dadosConta(dados) })
+        conta = await this.contas.criar({ tipo: t, numero, nome: n, email: e, senha, dados: { ...(await this.#dadosConta(dados)), acessoEntregueEm: this.relogio.agora().toISOString() } })
       } catch (erro) {
         if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
       }
@@ -141,6 +141,7 @@ export class ServicoRegistoPessoal {
     const inicial = this.gerarSenha(c.email)
     c.mudarSenha(await this.cifra.cifrar(inicial))
     c.deveMudarSenha = true
+    c.dados = { ...(c.dados ?? {}), acessoEntregueEm: this.relogio.agora().toISOString() }
     c.tentativasFalhadas = 0
     c.bloqueadoAte = null
     await this.contas.guardar(c)

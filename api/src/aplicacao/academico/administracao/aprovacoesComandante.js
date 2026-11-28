@@ -227,35 +227,60 @@ export class ServicoAprovacoesComandante {
     A primeira aprovação de um docente (pelo Comandante, na distribuição, ou quando é ele próprio a alocar): a conta
     fica verificada e a palavra-passe inicial vai por e-mail. Só a partir daqui o docente entra no portal.
   */
-  async libertarDocentes(ctx, docentes) {
+  async libertarDocentes(ctx, docentes, { fichas = false } = {}) {
     const porVerificar = [...new Map(docentes.filter((d) => d && !d.verificadoEm && d.ativo !== false).map((d) => [d.id, d])).values()]
-    if (!porVerificar.length) return { contasNovas: [], emails: 0 }
+    if (!porVerificar.length) return { contasNovas: [], emails: 0, fichas: [] }
     await this.controlo.verificarDocentes(porVerificar.map((d) => d.id), ctx.actor.nome ?? '', this.relogio.agora())
     let emails = 0
-    for (const d of porVerificar) if (await this.#enviarConta(ctx, d.id)) emails++
-    return { contasNovas: porVerificar, emails }
+    const lista = []
+    // a primeira aprovação: a conta vai por e-mail (como sempre) e, se se pedem, sai também a ficha de acesso
+    for (const d of porVerificar) {
+      const r = await this.darConta(ctx, d.id, { email: Boolean(this.correio), ficha: fichas, forcar: true })
+      if (r?.enviado) emails++
+      if (r?.ficha) lista.push(r.ficha)
+    }
+    return { contasNovas: porVerificar, emails, fichas: lista }
   }
 
-  // palavra-passe inicial nova e o e-mail com a conta (sem servidor de e-mail, a Repartição entrega a ficha de acesso)
-  async #enviarConta(ctx, contaId) {
+  /*
+    O acesso ao portal de quem ainda não o recebeu (nunca entrou nem se lhe deu a ficha): a conta fica activa, com a
+    palavra-passe inicial (o portal pede outra na primeira entrada); vai por e-mail se se pedir e houver servidor.
+  */
+  async darConta(ctx, contaId, { email = false, ficha = false, forcar = false } = {}) {
     const c = await this.contas.porId(contaId)
-    if (!c || !this.correio) return false
+    if (!c || (!forcar && (c.ultimoAcesso || c.dados?.acessoEntregueEm))) return null
     const inicial = senhaInicial()
     c.mudarSenha(await this.cifra.cifrar(inicial))
     c.deveMudarSenha = true
-    await this.contas.guardar(c)
-    await this.auditoria.registar(ctx, { acao: 'enviar_conta_docente', colecao: 'contas_portal', alvoId: c.id, alvoTitulo: `${c.nome} (${c.numero})` })
+    c.ativo = true
     const endereco = this.urlPortal || 'o Portal Académico da ESG'
-    return this.correio.enviar({
+    const enviado = email && this.correio ? await this.correio.enviar({
       para: c.email,
       assunto: 'A sua conta do Portal Académico da ESG',
       texto: [
         `${c.nome},`, '',
-        'O Comandante da Escola Superior de Guerra aprovou a distribuição de serviço docente: já pode entrar no Portal Académico.', '',
+        'Já pode entrar no Portal Académico da Escola Superior de Guerra.', '',
         `Endereço: ${endereco}`, `E-mail: ${c.email}`, `Número: ${c.numero}`, `Palavra-passe inicial: ${inicial}`, '',
         'Na primeira entrada o portal pede uma palavra-passe nova. Não partilhe esta mensagem.',
       ].join('\n'),
-    })
+    }) : false
+    // o acesso só conta como entregue se o e-mail saiu de facto ou se a ficha vai ser impressa
+    if (ficha || (enviado && this.correio?.real)) c.dados = { ...(c.dados ?? {}), acessoEntregueEm: this.relogio.agora().toISOString() }
+    await this.contas.guardar(c)
+    await this.auditoria.registar(ctx, { acao: 'enviar_conta_docente', colecao: 'contas_portal', alvoId: c.id, alvoTitulo: `${c.nome} (${c.numero})` })
+    return { ficha: ficha ? { ...c.publico(), senhaInicial: inicial } : null, enviado }
+  }
+
+  // as fichas de acesso dos docentes já aprovados nas cadeiras que ainda não receberam o acesso (sem e-mail na Escola)
+  async fichasDosDocentes(ctx, { anoLetivo } = {}) {
+    ctx.actor.exigir('academico.gerir')
+    const ids = await this.controlo.docentesAprovados?.({ anoLetivo }) ?? []
+    const fichas = []
+    for (const id of ids) {
+      const r = await this.darConta(ctx, id, { ficha: true })
+      if (r?.ficha) fichas.push(r.ficha)
+    }
+    return { fichas, portal: this.urlPortal || '' }
   }
 
   async decidirNotas(ctx, id, { decisao, motivo }) {

@@ -90,6 +90,12 @@ export class RepositorioControloAcademico {
 
   // ---------- docentes: verificação pelo Comandante ----------
 
+  // os docentes com cadeira aprovada (nas turmas activas ou num ano lectivo)
+  async docentesAprovados({ anoLetivo } = {}) {
+    const l = await this.prisma.docencia.findMany({ where: { estado: 'aprovada', cadeira: { turma: anoLetivo ? { anoLetivo } : { ativa: true } } }, select: { docenteId: true }, distinct: ['docenteId'] })
+    return l.map((x) => x.docenteId)
+  }
+
   async docentes() {
     const l = await this.prisma.contaPortal.findMany({
       where: { tipo: 'docente' }, orderBy: [{ verificadoEm: { sort: 'asc', nulls: 'first' } }, { nome: 'asc' }],

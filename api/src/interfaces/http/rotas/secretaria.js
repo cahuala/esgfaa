@@ -50,6 +50,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/contas/:id/foto', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await p.registo.fotoDaConta(ctx(req), req.dados.params.id), { soLeitura: true }))
   r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))
   r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await p.registo.editarConta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/alocacao/fichas-acesso', validar({ body: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.cadeiras.aprovacoes.fichasDosDocentes(ctx(req), req.dados.body)))
   r.post('/turmas/:id/fichas-acesso', validar({ params: pId }), async (req, res) => res.json(await p.registo.fichasDaTurma(ctx(req), req.dados.params.id)))
   r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => res.json(await p.registo.reporSenha(ctx(req), req.dados.params.id)))
 

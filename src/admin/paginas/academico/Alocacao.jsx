@@ -7,6 +7,7 @@ import { dataHora } from '../../formatar'
 import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
+import { imprimirFichas } from '../pessoal/fichasAcesso'
 
 const PROPOSTO = <span className="badge bg-warning text-dark ms-1">{tx('proposto')}</span>
 
@@ -86,6 +87,9 @@ function Alocacao() {
     <>
       <CabecalhoPagina titulo={tx('Docentes nas cadeiras')} subtitulo={tx('regentes, assistentes e carga horária')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Docentes nas cadeiras') }]}>
         <Link to="/academico/docentes-horarios" className="btn btn-white"><i className="fa fa-user-tag me-1" />{tx('Docentes dos horários do arquivo')}</Link>
+        {gere && <button type="button" className="btn btn-white" title={tx('Os docentes já aprovados nas cadeiras que ainda não receberam o acesso ao portal')} onClick={() => api('/academico/alocacao/fichas-acesso', { metodo: 'POST', corpo: {} })
+          .then(async (r) => { if (r.fichas.length) await imprimirFichas(r.fichas, r.portal ? { portal: r.portal } : undefined); setAviso({ texto: r.fichas.length ? tx('{0} ficha(s) de acesso de docentes para entregar em mão.', { 0: r.fichas.length }) : tx('Todos os docentes aprovados já receberam o acesso ao portal.') }) })
+          .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))}><i className="fa fa-id-card me-1" />{tx('Fichas de acesso dos docentes')}</button>}
       </CabecalhoPagina>
       <div className="d-flex flex-wrap gap-2 mb-3">
         <select className="form-select w-auto" value={ano} onChange={(e) => setAno(e.target.value)} aria-label={tx('Ano lectivo')}>
@@ -267,7 +271,11 @@ function JanelaAlocar({ cadeira, onFechar, onFeito }) {
   const gravar = () => {
     setAGravar(true); setErro('')
     api(`/academico/cadeiras/${cadeira.id}/docentes`, { metodo: 'PUT', corpo: { docentes: lista.map((x) => ({ docenteId: x.docenteId, papel: x.papel, horas: Number(x.horas) || 0 })) } })
-      .then(() => onFeito(tx('Docentes de {0} gravados.', { 0: cadeira.nome })))
+      .then(async (r) => {
+        // aprovado logo (o Comandante a alocar, ou sem a aprovação dele): o docente novo recebe já a conta do portal
+        if (r.fichas?.length) await imprimirFichas(r.fichas)
+        onFeito([tx('Docentes de {0} gravados.', { 0: cadeira.nome }), r.fichas?.length ? tx('{0} conta(s) do portal prontas: entregue as fichas de acesso.', { 0: r.fichas.length }) : ''].filter(Boolean).join(' '))
+      })
       .catch((e) => { setErro(e.message); setAGravar(false) })
   }
   return (

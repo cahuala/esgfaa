@@ -208,16 +208,27 @@ export class ServicoCadeiras {
     const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
     await this.academico.definirDocentes(c.id, docentes.map((d) => ({ ...d, estado: direto || aprovados.has(d.docenteId) ? 'aprovada' : 'proposta' })))
     // foi o Comandante a alocar: já está aprovado — quem ainda não tinha acesso recebe-o agora (como na aprovação)
-    if (this.aprovacaoComandante && direto) {
-      const contas = await Promise.all(docentes.filter((d) => !aprovados.has(d.docenteId)).map((d) => this.contas.porId(d.docenteId)))
-      await this.aprovacoes?.libertarDocentes(ctx, contas)
+    let fichas = []
+    if (direto) {
+      const novos = docentes.filter((d) => !aprovados.has(d.docenteId))
+      if (this.aprovacaoComandante) {
+        // o Comandante a alocar: a primeira aprovação (conta verificada, e-mail e a ficha de acesso)
+        const contas = await Promise.all(novos.map((d) => this.contas.porId(d.docenteId)))
+        fichas = (await this.aprovacoes?.libertarDocentes(ctx, contas, { fichas: true }))?.fichas ?? []
+      } else {
+        // sem a aprovação do Comandante: a ficha de acesso só para quem ainda não a recebeu
+        for (const d of novos) {
+          const r = await this.aprovacoes?.darConta(ctx, d.docenteId, { ficha: true })
+          if (r?.ficha) fichas.push(r.ficha)
+        }
+      }
     }
     const nova = await this.academico.cadeira(c.id)
     await this.auditoria.registar(ctx, {
       acao: 'alocar_docentes', colecao: 'cadeiras', alvoId: c.id, alvoTitulo: c.nome,
       detalhes: { docentes: nova.docentes.map((d) => `${d.nome} (${d.papel}, ${d.horas} h)`), propostos: nova.docentesPropostos.map((d) => `${d.nome} (${d.papel}, ${d.horas} h)`) },
     })
-    return nova
+    return { ...nova, fichas }
   }
 
   async criarHorario(ctx, cadeiraId, dados) {

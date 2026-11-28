@@ -5,6 +5,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../
 import FotoConta from '../../componentes/FotoConta'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { useSessao } from '../../sessaoContexto'
+import { imprimirFichas } from '../pessoal/fichasAcesso'
 import { descarregarCsv } from './documentos/csv'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -66,13 +67,15 @@ function Matriculas() {
     setAGravar(true)
     let feitas = 0
     const erros = []
+    const fichas = []
     for (const [id, turmaId] of Object.entries(marcados)) {
       if (!turmaId) continue
-      try { await api(`/academico/turmas/${turmaId}/matriculas`, { metodo: 'POST', corpo: { estudanteId: Number(id) } }); feitas++ } catch (x) { erros.push(x.message) }
+      try { const m = await api(`/academico/turmas/${turmaId}/matriculas`, { metodo: 'POST', corpo: { estudanteId: Number(id) } }); fichas.push(...(m.fichas ?? [])); feitas++ } catch (x) { erros.push(x.message) }
     }
     setAGravar(false)
     setMarcados({})
-    setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), ...erros].join(' ') })
+    setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), fichas.length ? tx('{0} conta(s) do portal prontas: imprima as fichas de acesso e entregue-as em mão.', { 0: fichas.length }) : '', ...erros].filter(Boolean).join(' ') })
+    if (fichas.length) await imprimirFichas(fichas)
     carregar()
   }
   const candidatos = semTurma.filter((e) => procura.every((x) => semAcento([e.nome, e.numero, e.dados?.nip].join(' ')).includes(x))).slice(0, 50)
@@ -84,13 +87,15 @@ function Matriculas() {
     setAGravar(true)
     let feitas = 0
     const erros = []
+    const fichas = []
     for (const id of nova.escolhidos) {
-      try { await api(`/academico/turmas/${nova.turma}/matriculas`, { metodo: 'POST', corpo: { estudanteId: id } }); feitas++ } catch (e) { erros.push(e.message) }
+      try { const m = await api(`/academico/turmas/${nova.turma}/matriculas`, { metodo: 'POST', corpo: { estudanteId: id } }); fichas.push(...(m.fichas ?? [])); feitas++ } catch (e) { erros.push(e.message) }
     }
     setAGravar(false)
     setNova({ ...nova, escolhidos: [], q: '' })
     setJanela(false)
-    setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), ...erros].join(' ') })
+    setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), fichas.length ? tx('{0} conta(s) do portal prontas: imprima as fichas de acesso e entregue-as em mão.', { 0: fichas.length }) : '', ...erros].filter(Boolean).join(' ') })
+    if (fichas.length) await imprimirFichas(fichas)
     carregar()
   }
   const exportar = () => descarregarCsv(`matriculas-${ano}`, [[tx('Matrículas do ano lectivo {0}', { 0: ano })], [], ['N.º', 'NIP', 'Posto', 'Nome', 'Turma', 'Estado'], ...vistas.map((m, i) => [i + 1, m.estudante.dados?.nip ?? '', m.estudante.dados?.posto ?? '', m.estudante.nome, m.turma.nome, ESTADOS[m.estado] ?? m.estado])])

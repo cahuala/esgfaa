@@ -348,7 +348,8 @@ function MatricularEstudantes({ turma, carregar, avisar }) {
     setAGravar(true)
     try {
       const r = await api(`/academico/turmas/${turma.id}/matricular`, { metodo: 'POST', corpo: { estudanteIds: escolhidos.map((e) => e.id) } })
-      avisar({ texto: tx('{0} estudante(s) matriculado(s) em {1}.', { 0: r.matriculados, 1: turma.nome }) })
+      avisar({ texto: [tx('{0} estudante(s) matriculado(s) em {1}.', { 0: r.matriculados, 1: turma.nome }), r.fichas?.length ? tx('{0} conta(s) do portal prontas: imprima as fichas de acesso e entregue-as em mão.', { 0: r.fichas.length }) : ''].filter(Boolean).join(' ') })
+      if (r.fichas?.length) await imprimirFichas(r.fichas)
       setEscolhidos([])
       carregar()
     } catch (e) {
