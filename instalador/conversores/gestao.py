@@ -98,6 +98,23 @@ for t in arq['turmas']:
                   'ucs': [{k: v for k, v in u.items() if k != 'rotulo'} for u in ucs], 'estudantes': estudantes,
                   # os blocos da pauta assinada, com os coeficientes (o TII é um bloco), e a fórmula da média final
                   'blocos': p.get('blocos') or [], 'formula': p.get('formula') or ('blocos' if p.get('blocos') else 'media')})
+# o ramo e o posto que a pauta não traz vêm das listas (relações nominais e finalistas), pelo NIP ou pelo nome
+por_nip = {q['nip']: q for q in acad if q.get('nip')}
+por_nome = {}
+for q in acad: por_nome.setdefault(chave(q['nome']), q)
+for t in saida:
+    for e in t['estudantes']:
+        q = por_nip.get(e['nip']) or por_nome.get(chave(e['nome']))
+        if not q:
+            # a mesma pessoa com o nome escrito de outra maneira («Saraiva»/«Sariva»), entre os estudantes desse ano
+            do_ano = [x for x in acad if any(a_['anoLetivo'] == t['anoLetivo'] and a_['papel'] == 'estudante' for a_ in x.get('anos', []))]
+            parecidos = [x for x in do_ano if __import__('difflib').SequenceMatcher(None, sem(x['nome']), sem(e['nome'])).ratio() >= 0.9]
+            q = parecidos[0] if len(parecidos) == 1 else None
+        if not q: continue
+        if not e.get('ramo') and q.get('ramo'): e['ramo'] = q['ramo']
+        if not e.get('posto') and (q.get('posto') or q.get('postoExterno')): e['posto'] = q.get('posto') or q.get('postoExterno')
+        if not e.get('unidade') and q.get('unidadeOrigem'): e['unidade'] = q['unidadeOrigem']
+
 # ---------- as turmas sem pauta: os estudantes de cada ano (relações nominais e listas de finalistas) ----------
 # as turmas de 2026/2027 dos quatro cursos com plano vêm do arranque do ano; aqui ficam as outras, como histórico
 TODOS = [('CSCD', r'SUPERIOR DE COMANDO'), ('CEAO', r'ESTRATEGIA E ARTE'), ('COAMP', r'ASSEGURAMENTO|APOIO MORAL|PSICO-MORAL|EDUCACAO PATRIOTICA'),
@@ -122,7 +139,7 @@ for q in acad:
                                      'cursoNome': re.sub(r'^(?:\d+\.º\s+Turno\s+do\s+)?\d+\.º\s+', '', nome_curso), 'ucs': [], 'estudantes': []})
         num = q.get('nip') or q.get('numeroAgente') or ''
         if not any(e['nome'] == q['nome'] for e in t['estudantes']):
-            t['estudantes'].append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or q.get('postoExterno') or '', 'ramo': q.get('ramo') or '', 'notas': {}, 'final': None, 'mencao': ''})
+            t['estudantes'].append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or q.get('postoExterno') or '', 'ramo': q.get('ramo') or '', 'unidade': q.get('unidadeOrigem') or '', 'notas': {}, 'final': None, 'mencao': ''})
 saida += sorted(sem_pauta.values(), key=lambda t: (t['anoLetivo'], t['sigla'], t['edicao']))
 # nas turmas com pauta, quem está na lista do curso mas não na pauta: fica matriculado, sem notas (não entra na pauta)
 for t in saida:
@@ -137,7 +154,7 @@ for t in saida:
             if sg != t['sigla'] or int(m.group(1)) != t['edicao']: continue
             num = q.get('nip') or q.get('numeroAgente') or ''
             if (num and num in ja) or tok(q['nome']).__repr__() in ja or any(len(tok(q['nome']) & tok(e['nome'])) >= 3 or __import__('difflib').SequenceMatcher(None, sem(q['nome']), sem(e['nome'])).ratio() >= 0.88 for e in t['estudantes']): continue
-            if not any(o['nome'] == q['nome'] for o in outros): outros.append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or '', 'ramo': q.get('ramo') or ''})
+            if not any(o['nome'] == q['nome'] for o in outros): outros.append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or '', 'ramo': q.get('ramo') or '', 'unidade': q.get('unidadeOrigem') or ''})
     if outros:
         t['outrosEstudantes'] = outros
         avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): {len(outros)} discente(s) da lista do curso não estão na pauta — ficam matriculados, sem notas.")

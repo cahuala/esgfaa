@@ -27,6 +27,23 @@ const CATEGORIAS = [
   [(g) => g === 14, 'Major / C.Corv.'], [(g) => g === 13, 'Capitão / T.Navio'], [(g) => g >= 10 && g <= 12, 'Subalternos'], [(g) => g >= 1 && g <= 9, 'Sargentos e praças'], [(g) => !g, 'Civis'],
 ]
 const MENCOES = ['Distinto', 'Muito Bom', 'Bom', 'Regular', 'Reprovado']
+// os mapas por ramo, pela ordem do arquivo; a Casa Militar vem da unidade de origem (os seus oficiais saem do ramo)
+const MAPAS_RAMOS = [['EXE', 'do Exército'], ['MGA', 'da MGA'], ['PNA', 'da PNA'], ['FAN', 'da FAN'], ['CASA MILITAR', 'da Casa Militar']]
+// a Casa Militar junta as unidades presidenciais (UDP, USP, UGP); a Polícia pela unidade ou pelo posto; os estrangeiros à parte
+const CASA_MILITAR = /casa militar|unidade de (defesa|seguran[çc]a|guarda) presidencial|\b(UDP|USP|UGP)\b/i
+const POLICIA = /pol[ií]cia nacional/i
+const POSTO_POLICIA = /comiss[áa]rio|superintendente|intendente|inspector|subinspector|agente/i
+const ESTRANGEIRO = /forces arm[ée]es|congo|mo[çc]ambique|cabo verde|guin[ée]|s[ãa]o tom[ée]|namíbia|zâmbia|brasil|portugal/i
+const mapaDe = (l) => {
+  if (l.origem === 'estrangeiro' || ESTRANGEIRO.test(l.orgao || '')) return `dos países amigos${l.pais ? ` (${l.pais})` : ''}`
+  if (CASA_MILITAR.test(l.orgao || '')) return 'CASA MILITAR'
+  if (l.origem === 'policia' || l.ramo === 'PNA' || POLICIA.test(l.orgao || '') || (!l.ramo && POSTO_POLICIA.test(l.posto || ''))) return 'PNA'
+  return l.ramo || 'de outra origem'
+}
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const mencaoDe = (n) => (n === null || n === undefined ? '' : n >= 18 ? 'Muito BOM' : n >= 14 ? 'BOM' : n >= 10 ? 'REGULAR' : 'REPROVADO')
+// a classificação como nos mapas do arquivo: «BOM», «Muito BOM», «BOM/C/Distinção»
+const classificacao = (l) => (l.mencao === 'Distinto' ? `${mencaoDe(l.final)}/C/Distinção` : mencaoDe(l.final))
 const nomeCurso = (c) => `${c.nome}${c.sigla ? ` (${c.sigla})` : ''}`
 const media = (l) => { const n = l.filter((x) => x.final !== null && x.final !== undefined).map((x) => Number(x.final)); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : null }
 const fmt = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
@@ -56,6 +73,9 @@ function DocumentosAno() {
 
   const cursos = d.cursos.filter((c) => c.linhas.length)
   const periodo = [dataPt(d.inicio), dataPt(d.fim)].filter(Boolean).join(' a ')
+  // o período curto dos mapas: «21.10.24 á 25.07.2025»
+  const curta = (iso, ano4) => (iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${ano4 ? iso.slice(0, 4) : iso.slice(2, 4)}` : '')
+  const periodoCurto = d.inicio && d.fim ? `${curta(d.inicio)} á ${curta(d.fim, true)}` : periodo
   const director = quem.directorEnsino ? { cargo: quem.directorEnsino.cargo || 'O Director de Ensino', nome: quem.directorEnsino.nome, posto: quem.directorEnsino.posto } : 'O Director de Ensino'
   const titulo = DOCUMENTOS_ANO[tipo]
   const ficheiro = `${titulo} ${ano}`.replace(/\W+/g, '-')
@@ -83,27 +103,38 @@ function DocumentosAno() {
       )
     })
   } else if (tipo === 'ramos') {
-    corpo = cursos.map((c) => {
-      const orgaos = [...new Set(c.linhas.map(orgaoDe))]
-      return (
-        <section key={c.curso} className="mb-4">
-          <h2 className="h6 text-uppercase fw-bold text-center">{nomeCurso(c)}</h2>
-          {orgaos.map((o) => {
-            const ls = c.linhas.filter((l) => orgaoDe(l) === o)
-            excel.push([`${nomeCurso(c)} — ${o}`], ['Nº', 'NIP', 'Patente', 'Nome completo', 'Início e término', 'Média', 'Classificação'], ...ls.map((l, i) => [i + 1, l.nip, l.posto, l.nome, periodo, decimal(l.final), l.mencao ?? '']), [])
-            return (
-              <div key={o} className="mb-2">
-                <div className="fw-bold small text-uppercase mt-2">{o}</div>
-                <table>
-                  <thead><tr><th className="of-num">Nº</th><th>NIP</th><th>Patente</th><th>Nome completo</th><th>Início e término</th><th className="of-centro">Média</th><th>Classificação</th></tr></thead>
-                  <tbody>{ls.map((l, i) => <tr key={l.id}><td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.nip}</td><td>{l.posto}</td><td>{l.nome}</td><td className="small">{periodo}</td><td className="of-centro">{fmt(l.final)}</td><td>{l.mencao ?? ''}</td></tr>)}</tbody>
-                </table>
-              </div>
-            )
-          })}
-        </section>
-      )
-    })
+    // como no arquivo: um mapa por ramo (Exército, MGA, PNA, FAN, Casa Militar…), cada um com os cursos, o total geral,
+    // a data e a assinatura do Director de Ensino; a classificação em maiúsculas («BOM/C/Distinção» no Distinto)
+    const mapas = MAPAS_RAMOS.map(([k, titulo]) => [k, titulo]).concat([...new Set(cursos.flatMap((c) => c.linhas.map(mapaDe)))].filter((k) => !MAPAS_RAMOS.some(([x]) => x === k)).map((k) => [k, k]))
+      .filter(([k]) => cursos.some((c) => c.linhas.some((l) => mapaDe(l) === k)))
+    const local = `Escola Superior de Guerra do EMGFAA, em Luanda, ___ de ${MESES[Number(String(d.fim ?? '').slice(5, 7)) - 1] ?? '__________'} de ${String(d.fim ?? '').slice(0, 4) || '____'}.`
+    corpo = mapas.map(([k, nome], m) => (
+      <section key={k} className={m < mapas.length - 1 ? 'of-quebra mb-4' : 'mb-4'}>
+        <h2 className="h6 text-uppercase fw-bold text-center mb-3">Mapa do grau de aproveitamento de oficiais discentes {nome}<br />do ano académico {ano}</h2>
+        {cursos.filter((c) => c.linhas.some((l) => mapaDe(l) === k)).map((c) => {
+          const ls = c.linhas.filter((l) => mapaDe(l) === k)
+          excel.push([`${nome.toUpperCase()} — ${nomeCurso(c)}`], ['Nº', 'NIP', 'Patente', 'Nome completo', 'Início e término', 'Média', 'Classificação'], ...ls.map((l, i) => [String(i + 1).padStart(2, '0'), l.nip, l.posto, l.nome, i ? '-' : periodoCurto, decimal(l.final), classificacao(l)]), ['', '', '', '', '', 'TOTAL GERAL', String(ls.length).padStart(2, '0')], [])
+          return (
+            <div key={c.curso} className="mb-3">
+              <div className="fw-bold text-uppercase text-center">{nomeCurso(c)}</div>
+              <table>
+                <thead><tr><th className="of-num">Nº</th><th>NIP</th><th>Patente</th><th>Nome completo</th><th className="of-centro">Início e término</th><th className="of-centro">Média</th><th className="of-centro">Classificação</th></tr></thead>
+                <tbody>{ls.map((l, i) => <tr key={l.id}><td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.nip}</td><td>{l.posto}</td><td>{l.nome}</td><td className="of-centro small">{i ? '-' : periodoCurto}</td><td className="of-centro">{fmt(l.final)}</td><td className="of-centro">{classificacao(l)}</td></tr>)}</tbody>
+                <tfoot><tr><th colSpan={6} className="text-end">TOTAL GERAL</th><th className="of-centro">{String(ls.length).padStart(2, '0')}</th></tr></tfoot>
+              </table>
+            </div>
+          )
+        })}
+        {m < mapas.length - 1 && (
+          <div className="mt-3 text-center small">
+            <div className="mb-4">{local}</div>
+            <div className="fw-bold">O DIRECTOR DE ENSINO</div>
+            <div className="mt-4">{typeof director === 'object' ? (director.nome || '').toUpperCase() : ''}</div>
+            <div className="fw-bold">{typeof director === 'object' && director.posto ? `*${director.posto.toUpperCase()}*` : ''}</div>
+          </div>
+        )}
+      </section>
+    ))
   } else if (tipo === 'finais') {
     // como no arquivo: matriculados, terminaram com aproveitamento, baixas, média, menções e % de aproveitamento
     const linhas = cursos.map((c) => {

@@ -31,6 +31,27 @@ const nota = (v) => {
 }
 const txt = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 // sigla de um bloco a partir do nome («Administração» → ADM; «Op. Conjuntas» → OPC)
+// o mesmo nome, com as diferenças de grafia das listas («Franklin»/«Franklim», «Soma Kesenje»/«Somakesenje»,
+// «J.»/«Januário»): pelo menos duas palavras parecidas (ou uma, num nome de uma palavra), ou o nome junto quase igual
+function distancia(a, b) {
+  const d = Array.from({ length: b.length + 1 }, (_, k) => k)
+  for (let i = 1; i <= a.length; i++) {
+    let antes = d[0]
+    d[0] = i
+    for (let k = 1; k <= b.length; k++) { const t = d[k]; d[k] = Math.min(d[k] + 1, d[k - 1] + 1, antes + (a[i - 1] === b[k - 1] ? 0 : 1)); antes = t }
+  }
+  return d[b.length]
+}
+function mesmoNome(a, b) {
+  const p = (n) => String(n ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 2 && !['dos', 'das'].includes(w))
+  const x = p(a)
+  const y = p(b)
+  const parecida = (w, v) => w === v || (w.length >= 4 && v.length >= 4 && distancia(w, v) <= (Math.min(w.length, v.length) >= 7 ? 2 : 1))
+  const comuns = x.filter((w) => y.some((v) => parecida(w, v))).length
+  const junto = (l) => l.join('')
+  return comuns >= Math.min(2, x.length, y.length) || distancia(junto(x), junto(y)) <= Math.max(2, Math.round(junto(x).length * 0.12))
+}
+
 const siglaBloco = (nome, usadas) => {
   const base = txt(nome, 60).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z ]/g, ' ').trim()
   const palavras = base.split(/\s+/).filter((w) => w.length > 2)
@@ -78,11 +99,11 @@ export class ServicoArquivoAcademico {
     // as turmas sem pauta (só a relação nominal ou a lista de finalistas): os estudantes desse ano, sem cadeiras nem notas
     const semPauta = t.semPauta === true
     if (!ucs.length && !semPauta) throw new ErroValidacao(`${edicao}.º ${sigla} (${anoLetivo}): a pauta não tem cadeiras.`)
-    const pessoa = (e) => ({ nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20) })
+    const pessoa = (e) => ({ nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20), unidade: txt(e?.unidade, 200) })
     // quem está na lista do curso mas não na pauta: fica matriculado na turma, sem notas
     const outros = (Array.isArray(t.outrosEstudantes) ? t.outrosEstudantes : []).map(pessoa).filter((e) => e.nome)
     const estudantes = (t.estudantes ?? []).map((e) => ({
-      nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20),
+      nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20), unidade: txt(e?.unidade, 200),
       notas: Object.fromEntries(ucs.map((u) => [u.codigo, nota(e?.notas?.[u.codigo])])),
       final: nota(e?.final), mencao: txt(e?.mencao, 30), mediaSimples: nota(e?.mediaSimples), blocos: e?.blocos && typeof e.blocos === 'object' ? Object.fromEntries(Object.entries(e.blocos).map(([k, v]) => [txt(k, 80), nota(v)])) : {}, ordem: Number.isInteger(Number(e?.ordem)) && Number(e?.ordem) > 0 ? Number(e.ordem) : null,
     })).filter((e) => e.nome)
@@ -127,7 +148,12 @@ export class ServicoArquivoAcademico {
       const linhas = []
       const faltam = []
       for (const e of [...t.estudantes, ...t.outros.map((o) => ({ ...o, soMatricula: true }))]) {
-        const c = (e.nip ? porNumero.get(norm(e.nip)) : null) ?? (!e.nip ? porNome.get(nomeChave(e.nome)) : null)
+        // pelo NIP só se o nome também for dessa pessoa (há listas com os NIP desfasados dos nomes: 15.º CEAO); senão, pelo nome
+        const peloNip = e.nip ? porNumero.get(norm(e.nip)) : null
+        const nipCerto = peloNip && mesmoNome(peloNip.nome, e.nome)
+        const c = (nipCerto ? peloNip : null) ?? ((!e.nip || peloNip) ? porNome.get(nomeChave(e.nome)) : null)
+        if (peloNip && !nipCerto) r.nipsDuvidosos = [...(r.nipsDuvidosos ?? []), `${e.nome}: o NIP ${e.nip} é de ${peloNip.nome}`]
+        if (peloNip && !nipCerto && !c) e.nip = '' // a conta nova fica sem esse NIP (é de outra pessoa)
         if (c) linhas.push({ ...e, conta: c })
         else faltam.push(e)
       }
@@ -141,6 +167,12 @@ export class ServicoArquivoAcademico {
         const c = await this.#criarConta(e, { ativo: t.emCurso || !(t.semPauta || e.soMatricula) })
         if (c) { linhas.push({ ...e, conta: c }); for (const n of [e.nip]) if (n) porNumero.set(norm(n), c) }
         else r.semConta.push(`${e.nome}${e.nip ? ` (${e.nip})` : ''}`)
+      }
+      // o ramo e o posto que faltam na conta (só o que está em branco; o que veio do Pessoal não muda)
+      for (const l of linhas) {
+        const d = l.conta.dados ?? {}
+        const falta = Object.fromEntries([['ramo', l.ramo], ['posto', l.posto], ['departamento', l.unidade]].filter(([k, v]) => v && !d[k]))
+        if (Object.keys(falta).length) { l.conta.dados = { ...d, ...falta }; await this.prisma.contaPortal.update({ where: { id: l.conta.id }, data: { dados: l.conta.dados } }) }
       }
       await this.anosLetivos.garantir(t.anoLetivo)
       await this.prisma.$transaction(async (tx) => this.#gravar(tx, t, curso, daqui, linhas, ctx), { timeout: 120_000 })
@@ -163,6 +195,8 @@ export class ServicoArquivoAcademico {
     const turma = existente ?? await tx.turma.create({ data: { curso: curso.id, anoLetivo: t.anoLetivo, nome: t.nome, anoFinal: true, ativa: Boolean(t.emCurso) } })
     // sem pauta, e quem não está na pauta: só a matrícula (concluída nos anos anteriores; activa no ano em curso)
     const estado = t.emCurso ? 'ativa' : 'concluida'
+    // a turma sem pauta segue a lista: quem lá estava por engano (um NIP desfasado) sai da turma
+    if (t.semPauta && existente) await tx.matricula.deleteMany({ where: { turmaId: turma.id, estudanteId: { notIn: linhas.map((l) => l.conta.id) } } })
     for (const l of linhas.filter((x) => t.semPauta || x.soMatricula)) {
       await tx.matricula.upsert({ where: { estudanteId_turmaId: { estudanteId: l.conta.id, turmaId: turma.id } }, create: { estudanteId: l.conta.id, turmaId: turma.id, estado }, update: {} })
     }
@@ -417,7 +451,7 @@ export class ServicoArquivoAcademico {
     const ano = (this.relogio?.agora() ?? new Date()).getFullYear()
     for (let tentativa = 0; tentativa < 4; tentativa++) {
       try {
-        const c = await this.contas.criar({ tipo: 'estudante', numero: numeroConta('estudante', ano, await this.contas.proximaSequencia('estudante', ano)), nome: e.nome, email, senha: await this.cifra.cifrar(senhaInicial()), ativo, dados: { nip: e.nip || '', posto: e.posto || '', ramo: e.ramo || '' } })
+        const c = await this.contas.criar({ tipo: 'estudante', numero: numeroConta('estudante', ano, await this.contas.proximaSequencia('estudante', ano)), nome: e.nome, email, senha: await this.cifra.cifrar(senhaInicial()), ativo, dados: { nip: e.nip || '', posto: e.posto || '', ramo: e.ramo || '', departamento: e.unidade || '' } })
         return { id: c.id, nome: c.nome, dados: c.dados }
       } catch (erro) {
         if (!/Número/.test(erro.message)) throw erro

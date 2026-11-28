@@ -55,7 +55,8 @@ export class ServicoDocumentos {
   async documentosDoAno(ctx, anoLetivo) {
     ctx.actor.exigir('academico.ver')
     const ano = await this.anosLetivos?.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })
-    const turmas = (await this.academico.listarTurmas()).filter((t) => t.anoLetivo === anoLetivo && t.ativa !== false)
+    // todas as turmas do ano (as de anos anteriores já não estão activas, mas os mapas desses anos são delas)
+    const turmas = (await this.academico.listarTurmas()).filter((t) => t.anoLetivo === anoLetivo)
     const cursos = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, c]))
     const porCurso = new Map()
     for (const t of turmas) {

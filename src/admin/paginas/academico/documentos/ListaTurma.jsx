@@ -17,7 +17,8 @@ const dataPt = (v) => (v ? new Date(`${String(v).slice(0, 10)}T12:00:00`).toLoca
 const d = (e, k) => e.dados?.[k] ?? ''
 const formacao = (e) => [d(e, 'habilitacao'), d(e, 'areaFormacao')].filter(Boolean).join(' — ')
 const LISTAS_TURMA = {
-  relacao: { titulo: 'Relação nominal dos {p}', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome completo', (e) => e.nome], ['N.º de estudante', (e) => e.numero], ['Ramo', (e) => d(e, 'ramo')], ['Unidade de origem', (e) => d(e, 'departamento')]] },
+  // como a do arquivo (Direcção de Ensino): N/O, NIP, posto, nome completo e ramo
+  relacao: { titulo: 'Relação nominal dos {p}', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome completo', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')]] },
   contactos: { titulo: 'Lista telefónica e e-mail', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Contactos', (e) => d(e, 'telefone')], ['Correio electrónico', (e) => e.email ?? '']] },
   constituicao: { titulo: 'Constituição da turma — lista final de dados para constar nos diplomas', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Obs.', () => '']] },
   formacao: { titulo: 'Formação académica actual', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Formação académica', formacao]] },
@@ -69,7 +70,7 @@ function ListaTurma() {
       assinaturas={['O Chefe da Repartição de Administração Escolar']}
     >
       <table>
-        <thead><tr><th className="of-num">N.º</th>{def.colunas.map(([c]) => <th key={c}>{c}</th>)}</tr></thead>
+        <thead><tr><th className="of-num">{tipo === 'relacao' ? 'N/O' : 'N.º'}</th>{def.colunas.map(([c]) => <th key={c}>{c}</th>)}</tr></thead>
         <tbody>
           {linhas.length === 0 && <tr><td colSpan={def.colunas.length + 1} className="of-centro">Sem {pessoas.toLowerCase()} nesta lista.</td></tr>}
           {linhas.map((e, i) => (
