@@ -218,6 +218,8 @@ for folha, r, d in linhas('RELAÇÃO NOMINAL DO PESSOAL CIVIL COM CARREIRAS E CA
 
 rel = json.load(open(RELACOES))
 rel['militares'] = militares
+# o ramo de cada militar da lista: corrige as fichas que ficaram com o ramo por confirmar (Exército por omissão)
+rel['ramos'] = [{'nip': m['nip'], 'ramo': m['ramo']} for m in militares if m.get('ramo')]
 rel['civis'] = civis
 # quem assina (já lá estavam) primeiro, depois os cargos da relação nominal
 antes = rel.get('cargos', [])

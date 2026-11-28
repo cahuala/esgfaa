@@ -53,9 +53,31 @@ export async function carregarRelacoes(contentor, dados, u = QUEM, { pastaFotos 
   if (dados.academicos?.pessoas?.length) linhas.push(...await carregarAcademicos(contentor, dados.academicos, u))
   // 4. quem assina
   if (dados.cargos?.length) linhas.push(...await carregarCargos(contentor, dados.cargos, u))
+  // 4b. o ramo das relações (o da lista de efectividade) só nas fichas com o ramo por confirmar
+  if (dados.ramos?.length) linhas.push(...await carregarRamos(contentor, dados.ramos))
   // 5. fotografias
   if (pastaFotos && fs.existsSync(pastaFotos)) linhas.push(...await carregarFotos(contentor, pastaFotos, u))
   return linhas
+}
+
+/*
+  O ramo de quem tem a ficha com o ramo por confirmar (as listas dos docentes e dos discentes não o diziam e ficou
+  Exército por omissão): o da relação nominal (lista de efectividade). As fichas com o ramo confirmado ficam como estão.
+*/
+export async function carregarRamos(contentor, ramos) {
+  const { bd } = contentor
+  let mudados = 0
+  let confirmados = 0
+  for (const r of ramos) {
+    if (!['EXE', 'FAN', 'MGA'].includes(r.ramo) || !r.nip) continue
+    const p = await bd.pessoa.findFirst({ where: { nip: String(r.nip), ramoPorConfirmar: true }, select: { id: true, ramo: true } })
+    if (!p) continue
+    await bd.pessoa.update({ where: { id: p.id }, data: { ramo: r.ramo, ramoPorConfirmar: false } })
+    await bd.sincronizacao.updateMany({ where: { pessoaId: p.id }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
+    if (p.ramo === r.ramo) confirmados++
+    else mudados++
+  }
+  return ['', `Ramos: ${mudados} ficha(s) com o ramo corrigido e ${confirmados} confirmada(s), pela relação nominal (só as que tinham o ramo por confirmar).`]
 }
 
 /*

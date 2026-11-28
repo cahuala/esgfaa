@@ -102,7 +102,7 @@ export default function Perfil() {
           <div className="pes-ficha-nome">{p.nome}</div>
           <div className="pes-ficha-badges">
             {militar ? <>
-              <span>{p.postoNome}</span><span>{p.fps}</span><span>{p.ramoNome}</span>
+              <span>{p.postoNome}</span><span>{p.fps}</span><span>{p.ramoNome}{p.ramoPorConfirmar ? ' (por confirmar)' : ''}</span>
               <span className={p.situacao === 'activo' ? 'pes-sit-activo' : 'pes-sit-outro'} title={p.situacaoCaminho}>{p.situacao === 'activo' && p.efectividadeNome ? p.efectividadeNome : p.situacaoNome}</span>
               {p.estadoNome && <span>{p.estadoNome}</span>}
             </> : <><span>{p.carreiraNome || 'Pessoal civil'}</span>{p.categoriaCivil && <span>{p.categoriaCivil}</span>}</>}
@@ -185,7 +185,7 @@ export default function Perfil() {
               </Bloco>
               <Bloco titulo="Classificação militar" icone="fa-shield-alt">
                 <Grelha>
-                  <Dado r="Ramo" v={p.ramoNome} /><Dado r="Categoria" v={p.categoriaNome} />
+                  <Dado r="Ramo" v={p.ramoPorConfirmar ? `${p.ramoNome ?? ''} — por confirmar (a lista não dizia o ramo)` : p.ramoNome} /><Dado r="Categoria" v={p.categoriaNome} />
                   <Dado r="FPS" v={`${p.fpsNome} (${ref.formasServico[p.fps]?.carreira})`} /><Dado r="Quadro especial" v={p.quadroNome} />
                   <Dado r="Especialidade" v={p.especialidade} /><Dado r="Anos no posto" v={p.tempoNoPosto !== null && p.tempoNoPosto !== undefined ? anos(p.tempoNoPosto) : 'Falta a data de antiguidade no posto'} />
                   <Dado r="Ingresso nas FAA" v={dataPt(p.dataIngresso)} /><Dado r="Ingresso no QP" v={dataPt(p.dataIngressoQP)} />

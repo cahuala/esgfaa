@@ -250,6 +250,8 @@ export class ServicoRegistoPessoal {
         if (p.nome) existente.nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
         // a ficha do Pessoal a que a conta corresponde (para a reconhecer depois, mesmo com outro e-mail)
         existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)), ...(t === 'estudante' ? this.#anosDoPessoal(p.anos) : {}), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }
+        // o ramo que o Pessoal ainda não confirmou chega vazio: não fica o de antes (Exército por omissão)
+        if (p.dados && p.dados.ramo === '') delete existente.dados.ramo
         if (Boolean(p.ativo) !== existente.ativo) {
           existente.ativo = Boolean(p.ativo)
           if (!existente.ativo) existente.invalidarSessoes()

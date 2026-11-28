@@ -94,7 +94,8 @@ export class ServicoSincronizacao {
       // a origem (faa, policia, estrangeiro, civil) e o país dos estrangeiros: para as listas e os documentos do ensino
       dados: {
         posto: p.posto ? nomeDoPosto(p.posto, p.ramo) : p.postoExterno ?? '', postoEquivalente: !p.posto && p.postoExterno ? postoEquivalente(p) : '',
-        ramo: p.ramo ?? '', nip: p.nip || p.numeroAgente || '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '',
+        // o ramo que as listas não diziam (ficou Exército por omissão) não vai: os mapas por ramo não o contam mal
+        ramo: p.ramoPorConfirmar ? '' : p.ramo ?? '', nip: p.nip || p.numeroAgente || '', telefone: p.telefone ?? '', departamento: p.unidade?.nome || p.unidadeOrigem || '',
         origem: origemDe(p), pais: origemDe(p) === 'estrangeiro' ? p.paisNascimento || p.nacionalidade || '' : '',
         // para a ficha académica na Administração Escolar (sem BI, morada, família nem vencimentos)
         genero: p.genero ?? '', dataNascimento: p.dataNascimento ? new Date(p.dataNascimento).toISOString().slice(0, 10) : '', naturalidade: p.naturalidade ?? '', provincia: p.provincia ?? '',
