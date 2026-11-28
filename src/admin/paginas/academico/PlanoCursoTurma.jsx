@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { abrirFicheiro, api } from '../../api'
-import { Carregando, Painel } from '../../componentes/Ui'
+import { Carregando, Janela, Painel } from '../../componentes/Ui'
 import ConselhoCurso from './ConselhoCurso'
 import RegrasPlano from '../../../portal/RegrasPlano'
 import { t as tx, localAtual } from '../../../i18n/linguas'
@@ -142,7 +142,8 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
         )}
 
         {plano && (
-          <form className="border rounded p-3 mt-2" onSubmit={guardarPlano}>
+          <Janela titulo={plano.id ? tx('Plano de curso') : tx('Novo plano de curso')} onFechar={() => setPlano(null)} larga>
+          <form onSubmit={guardarPlano}>
             <div className="row g-2">
               <div className="col-md-6"><label className="form-label small fw-bold" htmlFor="pl-nome">{tx('Nome do plano')}</label><input id="pl-nome" className="form-control form-control-sm" required minLength={3} value={plano.nome} onChange={(e) => setPlano({ ...plano, nome: e.target.value })} /></div>
               <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pl-formula">{tx('Nota final')}</label><select id="pl-formula" className="form-select form-select-sm" value={plano.formula} onChange={(e) => setPlano({ ...plano, formula: e.target.value })}>{Object.entries(FORMULAS).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
@@ -170,6 +171,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
             <button type="button" className="btn btn-sm btn-link px-0" onClick={() => setPlano({ ...plano, blocos: [...plano.blocos, { sigla: '', nome: '', coeficiente: 1 }] })}><i className="fa fa-plus me-1" />{tx('Juntar bloco')}</button>
             <div className="d-flex gap-2 mt-2"><button type="submit" className="btn btn-sm btn-theme">{tx('Guardar o plano')}</button><button type="button" className="btn btn-sm btn-white" onClick={() => setPlano(null)}>{tx('Cancelar')}</button></div>
           </form>
+          </Janela>
         )}
       </Painel>
 

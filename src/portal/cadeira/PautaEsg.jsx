@@ -6,6 +6,7 @@ import { dataHora } from '../formatar'
 import { FORMAS_AVALIACAO, NOTA_MAXIMA_RECUPERACAO, REGRA_ESG, SITUACOES, TIPOS_AVALIACAO, resultadoUc } from '../regraAvaliacao'
 import RegrasPlano from '../RegrasPlano'
 import { t as tx } from '../../i18n/linguas'
+import JanelaFormulario from '../JanelaFormulario'
 import CabecalhoImpressao from '../../components/CabecalhoImpressao'
 import { abrirPlano } from '../api'
 
@@ -277,12 +278,14 @@ export function MinhasNotasEsg({ c, n, pedir, avisar, aoMudar }) {
         </div>
       )}
       {revisao && (
-        <form className="panel p-3 mb-2" onSubmit={pedirRevisao}>
+        <JanelaFormulario titulo={tx('Pedir a revisão da prova')} aoFechar={() => setRevisao(null)}>
+        <form onSubmit={pedirRevisao}>
           <label className="form-label small fw-bold" htmlFor="rev-motivo">{tx('Revisão de «{0}»: porque não concorda com a classificação?', { 0: revisao.prova.titulo })}</label>
           <textarea id="rev-motivo" className="form-control form-control-sm" rows={4} required minLength={10} maxLength={3000} value={revisao.motivo} onChange={(e) => setRevisao({ ...revisao, motivo: e.target.value })} />
           <div className="small text-muted mt-1">{tx('A reclamação vai ao Director do Curso e o Director de Ensino delibera. A classificação pode subir, manter-se ou baixar. Só se pede uma vez por prova.')}</div>
           <div className="d-flex gap-2 mt-2"><button type="submit" className="btn btn-sm btn-theme" disabled={aPedir === revisao.prova.id}>{tx('Enviar o pedido de revisão')}</button><button type="button" className="btn btn-sm btn-white" onClick={() => setRevisao(null)}>{tx('Cancelar')}</button></div>
         </form>
+        </JanelaFormulario>
       )}
       <div className="p-notas-linha">
         <div className="p-notas-final"><span>{tx('Nota da UC')}</span><Nota valor={n.final} forte />{n.mencao && n.situacao === 'aprovado' && <small>{n.mencao}</small>}</div>

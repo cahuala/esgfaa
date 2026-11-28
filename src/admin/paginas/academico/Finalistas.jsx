@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
-import { Painel } from '../../componentes/Ui'
+import { Painel, Janela } from '../../componentes/Ui'
 import FotoConta from '../../componentes/FotoConta'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 
@@ -75,9 +75,9 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar, t
         </td>
       </tr>
       {aberta && (
-        <tr>
-          <td colSpan={6} className="bg-light">
-            <form className="row g-2 py-2" onSubmit={guardar}>
+        <tr><td colSpan={6} className="p-0 border-0">
+          <Janela titulo={`${termos.trabalho.sigla} · ${l.estudante.nome}`} onFechar={alternar} larga>
+            <form className="row g-2" onSubmit={guardar}>
               <div className="col-12"><label className="form-label fw-bold" htmlFor={`tema-${l.estudante.id}`}>{tx('Tema')}</label><input id={`tema-${l.estudante.id}`} className="form-control" value={f.tema} onChange={(e) => setF({ ...f, tema: e.target.value })} required /></div>
               <div className="col-md-4"><label className="form-label fw-bold" htmlFor={`ori-${l.estudante.id}`}>{tx('Orientador')}</label><input id={`ori-${l.estudante.id}`} className="form-control" value={f.orientador} onChange={(e) => setF({ ...f, orientador: e.target.value })} /></div>
               <div className="col-md-5"><label className="form-label fw-bold" htmlFor={`juri-${l.estudante.id}`}>{tx('Júri')}</label><input id={`juri-${l.estudante.id}`} className="form-control" value={f.juri} onChange={(e) => setF({ ...f, juri: e.target.value })} placeholder={tx('Presidente; arguente; orientador')} /></div>
@@ -86,8 +86,8 @@ function LinhaFinalista({ l, turma, gerir, aberta, alternar, avisar, carregar, t
               <div className="col-12"><input className="form-control" value={f.observacao} onChange={(e) => setF({ ...f, observacao: e.target.value })} placeholder={tx('Observação (opcional)')} aria-label={tx('Observação')} /></div>
               <div className="col-12"><button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar o {0}', { 0: termos.trabalho.sigla })}</button></div>
             </form>
-          </td>
-        </tr>
+          </Janela>
+        </td></tr>
       )}
     </>
   )

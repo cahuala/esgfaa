@@ -167,7 +167,13 @@ export class ServicoConclusaoCurso {
     // só o curso desta turma (quem fez outro curso noutro ano tem outro certificado, com as notas desse ano)
     const percurso = await this.percursos.de(estudante.id, { publicadas: false, estudante, turmaId: turma.id })
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
-    if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
+    if (!existente && !percurso.concluido) {
+      // a classificação homologada sem a média final: o arquivo só trouxe a pauta parcial deste curso
+      const semFinal = percurso.planoCurso?.homologado && (percurso.planoCurso.final === null || percurso.planoCurso.final === undefined)
+      throw new Conflito(semFinal
+        ? 'A pauta deste curso no arquivo não tem a média final (só a pauta parcial): sem ela não se emitem o diploma nem o certificado. Carregue a pauta final assinada em Administração Escolar › Arquivo.'
+        : `O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ') || 'falta a média final'}.`)
+    }
     if (!existente && percurso.planoCurso && !percurso.planoCurso.homologado) throw new Conflito('A classificação final ainda não foi homologada pelo Comandante (Conselho de Curso).')
     // a primeira emissão do diploma e do certificado é directa (imprime-se logo, sem esperar pelo Comandante): a
     // classificação final já foi homologada por ele no Conselho de Curso

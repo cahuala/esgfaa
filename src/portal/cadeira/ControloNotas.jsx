@@ -4,6 +4,7 @@ import { Cartao } from '../componentes'
 import { dataHora, nota } from '../formatar'
 import { confirmar } from '../dialogos'
 import { NOMES_COMPONENTES } from '../regraAvaliacao'
+import JanelaFormulario from '../JanelaFormulario'
 import { t as tx } from '../../i18n/linguas'
 
 const ESTADOS_PROVA = { enviado: ['bg-warning text-dark', tx('Enviada à Repartição')], impresso: ['bg-success', tx('Impressa')] }
@@ -137,7 +138,8 @@ function AlteracoesNotas({ c, avisar }) {
         </div>
       )}
       {aberto && (
-        <form onSubmit={pedir} className="border rounded p-2 mb-3">
+        <JanelaFormulario titulo={tx('Pedir a alteração de notas publicadas')} aoFechar={() => setAberto(false)}>
+        <form onSubmit={pedir}>
           <label className="form-label small fw-bold" htmlFor="an-prova">{tx('Prova')}</label>
           <select id="an-prova" className="form-select form-select-sm mb-2" required value={f.prova} onChange={(e) => setF({ ...f, prova: e.target.value, estudanteIds: [] })}>
             <option value="">{tx('Escolha a prova publicada')}</option>
@@ -164,6 +166,7 @@ function AlteracoesNotas({ c, avisar }) {
             <button type="button" className="btn btn-white btn-sm" onClick={() => setAberto(false)}>{tx('Cancelar')}</button>
           </div>
         </form>
+        </JanelaFormulario>
       )}
       {!provas.length && <div className="small text-muted">{tx('Ainda não há notas publicadas nesta cadeira.')}</div>}
       {pedidos?.length > 0 && (

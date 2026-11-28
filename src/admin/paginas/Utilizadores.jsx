@@ -3,7 +3,7 @@ import PermissoesConta from './PermissoesConta'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useSessao } from '../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel, Janela } from '../componentes/Ui'
 import { dataHora } from '../formatar'
 import { t as tx } from '../../i18n/linguas'
 
@@ -116,7 +116,7 @@ function Utilizadores() {
       {erro && <Erro texto={erro} onRepetir={() => { setErro(''); carregar() }} />}
 
       <div className="row">
-        <div className={form ? 'col-xl-8' : 'col-12'}>
+        <div className="col-12">
           <Painel titulo={tx('Contas')} corpo={false}>
             {!lista && !erro ? <Carregando /> : (
               <div className="table-responsive">
@@ -169,8 +169,7 @@ function Utilizadores() {
         </div>
 
         {form && (
-          <div className="col-xl-4">
-            <Painel titulo={form.id ? tx('Editar utilizador') : tx('Novo utilizador')}>
+          <Janela titulo={form.id ? tx('Editar utilizador') : tx('Novo utilizador')} onFechar={() => setForm(null)}>
               <form onSubmit={guardar}>
                 {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
                 <div className="mb-3">
@@ -204,12 +203,11 @@ function Utilizadores() {
                   <button type="submit" className="btn btn-theme" disabled={aGuardar}>{aGuardar ? tx('A guardar…') : tx('Guardar')}</button>
                 </div>
               </form>
-            </Painel>
-          </div>
+          </Janela>
         )}
       </div>
 
-      {permissoes && <div className="mt-3"><PermissoesConta u={permissoes} eu={eu} aoFechar={() => setPermissoes(null)} aoGuardar={(m) => { setPermissoes(null); setAviso({ texto: m }); carregar() }} /></div>}
+      {permissoes && <Janela titulo={tx('Permissões de {0}', { 0: permissoes.nome })} onFechar={() => setPermissoes(null)} larga><PermissoesConta u={permissoes} eu={eu} aoFechar={() => setPermissoes(null)} aoGuardar={(m) => { setPermissoes(null); setAviso({ texto: m }); carregar() }} /></Janela>}
       <Confirmar pedido={confirmar} onCancelar={() => setConfirmar(null)} />
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>

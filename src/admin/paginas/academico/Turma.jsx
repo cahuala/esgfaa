@@ -17,6 +17,7 @@ import FotoConta from '../../componentes/FotoConta'
 import Exportar from '../../componentes/Exportar'
 import { confirmar } from '../../../portal/dialogos'
 import { imprimirFichas } from '../pessoal/fichasAcesso'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { t as tx } from '../../../i18n/linguas'
 import { DEPARTAMENTOS_ENSINO } from '../../departamentos'
 
@@ -52,6 +53,7 @@ function Turma() {
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
   const [gerarHorario, setGerarHorario] = useState(false)
+  const { anos: anosTrabalho } = useAnoTrabalho()
   const [importar, setImportar] = useState(false)
   const [escolherDoc, setEscolherDoc] = useState(false)
   const [passagem, setPassagem] = useState(false)
@@ -93,11 +95,13 @@ function Turma() {
   const curso = t.termos ?? { pessoas: 'Estudantes', pessoa: 'Estudante', trabalho: { sigla: 'TFC', nome: 'Trabalho de fim de curso' } }
   const meses = (() => { const d = String(fichaCurso?.duracao ?? '').toLowerCase(); const m = /(\d+)\s*m[eê]s/.exec(d); if (m) return Number(m[1]); const a = /(\d+)\s*ano/.exec(d); return a ? Number(a[1]) * 12 : null })()
   const variosAnos = (meses ?? 13) > 12
+  const anoFechadoTurma = Boolean(anosTrabalho.find((a) => a.id === t.anoLetivo)?.fechado)
   const ABAS = [
     ['estudantes', tx(curso.pessoas), 'fa-user-graduate', t.matriculas.length],
     ...(t.anoFinal ? [['finalistas', tx('Finalistas e {0}', { 0: curso.trabalho.sigla }), 'fa-award', `${concluiram}/${conclusao.size}`]] : []),
     ['cadeiras', tx('Cadeiras e horário'), 'fa-book', t.cadeiras.length],
     ['plano', tx('Plano de curso'), 'fa-clipboard-list', null],
+    ['docentes', tx('Docentes'), 'fa-chalkboard-teacher', new Set(t.cadeiras.flatMap((c) => [...(c.docentes ?? []), ...(c.docentesPropostos ?? [])].map((d) => d.id))).size],
     ['documentos', tx('Documentos da turma'), 'fa-print', null],
     ...(t.cadeiras.length ? [['avaliacao', tx('Avaliação dos docentes'), 'fa-star-half-alt', null]] : []),
   ]
@@ -255,6 +259,42 @@ function Turma() {
         </div>
       )}
 
+      {aba === 'docentes' && (() => {
+        // os docentes da turma: cada um com as suas cadeiras (o papel, as horas e se já está aprovado)
+        const porDocente = new Map()
+        for (const c of t.cadeiras) {
+          for (const d of [...(c.docentes ?? []), ...(c.docentesPropostos ?? [])]) {
+            const x = porDocente.get(d.id) ?? { ...d, cadeiras: [] }
+            x.cadeiras.push({ id: c.id, codigo: c.codigo, nome: c.nome, papel: d.papel, horas: d.horas, estado: d.estado })
+            porDocente.set(d.id, x)
+          }
+        }
+        const lista = [...porDocente.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt'))
+        const semDocente = t.cadeiras.filter((c) => !(c.docentes?.length || c.docentesPropostos?.length))
+        return (
+          <Painel titulo={tx('Docentes da turma ({0})', { 0: lista.length })} corpo={false} acoes={gerir && <Link to="/academico/alocacao" className="btn btn-xs btn-white"><i className="fa fa-user-plus me-1" />{tx('Alocação de docentes')}</Link>}>
+            {lista.length === 0 ? (
+              <div className="p-3 text-muted">{tx('Nenhuma cadeira desta turma tem docente.')} {anoFechadoTurma ? tx('O arquivo deste ano lectivo não diz quem leccionou cada cadeira.') : tx('Aloque-os em «Alocação de docentes».')}</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-striped align-middle mb-0">
+                  <thead><tr><th>{tx('Docente')}</th><th>{tx('Cadeiras nesta turma')}</th><th className="text-end">{tx('Horas')}</th></tr></thead>
+                  <tbody>
+                    {lista.map((d) => (
+                      <tr key={d.id}>
+                        <td><div className="d-flex align-items-center gap-2"><FotoConta id={d.id} nome={d.nome} temFoto tamanho={34} /><div><Link to={`/pessoal/registo/${d.id}/ficha`} className="fw-bold text-body text-decoration-none">{d.nome}</Link><div className="small text-muted">{d.numero}</div></div></div></td>
+                        <td className="small">{d.cadeiras.map((c) => <div key={c.id}><Link to={`/academico/cadeiras/${c.id}`}>{c.codigo}</Link> {c.nome} <span className="text-muted">· {c.papel === 'regente' ? tx('Regente') : tx('Assistente')}</span>{c.estado !== 'aprovada' && <span className="badge bg-warning text-dark ms-1">{tx('proposto')}</span>}</div>)}</td>
+                        <td className="text-end">{d.cadeiras.reduce((s2, c) => s2 + (Number(c.horas) || 0), 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {semDocente.length > 0 && lista.length > 0 && <div className="p-2 small text-warning border-top">{tx('Sem docente: {0}', { 0: semDocente.map((c) => c.codigo).join(', ') })}</div>}
+          </Painel>
+        )
+      })()}
       {aba === 'documentos' && (
         <Painel titulo={tx('Documentos da turma')}>
           <div className="d-flex flex-wrap gap-2 align-items-center mb-3">
