@@ -70,6 +70,14 @@ const mapasDe = (l) => {
   return orgao ? [ramo, orgao] : [ramo]
 }
 const noMapa = (l, k) => mapasDe(l).includes(k)
+// os postos do quadro dos orientadores, pela ordem do arquivo (o que não tem posto é «Civil»)
+const POSTOS_ORIENTADORES = [
+  ['General', /^(general|gen\.?)\b(?!.*tenente)/i], ['T.General', /^(t\.?\s*general|tenente[- ]general|ten\.?\s*gen)/i], ['Almirante', /^almirante/i], ['V.Almirante', /^(v\.?\s*almirante|vice[- ]almirante)/i],
+  ['Comissário', /^comiss[áa]rio\b/i], ['Subcomissário', /^sub[- ]?comiss[áa]rio/i], ['Brigadeiro', /^brig(adeiro|\.)/i], ['C.Almirante', /^(c\.?\s*almirante|contra[- ]almirante)/i],
+  ['CMG', /^(cmg|capit[ãa]o[- ]de[- ]mar[- ]e[- ]guerra)\b/i], ['Coronel', /^(cor\.?|coronel)\b/i], ['Super.Int.Chefe', /^super(intendente)?[\s.-]*(int\.?)?[\s.-]*chefe/i], ['Superintendente', /^superintendente\b(?!.*chefe)/i],
+  ['T.Coronel', /^(t\.?\s*cor(onel)?|tenente[- ]coronel|ten\.?\s*cor)/i], ['Capitão-de-Fragata', /^capit[ãa]o[- ]de[- ]fragata/i], ['Major', /^maj(or|\.)/i], ['Capitão-de-Corveta', /^capit[ãa]o[- ]de[- ]corveta/i],
+  ['Intendente', /^intendente\b/i], ['Capitão', /^(cap\.?|capit[ãa]o)\b(?![- ]de)/i],
+]
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const mencaoDe = (n) => (n === null || n === undefined ? '' : n >= 18 ? 'Muito BOM' : n >= 14 ? 'BOM' : n >= 10 ? 'REGULAR' : 'REPROVADO')
 // a classificação como nos mapas do arquivo: «BOM», «Muito BOM», «BOM/C/Distinção»
@@ -205,6 +213,24 @@ function DocumentosAno() {
         </section>
       )
     })
+  } else if (tipo === 'orientadores') {
+    // o quadro estatístico dos orientadores (como o do arquivo): cada orientador uma vez, contado pelo posto
+    const nomes = [...new Set(cursos.flatMap((c) => c.linhas.map((l) => String(l.orientador || '').replace(/\s+/g, ' ').trim())).filter(Boolean))]
+    const conta = POSTOS_ORIENTADORES.map(([rotulo, re]) => [rotulo, nomes.filter((n) => re.test(n)).length])
+    const civis = nomes.filter((n) => !POSTOS_ORIENTADORES.some(([, re]) => re.test(n))).length
+    const linhasQ = [...conta.filter(([, n]) => n), ...(civis ? [['Civil', civis]] : [])]
+    excel.push(['QUADRO ESTATÍSTICO DOS ORIENTADORES'], [`ANO ACADÉMICO ${ano}`], [], ['DESIGNAÇÃO', 'NÚMERO DE ORIENTADORES', 'SUBTOTAL'], ...linhasQ.map(([r, n]) => [r, String(n).padStart(2, '0'), String(n).padStart(2, '0')]), ['TOTAL GERAL', String(nomes.length).padStart(2, '0'), String(nomes.length).padStart(2, '0')])
+    corpo = (
+      <>
+        <h2 className="h6 text-uppercase fw-bold text-center">Quadro estatístico dos orientadores — ano académico {ano}</h2>
+        <table style={{ width: 'auto', margin: '0 auto' }}>
+          <thead><tr><th>Designação</th><th className="of-centro">Número de orientadores</th><th className="of-centro">Subtotal</th></tr></thead>
+          <tbody>{linhasQ.map(([r, n]) => <tr key={r}><td>{r}</td><td className="of-centro">{String(n).padStart(2, '0')}</td><td className="of-centro">{String(n).padStart(2, '0')}</td></tr>)}</tbody>
+          <tfoot><tr><th>TOTAL GERAL</th><th className="of-centro">{String(nomes.length).padStart(2, '0')}</th><th className="of-centro">{String(nomes.length).padStart(2, '0')}</th></tr></tfoot>
+        </table>
+        {!nomes.length && <p className="text-center small mt-2">Ainda não há orientadores lançados nos Trabalhos de Investigação Individual deste ano (Turma › TFC/TII).</p>}
+      </>
+    )
   } else if (tipo === 'finais') {
     // como no arquivo: matriculados, terminaram com aproveitamento, baixas, média, menções e % de aproveitamento
     const linhas = cursos.map((c) => {
@@ -290,7 +316,7 @@ function DocumentosAno() {
       anoLetivo={ano}
       titulo={titulo.toUpperCase()} voltar="/academico/turmas"
       subtitulo={`Ano lectivo ${ano} · ${cursos.length} curso(s) · ${cursos.reduce((s, c) => s + c.linhas.length, 0)} discente(s)`}
-      assinaturas={['ramos', 'resumo', 'estatistica', 'finais'].includes(tipo) ? [director] : []}
+      assinaturas={['ramos', 'resumo', 'estatistica', 'finais'].includes(tipo) ? [director] : tipo === 'orientadores' ? [quem.chefeRae ? { cargo: 'O Chefe de Rep. Adm. Escolar', nome: quem.chefeRae.nome, posto: quem.chefeRae.posto } : 'O Chefe de Rep. Adm. Escolar'] : []}
       paisagem={tipo === 'estatistica' || tipo === 'ramos' || tipo === 'relacao'}
       acoes={(
         <>

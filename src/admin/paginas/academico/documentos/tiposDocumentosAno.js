@@ -8,6 +8,7 @@ export const DOCUMENTOS_ANO = {
   finais: 'Dados estatísticos finais dos cursos',
   entrega: 'Relação para a entrega dos diplomas e certificados',
   diplomas: 'Lista final de dados para os diplomas',
+  orientadores: 'Quadro estatístico dos orientadores',
 }
 
 // os documentos de uma turma (na escolha do ano lectivo e da turma; também para a 2.ª via)

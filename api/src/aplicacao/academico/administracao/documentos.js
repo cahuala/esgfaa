@@ -65,6 +65,8 @@ export class ServicoDocumentos {
       porCurso.set(t.curso, x)
       x.turmas.push(t.nome)
       const matriculas = await this.academico.matriculasDaTurma(t.id)
+      // o orientador do Trabalho de Investigação Individual de cada discente (para o quadro dos orientadores)
+      const tfcs = new Map(((await this.conclusao?.tfcsDaTurma(t.id).catch(() => [])) ?? []).map((x) => [x.estudanteId, x]))
       // as baixas de curso (matrícula anulada ou suspensa): para os dados estatísticos finais
       x.baixas += matriculas.filter((y) => ['anulada', 'suspensa'].includes(y.estado)).length
       for (const m of matriculas.filter((y) => ['ativa', 'concluida'].includes(y.estado))) {
@@ -73,7 +75,7 @@ export class ServicoDocumentos {
         const r = await Promise.resolve(this.esg?.resultadoDoEstudante(e.id, t)).catch(() => null)
         x.linhas.push({
           id: e.id, numero: e.numero, nome: e.nome, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '', ramo: d.ramo || '', orgao: d.departamento || '',
-          origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, funcao: d.funcaoActual || '', habilitacao: [d.habilitacao, d.areaFormacao].filter(Boolean).join(' — '), telefone: d.telefone || '', final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
+          origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, funcao: d.funcaoActual || '', orientador: tfcs.get(e.id)?.orientador || '', habilitacao: [d.habilitacao, d.areaFormacao].filter(Boolean).join(' — '), telefone: d.telefone || '', final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
         })
       }
     }

@@ -5,7 +5,7 @@ import { Carregando, Erro } from '../../../componentes/Ui'
 import { NOMES_COMPONENTES, SITUACOES } from '../../../../portal/regraAvaliacao'
 import { exportarPautaExcel } from '../../../../portal/exportarPauta'
 import Documento from './Documento'
-import { valor } from './csv'
+import { decimal, descarregarCsv, valor } from './csv'
 
 const PERIODOS = { 1: '1.º semestre', 2: '2.º semestre', anual: 'Anual' }
 
@@ -55,9 +55,19 @@ function PautaCadeira() {
     await escrever([...topo, [B('Nº'), B('NIP'), B('POSTO'), B('NOME  COMPLETO'), B('RAMOS'), B('DISCIPLINA'), B('NOTAS')], ...corpo, ...fim], { sheet: c.codigo.slice(0, 30) || 'Pauta', columns: [{ width: 6 }, { width: 14 }, { width: 18 }, { width: 50 }, { width: 11 }, { width: 14 }, { width: 10 }] })
       .toFile(`pauta-${c.codigo}-${c.turma?.nome || ''}.xlsx`.replace(/[^\w.-]+/g, '-'))
   }
+  // a mini-pauta (como a do arquivo): uma coluna por prova (TAI, TAG…) e a média da cadeira
+  const esg = p.modo === 'esg'
+  const provas = esg ? (p.avaliacoes ?? []) : []
+  const notaProva = (l, a) => { const n = l.notas?.[a.id]; const v = n?.recuperacao ?? n?.nota; return v === null || v === undefined ? null : Number(v) }
+  const tituloProva = (a) => (a.titulo && a.titulo !== a.tipo ? a.titulo : a.tipo)
+  function excelMini() {
+    descarregarCsv(`mini-pauta-${c.codigo}`, [['ESCOLA SUPERIOR DE GUERRA'], ['DIRECÇÃO DE ENSINO'], [`MINI PAUTA DE ${(c.nome || c.codigo).toUpperCase()}`], [(c.turma?.nome || '').toUpperCase()], [],
+      ['N/O', 'NIP', 'POSTO', 'NOME', 'RAMO', ...provas.map((a) => tituloProva(a).toUpperCase()), 'MÉDIA'],
+      ...p.linhas.map((l, i) => [String(i + 1).padStart(2, '0'), l.estudante.nip || '', l.estudante.posto || '', l.estudante.nome, RAMOS[l.estudante.ramo] ?? l.estudante.ramo ?? '', ...provas.map((a) => decimal(notaProva(l, a))), decimal(linhaNota(l))])])
+  }
   const acoes = <>
-    <button type="button" className="btn btn-white" onClick={() => setDetalhada(!detalhada)}><i className="fa fa-columns me-1" />{detalhada ? 'Modelo do arquivo' : 'Pauta detalhada (provas e exame)'}</button>
-    <button type="button" className="btn btn-white" onClick={() => (detalhada ? exportarPautaExcel(c, p.linhas) : excelArquivo().catch((e) => setErro(e.message)))}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
+    <button type="button" className="btn btn-white" onClick={() => setDetalhada(!detalhada)}><i className="fa fa-columns me-1" />{detalhada ? 'Modelo do arquivo' : esg ? 'Mini-pauta (as provas)' : 'Pauta detalhada (provas e exame)'}</button>
+    <button type="button" className="btn btn-white" onClick={() => (detalhada ? (esg ? excelMini() : exportarPautaExcel(c, p.linhas)) : excelArquivo().catch((e) => setErro(e.message)))}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
   </>
   if (!detalhada) {
     return (
@@ -88,6 +98,32 @@ function PautaCadeira() {
           </tbody>
         </table>
         {p.linhas.some((l) => l.estudante.inscrito) && <div className="small">* Inscrito na cadeira fora da sua turma.</div>}
+      </Documento>
+    )
+  }
+  if (esg) {
+    return (
+      <Documento
+        anoLetivo={c.turma?.anoLetivo}
+        titulo={`MINI PAUTA DE ${(c.nome || c.codigo).toUpperCase()}`} voltar={`/academico/cadeiras/${c.id}?separador=pauta`}
+        subtitulo={<>DIRECÇÃO DE ENSINO<br />{(c.turma?.nome || '').toUpperCase()} · {c.codigo}{horas ? ` · carga horária ${horas} h` : ''}</>}
+        acoes={acoes}
+        assinaturas={[`O Docente${regente ? ` — ${regente}` : ''}`, 'O Chefe da Repartição de Administração Escolar']}
+      >
+        <table className="of-pauta-cadeira">
+          <thead><tr><th>N/O</th><th>NIP</th><th>POSTO</th><th>NOME</th><th>RAMO</th>{provas.map((a) => <th key={a.id}>{tituloProva(a).toUpperCase()}</th>)}<th>MÉDIA</th></tr></thead>
+          <tbody>
+            {p.linhas.map((l, i) => (
+              <tr key={l.estudante.id}>
+                <td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.estudante.nip || ''}</td><td>{l.estudante.posto || ''}</td><td>{l.estudante.nome}</td>
+                <td className="of-centro">{RAMOS[l.estudante.ramo] ?? l.estudante.ramo ?? ''}</td>
+                {provas.map((a) => <td key={a.id} className="of-centro">{fmt(notaProva(l, a))}</td>)}
+                <td className="of-centro"><b>{fmt(linhaNota(l))}</b></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!provas.length && <p className="small mt-2">Esta cadeira ainda não tem provas (a nota veio da pauta assinada do arquivo).</p>}
       </Documento>
     )
   }
