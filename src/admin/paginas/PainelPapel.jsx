@@ -110,6 +110,7 @@ export default function PainelPapel() {
   const [seg, setSeg] = useState(null)
   const [contas, setContas] = useState(null)
   const [porAprovar, setPorAprovar] = useState(null)
+  const [alertas, setAlertas] = useState(null)
   const verAc = pode('academico.ver')
   const verBib = pode('biblioteca.ver')
   const verSeg = pode('seguranca.ver')
@@ -117,6 +118,8 @@ export default function PainelPapel() {
   const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
   useEffect(() => {
     if (verAc && ano) api(`/academico/pendentes?anoLetivo=${encodeURIComponent(ano)}`).then(setAc).catch(() => {})
+    // alertas precoces: os discentes em risco (os dos seus cursos, para o Director de Curso)
+    if (verAc && ano) api(`/academico/indicadores/alertas?anoLetivo=${encodeURIComponent(ano)}`).then(setAlertas).catch(() => {})
     if (verBib) api('/biblioteca').then(setBib).catch(() => {})
     if (verSeg) api('/seguranca').then(setSeg).catch(() => {})
     if (verPes && ano) api(`/academico/contas?anoLetivo=${encodeURIComponent(ano)}`).then(setContas).catch(() => {})
@@ -128,6 +131,7 @@ export default function PainelPapel() {
   const gere = pode('academico.gerir')
   const tarefas = (ac || porAprovar !== null) && [
     aprova && { para: '/publicacoes', icone: 'fa-stamp', cor: 'bg-danger', texto: tx('Por aprovar: site, avisos e inquéritos do portal, contas do painel'), valor: porAprovar ?? 0 },
+    alertas?.emRisco > 0 && { para: '/academico/indicadores', icone: 'fa-exclamation-triangle', cor: 'bg-danger', texto: alertas.meusCursos?.length ? tx('Discentes em risco nos seus cursos (faltas, negativas, TII atrasado)') : tx('Discentes em risco (faltas, negativas, TII atrasado)'), valor: alertas.emRisco },
     ...(!ac ? [] : [
     homologa && { para: '/academico/alteracoes-notas', icone: 'fa-user-shield', cor: 'bg-danger', texto: tx('Pedidos de alteração de notas por decidir'), valor: ac.alteracoesPendentes },
     homologa && { para: '/academico/docentes', icone: 'fa-user-check', cor: 'bg-warning text-dark', texto: tx('Docentes por verificar'), valor: ac.docentesPorVerificar },

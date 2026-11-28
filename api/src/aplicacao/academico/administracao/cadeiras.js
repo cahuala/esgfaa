@@ -231,4 +231,46 @@ export class ServicoCadeiras {
     ctx.actor.exigir('academico.gerir')
     await this.academico.apagarHorario(id)
   }
+
+  /*
+    Gera o horário semanal de uma turma (ver dominio/academico/horarios/gerar.js): sem choques na turma, nos docentes
+    (também com as outras turmas do ano) e nas salas. simular (por omissão) só mostra a proposta; aplicar grava-a.
+    substituir: apaga primeiro os horários que a turma já tem; sem ele, esses ficam e só se marcam as cadeiras sem
+    horário.
+  */
+  async gerarHorario(ctx, turmaId, { tempos, dias, salas = [], aplicar = false, substituir = false } = {}) {
+    ctx.actor.exigir(aplicar ? 'academico.gerir' : 'academico.ver')
+    const t = await this.academico.turma(turmaId)
+    if (!t) throw new NaoEncontrado('Turma não encontrada.')
+    const { gerarHorario, tempoDe } = await import('../../../dominio/academico/horarios/gerar.js')
+    const { BLOCOS_HORARIO } = await import('./horarioMensal.js')
+    const blocos = (Array.isArray(tempos) && tempos.length ? tempos : BLOCOS_HORARIO).slice(0, 12)
+    if (blocos.some((b) => !tempoDe(b))) throw new ErroValidacao('Os tempos escrevem-se assim: 08:30-09:20.', { campo: 'tempos' })
+    const diasOk = (Array.isArray(dias) && dias.length ? dias : [1, 2, 3, 4, 5]).map(Number).filter((d) => d >= 1 && d <= 6)
+    const salasOk = [...new Set((salas ?? []).map((x) => String(x).trim()).filter(Boolean))].slice(0, 30)
+    // as semanas de cada período (das datas do ano lectivo; sem elas, 16 por semestre)
+    const ano = await this.anosLetivos?.prisma.anoLetivo.findUnique({ where: { id: t.anoLetivo } }).catch(() => null)
+    const semanasEntre = (a, b) => (a && b ? Math.max(1, Math.round((new Date(b) - new Date(a)) / (7 * 86_400_000))) : null)
+    const semanas = { 1: semanasEntre(ano?.semestre1Inicio, ano?.semestre1Fim) ?? 16, 2: semanasEntre(ano?.semestre2Inicio, ano?.semestre2Fim) ?? 16, anual: semanasEntre(ano?.inicio, ano?.fim) ?? 32 }
+    const docentesDe = (c) => [...(c.docentes ?? []), ...(c.docentesPropostos ?? [])].map((d) => d.id)
+    const cadeiras = await this.academico.cadeirasDasTurmas([t.id])
+    const proprios = await this.academico.horariosDasCadeiras(cadeiras.map((c) => c.id))
+    // as outras turmas do mesmo ano: os horários dos seus docentes e das salas
+    const outras = (await this.academico.listarTurmas()).filter((x) => x.anoLetivo === t.anoLetivo && x.id !== t.id)
+    const cadOutras = outras.length ? await this.academico.cadeirasDasTurmas(outras.map((x) => x.id)) : []
+    const porCadeira = new Map([...cadeiras, ...cadOutras].map((c) => [c.id, c]))
+    const ocupa = (h, daTurma) => ({ diaSemana: h.diaSemana, inicio: h.inicio, fim: h.fim, sala: h.sala, periodo: porCadeira.get(h.cadeiraId)?.periodo ?? '1', docenteIds: docentesDe(porCadeira.get(h.cadeiraId) ?? {}), daTurma })
+    const ocupados = (await this.academico.horariosDasCadeiras(cadOutras.map((c) => c.id))).map((h) => ocupa(h, false))
+    if (!substituir) ocupados.push(...proprios.map((h) => ocupa(h, true)))
+    const comHorario = new Set(proprios.map((h) => h.cadeiraId))
+    const aMarcar = cadeiras.filter((c) => substituir || !comHorario.has(c.id)).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, periodo: String(c.periodo ?? '1'), horas: Number(c.horas) || 0, docenteIds: docentesDe(c) }))
+    const r = gerarHorario({ cadeiras: aMarcar, ocupados, tempos: blocos, dias: diasOk, salas: salasOk, semanas })
+    if (aplicar) {
+      if (substituir) for (const h of proprios) await this.academico.apagarHorario(h.id)
+      for (const h of r.horario) await this.academico.criarHorario({ cadeiraId: h.cadeiraId, diaSemana: h.diaSemana, inicio: h.inicio, fim: h.fim, sala: h.sala })
+      await this.auditoria.registar(ctx, { acao: 'gerar_horario', colecao: 'horarios', alvoId: t.id, alvoTitulo: `Horário de ${t.nome}`, detalhes: { tempos: r.horario.length, substituir: Boolean(substituir), semLugar: r.semLugar.length } })
+    }
+    const nomes = new Map(cadeiras.flatMap((c) => [...(c.docentes ?? []), ...(c.docentesPropostos ?? [])]).map((d) => [d.id, d.nome]))
+    return { ...r, horario: r.horario.map((h) => ({ ...h, docentes: h.docenteIds.map((id) => nomes.get(id)).filter(Boolean) })), aplicado: Boolean(aplicar), tempos: blocos, dias: diasOk, semanas, mantidos: substituir ? 0 : proprios.length }
+  }
 }

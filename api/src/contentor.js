@@ -326,7 +326,7 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     workshops: new ServicoWorkshops({ workshops: r.workshops, academico: r.academico, acesso, disponibilidade, privados, notificacoes, pautas, registos, relogio }),
     colaborativo: new ServicoColaborativo({ colaborativo: r.colaborativo, acesso, notificacoes, filtroHtml: filtrarHtml, relogio }),
     pesquisa: new ServicoPesquisa({ pesquisa: r.pesquisa, acesso, disponibilidade }),
-    indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio }),
+    indicadores: new ServicoIndicadores({ academico: r.academico, recursos: r.recursos, pautas, relogio, conclusao: r.conclusao, prisma, paginas: r.paginas }),
     inqueritos: new ServicoInqueritos({ inqueritos: r.inqueritos, academico: r.academico, acesso, disponibilidade, notificacoes, registos, auditoria, relogio }),
     ensino: ensino(),
     controlo,
@@ -365,6 +365,8 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   servicos.monitorizacao = new ServicoMonitorizacao({ config, prisma: prismaBase, seguranca: servicos.seguranca, replicacao, paginas: r.paginas, auditoria, relogio })
   const fechar = async () => { replicacao?.parar(); await servicos.seguranca.parar(); await prismaBase.$disconnect() }
   // os docentes que chegam do Pessoal entram logo nas cadeiras do ano em que as listas os põem (propostos ao Comandante)
+  // os indicadores ao longo dos anos lêem as pautas finais (Administração Escolar)
+  servicos.indicadores.documentos = servicos.administracaoEscolar.documentos
   if (servicos.pessoal?.registo && servicos.administracaoEscolar?.arquivo) {
     let aPropor = null
     servicos.pessoal.registo.aoReceberDocentes = () => {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { Campo, Cartao, Etiqueta, Vazio, Carregando } from '../componentes'
 import { data } from '../formatar'
@@ -13,7 +14,7 @@ function Presencas(props) {
 function MinhasPresencas({ c }) {
   if (!c.presencas.length) return <Vazio>{tx('Ainda não há aulas registadas.')}</Vazio>
   return (
-    <Cartao titulo={tx('As minhas presenças')} acoes={<Etiqueta cor={c.assiduidade >= 75 ? 'verde' : 'vermelho'}>{tx('Assiduidade:')} {c.assiduidade} %</Etiqueta>}>
+    <Cartao titulo={tx('As minhas presenças')} acoes={<><Link to="/presenca" className="btn btn-sm btn-theme me-2"><i className="fa fa-qrcode me-1" />{tx('Marcar presença')}</Link><Etiqueta cor={c.assiduidade >= 75 ? 'verde' : 'vermelho'}>{tx('Assiduidade:')} {c.assiduidade} %</Etiqueta></>}>
       <ul className="p-lista">
         {c.presencas.map((p) => (
           <li key={p.data} className="p-linha-entre">
@@ -33,6 +34,7 @@ function Aulas({ c, avisar }) {
   const [f, setF] = useState({ data: hoje, sumario: '' })
   const [estados, setEstados] = useState({})
   const [erro, setErro] = useState('')
+  const [qr, setQr] = useState(null) // { aulaId, codigo, ate, imagem }
 
   const carregar = useCallback(() => api(`/cadeiras/${c.id}/aulas`).then((r) => {
     setD(r)
@@ -41,6 +43,26 @@ function Aulas({ c, avisar }) {
   useEffect(() => { carregar() }, [carregar])
 
   if (!d) return <Carregando />
+
+  // presenças rápidas: o código da aula, mostrado como QR no quadro; os estudantes lêem-no no telemóvel
+  async function abrirQr(aulaId) {
+    try {
+      const r = await api(`/aulas/${aulaId}/codigo`, { metodo: 'POST' })
+      const { default: QRCode } = await import('qrcode')
+      const ligacao = `${window.location.origin}${window.location.pathname}#/presenca/${r.codigo}`
+      setQr({ aulaId, ...r, imagem: await QRCode.toDataURL(ligacao, { margin: 1, width: 320 }) })
+    } catch (falha) { avisar({ tipo: 'erro', texto: falha.message }) }
+  }
+  // a aula de hoje com todos em falta: cada um fica presente ao ler o QR
+  async function aulaComQr() {
+    try {
+      const a = await api(`/cadeiras/${c.id}/aulas`, { metodo: 'POST', corpo: { ...f, presencas: d.estudantes.map((e) => ({ estudanteId: e.id, estado: 'falta' })) } })
+      setF({ data: hoje, sumario: '' })
+      await carregar()
+      await abrirQr(a.id)
+    } catch (falha) { setErro(falha.message) }
+  }
+  const aulaQr = qr && d.aulas.find((a) => a.id === qr.aulaId)
 
   async function registar(e) {
     e.preventDefault()
@@ -65,6 +87,7 @@ function Aulas({ c, avisar }) {
               return (
                 <li key={a.id}>
                   <strong>{data(a.data)}</strong>{a.sumario && <span className="p-texto-suave"> · {a.sumario}</span>}
+                  <button type="button" className="btn btn-xs btn-white float-end" onClick={() => abrirQr(a.id)} title={tx('Presença por QR')}><i className="fa fa-qrcode" /></button>
                   <div className="p-linha-meta">{v.filter((x) => x === 'presente').length} {tx('presentes ·')} {v.filter((x) => x === 'falta').length} {tx('faltas ·')} {v.filter((x) => x === 'justificada').length} {tx('justificadas')}</div>
                 </li>
               )
@@ -89,9 +112,31 @@ function Aulas({ c, avisar }) {
               ))}
             </ul>
           )}
-          <button type="submit" className="btn btn-theme">{tx('Registar')}</button>
+          <div className="d-flex flex-wrap gap-2">
+            <button type="submit" className="btn btn-theme">{tx('Registar')}</button>
+            {d.estudantes.length > 0 && <button type="button" className="btn btn-white" onClick={aulaComQr} title={tx('Regista a aula com todos em falta; cada estudante fica presente ao ler o QR')}><i className="fa fa-qrcode me-1" />{tx('Registar com presença por QR')}</button>}
+          </div>
         </form>
       </Cartao>
+      {qr && (
+        <>
+          <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" onClick={() => setQr(null)}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-content text-center">
+                <div className="modal-header"><h4 className="modal-title">{tx('Presença por QR')}{aulaQr && ` · ${data(aulaQr.data)}`}</h4><button type="button" className="btn-close" onClick={() => setQr(null)} aria-label={tx('Fechar')} /></div>
+                <div className="modal-body">
+                  <img src={qr.imagem} alt={tx('Código QR da aula')} style={{ width: 300, maxWidth: '100%' }} />
+                  <div className="display-5 fw-bold my-2" style={{ letterSpacing: 6 }}>{qr.codigo}</div>
+                  <div className="small text-muted">{tx('Os estudantes lêem o QR com o telemóvel ou escrevem o código em «Marcar presença». Vale até às {0}.', { 0: new Date(qr.ate).toLocaleTimeString().slice(0, 5) })}</div>
+                  {aulaQr && <div className="mt-2 fw-bold">{Object.values(aulaQr.presencas).filter((x) => x === 'presente').length} / {d.estudantes.length} {tx('presentes')}</div>}
+                </div>
+                <div className="modal-footer"><button type="button" className="btn btn-white" onClick={carregar}><i className="fa fa-sync me-1" />{tx('Actualizar')}</button><button type="button" className="btn btn-theme" onClick={() => setQr(null)}>{tx('Fechar')}</button></div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" />
+        </>
+      )}
     </div>
   )
 }

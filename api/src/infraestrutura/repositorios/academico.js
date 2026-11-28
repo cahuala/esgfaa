@@ -129,6 +129,15 @@ export class RepositorioAcademico {
 
   // os estudantes da turma para as listas e os documentos: os activos e, nas turmas de anos anteriores, os que
   // concluíram (as contas já inactivas do histórico também contam)
+  // os antigos alunos: as matrículas concluídas (e as das turmas que já não estão activas), com os dados de hoje
+  async antigosAlunos() {
+    const linhas = await this.prisma.matricula.findMany({
+      where: { OR: [{ estado: 'concluida' }, { estado: 'ativa', turma: { ativa: false } }] },
+      include: { estudante: { select: { ...contaResumo.select, dados: true, ativo: true } }, turma: { select: { id: true, nome: true, curso: true, anoLetivo: true } } },
+    })
+    return linhas.map((m) => ({ estudante: { ...m.estudante, dados: m.estudante.dados ?? {} }, turma: m.turma }))
+  }
+
   async estudantesDaTurmaParaListas(turmaId) {
     const linhas = await this.prisma.matricula.findMany({
       where: { turmaId, estado: { in: ['ativa', 'concluida'] } },
@@ -649,6 +658,11 @@ export class RepositorioAcademico {
 
   aula(id) {
     return this.prisma.aula.findUnique({ where: { id: Number(id) } })
+  }
+
+  // uma presença (presenças rápidas por código): fica «presente», sem mexer nas outras
+  marcarPresenca(aulaId, estudanteId, estado) {
+    return this.prisma.presenca.upsert({ where: { aulaId_estudanteId: { aulaId, estudanteId } }, create: { aulaId, estudanteId, estado }, update: { estado } })
   }
 
   async registarAula({ cadeiraId, data, sumario, presencas }) {

@@ -290,6 +290,7 @@ function Layout({ children }) {
             {pode('academico.gerir') && <ItemMenu para="/academico/arquivo" icone="fa-box-archive" texto={tx('Carregar o arquivo e as turmas do ano')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/docentes-horarios" icone="fa-user-tag" texto={tx('Docentes dos horários do arquivo')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/indicadores" icone="fa-chart-pie" texto={tx('Indicadores académicos')} />}
+            {pode('academico.ver') && <ItemMenu para="/academico/antigos-alunos" icone="fa-user-graduate" texto={tx('Antigos alunos')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/satisfacao" icone="fa-poll" texto={tx('Inquéritos de satisfação')} />}
             {pode('integridade.ver') && <ItemMenu para="/integridade" icone="fa-fingerprint" texto={tx('Integridade académica')} />}
             {pode('academico.ver') && <ItemMenu para="/academico/lti" icone="fa-plug" texto={tx('Ferramentas externas (LTI)')} />}

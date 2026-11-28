@@ -50,6 +50,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/contas/:id/foto', validar({ params: pId }), async (req, res) => enviarFicheiro(req, res, await p.registo.fotoDaConta(ctx(req), req.dados.params.id), { soLeitura: true }))
   r.post('/contas', validar({ body: E.conta }), async (req, res) => res.status(201).json(await p.registo.criarConta(ctx(req), req.dados.body)))
   r.put('/contas/:id', validar({ params: pId, body: E.conta }), async (req, res) => res.json(await p.registo.editarConta(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/turmas/:id/fichas-acesso', validar({ params: pId }), async (req, res) => res.json(await p.registo.fichasDaTurma(ctx(req), req.dados.params.id)))
   r.post('/contas/:id/repor-senha', validar({ params: pId }), async (req, res) => res.json(await p.registo.reporSenha(ctx(req), req.dados.params.id)))
 
   r.get('/turmas', async (req, res) => res.json(await a.turmas.listarTurmas(ctx(req))))
@@ -87,6 +88,9 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/inqueritos/:id', validar({ params: pId }), async (req, res) => res.json(await q.resultadosAdmin(ctx(req), req.dados.params.id)))
   r.delete('/inqueritos/:id', validar({ params: pId }), async (req, res) => { await q.apagarAvaliacao(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/indicadores', validar({ query: E.filtroIndicadores }), async (req, res) => res.json(await servicos.indicadores.indicadores(ctx(req), req.dados.query)))
+  r.get('/indicadores/alertas', validar({ query: E.filtroIndicadores }), async (req, res) => res.json(await servicos.indicadores.alertas(ctx(req), req.dados.query)))
+  r.get('/antigos-alunos', async (req, res) => res.json(await a.documentos.antigosAlunos(ctx(req))))
+  r.get('/indicadores/evolucao', async (req, res) => res.json(await servicos.indicadores.evolucao(ctx(req))))
   r.get('/cadeiras/:id/inscricoes', validar({ params: pId }), async (req, res) => res.json(await a.inscricoes.daCadeira(ctx(req), req.dados.params.id)))
   r.post('/cadeiras/:id/inscricoes', validar({ params: pId, body: E.inscricao }), async (req, res) => res.status(201).json(await a.inscricoes.inscrever(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/inscricoes/:id', validar({ params: pId }), async (req, res) => res.json(await a.inscricoes.anular(ctx(req), req.dados.params.id)))
@@ -144,6 +148,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/planos-curso/:id/documento', ficheiro, validar({ params: pId, body: E.programa }), async (req, res) => res.json(await pc.documento(ctx(req), req.dados.params.id, req.dados.body, req.ficheiro)))
   r.delete('/planos-curso/:id', validar({ params: pId }), async (req, res) => { await pc.apagar(ctx(req), req.dados.params.id); res.status(204).end() })
   r.get('/turmas/:id/plano-curso', validar({ params: pId }), async (req, res) => res.json(await pc.daTurma(ctx(req), req.dados.params.id)))
+  r.post('/turmas/:id/plano-curso/copiar', validar({ params: pId }), async (req, res) => res.status(201).json(await pc.copiarAnterior(ctx(req), req.dados.params.id)))
   r.post('/turmas/:id/plano-curso', validar({ params: pId, body: E.modeloPlano }), async (req, res) => res.status(201).json(await pc.carregarModelo(ctx(req), req.dados.params.id, req.dados.body.modelo)))
   r.get('/turmas/:id/pauta-plano', validar({ params: pId }), async (req, res) => res.json(await pc.pautaGeral(ctx(req), req.dados.params.id)))
   // Conselho de Curso e homologação (Director de Ensino e Comandante)
@@ -164,6 +169,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.put('/cadeiras/:id/provas/:prova/notas', validar({ params: pProva, body: E.notasProva }), async (req, res) => res.json(await pc.notasProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.linhas)))
   r.put('/cadeiras/:id/provas/:prova/publicacao', validar({ params: pProva, body: E.publicarProva }), async (req, res) => res.json(await pc.publicarProva(ctx(req), req.dados.params.id, req.dados.params.prova, req.dados.body.publicar)))
   r.post('/cadeiras/:id/horarios', validar({ params: pId, body: E.horario }), async (req, res) => res.status(201).json(await a.cadeiras.criarHorario(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/turmas/:id/horario/gerar', validar({ params: pId, body: z.object({ tempos: z.array(z.string().max(20)).max(12).optional(), dias: z.array(z.number().int().min(1).max(6)).max(6).optional(), salas: z.array(z.string().max(60)).max(30).optional(), aplicar: z.boolean().optional(), substituir: z.boolean().optional() }) }), async (req, res) => res.json(await a.cadeiras.gerarHorario(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/horarios/:id', validar({ params: pId }), async (req, res) => { await a.cadeiras.apagarHorario(ctx(req), req.dados.params.id); res.status(204).end() })
 
   r.get('/pedidos/tipos', async (req, res) => res.json(a.pedidos.tiposPedido(ctx(req))))

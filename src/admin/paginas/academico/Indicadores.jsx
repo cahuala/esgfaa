@@ -4,9 +4,10 @@ import { api } from '../../api'
 import { CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
+import { descarregarCsv } from './documentos/csv'
 
 const NOMES = { p1: tx('1.ª Prova'), p2: tx('2.ª Prova'), exame: tx('Exame'), recurso: tx('Recurso') }
-const MOTIVOS = { faltas: ['bg-warning text-dark', 'fa-user-times'], nota: ['bg-danger', 'fa-arrow-down'], situacao: ['bg-danger', 'fa-exclamation'], acesso: ['bg-gray-500', 'fa-plug'] }
+const MOTIVOS = { faltas: ['bg-warning text-dark', 'fa-user-times'], nota: ['bg-danger', 'fa-arrow-down'], situacao: ['bg-danger', 'fa-exclamation'], acesso: ['bg-gray-500', 'fa-plug'], tii: ['bg-purple', 'fa-book'] }
 const pct = (v) => (v === null || v === undefined ? '—' : `${v.toLocaleString(localAtual())}%`)
 const num = (v) => (v === null || v === undefined ? '—' : v.toLocaleString(localAtual()))
 
@@ -31,18 +32,29 @@ function Indicadores() {
   const [d, setD] = useState(null)
   const [erro, setErro] = useState('')
   const [filtroRisco, setFiltroRisco] = useState('')
+  const [vista, setVista] = useState('ano')
+  // o Director de Curso vê primeiro os seus cursos
+  const [soMeus, setSoMeus] = useState(true)
   useEffect(() => { api(`/academico/indicadores${ano ? `?anoLetivo=${encodeURIComponent(ano)}` : ''}`).then(setD).catch((e) => setErro(e.message)) }, [ano])
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
+  const separadores = (
+    <ul className="nav nav-tabs mb-3">
+      {[['ano', tx('Este ano lectivo')], ['anos', tx('Ao longo dos anos')]].map(([k, v]) => <li key={k} className="nav-item"><button type="button" className={`nav-link ${vista === k ? 'active' : ''}`} onClick={() => setVista(k)}>{v}</button></li>)}
+    </ul>
+  )
+  if (vista === 'anos') return <><CabecalhoPagina titulo={tx('Indicadores académicos')} subtitulo={tx('ao longo dos anos')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Indicadores') }]} />{separadores}<Evolucao /></>
 
   const g = d.geral
   const widgets = [
     ['bg-dark', 'fa-user-graduate', tx('ESTUDANTES ACTIVOS'), g.estudantes, tx('{0} turma(s) · {1} cadeiras', { 0: g.turmas, 1: g.cadeiras })],
-    ['bg-red', 'fa-exclamation-triangle', tx('EM RISCO'), g.emRisco, tx('faltas, negativas ou sem acesso')],
+    ['bg-red', 'fa-exclamation-triangle', tx('EM RISCO'), g.emRisco, tx('faltas, negativas, TII ou sem acesso')],
     ['bg-orange', 'fa-hourglass-half', tx('PAUTAS EM ATRASO'), g.pautasEmAtraso, tx('notas por lançar há 15+ dias')],
     ['bg-teal', 'fa-check-circle', tx('APROVAÇÃO MÉDIA'), pct(g.taxaAprovacao), tx('assiduidade média {0}', { 0: pct(g.assiduidade) })],
   ]
-  const risco = filtroRisco ? d.risco.filter((r) => r.motivos.some((m) => m.tipo === filtroRisco)) : d.risco
+  const meus = d.meusCursos ?? []
+  const doCurso = soMeus && meus.length ? d.risco.filter((r) => meus.includes(r.curso)) : d.risco
+  const risco = filtroRisco ? doCurso.filter((r) => r.motivos.some((m) => m.tipo === filtroRisco)) : doCurso
 
   return (
     <>
@@ -53,6 +65,7 @@ function Indicadores() {
           </select>
         )}
       </CabecalhoPagina>
+      {separadores}
       <div className="row">
         {widgets.map(([cor, icone, titulo, valor, nota]) => (
           <div key={titulo} className="col-xl-3 col-md-6">
@@ -70,9 +83,10 @@ function Indicadores() {
         <div className="col-xl-7">
           <Painel titulo={tx('Estudantes em risco ({0})', { 0: d.risco.length })} acoes={(
             <select className="form-select form-select-sm" style={{ width: 170 }} value={filtroRisco} onChange={(e) => setFiltroRisco(e.target.value)} aria-label={tx('Filtrar motivo')}>
-              <option value="">{tx('Todos os motivos')}</option><option value="faltas">{tx('Faltas')}</option><option value="nota">{tx('Negativas')}</option><option value="situacao">{tx('Recurso/reprovação')}</option><option value="acesso">{tx('Sem acesso')}</option>
+              <option value="">{tx('Todos os motivos')}</option><option value="faltas">{tx('Faltas')}</option><option value="nota">{tx('Negativas')}</option><option value="situacao">{tx('Recurso/reprovação')}</option><option value="acesso">{tx('Sem acesso')}</option><option value="tii">{tx('TII atrasado')}</option>
             </select>
           )} corpo={false}>
+            {meus.length > 0 && <label className="form-check small m-2"><input type="checkbox" className="form-check-input" checked={soMeus} onChange={(e) => setSoMeus(e.target.checked)} /> {tx('Só os cursos de que sou Director ({0} de {1})', { 0: d.risco.filter((r) => meus.includes(r.curso)).length, 1: d.risco.length })}</label>}
             <div className="table-responsive" style={{ maxHeight: 520 }}>
               <table className="table table-striped align-middle mb-0">
                 <thead><tr><th>{tx('Estudante')}</th><th>{tx('Turma')}</th><th>{tx('Motivos')}</th></tr></thead>
@@ -155,6 +169,53 @@ function Indicadores() {
         </div>
       </Painel>
     </>
+  )
+}
+
+/*
+  Ao longo dos anos: por curso, por Ramo e por cadeira a percentagem de aproveitamento e a média de cada ano
+  (das pautas finais); por docente as horas e as cadeiras. Exporta-se para o Excel.
+*/
+const VISTAS = { cursos: tx('Por curso'), ramos: tx('Por Ramo'), cadeiras: tx('Por cadeira'), docentes: tx('Carga dos docentes') }
+function Evolucao() {
+  const [e, setE] = useState(null)
+  const [erro, setErro] = useState('')
+  const [v, setV] = useState('cursos')
+  const [q, setQ] = useState('')
+  useEffect(() => { api('/academico/indicadores/evolucao').then(setE).catch((x) => setErro(x.message)) }, [])
+  if (erro) return <Erro texto={erro} />
+  if (!e) return <Carregando texto={tx('A ler as pautas de todos os anos…')} />
+  const docentes = v === 'docentes'
+  const termo = q.trim().toLowerCase()
+  const linhas = e[v].filter((x) => !termo || String(x.nome).toLowerCase().includes(termo))
+  const celula = (a) => (!a ? '—' : docentes ? `${a.horas} h · ${a.cadeiras}` : `${pct(a.taxa)} · ${num(a.media)}`)
+  const exportar = () => descarregarCsv(`indicadores-${v}`, [
+    ['ESCOLA SUPERIOR DE GUERRA'], [`INDICADORES AO LONGO DOS ANOS — ${VISTAS[v].toUpperCase()}`], [],
+    ['Nº', docentes ? 'Docente' : 'Nome', ...e.anos.flatMap((a) => (docentes ? [`${a} horas`, `${a} cadeiras`] : [`${a} discentes`, `${a} % aproveitamento`, `${a} média`]))],
+    ...linhas.map((x, i) => [i + 1, x.nome, ...e.anos.flatMap((a) => { const y = x.porAno[a]; return docentes ? [y?.horas ?? '', y?.cadeiras ?? ''] : [y?.discentes ?? '', y?.taxa === null || y?.taxa === undefined ? '' : String(y.taxa).replace('.', ','), y?.media === null || y?.media === undefined ? '' : String(y.media.toFixed(2)).replace('.', ',')] })]),
+  ])
+  return (
+    <Painel titulo={VISTAS[v]} corpo={false} acoes={<button type="button" className="btn btn-sm btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />{tx('Exportar Excel')}</button>}>
+      <div className="d-flex flex-wrap gap-2 p-2 border-bottom">
+        <div className="btn-group btn-group-sm">{Object.entries(VISTAS).map(([k, t]) => <button key={k} type="button" className={`btn ${v === k ? 'btn-dark' : 'btn-white'}`} onClick={() => setV(k)}>{t}</button>)}</div>
+        <input className="form-control form-control-sm" style={{ maxWidth: 240 }} placeholder={tx('Procurar')} value={q} onChange={(x) => setQ(x.target.value)} />
+        <span className="small text-muted align-self-center ms-auto">{docentes ? tx('horas · cadeiras em cada ano') : tx('% com aproveitamento · média final em cada ano')}</span>
+      </div>
+      <div className="table-responsive" style={{ maxHeight: 620 }}>
+        <table className="table table-sm table-striped align-middle mb-0">
+          <thead><tr><th>{docentes ? tx('Docente') : tx('Nome')}</th>{e.anos.map((a) => <th key={a} className="text-center text-nowrap">{a}</th>)}</tr></thead>
+          <tbody>
+            {linhas.length === 0 && <tr><td colSpan={e.anos.length + 1} className="text-center text-muted py-4">{tx('Nada a mostrar.')}</td></tr>}
+            {linhas.map((x) => (
+              <tr key={x.chave}>
+                <td className="fw-bold">{x.nome}</td>
+                {e.anos.map((a) => <td key={a} className="text-center text-nowrap small">{celula(x.porAno[a])}{!docentes && x.porAno[a] && <div className="text-muted" style={{ fontSize: 11 }}>{x.porAno[a].discentes} {tx('discentes')}</div>}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Painel>
   )
 }
 

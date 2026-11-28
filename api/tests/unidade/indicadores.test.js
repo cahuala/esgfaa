@@ -34,3 +34,17 @@ describe('indicadores: regras', () => {
     assert.equal(media([]), null)
   })
 })
+
+it('TII atrasado: sem tema, sem orientador, sem data de defesa, defendido sem nota', async () => {
+  const { motivosDoTii } = await import('../../src/aplicacao/academico/administracao/indicadores.js')
+  const inicio = new Date('2026-10-01T00:00:00Z')
+  const fim = new Date('2027-07-25T00:00:00Z')
+  const t = (tfc, agora) => motivosDoTii(tfc, { inicio, fim, agora: new Date(agora) }).map((m) => m.texto)
+  assert.deepEqual(t(null, '2026-11-15'), []) // ainda cedo
+  assert.deepEqual(t(null, '2027-01-15'), ['TII ainda sem tema'])
+  assert.deepEqual(t({ tema: 'A defesa', orientador: '' }, '2027-01-15'), ['TII ainda sem orientador'])
+  assert.deepEqual(t({ tema: 'A defesa', orientador: 'Cor X', dataDefesa: null, nota: null }, '2027-07-01'), ['TII sem data de defesa'])
+  assert.deepEqual(t({ tema: 'A defesa', orientador: 'Cor X', dataDefesa: '2027-06-30', nota: null }, '2027-07-01'), ['TII defendido e sem nota lançada'])
+  assert.deepEqual(t({ tema: 'A defesa', orientador: 'Cor X', dataDefesa: '2027-06-30', nota: 15 }, '2027-07-01'), [])
+})
+

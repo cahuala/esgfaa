@@ -19,6 +19,7 @@ import Turma from './paginas/academico/Turma'
 import CadeiraAcademica from './paginas/academico/Cadeira'
 import Alocacao from './paginas/academico/Alocacao'
 import Indicadores from './paginas/academico/Indicadores'
+import AntigosAlunos from './paginas/academico/AntigosAlunos'
 import PautaTurma from './paginas/academico/documentos/PautaTurma'
 import ListaTurma from './paginas/academico/documentos/ListaTurma'
 import ListaCurso from './paginas/academico/documentos/ListaCurso'
@@ -96,6 +97,7 @@ function App() {
         {pode('academico.ver') && <Route path="/academico/cadeiras/:id" element={<CadeiraAcademica />} />}
         {pode('academico.ver') && <Route path="/academico/alocacao" element={<Alocacao />} />}
         {pode('academico.ver') && <Route path="/academico/indicadores" element={<Indicadores />} />}
+        {pode('academico.ver') && <Route path="/academico/antigos-alunos" element={<AntigosAlunos />} />}
         {pode('academico.ver') && <Route path="/academico/satisfacao" element={<Satisfacao />} />}
         {pode('integridade.ver') && <Route path="/integridade" element={<Integridade />} />}
         {pode('integridade.ver') && <Route path="/integridade/analises/:id" element={<Integridade />} />}

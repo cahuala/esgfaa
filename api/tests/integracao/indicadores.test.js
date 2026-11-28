@@ -58,4 +58,13 @@ describe('painel de indicadores da Administração Escolar', () => {
     assert.deepEqual(d.atrasos.map((a) => [a.cadeira.codigo, a.componente, a.faltam, a.diasAtraso]), [['EST101', 'p1', 1, 19]])
     assert.equal(d.turmas[0].emRisco, 2)
   })
+
+  it('alertas precoces para o painel e os indicadores ao longo dos anos', async () => {
+    const a = (await sec().get('/api/admin/academico/indicadores/alertas?anoLetivo=2026%2F2027').expect(200)).body
+    assert.deepEqual([a.anoLetivo, a.emRisco, a.porTipo.faltas, a.porTipo.nota, a.meusCursos], ['2026/2027', 2, 1, 1, []])
+    const e = (await sec().get('/api/admin/academico/indicadores/evolucao').expect(200)).body
+    assert.deepEqual(e.anos, ['2026/2027'])
+    // a carga dos docentes por ano (a turma não tem plano da ESG: não há pauta final para os cursos)
+    assert.deepEqual(e.docentes.map((d) => [d.nome, d.porAno['2026/2027'].cadeiras]), [['Docente Prof Teste', 1]])
+  })
 })

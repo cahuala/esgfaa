@@ -26,6 +26,7 @@ import Inqueritos from './paginas/Inqueritos'
 import Biblioteca, { LerObra, MeusEmprestimos } from './paginas/Biblioteca'
 import Originalidade from './paginas/Originalidade'
 import JanelaDialogo from './JanelaDialogo'
+import MarcarPresenca from './paginas/MarcarPresenca'
 
 function App() {
   const { conta, aVerificar, eDocente } = useSessao()
@@ -60,6 +61,8 @@ function App() {
         {!eDocente && <Route path="/emblemas" element={<Emblemas />} />}
         {!eDocente && <Route path="/pedidos" element={<Pedidos />} />}
         {!eDocente && <Route path="/avisos" element={<Avisos />} />}
+        {!eDocente && <Route path="/presenca" element={<MarcarPresenca />} />}
+        {!eDocente && <Route path="/presenca/:codigo" element={<MarcarPresenca />} />}
         <Route path="/pesquisa" element={<Pesquisa />} />
         <Route path="/inqueritos" element={<Inqueritos />} />
         <Route path="/inqueritos/:id" element={<Inqueritos />} />

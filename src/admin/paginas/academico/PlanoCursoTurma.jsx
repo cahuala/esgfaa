@@ -39,6 +39,15 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
       aoMudar?.()
     } catch (e) { falhou(e) }
   }
+  // plano com versões: o do ano novo começa como cópia do do ano anterior (o anterior fica como estava)
+  async function copiarAnterior() {
+    try {
+      const r = await api(`/academico/turmas/${turma.id}/plano-curso/copiar`, { metodo: 'POST' })
+      avisar({ texto: tx('Plano copiado de {0}: {1} UC criada(s), {2} actualizada(s). Pode mudá-lo: o de {0} fica como estava.', { 0: d.anterior.anoLetivo, 1: r.criadas, 2: r.atualizadas }) })
+      carregar()
+      aoMudar?.()
+    } catch (e) { falhou(e) }
+  }
   async function enviarDocumento(dados, texto) {
     try {
       await api(`/academico/planos-curso/${d.plano.id}/documento`, { metodo: 'PUT', formulario: dados })
@@ -89,6 +98,7 @@ export default function PlanoCursoTurma({ turma, gerir, avisar, aoMudar }) {
             <p>{tx('Esta turma ainda não tem plano de curso da ESG: as cadeiras usam a pauta clássica (1.ª e 2.ª prova, exame e recurso). Com o plano, passam a ser avaliadas por TAI e TAG, com blocos, coeficientes e a menção da ESG.')}</p>
             {gerir && (
               <div className="d-flex flex-wrap gap-2 align-items-center">
+                {d.anterior && <button type="button" className="btn btn-theme" onClick={copiarAnterior}><i className="fa fa-copy me-1" />{tx('Copiar o plano de {0}', { 0: d.anterior.anoLetivo })}</button>}
                 <select className="form-select w-auto" value={modelo} onChange={(e) => setModelo(e.target.value)} aria-label={tx('Modelo de plano')}>
                   <option value="">{tx('Escolher o modelo do plano 2026/2027…')}</option>
                   {Object.entries(d.modelos).map(([k, n]) => <option key={k} value={k}>{n}</option>)}

@@ -6,6 +6,7 @@ import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../
 import { ESTADOS_PERIODO, PERIODOS, estadoDoPeriodo } from './comum'
 import { BLOCOS_DE_TEMPOS } from '../../../portal/regraAvaliacao'
 import CopiarTurma from './CopiarTurma'
+import GerarHorario from './GerarHorario'
 import AvaliacaoDocentes from './AvaliacaoDocentes'
 import PlanoCursoTurma from './PlanoCursoTurma'
 import ImportarEstudantes from './ImportarEstudantes'
@@ -15,6 +16,7 @@ import EscolherDocumento from './documentos/EscolherDocumento'
 import FotoConta from '../../componentes/FotoConta'
 import Exportar from '../../componentes/Exportar'
 import { confirmar } from '../../../portal/dialogos'
+import { imprimirFichas } from '../pessoal/fichasAcesso'
 import { t as tx } from '../../../i18n/linguas'
 import { DEPARTAMENTOS_ENSINO } from '../../departamentos'
 
@@ -49,6 +51,7 @@ function Turma() {
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
   const [copiar, setCopiar] = useState(false)
+  const [gerarHorario, setGerarHorario] = useState(false)
   const [importar, setImportar] = useState(false)
   const [escolherDoc, setEscolherDoc] = useState(false)
   const [passagem, setPassagem] = useState(false)
@@ -127,6 +130,14 @@ function Turma() {
           <button type="button" className="btn btn-xs btn-theme" onClick={() => setMatricular(!matricular)}><i className={`fa ${matricular ? 'fa-times' : 'fa-user-plus'} me-1`} />{matricular ? tx('Fechar') : tx('Matricular estudantes')}</button>
           <button type="button" className="btn btn-xs btn-white" onClick={() => setImportar(true)}><i className="fa fa-file-excel me-1 text-success" />{tx('Do Excel/CSV')}</button>
           {!t.anoFinal && variosAnos && <button type="button" className="btn btn-xs btn-white" onClick={() => setPassagem(true)}><i className="fa fa-level-up-alt me-1 text-success" />{tx('Passagem de ano')}</button>}
+          <button type="button" className="btn btn-xs btn-white" onClick={async () => {
+            if (!(await confirmar(tx('Quem ainda nunca entrou no portal recebe uma palavra-passe inicial nova e sai uma ficha de acesso por estudante, para entregar em mão. As palavras-passe anteriores dessas contas deixam de servir.'), { titulo: tx('Fichas de acesso da turma'), botao: tx('Gerar as fichas') }))) return
+            try {
+              const r = await api(`/academico/turmas/${t.id}/fichas-acesso`, { metodo: 'POST' })
+              if (r.fichas.length) await imprimirFichas(r.fichas, r.portal ? { portal: r.portal } : undefined)
+              setAviso({ texto: tx('{0} ficha(s) de acesso geradas; {1} já tinham entrado no portal.', { 0: r.fichas.length, 1: r.jaEntraram }) })
+            } catch (e) { setAviso({ tipo: 'erro', texto: e.message }) }
+          }}><i className="fa fa-id-card me-1" />{tx('Fichas de acesso')}</button>
         </>}>
           {matricular && gerir && <div className="p-3 border-bottom bg-light"><MatricularEstudantes turma={t} carregar={carregar} avisar={setAviso} /></div>}
           <div className="p-3 border-bottom d-flex flex-wrap gap-2 align-items-center">
@@ -239,6 +250,7 @@ function Turma() {
           <div className="col-xl-4">
             {gerir && <NovaCadeira turma={t} carregar={carregar} avisar={setAviso} />}
             {gerir && <button type="button" className="btn btn-white w-100" onClick={() => setCopiar(true)}><i className="fa fa-copy me-1" />{tx('Copiar cadeiras de outra turma')}</button>}
+            {gerir && t.cadeiras.length > 0 && <button type="button" className="btn btn-white w-100 mt-2" onClick={() => setGerarHorario(true)}><i className="fa fa-magic me-1" />{tx('Gerar o horário automaticamente')}</button>}
           </div>
         </div>
       )}
@@ -273,6 +285,7 @@ function Turma() {
       {importar && <ImportarEstudantes turma={t} fechar={() => setImportar(false)} concluido={carregar} />}
       {passagem && <PassagemAno turma={t} fechar={() => setPassagem(false)} concluido={carregar} />}
       {copiar && <CopiarTurma turma={t} fechar={() => setCopiar(false)} concluido={carregar} />}
+      {gerarHorario && <GerarHorario turma={t} fechar={() => setGerarHorario(false)} concluido={(texto) => { setAviso({ texto }); carregar() }} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
   )

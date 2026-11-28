@@ -105,6 +105,22 @@ export class ServicoRegistoPessoal {
     return this.#reporSenha(ctx, id)
   }
 
+  /*
+    As fichas de acesso de uma turma de uma só vez: quem está matriculado e ainda nunca entrou no portal recebe uma
+    palavra-passe inicial nova (a anterior deixa de servir); imprime-se uma ficha por estudante para entregar em mão.
+  */
+  async fichasDaTurma(ctx, turmaId) {
+    ctx.actor.exigir('pessoal.registar', 'academico.gerir')
+    const matriculas = (await this.academico.matriculasDaTurma(Number(turmaId))).filter((m) => m.estado === 'ativa')
+    const fichas = []
+    for (const m of matriculas) {
+      const c = await this.contas.porId(m.estudante.id)
+      if (!c || c.ultimoAcesso || c.ativo === false) continue
+      fichas.push(await this.#reporSenha(ctx, c.id))
+    }
+    return { fichas, jaEntraram: matriculas.length - fichas.length, portal: this.urlPortal || '' }
+  }
+
   // pedido assinado do Sistema de Gestão de Pessoal: a Repartição imprime lá a ficha de acesso
   // o Pessoal mostra, na tabela dos estudantes e docentes, o estado de cada conta no portal
   estadoContasDoPessoal(ctx, ids) {
@@ -175,41 +191,14 @@ export class ServicoRegistoPessoal {
     return null
   }
 
-  /*
-    A matrícula sem voltas: o Pessoal diz em que curso está o estudante em cada ano lectivo (as listas de cada ano);
-    se houver uma turma activa desse curso nesse ano, o estudante fica logo matriculado (a Repartição já não tem de o
-    procurar em «Matrículas»). A turma reconhece-se pelo nome do curso («32.º Curso Superior de Comando e Direcção»):
-    igual, ou a única turma desse ano com as mesmas palavras do curso. Nunca muda nem tira uma matrícula que já exista,
-    nem matricula quem já está noutra turma desse ano.
-  */
-  async #matricularPelosAnos(contaId, anos) {
-    if (!Array.isArray(anos) || !anos.length || !this.academico?.matricular) return
-    try {
-      this.turmasAtivas ??= (await this.academico.listarTurmas()).filter((x) => x.ativa)
-      const sem = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-      const palavras = (v) => new Set(sem(v).split(/[^a-z]+/).filter((w) => w.length > 3 && !['curso', 'turno', 'para', 'orgaos'].includes(w)))
-      const ja = await this.academico.matriculasDoEstudante(contaId)
-      for (const a of anos) {
-        const doAno = this.turmasAtivas.filter((x) => x.anoLetivo === a.anoLetivo)
-        if (!doAno.length || ja.some((m) => m.turma.anoLetivo === a.anoLetivo && m.estado !== 'anulada')) continue
-        let turma = doAno.find((x) => sem(x.nome) === sem(a.curso))
-        if (!turma) {
-          const pc = palavras(a.curso)
-          const notas = doAno.map((x) => ({ x, n: [...palavras(x.nome)].filter((w) => pc.has(w)).length })).filter((y) => y.n >= 3).sort((u, v) => v.n - u.n)
-          // só se uma turma ganhar claramente (dois cursos com o mesmo número de palavras: fica para a Repartição)
-          if (notas.length && (notas.length === 1 || notas[0].n > notas[1].n)) turma = notas[0].x
-        }
-        if (!turma) continue
-        await this.academico.matricular(contaId, turma.id).catch(() => {})
-        ja.push({ turma: { anoLetivo: a.anoLetivo }, estado: 'ativa' })
-      }
-    } catch {
-      // a matrícula automática é uma ajuda: se falhar, a pessoa chega na mesma e matricula-se em «Matrículas»
-    }
+  // o curso de cada ano lectivo que o Pessoal envia (das listas de cada ano): só para sugerir a matrícula em
+  // «Matrículas» — quem matricula é a Repartição de Administração Escolar
+  #anosDoPessoal(anos) {
+    if (!Array.isArray(anos) || !anos.length) return {}
+    return { anosPessoal: anos.slice(0, 30).map((a) => ({ anoLetivo: String(a.anoLetivo ?? '').slice(0, 9), curso: limparTexto(a.curso ?? '').slice(0, 200), ...(a.concluido ? { concluido: true } : {}) })).filter((a) => a.anoLetivo) }
   }
 
   async sincronizarDoPessoal(ctx, pessoas) {
-    this.turmasAtivas = null
     const resultados = []
     let criadas = 0
     let atualizadas = 0
@@ -244,13 +233,12 @@ export class ServicoRegistoPessoal {
           for (let tentativa = 0; !conta; tentativa++) {
             try {
               const ano = this.relogio.agora().getFullYear()
-              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: { ...(await this.#dadosConta(p.dados)), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }, ativo: Boolean(p.ativo) })
+              conta = await this.contas.criar({ tipo: t, numero: numeroConta(t, ano, await this.contas.proximaSequencia(t, ano)), nome, email, senha: await this.cifra.cifrar(this.gerarSenha(email)), dados: { ...(await this.#dadosConta(p.dados)), ...(t === 'estudante' ? this.#anosDoPessoal(p.anos) : {}), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }, ativo: Boolean(p.ativo) })
             } catch (erro) {
               if (!/Número/.test(erro.message) || tentativa >= 3) throw erro
             }
           }
           await this.#fotoDoPessoal(conta.id, p.foto)
-          if (t === 'estudante') await this.#matricularPelosAnos(conta.id, p.anos)
           if (t === 'docente' && p.anosDocente?.length) await this.contas.guardarAnosDocente?.(conta.id, p.anosDocente)
           criadas++
           resultados.push({ ref: p.ref, ok: true, contaId: conta.id })
@@ -259,14 +247,13 @@ export class ServicoRegistoPessoal {
         if (existente.tipo !== t) throw new ErroValidacao(`Já existe uma conta de ${existente.tipo} com este e-mail.`)
         if (p.nome) existente.nome = texto(p.nome, 'nome', 'Nome completo', { min: 5, max: 150 })
         // a ficha do Pessoal a que a conta corresponde (para a reconhecer depois, mesmo com outro e-mail)
-        existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }
+        existente.dados = { ...existente.dados, ...(await this.#dadosConta(p.dados)), ...(t === 'estudante' ? this.#anosDoPessoal(p.anos) : {}), ...(p.ref ? { pessoalRef: String(p.ref).slice(0, 40) } : {}) }
         if (Boolean(p.ativo) !== existente.ativo) {
           existente.ativo = Boolean(p.ativo)
           if (!existente.ativo) existente.invalidarSessoes()
         }
         await this.contas.guardar(existente)
         await this.#fotoDoPessoal(existente.id, p.foto)
-        if (t === 'estudante') await this.#matricularPelosAnos(existente.id, p.anos)
         if (t === 'docente' && p.anosDocente?.length) await this.contas.guardarAnosDocente?.(existente.id, p.anosDocente)
         atualizadas++
         resultados.push({ ref: p.ref, ok: true, contaId: existente.id })

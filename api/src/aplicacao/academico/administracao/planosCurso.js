@@ -1,4 +1,4 @@
-import { NaoEncontrado, ErroValidacao } from '../../../dominio/comum/erros.js'
+import { Conflito, NaoEncontrado, ErroValidacao } from '../../../dominio/comum/erros.js'
 import { FORMAS_AVALIACAO, FORMULAS, MODELOS_PLANO, TERMOS, TIPOS_AVALIACAO, validarPlano, verificarCargaHoraria } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
@@ -17,9 +17,17 @@ export class ServicoPlanosCurso {
     return { planos: await this.planosCurso.planos(), modelos: Object.fromEntries(Object.entries(MODELOS_PLANO).map(([k, m]) => [k, { nome: m.plano.nome, cadeiras: m.cadeiras.length }])), formulas: FORMULAS, termos: TERMOS, tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO }
   }
 
+  // o plano de um ano fechado fica como estava (cada ano tem a sua versão do plano)
+  async #exigirAberto(anoLetivo) {
+    const a = anoLetivo ? await this.anosLetivos?.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } }).catch(() => null) : null
+    if (a?.fechado) throw new Conflito(`O ano lectivo ${anoLetivo} está fechado: o plano de curso desse ano fica como estava. Para o ano novo, copie-o (Turma › Plano de curso).`)
+  }
+
   async guardar(ctx, id, dados) {
     ctx.actor.exigir('academico.gerir')
     const limpo = validarPlano(dados)
+    await this.#exigirAberto(limpo.anoLetivo)
+    if (id) await this.#exigirAberto((await this.planosCurso.plano(Number(id)))?.anoLetivo)
     const p = await this.planosCurso.guardarPlano(id ? Number(id) : null, limpo).catch((e) => {
       if (e?.code === 'P2002') throw new ErroValidacao('Já existe um plano para este curso e ano lectivo.', { campo: 'anoLetivo' })
       throw e
@@ -32,6 +40,7 @@ export class ServicoPlanosCurso {
     ctx.actor.exigir('academico.gerir')
     const p = await this.planosCurso.plano(id)
     if (!p) throw new NaoEncontrado('Plano não encontrado.')
+    await this.#exigirAberto(p.anoLetivo)
     await this.planosCurso.apagarPlano(p.id)
     await this.auditoria.registar(ctx, { acao: 'apagar_plano_curso', colecao: 'planos_curso', alvoId: p.id, alvoTitulo: p.nome })
   }
@@ -47,6 +56,7 @@ export class ServicoPlanosCurso {
     if (!m) throw new ErroValidacao('Modelo desconhecido.', { campo: 'modelo' })
     const t = await this.academico.turma(turmaId)
     if (!t) throw new NaoEncontrado('Turma não encontrada.')
+    await this.#exigirAberto(t.anoLetivo)
     let plano = await this.planosCurso.daTurma(t)
     if (!plano) plano = await this.planosCurso.guardarPlano(null, validarPlano({ ...m.plano, curso: t.curso, anoLetivo: t.anoLetivo }))
     const existentes = await this.academico.cadeirasDasTurmas([t.id])
@@ -91,7 +101,43 @@ export class ServicoPlanosCurso {
     const ucs = cadeiras.map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, periodo: c.periodo, bloco: c.bloco, creditos: c.creditos, horasContacto: c.horasContacto, horasNaoContacto: c.horasNaoContacto, tii: c.tii }))
     const avisos = verificarCargaHoraria(ucs)
     if (plano) for (const u of ucs) if (plano.blocos.length && !plano.blocos.some((b) => b.sigla === u.bloco)) avisos.push(`${u.codigo} ${u.nome}: sem bloco do plano.`)
-    return { turma: t, plano, ucs, avisos, modelos: Object.fromEntries(Object.entries(MODELOS_PLANO).map(([k, x]) => [k, x.plano.nome])) }
+    const anterior = plano ? null : await this.#anterior(t)
+    return { turma: t, plano, ucs, avisos, anterior: anterior && { id: anterior.id, nome: anterior.nome, anoLetivo: anterior.anoLetivo }, modelos: Object.fromEntries(Object.entries(MODELOS_PLANO).map(([k, x]) => [k, x.plano.nome])) }
+  }
+
+  // o plano mais recente do mesmo curso antes do ano da turma
+  async #anterior(t) {
+    return (await this.planosCurso.planos()).filter((p) => p.curso === t.curso && p.anoLetivo < t.anoLetivo).sort((a, b) => b.anoLetivo.localeCompare(a.anoLetivo))[0] ?? null
+  }
+
+  /*
+    Plano com versões: o plano do ano novo começa como cópia do do ano anterior (as regras, os blocos e os
+    coeficientes) e as UC da turma desse ano (bloco, créditos, horas, TII) — depois muda-se só o do ano novo; o do
+    ano anterior fica como estava.
+  */
+  async copiarAnterior(ctx, turmaId) {
+    ctx.actor.exigir('academico.gerir')
+    const t = await this.academico.turma(turmaId)
+    if (!t) throw new NaoEncontrado('Turma não encontrada.')
+    await this.#exigirAberto(t.anoLetivo)
+    if (await this.planosCurso.daTurma(t)) throw new Conflito('Esta turma já tem plano de curso.')
+    const a = await this.#anterior(t)
+    if (!a) throw new NaoEncontrado('Não há plano deste curso em anos anteriores.')
+    const nome = a.nome.includes(a.anoLetivo) ? a.nome.replace(a.anoLetivo, t.anoLetivo) : `${a.nome} (${t.anoLetivo})`
+    const plano = await this.planosCurso.guardarPlano(null, validarPlano({ ...a, nome, curso: t.curso, anoLetivo: t.anoLetivo }))
+    // as UC da turma do mesmo curso nesse ano
+    const turmaAnterior = (await this.academico.listarTurmas()).find((x) => x.curso === t.curso && x.anoLetivo === a.anoLetivo)
+    const deAntes = turmaAnterior ? await this.academico.cadeirasDasTurmas([turmaAnterior.id]) : []
+    const existentes = await this.academico.cadeirasDasTurmas([t.id])
+    let criadas = 0
+    let atualizadas = 0
+    for (const c of deAntes) {
+      const dados = { periodo: c.periodo, bloco: c.bloco, creditos: c.creditos, horasContacto: c.horasContacto, horasNaoContacto: c.horasNaoContacto, horas: c.horas, tii: Boolean(c.tii) }
+      const ja = existentes.find((x) => x.codigo === c.codigo)
+      if (ja) { await this.academico.atualizarCadeira(ja.id, dados); atualizadas++ } else { await this.academico.criarCadeira({ turmaId: t.id, codigo: c.codigo, nome: c.nome, descricao: '', ...dados }); criadas++ }
+    }
+    await this.auditoria.registar(ctx, { acao: 'copiar_plano_curso', colecao: 'planos_curso', alvoId: plano.id, alvoTitulo: `${a.nome} → ${plano.nome}`, detalhes: { criadas, atualizadas } })
+    return { plano, criadas, atualizadas }
   }
 
   async pautaGeral(ctx, turmaId) {

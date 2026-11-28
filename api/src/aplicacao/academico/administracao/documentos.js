@@ -52,6 +52,32 @@ export class ServicoDocumentos {
     do ano, os discentes (NIP, posto, ramo, órgão de origem), a classificação final e a menção — daqui saem os dados
     estatísticos, os dados por ramos, o resumo, a relação para a entrega dos diplomas e a lista para os diplomas.
   */
+  /*
+    Antigos alunos (para os relatórios ao Estado-Maior): quem concluiu cursos na Escola, com os cursos e o ano de
+    cada um, e o posto, a função, a unidade e o ramo de hoje — que vêm do Sistema de Pessoal (ficha actualizada).
+  */
+  async antigosAlunos(ctx) {
+    ctx.actor.exigir('academico.ver')
+    const cursos = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, c]))
+    const porPessoa = new Map()
+    for (const m of await this.academico.antigosAlunos()) {
+      const e = m.estudante
+      const d = e.dados
+      const x = porPessoa.get(e.id) ?? {
+        id: e.id, nome: e.nome, numero: e.numero, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '',
+        ramo: d.origem === 'policia' ? 'PNA' : d.ramo || '', funcao: d.funcaoActual || '', unidade: d.departamento || '', telefone: d.telefone || '', ativo: e.ativo !== false, cursos: [],
+      }
+      porPessoa.set(e.id, x)
+      const c = cursos.get(m.turma.curso)
+      x.cursos.push({ turma: m.turma.nome, curso: c?.titulo || c?.dados?.nome || m.turma.curso, sigla: c?.dados?.sigla || '', anoLetivo: m.turma.anoLetivo })
+    }
+    const { grauDe, ordenarPorHierarquia } = await import('../../../dominio/academico/pessoas/hierarquia.js')
+    const lista = ordenarPorHierarquia([...porPessoa.values()].map((x) => ({ ...x, cursos: x.cursos.sort((a, b) => a.anoLetivo.localeCompare(b.anoLetivo)) })), (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } }))
+    for (const l of lista) l.grau = grauDe({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })
+    const contar = (f) => Object.entries(lista.reduce((o, l) => { const k = f(l) || '—'; o[k] = (o[k] ?? 0) + 1; return o }, {})).sort((a, b) => b[1] - a[1])
+    return { total: lista.length, porRamo: contar((l) => l.ramo), porPosto: contar((l) => l.posto), anos: [...new Set(lista.flatMap((l) => l.cursos.map((c) => c.anoLetivo)))].sort(), lista }
+  }
+
   async documentosDoAno(ctx, anoLetivo) {
     ctx.actor.exigir('academico.ver')
     const ano = await this.anosLetivos?.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })

@@ -15,6 +15,16 @@ import { t as tx } from '../../../i18n/linguas'
 const ESTADOS = { ativa: 'Activa', suspensa: 'Suspensa', concluida: 'Concluída', anulada: 'Anulada' }
 const COR = { ativa: 'bg-success', suspensa: 'bg-warning text-dark', concluida: 'bg-primary', anulada: 'bg-secondary' }
 const semAcento = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+// a turma do curso que o Pessoal indica: o mesmo nome, ou a única turma do ano com as mesmas palavras (a lista
+// pode escrever o curso de outra maneira: o «18.º» do COAMP)
+const palavras = (v) => new Set(semAcento(v).split(/[^a-z]+/).filter((w) => w.length > 3 && !['curso', 'turno', 'para', 'orgaos'].includes(w)))
+function turmaDoCurso(turmas, curso) {
+  const igual = turmas.find((t) => semAcento(t.nome) === semAcento(curso))
+  if (igual) return igual
+  const pc = palavras(curso)
+  const notas = turmas.map((t) => ({ t, n: [...palavras(t.nome)].filter((w) => pc.has(w)).length })).filter((x) => x.n >= 3).sort((a, b) => b.n - a.n)
+  return notas.length && (notas.length === 1 || notas[0].n > notas[1].n) ? notas[0].t : null
+}
 
 function Matriculas() {
   const { pode } = useSessao()
@@ -28,6 +38,8 @@ function Matriculas() {
   const [filtro, setFiltro] = useState({ turma: '', estado: '', q: '' })
   const [nova, setNova] = useState({ turma: '', q: '', escolhidos: [] })
   const [aGravar, setAGravar] = useState(false)
+  // sugeridos pelo Pessoal: { [estudanteId]: turmaId } (os marcados para matricular)
+  const [marcados, setMarcados] = useState({})
 
   const carregar = useCallback(() => api('/academico/turmas')
     .then((lista) => Promise.all(lista.filter((t) => t.anoLetivo === ano).map((t) => api(`/academico/turmas/${t.id}`))))
@@ -45,6 +57,24 @@ function Matriculas() {
   const vistas = linhas.filter((m) => (!filtro.turma || String(m.turma.id) === filtro.turma) && (!filtro.estado || m.estado === filtro.estado) && termos.every((x) => semAcento([m.estudante.nome, m.estudante.numero, m.estudante.dados?.nip, m.estudante.dados?.posto].join(' ')).includes(x)))
   const semTurma = estudantes.filter((e) => e.ativo !== false && !comTurma.has(e.id))
   const procura = semAcento(nova.q).split(/\s+/).filter(Boolean)
+  // os estudantes que o Pessoal diz estarem num curso deste ano e ainda sem turma: a turma proposta
+  const sugeridos = semTurma.map((e) => {
+    const a = (e.dados?.anosPessoal ?? []).find((x) => x.anoLetivo === ano)
+    return a ? { e, curso: a.curso, turma: turmaDoCurso(turmas, a.curso) } : null
+  }).filter(Boolean)
+  async function matricularSugeridos() {
+    setAGravar(true)
+    let feitas = 0
+    const erros = []
+    for (const [id, turmaId] of Object.entries(marcados)) {
+      if (!turmaId) continue
+      try { await api(`/academico/turmas/${turmaId}/matriculas`, { metodo: 'POST', corpo: { estudanteId: Number(id) } }); feitas++ } catch (x) { erros.push(x.message) }
+    }
+    setAGravar(false)
+    setMarcados({})
+    setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), ...erros].join(' ') })
+    carregar()
+  }
   const candidatos = semTurma.filter((e) => procura.every((x) => semAcento([e.nome, e.numero, e.dados?.nip].join(' ')).includes(x))).slice(0, 50)
 
   async function mudarEstado(m, estado) {
@@ -71,6 +101,30 @@ function Matriculas() {
       <CabecalhoPagina titulo={tx('Matrículas')} subtitulo={tx('ano lectivo {0} — {1} activa(s), {2} concluída(s) (o ano muda-se no menu)', { 0: ano, 1: contar('ativa'), 2: contar('concluida') })} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Matrículas') }]}>
         <button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />{tx('Exportar Excel')}</button>
       </CabecalhoPagina>
+      {gerir && sugeridos.length > 0 && (
+        <Painel titulo={tx('Por matricular: vieram do Sistema de Pessoal com um curso de {0} ({1})', { 0: ano, 1: sugeridos.length })} corpo={false} acoes={<>
+          <button type="button" className="btn btn-xs btn-white me-1" onClick={() => setMarcados(Object.fromEntries(sugeridos.filter((x) => x.turma).map((x) => [x.e.id, x.turma.id])))}>{tx('Marcar todos')}</button>
+          <button type="button" className="btn btn-xs btn-theme" disabled={!Object.values(marcados).some(Boolean) || aGravar} onClick={matricularSugeridos}><i className="fa fa-user-plus me-1" />{tx('Matricular os marcados ({0})', { 0: Object.values(marcados).filter(Boolean).length })}</button>
+        </>}>
+          <div className="table-responsive" style={{ maxHeight: 360 }}>
+            <table className="table table-sm align-middle mb-0">
+              <thead><tr><th style={{ width: 1 }} /><th>{tx('Estudante')}</th><th>{tx('Curso (no Pessoal)')}</th><th>{tx('Turma')}</th></tr></thead>
+              <tbody>
+                {sugeridos.map((x) => (
+                  <tr key={x.e.id}>
+                    <td><input type="checkbox" className="form-check-input" checked={Boolean(marcados[x.e.id])} onChange={(ev) => setMarcados({ ...marcados, [x.e.id]: ev.target.checked ? (marcados[x.e.id] || x.turma?.id || turmas[0]?.id) : undefined })} aria-label={tx('Marcar {0}', { 0: x.e.nome })} /></td>
+                    <td><b>{[x.e.dados?.posto, x.e.nome].filter(Boolean).join(' ')}</b>{x.e.dados?.nip && <span className="small text-muted"> · NIP {x.e.dados.nip}</span>}</td>
+                    <td className="small">{x.curso}</td>
+                    <td><select className="form-select form-select-sm" value={marcados[x.e.id] ?? x.turma?.id ?? ''} onChange={(ev) => setMarcados({ ...marcados, [x.e.id]: ev.target.value ? Number(ev.target.value) : undefined })} aria-label={tx('Turma de {0}', { 0: x.e.nome })}>
+                      <option value="">{tx('— escolher —')}</option>{turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                    </select></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Painel>
+      )}
       <div className="row">
         <div className="col-12">
           {gerir && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Matricular')}</button></div>}

@@ -129,4 +129,29 @@ describe('plano de curso da ESG: TAI/TAG, recuperação, blocos e nota final (32
     assert.ok('GP' in ana.ucs)
     assert.equal(ana.final, null)
   })
+
+  it('plano com versões: o do ano seguinte copia-se do anterior; o de um ano fechado fica como estava', async () => {
+    const tudo = amb.com((await amb.criarUtilizador('administrador')).token)
+    const nova = (await tudo.post('/api/admin/academico/turmas').send({ curso: 'curso-superior-de-comando-e-direccao', anoLetivo: '2027/2028', nome: '33.º CSCD' })).body
+    const d = (await escola.get(`/api/admin/academico/turmas/${nova.id}/plano-curso`)).body
+    assert.equal(d.anterior.anoLetivo, '2026/2027')
+    const c = await escola.post(`/api/admin/academico/turmas/${nova.id}/plano-curso/copiar`)
+    assert.equal(c.status, 201, c.body.erro)
+    assert.deepEqual([c.body.plano.anoLetivo, c.body.criadas, c.body.plano.blocos.map((b) => b.coeficiente)], ['2027/2028', 20, [2, 3, 1, 2, 2]])
+    assert.equal((await escola.post(`/api/admin/academico/turmas/${nova.id}/plano-curso/copiar`)).status, 409) // já tem
+    // muda-se o do ano novo; o do anterior fica igual
+    const planos = (await escola.get('/api/admin/academico/planos-curso')).body.planos
+    const novo = planos.find((p) => p.anoLetivo === '2027/2028')
+    const r = await escola.put(`/api/admin/academico/planos-curso/${novo.id}`).send({ ...novo, ajusteMaximo: '1', blocos: novo.blocos.map((b) => ({ ...b, coeficiente: String(b.coeficiente) })) })
+    assert.equal(r.status, 200, r.body.erro)
+    const antigo = planos.find((p) => p.anoLetivo === '2026/2027')
+    assert.notEqual(antigo.ajusteMaximo, 1)
+    // o ano 2026/2027 fechado: o seu plano já não muda
+    await amb.contentor.prisma.anoLetivo.upsert({ where: { id: '2026/2027' }, create: { id: '2026/2027', inicio: new Date('2026-10-01'), fim: new Date('2027-07-25'), semestre1Inicio: new Date('2026-10-01'), semestre1Fim: new Date('2027-02-15'), semestre2Inicio: new Date('2027-02-16'), semestre2Fim: new Date('2027-07-25'), fechado: true }, update: { fechado: true } })
+    const f = await escola.put(`/api/admin/academico/planos-curso/${antigo.id}`).send({ ...antigo, ajusteMaximo: '2', blocos: antigo.blocos.map((b) => ({ ...b, coeficiente: String(b.coeficiente) })) })
+    assert.equal(f.status, 409)
+    assert.match(f.body.erro, /fechado/)
+    await amb.contentor.prisma.anoLetivo.update({ where: { id: '2026/2027' }, data: { fechado: false } })
+  })
 })
+

@@ -167,6 +167,9 @@ export function rotasPortal({ servicos, config, privados }) {
   r.post('/cadeiras/:id/aulas', validar({ params: pId, body: E.aula }), async (req, res) => res.status(201).json(await e.presencas.registarAula(ctx(req), req.dados.params.id, req.dados.body)))
   r.put('/aulas/:id', validar({ params: pId, body: E.aula }), async (req, res) => { await e.presencas.atualizarAula(ctx(req), req.dados.params.id, req.dados.body); res.status(204).end() })
   r.delete('/aulas/:id', validar({ params: pId }), async (req, res) => { await e.presencas.apagarAula(ctx(req), req.dados.params.id); res.status(204).end() })
+  // presenças rápidas: o código da aula (docente) e a presença marcada com ele (estudante)
+  r.post('/aulas/:id/codigo', validar({ params: pId }), async (req, res) => res.json(await e.presencas.codigoPresenca(ctx(req), req.dados.params.id)))
+  r.post('/presencas/codigo', validar({ body: z.object({ codigo: z.string().min(4).max(12) }) }), async (req, res) => res.json(await e.presencas.marcarPorCodigo(ctx(req), req.dados.body.codigo)))
 
 
   // ---------- notificações e mensagens ----------
