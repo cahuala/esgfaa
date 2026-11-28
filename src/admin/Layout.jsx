@@ -124,7 +124,7 @@ function Layout({ children }) {
   }, [verAcademico])
   // publicações à espera do Comandante (contador no menu)
   const [porAprovar, setPorAprovar] = useState(0)
-  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
+  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar') || pode('academico.conselho')
   useEffect(() => {
     if (!aprova) return undefined
     const contar = () => api('/publicacoes/contagem').then((r) => setPorAprovar(r.pendentes)).catch(() => {})

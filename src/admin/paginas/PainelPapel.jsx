@@ -115,7 +115,7 @@ export default function PainelPapel() {
   const verBib = pode('biblioteca.ver')
   const verSeg = pode('seguranca.ver')
   const verPes = pode('pessoal.ver')
-  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar')
+  const aprova = pode('publicacoes.aprovar') || pode('utilizadores.aprovar') || pode('academico.conselho')
   useEffect(() => {
     if (verAc && ano) api(`/academico/pendentes?anoLetivo=${encodeURIComponent(ano)}`).then(setAc).catch(() => {})
     // alertas precoces: os discentes em risco (os dos seus cursos, para o Director de Curso)
@@ -134,7 +134,6 @@ export default function PainelPapel() {
     alertas?.emRisco > 0 && { para: '/academico/indicadores', icone: 'fa-exclamation-triangle', cor: 'bg-danger', texto: alertas.meusCursos?.length ? tx('Discentes em risco nos seus cursos (faltas, negativas, TII atrasado)') : tx('Discentes em risco (faltas, negativas, TII atrasado)'), valor: alertas.emRisco },
     ...(!ac ? [] : [
     homologa && { para: '/academico/alteracoes-notas', icone: 'fa-user-shield', cor: 'bg-danger', texto: tx('Pedidos de alteração de notas por decidir'), valor: ac.alteracoesPendentes },
-    homologa && { para: '/academico/docentes', icone: 'fa-user-check', cor: 'bg-warning text-dark', texto: tx('Docentes por verificar'), valor: ac.docentesPorVerificar },
     ...(homologa ? ac.porHomologar.map((t) => ({ para: `/academico/turmas/${t.id}?aba=plano`, icone: 'fa-stamp', cor: 'bg-dark', texto: tx('Homologar as classificações: {0}', { 0: t.nome }) })) : []),
     ...(conselho ? ac.porConfirmar.map((t) => ({ para: `/academico/turmas/${t.id}?aba=plano`, icone: 'fa-gavel', cor: 'bg-dark', texto: tx('Confirmar em Conselho de Curso: {0}', { 0: t.nome }) })) : []),
     conselho && ac.revisoes > 0 && { para: '/academico/turmas', icone: 'fa-search', cor: 'bg-info', texto: tx('Pedidos de revisão de provas por decidir'), valor: ac.revisoes },

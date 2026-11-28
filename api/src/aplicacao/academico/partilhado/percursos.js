@@ -6,19 +6,30 @@ import { TrabalhoFimCurso } from '../../../dominio/academico/conclusao/tfc.js'
 /*
   Monta o percurso académico de um estudante (matrículas, inscrições, notas, TFC e certificado).
   publicadas = true: só as notas publicadas (o que o estudante vê); false: todas (Administração Escolar).
+  turmaId: só o curso dessa turma (o certificado e o diploma de um curso: quem fez cursos diferentes em anos
+  diferentes tem um certificado de cada um, cada um com as notas, o TII e a média desse ano lectivo).
 */
 export class ServicoPercursos {
   constructor({ academico, conclusao, esg = null }) {
     Object.assign(this, { academico, conclusao, esg })
   }
 
-  async de(estudanteId, { publicadas = true, estudante = null } = {}) {
-    const [matriculas, inscricoes, tfcs, certificados] = await Promise.all([
+  async de(estudanteId, { publicadas = true, estudante = null, turmaId = null } = {}) {
+    let [matriculas, inscricoes, tfcs, certificados] = await Promise.all([
       this.academico.percursoDoEstudante(estudanteId),
       this.academico.inscricoesDoEstudante(estudanteId),
       this.conclusao.tfcsDoEstudante(estudanteId),
       this.conclusao.certificadosDoEstudante(estudanteId),
     ])
+    if (turmaId) {
+      // a turma do certificado e os anos curriculares anteriores do mesmo curso (um curso de dois anos); outro curso, não
+      const alvo = matriculas.find((m) => m.turma.id === turmaId)?.turma
+      const ano = (t) => Number(t?.anoCurricular) || 1
+      matriculas = matriculas.filter((m) => m.turma.id === turmaId || (alvo && m.turma.curso === alvo.curso && ano(m.turma) < ano(alvo) && m.turma.anoLetivo < alvo.anoLetivo))
+      inscricoes = []
+      tfcs = tfcs.filter((t) => t.turmaId === turmaId)
+      certificados = certificados.filter((c) => c.turmaId === turmaId)
+    }
     const ativas = inscricoes.filter((i) => i.estado === 'ativa')
     const cadeiras = await this.academico.cadeirasDasTurmas(matriculas.map((m) => m.turma.id))
     const extra = await Promise.all(ativas.map((i) => this.academico.cadeira(i.cadeiraId)))

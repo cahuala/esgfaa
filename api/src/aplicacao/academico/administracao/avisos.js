@@ -22,7 +22,8 @@ export class ServicoAvisosGerais {
       turma = await this.academico.turma(turmaId)
       if (!turma) throw new ErroValidacao('Turma inválida.', { campo: 'turmaId' })
     }
-    const aprova = ctx.actor.pode('publicacoes.aprovar')
+    // os avisos do portal já não esperam pelo Comandante: publica quem os escreve (fica na auditoria)
+    const aprova = true
     const a = await this.academico.criarAvisoGeral({
       turmaId: turma?.id ?? null,
       titulo: texto(titulo, 'titulo', 'Título', { min: 2, max: 200 }),

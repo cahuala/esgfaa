@@ -68,12 +68,13 @@ export async function criarAmbiente({ limites = {}, relogio, env = {}, externos 
     return { ...criado, senha, token: ativo ? await entrar(email, senha) : null }
   }
 
-  // o Comandante aprova uma publicação do site (nada chega ao público sem ele)
+  // o Comandante aprova uma publicação (o que o Editor-chefe já publicou sem pedido não está à espera: segue)
   let comandante = null
   const oComandante = async () => (comandante ??= await criarUtilizador('comandante'))
   async function aprovar(colecao, id) {
     await oComandante()
     const r = await http().post(`/api/admin/publicacoes/${colecao}/${encodeURIComponent(id)}/decisao`).set('Authorization', `Bearer ${comandante.token}`).send({ decisao: 'aprovar' })
+    if (r.status === 409 && /não está à espera/.test(r.body.erro ?? '')) return { decisao: 'aprovar', jaPublicado: true }
     if (r.status !== 200) throw new Error(`Falha ao aprovar ${colecao}/${id} (${r.status}): ${r.body.erro}`)
     return r.body
   }

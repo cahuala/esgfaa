@@ -78,16 +78,14 @@ export class ServicoInteracoes {
     })
   }
 
-  // 1.º passo: a equipa de comunicação revê o comentário (aprovado, vai ao Comandante)
+  // a equipa de comunicação revê o comentário e, aprovado, fica publicado
   async rever(ctx, id, { decisao, motivo }) {
     ctx.actor.exigir('comentarios.aprovar')
     const c = await this.#comentario(id)
     if (c.estado !== 'pendente') throw new Conflito('Este comentário já foi revisto.')
     if (decisao !== 'aprovar') return this.#recusar(ctx, c, motivo).then(() => ({ estado: 'recusado' }))
-    if (ctx.actor.pode('publicacoes.aprovar')) return this.#publicar(ctx, c, 'aprovar_comentario').then(() => ({ estado: 'publicado' }))
-    await this.interacoes.mudarEstadoComentario(c.id, 'revisto', { revistoPor: ctx.actor.nome ?? '', revistoEm: this.relogio.agora() })
-    await this.auditoria.registar(ctx, { acao: 'rever_comentario', colecao: c.colecao, alvoId: c.item_id, alvoTitulo: `Comentário de ${c.nome}`, detalhes: { texto: c.texto.slice(0, 300) } })
-    return { estado: 'revisto' }
+    // o moderador publica o comentário (já não vai ao Comandante)
+    return this.#publicar(ctx, c, 'aprovar_comentario').then(() => ({ estado: 'publicado' }))
   }
 
   // 2.º passo: o Comandante (em «Por aprovar»)

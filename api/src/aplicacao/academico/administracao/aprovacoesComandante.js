@@ -15,7 +15,7 @@ const media = (m) => (m === null ? '—' : m.toFixed(1).replace('.', ','))
     os docentes propostos ficam para corrigir) ou rejeita (os docentes propostos saem das cadeiras e faz-se uma lista
     nova). Ao aprovar também pode deixar recomendações; o Ensino vê-as na Alocação de docentes;
   - a publicação das notas (provas parcelares, exames, TAI/TAG): o docente pede e os estudantes só as veem
-    quando o Comandante aprova; se recusar, o docente vê o motivo;
+    quando o Director de Ensino aprova (ou o Comandante); se recusar, o docente vê o motivo;
   - os diplomas e certificados de conclusão do curso: a Administração Escolar envia e só ficam disponíveis
     quando o Comandante aprova (por turma).
 */
@@ -70,7 +70,9 @@ export class ServicoAprovacoesComandante {
   // ---------- o que espera pelo Comandante (lista de «Por aprovar») ----------
 
   async paraAprovar(ctx) {
-    if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return []
+    if (!this.aprovacaoComandante) return []
+    // o Director de Ensino aprova a publicação das notas; o resto é do Comandante
+    if (!ctx.actor.pode('academico.homologar')) return ctx.actor.pode('academico.conselho') ? this.#notasPorPublicar() : []
     // uma só lista por ano lectivo (todas as turmas)
     const porAno = new Map()
     for (const t of await this.controlo.turmasComDistribuicaoPendente()) {
@@ -88,6 +90,11 @@ export class ServicoAprovacoesComandante {
         resumo: linhas.map(({ d, c, t }) => `${d.docente.nome} — ${c.codigo} ${c.nome} (${t.nome}; ${PAPEIS[d.papel] ?? d.papel}, ${d.horas} h)${d.estado === 'proposta' ? ' — NOVO' : ''}`).join('\n'),
       }
     })
+    return [...distribuicoes, ...(await this.#notasPorPublicar()), ...(await this.#directoresPropostos()), ...(await this.#reaberturas()), ...((await this.certificadosCurso?.paraAprovar()) ?? [])]
+  }
+
+  // as provas com a publicação das notas pedida (aprova o Director de Ensino; o Comandante também pode)
+  async #notasPorPublicar() {
     const notas = []
     for (const c of await this.controlo.cadeirasComPublicacaoPendente()) {
       const p = c.publicacaoPedida
@@ -106,7 +113,7 @@ export class ServicoAprovacoesComandante {
         resumo: `${r.notas} nota(s), média ${media(r.media)}, ${r.positivas} positiva(s)`,
       })
     }
-    return [...distribuicoes, ...notas, ...(await this.#directoresPropostos()), ...(await this.#reaberturas()), ...((await this.certificadosCurso?.paraAprovar()) ?? [])]
+    return notas
   }
 
   // ---------- reabrir um ano lectivo fechado (pedido da Administração Escolar) ----------
@@ -169,7 +176,8 @@ export class ServicoAprovacoesComandante {
   }
 
   async contarParaAprovar(ctx) {
-    if (!this.aprovacaoComandante || !ctx.actor.pode('academico.homologar')) return 0
+    if (!this.aprovacaoComandante) return 0
+    if (!ctx.actor.pode('academico.homologar')) return ctx.actor.pode('academico.conselho') ? this.controlo.contarPublicacoesPendentes() : 0
     const directores = Object.values((await this.paginas?.ler(CHAVE_DIRECTORES)) ?? {}).filter((x) => x.proposta).length
     const reaberturas = ((await this.anosLetivos?.reaberturasPendentes()) ?? []).length + ((await this.anosLetivos?.fechosPendentes()) ?? []).length
     const certificados = (await this.certificadosCurso?.contarParaAprovar()) ?? 0
@@ -251,7 +259,7 @@ export class ServicoAprovacoesComandante {
   }
 
   async decidirNotas(ctx, id, { decisao, motivo }) {
-    ctx.actor.exigir('academico.homologar')
+    ctx.actor.exigir('academico.homologar', 'academico.conselho')
     const [, tipo, n] = /^(uc|av)-(\d+)$/.exec(String(id)) ?? []
     if (!tipo) throw new NaoEncontrado('Pedido não encontrado.')
     const m = String(motivo ?? '').trim()

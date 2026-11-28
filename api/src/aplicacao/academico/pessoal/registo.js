@@ -54,7 +54,9 @@ export class ServicoRegistoPessoal {
     // o que vem do Pessoal para a ficha académica (sem BI, morada, família nem vencimentos)
     return Object.fromEntries(['posto', 'ramo', 'telefone', 'nip', 'departamento', 'postoEquivalente', 'origem', 'pais', 'genero', 'dataNascimento', 'naturalidade', 'provincia', 'nacionalidade', 'habilitacao', 'areaFormacao', 'funcaoActual', 'especialidade', 'tipoDocente', 'categoriaDocente']
       .filter((k) => d[k] !== undefined && d[k] !== '')
-      .map((k) => [k, limparTexto(d[k]).slice(0, 120)]))
+      .map((k) => [k, limparTexto(d[k]).slice(0, 120)])
+      // a posição da unidade na orgânica (do Pessoal): para ordenar as listas pelo posto e pela unidade
+      .concat(Number.isInteger(d.ordemUnidade) && d.ordemUnidade >= 0 ? [['ordemUnidade', d.ordemUnidade]] : []))
   }
 
   async criarConta(ctx, { tipo, nome, email, dados }) {

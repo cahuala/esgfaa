@@ -23,4 +23,11 @@ describe('ordem hierárquica das listas académicas', () => {
     assert.equal(nomeSemPosto('Maj. João Fernandes'), 'João Fernandes')
     assert.ok(compararHierarquia({ nome: 'Maj. Zé Antunes' }, { nome: 'Maj. Abel Matos' }) > 0)
   })
+
+  it('no mesmo posto, pela hierarquia da unidade (do Pessoal) e só depois pelo nome; sem unidade, no fim', () => {
+    const p = (nome, posto, ordemUnidade) => ({ nome, dados: { posto, ...(ordemUnidade !== undefined ? { ordemUnidade } : {}) } })
+    const lista = [p('Ana Zua', 'Coronel', 5), p('Bruno Abel', 'Coronel'), p('Carlos Muteka', 'Coronel', 1), p('Daniel Bento', 'Brigadeiro', 9), p('Abel Costa', 'Coronel', 5)]
+    assert.deepEqual(ordenarPorHierarquia(lista).map((x) => x.nome), ['Daniel Bento', 'Carlos Muteka', 'Abel Costa', 'Ana Zua', 'Bruno Abel'])
+  })
 })
+

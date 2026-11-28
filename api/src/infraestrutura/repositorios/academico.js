@@ -9,7 +9,7 @@ const contaResumo = { select: { id: true, nome: true, numero: true, email: true 
 // a conta com o posto (para a ordem hierárquica e as listas), sem os outros dados pessoais
 const comPosto = { select: { ...contaResumo.select, dados: true } }
 // o posto, o NIP e o ramo (a Polícia Nacional como PNA): para as pautas, como no arquivo
-const resumoComPosto = ({ dados, ...e }) => ({ ...e, posto: dados?.posto ?? '', nip: dados?.nip ?? '', ramo: dados?.origem === 'policia' ? 'PNA' : dados?.ramo ?? '' })
+const resumoComPosto = ({ dados, ...e }) => ({ ...e, posto: dados?.posto ?? '', nip: dados?.nip ?? '', ramo: dados?.origem === 'policia' ? 'PNA' : dados?.ramo ?? '', ...(dados?.ordemUnidade !== undefined ? { ordemUnidade: dados.ordemUnidade } : {}) })
 
 const ordemPapel = { regente: 0, assistente: 1 }
 // junta duas listas de estudantes sem repetir, pela ordem hierárquica (posto e, no mesmo posto, nome)

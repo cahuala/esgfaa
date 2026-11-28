@@ -45,6 +45,7 @@ export function papelNoEnsino(p, cadeia) {
   return p.tipo === 'civil' || cargo ? 'gabinete_ensino' : null
 }
 import { calcularAssinantes } from './assinantes.js'
+import { posicoesUnidades } from './ordem.js'
 
 // com as fotografias, os lotes são pequenos (cada uma tem ~100 KB)
 const LOTE = 50
@@ -80,7 +81,8 @@ export class ServicoSincronizacao {
     }
   }
 
-  #conteudo(p, contaId, fotoEnviada = '') {
+  // posicoes: a posição de cada unidade na orgânica (a Gestão Escolar ordena as listas pelo posto e por ela)
+  #conteudo(p, contaId, fotoEnviada = '', posicoes = null) {
     // o militar que é funcionário e também docente ou aluno tem conta no portal (aluno, se estiver num curso)
     // o docente novo à espera do despacho do Comandante ainda não conta
     const vs = [p.vinculo, ...(p.outrosVinculos ?? [])].filter((v) => !(v === 'docente' && p.docentePendente))
@@ -96,7 +98,9 @@ export class ServicoSincronizacao {
         origem: origemDe(p), pais: origemDe(p) === 'estrangeiro' ? p.paisNascimento || p.nacionalidade || '' : '',
         // para a ficha académica na Administração Escolar (sem BI, morada, família nem vencimentos)
         genero: p.genero ?? '', dataNascimento: p.dataNascimento ? new Date(p.dataNascimento).toISOString().slice(0, 10) : '', naturalidade: p.naturalidade ?? '', provincia: p.provincia ?? '',
-        nacionalidade: p.nacionalidade ?? '', habilitacao: HABILITACOES[p.habilitacao] ?? '', areaFormacao: (p.areaFormacao ?? '').slice(0, 120), funcaoActual: (p.funcaoActual ?? '').slice(0, 120),
+        // a função: a escrita na ficha ou, nos efectivos da Escola, o cargo que ocupam na orgânica
+        nacionalidade: p.nacionalidade ?? '', habilitacao: HABILITACOES[p.habilitacao] ?? '', areaFormacao: (p.areaFormacao ?? '').slice(0, 120), funcaoActual: (p.funcaoActual || p.cargo?.nome || '').slice(0, 120),
+        ...(p.unidadeId && posicoes?.has(p.unidadeId) ? { ordemUnidade: posicoes.get(p.unidadeId) } : {}),
         especialidade: p.especialidade ?? '', tipoDocente: p.tipoDocente ?? '', categoriaDocente: p.categoriaDocente ?? '',
       },
       ...(foto !== undefined ? { foto } : {}),
@@ -377,9 +381,10 @@ export class ServicoSincronizacao {
     await this.enviarComandante().catch(() => {})
     await this.enviarContasEnsino().catch(() => {})
     // as que falharam só por falta de ligação voltam sempre a ir (quando a Gestão Escolar voltar, seguem sozinhas)
-    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }, { estado: 'erro', erro: { startsWith: SEM_LIGACAO } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } }, anosAcademicos: { select: { anoLetivo: true, papel: true, curso: true, concluido: true }, orderBy: { anoLetivo: 'desc' }, take: 60 } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
+    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }, { estado: 'erro', erro: { startsWith: SEM_LIGACAO } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } }, cargo: { select: { nome: true } }, anosAcademicos: { select: { anoLetivo: true, papel: true, curso: true, concluido: true }, orderBy: { anoLetivo: 'desc' }, take: 60 } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
-    const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada)) })
+    const posicoes = await posicoesUnidades(this.bd).catch(() => null)
+    const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada, posicoes)) })
     const data = String(Math.floor(this.agora().getTime() / 1000))
     let resultados
     try {

@@ -14,6 +14,9 @@ e só vão para o pendrive. Aqui fica só o código.
 | `comparar.py` | `arquivo.json` e as listas convertidas sem o arquivo | `CONFERENCIA.xlsx` (arquivo × listas: iguais, diferenças, só num lado) |
 | `certificados.py` | os certificados assinados (PDF) | os nomes oficiais das cadeiras de cada coluna da pauta e o período de cada ano |
 | `gestao.py` | `arquivo.json` e `academicos.json` | `gestao-pautas.json` (para o painel: Administração Escolar › Arquivo) |
+| `efectivos.py` | as relações nominais do efectivo (militares, agregados, civis — Excel da Repartição de Pessoal e Quadros) e a `organica.json` | as secções `militares`, `civis` e `cargos` da `relacoes.json` do Pessoal, e a lista para conferir (cargos e classes sem correspondência) |
+| `fotos.py` | as pastas das fotografias (NIP no nome ou posto e nome) | `carregar/fotos/<NIP>.jpg` reduzidas (600 px), ao lado da `relacoes.json` |
+| `programas.py` | os planos de curso (Word) de um ano lectivo | `programas-<ano>.json` (objectivos e plano das sessões de cada UC: o «Programa» das cadeiras na Gestão Escolar) |
 
 ## Como se corre (macOS)
 

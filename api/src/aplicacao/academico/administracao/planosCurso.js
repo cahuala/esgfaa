@@ -181,4 +181,53 @@ export class ServicoPlanosCurso {
     ctx.actor.exigir('academico.notas', 'academico.homologar')
     return this.esg.publicar(ctx, await this.#cadeira(cadeiraId), provaId, publicar)
   }
+
+  /*
+    Os programas das unidades curriculares, tirados dos planos de curso (instalador/conversores/programas.py): o
+    objectivo geral, os objectivos específicos e o plano das sessões de cada UC. Vão para o «Programa» das cadeiras das
+    turmas desse curso e ano lectivo (a cadeira reconhece-se pelo nome); uma cadeira que já tem programa fica como está.
+    dados: { cursos: [{ curso: 'cscd'|'cemc'|'ceao'|'coamp', anoLetivo, ficheiro, ucs: [{ nome, sigla, carga,
+    objectivoGeral, objectivosEspecificos, sessoes: [{ tema, sessao, objectivo, tempos, metodo }] }] }] }
+  */
+  async carregarProgramas(ctx, dados) {
+    ctx.actor.exigir('academico.gerir')
+    const CURSO = { cscd: /superior.de.comando/, cemc: /estado.maior.conjunto/, ceao: /estrategia.e.arte/, coamp: /asseguramento/ }
+    const sem = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    const pal = (v) => new Set(sem(v).replace(/\(.*?\)/g, ' ').split(/[^a-z]+/).filter((w) => w.length > 3))
+    const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const turmas = await this.academico.listarTurmas()
+    const resultado = { preenchidas: 0, jaTinham: 0, semCadeira: [] }
+    for (const c of dados?.cursos ?? []) {
+      const rx = CURSO[c.curso]
+      const doCurso = turmas.filter((t) => rx && rx.test(sem(t.curso)) && t.anoLetivo === c.anoLetivo)
+      const cadeiras = doCurso.length ? await this.academico.cadeirasDasTurmas(doCurso.map((t) => t.id)) : []
+      for (const u of c.ucs ?? []) {
+        if (/^(total|diversos)$/i.test(String(u.nome).trim())) continue
+        const pu = pal(u.nome)
+        // a cadeira com o mesmo nome (sem acentos) ou com mais palavras em comum (pelo menos 60 % das da UC)
+        const eTii = /trabalho de (investigacao|fim)/.test(sem(u.nome)) || /^(TII|TFC)$/.test(u.sigla ?? '')
+        const escolhidas = eTii ? cadeiras.filter((x) => x.tii) : cadeiras.filter((x) => sem(x.nome) === sem(u.nome) || (u.sigla && x.codigo === u.sigla))
+        if (!escolhidas.length && !eTii) {
+          const notas = cadeiras.map((x) => ({ x, n: [...pal(x.nome)].filter((w) => pu.has(w)).length / Math.max(1, Math.min(pu.size, pal(x.nome).size)) })).filter((y) => y.n >= 0.6).sort((a, b) => b.n - a.n)
+          if (notas.length && (notas.length === 1 || notas[0].n > notas[1].n)) escolhidas.push(...notas.filter((y) => y.n === notas[0].n).map((y) => y.x))
+        }
+        if (!escolhidas.length) { resultado.semCadeira.push(`${c.curso.toUpperCase()} ${c.anoLetivo}: ${u.nome}`); continue }
+        const html = [
+          u.carga ? `<p><strong>Carga:</strong> ${esc(u.carga)}</p>` : '',
+          u.objectivoGeral ? `<h4>Objectivo geral</h4><p>${esc(u.objectivoGeral)}</p>` : '',
+          u.objectivosEspecificos?.length ? `<h4>Objectivos específicos</h4><ul>${u.objectivosEspecificos.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` : '',
+          u.sessoes?.length ? `<h4>Plano das sessões</h4><table><thead><tr><th>Sessão</th><th>Tema / OE</th><th>Objectivo de aprendizagem</th><th>TE</th><th>Método</th></tr></thead><tbody>${u.sessoes.map((x) => `<tr><td>${esc(x.sessao)}</td><td>${esc(x.tema)}</td><td>${esc(x.objectivo)}</td><td>${esc(x.tempos)}</td><td>${esc(x.metodo)}</td></tr>`).join('')}</tbody></table>` : '',
+          `<p><small>Do plano de curso ${esc(c.anoLetivo)}${c.ficheiro ? ` (${esc(String(c.ficheiro).split('/').pop())})` : ''}.</small></p>`,
+        ].join('')
+        for (const x of escolhidas) {
+          const atual = await this.academico.cadeira(x.id)
+          if (atual?.programa && String(atual.programa).trim()) { resultado.jaTinham++; continue }
+          await this.academico.atualizarCadeira(x.id, { programa: this.filtroHtml ? this.filtroHtml(html) : html })
+          resultado.preenchidas++
+        }
+      }
+    }
+    await this.auditoria.registar(ctx, { acao: 'carregar_programas', colecao: 'cadeiras', alvoTitulo: `${resultado.preenchidas} programa(s) dos planos de curso`, detalhes: { jaTinham: resultado.jaTinham, semCadeira: resultado.semCadeira.length } })
+    return resultado
+  }
 }

@@ -8,6 +8,8 @@ const dia = (d) => (d ? new Date(d).toISOString().slice(0, 10) : null)
 */
 export async function aplicarAlteracao(tx, tipo, p, x, data, doc) {
   const base = { ...doc, pessoaId: p.id }
+  // o posto, o cargo (a função) e a situação vão também para a Gestão Escolar
+  await tx.sincronizacao?.updateMany({ where: { pessoaId: p.id }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
   if (tipo === 'promocao') {
     await tx.pessoa.update({ where: { id: p.id }, data: { posto: x.postoNovo, dataAntiguidadePosto: data } })
     // a promoção ao posto da graduação (ou acima) faz cessar a graduação (art. 67.º)

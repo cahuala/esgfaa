@@ -14,12 +14,11 @@ export class ServicoUtilizadores {
     Object.assign(this, { utilizadores, papeis, atividades, cifra, auditoria, relogio })
   }
 
-  // o pedido fica à espera do Comandante? (quem aprova decide logo; sem ninguém que aprove, também)
-  async #precisaAprovacao(ctx) {
-    if (ctx.actor.pode('utilizadores.aprovar')) return false
-    const aprovam = (await this.papeis.listar()).filter((p) => p.permissoes.includes('utilizadores.aprovar')).map((p) => p.id)
-    return this.utilizadores.haAtivoComPapel(aprovam)
+  // as contas do painel e as mudanças de papel já não esperam pelo Comandante: decide o administrador (fica na auditoria)
+  async #precisaAprovacao() {
+    return false
   }
+
 
   #pedido(ctx, extra) {
     return { ...extra, pedidoPor: ctx.actor.nome ?? null, pedidoPorId: ctx.actor.id ?? null, pedidoEm: (this.relogio?.agora?.() ?? new Date()).toISOString() }

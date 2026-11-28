@@ -115,9 +115,8 @@ describe('portal: notificações, e-mails, lembretes e mensagens', () => {
 
   it('aviso geral da Administração Escolar e pedido pronto', async () => {
     const a = (await sec().post('/api/admin/academico/avisos').send({ titulo: 'Matrículas abertas', texto: 'Até dia 30.' })).body
-    // ninguém é avisado antes de o Comandante aprovar
-    assert.notEqual((await caixa('ana')).lista[0]?.titulo, 'Administração Escolar: Matrículas abertas')
-    await amb.aprovar('avisos_gerais', a.id)
+    // o aviso já não espera pelo Comandante: chega logo
+    assert.equal(a.estado, 'publicado')
     for (const k of ['ana', 'bruno', 'carla']) assert.equal((await caixa(k)).lista[0].titulo, 'Administração Escolar: Matrículas abertas')
     const p = (await portal('carla').post('/api/portal/pedidos').send({ tipo: 'Declaração de matrícula' })).body
     await sec().put(`/api/admin/academico/pedidos/${p.id}`).send({ estado: 'pronto', resposta: 'Pode levantar.' })

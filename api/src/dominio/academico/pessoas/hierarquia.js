@@ -1,7 +1,9 @@
 /*
-  Ordem das listas académicas (Lei n.º 13/18): pelo posto, do mais alto para o mais baixo (os postos equivalentes dos
-  três ramos contam igual — ex.: Coronel = Capitão-de-Mar-e-Guerra) e, dentro do mesmo posto, por ordem alfabética do
-  nome. Os civis (sem posto) vêm depois dos militares, também por ordem alfabética.
+  Ordem das listas académicas (Lei n.º 13/18), a mesma do Sistema de Pessoal: pelo posto, do mais alto para o mais
+  baixo (os postos equivalentes dos três ramos contam igual — ex.: Coronel = Capitão-de-Mar-e-Guerra); no mesmo posto,
+  pela hierarquia da unidade (a posição da unidade na orgânica, que vem do Pessoal em dados.ordemUnidade: o Comando
+  antes das Direcções, cada unidade seguida das suas subunidades; quem não tem unidade na orgânica vem depois); e por
+  fim por ordem alfabética do nome. Os civis (sem posto) vêm depois dos militares, pela mesma ordem.
   O posto vem do Sistema de Gestão de Pessoal (dados.posto; na Polícia Nacional e nas forças estrangeiras, o posto
   equivalente das FAA em dados.postoEquivalente); nas contas antigas, da abreviatura no nome («Maj. …»).
 */
@@ -52,7 +54,9 @@ export function nomeSemPosto(nome) {
   return pre ? n.split(/\s+/).slice(pre.split(' ').length).join(' ') : n
 }
 
-export const compararHierarquia = (a, b) => grauDe(b) - grauDe(a) || nomeSemPosto(a?.nome).localeCompare(nomeSemPosto(b?.nome), 'pt', { sensitivity: 'base' })
+// a posição da unidade na orgânica (sem ela, no fim)
+const ordemDaUnidade = (p) => { const v = Number(p?.dados?.ordemUnidade ?? p?.ordemUnidade); return Number.isFinite(v) && v >= 0 ? v : 1e9 }
+export const compararHierarquia = (a, b) => grauDe(b) - grauDe(a) || ordemDaUnidade(a) - ordemDaUnidade(b) || nomeSemPosto(a?.nome).localeCompare(nomeSemPosto(b?.nome), 'pt', { sensitivity: 'base' })
 
 // ordena uma lista de pessoas (ou de linhas que têm a pessoa em «de(linha)»)
 export const ordenarPorHierarquia = (lista, de = (x) => x) => [...lista].sort((a, b) => compararHierarquia(de(a), de(b)))

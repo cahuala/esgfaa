@@ -183,6 +183,12 @@ async function main() {
     fs.mkdirSync(pastaCarregar, { recursive: true })
     fs.copyFileSync(origem, path.join(pastaCarregar, 'relacoes.json'))
     console.log('  ✓ relações nominais incluídas (carregar/relacoes.json): a actualização carrega-as')
+    // as fotografias (<NIP>.jpg, de instalador/conversores/fotos.py), ao lado da relacoes.json: só em quem não tem
+    const fotos = path.join(path.dirname(origem), 'fotos')
+    if (fs.existsSync(fotos)) {
+      fs.cpSync(fotos, path.join(pastaCarregar, 'fotos'), { recursive: true })
+      console.log(`  ✓ ${fs.readdirSync(fotos).length} fotografia(s) incluídas (carregar/fotos): só para quem ainda não tem`)
+    }
   }
   const ligacao = path.join(DESTINO, 'ligacao-portal.txt')
   fs.rmSync(ligacao, { force: true })

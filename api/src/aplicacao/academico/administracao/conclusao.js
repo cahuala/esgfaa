@@ -42,7 +42,7 @@ export class ServicoConclusaoCurso {
     const turma = await this.#turma(turmaId)
     const estudantes = await this.academico.estudantesDaPauta(turma.id)
     const linhas = await Promise.all(estudantes.map(async (e) => {
-      const p = (await this.percursos.de(e.id, { publicadas: false })).paraJSON()
+      const p = (await this.percursos.de(e.id, { publicadas: false, turmaId: turma.id })).paraJSON()
       return { estudante: e, tfc: p.tfc, resumo: p.resumo, conclusao: p.conclusao, certificado: p.certificado }
     }))
     return { turma: { id: turma.id, nome: turma.nome, anoLetivo: turma.anoLetivo, anoFinal: turma.anoFinal, curso: await this.#nomeDoCurso(turma.curso) }, linhas }
@@ -164,7 +164,8 @@ export class ServicoConclusaoCurso {
   }
 
   async #documentos(ctx, turma, estudante, { pedir = false, aviso = true, consultar = false } = {}) {
-    const percurso = await this.percursos.de(estudante.id, { publicadas: false, estudante })
+    // só o curso desta turma (quem fez outro curso noutro ano tem outro certificado, com as notas desse ano)
+    const percurso = await this.percursos.de(estudante.id, { publicadas: false, estudante, turmaId: turma.id })
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
     if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
     if (!existente && percurso.planoCurso && !percurso.planoCurso.homologado) throw new Conflito('A classificação final ainda não foi homologada pelo Comandante (Conselho de Curso).')

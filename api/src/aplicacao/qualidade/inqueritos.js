@@ -43,17 +43,11 @@ export class ServicoInqueritosInstitucionais {
     return this.#resumo(await this.qualidade.guardar(i, i.mudancasPermitidas(InqueritoInstitucional.validar(dados, i))))
   }
 
-  // lança: fica visível no portal e avisa quem deve responder (sem a aprovação, fica pedido ao Comandante)
+  // lança: fica visível no portal e avisa quem deve responder (o Gabinete de Qualidade e a Direcção de Ensino lançam sem o Comandante)
   async lancar(ctx, id) {
     ctx.actor.exigir('academico.gerir')
     const atual = await this.#inquerito(id)
-    if (!ctx.actor.pode('publicacoes.aprovar')) {
-      if (atual.aprovacao?.estado === 'pendente') throw new Conflito('O lançamento já está à espera do Comandante.')
-      atual.lancar(this.relogio.agora()) // as mesmas verificações (já lançado, data de fecho)
-      const g = await this.qualidade.guardar(atual, { aprovacao: { estado: 'pendente', pedidoPor: ctx.actor.nome ?? null, pedidoEm: this.relogio.agora().toISOString() } })
-      await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_inquerito', colecao: 'inqueritos', alvoId: g.id, alvoTitulo: g.titulo })
-      return this.#resumo(g)
-    }
+    // o Gabinete de Qualidade e a Direcção de Ensino lançam sem o Comandante (fica na auditoria)
     return this.#lancar(ctx, atual)
   }
 

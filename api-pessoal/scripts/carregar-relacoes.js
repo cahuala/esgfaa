@@ -7,12 +7,15 @@
   2. as fichas novas: militares, civis e domiciliares (por esta ordem; os domiciliares ligam-se ao oficial pelo NIP);
   3. os docentes e os estudantes (listas do corpo docente, dos discentes do ano lectivo e dos finalistas dos anos
      anteriores), uma só vez por versão das listas (ver carregarAcademicos);
-  4. quem assina os documentos (o Comandante, o Director de Ensino…), dos documentos assinados do arquivo: a pessoa
-     é nomeada para o cargo só se o cargo estiver vazio e ela ainda não tiver cargo (fica no histórico).
+  4. os cargos (quem assina os documentos e os cargos da relação nominal do efectivo): a pessoa é nomeada para o
+     cargo só se o cargo estiver vazio e ela ainda não tiver cargo (fica no histórico);
+  5. as fotografias (carregar/fotos/<NIP ou n.º de agente>.jpg): só em quem ainda não tem fotografia.
   Nunca apaga nem altera o que já está no sistema: quem já existe fica como está («já existia»). Pode correr-se
   em todas as actualizações. Escreve um relatório (o que entrou, o que já existia e as linhas com problema).
 */
 import fs from 'node:fs'
+import path from 'node:path'
+import crypto from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { aplicarAlteracao } from '../src/aplicacao/alteracoes.js'
 
@@ -25,7 +28,7 @@ const parecidos = (a, b) => { const x = palavras(a); return [...palavras(b)].fil
 const QUEM = { email: 'carregamento das relações nominais', nome: 'Carregamento', papel: 'administrador' }
 
 // devolve as linhas do relatório
-export async function carregarRelacoes(contentor, dados, u = QUEM) {
+export async function carregarRelacoes(contentor, dados, u = QUEM, { pastaFotos = null } = {}) {
   const linhas = [`Relações nominais (${dados.geradoEm ?? ''}) — carregadas em ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`, '']
   // 1. orgânica: só as unidades e os cargos que ainda não existem
   const existentes = await contentor.bd.cargo.findMany({ select: { nome: true, unidade: { select: { nome: true } } } })
@@ -50,6 +53,34 @@ export async function carregarRelacoes(contentor, dados, u = QUEM) {
   if (dados.academicos?.pessoas?.length) linhas.push(...await carregarAcademicos(contentor, dados.academicos, u))
   // 4. quem assina
   if (dados.cargos?.length) linhas.push(...await carregarCargos(contentor, dados.cargos, u))
+  // 5. fotografias
+  if (pastaFotos && fs.existsSync(pastaFotos)) linhas.push(...await carregarFotos(contentor, pastaFotos, u))
+  return linhas
+}
+
+/*
+  As fotografias (carregar/fotos): o nome de cada ficheiro é o NIP ou o n.º de agente. Só se põem em quem ainda não tem
+  fotografia (a que já está — tirada na Repartição — fica); vão também para a conta do Portal Académico.
+*/
+export async function carregarFotos(contentor, pasta, u = QUEM) {
+  const { bd, config, servicos } = contentor
+  const linhas = ['', 'Fotografias:']
+  let postas = 0
+  let jaTinham = 0
+  const semFicha = []
+  fs.mkdirSync(config.pastaFotos, { recursive: true })
+  for (const f of fs.readdirSync(pasta).filter((x) => /\.(jpe?g|png|webp)$/i.test(x)).sort()) {
+    const ident = path.parse(f).name.trim().toUpperCase()
+    const p = await bd.pessoa.findFirst({ where: { OR: [{ nip: ident }, { numeroAgente: ident }] }, select: { id: true, fotoId: true } })
+    if (!p) { semFicha.push(ident); continue }
+    if (p.fotoId) { jaTinham++; continue }
+    const ext = path.extname(f).slice(1).toLowerCase().replace('jpeg', 'jpg')
+    const nome = `${crypto.randomUUID()}.${ext}`
+    fs.copyFileSync(path.join(pasta, f), path.join(config.pastaFotos, nome))
+    await servicos.pessoas.guardarFoto(u, p.id, nome)
+    postas++
+  }
+  linhas.push(`   ${postas} fotografia(s) postas; ${jaTinham} pessoa(s) já tinham fotografia (fica a que tinham); ${semFicha.length} sem ficha com esse NIP.`)
   return linhas
 }
 
@@ -221,7 +252,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const contentor = criarContentor(criarConfig())
   let linhas
   try {
-    linhas = await carregarRelacoes(contentor, JSON.parse(fs.readFileSync(ficheiro, 'utf8')))
+    linhas = await carregarRelacoes(contentor, JSON.parse(fs.readFileSync(ficheiro, 'utf8')), QUEM, { pastaFotos: path.join(path.dirname(ficheiro), 'fotos') })
   } finally {
     await contentor.fechar()
   }

@@ -28,14 +28,13 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.match(r.body.erro, /já está publicado/)
   })
 
-  it('editor-chefe envia os rascunhos ao Comandante, que os publica', async () => {
+  it('o editor-chefe publica os rascunhos do redactor (fica no registo de actividades)', async () => {
     const rasc = await amb.com(redator.token).post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Para publicar' }))
     const r = await amb.com(chefe.token).put(`/api/admin/colecoes/noticias/${rasc.body.slug}`).send({ ...rasc.body, _estado: 'publicado' })
     assert.equal(r.status, 200)
-    assert.deepEqual([r.body._estado, r.body._aprovacao.estado], ['rascunho', 'pendente'])
-    assert.equal((await amb.aprovar('noticias', rasc.body.slug))._estado, 'publicado')
-    const log = await amb.contentor.repositorios.atividades.listar({ acao: 'aprovar_publicacao' })
-    assert.equal(log.linhas[0].alvo_id, rasc.body.slug)
+    assert.deepEqual([r.body._estado, r.body._aprovacao], ['publicado', null])
+    const log = await amb.contentor.repositorios.atividades.listar({ colecao: 'noticias', porPagina: 50 })
+    assert.ok(log.linhas.some((l) => l.alvo_id === rasc.body.slug))
   })
 
   it('responsável de cibersegurança vê o centro de segurança e o registo de actividades, e nada mais', async () => {
@@ -80,53 +79,22 @@ describe('permissões (RBAC) e utilizadores', () => {
     assert.ok(!('senha' in ok.body))
     assert.equal((await amb.com(admin).post('/api/admin/utilizadores').send({ ...base, email: 'RITA@teste.ao' })).status, 409)
 
-    // a conta nova espera o Comandante: até lá não entra
-    assert.equal(ok.body.ativo, false)
-    assert.equal(ok.body.aprovacao.tipo, 'criar')
-    const espera = await amb.http().post('/api/admin/entrar').send({ email: 'rita@teste.ao', senha: 'Segura2026xyz' })
-    assert.equal(espera.status, 403)
-    assert.match(espera.body.erro, /aprovação do Comandante/)
-    // o administrador não a ativa por fora
-    assert.equal((await amb.com(admin).put(`/api/admin/utilizadores/${ok.body.id}`).send({ ativo: true })).status, 400)
-    await amb.aprovar('utilizadores', ok.body.id)
+    // a conta nova fica logo activa (decide o administrador; fica na auditoria)
+    assert.equal(ok.body.ativo, true)
+    assert.ok(!ok.body.aprovacao)
 
     // quem foi criado por outra pessoa tem de mudar a palavra-passe
     const t = await amb.entrar('rita@teste.ao', 'Segura2026xyz')
     assert.equal((await amb.com(t).get('/api/admin/eu')).body.deveMudarSenha, true)
   })
 
-  it('mudar o papel (com o Comandante) termina as sessões da conta e aplica as novas permissões', async () => {
-    const cmd = await amb.oComandante()
+  it('mudar o papel termina as sessões da conta e aplica as novas permissões (decide o administrador)', async () => {
     const u = await amb.criarUtilizador('redator')
     assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 200)
     const r = await amb.com(admin).put(`/api/admin/utilizadores/${u.id}`).send({ papel: 'moderador' })
     assert.equal(r.status, 200)
-    // fica pedido: o papel não muda até o Comandante aprovar
-    assert.equal(r.body.papel, 'redator')
-    assert.deepEqual([r.body.aprovacao.tipo, r.body.aprovacao.papel, r.body.aprovacao.de], ['papel', 'moderador', 'redator'])
-    assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 200)
-    const lista = (await amb.com(cmd.token).get('/api/admin/publicacoes')).body
-    assert.ok(lista.some((x) => x.colecao === 'utilizadores' && x.id === String(u.id) && x.tipo === 'papel'))
-    assert.equal((await amb.com(cmd.token).get('/api/admin/publicacoes/contagem')).body.contas >= 1, true)
-    // o administrador não decide
-    assert.equal((await amb.com(admin).post(`/api/admin/publicacoes/utilizadores/${u.id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
-    await amb.aprovar('utilizadores', u.id)
-    assert.equal((await amb.com(admin).get('/api/admin/utilizadores')).body.find((x) => x.id === u.id).papel, 'moderador')
+    assert.equal(r.body.papel, 'moderador')
     assert.equal((await amb.com(u.token).get('/api/admin/eu')).status, 401)
-  })
-
-  it('o Comandante recusa: a conta nova não fica; o papel fica como estava', async () => {
-    const cmd = await amb.oComandante()
-    const nova = (await amb.com(admin).post('/api/admin/utilizadores').send({ nome: 'Conta Recusada', email: 'recusada@teste.ao', papel: 'redator', senha: 'Segura2026xyz' })).body
-    const r = await amb.com(cmd.token).post(`/api/admin/publicacoes/utilizadores/${nova.id}/decisao`).send({ decisao: 'recusar', motivo: 'Não autorizado' })
-    assert.equal(r.status, 200)
-    assert.equal(r.body.apagada, true)
-    assert.ok(!(await amb.com(admin).get('/api/admin/utilizadores')).body.some((x) => x.id === nova.id))
-    const u = await amb.criarUtilizador('redator')
-    await amb.com(admin).put(`/api/admin/utilizadores/${u.id}`).send({ papel: 'moderador' })
-    await amb.com(cmd.token).post(`/api/admin/publicacoes/utilizadores/${u.id}/decisao`).send({ decisao: 'recusar' }).expect(200)
-    const depois = (await amb.com(admin).get('/api/admin/utilizadores')).body.find((x) => x.id === u.id)
-    assert.deepEqual([depois.papel, depois.aprovacao], ['redator', null])
   })
 
   it('desactivar termina as sessões', async () => {

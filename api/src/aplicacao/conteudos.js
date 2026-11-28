@@ -93,7 +93,7 @@ export class ServicoConteudos {
     let estado = estadoFinal({ actor: ctx.actor, colecao, pedido: corpo?._estado, atual: null })
     // sem aprovar publicações: fica em rascunho e o pedido vai ao Comandante
     let aprovacao = null
-    if (estado === 'publicado' && !podeAprovar(ctx.actor)) {
+    if (estado === 'publicado' && !podeAprovar(ctx.actor, colecao)) {
       estado = 'rascunho'
       aprovacao = pedidoDeAprovacao({ actor: ctx.actor, tipo: 'publicar', dados: null, quando: this.relogio?.agora?.() ?? new Date() })
     }
@@ -130,7 +130,7 @@ export class ServicoConteudos {
     const alterados = atual.camposAlterados(dados)
 
     // sem aprovar publicações: publicar ou alterar o que está publicado é um pedido ao Comandante
-    if (!podeAprovar(ctx.actor) && estado === 'publicado') {
+    if (!podeAprovar(ctx.actor, colecao) && estado === 'publicado') {
       const quando = this.relogio?.agora?.() ?? new Date()
       if (atual.estado === 'publicado' && !alterados.length && !atual.aprovacao) return paraPainel(atual)
       const proposta = atual.estado === 'publicado'

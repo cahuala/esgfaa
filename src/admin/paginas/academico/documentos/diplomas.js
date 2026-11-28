@@ -7,8 +7,8 @@ import { paragrafo } from '../../../../utils/pdfParagrafo'
   - «lista»: Curso Superior de Comando e Direcção, CoaMP, Estado-Maior Conjunto — disciplinas e valores em
     duas colunas.
   Diplomas (pela categoria de quem o recebe):
-  - «atesta» (oficiais generais): A4 deitado, «Atesta-se que o Senhor … frequentou …»;
-  - «outorga» (os outros militares): A4 ao alto, decorado — «A Escola Superior de Guerra outorga o presente
+  - «atesta» (os militares que não são oficiais generais): A4 deitado, «Atesta-se que o Senhor … frequentou …»;
+  - «outorga» (oficiais generais): A4 ao alto, decorado — «A Escola Superior de Guerra outorga o presente
     diploma ao …» (o fundo é a digitalização desse diploma da Escola: o ficheiro chama-se diploma-generais.jpg
     por razões históricas).
   c = resposta da emissão do certificado (estudante, curso, média, percurso, código);
@@ -24,15 +24,15 @@ const M = (t) => String(t ?? '').toLocaleUpperCase('pt')
 export const oficialGeneral = (posto = '') => /brigadeiro|general|almirante/i.test(String(posto))
 /*
   Os modelos de cada estudante: o certificado pelo curso (Estratégia e Arte Operativa: com tabela; os outros:
-  em duas colunas); o diploma pela categoria (oficiais generais: «Atesta-se que…»; os outros militares: o
-  diploma decorado «A ESG outorga…»).
+  em duas colunas); o diploma pela categoria (oficiais generais: o diploma decorado «A ESG outorga…», o fundo
+  diploma-generais; os outros militares: «Atesta-se que…», o fundo diploma-todos).
 */
 export const modelosDe = (curso = '', posto = '') => ({
   certificado: /estrat[ée]gia\s+e\s+arte\s+operativa/i.test(curso) ? 'tabela' : 'lista',
-  diploma: oficialGeneral(posto) ? 'atesta' : 'outorga',
+  diploma: oficialGeneral(posto) ? 'outorga' : 'atesta',
 })
 export const MODELOS_CERTIFICADO = { tabela: 'Com tipo de avaliação e classificação (Estratégia e Arte Operativa)', lista: 'Disciplinas e valores em duas colunas (Comando e Direcção, CoaMP, Estado-Maior Conjunto)' }
-export const MODELOS_DIPLOMA = { atesta: '«Atesta-se que…» (oficiais generais)', outorga: '«A ESG outorga o presente diploma…» (militares que não são oficiais generais)' }
+export const MODELOS_DIPLOMA = { atesta: '«Atesta-se que…» (militares que não são oficiais generais)', outorga: '«A ESG outorga o presente diploma…» (oficiais generais)' }
 
 async function novo() {
   const { jsPDF } = await import('jspdf')
@@ -183,7 +183,7 @@ function diplomaAtesta(d, c, o) {
   codigo(doc, c, W, 202)
 }
 
-// ---------- diploma «A ESG outorga o presente diploma…» (militares que não são oficiais generais) ----------
+// ---------- diploma «A ESG outorga o presente diploma…» (oficiais generais) ----------
 /*
   O fundo é o próprio diploma da Escola digitalizado (fitas, selo, arabescos, emblema, «DIPLOMA» e os textos
   fixos), sem o que muda de pessoa para pessoa; por cima escreve-se o nome (em letra manuscrita, como no

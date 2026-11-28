@@ -22,11 +22,14 @@ export function garantirPodeEditar({ actor, colecao, atual, pedido }) {
 }
 
 /*
-  Aprovação do Comandante: nada chega ao público sem «publicacoes.aprovar».
-  Quem pode publicar mas não aprovar envia um pedido: o conteúdo novo fica em rascunho e a alteração de um
-  já publicado fica à parte — o site continua a mostrar a versão aprovada até o Comandante decidir.
+  Aprovação do Comandante: só o que é institucional (os cursos, as pessoas do Comando e as páginas da Escola)
+  espera por «publicacoes.aprovar». As notícias, os artigos, os eventos, a publicidade e as revistas publica-os o
+  Editor-chefe (quem tem «{colecao}.publicar»), sem pedido; fica tudo na auditoria.
+  Quem pode publicar mas não aprovar o institucional envia um pedido: o conteúdo novo fica em rascunho e a alteração
+  de um já publicado fica à parte — o site continua a mostrar a versão aprovada até o Comandante decidir.
 */
-export const podeAprovar = (actor) => actor.pode('publicacoes.aprovar')
+export const INSTITUCIONAIS = ['cursos', 'pessoas']
+export const podeAprovar = (actor, colecao = null) => actor.pode('publicacoes.aprovar') || (colecao !== null && !INSTITUCIONAIS.includes(colecao) && actor.pode(`${colecao}.publicar`))
 
 export const pedidoDeAprovacao = ({ actor, tipo, dados, quando }) => ({
   estado: 'pendente', tipo, dados, pedidoPor: actor.nome ?? '', pedidoPorId: actor.id ?? null, pedidoEm: quando.toISOString(),

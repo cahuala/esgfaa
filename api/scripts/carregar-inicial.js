@@ -4,7 +4,8 @@
     - arranque-*.json        as turmas do ano lectivo com as cadeiras dos planos, as matrículas, o departamento de
                              cada cadeira e os docentes habituais (propostos ao Comandante);
     - gestao-pautas*.json    as pautas assinadas do arquivo (as notas, a média final e a classificação), com as contas
-                             dos discentes que o Pessoal ainda não enviou (activas, para verem as notas).
+                             dos discentes que o Pessoal ainda não enviou (activas, para verem as notas);
+    - programas-*.json       os programas das cadeiras (objectivos e plano das sessões), dos planos de curso.
   O que já está no sistema não muda; os anos fechados ficam de fora.
     node --env-file=<config> scripts/carregar-inicial.js <pasta com os ficheiros> [relatorio.txt]
 */
@@ -24,7 +25,7 @@ export async function carregarInicial(contentor, pasta) {
   // primeiro o arranque do ano (o catálogo das cadeiras), depois o arquivo
   // pela ordem certa: o arranque do ano (o catálogo), as pautas e as turmas do arquivo, os docentes de cada ano (precisam
   // das turmas) e os horários (precisam dos docentes nas turmas)
-  const ORDEM = { 'arranque-ano-lectivo': 0, 'arquivo-administracao-escolar': 1, 'docentes-dos-anos': 2, 'docentes-horarios': 3 }
+  const ORDEM = { 'arranque-ano-lectivo': 0, 'arquivo-administracao-escolar': 1, 'docentes-dos-anos': 2, 'docentes-horarios': 3, programas: 4 }
   const lidos = ficheiros.map((f) => ({ f, j: JSON.parse(fs.readFileSync(path.join(pasta, f), 'utf8')) })).sort((a, b) => (ORDEM[a.j.tipo] ?? 1) - (ORDEM[b.j.tipo] ?? 1) || a.f.localeCompare(b.f))
   for (const { f, j } of lidos) {
     try {
@@ -34,6 +35,22 @@ export async function carregarInicial(contentor, pasta) {
         // os anos anteriores sem dúvida ficam logo; o resto espera pela Repartição
         const sd = await contentor.servicos.administracaoEscolar.docentesHorarios.confirmarSemDuvida(ctx)
         linhas.push(`${f}: ${g.linhas} linha(s) dos horários guardadas; ${sd.feitas} docente(s) sem dúvida ficaram nas cadeiras dos anos anteriores — os outros confirma-os a Repartição em «Docentes dos horários do arquivo».`, '')
+        continue
+      }
+      // quem assina (dos documentos assinados do arquivo), escrito à mão só onde ainda não há nome: o do Pessoal
+      // (quem ocupa o cargo na orgânica) continua a valer primeiro
+      if (j.tipo === 'quem-assina') {
+        const conc = contentor.servicos.administracaoEscolar.conclusao
+        const atual = (await conc.documentosAcademicos(ctx)).manual ?? {}
+        const novos = Object.fromEntries(Object.entries(j.assinantes ?? {}).filter(([k, v]) => ['chefeRae', 'directorEnsino', 'comandante'].includes(k) && v?.nome && !atual[k]?.nome).map(([k, v]) => [k, { cargo: atual[k]?.cargo || v.cargo || '', nome: v.nome, posto: v.posto ?? '', origem: 'manual' }]))
+        if (Object.keys(novos).length) await conc.guardarDocumentosAcademicos(ctx, novos)
+        linhas.push(`${f}: ${Object.keys(novos).length ? `escrito à mão (sem o Pessoal): ${Object.values(novos).map((x) => `${x.nome} — ${x.cargo}`).join('; ')}` : 'quem assina já estava escrito (fica como está).'}`, '')
+        continue
+      }
+      // os programas das cadeiras (dos planos de curso): só nas cadeiras que ainda não têm programa
+      if (j.tipo === 'programas') {
+        const g = await contentor.servicos.administracaoEscolar.planosCurso.carregarProgramas(ctx, j)
+        linhas.push(`${f}: ${g.preenchidas} cadeira(s) com o programa do plano de curso; ${g.jaTinham} já tinham programa (ficam como estão).`, ...g.semCadeira.map((x) => `   sem cadeira com este nome: ${x}`), '')
         continue
       }
       // os docentes de cada ano anterior (as listas do corpo docente): nas cadeiras desse ano

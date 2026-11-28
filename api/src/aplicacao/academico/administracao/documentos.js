@@ -65,14 +65,14 @@ export class ServicoDocumentos {
       const d = e.dados
       const x = porPessoa.get(e.id) ?? {
         id: e.id, nome: e.nome, numero: e.numero, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '',
-        ramo: d.origem === 'policia' ? 'PNA' : d.ramo || '', funcao: d.funcaoActual || '', unidade: d.departamento || '', telefone: d.telefone || '', ativo: e.ativo !== false, cursos: [],
+        ramo: d.origem === 'policia' ? 'PNA' : d.ramo || '', funcao: d.funcaoActual || '', unidade: d.departamento || '', ordemUnidade: d.ordemUnidade, telefone: d.telefone || '', ativo: e.ativo !== false, cursos: [],
       }
       porPessoa.set(e.id, x)
       const c = cursos.get(m.turma.curso)
       x.cursos.push({ turma: m.turma.nome, curso: c?.titulo || c?.dados?.nome || m.turma.curso, sigla: c?.dados?.sigla || '', anoLetivo: m.turma.anoLetivo })
     }
     const { grauDe, ordenarPorHierarquia } = await import('../../../dominio/academico/pessoas/hierarquia.js')
-    const lista = ordenarPorHierarquia([...porPessoa.values()].map((x) => ({ ...x, cursos: x.cursos.sort((a, b) => a.anoLetivo.localeCompare(b.anoLetivo)) })), (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } }))
+    const lista = ordenarPorHierarquia([...porPessoa.values()].map((x) => ({ ...x, cursos: x.cursos.sort((a, b) => a.anoLetivo.localeCompare(b.anoLetivo)) })), (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente, ordemUnidade: l.ordemUnidade } }))
     for (const l of lista) l.grau = grauDe({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })
     const contar = (f) => Object.entries(lista.reduce((o, l) => { const k = f(l) || '—'; o[k] = (o[k] ?? 0) + 1; return o }, {})).sort((a, b) => b[1] - a[1])
     return { total: lista.length, porRamo: contar((l) => l.ramo), porPosto: contar((l) => l.posto), anos: [...new Set(lista.flatMap((l) => l.cursos.map((c) => c.anoLetivo)))].sort(), lista }
@@ -100,7 +100,7 @@ export class ServicoDocumentos {
         const d = e.dados ?? {}
         const r = await Promise.resolve(this.esg?.resultadoDoEstudante(e.id, t)).catch(() => null)
         x.linhas.push({
-          id: e.id, numero: e.numero, nome: e.nome, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '', ramo: d.ramo || '', orgao: d.departamento || '',
+          id: e.id, numero: e.numero, nome: e.nome, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '', ordemUnidade: d.ordemUnidade, ramo: d.ramo || '', orgao: d.departamento || '',
           origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, funcao: d.funcaoActual || '', orientador: tfcs.get(e.id)?.orientador || '', habilitacao: [d.habilitacao, d.areaFormacao].filter(Boolean).join(' — '), telefone: d.telefone || '', final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
         })
       }
@@ -109,7 +109,7 @@ export class ServicoDocumentos {
     for (const c of porCurso.values()) for (const l of c.linhas) l.grau = grauDe({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })
     return {
       anoLetivo, inicio: ano?.inicio ? ano.inicio.toISOString().slice(0, 10) : null, fim: ano?.fim ? ano.fim.toISOString().slice(0, 10) : null,
-      cursos: [...porCurso.values()].map((c) => ({ ...c, linhas: ordenarPorHierarquia(c.linhas, (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente } })) })),
+      cursos: [...porCurso.values()].map((c) => ({ ...c, linhas: ordenarPorHierarquia(c.linhas, (l) => ({ nome: l.nome, dados: { posto: l.posto, postoEquivalente: l.postoEquivalente, ordemUnidade: l.ordemUnidade } })) })),
     }
   }
 

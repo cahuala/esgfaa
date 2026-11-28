@@ -64,4 +64,34 @@ describe('Diplomas e certificados: a primeira emissão imprime-se logo', () => {
     assert.equal(aprovados.length, 2)
     assert.ok(aprovados.every((x) => x.percurso), 'levam o percurso para o PDF')
   })
+
+  it('o mesmo militar em cursos diferentes, em anos diferentes: um certificado de cada curso, com as notas desse ano', async () => {
+    const tudo = amb.com((await amb.criarUtilizador('administrador')).token)
+    const curso = async (anoLetivo, nome, codigo, nota) => {
+      const t = (await tudo.post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo, nome, anoCurricular: 1 })).body
+      await tudo.put(`/api/admin/academico/turmas/${t.id}`).send({ anoFinal: true })
+      const c = (await tudo.post(`/api/admin/academico/turmas/${t.id}/cadeiras`).send({ codigo, nome: codigo, horas: 30 })).body
+      return { t, c, nota }
+    }
+    const a = await curso('2023/2024', 'Curso A 2023', 'CA1', 15)
+    const b = await curso('2024/2025', 'Curso B 2024', 'CB1', 17)
+    const rui = (await amb.registarEMatricular(tudo, a.t.id, { nome: 'Coronel Rui Dois Cursos', email: 'rui.dois@esgfaa.gov.ao' })).body
+    // o curso de 2023/2024 ficou concluído; no ano seguinte fez outro
+    await amb.contentor.prisma.matricula.updateMany({ where: { estudanteId: rui.id, turmaId: a.t.id }, data: { estado: 'concluida' } })
+    await tudo.post(`/api/admin/academico/turmas/${b.t.id}/matriculas`).send({ estudanteId: rui.id }).expect(201)
+    for (const x of [a, b]) {
+      await tudo.put(`/api/admin/academico/cadeiras/${x.c.id}/pauta`).send({ linhas: [{ estudanteId: rui.id, p1: x.nota, p2: x.nota }] })
+      await tudo.put(`/api/admin/academico/turmas/${x.t.id}/tfc/${rui.id}`).send({ tema: `Tema ${x.t.nome}`, dataDefesa: '2026-07-05', nota: x.nota }).expect(200)
+    }
+    const ra = await rae.post(`/api/admin/academico/turmas/${a.t.id}/certificados/${rui.id}`).send({})
+    assert.equal(ra.status, 201, ra.body.erro)
+    const ca = ra.body
+    const cb = (await rae.post(`/api/admin/academico/turmas/${b.t.id}/certificados/${rui.id}`).send({}).expect(201)).body
+    assert.notEqual(ca.codigo, cb.codigo)
+    assert.deepEqual([ca.estado, cb.estado], ['aprovado', 'aprovado'])
+    // cada um com as cadeiras do seu ano
+    const cadeiras = (c) => c.percurso.anos.flatMap((x) => x.disciplinas.map((d) => d.cadeira.codigo))
+    assert.deepEqual([cadeiras(ca), cadeiras(cb)], [['CA1'], ['CB1']])
+  })
 })
+

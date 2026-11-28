@@ -153,7 +153,8 @@ export class ServicoAvaliacaoEsg {
     await this.#aberta(cadeira)
     const a = await this.#daCadeira(cadeira, avaliacaoId)
     // só o Comandante publica: os outros deixam o pedido (que ele aprova ou recusa em «Por aprovar»)
-    if (publicar && !a.publicadaEm && this.aprovacaoComandante && !ctx.actor?.pode?.('academico.homologar')) {
+    // a publicação das notas aprova-a o Director de Ensino (ele e o Comandante publicam logo)
+    if (publicar && !a.publicadaEm && this.aprovacaoComandante && !ctx.actor?.pode?.('academico.homologar') && !ctx.actor?.pode?.('academico.conselho')) {
       await this.planos.atualizarAvaliacao(a.id, { publicacaoPedida: { estado: 'pendente', pedidoPor: ctx.conta?.nome ?? ctx.actor?.nome ?? '', pedidoEm: this.relogio.agora().toISOString() } })
       await this.auditoria.registar(ctx, { acao: 'pedir_publicacao_notas', colecao: 'pautas', alvoId: cadeira.id, alvoTitulo: `${a.tipo} ${a.titulo} — ${cadeira.nome}`, utilizador })
     } else if (!publicar && !a.publicadaEm && a.publicacaoPedida) {

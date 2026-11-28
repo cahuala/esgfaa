@@ -62,9 +62,8 @@ describe('conteúdos e páginas (painel)', () => {
 
   it('lista com estatísticas e métricas de publicidade', async () => {
     const b = (await api().post('/api/admin/colecoes/publicidade').send({ titulo: 'Banner', posicao: 'rodape' })).body
-    // o administrador pede; só aparece depois de o Comandante aprovar
-    assert.deepEqual([b._estado, b._aprovacao.estado, b._aprovacao.tipo], ['rascunho', 'pendente', 'publicar'])
-    await amb.aprovar('publicidade', b.id)
+    // a publicidade não é institucional: quem pode publicar publica logo (sem o Comandante)
+    assert.deepEqual([b._estado, b._aprovacao], ['publicado', null])
     const r = await api().get('/api/admin/colecoes/publicidade')
     assert.equal(r.status, 200)
     assert.deepEqual(r.body[0]._metricas, { impressoes: 0, cliques: 0 })
@@ -118,34 +117,30 @@ describe('conteúdos e páginas (painel)', () => {
     assert.ok(Array.isArray(r.body.visitasDias))
   })
 
-  it('aprovação do Comandante: nada chega ao site sem ele; uma alteração não muda o site até aprovar; recusa com motivo', async () => {
+  it('o Editor-chefe publica as notícias; o institucional (cursos, pessoas, páginas) espera pelo Comandante; recusa com motivo', async () => {
     const chefe = amb.com((await amb.criarUtilizador('editor_chefe')).token)
     const cmd = amb.com((await amb.criarUtilizador('comandante')).token)
     const noSite = async (slug) => ((await amb.http().get('/api/publico/conteudo')).body.noticias || []).find((n) => n.slug === slug)
 
+    // uma notícia: publicada logo
     const n = (await chefe.post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Visita do Ministro', _estado: 'publicado' }))).body
-    assert.deepEqual([n._estado, n._aprovacao.estado], ['rascunho', 'pendente'])
-    assert.equal(await noSite(n.slug), undefined)
-    // nem o Administrador aprova; o Comandante vê o pedido e a contagem
-    assert.equal((await api().post(`/api/admin/publicacoes/noticias/${n.slug}/decisao`).send({ decisao: 'aprovar' })).status, 403)
-    assert.equal((await api().get('/api/admin/publicacoes')).status, 403)
-    const lista = (await cmd.get('/api/admin/publicacoes')).body
-    assert.ok(lista.some((p) => p.id === n.slug && p.tipo === 'publicar' && p.pedidoPor === 'Utilizador editor_chefe'))
-    assert.ok((await cmd.get('/api/admin/publicacoes/contagem')).body.pendentes >= 1)
-    assert.equal((await cmd.post(`/api/admin/publicacoes/noticias/${n.slug}/decisao`).send({ decisao: 'aprovar' })).status, 200)
+    assert.deepEqual([n._estado, n._aprovacao], ['publicado', null])
     assert.equal((await noSite(n.slug)).titulo, 'Visita do Ministro')
+    await chefe.put(`/api/admin/colecoes/noticias/${n.slug}`).send({ ...noticia({ titulo: 'Visita do Ministro da Defesa' }), _estado: 'publicado' })
+    assert.equal((await noSite(n.slug)).titulo, 'Visita do Ministro da Defesa')
 
-    // alterar o que está publicado: o site continua com a versão aprovada
-    const alt = (await chefe.put(`/api/admin/colecoes/noticias/${n.slug}`).send({ ...noticia({ titulo: 'Visita do Ministro da Defesa' }), _estado: 'publicado' })).body
-    assert.deepEqual([alt._estado, alt._aprovacao.tipo, alt.titulo], ['publicado', 'alterar', 'Visita do Ministro da Defesa'])
-    assert.equal((await noSite(n.slug)).titulo, 'Visita do Ministro')
-    assert.equal((await cmd.post(`/api/admin/publicacoes/noticias/${n.slug}/decisao`).send({ decisao: 'recusar' })).status, 400) // sem motivo
-    const rec = (await cmd.post(`/api/admin/publicacoes/noticias/${n.slug}/decisao`).send({ decisao: 'recusar', motivo: 'Confirmar o cargo exacto.' })).body
-    assert.deepEqual([rec._aprovacao.estado, rec._aprovacao.motivo], ['recusado', 'Confirmar o cargo exacto.'])
-    assert.equal((await noSite(n.slug)).titulo, 'Visita do Ministro')
-    await chefe.put(`/api/admin/colecoes/noticias/${n.slug}`).send({ ...noticia({ titulo: 'Visita do Ministro de Estado' }), _estado: 'publicado' })
-    await cmd.post(`/api/admin/publicacoes/noticias/${n.slug}/decisao`).send({ decisao: 'aprovar' })
-    assert.equal((await noSite(n.slug)).titulo, 'Visita do Ministro de Estado')
+    // um curso (institucional): só com o Comandante; nem o Administrador aprova
+    const c = (await chefe.post('/api/admin/colecoes/cursos').send({ nome: 'Curso de Teste Institucional', _estado: 'publicado' })).body
+    assert.deepEqual([c._estado, c._aprovacao.estado], ['rascunho', 'pendente'])
+    assert.equal((await api().post(`/api/admin/publicacoes/cursos/${c.id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
+    const lista = (await cmd.get('/api/admin/publicacoes')).body
+    assert.ok(lista.some((p) => p.id === c.id && p.tipo === 'publicar' && p.pedidoPor === 'Utilizador editor_chefe'))
+    assert.ok((await cmd.get('/api/admin/publicacoes/contagem')).body.pendentes >= 1)
+    assert.equal((await cmd.post(`/api/admin/publicacoes/cursos/${c.id}/decisao`).send({ decisao: 'recusar' })).status, 400) // sem motivo
+    const rec = (await cmd.post(`/api/admin/publicacoes/cursos/${c.id}/decisao`).send({ decisao: 'recusar', motivo: 'Confirmar o nome oficial.' })).body
+    assert.deepEqual([rec._aprovacao.estado, rec._aprovacao.motivo], ['recusado', 'Confirmar o nome oficial.'])
+    await chefe.put(`/api/admin/colecoes/cursos/${c.id}`).send({ nome: 'Curso de Teste Institucional', _estado: 'publicado' })
+    assert.equal((await cmd.post(`/api/admin/publicacoes/cursos/${c.id}/decisao`).send({ decisao: 'aprovar' })).status, 200)
 
     // páginas do site: o mesmo
     await chefe.put('/api/admin/paginas/home').send({ heroi: { titulo: 'Nova capa' } })

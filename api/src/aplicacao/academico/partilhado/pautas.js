@@ -198,8 +198,8 @@ export class ServicoPautas {
     if (ctx.conta && retiradas.length) throw new Conflito(`As notas de ${retiradas.map((k) => NOMES_COMPONENTES[k]).join(', ')} já foram publicadas. Para corrigir a nota de um estudante, peça a alteração ao Comandante.`)
     if (!ctx.conta && retiradas.length) this.controlo?.exigirComandante(ctx, retiradas.map((k) => NOMES_COMPONENTES[k]).join(', '))
     const novas = ordenada.filter((k) => !cadeira.notasPublicadas.includes(k))
-    // as notas novas só chegam aos estudantes com a aprovação do Comandante: fica o pedido (o Comandante publica logo)
-    if (this.aprovacaoComandante && novas.length && !ctx.actor?.pode?.('academico.homologar')) {
+    // as notas novas só chegam aos estudantes com a aprovação do Director de Ensino: fica o pedido (ele e o Comandante publicam logo)
+    if (this.aprovacaoComandante && novas.length && !ctx.actor?.pode?.('academico.homologar') && !ctx.actor?.pode?.('academico.conselho')) {
       const antes = cadeira.publicacaoPedida?.estado === 'pendente' ? cadeira.publicacaoPedida.componentes ?? [] : []
       const componentes = COMPONENTES_NOTA.filter((k) => novas.includes(k) || antes.includes(k))
       await this.academico.pedirPublicacao(cadeira.id, { estado: 'pendente', componentes, pedidoPor: ctx.conta?.nome ?? ctx.actor?.nome ?? '', pedidoEm: this.relogio.agora().toISOString() })

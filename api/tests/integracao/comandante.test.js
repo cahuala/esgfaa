@@ -22,14 +22,17 @@ describe('o Comandante: avisos por e-mail e acontecimentos importantes', () => {
   it('o que fica à espera dele chega-lhe por e-mail (e não ao Administrador)', async () => {
     const n = correio.enviados.length
     const chefe = amb.com((await amb.criarUtilizador('editor_chefe')).token)
+    // a notícia publica-se logo (não vai ao Comandante); um curso (institucional) espera por ele
     await chefe.post('/api/admin/colecoes/noticias').send(noticia({ titulo: 'Visita do Ministro', _estado: 'publicado' })).expect(201)
+    await chefe.post('/api/admin/colecoes/cursos').send({ nome: 'Curso Novo da Escola', _estado: 'publicado' }).expect(201)
+    // a conta nova do painel já não espera por ele (decide o administrador)
     await admin.post('/api/admin/utilizadores').send({ nome: 'Rui Novo', email: 'rui.novo@teste.ao', papel: 'redator', senha: 'Segura2026xyz' }).expect(201)
-    await esperarEnviados(correio, n + 2)
+    await esperarEnviados(correio, n + 1)
+    await tique()
     const novos = correio.enviados.slice(n)
-    assert.deepEqual(novos.map((m) => m.para), [cmd.email, cmd.email])
-    assert.match(novos[0].assunto, /Publicação do site por aprovar: Visita do Ministro/)
-    assert.match(novos[1].assunto, /Conta nova do painel por aprovar: Rui Novo/)
-    assert.match(novos[1].texto, /«Por aprovar»/)
+    assert.deepEqual(novos.map((m) => m.para), [cmd.email])
+    assert.match(novos[0].assunto, /Publicação do site por aprovar: Curso Novo da Escola/)
+    assert.match(novos[0].texto, /«Por aprovar»/)
     // o e-mail não leva o endereço reservado do painel
     assert.ok(!novos.some((m) => /https?:\/\//.test(m.texto)))
   })
@@ -49,7 +52,7 @@ describe('o Comandante: avisos por e-mail e acontecimentos importantes', () => {
     const g = Object.fromEntries(r.body.grupos.map((x) => [x.id, x]))
     assert.deepEqual(Object.keys(g), ['decisoes', 'contas', 'notas', 'publicacoes', 'seguranca'])
     assert.ok(g.contas.total >= 2)
-    assert.ok(g.contas.linhas.some((l) => l.acao === 'pedir_aprovacao_conta' && l.alvo_titulo === 'Rui Novo'))
+    assert.ok(g.contas.linhas.some((l) => l.acao === 'criar_utilizador' && l.alvo_titulo === 'Rui Novo'))
     assert.ok(g.publicacoes.linhas.some((l) => l.acao === 'pedir_aprovacao'))
     const redator = amb.com((await amb.criarUtilizador('redator')).token)
     assert.equal((await redator.get('/api/admin/acontecimentos')).status, 403)

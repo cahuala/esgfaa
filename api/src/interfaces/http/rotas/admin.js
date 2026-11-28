@@ -107,7 +107,8 @@ export function rotasAdmin({ servicos, config, armazenamento, privados }) {
   const aprovacoesEnsino = servicos.administracaoEscolar.aprovacoes
   r.get('/publicacoes', async (req, res) => {
     const c = ctx(req)
-    if (!c.actor.pode('utilizadores.aprovar') && !c.actor.pode('academico.homologar')) c.actor.exigir('publicacoes.aprovar')
+    // o Director de Ensino (academico.conselho) vê aqui as notas por publicar
+    if (!c.actor.pode('utilizadores.aprovar') && !c.actor.pode('academico.homologar') && !c.actor.pode('academico.conselho')) c.actor.exigir('publicacoes.aprovar')
     const site = c.actor.pode('publicacoes.aprovar') ? [...(await servicos.conteudos.paraAprovar(c)), ...(await servicos.paginas.paraAprovar(c))] : []
     const contas = c.actor.pode('utilizadores.aprovar') ? (await servicos.utilizadores.listar(c)).filter((u) => u.aprovacao).map((u) => ({
       colecao: 'utilizadores', id: String(u.id), titulo: u.nome, tipo: u.aprovacao.tipo === 'criar' ? 'conta' : 'papel', pedidoPor: u.aprovacao.pedidoPor, pedidoEm: u.aprovacao.pedidoEm,

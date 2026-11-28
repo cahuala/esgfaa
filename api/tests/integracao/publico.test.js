@@ -47,7 +47,7 @@ describe('site público', () => {
     assert.equal((await amb.http().post(url).send({ visitante: '<x>' })).status, 400)
   })
 
-  it('comentários: só aparecem depois da equipa de comunicação e do Comandante; validados e com armadilha para robôs', async () => {
+  it('comentários: só aparecem depois de a equipa de comunicação os aprovar; validados e com armadilha para robôs', async () => {
     const url = `/api/publico/interacoes/noticias/${publicada}/comentarios`
     const visiveis = async () => (await amb.http().get(`/api/publico/interacoes/noticias/${publicada}?visitante=${VISITANTE}`)).body.comentarios
     const r = await amb.http().post(url).send({ nome: 'Maria', texto: 'Excelente iniciativa!', visitante: VISITANTE })
@@ -62,36 +62,20 @@ describe('site público', () => {
     const cmd = amb.com((await amb.oComandante()).token)
     const id = (await moderador.get('/api/admin/comentarios')).body.find((c) => c.nome === 'Maria').id
     assert.equal((await moderador.get('/api/admin/comentarios/contagem')).body.porRever, 1)
-    // 1.º passo: a equipa de comunicação; o Comandante ainda não o vê como seu enquanto não for revisto
-    assert.equal((await cmd.post(`/api/admin/publicacoes/comentarios/${id}/decisao`).send({ decisao: 'aprovar' })).status, 409)
+    // a equipa de comunicação aprova e fica publicado (já não vai ao Comandante)
     const rev = await moderador.post(`/api/admin/comentarios/${id}/revisao`).send({ decisao: 'aprovar' })
-    assert.equal(rev.body.estado, 'revisto')
-    assert.equal((await visiveis()).length, 0)
+    assert.equal(rev.body.estado, 'publicado')
     assert.equal((await moderador.post(`/api/admin/comentarios/${id}/revisao`).send({ decisao: 'aprovar' })).status, 409)
-    // o moderador não decide pelo Comandante
-    assert.equal((await moderador.post(`/api/admin/publicacoes/comentarios/${id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
-    // 2.º passo: o Comandante, em «Por aprovar»
-    assert.equal((await cmd.get('/api/admin/publicacoes/contagem')).body.comentarios, 1)
-    const item = (await cmd.get('/api/admin/publicacoes')).body.find((p) => p.colecao === 'comentarios')
-    assert.equal(item.titulo, 'Comentário de Maria')
-    assert.equal(item.resumo, 'Excelente iniciativa!')
-    assert.equal(item.destino, 'Notícia pública')
-    assert.equal((await cmd.post(`/api/admin/publicacoes/comentarios/${id}/decisao`).send({ decisao: 'aprovar' })).status, 200)
+    assert.equal((await cmd.get('/api/admin/publicacoes/contagem')).body.comentarios, 0)
     const lista = await visiveis()
     assert.equal(lista.length, 1)
     assert.equal(lista[0].texto, 'Excelente iniciativa!')
     assert.ok(!('ip' in lista[0]))
 
-    // recusar (em qualquer dos passos) apaga o comentário; o Comandante tem de dizer porquê
+    // recusar apaga o comentário
     await amb.http().post(url).send({ nome: 'Rui', texto: 'Comentário fora do tema' })
-    await amb.http().post(url).send({ nome: 'Luís', texto: 'Comentário ofensivo' })
-    const todos = (await moderador.get('/api/admin/comentarios')).body
-    const rui = todos.find((c) => c.nome === 'Rui').id
-    const luis = todos.find((c) => c.nome === 'Luís').id
+    const rui = (await moderador.get('/api/admin/comentarios')).body.find((c) => c.nome === 'Rui').id
     assert.equal((await moderador.post(`/api/admin/comentarios/${rui}/revisao`).send({ decisao: 'recusar' })).body.estado, 'recusado')
-    await moderador.post(`/api/admin/comentarios/${luis}/revisao`).send({ decisao: 'aprovar' })
-    assert.equal((await cmd.post(`/api/admin/publicacoes/comentarios/${luis}/decisao`).send({ decisao: 'recusar' })).status, 400)
-    assert.equal((await cmd.post(`/api/admin/publicacoes/comentarios/${luis}/decisao`).send({ decisao: 'recusar', motivo: 'Linguagem ofensiva' })).status, 200)
     assert.deepEqual((await moderador.get('/api/admin/comentarios')).body.map((c) => c.nome), ['Maria'])
     assert.equal((await visiveis()).length, 1)
   })
