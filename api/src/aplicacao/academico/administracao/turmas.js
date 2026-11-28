@@ -253,9 +253,12 @@ export class ServicoTurmas {
 
   async listaDoCurso(ctx, cursoId, anoLetivo) {
     ctx.actor.exigir('academico.ver')
-    const curso = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
-    if (!curso) throw new NaoEncontrado('Curso não encontrado.')
-    const turmas = (await this.academico.listarTurmas()).filter((t) => t.curso === curso.id && (!anoLetivo || t.anoLetivo === anoLetivo))
+    // os cursos que não estão na lista dos cursos do site (os antigos, os de línguas, os de actualização): o nome é o da turma
+    const doSite = (await this.conteudos.listar('cursos')).find((x) => x.id === cursoId)
+    const todas = await this.academico.listarTurmas()
+    if (!doSite && !todas.some((t) => t.curso === cursoId)) throw new NaoEncontrado('Curso não encontrado.')
+    const curso = doSite ?? { id: cursoId, dados: { nome: cursoId } }
+    const turmas = todas.filter((t) => t.curso === curso.id && (!anoLetivo || t.anoLetivo === anoLetivo))
     const estudantes = []
     for (const t of turmas) for (const e of await this.academico.estudantesDaTurmaParaListas(t.id)) estudantes.push({ ...e, turma: t.nome, turmaId: t.id })
     const d = curso.dados ?? curso

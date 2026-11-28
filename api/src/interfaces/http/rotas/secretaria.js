@@ -64,7 +64,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   // o Director de cada curso (designado pela Administração Escolar)
   r.get('/directores-curso', async (req, res) => res.json(await a.turmas.directoresDeCurso(ctx(req))))
   r.put('/cursos/:curso/director', validar({ params: z.object({ curso: z.string().max(120) }), body: z.object({ utilizadorId: z.number().int().positive().nullable() }) }), async (req, res) => res.json(await a.turmas.definirDirectorDeCurso(ctx(req), req.dados.params.curso, req.dados.body.utilizadorId)))
-  r.get('/cursos/:curso/lista', validar({ params: z.object({ curso: z.string().max(120) }), query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.turmas.listaDoCurso(ctx(req), req.dados.params.curso, req.dados.query.anoLetivo)))
+  r.get('/cursos/:curso/lista', validar({ params: z.object({ curso: z.string().max(250) }), query: z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/).optional() }) }), async (req, res) => res.json(await a.turmas.listaDoCurso(ctx(req), req.dados.params.curso, req.dados.query.anoLetivo)))
   r.put('/turmas/:id', validar({ params: pId, body: E.turma }), async (req, res) => res.json(await a.turmas.editarTurma(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/turmas/:id/matriculas', validar({ params: pId, body: E.matricula }), async (req, res) => res.status(201).json(await a.turmas.matricular(ctx(req), req.dados.params.id, req.dados.body)))
   r.post('/contas/importar', validar({ body: E.importarPessoas }), async (req, res) => res.json(await p.registo.importar(ctx(req), req.dados.body)))
