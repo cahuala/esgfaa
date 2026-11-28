@@ -5,6 +5,8 @@ import { emailDeAcesso } from '../../../dominio/academico/pessoas/emailAcesso.js
 import { numeroConta, senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
 
 export const CHAVE_CATALOGO = 'cadeiras-catalogo'
+// as listas do corpo docente dos anos anteriores: { '2025/2026': [{ nome da disciplina, docentes }] }
+export const CHAVE_CATALOGOS_ANOS = 'cadeiras-catalogo-anos'
 
 /*
   Carga do arquivo da Repartição de Administração Escolar (as pautas finais dos anos anteriores, já assinadas):
@@ -73,7 +75,12 @@ export class ServicoArquivoAcademico {
       }
       ucs.push({ codigo, nome: txt(u?.nome, 200) || codigo, bloco: b?.sigla ?? '', tii })
     }
-    if (!ucs.length) throw new ErroValidacao(`${edicao}.º ${sigla} (${anoLetivo}): a pauta não tem cadeiras.`)
+    // as turmas sem pauta (só a relação nominal ou a lista de finalistas): os estudantes desse ano, sem cadeiras nem notas
+    const semPauta = t.semPauta === true
+    if (!ucs.length && !semPauta) throw new ErroValidacao(`${edicao}.º ${sigla} (${anoLetivo}): a pauta não tem cadeiras.`)
+    const pessoa = (e) => ({ nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20) })
+    // quem está na lista do curso mas não na pauta: fica matriculado na turma, sem notas
+    const outros = (Array.isArray(t.outrosEstudantes) ? t.outrosEstudantes : []).map(pessoa).filter((e) => e.nome)
     const estudantes = (t.estudantes ?? []).map((e) => ({
       nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20),
       notas: Object.fromEntries(ucs.map((u) => [u.codigo, nota(e?.notas?.[u.codigo])])),
@@ -82,7 +89,7 @@ export class ServicoArquivoAcademico {
     // o nome da turma por extenso (o do curso: «29.º Curso Superior de Comando e Direcção»); sem ele, vem do curso
     // a fórmula da pauta (o conversor confere-a com as médias do Excel): blocos ponderados pelos coeficientes, ou a média das cadeiras
     const formula = t.formula === 'media' || !blocos.length ? 'media' : 'blocos'
-    return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, formula, ficheiro: txt(t.ficheiro, 300) }
+    return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, formula, ficheiro: txt(t.ficheiro, 300), semPauta, outros, emCurso: t.emCurso === true, cursoNome: txt(t.cursoNome, 200) }
   }
 
   async importar(ctx, { turmas, simular = true } = {}) {
@@ -104,7 +111,8 @@ export class ServicoArquivoAcademico {
     for (const t of lista) {
       const r = { turma: `${t.nome} (${t.anoLetivo})`, sigla: t.sigla, anoLetivo: t.anoLetivo, cadeiras: t.ucs.length, discentes: t.estudantes.length, comConta: 0, semConta: [], estado: '', motivo: '' }
       resultado.push(r)
-      const curso = porSigla.get(t.sigla)
+      // um curso que já não se dá (CCEM, CPOS, línguas…) não está no site: a turma do arquivo fica com o nome do curso
+      const curso = porSigla.get(t.sigla) ?? (t.semPauta && t.cursoNome ? { id: t.cursoNome, titulo: t.cursoNome, dados: { sigla: t.sigla, nome: t.cursoNome } } : null)
       if (!curso) { Object.assign(r, { estado: 'sem curso', motivo: `O curso ${t.sigla} não está em Conteúdos › Cursos (crie-o com esta sigla e volte a carregar).` }); continue }
       if (!t.nome) t.nome = `${t.edicao}.º ${curso.dados?.nome || curso.titulo || t.sigla}`
       r.turma = `${t.nome} (${t.anoLetivo})`
@@ -118,7 +126,7 @@ export class ServicoArquivoAcademico {
       if (daqui && await this.#temNotasDoSistema(daqui.id)) { Object.assign(r, { estado: 'já existe', motivo: `A turma ${t.nome} já tem notas lançadas no sistema: fica como está.` }); continue }
       const linhas = []
       const faltam = []
-      for (const e of t.estudantes) {
+      for (const e of [...t.estudantes, ...t.outros.map((o) => ({ ...o, soMatricula: true }))]) {
         const c = (e.nip ? porNumero.get(norm(e.nip)) : null) ?? (!e.nip ? porNome.get(nomeChave(e.nome)) : null)
         if (c) linhas.push({ ...e, conta: c })
         else faltam.push(e)
@@ -129,7 +137,8 @@ export class ServicoArquivoAcademico {
       r.estado = simular ? 'por carregar' : 'carregada'
       if (simular) continue
       for (const e of faltam) {
-        const c = await this.#criarConta(e)
+        // as contas de quem só está nas listas de anos anteriores ficam inactivas (histórico); as do ano em curso, activas
+        const c = await this.#criarConta(e, { ativo: t.emCurso || !(t.semPauta || e.soMatricula) })
         if (c) { linhas.push({ ...e, conta: c }); for (const n of [e.nip]) if (n) porNumero.set(norm(n), c) }
         else r.semConta.push(`${e.nome}${e.nip ? ` (${e.nip})` : ''}`)
       }
@@ -151,7 +160,14 @@ export class ServicoArquivoAcademico {
   }
 
   async #gravar(tx, t, curso, existente, linhas, ctx) {
-    const turma = existente ?? await tx.turma.create({ data: { curso: curso.id, anoLetivo: t.anoLetivo, nome: t.nome, anoFinal: true, ativa: false } })
+    const turma = existente ?? await tx.turma.create({ data: { curso: curso.id, anoLetivo: t.anoLetivo, nome: t.nome, anoFinal: true, ativa: Boolean(t.emCurso) } })
+    // sem pauta, e quem não está na pauta: só a matrícula (concluída nos anos anteriores; activa no ano em curso)
+    const estado = t.emCurso ? 'ativa' : 'concluida'
+    for (const l of linhas.filter((x) => t.semPauta || x.soMatricula)) {
+      await tx.matricula.upsert({ where: { estudanteId_turmaId: { estudanteId: l.conta.id, turmaId: turma.id } }, create: { estudanteId: l.conta.id, turmaId: turma.id, estado }, update: {} })
+    }
+    if (t.semPauta) return
+    linhas = linhas.filter((x) => !x.soMatricula)
     // o plano do curso desse ano (se ainda não houver): os blocos da pauta; a média e a classificação ficam as do arquivo
     let plano = await tx.planoCurso.findUnique({ where: { curso_anoLetivo: { curso: curso.id, anoLetivo: t.anoLetivo } } })
     if (!plano) {
@@ -253,6 +269,8 @@ export class ServicoArquivoAcademico {
       r.turma = `${nome} (${anoLetivo})`
       const modelo = MODELOS_PLANO[t?.modelo]
       let turma = await this.prisma.turma.findFirst({ where: { curso: curso.id, anoLetivo }, orderBy: { id: 'asc' } })
+      // o nome corrigido na lista (ex.: o COAMP de 2026/2027 é o 12.º, não o 18.º)
+      if (turma && !simular && t?.nome && turma.nome !== nome) turma = await this.prisma.turma.update({ where: { id: turma.id }, data: { nome } })
       const ucs = turma ? await this.prisma.unidadeCurricular.findMany({ where: { turmaId: turma.id }, include: { docentes: true } }) : []
       const doModelo = modelo ? modelo.cadeiras.filter((c) => !ucs.some((u) => u.codigo === c.codigo)) : []
       const todas = [...ucs.map((u) => ({ codigo: u.codigo, nome: u.nome, departamento: u.departamento, docentes: u.docentes, existe: u })), ...doModelo.map((c) => ({ codigo: c.codigo, nome: c.nome, departamento: '', docentes: [], modelo: c }))]
@@ -328,35 +346,69 @@ export class ServicoArquivoAcademico {
     ainda não estavam nas cadeiras porque não tinham conta: quando chegam do Sistema de Pessoal, ficam propostos nas
     cadeiras do ano (para o Comandante aprovar). Repetir não duplica.
   */
+  /*
+    Os docentes de cada ano lectivo anterior (as listas do corpo docente, com a disciplina de cada um): guardam-se e
+    cada docente fica nas cadeiras desse ano com essa disciplina (aprovado: é o registo do que foi). Quem ainda não
+    chegou do Pessoal entra quando chegar (proporDocentesDoCatalogo corre também nestes anos).
+  */
+  async guardarDocentesDosAnos(ctx, anos = []) {
+    if (!this.paginas || !Array.isArray(anos)) return { anos: 0, propostos: 0 }
+    const limpos = {}
+    for (const a of anos.slice(0, 20)) {
+      if (!ANO.test(String(a?.anoLetivo ?? ''))) continue
+      limpos[a.anoLetivo] = (Array.isArray(a.cadeiras) ? a.cadeiras : []).slice(0, 500).map((c) => ({ nome: txt(c?.nome, 200), docentes: (Array.isArray(c?.docentes) ? c.docentes : []).slice(0, 50).map((d) => ({ nip: txt(d?.nip, 20), nome: txt(d?.nome, 200), tipo: txt(d?.tipo, 20) || 'efectivo' })) })).filter((c) => c.nome)
+    }
+    await this.paginas.guardar(CHAVE_CATALOGOS_ANOS, limpos, ctx.actor?.id ?? null)
+    const r = await this.proporDocentesDoCatalogo(ctx)
+    return { anos: Object.keys(limpos).length, propostos: r.propostos }
+  }
+
   async proporDocentesDoCatalogo(ctx) {
     const cat = this.paginas ? await this.paginas.ler(CHAVE_CATALOGO) : null
-    if (!cat?.cadeiras?.length || !cat.anoLetivo) return { propostos: 0 }
-    const ano = await this.prisma.anoLetivo.findUnique({ where: { id: cat.anoLetivo } })
-    if (ano?.fechado) return { propostos: 0 }
+    // os anos anteriores (as listas do corpo docente de cada ano)
+    let propostos = 0
+    const anteriores = this.paginas ? (await this.paginas.ler(CHAVE_CATALOGOS_ANOS)) ?? {} : {}
+    for (const [anoLetivo, cadeiras] of Object.entries(anteriores)) {
+      if (cat?.anoLetivo === anoLetivo || !cadeiras?.length) continue
+      propostos += await this.#docentesNasCadeiras(anoLetivo, cadeiras, { anterior: true })
+    }
+    if (!cat?.cadeiras?.length || !cat.anoLetivo) {
+      if (propostos && this.auditoria) await this.auditoria.registar(ctx, { acao: 'docentes_do_catalogo', colecao: 'cadeiras', alvoTitulo: `${propostos} docente(s) nas cadeiras dos anos anteriores (listas do corpo docente)`, utilizador: null })
+      return { propostos }
+    }
+    propostos += await this.#docentesNasCadeiras(cat.anoLetivo, cat.cadeiras, { anterior: false })
+    if (propostos && this.auditoria) await this.auditoria.registar(ctx, { acao: 'docentes_do_catalogo', colecao: 'cadeiras', alvoTitulo: `${cat.anoLetivo}: ${propostos} docente(s) propostos nas cadeiras (chegaram do Pessoal)`, utilizador: null })
+    return { propostos }
+  }
+
+  // cada docente da lista nas cadeiras do ano com a sua disciplina (pelo nome da cadeira); devolve quantos entraram
+  async #docentesNasCadeiras(anoLetivo, catalogo, { anterior }) {
+    const ano = await this.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })
+    if (ano?.fechado) return 0
     const contas = await this.prisma.contaPortal.findMany({ where: { tipo: 'docente' }, select: { id: true, nome: true, dados: true, ativo: true } })
     const nomeChave = (n) => String(n ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ')
     const conta = (nip, nome) => (nip && contas.find((c) => norm(c.dados?.nip) === norm(nip) || norm(c.dados?.numeroAgente) === norm(nip))) || (() => { const m = contas.filter((c) => nomeChave(c.nome) === nomeChave(nome)); return m.length === 1 ? m[0] : null })()
-    const ucs = await this.prisma.unidadeCurricular.findMany({ where: { turma: { anoLetivo: cat.anoLetivo } }, include: { docentes: true } })
+    const ucs = await this.prisma.unidadeCurricular.findMany({ where: { turma: { anoLetivo } }, include: { docentes: true } })
     let propostos = 0
     for (const uc of ucs) {
-      const k = noCatalogo(uc.nome, cat.cadeiras)
+      const k = noCatalogo(uc.nome, catalogo)
       if (!k?.docentes?.length) continue
       const ja = new Set(uc.docentes.map((d) => d.docenteId))
       let primeiro = ja.size === 0
       for (const d of k.docentes) {
         const cd = conta(d.nip, d.nome)
         if (!cd || ja.has(cd.id)) continue
-        await this.prisma.docencia.create({ data: { cadeiraId: uc.id, docenteId: cd.id, papel: primeiro && d.tipo === 'efectivo' ? 'regente' : 'assistente', estado: this.aprovacaoComandante ? 'proposta' : 'aprovada' } })
+        // nos anos anteriores fica logo (é o registo do que foi); no ano em curso segue para o Comandante
+        await this.prisma.docencia.create({ data: { cadeiraId: uc.id, docenteId: cd.id, papel: primeiro && d.tipo === 'efectivo' ? 'regente' : 'assistente', estado: !anterior && this.aprovacaoComandante ? 'proposta' : 'aprovada' } })
         if (d.tipo === 'efectivo') primeiro = false
         ja.add(cd.id)
         propostos++
       }
     }
-    if (propostos && this.auditoria) await this.auditoria.registar(ctx, { acao: 'docentes_do_catalogo', colecao: 'cadeiras', alvoTitulo: `${cat.anoLetivo}: ${propostos} docente(s) propostos nas cadeiras (chegaram do Pessoal)`, utilizador: null })
-    return { propostos }
+    return propostos
   }
 
-  async #criarConta(e) {
+  async #criarConta(e, { ativo = true } = {}) {
     if (!this.contas || !this.cifra) return null
     if (!this.emails) this.emails = new Set((await this.prisma.contaPortal.findMany({ select: { email: true } })).map((c) => c.email.toLowerCase()))
     const email = emailDeAcesso(e.nome, this.dominio, this.emails)
@@ -365,7 +417,7 @@ export class ServicoArquivoAcademico {
     const ano = (this.relogio?.agora() ?? new Date()).getFullYear()
     for (let tentativa = 0; tentativa < 4; tentativa++) {
       try {
-        const c = await this.contas.criar({ tipo: 'estudante', numero: numeroConta('estudante', ano, await this.contas.proximaSequencia('estudante', ano)), nome: e.nome, email, senha: await this.cifra.cifrar(senhaInicial()), dados: { nip: e.nip || '', posto: e.posto || '', ramo: e.ramo || '' } })
+        const c = await this.contas.criar({ tipo: 'estudante', numero: numeroConta('estudante', ano, await this.contas.proximaSequencia('estudante', ano)), nome: e.nome, email, senha: await this.cifra.cifrar(senhaInicial()), ativo, dados: { nip: e.nip || '', posto: e.posto || '', ramo: e.ramo || '' } })
         return { id: c.id, nome: c.nome, dados: c.dados }
       } catch (erro) {
         if (!/Número/.test(erro.message)) throw erro

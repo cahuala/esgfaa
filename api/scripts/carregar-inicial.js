@@ -22,13 +22,24 @@ export async function carregarInicial(contentor, pasta) {
   const ficheiros = fs.existsSync(pasta) ? fs.readdirSync(pasta).filter((f) => f.endsWith('.json')).sort() : []
   if (!ficheiros.length) return [...linhas, `Sem ficheiros para carregar em ${pasta}.`]
   // primeiro o arranque do ano (o catálogo das cadeiras), depois o arquivo
-  for (const f of [...ficheiros.filter((x) => x.startsWith('arranque')), ...ficheiros.filter((x) => !x.startsWith('arranque'))]) {
-    const j = JSON.parse(fs.readFileSync(path.join(pasta, f), 'utf8'))
+  // pela ordem certa: o arranque do ano (o catálogo), as pautas e as turmas do arquivo, os docentes de cada ano (precisam
+  // das turmas) e os horários (precisam dos docentes nas turmas)
+  const ORDEM = { 'arranque-ano-lectivo': 0, 'arquivo-administracao-escolar': 1, 'docentes-dos-anos': 2, 'docentes-horarios': 3 }
+  const lidos = ficheiros.map((f) => ({ f, j: JSON.parse(fs.readFileSync(path.join(pasta, f), 'utf8')) })).sort((a, b) => (ORDEM[a.j.tipo] ?? 1) - (ORDEM[b.j.tipo] ?? 1) || a.f.localeCompare(b.f))
+  for (const { f, j } of lidos) {
     try {
       // os docentes dos horários do arquivo: ficam guardados para a Repartição confirmar (Docentes dos horários)
       if (j.tipo === 'docentes-horarios') {
         const g = await contentor.servicos.administracaoEscolar.docentesHorarios.guardar(ctx, { linhas: j.linhas ?? [] })
-        linhas.push(`${f}: ${g.linhas} linha(s) dos horários guardadas — a Repartição confirma os docentes em «Docentes dos horários do arquivo».`, '')
+        // os anos anteriores sem dúvida ficam logo; o resto espera pela Repartição
+        const sd = await contentor.servicos.administracaoEscolar.docentesHorarios.confirmarSemDuvida(ctx)
+        linhas.push(`${f}: ${g.linhas} linha(s) dos horários guardadas; ${sd.feitas} docente(s) sem dúvida ficaram nas cadeiras dos anos anteriores — os outros confirma-os a Repartição em «Docentes dos horários do arquivo».`, '')
+        continue
+      }
+      // os docentes de cada ano anterior (as listas do corpo docente): nas cadeiras desse ano
+      if (j.tipo === 'docentes-dos-anos') {
+        const g = await arq.guardarDocentesDosAnos(ctx, j.anos ?? [])
+        linhas.push(`${f}: as listas do corpo docente de ${g.anos} ano(s) lectivo(s) guardadas; ${g.propostos} docente(s) ficaram nas cadeiras desses anos (os que ainda não chegaram do Pessoal entram quando chegarem).`, '')
         continue
       }
       const r = j.tipo === 'arranque-ano-lectivo'

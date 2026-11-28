@@ -101,6 +101,24 @@ export class ServicoDocentesHorarios {
     return { cadeiras, linhas: guardado.linhas.length, semTurma, guardadoEm: guardado.guardadoEm ?? null }
   }
 
+  /*
+    Os anos anteriores sem dúvida: quando o nome do horário só pode ser um docente, ele fica logo na cadeira (é o
+    registo do que foi). Os de várias pessoas possíveis e os do ano em curso esperam pela Repartição.
+  */
+  async confirmarSemDuvida(ctx) {
+    const s = await this.sugestoes(ctx)
+    if (!s.cadeiras.length) return { feitas: 0 }
+    const ativas = new Set((await this.prisma.turma.findMany({ where: { ativa: true }, select: { id: true } })).map((t) => t.id))
+    const escolhas = []
+    for (const c of s.cadeiras) {
+      if (ativas.has(c.turmaId)) continue
+      for (const x of c.sugestoes) if (x.sugerido && !x.jaNaCadeira && !c.atuais.some((d) => d.id === x.sugerido)) escolhas.push({ cadeiraId: c.cadeiraId, docenteId: x.sugerido })
+    }
+    if (!escolhas.length) return { feitas: 0 }
+    const r = await this.confirmar(ctx, escolhas)
+    return { feitas: r.feitas }
+  }
+
   // a Repartição confirma: cada docente escolhido fica na cadeira (regente se for o primeiro, senão assistente)
   async confirmar(ctx, escolhas = []) {
     ctx.actor.exigir('academico.gerir')

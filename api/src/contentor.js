@@ -369,7 +369,11 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
     let aPropor = null
     servicos.pessoal.registo.aoReceberDocentes = () => {
       if (aPropor) return aPropor
-      aPropor = servicos.administracaoEscolar.arquivo.proporDocentesDoCatalogo({ actor: { id: null, nome: 'Sistema de Pessoal' }, ip: null, agente: 'integracao' }).finally(() => { aPropor = null })
+      const ctx = { actor: { id: null, nome: 'Sistema de Pessoal', papel: 'administrador', pode: () => true, exigir: () => {} }, ip: null, agente: 'integracao' }
+      // as listas de cada ano e, nos anos anteriores, os nomes dos horários que só podem ser um docente
+      aPropor = servicos.administracaoEscolar.arquivo.proporDocentesDoCatalogo(ctx)
+        .then(() => servicos.administracaoEscolar.docentesHorarios?.confirmarSemDuvida(ctx))
+        .finally(() => { aPropor = null })
       return aPropor
     }
   }

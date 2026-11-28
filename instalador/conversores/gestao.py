@@ -98,6 +98,63 @@ for t in arq['turmas']:
                   'ucs': [{k: v for k, v in u.items() if k != 'rotulo'} for u in ucs], 'estudantes': estudantes,
                   # os blocos da pauta assinada, com os coeficientes (o TII é um bloco), e a fórmula da média final
                   'blocos': p.get('blocos') or [], 'formula': p.get('formula') or ('blocos' if p.get('blocos') else 'media')})
+# ---------- as turmas sem pauta: os estudantes de cada ano (relações nominais e listas de finalistas) ----------
+# as turmas de 2026/2027 dos quatro cursos com plano vêm do arranque do ano; aqui ficam as outras, como histórico
+TODOS = [('CSCD', r'SUPERIOR DE COMANDO'), ('CEAO', r'ESTRATEGIA E ARTE'), ('COAMP', r'ASSEGURAMENTO|APOIO MORAL|PSICO-MORAL|EDUCACAO PATRIOTICA'),
+         ('CEMC', r'ESTADO.MAIOR CONJUNTO'), ('CCEO', r'CAPACITACAO DE ESTRATEGIA|ACTUALIZACAO DE ESTRATEGIA'), ('CCEM', r'COMANDO E ESTADO.MAIOR'),
+         ('CPOS', r'PROMOCAO A OFICIAL SUPERIOR'), ('CFD', r'FORMACAO DE DOCENTES'), ('CLP', r'LINGUA PORTUGUESA'), ('CLR', r'LINGUA RUSSA'), ('CLI', r'LINGUA INGLESA')]
+ARRANQUE = {('CSCD', '2026/2027'), ('CEAO', '2026/2027'), ('CEMC', '2026/2027'), ('COAMP', '2026/2027')}
+ANO_ATUAL = '2026/2027'
+com_pauta = {(t['sigla'], t['edicao'], t['anoLetivo']) for t in saida}
+sem_pauta = {}
+for q in acad:
+    for a_ in q.get('anos', []):
+        if a_['papel'] != 'estudante': continue
+        nome_curso = a_.get('curso') or ''
+        m = re.match(r'^(?:\d+\.º\s+Turno\s+do\s+)?(\d+)\.º\s+(.*)$', nome_curso)
+        sg = next((x for x, rx in TODOS if m and re.search(rx, sem(m.group(2)))), None)
+        if not sg or (sg, a_['anoLetivo']) in ARRANQUE: continue
+        ed = int(m.group(1))
+        if (sg, ed, a_['anoLetivo']) in com_pauta: continue
+        k = (sg, ed, a_['anoLetivo'], nome_curso)
+        t = sem_pauta.setdefault(k, {'sigla': sg, 'edicao': ed, 'anoLetivo': a_['anoLetivo'], 'curso': nome_curso, 'nome': nome_curso,
+                                     'semPauta': True, 'emCurso': a_['anoLetivo'] >= ANO_ATUAL, 'ficheiro': 'relação nominal / lista de finalistas',
+                                     'cursoNome': re.sub(r'^(?:\d+\.º\s+Turno\s+do\s+)?\d+\.º\s+', '', nome_curso), 'ucs': [], 'estudantes': []})
+        num = q.get('nip') or q.get('numeroAgente') or ''
+        if not any(e['nome'] == q['nome'] for e in t['estudantes']):
+            t['estudantes'].append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or q.get('postoExterno') or '', 'ramo': q.get('ramo') or '', 'notas': {}, 'final': None, 'mencao': ''})
+saida += sorted(sem_pauta.values(), key=lambda t: (t['anoLetivo'], t['sigla'], t['edicao']))
+# nas turmas com pauta, quem está na lista do curso mas não na pauta: fica matriculado, sem notas (não entra na pauta)
+for t in saida:
+    if t.get('semPauta'): continue
+    ja = {e['nip'] for e in t['estudantes'] if e['nip']} | {tok(e['nome']).__repr__() for e in t['estudantes']}
+    outros = []
+    for q in acad:
+        for a_ in q.get('anos', []):
+            if a_['papel'] != 'estudante' or a_['anoLetivo'] != t['anoLetivo']: continue
+            m = re.match(r'^(\d+)\.º\s+(.*)$', a_.get('curso') or '')
+            sg = next((x for x, rx in TODOS if m and re.search(rx, sem(m.group(2)))), None)
+            if sg != t['sigla'] or int(m.group(1)) != t['edicao']: continue
+            num = q.get('nip') or q.get('numeroAgente') or ''
+            if (num and num in ja) or tok(q['nome']).__repr__() in ja or any(len(tok(q['nome']) & tok(e['nome'])) >= 3 or __import__('difflib').SequenceMatcher(None, sem(q['nome']), sem(e['nome'])).ratio() >= 0.88 for e in t['estudantes']): continue
+            if not any(o['nome'] == q['nome'] for o in outros): outros.append({'nip': num, 'nome': q['nome'], 'posto': q.get('posto') or '', 'ramo': q.get('ramo') or ''})
+    if outros:
+        t['outrosEstudantes'] = outros
+        avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): {len(outros)} discente(s) da lista do curso não estão na pauta — ficam matriculados, sem notas.")
+
+# ---------- os docentes de cada ano (as listas do corpo docente): a disciplina de cada um ----------
+docentes_ano = {}
+for q in acad:
+    for a_ in q.get('anos', []):
+        if a_['papel'] != 'docente' or not a_.get('curso') or a_['anoLetivo'] in (ANO_ATUAL,): continue
+        cad = docentes_ano.setdefault(a_['anoLetivo'], {}).setdefault(a_['curso'], {'nome': a_['curso'], 'docentes': []})
+        if not any(d['nome'] == q['nome'] for d in cad['docentes']):
+            cad['docentes'].append({'nip': q.get('nip') or '', 'nome': q['nome'], 'posto': q.get('posto') or '', 'tipo': a_.get('tipoDocente') or 'efectivo'})
+SAIDA_DOC = re.sub(r'(\.json)?$', '', SAIDA).replace('gestao-pautas', 'gestao-docentes') + '.json'
+if 'gestao-docentes' not in SAIDA_DOC: SAIDA_DOC = SAIDA_DOC[:-5] + '-docentes.json'
+json.dump({'tipo': 'docentes-dos-anos', 'anos': [{'anoLetivo': k, 'cadeiras': list(v.values())} for k, v in sorted(docentes_ano.items())]}, open(SAIDA_DOC, 'w'), ensure_ascii=False)
+print('docentes por ano:', {k: sum(len(c['docentes']) for c in v.values()) for k, v in docentes_ano.items()}, '→', SAIDA_DOC)
 json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-27', 'turmas': saida, 'avisos': sorted(set(avisos))}, open(SAIDA, 'w'), ensure_ascii=False)
 for t in saida:
+    if t.get('semPauta'): print(f"{t['anoLetivo']} {t['curso'][:70]}: {len(t['estudantes'])} discentes (sem pauta)"); continue
     print(f"{t['anoLetivo']} {t['edicao']}.º {t['sigla']}: {len(t['estudantes'])} discentes ({sum(1 for e in t['estudantes'] if e['nip'])} com NIP), {len(t['ucs'])} cadeiras: " + ', '.join(f"{u['codigo']}={u['nome'][:22]}" for u in t['ucs'][:6]) + '…')

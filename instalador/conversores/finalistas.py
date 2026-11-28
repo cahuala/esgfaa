@@ -26,6 +26,9 @@ def linhas(f):
                     if x and (not cs or cs[-1] != x): cs.append(x)
                 out.extend(cs)
     return out
+# erros de edição nas listas, conferidos com os planos de curso (decisão da Repartição de Administração Escolar):
+# a lista dos discentes de 2026/2027 diz «18º» no COAMP, mas o plano e a agenda são do 12.º COAMP
+CORRECOES = {('2026.2027', '18º CURSO DE ORGANIZAÇÃO DO ASSEGURAMENTO'): '12º CURSO DE ORGANIZAÇÃO DO ASSEGURAMENTO'}
 cursos = []
 for f in sys.argv[2:]:
     L = linhas(f); i = 0; cur = None; unidade = ''; reg = None; cab = None
@@ -36,6 +39,7 @@ for f in sys.argv[2:]:
     for x in L:
         up = x.upper()
         if up.startswith('RELAÇÃO NOMINAL DOS FINALISTAS') or (up.endswith('CURSO DE ESTRATÉGIA E ARTE OPERATIVA') and 'DISCENTES' in f.upper()) or re.match(r'^\d+º (TURNO|CURSO)', up) and 'DISCENTES' in f.upper():
+            x = next((n for (fic, t), n in CORRECOES.items() if fic in f and up.startswith(t)), x)
             fecha(); cur = {'ficheiro': f.split('/')[-1], 'titulo': x, 'alunos': [], 'data': None}; cursos.append(cur); cab = True; unidade = ''; continue
         if cab and not re.search(r'20\d\d', cur['titulo']) and not ORD.match(x) and cur['ficheiro'].upper().find('DISCENTES')<0: cur['titulo'] += ' ' + x; continue
         if cur is None: continue
