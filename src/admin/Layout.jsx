@@ -13,6 +13,7 @@ import AvatarConta from './componentes/AvatarConta'
 import AvisoPrivacidade from '../components/AvisoPrivacidade'
 import { useAnoTrabalho } from './anoTrabalho'
 import { nomeDoSistema, useSistema } from './sistema'
+import PesquisaGlobal from './componentes/PesquisaGlobal'
 
 const SITE = import.meta.env.BASE_URL
 
@@ -170,6 +171,7 @@ function Layout({ children }) {
         </div>
 
         <div className="navbar-nav">
+          {pode('academico.ver') && <PesquisaGlobal />}
           <div className="navbar-item">
             <a href={SITE} target="_blank" rel="noreferrer" className="navbar-link icon" title={tx('Ver o site')}>
               <i className="fa fa-external-link-alt" />

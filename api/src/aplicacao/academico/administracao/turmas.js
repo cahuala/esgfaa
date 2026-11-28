@@ -29,6 +29,35 @@ export class ServicoTurmas {
     Object.assign(this, dependencias)
   }
 
+  /*
+    Pesquisa em todo o sistema (como na GENIUS): escreve-se um nome, um NIP, o número, uma turma ou uma cadeira e
+    vai-se directo à ficha, à turma ou à pauta. Perdoa os acentos e um erro de escrita por palavra. As turmas e as
+    cadeiras são as do ano lectivo do menu.
+  */
+  async procurar(ctx, q, anoLetivo) {
+    ctx.actor.exigir('academico.ver')
+    const termos = semAcentos(q).split(/\s+/).filter((t) => t.length >= 2).slice(0, 6)
+    if (!termos.length) return { pessoas: [], turmas: [], cadeiras: [] }
+    const bate = (texto) => {
+      const palavras = semAcentos(texto).split(/[\s,.;:/()-]+/).filter(Boolean)
+      const junto = palavras.join(' ')
+      return termos.every((t) => junto.includes(t) || (t.length >= 4 && palavras.some((w) => quaseIgual(t, w.slice(0, t.length)) || quaseIgual(t, w))))
+    }
+    const contas = await this.contas.listar({}).catch(() => [])
+    const pessoas = contas.filter((c) => bate([c.nome, c.numero, c.email, c.dados?.nip, c.dados?.posto].filter(Boolean).join(' ')))
+      .slice(0, 12).map((c) => ({ id: c.id, nome: c.nome, tipo: c.tipo, numero: c.numero ?? '', nip: c.dados?.nip ?? '', posto: c.dados?.posto ?? '', temFoto: Boolean(c.fotoCaminho ?? c.temFoto), ativo: c.ativo !== false }))
+    const turmas = (await this.academico.listarTurmas()).filter((t) => !anoLetivo || t.anoLetivo === anoLetivo)
+    const porId = new Map(turmas.map((t) => [t.id, t]))
+    // a sigla do curso (CSCD, COAMP…) também encontra as turmas
+    const siglas = new Map((await this.conteudos.listar('cursos')).map((c) => [c.id, c.dados?.sigla ?? '']))
+    const cadeiras = turmas.length ? await this.academico.cadeirasDasTurmas(turmas.map((t) => t.id)) : []
+    return {
+      pessoas,
+      turmas: turmas.filter((t) => bate(`${t.nome} ${t.anoLetivo} ${siglas.get(t.curso) ?? ''}`)).slice(0, 8).map((t) => ({ id: t.id, nome: t.nome, anoLetivo: t.anoLetivo })),
+      cadeiras: cadeiras.filter((c) => bate(`${c.codigo} ${c.nome}`)).slice(0, 12).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, turma: porId.get(c.turmaId)?.nome ?? '' })),
+    }
+  }
+
   listarTurmas(ctx) {
     ctx.actor.exigir('academico.ver')
     return this.academico.listarTurmas()
@@ -365,4 +394,14 @@ export class ServicoTurmas {
     await this.auditoria.registar(ctx, { acao: 'alterar_matricula', colecao: 'matriculas', alvoId: m.id, detalhes: { de: m.estado, para: estado } })
     return r
   }
+}
+
+const semAcentos = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+// iguais com no máximo um erro (uma letra trocada, a mais ou a menos)
+function quaseIgual(a, b) {
+  if (a === b) return true
+  if (Math.abs(a.length - b.length) > 1) return false
+  let i = 0
+  while (i < a.length && i < b.length && a[i] === b[i]) i++
+  return a.slice(i + 1) === b.slice(i + 1) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i)
 }

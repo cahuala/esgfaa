@@ -933,3 +933,20 @@ fieldset:disabled .bloco-topo .btn-group {
 .of-pauta-geral tfoot td { background: inherit; }
 .of-pauta-cadeira { font-family: 'Century Gothic', 'URW Gothic', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .of-pauta-cadeira thead th { background: #c0c0c0; text-align: center; font-weight: bold; border-width: 2px !important; }
+
+/* a pesquisa em todo o sistema, no cabeçalho */
+.esg-pesquisa { position: relative; align-self: center; margin-right: .5rem; }
+.esg-pesquisa form { position: relative; }
+.esg-pesquisa input { width: 320px; padding-left: 1.9rem; border-radius: 20px; }
+.esg-pesquisa-icone { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: #888; font-size: .8rem; }
+.esg-pesquisa-lista { position: absolute; right: 0; top: calc(100% + 4px); width: 420px; max-height: 70vh; overflow-y: auto; background: var(--bs-body-bg, #fff); border: 1px solid rgba(0,0,0,.12); border-radius: 8px; z-index: 1050; }
+.esg-pesquisa-grupo { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: #888; padding: .5rem .75rem .25rem; }
+.esg-pesquisa-item { display: flex; align-items: center; gap: .6rem; width: 100%; text-align: left; background: none; border: 0; padding: .4rem .75rem; color: inherit; }
+.esg-pesquisa-item:hover, .esg-pesquisa-item:focus { background: rgba(0,0,0,.05); outline: none; }
+.esg-pesquisa-item span { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.esg-pesquisa-item small { color: #888; }
+@media (max-width: 991px) {
+  .esg-pesquisa input { width: 160px; }
+  .esg-pesquisa-lista { position: fixed; left: 8px; right: 8px; width: auto; top: 56px; }
+}
+@media (max-width: 575px) { .esg-pesquisa { display: none; } }
