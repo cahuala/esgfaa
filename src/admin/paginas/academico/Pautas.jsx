@@ -46,7 +46,9 @@ function Pautas({ lancar = false }) {
   const { ano, mudar } = useAnoTrabalho()
   const [turmas, setTurmas] = useState(null)
   const [cursos, setCursos] = useState([])
-  const [aberta, setAberta] = useState(null)
+  // em «Lançar notas» as cadeiras de cada turma aparecem logo (sem um clique a mais); nas pautas abre-se a turma
+  const [abertas, setAbertas] = useState({})
+  const aberta = (id) => abertas[id] ?? lancar
   const [erro, setErro] = useState('')
   useEffect(() => {
     api('/academico/turmas').then(setTurmas).catch((e) => setErro(e.message))
@@ -80,11 +82,11 @@ function Pautas({ lancar = false }) {
                 <b className="me-auto">{t.nome} <span className="fw-normal text-muted small">· {t.estudantes} {tx('estudante(s)')} · {t.cadeiras} {tx('cadeira(s)')}</span></b>
                 <Link to={`/academico/documentos/turma/${t.id}/pauta`} className="btn btn-sm btn-white"><i className="fa fa-table me-1" />{tx('Pauta da turma')}</Link>
                 <Link to={`/academico/turmas/${t.id}/pauta-final`} className="btn btn-sm btn-white"><i className="fa fa-file-alt me-1" />{tx('Pauta final do curso')}</Link>
-                <button type="button" className={`btn btn-sm ${aberta === t.id ? 'btn-dark' : 'btn-theme'}`} onClick={() => setAberta(aberta === t.id ? null : t.id)} aria-expanded={aberta === t.id}>
-                  <i className={`fa ${aberta === t.id ? 'fa-chevron-up' : 'fa-chevron-down'} me-1`} />{lancar ? tx('Cadeiras') : tx('Pautas das cadeiras')}
+                <button type="button" className={`btn btn-sm ${aberta(t.id) ? 'btn-dark' : 'btn-theme'}`} onClick={() => setAbertas({ ...abertas, [t.id]: !aberta(t.id) })} aria-expanded={aberta(t.id)}>
+                  <i className={`fa ${aberta(t.id) ? 'fa-chevron-up' : 'fa-chevron-down'} me-1`} />{lancar ? tx('Cadeiras') : tx('Pautas das cadeiras')}
                 </button>
               </div>
-              {aberta === t.id && <div className="bg-light border-top"><Cadeiras turmaId={t.id} lancar={lancar} /></div>}
+              {aberta(t.id) && <div className="bg-light border-top"><Cadeiras turmaId={t.id} lancar={lancar} /></div>}
             </div>
           ))}
         </Painel>

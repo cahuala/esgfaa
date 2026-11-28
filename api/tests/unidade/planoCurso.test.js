@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { MODELOS_PLANO, faltasDoCurso, mencao, notaDaProva, prazoRecuperacao, recuperacaoPossivel, resultadoCurso, resultadoUc, validarPlano, verificarCargaHoraria } from '../../src/dominio/academico/avaliacao/planoCurso.js'
+import { MODELOS_PLANO, faltasDoCurso, mencao, notaDaProva, pesosProvasDoPlano, prazoRecuperacao, recuperacaoPossivel, resultadoCurso, resultadoUc, validarPlano, verificarCargaHoraria } from '../../src/dominio/academico/avaliacao/planoCurso.js'
 
 const CSCD = validarPlano({ ...MODELOS_PLANO['cscd-2026'].plano, curso: 'cscd' })
 
@@ -163,5 +163,53 @@ describe('fórmula «blocos»: média simples em cada bloco, blocos ponderados',
     assert.deepEqual(r.blocos.map((b) => b.nota), [18.08, 18.17, 16.69, 18.63, 18])
     assert.equal(r.final, Math.round(((18.08 * 4 + 18.17 * 2 + 16.69 * 2 + 18.63 + 18 * 3) / 12) * 100) / 100)
     assert.deepEqual([r.final, r.mencao], [17.89, 'Bom'])
+  })
+})
+
+// as fórmulas dos planos de 2026/2027, conferidas com as pautas assinadas do arquivo
+describe('fórmulas dos planos de curso (sem erros de cálculo)', () => {
+  it('CSCD: PDO, ODEF, OOF e OEST = (3×TAI + TAG) / 4, sem ninguém escrever os pesos', () => {
+    assert.deepEqual(pesosProvasDoPlano(CSCD, 'PDO'), { TAI: 3, TAG: 1 })
+    assert.equal(pesosProvasDoPlano(CSCD, 'GP'), null)
+    const provas = [{ id: 1, tipo: 'TAI', forma: 'teste' }, { id: 2, tipo: 'TAG', forma: 'trabalho' }]
+    assert.equal(resultadoUc(provas, { 1: { nota: 16 }, 2: { nota: 12 } }, { pesosTipo: pesosProvasDoPlano(CSCD, 'ODEF') }).final, 15) // (3·16 + 12) / 4
+    assert.equal(resultadoUc(provas, { 1: { nota: 16 }, 2: { nota: 12 } }).final, 14) // nas outras UC, a média simples
+    // dois TAI: a média dos TAI pesa 3 e a do TAG 1
+    const tres = [...provas, { id: 3, tipo: 'TAI', forma: 'relatorio' }]
+    assert.equal(resultadoUc(tres, { 1: { nota: 16 }, 2: { nota: 12 }, 3: { nota: 14 } }, { pesosTipo: { TAI: 3, TAG: 1 } }).final, 14.25) // (3·15 + 12) / 4
+    // só TAI: a média simples
+    assert.equal(resultadoUc([provas[0]], { 1: { nota: 13 } }, { pesosTipo: { TAI: 3, TAG: 1 } }).final, 13)
+    // os pesos escritos em cada prova continuam a valer primeiro
+    assert.equal(resultadoUc(provas.map((p) => ({ ...p, peso: 50 })), { 1: { nota: 16 }, 2: { nota: 12 } }, { pesosTipo: { TAI: 3, TAG: 1 } }).final, 14)
+  })
+
+  it('31.º CSCD (pauta assinada): Táctica = (6·PDO + 6·ODEF + 5·OOF + 6·OEST + 3·OAC) / 26 = 10,99', () => {
+    const plano = { ...CSCD, blocos: [{ sigla: 'TAC', nome: 'Táctica', coeficiente: 3 }] }
+    const u = (codigo, creditos, final) => ({ bloco: 'TAC', codigo, nome: codigo, creditos, final, situacao: 'aprovado' })
+    const r = resultadoCurso(plano, [u('PDO', 6, 10), u('ODEF', 6, 10), u('OOF', 5, 11.18), u('OEST', 6, 11.2), u('OAC', 3, 14.18)])
+    assert.equal(r.blocos[0].nota, 10.99) // no Excel: 10,986153…
+  })
+
+  it('CSCD: a média final pelos coeficientes do plano (2·Adm + 3·Tac + 1·OCC + 2·Estr + 2·TII) / 10', () => {
+    const ucs = MODELOS_PLANO['cscd-2026'].cadeiras.map((c) => ({ ...c, final: { ADM: 18, TAC: 11, OCC: 13, ESTR: 16, TII: 17 }[c.bloco], situacao: 'aprovado' }))
+    const r = resultadoCurso(CSCD, ucs)
+    assert.equal(r.final, Math.round(((2 * 18 + 3 * 11 + 13 + 2 * 16 + 2 * 17) / 10) * 100) / 100)
+  })
+
+  it('CEMC: (2,5·Adm + 1·OCC + 2·Estr + 1,5·TII) / 7 e o bloco do TII = (3·MIC + 14·TII) / 17', () => {
+    const cemc = validarPlano({ ...MODELOS_PLANO['cemc-2026'].plano, curso: 'cemc' })
+    const ucs = MODELOS_PLANO['cemc-2026'].cadeiras.map((c) => ({ ...c, final: c.codigo === 'MIC' ? 12 : c.codigo === 'TII' ? 17 : { ADM: 16, OCC: 14, ESTR: 15 }[c.bloco], situacao: 'aprovado' }))
+    const r = resultadoCurso(cemc, ucs)
+    const tii = Math.round(((3 * 12 + 14 * 17) / 17) * 100) / 100
+    assert.equal(r.blocos.find((b) => b.sigla === 'TII').nota, tii)
+    assert.equal(r.final, Math.round(((2.5 * 16 + 14 + 2 * 15 + 1.5 * tii) / 7) * 100) / 100)
+  })
+
+  it('30.º CSCD (pauta assinada, 2024/2025): blocos simples com os coeficientes 3, 4, 1, 2 e 4 → 16,26', () => {
+    const plano = { formula: 'blocos', ajusteMaximo: 0, exigirBlocos: false, exigirUcs: false, exigirTii: false, blocos: [{ sigla: 'ADM', nome: 'Adm', coeficiente: 3 }, { sigla: 'TAC', nome: 'Tac', coeficiente: 4 }, { sigla: 'OCC', nome: 'OCC', coeficiente: 1 }, { sigla: 'EST', nome: 'Estr', coeficiente: 2 }, { sigla: 'TII', nome: 'TII', coeficiente: 4 }] }
+    const u = (bloco, codigo, final) => ({ bloco, codigo, nome: codigo, creditos: 3, final, situacao: 'aprovado' })
+    const ucs = [u('ADM', 'CRPP', 16), u('ADM', 'GP', 17), u('ADM', 'CL', 18), u('ADM', 'ALOG', 18.5), ...[17, 17.42, 12.72, 14.78, 15.64].map((n, i) => u('TAC', `T${i}`, n)), u('OCC', 'OCC', 15), u('OCC', 'TOCC', 14), ...[18, 16.5, 15.4, 16].map((n, i) => u('EST', `E${i}`, n)), u('TII', 'TII', 16.5)]
+    const r = resultadoCurso(plano, ucs)
+    assert.equal(r.final, 16.26) // a «Média Ponderada» do Excel: 16,2588
   })
 })

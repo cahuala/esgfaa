@@ -60,7 +60,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
       if (rec === undefined) invalidas.push(`${a.id}-rec`)
       return [a.id, { nota: nota ?? null, recuperacao: rec ?? null, recuperacaoPedidaEm: l.notas[a.id]?.recuperacaoPedidaEm }]
     }))
-    return { ...resultadoUc(p.avaliacoes, notas, { exigirTesteEscrito: p.plano?.exigirTesteEscrito !== false }), invalidas }
+    return { ...resultadoUc(p.avaliacoes, notas, { exigirTesteEscrito: p.plano?.exigirTesteEscrito !== false, pesosTipo: p.pesosProvas }), invalidas }
   }
   const resultados = Object.fromEntries(p.linhas.map((l) => [l.estudante.id, resultado(l)]))
   const temInvalidas = Object.values(resultados).some((r) => r.invalidas.length)
@@ -105,6 +105,11 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
   const avisoPesos = pesos.some((x) => x > 0) && (pesos.some((x) => !x)
     ? tx('Algumas provas têm peso e outras não: a nota da UC usa a média simples até todas terem peso.')
     : Math.abs(somaPesos - 100) > 0.01 ? tx('Os pesos das provas somam {0} % (deviam somar 100 %).', { 0: String(somaPesos).replace('.', ',') }) : '')
+  // um clique: um TAI (teste escrito) ou um TAG (trabalho) com o título numerado; a data e o resto mudam-se depois
+  async function criarRapida(tipo) {
+    const n = p.avaliacoes.filter((a) => a.tipo === tipo).length + 1
+    try { aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { tipo, forma: tipo === 'TAG' ? 'trabalho' : 'teste', titulo: `${tipo} ${n}`, data: null, peso: null } })) } catch (x) { falhou(x) }
+  }
   async function criar(e) {
     e.preventDefault()
     try {
@@ -124,7 +129,9 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
         </div>
         <div className="p-acoes-linha p-sem-impressao">
           {mudadas.size > 0 && <span className="p-por-guardar">{tx('Alterações por guardar')}</span>}
-          {!c.tii && <button type="button" className="btn btn-white" onClick={() => setNova(nova ? null : VAZIA)}><i className="fa fa-plus me-1" />{tx('Nova prova')}</button>}
+          {!c.tii && <button type="button" className="btn btn-white" onClick={() => criarRapida('TAI')} title={tx('Novo TAI (teste escrito)')}><i className="fa fa-plus me-1" />TAI</button>}
+          {!c.tii && <button type="button" className="btn btn-white" onClick={() => criarRapida('TAG')} title={tx('Novo TAG (trabalho de grupo)')}><i className="fa fa-plus me-1" />TAG</button>}
+          {!c.tii && <button type="button" className="btn btn-white" onClick={() => setNova(nova ? null : VAZIA)} title={tx('Outra prova (escolher a forma, o título, o peso e a data)')}><i className="fa fa-sliders-h me-1" />{tx('Outra prova')}</button>}
           <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" /> {tx('Imprimir')}</button>
           {!c.tii && <button type="button" className="btn btn-theme" onClick={guardar} disabled={!mudadas.size || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? tx('A guardar…') : tx('Guardar pauta')}</button>}
         </div>
@@ -149,7 +156,8 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
 
       {c.tii && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-1" />{tx('A nota desta UC é a do Trabalho de Investigação Individual, lançada pela Administração Escolar (turma → TFC/TII).')}</div>}
       {!c.tii && avisoPesos && <div className="alert alert-warning py-2 p-sem-impressao"><i className="fa fa-balance-scale me-1" />{avisoPesos}</div>}
-      {!c.tii && p.avaliacoes.length === 0 && <Vazio>{tx('Ainda não há provas. Crie os TAI e os TAG da UC em «Nova prova».')}</Vazio>}
+      {!c.tii && p.pesosProvas && !pesos.some((x) => x > 0) && <div className="alert alert-light border py-2 p-sem-impressao small"><i className="fa fa-balance-scale me-1" />{tx('Pelo plano de curso, a nota desta UC é ({0}) — o sistema já calcula assim.', { 0: Object.entries(p.pesosProvas).map(([k, v]) => `${v > 1 ? `${v}×` : ''}${k}`).join(' + ') + ` / ${Object.values(p.pesosProvas).reduce((a, b) => a + b, 0)}` })}</div>}
+      {!c.tii && p.avaliacoes.length === 0 && <Vazio>{tx('Ainda não há provas. Crie os TAI e os TAG da UC com os botões «+ TAI» e «+ TAG» (um clique cada).')}</Vazio>}
 
       {(c.tii || p.avaliacoes.length > 0) && (
         <div className="panel mb-2 overflow-hidden">

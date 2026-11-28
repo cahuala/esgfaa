@@ -146,7 +146,7 @@ export const decisaoRevisao = (antes, depois) => (depois > antes ? 'subiu' : dep
   situacao: sem_provas | em_curso (faltam notas) | recuperacao (TAI de teste negativo com recuperação pedida
   ou ainda possível) | aprovado | reprovado.
 */
-export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recuperacaoAutomatica = false, agora = new Date() } = {}) {
+export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recuperacaoAutomatica = false, agora = new Date(), pesosTipo = null } = {}) {
   if (!avaliacoes.length) return { final: null, situacao: 'sem_provas', mencao: null, provas: [] }
   const provas = avaliacoes.map((a) => {
     const n = notas[a.id] ?? {}
@@ -156,9 +156,15 @@ export function resultadoUc(avaliacoes, notas, { exigirTesteEscrito = true, recu
   // a média das provas; com o peso de cada prova (ex.: TAG 50 % + defesa individual 50 %), quando todas o têm
   const pesos = avaliacoes.map((a) => Number(a.peso) || 0)
   const comPesos = pesos.every((p) => p > 0)
+  // a fórmula da UC no plano de curso (ex.: CSCD, «PDO = (3×TAI + TAG) / 4»): a média de cada tipo de prova, pesada
+  const tipos = pesosTipo ? [...new Set(provas.map((p) => p.tipo))].filter((t) => Number(pesosTipo[t]) > 0) : []
+  const porTipo = !comPesos && tipos.length === new Set(provas.map((p) => p.tipo)).size && tipos.length > 1
+  const mediaTipo = (t) => { const x = provas.filter((p) => p.tipo === t); return x.reduce((s, p) => s + p.conta, 0) / x.length }
   const final = comPesos
     ? centesimas(provas.reduce((s, p, i) => s + p.conta * pesos[i], 0) / pesos.reduce((s, p) => s + p, 0))
-    : centesimas(provas.reduce((s, p) => s + p.conta, 0) / provas.length)
+    : porTipo
+      ? centesimas(tipos.reduce((s, t) => s + Number(pesosTipo[t]) * mediaTipo(t), 0) / tipos.reduce((s, t) => s + Number(pesosTipo[t]), 0))
+      : centesimas(provas.reduce((s, p) => s + p.conta, 0) / provas.length)
   // os TAI de teste escrito também têm de ter 10 (cada um)
   const testesNegativos = exigirTesteEscrito ? provas.filter((p) => p.tipo === 'TAI' && p.forma === 'teste' && p.conta < NOTA_MINIMA) : []
   const emRecuperacao = provas.some((p) => {
@@ -218,11 +224,12 @@ export function faltasDoCurso(presencas, horasContacto, percentagem = 10) {
 export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   // em «blocos» todas as UC pesam igual dentro do bloco; nas outras, pelas unidades de crédito
   const peso = (u) => (plano.formula !== 'blocos' && u.creditos > 0 ? u.creditos : 1)
-  const media = (lista) => {
+  // a média exacta (sem arredondar): a média final faz-se com os valores exactos dos blocos, como no Excel das pautas
+  const mediaExacta = (lista) => {
     const comNota = lista.filter((u) => u.final !== null && u.final !== undefined)
     if (!comNota.length || comNota.length < lista.length) return null
     const soma = comNota.reduce((s, u) => s + peso(u) * Number(u.final), 0)
-    return centesimas(soma / comNota.reduce((s, u) => s + peso(u), 0))
+    return soma / comNota.reduce((s, u) => s + peso(u), 0)
   }
   const emFalta = []
   const exigeUcs = plano.exigirUcs !== false
@@ -235,8 +242,9 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   }
   const blocos = plano.blocos.map((b) => {
     const dele = ucs.filter((u) => u.bloco === b.sigla)
-    const nota = dele.length ? media(dele) : null
-    return { ...b, ucs: dele.length, nota, aprovado: nota !== null && nota >= NOTA_MINIMA }
+    const exacta = dele.length ? mediaExacta(dele) : null
+    const nota = exacta === null ? null : centesimas(exacta)
+    return { ...b, ucs: dele.length, nota, exacta, aprovado: nota !== null && nota >= NOTA_MINIMA }
   })
   const semBloco = ucs.filter((u) => !plano.blocos.some((b) => b.sigla === u.bloco))
   let base = null
@@ -247,7 +255,7 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   }
   else if (blocos.every((b) => b.nota !== null) && blocos.some((b) => b.ucs)) {
     const usados = blocos.filter((b) => b.ucs)
-    base = centesimas(usados.reduce((s, b) => s + b.coeficiente * b.nota, 0) / usados.reduce((s, b) => s + b.coeficiente, 0))
+    base = centesimas(usados.reduce((s, b) => s + b.coeficiente * b.exacta, 0) / usados.reduce((s, b) => s + b.coeficiente, 0))
   }
   const limite = Number(plano.ajusteMaximo) || 0
   const a = Math.max(-limite, Math.min(limite, Number(ajuste) || 0))
@@ -257,7 +265,7 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
   if (faltas?.excedido) emFalta.push(`Faltas justificadas acima do limite: ${faltas.justificadas} de no máximo ${faltas.limite} tempos (${plano.faltasMaximas ?? 10} %)`)
   const concluido = ucs.length > 0 && !emFalta.length && final !== null
   return {
-    blocos, semBloco: semBloco.map((u) => u.codigo), media: base, ajuste: a, final, faltas,
+    blocos: blocos.map((b) => { const x = { ...b }; delete x.exacta; return x }), semBloco: semBloco.map((u) => u.codigo), media: base, ajuste: a, final, faltas,
     concluido, aprovado: concluido, mencao: concluido ? mencao(final) : final !== null && final < NOTA_MINIMA ? 'Reprovado' : null, emFalta,
   }
 }
@@ -295,6 +303,8 @@ export function verificarCargaHoraria(cadeiras) {
 */
 // os planos organizam as UC por blocos e não indicam semestres: todas são anuais
 const uc = (bloco, codigo, nome, hc, hnc, creditos, periodo = 'anual') => ({ bloco, codigo, nome, horasContacto: hc, horasNaoContacto: hnc, creditos, periodo })
+// a fórmula da UC no plano (CSCD 2026/2027: PDO, ODEF, OOF e OEST = (3×TAI + TAG) / 4)
+const TAI3_TAG1 = { pesosProvas: { TAI: 3, TAG: 1 } }
 export const MODELOS_PLANO = {
   'cscd-2026': {
     plano: {
@@ -304,8 +314,8 @@ export const MODELOS_PLANO = {
     cadeiras: [
       uc('ADM', 'CEO', 'Comunicação Estratégica nas Organizações', 33, 12, 3), uc('ADM', 'GP', 'Gestão de Pessoas', 33, 12, 3), uc('ADM', 'EFP', 'Economia e Finanças Públicas', 10, 5, 1),
       uc('ADM', 'DAM', 'Direito Administrativo Militar', 8, 7, 1), uc('ADM', 'LE', 'Liderança Estratégica', 35, 10, 3), uc('ADM', 'AL', 'Apoio Logístico', 31, 14, 3),
-      uc('TAC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1), uc('TAC', 'PDO', 'Planeamento e Doutrina de Operações', 73, 23, 6), uc('TAC', 'ODEF', 'Operações Defensivas – Componente', 67, 23, 6),
-      uc('TAC', 'OOF', 'Operações Ofensivas – Divisão', 50, 25, 5), uc('TAC', 'OEST', 'Operações de Estabilização – Divisão', 75, 15, 6), uc('TAC', 'OAC', 'Operações de Apoio Civil', 32, 13, 3),
+      uc('TAC', 'MQAD', 'Métodos Quantitativos de Apoio à Decisão', 15, 0, 1), { ...uc('TAC', 'PDO', 'Planeamento e Doutrina de Operações', 73, 23, 6), ...TAI3_TAG1 }, { ...uc('TAC', 'ODEF', 'Operações Defensivas – Componente', 67, 23, 6), ...TAI3_TAG1 },
+      { ...uc('TAC', 'OOF', 'Operações Ofensivas – Divisão', 50, 25, 5), ...TAI3_TAG1 }, { ...uc('TAC', 'OEST', 'Operações de Estabilização – Divisão', 75, 15, 6), ...TAI3_TAG1 }, uc('TAC', 'OAC', 'Operações de Apoio Civil', 32, 13, 3),
       uc('OCC', 'DOCC', 'Doutrina de Operações Conjuntas e Combinadas', 43, 17, 4), uc('OCC', 'POCC', 'Planeamento de Operações Conjuntas e Combinadas', 78, 12, 6),
       uc('ESTR', 'GA', 'Geopolítica Aplicada', 42, 3, 3), uc('ESTR', 'CONF', 'Conflitualidade', 40, 5, 3), uc('ESTR', 'PPE', 'Pensamento e Planeamento Estratégico', 72, 18, 6),
       uc('ESTR', 'DIP', 'Direito Internacional Público aplicado às Operações Militares', 23, 7, 2),
@@ -364,4 +374,14 @@ export const MODELOS_PLANO = {
       { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10), tii: true },
     ],
   },
+}
+
+/*
+  Os pesos das provas de uma UC fixados no plano de curso (sem ninguém os ter de escrever): procura-se o modelo do
+  plano da turma (pelo nome do plano) e a UC pelo código. Devolve { TAI: 3, TAG: 1 } ou null.
+*/
+export function pesosProvasDoPlano(plano, codigo) {
+  if (!plano?.nome || !codigo) return null
+  const m = Object.values(MODELOS_PLANO).find((x) => x.plano.nome === plano.nome)
+  return m?.cadeiras.find((c) => c.codigo === String(codigo).toUpperCase())?.pesosProvas ?? null
 }

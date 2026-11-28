@@ -2,7 +2,7 @@ import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../d
 import { validarNota } from '../../../dominio/academico/avaliacao/nota.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { estadoDosPrazos, mensagemFechado } from '../../../dominio/academico/avaliacao/prazosNotas.js'
-import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, recuperacaoPossivel, regrasPublicas, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
+import { DECISOES_REVISAO, FORMAS_AVALIACAO, NOTA_MINIMA, TIPOS_AVALIACAO, decisaoRevisao, faltasDoCurso, mencao, pesosProvasDoPlano, recuperacaoPossivel, regrasPublicas, resultadoCurso, resultadoUc, revisaoPossivel } from '../../../dominio/academico/avaliacao/planoCurso.js'
 
 /*
   Avaliação pelos planos de curso da ESG (turmas cujo curso e ano lectivo têm um plano): as provas
@@ -38,7 +38,7 @@ export class ServicoAvaliacaoEsg {
       const n = tii ?? (doArquivo === undefined ? null : Number(doArquivo))
       return { final: n, situacao: n === null ? 'em_curso' : n >= NOTA_MINIMA ? 'aprovado' : 'reprovado', mencao: n === null ? null : mencao(n), provas: [] }
     }
-    return resultadoUc(avaliacoes, notas, { exigirTesteEscrito: plano?.exigirTesteEscrito !== false, recuperacaoAutomatica: plano?.recuperacaoAutomatica === true, agora: this.relogio.agora() })
+    return resultadoUc(avaliacoes, notas, { exigirTesteEscrito: plano?.exigirTesteEscrito !== false, recuperacaoAutomatica: plano?.recuperacaoAutomatica === true, agora: this.relogio.agora(), pesosTipo: pesosProvasDoPlano(plano, cadeira.codigo) })
   }
 
   // ---------- pauta da UC (docente e Administração Escolar) ----------
@@ -48,7 +48,8 @@ export class ServicoAvaliacaoEsg {
     const [avaliacoes, estudantes, tiis] = await Promise.all([this.planos.avaliacoes(cadeira.id), this.academico.estudantesDaPautaDaCadeira(cadeira), cadeira.tii ? this.#tiis(cadeira.turmaId) : {}])
     const notas = await this.planos.notas(avaliacoes.map((a) => a.id))
     return {
-      modo: 'esg', cadeira, plano, tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO, prazos: await this.#prazos(cadeira),
+      // os pesos das provas que o plano fixa para esta UC (ex.: CSCD, PDO = (3×TAI + TAG) / 4): o ecrã calcula igual
+      modo: 'esg', cadeira, plano, pesosProvas: pesosProvasDoPlano(plano, cadeira.codigo), tipos: TIPOS_AVALIACAO, formas: FORMAS_AVALIACAO, prazos: await this.#prazos(cadeira),
       avaliacoes: avaliacoes.map((a) => ({ ...a, pedidos: Object.values(notas[a.id] ?? {}).filter((n) => n.recuperacaoPedidaEm).length, revisoes: Object.values(notas[a.id] ?? {}).filter((n) => n.revisao && !n.revisao.decididaEm).length })),
       linhas: estudantes.map((e) => {
         const minhas = Object.fromEntries(avaliacoes.map((a) => [a.id, notas[a.id]?.[e.id] ?? {}]))
