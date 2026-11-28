@@ -59,13 +59,13 @@ describe('avaliação pelos planos de curso da ESG', () => {
     assert.ok(r2.emFalta.some((t) => t.startsWith('CEO')) && r2.emFalta.some((t) => t.startsWith('Bloco ADM')))
   })
 
-  it('COAMP: média das UC e o ajuste do Comandante, limitado a ±0,25', () => {
+  it('COAMP: média simples no bloco e o ajuste do Comandante, limitado a ±0,25', () => {
     const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
-    const ucs = [{ codigo: 'A', nome: 'A', creditos: 2, final: 12, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', creditos: 2, final: 13, situacao: 'aprovado' }]
+    const ucs = [{ codigo: 'A', nome: 'A', bloco: 'NUC', creditos: 2, final: 12, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', bloco: 'NUC', creditos: 2, final: 13, situacao: 'aprovado' }]
     assert.equal(resultadoCurso(coamp, ucs).final, 12.5)
     assert.equal(resultadoCurso(coamp, ucs, { ajuste: 1 }).final, 12.75)
-    // a média global não é ponderada: uma UC de 12 UCréd pesa o mesmo que uma de 1
-    const desiguais = [{ codigo: 'A', nome: 'A', creditos: 12, final: 16, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', creditos: 1, final: 10, situacao: 'aprovado' }]
+    // dentro do bloco não se pondera: uma UC de 12 UCréd pesa o mesmo que uma de 1
+    const desiguais = [{ codigo: 'A', nome: 'A', bloco: 'NUC', creditos: 12, final: 16, situacao: 'aprovado' }, { codigo: 'B', nome: 'B', bloco: 'NUC', creditos: 1, final: 10, situacao: 'aprovado' }]
     assert.equal(resultadoCurso(coamp, desiguais).final, 13)
   })
 
@@ -93,8 +93,9 @@ describe('avaliação pelos planos de curso da ESG', () => {
   it('COAMP: só a média global (≥ 10) aprova; o juízo tem 10 factores (sem a cultura científica)', async () => {
     const { factoresDoPlano, juizoCompleto } = await import('../../src/dominio/academico/avaliacao/conselho.js')
     const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
-    const ucs = [{ codigo: 'A', nome: 'A', creditos: 2, final: 8, situacao: 'reprovado' }, { codigo: 'TFC', nome: 'TFC', creditos: 2, final: 14, situacao: 'aprovado', tii: true }]
-    assert.equal(resultadoCurso(coamp, ucs).concluido, true) // média simples (8 + 14) / 2 = 11
+    const ucs = [{ codigo: 'A', nome: 'A', bloco: 'NUC', creditos: 2, final: 8, situacao: 'reprovado' }, { codigo: 'TFC', nome: 'TFC', bloco: 'TFC', creditos: 2, final: 14, situacao: 'aprovado', tii: true }]
+    assert.equal(resultadoCurso(coamp, ucs).final, 10.57) // (4·8 + 3·14) / 7
+    assert.equal(resultadoCurso(coamp, ucs).concluido, true) // só a média global (≥ 10) conta
     const f = factoresDoPlano(coamp)
     assert.equal(Object.keys(f).length, 10)
     assert.equal(f.culturaCientifica, undefined)
@@ -211,5 +212,29 @@ describe('fórmulas dos planos de curso (sem erros de cálculo)', () => {
     const ucs = [u('ADM', 'CRPP', 16), u('ADM', 'GP', 17), u('ADM', 'CL', 18), u('ADM', 'ALOG', 18.5), ...[17, 17.42, 12.72, 14.78, 15.64].map((n, i) => u('TAC', `T${i}`, n)), u('OCC', 'OCC', 15), u('OCC', 'TOCC', 14), ...[18, 16.5, 15.4, 16].map((n, i) => u('EST', `E${i}`, n)), u('TII', 'TII', 16.5)]
     const r = resultadoCurso(plano, ucs)
     assert.equal(r.final, 16.26) // a «Média Ponderada» do Excel: 16,2588
+  })
+})
+
+describe('COAMP e CEAO pelas pautas assinadas', () => {
+  it('COAMP 2026/2027: o modelo tem os pesos da «média geral» (4, 2, 2, 1 e TFC 3), média simples em cada bloco', () => {
+    const coamp = validarPlano({ ...MODELOS_PLANO['coamp-2026'].plano, curso: 'coamp' })
+    assert.equal(coamp.formula, 'blocos')
+    assert.deepEqual(coamp.blocos.map((b) => [b.sigla, b.coeficiente]), [['NUC', 4], ['COMP', 2], ['TAC', 2], ['GER', 1], ['TFC', 3]])
+    assert.equal(MODELOS_PLANO['coamp-2026'].cadeiras.find((c) => c.tii).bloco, 'TFC')
+    assert.equal(coamp.ajusteMaximo, 0.25)
+  })
+
+  it('CEAO 2026/2027: 0,60·Nucleares + 0,15·Complementares + 0,25·TII, com a média simples em cada bloco', () => {
+    const ceao = validarPlano({ ...MODELOS_PLANO['ceao-2026'].plano, curso: 'ceao' })
+    const ucs = MODELOS_PLANO['ceao-2026'].cadeiras.map((c) => ({ ...c, final: c.codigo === 'AOT' ? 18 : c.bloco === 'NUC' ? 12 : c.bloco === 'COMP' ? 14 : 16, situacao: 'aprovado' }))
+    const r = resultadoCurso(ceao, ucs)
+    const nuc = (18 + 12 * 6) / 7 // a AOT (43 UCréd) conta como as outras
+    assert.equal(r.blocos.find((b) => b.sigla === 'NUC').nota, Math.round(nuc * 100) / 100)
+    assert.equal(r.final, Math.round((0.6 * nuc + 0.15 * 14 + 0.25 * 16) * 100) / 100)
+  })
+
+  it('um bloco sem UC na turma não impede a média final', () => {
+    const plano = { formula: 'blocos', ajusteMaximo: 0, exigirBlocos: false, blocos: [{ sigla: 'A', nome: 'A', coeficiente: 2 }, { sigla: 'B', nome: 'B', coeficiente: 1 }] }
+    assert.equal(resultadoCurso(plano, [{ codigo: 'X', nome: 'X', bloco: 'A', creditos: 1, final: 15, situacao: 'aprovado' }]).final, 15)
   })
 })

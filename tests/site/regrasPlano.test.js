@@ -22,9 +22,10 @@ describe('regras de avaliação no ecrã (as do plano de cada curso)', () => {
     expect(r['Aprovação na unidade curricular']).toMatch(/não exige 10 em cada unidade curricular/)
     expect(r['Aprovação no curso']).toMatch(/10 valores em cada bloco, 10 valores no Trabalho de Investigação Individual/)
   })
-  it('COAMP: média aritmética simples das UC, recurso obrigatório, ajuste ±0,25, sem limite de faltas, 10 factores', () => {
+  it('COAMP: blocos pesados 4, 2, 2, 1 e o TFC 3 (média simples em cada bloco), recurso obrigatório, ajuste ±0,25, sem limite de faltas, 10 factores', () => {
     const r = regras('coamp-2026')
-    expect(r['Nota final do curso']).toMatch(/Média aritmética simples.*sem ponderação/)
+    expect(r['Nota final do curso']).toBe('(4 × Matérias Nucleares + 2 × Matérias Complementares + 2 × Matérias de Táctica + 1 × Matérias Gerais + 3 × Trabalho de Fim do Curso) / 12')
+    expect(r['Nota de cada bloco']).toMatch(/^Média simples/)
     expect(r.Recurso).toMatch(/obrigatório/)
     expect(r['Teste de recuperação']).toBeUndefined()
     expect(r['Aprovação no curso']).toBe('Exige média final de 10 valores.')

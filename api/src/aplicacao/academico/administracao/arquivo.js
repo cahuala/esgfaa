@@ -281,8 +281,17 @@ export class ServicoArquivoAcademico {
       if (simular) continue
       await this.prisma.$transaction(async (tx) => {
         if (!turma) turma = await tx.turma.create({ data: { curso: curso.id, anoLetivo, nome, anoFinal: true, ativa: true } })
-        if (modelo && !(await tx.planoCurso.findUnique({ where: { curso_anoLetivo: { curso: curso.id, anoLetivo } } }))) {
+        const planoAtual = modelo ? await tx.planoCurso.findUnique({ where: { curso_anoLetivo: { curso: curso.id, anoLetivo } } }) : null
+        if (modelo && !planoAtual) {
           await tx.planoCurso.create({ data: validarPlano({ ...modelo.plano, curso: curso.id, anoLetivo }) })
+        } else if (modelo && planoAtual.nome === modelo.plano.nome && planoAtual.formula !== modelo.plano.formula && ['media', 'percentagem'].includes(planoAtual.formula)) {
+          // o plano carregado com a versão anterior do modelo (COAMP média simples de todas as UC, CEAO UC pesadas pelos
+          // créditos): passa às contas das pautas assinadas — a fórmula, os blocos e o bloco de cada UC (o TFC é um bloco)
+          const novo = validarPlano({ ...modelo.plano, curso: curso.id, anoLetivo })
+          await tx.planoCurso.update({ where: { id: planoAtual.id }, data: { formula: novo.formula, blocos: novo.blocos, exigirBlocos: novo.exigirBlocos } })
+          if (turma) {
+            for (const m of modelo.cadeiras) await tx.unidadeCurricular.updateMany({ where: { turmaId: turma.id, codigo: m.codigo, NOT: { bloco: m.bloco } }, data: { bloco: m.bloco } })
+          }
         }
         for (const x of comConta.filter((y) => y.c)) await tx.matricula.upsert({ where: { estudanteId_turmaId: { estudanteId: x.c.id, turmaId: turma.id } }, create: { estudanteId: x.c.id, turmaId: turma.id, estado: 'ativa' }, update: {} })
         for (const [i, c] of todas.entries()) {

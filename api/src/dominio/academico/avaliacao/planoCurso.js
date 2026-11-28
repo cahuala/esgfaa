@@ -253,7 +253,8 @@ export function resultadoCurso(plano, ucs, { ajuste = 0, faltas = null } = {}) {
     const comNota = ucs.filter((u) => u.final !== null && u.final !== undefined)
     base = comNota.length && comNota.length === ucs.length ? centesimas(comNota.reduce((s, u) => s + Number(u.final), 0) / comNota.length) : null
   }
-  else if (blocos.every((b) => b.nota !== null) && blocos.some((b) => b.ucs)) {
+  // os blocos sem UC nesta turma não contam (nem impedem a média); os outros têm de ter todos nota
+  else if (blocos.filter((b) => b.ucs).every((b) => b.nota !== null) && blocos.some((b) => b.ucs)) {
     const usados = blocos.filter((b) => b.ucs)
     base = centesimas(usados.reduce((s, b) => s + b.coeficiente * b.exacta, 0) / usados.reduce((s, b) => s + b.coeficiente, 0))
   }
@@ -342,7 +343,9 @@ export const MODELOS_PLANO = {
   },
   'ceao-2026': {
     plano: {
-      nome: '18.º Curso de Estratégia e Arte Operativa — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'auditor', formula: 'percentagem', ajusteMaximo: 0, exigirUcs: false, exigirTesteEscrito: false,
+      // o plano dá os pesos dos blocos (60/15/25) mas não pondera as UC dentro do bloco (o CSCD e o CEMC dizem-no; o
+      // CEAO não): média simples em cada bloco, como nas pautas assinadas do 16.º e do 17.º CEAO
+      nome: '18.º Curso de Estratégia e Arte Operativa — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'auditor', formula: 'blocos', ajusteMaximo: 0, exigirUcs: false, exigirTesteEscrito: false,
       blocos: [{ sigla: 'NUC', nome: 'Disciplinas Nucleares', coeficiente: 60 }, { sigla: 'COMP', nome: 'Disciplinas Complementares', coeficiente: 15 }, { sigla: 'TII', nome: 'Trabalho de Investigação Individual', coeficiente: 25 }],
     },
     // o plano dá a carga horária total de cada UC (sem separar contacto e não contacto) e não indica semestres
@@ -355,11 +358,12 @@ export const MODELOS_PLANO = {
     ],
   },
   'coamp-2026': {
-    // média das UC (o plano não pondera blocos); os blocos servem só para agrupar
+    // a «média final global» do plano é a da folha «média geral» das pautas assinadas (7.º, 10.º e 11.º COAMP): a média
+    // simples de cada bloco, pesada Nucleares 4, Complementares 2, Táctica 2, Gerais 1 e o TFC 3
     plano: {
-      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'media', ajusteMaximo: 0.25, exigirBlocos: false, exigirUcs: false, exigirTii: false, exigirTesteEscrito: false, recuperacaoAutomatica: true, faltasMaximas: 0,
+      nome: '12.º Curso de Organização do Asseguramento Moral e Psicológico — Plano 2026/2027', anoLetivo: '2026/2027', termo: 'discente', formula: 'blocos', ajusteMaximo: 0.25, exigirBlocos: false, exigirUcs: false, exigirTii: false, exigirTesteEscrito: false, recuperacaoAutomatica: true, faltasMaximas: 0,
       factoresJuizo: ['culturaMilitar', 'autoconfianca', 'adaptabilidade', 'iniciativa', 'comunicacao', 'senso', 'decisao', 'planeamento', 'analise', 'trabalhoGrupo'],
-      blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 1 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 1 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 1 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }],
+      blocos: [{ sigla: 'NUC', nome: 'Matérias Nucleares', coeficiente: 4 }, { sigla: 'COMP', nome: 'Matérias Complementares', coeficiente: 2 }, { sigla: 'TAC', nome: 'Matérias de Táctica', coeficiente: 2 }, { sigla: 'GER', nome: 'Matérias Gerais', coeficiente: 1 }, { sigla: 'TFC', nome: 'Trabalho de Fim do Curso', coeficiente: 3 }],
     },
     cadeiras: [
       uc('NUC', 'PM', 'Psicologia Militar', 45, 0, 3), uc('NUC', 'AP', 'Acção Psicológica', 180, 0, 12), uc('NUC', 'TPAMP', 'Teoria e Prática do Asseguramento Moral e Psicológico', 30, 0, 2),
@@ -371,7 +375,7 @@ export const MODELOS_PLANO = {
       uc('TAC', 'TOP', 'Topografia', 21, 0, 1), uc('TAC', 'DO', 'Doutrina das Operações', 38, 0, 2), uc('TAC', 'TEM', 'Técnica de Estado-Maior', 57, 0, 3), uc('TAC', 'BD', 'Brigada na Defesa', 64, 0, 4),
       uc('GER', 'DIP', 'Direito Internacional Público', 30, 0, 2), uc('GER', 'GA', 'Geopolítica Aplicada', 30, 0, 2), uc('GER', 'CL', 'Comando e Liderança', 30, 0, 2), uc('GER', 'PE', 'Pensamento Estratégico', 45, 0, 3),
       // Quadro Resumo do plano: o TII/TFC tem 156 tempos escolares e 10 UCréd
-      { ...uc('GER', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10), tii: true },
+      { ...uc('TFC', 'TFC', 'Trabalho de Fim do Curso', 156, 0, 10), tii: true },
     ],
   },
 }
