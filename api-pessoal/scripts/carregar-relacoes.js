@@ -90,6 +90,8 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
     if (!anos.length) return
     const r = await bd.anoAcademico.createMany({ data: anos.map((a) => ({ pessoaId: p.id, anoLetivo: a.anoLetivo, papel: a.papel, curso: a.curso ?? '', tipoDocente: a.tipoDocente ?? null, concluido: a.concluido ?? null })), skipDuplicates: true })
     n.anos += r.count
+    // um ano novo de estudante: a ficha volta a ir para a Gestão Escolar (que o matricula na turma desse curso)
+    if (r.count && anos.some((a) => a.papel === 'estudante')) await bd.sincronizacao.updateMany({ where: { pessoaId: p.id }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
   }
   const juntarCursos = async (p, cursos = []) => {
     for (const c of cursos) {

@@ -542,6 +542,9 @@ export class ServicoPessoas {
     if (!/^\d{4}\/\d{4}$/.test(anoLetivo) || Number(anoLetivo.slice(5)) !== Number(anoLetivo.slice(0, 4)) + 1) throw invalido('Ano lectivo inválido (ex.: 2026/2027).', 'anoLetivo')
     const chave = { pessoaId, anoLetivo, papel, curso: String(curso ?? '').trim() }
     const x = await this.bd.anoAcademico.upsert({ where: { pessoaId_anoLetivo_papel_curso: chave }, create: { ...chave, tipoDocente, concluido }, update: { tipoDocente, concluido } })
+    // o curso do ano vai para a Gestão Escolar (que matricula o estudante na turma desse curso)
+    await this.bd.sincronizacao.updateMany({ where: { pessoaId }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
+    this.aoMudarPortal?.()
     await this.auditoria.registar(u, 'editar_ficha', `ano lectivo ${anoLetivo} (${papel}) — ficha #${pessoaId}`)
     return x
   }

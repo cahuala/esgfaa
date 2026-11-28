@@ -175,7 +175,41 @@ export class ServicoRegistoPessoal {
     return null
   }
 
+  /*
+    A matrícula sem voltas: o Pessoal diz em que curso está o estudante em cada ano lectivo (as listas de cada ano);
+    se houver uma turma activa desse curso nesse ano, o estudante fica logo matriculado (a Repartição já não tem de o
+    procurar em «Matrículas»). A turma reconhece-se pelo nome do curso («32.º Curso Superior de Comando e Direcção»):
+    igual, ou a única turma desse ano com as mesmas palavras do curso. Nunca muda nem tira uma matrícula que já exista,
+    nem matricula quem já está noutra turma desse ano.
+  */
+  async #matricularPelosAnos(contaId, anos) {
+    if (!Array.isArray(anos) || !anos.length || !this.academico?.matricular) return
+    try {
+      this.turmasAtivas ??= (await this.academico.listarTurmas()).filter((x) => x.ativa)
+      const sem = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      const palavras = (v) => new Set(sem(v).split(/[^a-z]+/).filter((w) => w.length > 3 && !['curso', 'turno', 'para', 'orgaos'].includes(w)))
+      const ja = await this.academico.matriculasDoEstudante(contaId)
+      for (const a of anos) {
+        const doAno = this.turmasAtivas.filter((x) => x.anoLetivo === a.anoLetivo)
+        if (!doAno.length || ja.some((m) => m.turma.anoLetivo === a.anoLetivo && m.estado !== 'anulada')) continue
+        let turma = doAno.find((x) => sem(x.nome) === sem(a.curso))
+        if (!turma) {
+          const pc = palavras(a.curso)
+          const notas = doAno.map((x) => ({ x, n: [...palavras(x.nome)].filter((w) => pc.has(w)).length })).filter((y) => y.n >= 3).sort((u, v) => v.n - u.n)
+          // só se uma turma ganhar claramente (dois cursos com o mesmo número de palavras: fica para a Repartição)
+          if (notas.length && (notas.length === 1 || notas[0].n > notas[1].n)) turma = notas[0].x
+        }
+        if (!turma) continue
+        await this.academico.matricular(contaId, turma.id).catch(() => {})
+        ja.push({ turma: { anoLetivo: a.anoLetivo }, estado: 'ativa' })
+      }
+    } catch {
+      // a matrícula automática é uma ajuda: se falhar, a pessoa chega na mesma e matricula-se em «Matrículas»
+    }
+  }
+
   async sincronizarDoPessoal(ctx, pessoas) {
+    this.turmasAtivas = null
     const resultados = []
     let criadas = 0
     let atualizadas = 0
@@ -216,6 +250,7 @@ export class ServicoRegistoPessoal {
             }
           }
           await this.#fotoDoPessoal(conta.id, p.foto)
+          if (t === 'estudante') await this.#matricularPelosAnos(conta.id, p.anos)
           criadas++
           resultados.push({ ref: p.ref, ok: true, contaId: conta.id })
           continue
@@ -230,6 +265,7 @@ export class ServicoRegistoPessoal {
         }
         await this.contas.guardar(existente)
         await this.#fotoDoPessoal(existente.id, p.foto)
+        if (t === 'estudante') await this.#matricularPelosAnos(existente.id, p.anos)
         atualizadas++
         resultados.push({ ref: p.ref, ok: true, contaId: existente.id })
       } catch (e) {
