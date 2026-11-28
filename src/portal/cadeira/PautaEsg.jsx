@@ -16,7 +16,7 @@ const paraNumero = (v) => {
   const n = Number(t)
   return Number.isFinite(n) && n >= 0 && n <= 20 ? n : undefined
 }
-const VAZIA = { tipo: 'TAI', forma: 'teste', titulo: '', data: '', peso: '' }
+const VAZIA = { tipo: 'TAI', forma: 'teste', titulo: '', data: '' }
 
 /*
   Pauta pelo plano de curso da ESG (docente no portal e Administração Escolar no painel): as provas da UC
@@ -94,26 +94,15 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
             : tx('{0}: publicada. Abriu o prazo de pedido de recuperação.', { 0: a.titulo }) })
     }).catch(falhou)
   const apagar = (a) => pedir(`${base}/provas/${a.id}`, { metodo: 'DELETE' }).then(aplicar).catch(falhou)
-  // o peso de cada prova na nota da UC (%), como o plano da UC fixa; sem peso em todas = média simples
-  const mudarPeso = (a) => {
-    const v = window.prompt(tx('Peso de «{0}» na nota da UC (%). Vazio = sem peso.', { 0: a.titulo }), a.peso ?? '')
-    if (v === null) return
-    pedir(`${base}/provas/${a.id}`, { metodo: 'PUT', corpo: { peso: v.trim() || null } }).then(aplicar).catch(falhou)
-  }
-  const pesos = p.avaliacoes.map((a) => Number(a.peso) || 0)
-  const somaPesos = pesos.reduce((s, x) => s + x, 0)
-  const avisoPesos = pesos.some((x) => x > 0) && (pesos.some((x) => !x)
-    ? tx('Algumas provas têm peso e outras não: a nota da UC usa a média simples até todas terem peso.')
-    : Math.abs(somaPesos - 100) > 0.01 ? tx('Os pesos das provas somam {0} % (deviam somar 100 %).', { 0: String(somaPesos).replace('.', ',') }) : '')
   // um clique: um TAI (teste escrito) ou um TAG (trabalho) com o título numerado; a data e o resto mudam-se depois
   async function criarRapida(tipo) {
     const n = p.avaliacoes.filter((a) => a.tipo === tipo).length + 1
-    try { aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { tipo, forma: tipo === 'TAG' ? 'trabalho' : 'teste', titulo: `${tipo} ${n}`, data: null, peso: null } })) } catch (x) { falhou(x) }
+    try { aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { tipo, forma: tipo === 'TAG' ? 'trabalho' : 'teste', titulo: `${tipo} ${n}`, data: null } })) } catch (x) { falhou(x) }
   }
   async function criar(e) {
     e.preventDefault()
     try {
-      aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { ...nova, data: nova.data || null, peso: nova.peso || null } }))
+      aplicar(await pedir(`${base}/provas`, { metodo: 'POST', corpo: { ...nova, data: nova.data || null } }))
       setNova(null)
     } catch (x) {
       falhou(x)
@@ -131,7 +120,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
           {mudadas.size > 0 && <span className="p-por-guardar">{tx('Alterações por guardar')}</span>}
           {!c.tii && <button type="button" className="btn btn-white" onClick={() => criarRapida('TAI')} title={tx('Novo TAI (teste escrito)')}><i className="fa fa-plus me-1" />TAI</button>}
           {!c.tii && <button type="button" className="btn btn-white" onClick={() => criarRapida('TAG')} title={tx('Novo TAG (trabalho de grupo)')}><i className="fa fa-plus me-1" />TAG</button>}
-          {!c.tii && <button type="button" className="btn btn-white" onClick={() => setNova(nova ? null : VAZIA)} title={tx('Outra prova (escolher a forma, o título, o peso e a data)')}><i className="fa fa-sliders-h me-1" />{tx('Outra prova')}</button>}
+          {!c.tii && <button type="button" className="btn btn-white" onClick={() => setNova(nova ? null : VAZIA)} title={tx('Outra prova (escolher a forma, o título e a data)')}><i className="fa fa-sliders-h me-1" />{tx('Outra prova')}</button>}
           <button type="button" className="btn btn-white" onClick={() => window.print()}><FaPrint aria-hidden="true" /> {tx('Imprimir')}</button>
           {!c.tii && <button type="button" className="btn btn-theme" onClick={guardar} disabled={!mudadas.size || aGuardar || temInvalidas}><FaSave aria-hidden="true" /> {aGuardar ? tx('A guardar…') : tx('Guardar pauta')}</button>}
         </div>
@@ -145,8 +134,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
           <div className="row g-2 align-items-end">
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-tipo">{tx('Tipo')}</label><select id="pr-tipo" className="form-select form-select-sm" value={nova.tipo} onChange={(e) => setNova({ ...nova, tipo: e.target.value, forma: e.target.value === 'TAG' ? 'trabalho' : 'teste' })}>{Object.entries(TIPOS_AVALIACAO).map(([k, t]) => <option key={k} value={k} title={t}>{k} — {tx(t)}</option>)}</select></div>
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-forma">{tx('Forma')}</label><select id="pr-forma" className="form-select form-select-sm" value={nova.forma} onChange={(e) => setNova({ ...nova, forma: e.target.value })}>{Object.entries(FORMAS_AVALIACAO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
-            <div className="col-md-3"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
-            <div className="col-md-1"><label className="form-label small fw-bold" htmlFor="pr-peso" title={tx('Peso na nota da UC, como no plano da UC (ex.: 50). Vazio = média simples.')}>{tx('Peso %')}</label><input id="pr-peso" className="form-control form-control-sm" inputMode="decimal" value={nova.peso} onChange={(e) => setNova({ ...nova, peso: e.target.value })} placeholder="—" /></div>
+            <div className="col-md-4"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
             <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-data">{tx('Data')}</label><input id="pr-data" type="date" className="form-control form-control-sm" value={nova.data} onChange={(e) => setNova({ ...nova, data: e.target.value })} /></div>
             <div className="col-md-2"><button type="submit" className="btn btn-sm btn-theme w-100"><i className="fa fa-plus me-1" />{tx('Criar')}</button></div>
           </div>
@@ -155,8 +143,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
       )}
 
       {c.tii && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-1" />{tx('A nota desta UC é a do Trabalho de Investigação Individual, lançada pela Administração Escolar (turma → TFC/TII).')}</div>}
-      {!c.tii && avisoPesos && <div className="alert alert-warning py-2 p-sem-impressao"><i className="fa fa-balance-scale me-1" />{avisoPesos}</div>}
-      {!c.tii && p.pesosProvas && !pesos.some((x) => x > 0) && <div className="alert alert-light border py-2 p-sem-impressao small"><i className="fa fa-balance-scale me-1" />{tx('Pelo plano de curso, a nota desta UC é ({0}) — o sistema já calcula assim.', { 0: Object.entries(p.pesosProvas).map(([k, v]) => `${v > 1 ? `${v}×` : ''}${k}`).join(' + ') + ` / ${Object.values(p.pesosProvas).reduce((a, b) => a + b, 0)}` })}</div>}
+      {!c.tii && p.pesosProvas && <div className="alert alert-light border py-2 p-sem-impressao small"><i className="fa fa-balance-scale me-1" />{tx('Pelo plano de curso, a nota desta UC é ({0}) — o sistema já calcula assim.', { 0: Object.entries(p.pesosProvas).map(([k, v]) => `${v > 1 ? `${v}×` : ''}${k}`).join(' + ') + ` / ${Object.values(p.pesosProvas).reduce((a, b) => a + b, 0)}` })}</div>}
       {!c.tii && p.avaliacoes.length === 0 && <Vazio>{tx('Ainda não há provas. Crie os TAI e os TAG da UC com os botões «+ TAI» e «+ TAG» (um clique cada).')}</Vazio>}
 
       {(c.tii || p.avaliacoes.length > 0) && (
@@ -171,7 +158,7 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
                   {p.avaliacoes.map((a) => (
                     <th scope="col" key={a.id}>
                       <span className={`badge ${a.tipo === 'TAI' ? 'bg-primary' : 'bg-teal'} me-1`}>{a.tipo}</span>{a.titulo}
-                      <div className="small fw-normal text-muted">{tx(FORMAS_AVALIACAO[a.forma])}{a.data ? ` · ${a.data.split('-').reverse().join('/')}` : ''}{a.peso ? ` · ${String(a.peso).replace('.', ',')} %` : ''}</div>
+                      <div className="small fw-normal text-muted">{tx(FORMAS_AVALIACAO[a.forma])}{a.data ? ` · ${a.data.split('-').reverse().join('/')}` : ''}</div>
                       {a.pedidos > 0 && <div className="small text-warning fw-normal"><i className="fa fa-redo me-1" />{tx('{0} pedido(s) de recuperação', { 0: a.pedidos })}</div>}
                       {a.revisoes > 0 && <div className="small text-info fw-normal"><i className="fa fa-gavel me-1" />{tx('{0} pedido(s) de revisão', { 0: a.revisoes })}</div>}
                       <div className="p-sem-impressao mt-1">
@@ -179,7 +166,6 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
                           {a.publicadaEm ? <FaEye aria-hidden="true" /> : <FaEyeSlash aria-hidden="true" />} {a.publicadaEm ? tx('Publicada') : espera(a) ? tx('À espera do Comandante') : tx('Por publicar')}
                         </button>
                         {!a.publicadaEm && a.publicacaoPedida?.estado === 'recusada' && <div className="small text-danger fw-normal mt-1">{tx('Recusada pelo Comandante: {0}', { 0: a.publicacaoPedida.motivo })}</div>}
-                        <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => mudarPeso(a)} title={tx('Peso na nota da UC')} aria-label={tx('Peso na nota da UC')}><i className="fa fa-balance-scale" /></button>
                         {!a.publicadaEm && <button type="button" className="btn btn-xs btn-white ms-1" onClick={() => apagar(a)} title={tx('Apagar a prova')} aria-label={tx('Apagar a prova')}><i className="fa fa-trash" /></button>}
                       </div>
                     </th>

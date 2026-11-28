@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
@@ -24,7 +25,9 @@ function AlteracoesNotas() {
   const [escolhidos, setEscolhidos] = useState([])
   const [fundamento, setFundamento] = useState('')
   const [aviso, setAviso] = useState(null)
-  const carregar = useCallback(() => api(`/academico/alteracoes-notas${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r); setEscolhidos([]) }).catch((e) => setErro(e.message)), [estado])
+  // só as do ano lectivo do menu
+  const { ano } = useAnoTrabalho()
+  const carregar = useCallback(() => api(`/academico/alteracoes-notas${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r.filter((p) => !ano || !p.cadeira?.turma?.anoLetivo || p.cadeira.turma.anoLetivo === ano)); setEscolhidos([]) }).catch((e) => setErro(e.message)), [estado, ano])
   useEffect(() => { carregar() }, [carregar])
 
   const pendentes = (lista ?? []).filter((p) => p.estado === 'pendente')

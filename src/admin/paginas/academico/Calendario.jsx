@@ -34,7 +34,7 @@ function CalendarioAcademico() {
     carregar()
     api('/academico/turmas').then(setTodasTurmas).catch(() => {})
   }, [carregar])
-  const turmas = todasTurmas.filter((t) => t.ativa && (!ano || t.anoLetivo === ano))
+  const turmas = todasTurmas.filter((t) => (ano ? t.anoLetivo === ano : t.ativa)) // as do ano do menu (também as de anos já fechados)
 
   async function criar(e) {
     e.preventDefault()

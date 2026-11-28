@@ -388,8 +388,8 @@ export class RepositorioAcademico {
   }
 
   async todosAvisosGerais() {
-    const linhas = await this.prisma.avisoGeral.findMany({ orderBy: { criadoEm: 'desc' }, take: 200, include: { turma: { select: { nome: true } } } })
-    return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, titulo: a.titulo, texto: a.texto, estado: a.estado, aprovacao: a.aprovacao, criadoEm: iso(a.criadoEm) }))
+    const linhas = await this.prisma.avisoGeral.findMany({ orderBy: { criadoEm: 'desc' }, take: 200, include: { turma: { select: { nome: true, anoLetivo: true } } } })
+    return linhas.map((a) => ({ id: a.id, turmaId: a.turmaId, turma: a.turma?.nome || null, anoLetivo: a.turma?.anoLetivo ?? null, titulo: a.titulo, texto: a.texto, estado: a.estado, aprovacao: a.aprovacao, criadoEm: iso(a.criadoEm) }))
   }
 
   async avisoGeral(id) {

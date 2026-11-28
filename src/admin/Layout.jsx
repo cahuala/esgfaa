@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useLocation, useMatch } from 'react-router-dom'
+import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom'
 import { useSessao } from './sessaoContexto'
 import { COLECOES, PAGINAS } from './esquemas'
 import Brasao from '../assets/Logo-ecra.webp'
@@ -36,6 +36,15 @@ function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
 function SeletorAnoTrabalho() {
   const { ano, anos, actual, mudar } = useAnoTrabalho()
   const [aMudar, setAMudarLocal] = useState(false)
+  const navegar = useNavigate()
+  const { pathname } = useLocation()
+  // numa turma, cadeira ou documento de um ano, ao mudar de ano vai-se para a lista dessa secção no ano escolhido
+  const listaDaSeccao = () => {
+    if (/^\/academico\/cadeiras\/\d+/.test(pathname)) return '/academico/lancar-notas'
+    if (/^\/academico\/turmas\/\d+/.test(pathname)) return /pauta/.test(pathname) ? '/academico/pautas' : '/academico/turmas'
+    if (/^\/academico\/documentos\/(turma|cadeira|estudante|conta)\//.test(pathname)) return '/academico/documentos'
+    return null
+  }
   // o ecrã «A carregar o ano lectivo…» cobre a página enquanto se muda (o Layout ouve este aviso)
   const setAMudar = (v, novo) => { setAMudarLocal(v); window.dispatchEvent(new CustomEvent('esg-ano-a-mudar', { detail: v ? novo : null })) }
   if (!anos.length) return null
@@ -43,7 +52,7 @@ function SeletorAnoTrabalho() {
     <div className="menu-item px-3 pb-2 small text-white-50">
       <label htmlFor="ano-trabalho" className="d-block mb-1"><i className="fa fa-calendar-alt me-1" />{tx('Ano lectivo')}</label>
       <select id="ano-trabalho" className="form-select form-select-sm" value={ano} disabled={aMudar}
-        onChange={async (e) => { const novo = e.target.value; setAMudar(true, novo); try { await mudar(novo); await new Promise((r) => setTimeout(r, 350)) } finally { setAMudar(false) } }}>
+        onChange={async (e) => { const novo = e.target.value; setAMudar(true, novo); try { await mudar(novo); const ir = listaDaSeccao(); if (ir) navegar(ir); await new Promise((r) => setTimeout(r, 350)) } finally { setAMudar(false) } }}>
         {[...anos].sort((a, b) => b.id.localeCompare(a.id)).map((a) => <option key={a.id} value={a.id}>{a.id}{a.id === actual ? ` (${tx('actual')})` : ''}{a.fechado ? ` — ${tx('fechado')}` : ''}</option>)}
       </select>
     </div>

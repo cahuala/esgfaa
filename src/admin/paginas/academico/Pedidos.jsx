@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { abrirFicheiro, api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
@@ -67,7 +68,12 @@ function Pedidos() {
   const [aviso, setAviso] = useState(null)
   const [novo, setNovo] = useState(false)
 
-  const carregar = useCallback(() => api(`/academico/pedidos${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message)), [estado])
+  // os pedidos feitos dentro do ano lectivo do menu (do início ao fim do ano lectivo)
+  const { ano, anos } = useAnoTrabalho()
+  const periodo = anos.find((x) => x.id === ano)
+  const de = String(periodo?.inicio ?? '').slice(0, 10)
+  const ate = String(periodo?.fim ?? '').slice(0, 10)
+  const carregar = useCallback(() => api(`/academico/pedidos${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r.filter((p) => !de || !ate || (String(p.criadoEm ?? '').slice(0, 10) >= de && String(p.criadoEm ?? '').slice(0, 10) <= ate))) }).catch((e) => setErro(e.message)), [estado, de, ate])
   useEffect(() => { carregar() }, [carregar])
 
   return (

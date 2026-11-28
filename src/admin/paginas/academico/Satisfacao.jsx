@@ -29,7 +29,7 @@ function Satisfacao() {
   const falhou = useCallback((e) => setAviso({ tipo: 'erro', texto: e.message }), [])
   const carregar = useCallback(() => api('/academico/satisfacao').then(setD).catch((e) => setErro(e.message)), [])
   useEffect(() => { carregar(); api('/academico/turmas').then(setTodasTurmas).catch(() => {}) }, [carregar])
-  const turmas = todasTurmas.filter((t) => t.ativa !== false && (!ano || t.anoLetivo === ano))
+  const turmas = todasTurmas.filter((t) => (ano ? t.anoLetivo === ano : t.ativa !== false)) // as do ano do menu (também as de anos já fechados)
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
 

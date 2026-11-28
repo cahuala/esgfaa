@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { api, obterFicheiro } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
@@ -20,7 +21,9 @@ function ProvasImprimir() {
   const [estado, setEstado] = useState('enviado')
   const [aviso, setAviso] = useState(null)
   const gerir = pode('academico.gerir')
-  const carregar = useCallback(() => api(`/academico/provas-escritas${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r) }).catch((e) => setErro(e.message)), [estado])
+  // só as do ano lectivo do menu
+  const { ano } = useAnoTrabalho()
+  const carregar = useCallback(() => api(`/academico/provas-escritas${estado ? `?estado=${estado}` : ''}`).then((r) => { setErro(''); setLista(r.filter((p) => !ano || !p.cadeira?.turma?.anoLetivo || p.cadeira.turma.anoLetivo === ano)) }).catch((e) => setErro(e.message)), [estado, ano])
   useEffect(() => { carregar() }, [carregar])
 
   // o PDF abre noutro separador, pronto a imprimir; um documento Word descarrega-se

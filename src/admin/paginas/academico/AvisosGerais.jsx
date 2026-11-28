@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
@@ -15,11 +16,13 @@ function AvisosGerais() {
   const [f, setF] = useState({ turmaId: '', titulo: '', texto: '' })
   const [aviso, setAviso] = useState(null)
 
-  const carregar = useCallback(() => api('/academico/avisos').then(setLista).catch((e) => setErro(e.message)), [])
+  // os avisos para todos e os das turmas do ano lectivo do menu
+  const { ano } = useAnoTrabalho()
+  const carregar = useCallback(() => api('/academico/avisos').then((r) => setLista(r.filter((a) => !ano || !a.anoLetivo || a.anoLetivo === ano))).catch((e) => setErro(e.message)), [ano])
   useEffect(() => {
     carregar()
-    api('/academico/turmas').then(setTurmas).catch(() => {})
-  }, [carregar])
+    api('/academico/turmas').then((l) => setTurmas(l.filter((t) => !ano || t.anoLetivo === ano))).catch(() => {})
+  }, [carregar, ano])
 
   async function publicar(e) {
     e.preventDefault()

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
 import { Carregando, Painel } from '../../componentes/Ui'
@@ -20,7 +21,9 @@ export default function PrazosNotas({ turmas, avisar }) {
   const vazio = { componente: 'TAI', inicio: '', fim: '', turmaId: '', cadeiraId: '', descricao: '' }
   const [f, setF] = useState(vazio)
   const [erro, setErro] = useState('')
-  const carregar = useCallback(() => api('/academico/prazos-notas').then(setLista).catch((e) => setErro(e.message)), [])
+  // os de toda a Escola e os das turmas do ano lectivo do menu
+  const { ano } = useAnoTrabalho()
+  const carregar = useCallback(() => api('/academico/prazos-notas').then((r) => setLista(r.filter((p) => !ano || !p.turma?.anoLetivo || p.turma.anoLetivo === ano))).catch((e) => setErro(e.message)), [ano])
   useEffect(() => { carregar() }, [carregar])
   useEffect(() => {
     if (!f.turmaId) return
