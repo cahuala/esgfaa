@@ -130,16 +130,26 @@ export function PautaEsg({ c, avisar, pedir, base, abrirDocumento }) {
         <div className="small p-sem-impressao mb-2"><i className="fa fa-calendar-check me-1" />{tx('Lançamento de notas')}: {['TAI', 'TAG'].filter((k) => !p.prazos[k].livre).map((k) => <span key={k} className={`me-3 ${p.prazos[k].aberto ? 'text-success' : 'text-danger'}`} title={p.prazos[k].origem}><b>{k}</b> — {tx(p.prazos[k].texto)}</span>)}</div>
       )}
       {nova && (
-        <form className="panel p-3 mb-2 p-sem-impressao" onSubmit={criar}>
-          <div className="row g-2 align-items-end">
-            <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-tipo">{tx('Tipo')}</label><select id="pr-tipo" className="form-select form-select-sm" value={nova.tipo} onChange={(e) => setNova({ ...nova, tipo: e.target.value, forma: e.target.value === 'TAG' ? 'trabalho' : 'teste' })}>{Object.entries(TIPOS_AVALIACAO).map(([k, t]) => <option key={k} value={k} title={t}>{k} — {tx(t)}</option>)}</select></div>
-            <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-forma">{tx('Forma')}</label><select id="pr-forma" className="form-select form-select-sm" value={nova.forma} onChange={(e) => setNova({ ...nova, forma: e.target.value })}>{Object.entries(FORMAS_AVALIACAO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
-            <div className="col-md-4"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
-            <div className="col-md-2"><label className="form-label small fw-bold" htmlFor="pr-data">{tx('Data')}</label><input id="pr-data" type="date" className="form-control form-control-sm" value={nova.data} onChange={(e) => setNova({ ...nova, data: e.target.value })} /></div>
-            <div className="col-md-2"><button type="submit" className="btn btn-sm btn-theme w-100"><i className="fa fa-plus me-1" />{tx('Criar')}</button></div>
+        <>
+          <div className="modal d-block p-sem-impressao" tabIndex={-1} role="dialog" aria-modal="true" onClick={() => setNova(null)}>
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+              <form className="modal-content" onSubmit={criar}>
+                <div className="modal-header"><h4 className="modal-title">{tx('Outra prova')}</h4><button type="button" className="btn-close" onClick={() => setNova(null)} aria-label={tx('Fechar')} /></div>
+                <div className="modal-body">
+                  <div className="row g-2 align-items-end">
+                    <div className="col-md-6"><label className="form-label small fw-bold" htmlFor="pr-tipo">{tx('Tipo')}</label><select id="pr-tipo" className="form-select form-select-sm" value={nova.tipo} onChange={(e) => setNova({ ...nova, tipo: e.target.value, forma: e.target.value === 'TAG' ? 'trabalho' : 'teste' })}>{Object.entries(TIPOS_AVALIACAO).map(([k, t]) => <option key={k} value={k} title={t}>{k} — {tx(t)}</option>)}</select></div>
+                    <div className="col-md-6"><label className="form-label small fw-bold" htmlFor="pr-forma">{tx('Forma')}</label><select id="pr-forma" className="form-select form-select-sm" value={nova.forma} onChange={(e) => setNova({ ...nova, forma: e.target.value })}>{Object.entries(FORMAS_AVALIACAO).map(([k, t]) => <option key={k} value={k}>{tx(t)}</option>)}</select></div>
+                    <div className="col-12"><label className="form-label small fw-bold" htmlFor="pr-tit">{tx('Título')}</label><input id="pr-tit" className="form-control form-control-sm" required minLength={2} maxLength={150} value={nova.titulo} onChange={(e) => setNova({ ...nova, titulo: e.target.value })} placeholder={tx('Ex.: Teste escrito 1')} /></div>
+                    <div className="col-md-6"><label className="form-label small fw-bold" htmlFor="pr-data">{tx('Data')}</label><input id="pr-data" type="date" className="form-control form-control-sm" value={nova.data} onChange={(e) => setNova({ ...nova, data: e.target.value })} /></div>
+                  </div>
+                  {nova.forma === 'relatorio' && <div className="small text-muted mt-2">{tx('Relatório individual: mínimo de 1600 e máximo de 2000 palavras (plano de curso).')}</div>}
+                </div>
+                <div className="modal-footer"><button type="button" className="btn btn-white" onClick={() => setNova(null)}>{tx('Cancelar')}</button><button type="submit" className="btn btn-theme"><i className="fa fa-plus me-1" />{tx('Criar')}</button></div>
+              </form>
+            </div>
           </div>
-          {nova.forma === 'relatorio' && <div className="small text-muted mt-2">{tx('Relatório individual: mínimo de 1600 e máximo de 2000 palavras (plano de curso).')}</div>}
-        </form>
+          <div className="modal-backdrop fade show p-sem-impressao" />
+        </>
       )}
 
       {c.tii && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-1" />{tx('A nota desta UC é a do Trabalho de Investigação Individual, lançada pela Administração Escolar (turma → TFC/TII).')}</div>}

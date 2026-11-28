@@ -63,7 +63,7 @@ function EscolherDocumento({ fechar, documento = '', gerir = true }) {
                 </select>
                 {doc === 'diplomas' && <div className="small text-muted mt-1">{tx('Na página seguinte escolhem-se os estudantes.')}</div>}
               </>}
-              {fechado && <div className="alert alert-secondary small mt-3 mb-0"><i className="fa fa-lock me-1" />{tx('O ano lectivo {0} está fechado: consulta-se e reimprimem-se os diplomas e certificados já aprovados (2.ª via); para emitir outros documentos desse ano, o Comandante tem de o reabrir.', { 0: ano })}</div>}
+              {fechado && <div className="alert alert-secondary small mt-3 mb-0"><i className="fa fa-lock me-1" />{tx('O ano lectivo {0} está fechado: só se consultam os dados e se imprimem os documentos dele (não se muda nada).', { 0: ano })}</div>}
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-white" onClick={fechar}>{tx('Cancelar')}</button>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Carregando, Painel } from '../../componentes/Ui'
+import { Carregando, Painel, Janela } from '../../componentes/Ui'
 import { t as tx } from '../../../i18n/linguas'
 
 const COMPONENTES = { TAI: 'TAI (plano de curso)', TAG: 'TAG (plano de curso)', p1: '1.ª Prova', p2: '2.ª Prova', exame: 'Exame', recurso: 'Recurso' }
@@ -16,6 +16,7 @@ const data = (d) => d.split('-').reverse().join('/')
 export default function PrazosNotas({ turmas, avisar }) {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
+  const [janela, setJanela] = useState(false)
   const [lista, setLista] = useState(null)
   const [cadeiras, setCadeiras] = useState([])
   const vazio = { componente: 'TAI', inicio: '', fim: '', turmaId: '', cadeiraId: '', descricao: '' }
@@ -36,6 +37,7 @@ export default function PrazosNotas({ turmas, avisar }) {
     try {
       await api('/academico/prazos-notas', { metodo: 'POST', corpo: { ...f, turmaId: f.turmaId ? Number(f.turmaId) : null, cadeiraId: f.cadeiraId ? Number(f.cadeiraId) : null } })
       setF({ ...vazio, turmaId: f.turmaId })
+      setJanela(false)
       avisar({ texto: tx('Prazo definido. Os docentes só lançam essa componente dentro dele.') })
       carregar()
     } catch (x) {
@@ -47,7 +49,8 @@ export default function PrazosNotas({ turmas, avisar }) {
 
   return (
     <div className="row">
-      <div className="col-xl-8">
+      <div className="col-12">
+        {gerir && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Definir prazo')}</button></div>}
         <Painel titulo={tx('Prazos de lançamento das notas')} corpo={false}>
           {erro && !gerir && <div className="alert alert-danger m-2">{erro}</div>}
           {!lista ? <div className="panel-body"><Carregando /></div> : (
@@ -75,39 +78,37 @@ export default function PrazosNotas({ turmas, avisar }) {
           <div className="small text-muted p-2">{tx('Vale o prazo mais específico: o da cadeira (prorrogação), depois o da turma, depois o de toda a Escola. Fora do prazo, o docente não lança essa componente; a Administração Escolar pode sempre corrigir no painel (fica no registo de actividades).')}</div>
         </Painel>
       </div>
-      {gerir && (
-        <div className="col-xl-4">
-          <Painel titulo={tx('Definir prazo')}>
-            <form onSubmit={criar}>
-              {erro && <div className="alert alert-danger py-2">{erro}</div>}
-              <label className="form-label fw-bold" htmlFor="pz-comp">{tx('Componente')}</label>
-              <select id="pz-comp" className="form-select mb-2" value={f.componente} onChange={(e) => setF({ ...f, componente: e.target.value })}>
-                {Object.entries(COMPONENTES).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
-              </select>
-              <div className="row g-2 mb-2">
-                <div className="col-6"><label className="form-label fw-bold" htmlFor="pz-ini">{tx('De')}</label><input id="pz-ini" type="date" className="form-control" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} required /></div>
-                <div className="col-6"><label className="form-label fw-bold" htmlFor="pz-fim">{tx('Até (inclusive)')}</label><input id="pz-fim" type="date" className="form-control" value={f.fim} min={f.inicio} onChange={(e) => setF({ ...f, fim: e.target.value })} required /></div>
-              </div>
-              <label className="form-label fw-bold" htmlFor="pz-turma">{tx('Para')}</label>
-              <select id="pz-turma" className="form-select mb-2" value={f.turmaId} onChange={(e) => setF({ ...f, turmaId: e.target.value, cadeiraId: '' })}>
-                <option value="">{tx('Toda a Escola')}</option>
-                {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-              </select>
-              {f.turmaId && (
-                <>
-                  <label className="form-label" htmlFor="pz-cad">{tx('Só uma cadeira (prorrogação)')}</label>
-                  <select id="pz-cad" className="form-select mb-2" value={f.cadeiraId} onChange={(e) => setF({ ...f, cadeiraId: e.target.value })}>
-                    <option value="">{tx('Todas as cadeiras da turma')}</option>
-                    {cadeiras.map((c) => <option key={c.id} value={c.id}>{c.codigo} {c.nome}</option>)}
-                  </select>
-                </>
-              )}
-              <label className="form-label" htmlFor="pz-desc">{tx('Motivo / observação')}</label>
-              <input id="pz-desc" className="form-control mb-3" value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} placeholder={tx('Ex.: Despacho da Direcção de Ensino')} />
-              <button type="submit" className="btn btn-theme w-100"><i className="fa fa-clock me-1" /> {tx('Definir prazo')}</button>
-            </form>
-          </Painel>
-        </div>
+      {gerir && janela && (
+        <Janela titulo={tx('Definir prazo')} onFechar={() => setJanela(false)}>
+          <form onSubmit={criar}>
+            {erro && <div className="alert alert-danger py-2">{erro}</div>}
+            <label className="form-label fw-bold" htmlFor="pz-comp">{tx('Componente')}</label>
+            <select id="pz-comp" className="form-select mb-2" value={f.componente} onChange={(e) => setF({ ...f, componente: e.target.value })}>
+              {Object.entries(COMPONENTES).map(([k, v]) => <option key={k} value={k}>{tx(v)}</option>)}
+            </select>
+            <div className="row g-2 mb-2">
+              <div className="col-6"><label className="form-label fw-bold" htmlFor="pz-ini">{tx('De')}</label><input id="pz-ini" type="date" className="form-control" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} required /></div>
+              <div className="col-6"><label className="form-label fw-bold" htmlFor="pz-fim">{tx('Até (inclusive)')}</label><input id="pz-fim" type="date" className="form-control" value={f.fim} min={f.inicio} onChange={(e) => setF({ ...f, fim: e.target.value })} required /></div>
+            </div>
+            <label className="form-label fw-bold" htmlFor="pz-turma">{tx('Para')}</label>
+            <select id="pz-turma" className="form-select mb-2" value={f.turmaId} onChange={(e) => setF({ ...f, turmaId: e.target.value, cadeiraId: '' })}>
+              <option value="">{tx('Toda a Escola')}</option>
+              {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+            </select>
+            {f.turmaId && (
+              <>
+                <label className="form-label" htmlFor="pz-cad">{tx('Só uma cadeira (prorrogação)')}</label>
+                <select id="pz-cad" className="form-select mb-2" value={f.cadeiraId} onChange={(e) => setF({ ...f, cadeiraId: e.target.value })}>
+                  <option value="">{tx('Todas as cadeiras da turma')}</option>
+                  {cadeiras.map((c) => <option key={c.id} value={c.id}>{c.codigo} {c.nome}</option>)}
+                </select>
+              </>
+            )}
+            <label className="form-label" htmlFor="pz-desc">{tx('Motivo / observação')}</label>
+            <input id="pz-desc" className="form-control mb-3" value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} placeholder={tx('Ex.: Despacho da Direcção de Ensino')} />
+            <button type="submit" className="btn btn-theme w-100"><i className="fa fa-clock me-1" /> {tx('Definir prazo')}</button>
+          </form>
+        </Janela>
       )}
     </div>
   )

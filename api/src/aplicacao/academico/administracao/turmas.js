@@ -256,7 +256,7 @@ export class ServicoTurmas {
     if (!curso) throw new NaoEncontrado('Curso não encontrado.')
     const turmas = (await this.academico.listarTurmas()).filter((t) => t.curso === curso.id && (!anoLetivo || t.anoLetivo === anoLetivo))
     const estudantes = []
-    for (const t of turmas) for (const e of await this.academico.estudantesAtivosDaTurma(t.id)) estudantes.push({ ...e, turma: t.nome, turmaId: t.id })
+    for (const t of turmas) for (const e of await this.academico.estudantesDaTurmaParaListas(t.id)) estudantes.push({ ...e, turma: t.nome, turmaId: t.id })
     const d = curso.dados ?? curso
     return {
       curso: { id: curso.id, nome: d.nome, sigla: d.sigla ?? '', duracao: d.duracao ?? '' }, anoLetivo: anoLetivo || null,

@@ -40,6 +40,20 @@ export class ServicoAnosLetivos {
     return publicoAno(a, this.relogio.agora())
   }
 
+  /*
+    Os anos lectivos anteriores ao actual ficam fechados (só se consultam e se imprimem documentos deles): fecham-se
+    sozinhos ao arrancar, ao mudar o ano actual e na carga da instalação. O Comandante pode reabrir um, como sempre.
+    Só os que nunca foram reabertos: um ano reaberto pelo Comandante fica aberto até alguém o fechar.
+  */
+  async fecharAnteriores(quem = 'Sistema (anos anteriores ao actual)') {
+    const atual = await this.prisma.anoLetivo.findFirst({ where: { atual: true } })
+    if (!atual) return []
+    const anos = await this.prisma.anoLetivo.findMany({ where: { fechado: false, id: { lt: atual.id } } })
+    const fechar = anos.filter((a) => !a.reabertura)
+    for (const a of fechar) await this.prisma.anoLetivo.update({ where: { id: a.id }, data: { fechado: true, fechadoEm: this.relogio.agora(), fechadoPor: quem } })
+    return fechar.map((a) => a.id)
+  }
+
   async tornarAtual(ctx, id) {
     ctx.actor.exigir('academico.gerir')
     if (!(await this.prisma.anoLetivo.findUnique({ where: { id } }))) throw new NaoEncontrado('Ano lectivo não encontrado.')
@@ -48,6 +62,7 @@ export class ServicoAnosLetivos {
       this.prisma.anoLetivo.update({ where: { id }, data: { atual: true } }),
     ])
     await this.auditoria.registar(ctx, { acao: 'ano_letivo_atual', colecao: 'anos_letivos', alvoId: id, alvoTitulo: `Ano lectivo ${id}` })
+    await this.fecharAnteriores(`${ctx.actor.nome ?? 'Sistema'} (ao tornar actual o ano ${id})`)
     return this.listar(ctx)
   }
 
@@ -190,7 +205,7 @@ export class ServicoAnosLetivos {
     const ano = await this.anoDe(de)
     if (!ano) return
     const a = await this.prisma.anoLetivo.findUnique({ where: { id: ano }, select: { fechado: true } })
-    if (a?.fechado) throw new Conflito(`O ano lectivo ${ano} está fechado: já não se pode alterar nem emitir documentos dele. Para isso, o Comandante tem de o reabrir (peça em «Ano lectivo e semestres»).`)
+    if (a?.fechado) throw new Conflito(`O ano lectivo ${ano} está fechado: só se consultam os dados e se imprimem documentos dele. Para o alterar, o Comandante tem de o reabrir (peça em «Ano lectivo e semestres»).`)
   }
 
   // uma turma nova num ano ainda por configurar: o ano fica registado com as datas habituais (corrigem-se depois)

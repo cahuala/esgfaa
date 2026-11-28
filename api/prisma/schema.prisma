@@ -232,6 +232,8 @@ model ContaPortal {
   senha              String
   ativo              Boolean       @default(true)
   dados              Json          @default("{}") // posto, ramo, telefone, …
+  // os anos lectivos em que foi docente (as listas do corpo docente de cada ano, vindas do Pessoal)
+  anosDocente        String[]      @default([]) @map("anos_docente")
   // a fotografia que vem do Sistema de Gestão de Pessoal (na pasta privada); fotoId = a do Pessoal
   fotoCaminho        String?       @map("foto_caminho")
   fotoId             String?       @map("foto_id")

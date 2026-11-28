@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../componentes/Ui'
 import { t as tx } from '../../../i18n/linguas'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { DOCUMENTOS_ANO } from './documentos/tiposDocumentosAno'
@@ -32,6 +32,7 @@ const mesesDe = (curso) => {
 function Turmas() {
   const { pode } = useSessao()
   const navegar = useNavigate()
+  const [janela, setJanela] = useState(false)
   const [lista, setLista] = useState(null)
   const [cursos, setCursos] = useState([])
   // o ano lectivo de trabalho (escolhido no menu): só as turmas desse ano; a turma nova é desse ano
@@ -63,7 +64,7 @@ function Turmas() {
     ...cursos.map((c) => [c, doAno.filter((t) => t.curso === c.id)]),
     ...[...new Set(doAno.map((t) => t.curso).filter((id) => !cursoDe(id)))].map((id) => [{ id, nome: id }, doAno.filter((t) => t.curso === id)]),
   ]
-  const novaNoCurso = (id) => { setF((x) => ({ ...x, curso: id, anoCurricular: '1' })); document.getElementById('t-nome')?.focus() }
+  const novaNoCurso = (id) => { setF((x) => ({ ...x, curso: id, anoCurricular: '1' })); setJanela(true); setTimeout(() => document.getElementById('t-nome')?.focus(), 50) }
 
   async function criar(e) {
     e.preventDefault()
@@ -71,6 +72,7 @@ function Turmas() {
     try {
       await api('/academico/turmas', { metodo: 'POST', corpo: { ...f, anoLetivo: ano || f.anoLetivo, anoCurricular: variosAnos(f.curso) ? f.anoCurricular : '1' } })
       setF({ ...f, nome: '' })
+      setJanela(false)
       setAviso({ texto: tx('Turma criada.') })
       carregar()
     } catch (falha) {
@@ -91,7 +93,8 @@ function Turmas() {
       </CabecalhoPagina>
       {escolherDoc && <EscolherDocumento gerir={pode('academico.gerir')} fechar={() => setEscolherDoc(false)} />}
       <div className="row">
-        <div className={pode('academico.gerir') ? 'col-xl-8' : 'col-12'}>
+        <div className="col-12">
+          {pode('academico.gerir') && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Nova turma')}</button></div>}
           {erro && <Erro texto={erro} onRepetir={carregar} />}
           {!lista && !erro && <Carregando />}
           {lista && grupos.length === 0 && <Painel titulo={tx('Turmas')}><p className="text-muted mb-0">{tx('Ainda não há cursos nem turmas.')}</p></Painel>}
@@ -150,39 +153,37 @@ function Turmas() {
             )
           })}
         </div>
-        {pode('academico.gerir') && (
-          <div className="col-xl-4">
-            <Painel titulo={tx('Nova turma')}>
-              <form onSubmit={criar}>
-                {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
-                <label className="form-label fw-bold" htmlFor="t-curso">{tx('Curso')}</label>
-                <select id="t-curso" className="form-select mb-3" value={f.curso} onChange={(e) => setF({ ...f, curso: e.target.value })} required>
-                  {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+        {pode('academico.gerir') && janela && (
+          <Janela titulo={tx('Nova turma')} onFechar={() => setJanela(false)}>
+            <form onSubmit={criar}>
+              {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
+              <label className="form-label fw-bold" htmlFor="t-curso">{tx('Curso')}</label>
+              <select id="t-curso" className="form-select mb-3" value={f.curso} onChange={(e) => setF({ ...f, curso: e.target.value })} required>
+                {cursos.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+              <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano lectivo')}</label>
+              {anos.length ? (
+                <select id="t-ano" className="form-select mb-1" value={ano} onChange={(e) => mudar(e.target.value)} required>
+                  {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
                 </select>
-                <label className="form-label fw-bold" htmlFor="t-ano">{tx('Ano lectivo')}</label>
-                {anos.length ? (
-                  <select id="t-ano" className="form-select mb-1" value={ano} onChange={(e) => mudar(e.target.value)} required>
-                    {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ` (${tx('atual')})` : ''}</option>)}
+              ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
+              <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos lectivos e semestres')}</Link></div>
+              {mesesDe(cursoDe(f.curso)) && <div className="form-text mb-3"><i className="fa fa-clock me-1" />{tx('Duração do curso')}: {mesesDe(cursoDe(f.curso))} {tx('meses')}</div>}
+              {/* só nos cursos com mais de 12 meses (os da Escola duram 10 meses) */}
+              {variosAnos(f.curso) && (
+                <>
+                  <label className="form-label fw-bold" htmlFor="t-anocur">{tx('Ano curricular')}</label>
+                  <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
+                    {Array.from({ length: Math.min(6, Math.ceil((mesesDe(cursoDe(f.curso)) ?? 12) / 12)) }, (_, k) => k + 1).map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}
                   </select>
-                ) : <input id="t-ano" className="form-control mb-1" value={f.anoLetivo} onChange={(e) => setF({ ...f, anoLetivo: e.target.value })} placeholder="2026/2027" required />}
-                <div className="form-text mb-3"><Link to="/academico/anos-letivos">{tx('Configurar anos lectivos e semestres')}</Link></div>
-                {mesesDe(cursoDe(f.curso)) && <div className="form-text mb-3"><i className="fa fa-clock me-1" />{tx('Duração do curso')}: {mesesDe(cursoDe(f.curso))} {tx('meses')}</div>}
-                {/* só nos cursos com mais de 12 meses (os da Escola duram 10 meses) */}
-                {variosAnos(f.curso) && (
-                  <>
-                    <label className="form-label fw-bold" htmlFor="t-anocur">{tx('Ano curricular')}</label>
-                    <select id="t-anocur" className="form-select mb-3" value={f.anoCurricular} onChange={(e) => setF({ ...f, anoCurricular: e.target.value })}>
-                      {Array.from({ length: Math.min(6, Math.ceil((mesesDe(cursoDe(f.curso)) ?? 12) / 12)) }, (_, k) => k + 1).map((n) => <option key={n} value={n}>{n}{tx('.º ano')}</option>)}
-                    </select>
-                  </>
-                )}
-                <label className="form-label fw-bold" htmlFor="t-nome">{tx('Nome da turma')}</label>
-                <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('Ex.: 32.º CSCD — Turma A')} required />
-                <div className="form-text mb-3 mt-n2">{tx('Um curso pode ter várias turmas no mesmo ano lectivo (Turma A, Turma B…).')}</div>
-                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> {tx('Criar turma')}</button>
-              </form>
-            </Painel>
-          </div>
+                </>
+              )}
+              <label className="form-label fw-bold" htmlFor="t-nome">{tx('Nome da turma')}</label>
+              <input id="t-nome" className="form-control mb-3" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder={tx('Ex.: 32.º CSCD — Turma A')} required />
+              <div className="form-text mb-3 mt-n2">{tx('Um curso pode ter várias turmas no mesmo ano lectivo (Turma A, Turma B…).')}</div>
+              <button type="submit" className="btn btn-theme w-100"><i className="fa fa-plus me-1" /> {tx('Criar turma')}</button>
+            </form>
+          </Janela>
         )}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />

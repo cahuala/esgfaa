@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../componentes/Ui'
 import { t as tx, localAtual } from '../../../i18n/linguas'
 import PrazosNotas from './PrazosNotas'
 import { useAnoTrabalho } from '../../anoTrabalho'
@@ -20,6 +20,7 @@ const data = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(localAtual(), {
 function CalendarioAcademico() {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
+  const [janela, setJanela] = useState(false)
   const [lista, setLista] = useState(null)
   const [todasTurmas, setTodasTurmas] = useState([])
   const { ano } = useAnoTrabalho()
@@ -43,6 +44,7 @@ function CalendarioAcademico() {
       const { ambito, ...dados } = f
       await api('/academico/eventos', { metodo: 'POST', corpo: { ...dados, turmaId: ambito ? Number(ambito) : null } })
       setF({ ...vazio, tipo: f.tipo, ambito: f.ambito })
+      setJanela(false)
       setAviso({ texto: tx('Evento marcado. Já aparece no calendário do portal.') })
       carregar()
     } catch (falha) {
@@ -68,7 +70,8 @@ function CalendarioAcademico() {
     <>
       <CabecalhoPagina titulo={tx('Calendário académico')} subtitulo={tx('eventos, épocas e feriados')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Calendário académico') }]} />
       <div className="row">
-        <div className="col-xl-8">
+        <div className="col-12">
+          {gerir && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Marcar evento')}</button></div>}
           <Painel titulo={tx('Próximos')} corpo={false}>
             {!lista ? <div className="panel-body"><Carregando /></div> : (
               <div className="table-responsive">
@@ -88,37 +91,35 @@ function CalendarioAcademico() {
             </Painel>
           )}
         </div>
-        {gerir && (
-          <div className="col-xl-4">
-            <Painel titulo={tx('Marcar evento')}>
-              <form onSubmit={criar}>
-                {erroF && <div className="alert alert-danger py-2">{erroF}</div>}
-                <label className="form-label fw-bold" htmlFor="ev-tipo">{tx('Tipo')}</label>
-                <select id="ev-tipo" className="form-select mb-2" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
-                  <option value="geral">{tx('Evento (início de semestre, época de exames, cerimónia…)')}</option>
-                  <option value="feriado">{tx('Feriado / dia sem aulas')}</option>
-                </select>
-                <label className="form-label fw-bold" htmlFor="ev-ambito">{tx('Para')}</label>
-                <select id="ev-ambito" className="form-select mb-2" value={f.ambito} onChange={(e) => setF({ ...f, ambito: e.target.value })}>
-                  <option value="">{tx('Toda a Escola')}</option>
-                  {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
-                <label className="form-label fw-bold" htmlFor="ev-titulo">{tx('Título')}</label>
-                <input id="ev-titulo" className="form-control mb-2" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder={f.tipo === 'feriado' ? tx('Dia da Independência') : tx('Início do 2.º semestre')} required />
-                <div className="row g-2 mb-2">
-                  <div className="col-6"><label className="form-label fw-bold" htmlFor="ev-data">{tx('Data')}</label><input id="ev-data" type="date" className="form-control" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} required /></div>
-                  <div className="col-3"><label className="form-label" htmlFor="ev-ini">{tx('Início')}</label><input id="ev-ini" type="time" className="form-control" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} /></div>
-                  <div className="col-3"><label className="form-label" htmlFor="ev-fim">{tx('Fim')}</label><input id="ev-fim" type="time" className="form-control" value={f.fim} onChange={(e) => setF({ ...f, fim: e.target.value })} /></div>
-                </div>
-                <label className="form-label" htmlFor="ev-local">{tx('Local')}</label>
-                <input id="ev-local" className="form-control mb-2" value={f.local} onChange={(e) => setF({ ...f, local: e.target.value })} />
-                <label className="form-label" htmlFor="ev-desc">{tx('Descrição')}</label>
-                <textarea id="ev-desc" rows={2} className="form-control mb-3" value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} />
-                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-calendar-plus me-1" /> {tx('Marcar')}</button>
-                <p className="small text-muted mt-2 mb-0">{tx('As datas das provas, exame e recurso de cada cadeira são marcadas pelos docentes no portal.')}</p>
-              </form>
-            </Painel>
-          </div>
+        {gerir && janela && (
+          <Janela titulo={tx('Marcar evento')} onFechar={() => setJanela(false)}>
+            <form onSubmit={criar}>
+              {erroF && <div className="alert alert-danger py-2">{erroF}</div>}
+              <label className="form-label fw-bold" htmlFor="ev-tipo">{tx('Tipo')}</label>
+              <select id="ev-tipo" className="form-select mb-2" value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
+                <option value="geral">{tx('Evento (início de semestre, época de exames, cerimónia…)')}</option>
+                <option value="feriado">{tx('Feriado / dia sem aulas')}</option>
+              </select>
+              <label className="form-label fw-bold" htmlFor="ev-ambito">{tx('Para')}</label>
+              <select id="ev-ambito" className="form-select mb-2" value={f.ambito} onChange={(e) => setF({ ...f, ambito: e.target.value })}>
+                <option value="">{tx('Toda a Escola')}</option>
+                {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+              </select>
+              <label className="form-label fw-bold" htmlFor="ev-titulo">{tx('Título')}</label>
+              <input id="ev-titulo" className="form-control mb-2" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} placeholder={f.tipo === 'feriado' ? tx('Dia da Independência') : tx('Início do 2.º semestre')} required />
+              <div className="row g-2 mb-2">
+                <div className="col-6"><label className="form-label fw-bold" htmlFor="ev-data">{tx('Data')}</label><input id="ev-data" type="date" className="form-control" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} required /></div>
+                <div className="col-3"><label className="form-label" htmlFor="ev-ini">{tx('Início')}</label><input id="ev-ini" type="time" className="form-control" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} /></div>
+                <div className="col-3"><label className="form-label" htmlFor="ev-fim">{tx('Fim')}</label><input id="ev-fim" type="time" className="form-control" value={f.fim} onChange={(e) => setF({ ...f, fim: e.target.value })} /></div>
+              </div>
+              <label className="form-label" htmlFor="ev-local">{tx('Local')}</label>
+              <input id="ev-local" className="form-control mb-2" value={f.local} onChange={(e) => setF({ ...f, local: e.target.value })} />
+              <label className="form-label" htmlFor="ev-desc">{tx('Descrição')}</label>
+              <textarea id="ev-desc" rows={2} className="form-control mb-3" value={f.descricao} onChange={(e) => setF({ ...f, descricao: e.target.value })} />
+              <button type="submit" className="btn btn-theme w-100"><i className="fa fa-calendar-plus me-1" /> {tx('Marcar')}</button>
+              <p className="small text-muted mt-2 mb-0">{tx('As datas das provas, exame e recurso de cada cadeira são marcadas pelos docentes no portal.')}</p>
+            </form>
+          </Janela>
         )}
       </div>
       <PrazosNotas turmas={turmas} avisar={setAviso} />

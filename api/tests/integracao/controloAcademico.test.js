@@ -111,6 +111,33 @@ describe('controlo centralizado: provas escritas, alteração de notas pelo Coma
     assert.equal((await notas(10, 15)).status, 200)
   })
 
+  it('no painel: a Repartição pede a alteração já com a nota nova; o Comandante autoriza e a nota muda logo', async () => {
+    const url = '/api/admin/academico/alteracoes-notas'
+    const corpo = { cadeiraId: cadeira.id, componente: 'p1', estudanteId: contas.bruno.id, notaNova: 13.5, motivo: 'Erro de transcrição da folha de prova.' }
+    assert.equal((await sec.post(url).send({ ...corpo, motivo: 'curto' })).status, 400)
+    const r = await sec.post(url).send(corpo)
+    assert.equal(r.status, 201, r.body.erro)
+    assert.equal(r.body.alterada, false)
+    assert.equal((await sec.post(url).send(corpo)).status, 409) // já há um em aberto
+    const pauta = async () => (await sec.get(`/api/admin/academico/cadeiras/${cadeira.id}/pauta`)).body.linhas.find((l) => l.estudante.id === contas.bruno.id)
+    assert.equal((await pauta()).p1, 12) // ainda não mudou
+    const pend = (await cmd.get(`${url}?estado=pendente`)).body.find((x) => x.estudanteId === contas.bruno.id)
+    assert.deepEqual([pend.notaAtual, pend.notaNova, pend.docente], [12, 13.5, ''])
+    await cmd.post(`${url}/decidir`).send({ ids: [pend.id], decisao: 'autorizar' })
+    assert.equal((await pauta()).p1, 13.5)
+    assert.equal((await cmd.get(`${url}?estado=usado`)).body.find((x) => x.id === pend.id)?.estado, 'usado')
+    // pedida pelo próprio Comandante (prova do plano), muda logo
+    const prova = (await sec.get(`/api/admin/academico/cadeiras/${cadeira.id}/pauta`)).body
+    const tai = prova.avaliacoes?.find((a) => a.titulo === 'Teste 1')
+    if (tai) {
+      const d = await cmd.post(url).send({ cadeiraId: cadeira.id, avaliacaoId: tai.id, estudanteId: contas.bruno.id, notaNova: 16, motivo: 'Revisão da prova pedida pelo discente.' })
+      assert.equal(d.status, 201, d.body.erro)
+      assert.equal(d.body.alterada, true)
+      const l = (await sec.get(`/api/admin/academico/cadeiras/${cadeira.id}/pauta`)).body.linhas.find((x) => x.estudante.id === contas.bruno.id)
+      assert.equal(l.notas[tai.id].nota, 16)
+    }
+  })
+
   it('docentes novos chegam ao Comandante, que verifica a lista', async () => {
     const antes = (await cmd.get('/api/admin/academico/docentes-verificacao')).body
     const prof = antes.find((d) => d.email === 'prof@esgfaa.gov.ao')

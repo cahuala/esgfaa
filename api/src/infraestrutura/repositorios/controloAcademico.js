@@ -181,12 +181,12 @@ export class RepositorioControloAcademico {
     const [turmas, estudantes, docentes, pedidosDocumentos, conselhos, revisoes, docentesRegistados] = await Promise.all([
       p.turma.count({ where: anoLetivo ? { anoLetivo } : { ativa: true } }),
       anoLetivo ? p.matricula.count({ where: { estado: { not: 'anulada' }, turma: { anoLetivo } } }) : p.matricula.count({ where: { estado: 'ativa', turma: { ativa: true } } }),
-      anoLetivo ? p.contaPortal.count({ where: { tipo: 'docente', docencias: { some: { cadeira: { turma: { anoLetivo } } } } } }) : p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
+      anoLetivo ? p.contaPortal.count({ where: { tipo: 'docente', OR: [{ docencias: { some: { cadeira: { turma: { anoLetivo } } } } }, { anosDocente: { has: anoLetivo } }] } }) : p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
       p.pedido.count({ where: { estado: { in: ['pendente', 'em_tratamento'] } } }),
       p.conselhoCurso.findMany({ where: { estado: { in: ['proposta', 'confirmada'] } }, select: { estado: true, turmaId: true } }),
       p.notaAvaliacaoUc.count({ where: { revisaoPedidaEm: { not: null }, revisaoDecididaEm: null } }),
-      // os docentes que vieram do Pessoal (activos), estejam ou não já nas cadeiras do ano
-      p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
+      // os docentes desse ano que vieram do Pessoal (pela lista do corpo docente), estejam ou não já nas cadeiras
+      anoLetivo ? p.contaPortal.count({ where: { tipo: 'docente', anosDocente: { has: anoLetivo } } }) : p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
     ])
     const nomes = new Map((await p.turma.findMany({ where: { id: { in: conselhos.map((c) => c.turmaId) } }, select: { id: true, nome: true } })).map((t) => [t.id, t]))
     return {

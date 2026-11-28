@@ -44,7 +44,7 @@ function DistribuicaoDocente() {
       [`${titulo} — ano lectivo ${ano}`], [],
       ['N.º', 'Posto', 'Nome', 'Cadeira', 'Turma', 'Função', 'Horas', 'Estado'],
       ...d.docentes.flatMap((x, i) => x.cadeiras.map((c) => [i + 1, x.posto, x.nome, `${c.codigo} ${c.nome}`, c.turma, c.papel, c.horas, c.estado === 'proposta' ? 'Proposto' : 'Aprovado'])),
-    ])
+    ], { aprovado: true })
   }
   const assinante = (a, cargo) => ({ cargo: a?.cargo || cargo, nome: a?.nome ?? '', posto: a?.posto ?? '' })
   return (

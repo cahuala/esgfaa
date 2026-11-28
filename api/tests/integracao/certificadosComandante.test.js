@@ -3,10 +3,10 @@ import assert from 'node:assert/strict'
 import { criarAmbiente, relogioFalso } from '../apoio/ambiente.js'
 
 /*
-  O diploma e o certificado de conclusão do curso: a Administração Escolar envia ao Comandante e só ficam
-  disponíveis (para imprimir, no percurso do estudante e na verificação pública) quando ele aprovar.
+  O diploma e o certificado de conclusão do curso: da primeira vez imprimem-se logo, sem pedido ao Comandante (a
+  classificação final já foi homologada por ele); ficam no percurso do estudante e na verificação pública.
 */
-describe('Diplomas e certificados: só ficam disponíveis com a aprovação do Comandante', () => {
+describe('Diplomas e certificados: a primeira emissão imprime-se logo', () => {
   let amb, rae, comandante, turma, ana
   const url = () => `/api/admin/academico/turmas/${turma.id}/certificados/${ana.id}`
   const pendente = async () => (await comandante.get('/api/admin/publicacoes').expect(200)).body.find((x) => x.colecao === 'certificados_curso')
@@ -26,38 +26,17 @@ describe('Diplomas e certificados: só ficam disponíveis com a aprovação do C
   })
   after(() => amb.fechar())
 
-  it('abrir a página não envia nada; enviar fica à espera do Comandante, sem o percurso para imprimir', async () => {
-    const aberto = (await rae.post(url()).send({}).expect(201)).body
-    assert.deepEqual([aberto.estado, aberto.percurso], ['por pedir', null])
+  it('a primeira emissão é directa: imprime-se logo, sem esperar pelo Comandante (a classificação já foi homologada)', async () => {
+    const emitido = (await rae.post(url()).send({}).expect(201)).body
+    assert.equal(emitido.estado, 'aprovado')
+    assert.ok(emitido.percurso, 'leva o percurso para gerar o PDF')
+    assert.equal((await amb.http().get(`/api/publico/certificados/${emitido.codigo}`).expect(200)).body.estudante, 'Estudante Ana Diploma')
     assert.equal(await pendente(), undefined)
-    const enviado = (await rae.post(url()).send({ pedir: true }).expect(201)).body
-    assert.deepEqual([enviado.estado, enviado.percurso], ['pendente', null])
-    // ainda não existe para fora: nem na verificação pública, nem no percurso do estudante
-    assert.equal((await amb.http().get(`/api/publico/certificados/${enviado.codigo}`)).status, 404)
-    assert.equal((await rae.get(`/api/admin/academico/estudantes/${ana.id}/historico`)).body.certificado ?? null, null)
-    const item = await pendente()
-    assert.match(item.titulo, /CEM Final.*1 estudante/)
-    assert.match(item.resumo, /Estudante Ana Diploma/)
-    // a Administração Escolar não decide
-    assert.equal((await rae.post(`/api/admin/publicacoes/certificados_curso/${turma.id}/decisao`).send({ decisao: 'aprovar' })).status, 403)
+    // voltar a abrir não emite outro (o mesmo código)
+    assert.equal((await rae.post(url()).send({}).expect(201)).body.codigo, emitido.codigo)
   })
 
-  it('o Comandante recusa (com o motivo); a Administração Escolar corrige e envia de novo; ele aprova', async () => {
-    assert.equal((await comandante.post(`/api/admin/publicacoes/certificados_curso/${turma.id}/decisao`).send({ decisao: 'recusar' })).status, 400)
-    await comandante.post(`/api/admin/publicacoes/certificados_curso/${turma.id}/decisao`).send({ decisao: 'recusar', motivo: 'Confirmar a data do fim do curso' }).expect(200)
-    const recusado = (await rae.post(url()).send({}).expect(201)).body
-    assert.deepEqual([recusado.estado, recusado.aprovacao.motivo], ['recusado', 'Confirmar a data do fim do curso'])
-    assert.equal(await pendente(), undefined)
-    assert.equal((await rae.post(url()).send({ pedir: true }).expect(201)).body.estado, 'pendente')
-    await comandante.post(`/api/admin/publicacoes/certificados_curso/${turma.id}/decisao`).send({ decisao: 'aprovar' }).expect(200)
-    const aprovado = (await rae.post(url()).send({}).expect(201)).body
-    assert.equal(aprovado.estado, 'aprovado')
-    assert.ok(aprovado.percurso, 'o aprovado leva o percurso para gerar o PDF')
-    assert.equal((await amb.http().get(`/api/publico/certificados/${aprovado.codigo}`).expect(200)).body.estudante, 'Estudante Ana Diploma')
-    assert.equal(await pendente(), undefined)
-  })
-
-  it('vários de uma vez: um só pedido, o Comandante aprova uma vez para todos; quem não concluiu fica de fora', async () => {
+  it('vários de uma vez: saem todos logo; quem não concluiu fica de fora', async () => {
     const tudo = amb.com((await amb.criarUtilizador('administrador')).token)
     const t = (await tudo.post('/api/admin/academico/turmas').send({ curso: 'curso-de-estado-maior', anoLetivo: '2025/2026', nome: 'CEM Anterior', anoCurricular: 1 })).body
     await tudo.put(`/api/admin/academico/turmas/${t.id}`).send({ anoFinal: true })
@@ -70,23 +49,19 @@ describe('Diplomas e certificados: só ficam disponíveis com a aprovação do C
       est.push(e)
     }
     const lista = (await rae.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)).body
-    assert.equal(lista.direto, false)
+    assert.equal(lista.direto, true)
     assert.deepEqual(lista.estudantes.map((x) => x.estado).sort(), ['nao concluido', 'por pedir', 'por pedir'])
-    // consultar não cria nada, nem quando é o Comandante a ver
+    // consultar não cria nada
     await comandante.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)
     assert.equal(await amb.contentor.prisma.certificadoCurso.count({ where: { turmaId: t.id } }), 0)
     const r = (await rae.post(`/api/admin/academico/turmas/${t.id}/certificados`).send({ estudanteIds: est.map((e) => e.id) }).expect(200)).body
     assert.equal(r.enviados, 2)
     assert.equal(r.erros.length, 1)
     assert.match(r.erros[0], /Discente Tres Lote/)
-    const item = (await comandante.get('/api/admin/publicacoes').expect(200)).body.filter((x) => x.colecao === 'certificados_curso' && x.id === String(t.id))
-    assert.equal(item.length, 1)
-    assert.match(item[0].titulo, /2 estudantes/)
-    const d = (await comandante.post(`/api/admin/publicacoes/certificados_curso/${t.id}/decisao`).send({ decisao: 'aprovar' }).expect(200)).body
-    assert.equal(d.certificados, 2)
-    const depois = (await rae.get(`/api/admin/academico/turmas/${t.id}/certificados`).expect(200)).body
-    const aprovados = depois.estudantes.filter((x) => x.estado === 'aprovado')
+    // nada fica à espera do Comandante: os dois saem logo prontos a imprimir
+    assert.equal((await comandante.get('/api/admin/publicacoes').expect(200)).body.filter((x) => x.colecao === 'certificados_curso' && x.id === String(t.id)).length, 0)
+    const aprovados = r.estudantes.filter((x) => x.estado === 'aprovado')
     assert.equal(aprovados.length, 2)
-    assert.ok(aprovados.every((x) => x.percurso), 'os aprovados levam o percurso para o PDF (2.ª via)')
+    assert.ok(aprovados.every((x) => x.percurso), 'levam o percurso para o PDF')
   })
 })

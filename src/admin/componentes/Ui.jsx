@@ -85,6 +85,28 @@ export function Confirmar({ pedido, onCancelar }) {
   )
 }
 
+// Janela (modal) para um formulário: o título, o conteúdo e os botões do rodapé
+export function Janela({ aberta = true, titulo, onFechar, children, rodape, larga = false }) {
+  if (!aberta) return null
+  return (
+    <>
+      <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true" onClick={onFechar}>
+        <div className={`modal-dialog modal-dialog-centered modal-dialog-scrollable${larga ? ' modal-lg' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h4 className="modal-title">{titulo}</h4>
+              <button type="button" className="btn-close" onClick={onFechar} aria-label={tx('Fechar')} />
+            </div>
+            <div className="modal-body">{children}</div>
+            {rodape && <div className="modal-footer">{rodape}</div>}
+          </div>
+        </div>
+      </div>
+      <div className="modal-backdrop fade show" />
+    </>
+  )
+}
+
 export function Carregando({ texto, compacta = false }) {
   return <Espera texto={texto} compacta={compacta} />
 }

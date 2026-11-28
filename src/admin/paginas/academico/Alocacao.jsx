@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Janela, Painel } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
 import { ESTADOS_PERIODO, PAPEIS_DOCENCIA, PERIODOS, estadoDoPeriodo } from './comum'
 import { t as tx } from '../../../i18n/linguas'
@@ -42,6 +42,8 @@ function Alocacao() {
   const setAno = (v) => { if (v) { setTodos(false); mudar(v) } else setTodos(true) }
   const [semestre, setSemestre] = useState('')
   useEffect(() => { carregar() }, [])
+  // a janela de alocar: a cadeira desta turma (a mesma cadeira noutro curso tem o seu próprio docente)
+  const [alocar, setAlocar] = useState(null)
 
   if (erro) return <Erro texto={erro} />
   if (!d) return <Carregando />
@@ -221,7 +223,7 @@ function Alocacao() {
                                 ))}
                               </td>
                               <td className={`text-end text-nowrap ${c.horasAlocadas < c.horas ? 'text-warning' : ''}`}>{c.horasAlocadas} / {c.horas}</td>
-                              {gere && <td className="text-end"><Link to={`/academico/cadeiras/${c.id}?separador=docentes`} className="btn btn-xs btn-primary">{tx('Alocar')}</Link></td>}
+                              {gere && <td className="text-end"><button type="button" className="btn btn-xs btn-primary" onClick={() => setAlocar(c)}>{tx('Alocar')}</button></td>}
                             </tr>
                           ))}
                         </tbody>
@@ -234,8 +236,74 @@ function Alocacao() {
           </Painel>
         </div>
       </div>
+      {alocar && <JanelaAlocar cadeira={alocar} onFechar={() => setAlocar(null)} onFeito={(texto) => { setAlocar(null); setAviso({ texto }); carregar() }} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+/*
+  Alocar numa cadeira de uma turma: os docentes do ano lectivo da turma (ou todos), o papel e as horas. Os que já
+  lá estão ficam (podem tirar-se aqui). Grava-se a lista inteira da cadeira.
+*/
+function JanelaAlocar({ cadeira, onFechar, onFeito }) {
+  const anoLetivo = cadeira.turma?.anoLetivo
+  const [lista, setLista] = useState(cadeira.docentes.map((x) => ({ docenteId: x.id, nome: x.nome, papel: x.papel, horas: x.horas, estado: x.estado })))
+  const [docentes, setDocentes] = useState(null)
+  const [todosDocentes, setTodosDocentes] = useState(false)
+  const [q, setQ] = useState('')
+  const [erro, setErro] = useState('')
+  const [aGravar, setAGravar] = useState(false)
+  useEffect(() => {
+    const filtro = !todosDocentes && anoLetivo ? `&anoLetivo=${encodeURIComponent(anoLetivo)}` : ''
+    api(`/academico/contas?tipo=docente${filtro}`).then((l) => setDocentes(l.filter((x) => x.ativo !== false))).catch((e) => setErro(e.message))
+  }, [anoLetivo, todosDocentes])
+  const falta = Math.max(0, cadeira.horas - lista.reduce((s, x) => s + (Number(x.horas) || 0), 0))
+  const juntar = (d) => setLista([...lista, { docenteId: d.id, nome: d.nome, papel: lista.some((x) => x.papel === 'regente') ? 'assistente' : 'regente', horas: falta || cadeira.horas, estado: null }])
+  const mudar = (i, campo, v) => setLista(lista.map((x, k) => (k === i ? { ...x, [campo]: v } : x)))
+  const termo = q.trim().toLowerCase()
+  const escolhidos = new Set(lista.map((x) => x.docenteId))
+  const opcoes = (docentes ?? []).filter((d) => !escolhidos.has(d.id) && (!termo || `${d.nome} ${d.numero ?? ''}`.toLowerCase().includes(termo))).slice(0, 12)
+  const gravar = () => {
+    setAGravar(true); setErro('')
+    api(`/academico/cadeiras/${cadeira.id}/docentes`, { metodo: 'PUT', corpo: { docentes: lista.map((x) => ({ docenteId: x.docenteId, papel: x.papel, horas: Number(x.horas) || 0 })) } })
+      .then(() => onFeito(tx('Docentes de {0} gravados.', { 0: cadeira.nome })))
+      .catch((e) => { setErro(e.message); setAGravar(false) })
+  }
+  return (
+    <Janela titulo={<>{tx('Alocar')} · {cadeira.nome}<div className="small text-muted fw-normal">{cadeira.turma?.nome} · {cadeira.horas} {tx('h')}</div></>} onFechar={onFechar} larga
+      rodape={<><button type="button" className="btn btn-white" onClick={onFechar}>{tx('Cancelar')}</button><button type="button" className="btn btn-primary" disabled={aGravar} onClick={gravar}>{tx('Gravar')}</button></>}>
+      {erro && <div className="alert alert-danger py-2">{erro}</div>}
+      <h6>{tx('Docentes desta cadeira nesta turma')}</h6>
+      {lista.length === 0 ? <p className="text-muted small">{tx('Ainda nenhum. Escolha abaixo.')}</p> : (
+        <table className="table table-sm align-middle">
+          <tbody>
+            {lista.map((x, i) => (
+              <tr key={x.docenteId}>
+                <td>{x.nome}{x.estado === 'proposta' && PROPOSTO}</td>
+                <td style={{ width: 150 }}><select className="form-select form-select-sm" value={x.papel} onChange={(e) => mudar(i, 'papel', e.target.value)}>{Object.entries(PAPEIS_DOCENCIA).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></td>
+                <td style={{ width: 110 }}><div className="input-group input-group-sm"><input type="number" min={0} className="form-control" value={x.horas} onChange={(e) => mudar(i, 'horas', e.target.value)} /><span className="input-group-text">{tx('h')}</span></div></td>
+                <td className="text-end" style={{ width: 40 }}><button type="button" className="btn btn-xs btn-outline-danger" title={tx('Tirar')} onClick={() => setLista(lista.filter((_, k) => k !== i))}><i className="fa fa-times" /></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <h6 className="mt-3">{tx('Juntar um docente')}</h6>
+      <div className="d-flex gap-2 align-items-center mb-2">
+        <input className="form-control form-control-sm" placeholder={tx('Nome ou NIP')} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+        <label className="form-check small text-nowrap mb-0"><input type="checkbox" className="form-check-input" checked={todosDocentes} onChange={(e) => { setDocentes(null); setTodosDocentes(e.target.checked) }} /> {tx('todos os anos')}</label>
+      </div>
+      {docentes === null ? <Carregando compacta /> : opcoes.length === 0 ? <p className="text-muted small">{tx('Nenhum docente encontrado.')}</p> : (
+        <div className="list-group">
+          {opcoes.map((d) => (
+            <button key={d.id} type="button" className="list-group-item list-group-item-action py-1 d-flex justify-content-between" onClick={() => juntar(d)}>
+              <span>{d.nome}</span><span className="text-muted small">{d.numero}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </Janela>
   )
 }
 

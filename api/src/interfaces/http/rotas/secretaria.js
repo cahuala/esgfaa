@@ -38,6 +38,7 @@ export function rotasSecretaria({ servicos, config, privados }) {
   r.get('/provas-escritas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.paraImprimir(ctx(req), req.dados.query)))
   r.put('/provas-escritas/:id', validar({ params: pId, body: z.object({ impresso: z.boolean() }) }), async (req, res) => res.json(await ctl.marcarImpresso(ctx(req), req.dados.params.id, req.dados.body.impresso)))
   r.get('/alteracoes-notas', validar({ query: E.filtroEstado }), async (req, res) => res.json(await ctl.pedidosParaDecidir(ctx(req), req.dados.query)))
+  r.post('/alteracoes-notas', validar({ body: E.alteracaoNotaPainel }), async (req, res) => res.status(201).json(await ctl.pedirNoPainel(ctx(req), req.dados.body)))
   r.post('/alteracoes-notas/decidir', validar({ body: E.decisaoAlteracaoNota }), async (req, res) => res.json(await ctl.decidir(ctx(req), req.dados.body)))
   r.get('/docentes-verificacao', async (req, res) => res.json(await ctl.docentes(ctx(req))))
   r.post('/docentes-verificacao', validar({ body: E.verificarDocentes }), async (req, res) => res.json(await ctl.verificarDocentes(ctx(req), req.dados.body.ids)))

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../componentes/Ui'
 import { ESTADOS_PERIODO, PERIODOS, estadoDoPeriodo } from './comum'
 import { BLOCOS_DE_TEMPOS } from '../../../portal/regraAvaliacao'
 import CopiarTurma from './CopiarTurma'
@@ -385,12 +385,14 @@ function NovaCadeira({ turma, carregar, avisar }) {
   const vazio = { codigo: '', nome: '', periodo: '1', horas: '', departamento: '' }
   const [f, setF] = useState(vazio)
   const [erro, setErro] = useState('')
+  const [aberta, setAberta] = useState(false)
   async function criar(e) {
     e.preventDefault()
     setErro('')
     try {
       await api(`/academico/turmas/${turma.id}/cadeiras`, { metodo: 'POST', corpo: { ...f, horas: Number(f.horas || 0) } })
       setF(vazio)
+      setAberta(false)
       avisar({ texto: tx('Cadeira criada. Aloque os docentes na ficha da cadeira.') })
       carregar()
     } catch (falha) {
@@ -398,7 +400,9 @@ function NovaCadeira({ turma, carregar, avisar }) {
     }
   }
   return (
-    <Painel titulo={tx('Nova cadeira')}>
+    <>
+    <button type="button" className="btn btn-theme w-100 mb-2" onClick={() => setAberta(true)}><i className="fa fa-plus me-1" />{tx('Nova cadeira')}</button>
+    {aberta && <Janela titulo={tx('Nova cadeira')} onFechar={() => setAberta(false)} larga>
       <form onSubmit={criar}>
         {erro && <div className="alert alert-danger py-2">{erro}</div>}
         <div className="row g-2">
@@ -410,7 +414,8 @@ function NovaCadeira({ turma, carregar, avisar }) {
         </div>
         <button type="submit" className="btn btn-theme w-100 mt-3"><i className="fa fa-plus me-1" /> {tx('Criar cadeira')}</button>
       </form>
-    </Painel>
+    </Janela>}
+    </>
   )
 }
 

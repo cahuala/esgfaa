@@ -6,9 +6,13 @@
 */
 const ESCRITA = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
+// imprimir num ano fechado continua possível: a emissão dos diplomas e certificados (e a 2.ª via) é imprimir
+const IMPRIMIR = [/^\/turmas\/\d+\/certificados(\/\d+)?\/?$/]
+
 export function bloquearAnoFechado(anos, regras, { doCorpo = [] } = {}) {
   return async (req, res, next) => {
     if (!ESCRITA.has(req.method)) return next()
+    if (req.method === 'POST' && IMPRIMIR.some((re) => re.test(req.path))) return next()
     try {
       for (const [re, chave] of regras) {
         const m = re.exec(req.path)

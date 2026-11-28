@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from 'react'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { abrirFicheiro, api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Janela, Painel } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -29,7 +29,7 @@ function NovoPedido({ aoCriar, aoFechar }) {
     try { await api('/academico/pedidos', { metodo: 'POST', corpo: { estudanteId: Number(f.estudanteId), tipo: f.tipo, ...(f.motivo.trim() ? { motivo: f.motivo.trim() } : {}) } }); aoCriar() } catch (e) { setErro(e.message) } finally { setAGravar(false) }
   }
   return (
-    <Painel titulo={tx('Novo pedido de documento')}>
+    <Janela titulo={tx('Novo pedido de documento')} onFechar={aoFechar} larga>
       <form onSubmit={criar}>
         {erro && <div className="alert alert-danger py-2">{erro}</div>}
         <div className="row g-2">
@@ -54,7 +54,7 @@ function NovoPedido({ aoCriar, aoFechar }) {
           <button type="submit" className="btn btn-theme ms-auto" disabled={!f.estudanteId || !f.tipo || aGravar}><i className={`fa ${aGravar ? 'fa-spinner fa-spin' : 'fa-paper-plane'} me-1`} />{tx('Registar o pedido')}</button>
         </div>
       </form>
-    </Painel>
+    </Janela>
   )
 }
 
@@ -103,10 +103,10 @@ function Pedidos() {
                       <td>{p.tipo}{p.motivo && <div className="small text-muted texto-comentario">{p.motivo}</div>}</td>
                       <td className="text-nowrap">{dataHora(p.criadoEm)}</td>
                       <td><span className={`badge ${ESTADOS[p.estado][0]}`}>{ESTADOS[p.estado][1]}</span></td>
-                      <td className="text-end">{pode('academico.gerir') && <button type="button" className="btn btn-sm btn-primary" onClick={() => setAberto(aberto === p.id ? null : p.id)}>{aberto === p.id ? tx('Fechar') : tx('Tratar')}</button>}</td>
+                      <td className="text-end">{pode('academico.gerir') && <button type="button" className="btn btn-sm btn-primary" onClick={() => setAberto(aberto === p.id ? null : p.id)}>{tx('Tratar')}</button>}</td>
                     </tr>
                     {aberto === p.id && (
-                      <tr><td colSpan={5}><TratarPedido p={p} aoGuardar={() => { setAberto(null); setAviso({ texto: tx('Pedido actualizado.') }); carregar() }} avisar={setAviso} /></td></tr>
+                      <TratarPedido p={p} aoFechar={() => setAberto(null)} aoGuardar={() => { setAberto(null); setAviso({ texto: tx('Pedido actualizado.') }); carregar() }} avisar={setAviso} />
                     )}
                   </Fragment>
                 ))}
@@ -120,7 +120,7 @@ function Pedidos() {
   )
 }
 
-function TratarPedido({ p, aoGuardar, avisar }) {
+function TratarPedido({ p, aoGuardar, aoFechar, avisar }) {
   const [f, setF] = useState({ estado: p.estado, resposta: p.resposta || '' })
   const [ficheiro, setFicheiro] = useState(null)
   const [aGuardar, setAGuardar] = useState(false)
@@ -143,24 +143,27 @@ function TratarPedido({ p, aoGuardar, avisar }) {
   }
 
   return (
+    <Janela titulo={`${tx('Tratar o pedido')} · ${p.tipo}`} onFechar={aoFechar} larga>
+    <div className="small text-muted mb-2">{p.estudante.nome} · {dataHora(p.criadoEm)}{p.motivo && ` · ${p.motivo}`}</div>
     <form className="row g-2 align-items-end" onSubmit={guardar}>
-      <div className="col-md-3">
+      <div className="col-md-4">
         <label className="form-label fw-bold" htmlFor={`pe-${p.id}`}>{tx('Estado')}</label>
         <select id={`pe-${p.id}`} className="form-select" value={f.estado} onChange={(e) => setF({ ...f, estado: e.target.value })}>
           {Object.entries(ESTADOS).map(([k, [, v]]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
-      <div className="col-md-5">
+      <div className="col-md-8">
         <label className="form-label fw-bold" htmlFor={`pr-${p.id}`}>{tx('Resposta ao estudante')}</label>
         <input id={`pr-${p.id}`} className="form-control" value={f.resposta} onChange={(e) => setF({ ...f, resposta: e.target.value })} placeholder={tx('Ex.: pode levantar na Administração Escolar a partir de…')} />
       </div>
-      <div className="col-md-3">
+      <div className="col-12">
         <label className="form-label fw-bold" htmlFor={`pf-${p.id}`}>{tx('Documento (PDF)')}</label>
         <input id={`pf-${p.id}`} type="file" accept="application/pdf" className="form-control" onChange={(e) => setFicheiro(e.target.files[0] || null)} />
         {p.ficheiroId && <button type="button" className="btn btn-link btn-sm p-0" onClick={() => abrirFicheiro(p.ficheiroId, `${p.tipo}.pdf`).catch((x) => avisar({ tipo: 'erro', texto: x.message }))}>{tx('Ver o documento actual')}</button>}
       </div>
-      <div className="col-md-1"><button type="submit" className="btn btn-theme w-100" disabled={aGuardar}>{tx('Guardar')}</button></div>
+      <div className="col-12 d-flex gap-2 justify-content-end mt-3"><button type="button" className="btn btn-white" onClick={aoFechar}>{tx('Cancelar')}</button><button type="submit" className="btn btn-theme" disabled={aGuardar}>{tx('Guardar')}</button></div>
     </form>
+    </Janela>
   )
 }
 

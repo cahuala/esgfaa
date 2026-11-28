@@ -137,7 +137,7 @@ export class ServicoConclusaoCurso {
         estudantes.push({ estado: 'nao concluido', motivo: falha.message, estudante, percurso: null })
       }
     }
-    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    const direto = true
     return { turma: { id: turma.id, nome: turma.nome, anoLetivo: turma.anoLetivo, curso: turma.curso }, direto, estudantes }
   }
 
@@ -158,7 +158,7 @@ export class ServicoConclusaoCurso {
         erros.push(`${estudante.nome}: ${falha.message}`)
       }
     }
-    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    const direto = true
     if (enviados && !direto) await this.auditoria.registar(ctx, { acao: 'pedir_aprovacao_certificado', colecao: 'certificados', alvoTitulo: `${turma.nome} (${turma.anoLetivo}): ${enviados} estudante(s)` })
     return { enviados, erros, ...(await this.certificadosDaTurma(ctx, turma.id)) }
   }
@@ -168,7 +168,9 @@ export class ServicoConclusaoCurso {
     const existente = (await this.conclusao.certificadosDoEstudante(estudante.id)).find((c) => c.turmaId === turma.id)
     if (!existente && !percurso.concluido) throw new Conflito(`O curso ainda não está concluído: ${percurso.emFalta.slice(0, 3).join('; ')}.`)
     if (!existente && percurso.planoCurso && !percurso.planoCurso.homologado) throw new Conflito('A classificação final ainda não foi homologada pelo Comandante (Conselho de Curso).')
-    const direto = !this.aprovacaoComandante || ctx.actor.pode('academico.homologar')
+    // a primeira emissão do diploma e do certificado é directa (imprime-se logo, sem esperar pelo Comandante): a
+    // classificação final já foi homologada por ele no Conselho de Curso
+    const direto = true
     const agora = this.relogio.agora().toISOString()
     const pedido = { pedidoPor: ctx.actor.nome ?? '', pedidoEm: agora, ...(direto ? { decididoPor: ctx.actor.nome ?? '', decididoEm: agora } : {}) }
     const estado = direto ? 'aprovado' : 'pendente'

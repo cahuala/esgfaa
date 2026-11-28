@@ -101,7 +101,9 @@ export class ServicoSincronizacao {
       },
       ...(foto !== undefined ? { foto } : {}),
       // os cursos de cada ano lectivo do estudante (as listas de cada ano): a Gestão Escolar matricula-o logo na turma
-      ...(vs.includes('estudante') && p.anosAcademicos?.length ? { anos: p.anosAcademicos.filter((a) => a.curso).map((a) => ({ anoLetivo: a.anoLetivo, curso: a.curso.slice(0, 250), concluido: a.concluido ?? null })) } : {}),
+      ...(vs.includes('estudante') && p.anosAcademicos?.some((a) => a.papel === 'estudante') ? { anos: p.anosAcademicos.filter((a) => a.papel === 'estudante' && a.curso).slice(0, 30).map((a) => ({ anoLetivo: a.anoLetivo, curso: a.curso.slice(0, 250), concluido: a.concluido ?? null })) } : {}),
+      // os anos lectivos em que foi docente (as listas do corpo docente): a Gestão Escolar mostra-o em cada um desses anos
+      ...(vs.includes('docente') && p.anosAcademicos?.some((a) => a.papel === 'docente') ? { anosDocente: [...new Set(p.anosAcademicos.filter((a) => a.papel === 'docente').map((a) => a.anoLetivo))].slice(0, 40) } : {}),
     }
   }
 
@@ -375,7 +377,7 @@ export class ServicoSincronizacao {
     await this.enviarComandante().catch(() => {})
     await this.enviarContasEnsino().catch(() => {})
     // as que falharam só por falta de ligação voltam sempre a ir (quando a Gestão Escolar voltar, seguem sozinhas)
-    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }, { estado: 'erro', erro: { startsWith: SEM_LIGACAO } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } }, anosAcademicos: { where: { papel: 'estudante' }, select: { anoLetivo: true, curso: true, concluido: true }, orderBy: { anoLetivo: 'desc' }, take: 30 } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
+    const fila = await this.bd.sincronizacao.findMany({ where: { OR: [{ estado: 'pendente' }, { estado: 'erro', tentativas: { lt: MAX_TENTATIVAS } }, { estado: 'erro', erro: { startsWith: SEM_LIGACAO } }] }, include: { pessoa: { include: { unidade: { select: { nome: true } }, anosAcademicos: { select: { anoLetivo: true, papel: true, curso: true, concluido: true }, orderBy: { anoLetivo: 'desc' }, take: 60 } } } }, take: LOTE, orderBy: { pessoaId: 'asc' } })
     if (!fila.length) return { enviados: 0, erros: 0 }
     const corpo = JSON.stringify({ pessoas: fila.map((s) => this.#conteudo(s.pessoa, s.contaPortalId, s.fotoEnviada)) })
     const data = String(Math.floor(this.agora().getTime() / 1000))

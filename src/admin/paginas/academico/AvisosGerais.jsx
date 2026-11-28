@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../componentes/Ui'
 import { dataHora } from '../../formatar'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
@@ -10,6 +10,7 @@ import { t as tx } from '../../../i18n/linguas'
 // avisos da Secretaria no portal (para todos os estudantes ou só para uma turma)
 function AvisosGerais() {
   const { pode } = useSessao()
+  const [janela, setJanela] = useState(false)
   const [lista, setLista] = useState(null)
   const [turmas, setTurmas] = useState([])
   const [erro, setErro] = useState('')
@@ -29,6 +30,7 @@ function AvisosGerais() {
     try {
       const a = await api('/academico/avisos', { metodo: 'POST', corpo: { ...f, turmaId: f.turmaId ? Number(f.turmaId) : null } })
       setF({ turmaId: '', titulo: '', texto: '' })
+      setJanela(false)
       setAviso({ texto: a.estado === 'pendente' ? tx('Aviso enviado ao Comandante: chega aos estudantes quando ele aprovar.') : tx('Aviso publicado no portal.') })
       carregar()
     } catch (falha) {
@@ -40,7 +42,8 @@ function AvisosGerais() {
     <>
       <CabecalhoPagina titulo={tx('Avisos do portal')} subtitulo={tx('da Administração Escolar')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Avisos') }]} />
       <div className="row">
-        <div className="col-xl-8">
+        <div className="col-12">
+          {pode('academico.gerir') && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Novo aviso')}</button></div>}
           {erro && <Erro texto={erro} />}
           {!lista && !erro ? <Carregando /> : lista?.map((a) => (
             <Painel key={a.id} titulo={a.titulo} acoes={pode('academico.gerir') && (
@@ -54,23 +57,21 @@ function AvisosGerais() {
           ))}
           {lista?.length === 0 && <div className="alert alert-info">{tx('Ainda não há avisos.')}</div>}
         </div>
-        {pode('academico.gerir') && (
-          <div className="col-xl-4">
-            <Painel titulo={tx('Novo aviso')}>
-              <form onSubmit={publicar}>
-                <label className="form-label fw-bold" htmlFor="ag-turma">{tx('Para')}</label>
-                <select id="ag-turma" className="form-select mb-3" value={f.turmaId} onChange={(e) => setF({ ...f, turmaId: e.target.value })}>
-                  <option value="">{tx('Todos os estudantes')}</option>
-                  {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
-                <label className="form-label fw-bold" htmlFor="ag-titulo">{tx('Título')}</label>
-                <input id="ag-titulo" className="form-control mb-3" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} required />
-                <label className="form-label fw-bold" htmlFor="ag-texto">{tx('Texto')}</label>
-                <textarea id="ag-texto" className="form-control mb-3" rows={5} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} required />
-                <button type="submit" className="btn btn-theme w-100"><i className="fa fa-bullhorn me-1" /> {tx('Publicar')}</button>
-              </form>
-            </Painel>
-          </div>
+        {pode('academico.gerir') && janela && (
+          <Janela titulo={tx('Novo aviso')} onFechar={() => setJanela(false)}>
+            <form onSubmit={publicar}>
+              <label className="form-label fw-bold" htmlFor="ag-turma">{tx('Para')}</label>
+              <select id="ag-turma" className="form-select mb-3" value={f.turmaId} onChange={(e) => setF({ ...f, turmaId: e.target.value })}>
+                <option value="">{tx('Todos os estudantes')}</option>
+                {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+              </select>
+              <label className="form-label fw-bold" htmlFor="ag-titulo">{tx('Título')}</label>
+              <input id="ag-titulo" className="form-control mb-3" value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} required />
+              <label className="form-label fw-bold" htmlFor="ag-texto">{tx('Texto')}</label>
+              <textarea id="ag-texto" className="form-control mb-3" rows={5} value={f.texto} onChange={(e) => setF({ ...f, texto: e.target.value })} required />
+              <button type="submit" className="btn btn-theme w-100"><i className="fa fa-bullhorn me-1" /> {tx('Publicar')}</button>
+            </form>
+          </Janela>
         )}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />

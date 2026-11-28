@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Painel, Janela } from '../../componentes/Ui'
 import FotoConta from '../../componentes/FotoConta'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { useSessao } from '../../sessaoContexto'
@@ -20,6 +20,7 @@ function Matriculas() {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
   const { ano } = useAnoTrabalho()
+  const [janela, setJanela] = useState(false)
   const [turmas, setTurmas] = useState(null)
   const [estudantes, setEstudantes] = useState([])
   const [erro, setErro] = useState('')
@@ -58,6 +59,7 @@ function Matriculas() {
     }
     setAGravar(false)
     setNova({ ...nova, escolhidos: [], q: '' })
+    setJanela(false)
     setAviso({ tipo: erros.length ? 'erro' : undefined, texto: [tx('{0} matrícula(s) feita(s).', { 0: feitas }), ...erros].join(' ') })
     carregar()
   }
@@ -70,7 +72,8 @@ function Matriculas() {
         <button type="button" className="btn btn-white" onClick={exportar}><i className="fa fa-file-excel me-1 text-success" />{tx('Exportar Excel')}</button>
       </CabecalhoPagina>
       <div className="row">
-        <div className={gerir ? 'col-xl-8' : 'col-12'}>
+        <div className="col-12">
+          {gerir && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Matricular')}</button></div>}
           <Painel titulo={tx('Estudantes matriculados')} corpo={false}>
             <div className="d-flex flex-wrap gap-2 p-2 border-bottom">
               <select className="form-select form-select-sm w-auto" value={filtro.turma} onChange={(e) => setFiltro({ ...filtro, turma: e.target.value })} aria-label={tx('Turma')}>
@@ -105,30 +108,28 @@ function Matriculas() {
             </div>
           </Painel>
         </div>
-        {gerir && (
-          <div className="col-xl-4">
-            <Painel titulo={tx('Matricular')}>
-              <label className="form-label fw-bold" htmlFor="mat-turma">{tx('1. Turma')}</label>
-              <select id="mat-turma" className="form-select mb-3" value={nova.turma} onChange={(e) => setNova({ ...nova, turma: e.target.value })}>
-                <option value="">{turmas.length ? tx('— escolha a turma —') : tx('Não há turmas neste ano lectivo')}</option>
-                {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-              </select>
-              <label className="form-label fw-bold" htmlFor="mat-q">{tx('2. Estudantes sem turma neste ano ({0})', { 0: semTurma.length })}</label>
-              <input id="mat-q" className="form-control mb-2" placeholder={tx('Procurar (nome, NIP)')} value={nova.q} onChange={(e) => setNova({ ...nova, q: e.target.value })} />
-              <div className="border rounded mb-2" style={{ maxHeight: 280, overflowY: 'auto' }}>
-                {candidatos.length === 0 && <div className="small text-muted p-2">{semTurma.length ? tx('Ninguém com esta procura.') : tx('Todos os estudantes já têm turma neste ano. Os estudantes novos vêm do Sistema de Pessoal.')}</div>}
-                {candidatos.map((e) => (
-                  <label key={e.id} className="d-flex align-items-center gap-2 px-2 py-1 border-bottom small">
-                    <input type="checkbox" className="form-check-input" checked={nova.escolhidos.includes(e.id)} onChange={(ev) => setNova({ ...nova, escolhidos: ev.target.checked ? [...nova.escolhidos, e.id] : nova.escolhidos.filter((x) => x !== e.id) })} />
-                    <span>{[e.dados?.posto, e.nome].filter(Boolean).join(' ')}{e.dados?.nip && <span className="text-muted"> · NIP {e.dados.nip}</span>}</span>
-                  </label>
-                ))}
-              </div>
-              <button type="button" className="btn btn-theme w-100" disabled={!nova.turma || !nova.escolhidos.length || aGravar} onClick={matricular}>
-                <i className={`fa ${aGravar ? 'fa-spinner fa-spin' : 'fa-user-plus'} me-1`} />{tx('Matricular ({0})', { 0: nova.escolhidos.length })}
-              </button>
-            </Painel>
-          </div>
+        {gerir && janela && (
+          <Janela titulo={tx('Matricular')} onFechar={() => setJanela(false)}>
+            <label className="form-label fw-bold" htmlFor="mat-turma">{tx('1. Turma')}</label>
+            <select id="mat-turma" className="form-select mb-3" value={nova.turma} onChange={(e) => setNova({ ...nova, turma: e.target.value })}>
+              <option value="">{turmas.length ? tx('— escolha a turma —') : tx('Não há turmas neste ano lectivo')}</option>
+              {turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+            </select>
+            <label className="form-label fw-bold" htmlFor="mat-q">{tx('2. Estudantes sem turma neste ano ({0})', { 0: semTurma.length })}</label>
+            <input id="mat-q" className="form-control mb-2" placeholder={tx('Procurar (nome, NIP)')} value={nova.q} onChange={(e) => setNova({ ...nova, q: e.target.value })} />
+            <div className="border rounded mb-2" style={{ maxHeight: 280, overflowY: 'auto' }}>
+              {candidatos.length === 0 && <div className="small text-muted p-2">{semTurma.length ? tx('Ninguém com esta procura.') : tx('Todos os estudantes já têm turma neste ano. Os estudantes novos vêm do Sistema de Pessoal.')}</div>}
+              {candidatos.map((e) => (
+                <label key={e.id} className="d-flex align-items-center gap-2 px-2 py-1 border-bottom small">
+                  <input type="checkbox" className="form-check-input" checked={nova.escolhidos.includes(e.id)} onChange={(ev) => setNova({ ...nova, escolhidos: ev.target.checked ? [...nova.escolhidos, e.id] : nova.escolhidos.filter((x) => x !== e.id) })} />
+                  <span>{[e.dados?.posto, e.nome].filter(Boolean).join(' ')}{e.dados?.nip && <span className="text-muted"> · NIP {e.dados.nip}</span>}</span>
+                </label>
+              ))}
+            </div>
+            <button type="button" className="btn btn-theme w-100" disabled={!nova.turma || !nova.escolhidos.length || aGravar} onClick={matricular}>
+              <i className={`fa ${aGravar ? 'fa-spinner fa-spin' : 'fa-user-plus'} me-1`} />{tx('Matricular ({0})', { 0: nova.escolhidos.length })}
+            </button>
+          </Janela>
         )}
       </div>
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />

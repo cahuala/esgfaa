@@ -57,6 +57,7 @@ export const videoCurto = z.object({ legenda: texto(300).optional(), duracao: z.
 export const provaEscrita = z.object({ titulo: texto(200), data: texto(10).optional(), copias: z.union([texto(6), z.number()]).optional(), observacoes: texto(1000).optional() })
 // pedido de alteração de notas publicadas (um ou mais estudantes)
 export const pedidoAlteracaoNota = z.object({ avaliacaoId: z.union([idNumerico, z.null()]).optional(), componente: texto(20).optional(), estudanteIds: z.array(idNumerico).min(1).max(200), motivo: texto(1000) })
+export const alteracaoNotaPainel = z.object({ cadeiraId: idNumerico, avaliacaoId: z.union([idNumerico, z.null()]).optional(), componente: texto(20).optional(), estudanteId: idNumerico, notaNova: z.number().min(0).max(20), motivo: texto(1000) })
 export const decisaoAlteracaoNota = z.object({ ids: z.array(idNumerico).min(1).max(500), decisao: z.enum(['autorizar', 'recusar']), fundamento: texto(1000).optional() })
 export const verificarDocentes = z.object({ ids: z.array(idNumerico).min(1).max(1000) })
 

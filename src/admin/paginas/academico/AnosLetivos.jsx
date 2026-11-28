@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Confirmar, Erro, Janela, Painel } from '../../componentes/Ui'
 import { dataCurta as data } from '../../formatar'
 import { t as tx } from '../../../i18n/linguas'
 import { avisarAnosMudaram } from '../../anoTrabalho'
@@ -125,7 +125,7 @@ function AnosLetivos() {
       {lista?.length === 0 && <div className="alert alert-warning">{tx('Ainda não há anos lectivos. Crie o primeiro com «Novo ano lectivo».')}</div>}
 
       {f && (
-        <Painel titulo={f.novo ? tx('Novo ano lectivo') : tx('Datas de {0}', { 0: f.id })}>
+        <Janela titulo={f.novo ? tx('Novo ano lectivo') : tx('Datas de {0}', { 0: f.id })} onFechar={() => setF(null)} larga>
           <form onSubmit={guardar}>
             {erroForm && <div className="alert alert-danger py-2">{erroForm}</div>}
             <div className="row g-2">
@@ -147,11 +147,11 @@ function AnosLetivos() {
               <button type="button" className="btn btn-white" onClick={() => setF(null)}>{tx('Cancelar')}</button>
             </div>
           </form>
-        </Painel>
+        </Janela>
       )}
 
       {reabrir && (
-        <Painel titulo={comandante ? tx('Reabrir o ano lectivo {0}', { 0: reabrir.id }) : tx('Pedir ao Comandante a reabertura de {0}', { 0: reabrir.id })}>
+        <Janela titulo={comandante ? tx('Reabrir o ano lectivo {0}', { 0: reabrir.id }) : tx('Pedir ao Comandante a reabertura de {0}', { 0: reabrir.id })} onFechar={() => setReabrir(null)} larga>
           <form onSubmit={pedirReabertura}>
             <div className="row g-2">
               <div className="col-md-4">
@@ -177,7 +177,7 @@ function AnosLetivos() {
               <button type="button" className="btn btn-white" onClick={() => setReabrir(null)}>{tx('Cancelar')}</button>
             </div>
           </form>
-        </Painel>
+        </Janela>
       )}
 
       <div className="row">

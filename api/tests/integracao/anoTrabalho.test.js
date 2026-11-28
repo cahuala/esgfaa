@@ -32,10 +32,11 @@ describe('Ano lectivo de trabalho de cada conta do painel', () => {
     assert.equal((await adm.put('/api/admin/eu/ano-trabalho').send({ anoTrabalho: '' }).expect(200)).body.anoTrabalho, '')
   })
 
-  it('o registo e o painel mostram os do ano (e quem ainda não tem turma)', async () => {
+  it('o registo e o painel mostram os do ano (e, no ano actual, quem ainda não tem turma)', async () => {
     const nomes = async (ano) => (await adm.get(`/api/admin/academico/contas?tipo=estudante&anoLetivo=${encodeURIComponent(ano)}`).expect(200)).body.map((c) => c.nome).sort()
     assert.deepEqual(await nomes('2025/2026'), ['Estudante Ainda Sem Turma', 'Estudante do Ano Actual'])
-    assert.deepEqual(await nomes('2024/2025'), ['Estudante Ainda Sem Turma', 'Estudante do Ano Antigo'])
+    // um ano que já passou mostra só quem lá esteve
+    assert.deepEqual(await nomes('2024/2025'), ['Estudante do Ano Antigo'])
     const r = (await adm.get('/api/admin/academico/pendentes?anoLetivo=2024%2F2025').expect(200)).body
     assert.deepEqual([r.turmas, r.estudantes, r.anoLetivo], [1, 1, '2024/2025'])
   })

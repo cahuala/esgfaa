@@ -9,8 +9,9 @@ import { t as tx } from '../../../../i18n/linguas'
 
 /*
   Os diplomas e certificados de uma turma de uma só vez (do ano actual ou de anos anteriores, para a 2.ª via):
-  1) escolhem-se os estudantes; 2) enviam-se ao Comandante (um só pedido; ele aprova uma vez para todos);
-  3) depois de aprovados, imprimem-se todos num só PDF. Os já aprovados reimprimem-se sempre que for preciso (2.ª via).
+  1) escolhem-se os estudantes; 2) emitem-se (na primeira vez não precisam da aprovação do Comandante; se a API
+  pedir a aprovação — d.direto falso —, vão-lhe num só pedido); 3) imprimem-se todos num só PDF. Os já emitidos
+  reimprimem-se sempre que for preciso (2.ª via).
 */
 const SITUACAO = {
   'nao concluido': ['bg-secondary', 'Não concluiu o curso'],

@@ -127,6 +127,17 @@ export class RepositorioAcademico {
     return linhas.map((m) => ({ id: m.id, estado: m.estado, turma: { id: m.turma.id, nome: m.turma.nome, curso: m.turma.curso, anoLetivo: m.turma.anoLetivo, anoCurricular: m.turma.anoCurricular } }))
   }
 
+  // os estudantes da turma para as listas e os documentos: os activos e, nas turmas de anos anteriores, os que
+  // concluíram (as contas já inactivas do histórico também contam)
+  async estudantesDaTurmaParaListas(turmaId) {
+    const linhas = await this.prisma.matricula.findMany({
+      where: { turmaId, estado: { in: ['ativa', 'concluida'] } },
+      include: { estudante: comPosto },
+      orderBy: { estudante: { nome: 'asc' } },
+    })
+    return ordenarPorHierarquia(linhas.map((m) => resumoComPosto(m.estudante)))
+  }
+
   async estudantesAtivosDaTurma(turmaId) {
     const linhas = await this.prisma.matricula.findMany({
       where: { turmaId, estado: 'ativa', estudante: { ativo: true } },

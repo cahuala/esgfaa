@@ -10,6 +10,8 @@ const pessoa = z.object({
   foto: z.union([z.object({ id: z.string().max(80), dados: z.string().max(4_000_000) }), z.null()]).optional(),
   // os cursos de cada ano lectivo (os estudantes): para a matrícula na turma desse curso, sem a Repartição a fazer
   anos: z.array(z.object({ anoLetivo: z.string().regex(/^\d{4}\/\d{4}$/), curso: z.string().max(250), concluido: z.boolean().nullable().optional() })).max(30).optional(),
+  // os anos lectivos em que foi docente (as listas do corpo docente de cada ano)
+  anosDocente: z.array(z.string().regex(/^\d{4}\/\d{4}$/)).max(40).optional(),
 })
 const corpo = z.object({ pessoas: z.array(pessoa).max(200) })
 const assinante = z.object({ cargo: z.string().max(120), nome: z.string().max(150), posto: z.string().max(60), origem: z.string().max(20) })

@@ -30,6 +30,11 @@ await contentor.servicos.integridade.retomar()
 // traduções automáticas que faltem (conteúdos publicados antes de haver tradutor)
 contentor.servicos.traducoes.completar().catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: 'Traduções', erro: e.message })))
 
+// os anos lectivos anteriores ao actual ficam fechados (só consulta e impressão); nos sistemas internos
+if (!['online', 'site'].includes(config.sistema)) {
+  contentor.servicos.administracaoEscolar?.anosLetivos?.fecharAnteriores().then((f) => { if (f.length) console.log(`Anos lectivos fechados (anteriores ao actual): ${f.join(', ')}.`) }).catch((e) => console.error(JSON.stringify({ nivel: 'erro', mensagem: 'Fechar os anos anteriores', erro: e.message })))
+}
+
 // Centro de segurança: grava os eventos, carrega os bloqueios e envia os alertas
 contentor.servicos.seguranca.iniciar()
 

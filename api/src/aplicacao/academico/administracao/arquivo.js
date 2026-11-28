@@ -124,7 +124,7 @@ export class ServicoArquivoAcademico {
       if (!ANO.test(id) || !/^\d{4}-\d{2}-\d{2}$/.test(String(d?.inicio)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(d?.fim)) || d.inicio >= d.fim) continue
       const a = await this.prisma.anoLetivo.findUnique({ where: { id } })
       const p = datasPadrao(id)
-      if (!a || a.fechado || a.inicio.toISOString().slice(0, 10) !== p.inicio || a.fim.toISOString().slice(0, 10) !== p.fim) continue
+      if (!a || a.inicio.toISOString().slice(0, 10) !== p.inicio || a.fim.toISOString().slice(0, 10) !== p.fim) continue
       const dt = (x) => new Date(`${x}T00:00:00Z`)
       await this.prisma.anoLetivo.update({ where: { id }, data: { inicio: dt(d.inicio), fim: dt(d.fim), semestre1Inicio: dt(d.inicio), semestre2Fim: dt(d.fim) } })
       feitas.push(`${id}: ${d.inicio} a ${d.fim}`)
@@ -133,7 +133,8 @@ export class ServicoArquivoAcademico {
     return feitas
   }
 
-  async importar(ctx, { turmas, simular = true } = {}) {
+  // mesmoFechados: a carga da instalação regista o arquivo também nos anos já fechados (é o registo do que foi)
+  async importar(ctx, { turmas, simular = true, mesmoFechados = false } = {}) {
     ctx.actor.exigir('academico.gerir')
     if (!Array.isArray(turmas) || !turmas.length) throw new ErroValidacao('O ficheiro não tem turmas (pautas do arquivo).')
     if (turmas.length > 200) throw new ErroValidacao('No máximo 200 turmas de cada vez.')
@@ -158,7 +159,7 @@ export class ServicoArquivoAcademico {
       if (!t.nome) t.nome = `${t.edicao}.º ${curso.dados?.nome || curso.titulo || t.sigla}`
       r.turma = `${t.nome} (${t.anoLetivo})`
       const ano = await this.prisma.anoLetivo.findUnique({ where: { id: t.anoLetivo } })
-      if (ano?.fechado) { Object.assign(r, { estado: 'ano fechado', motivo: `O ano lectivo ${t.anoLetivo} está fechado: peça a reabertura ao Comandante.` }); continue }
+      if (ano?.fechado && !mesmoFechados) { Object.assign(r, { estado: 'ano fechado', motivo: `O ano lectivo ${t.anoLetivo} está fechado: peça a reabertura ao Comandante.` }); continue }
       // o que já está no sistema não se toca
       const existentes = await this.prisma.turma.findMany({ where: { curso: curso.id, anoLetivo: t.anoLetivo }, select: { id: true, nome: true, _count: { select: { matriculas: true } } } })
       const daqui = existentes.find((x) => x.nome === t.nome)
@@ -437,8 +438,8 @@ export class ServicoArquivoAcademico {
 
   // cada docente da lista nas cadeiras do ano com a sua disciplina (pelo nome da cadeira); devolve quantos entraram
   async #docentesNasCadeiras(anoLetivo, catalogo, { anterior }) {
-    const ano = await this.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } })
-    if (ano?.fechado) return 0
+    // os anos anteriores (já fechados) também: é o registo de quem leccionou, não uma alteração do ano
+    if (!anterior) { const ano = await this.prisma.anoLetivo.findUnique({ where: { id: anoLetivo } }); if (ano?.fechado) return 0 }
     const contas = await this.prisma.contaPortal.findMany({ where: { tipo: 'docente' }, select: { id: true, nome: true, dados: true, ativo: true } })
     const nomeChave = (n) => String(n ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ')
     const conta = (nip, nome) => (nip && contas.find((c) => norm(c.dados?.nip) === norm(nip) || norm(c.dados?.numeroAgente) === norm(nip))) || (() => { const m = contas.filter((c) => nomeChave(c.nome) === nomeChave(nome)); return m.length === 1 ? m[0] : null })()

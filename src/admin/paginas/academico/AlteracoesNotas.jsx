@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAnoTrabalho } from '../../anoTrabalho'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
-import { Aviso, CabecalhoPagina, Carregando, Erro, Painel } from '../../componentes/Ui'
+import { Aviso, CabecalhoPagina, Carregando, Erro, Janela, Painel } from '../../componentes/Ui'
 import Exportar from '../../componentes/Exportar'
 import { dataHora } from '../../formatar'
 import { NOMES_COMPONENTES } from '../../../portal/regraAvaliacao'
@@ -19,6 +19,8 @@ const nomeProva = (p) => (p.prova ? `${p.prova.tipo} ${p.prova.titulo}` : NOMES_
 function AlteracoesNotas() {
   const { pode } = useSessao()
   const decide = pode('academico.homologar')
+  const gere = pode('academico.gerir')
+  const [nova, setNova] = useState(false)
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [estado, setEstado] = useState('pendente')
@@ -48,7 +50,8 @@ function AlteracoesNotas() {
     <>
       <CabecalhoPagina titulo={tx('Alterações de notas')} subtitulo={tx('notas já publicadas: só mudam com autorização do Comandante')} migalhas={[{ rotulo: tx('Administração Escolar') }, { rotulo: tx('Alterações de notas') }]} />
       {erro && <Erro texto={erro} onRepetir={carregar} />}
-      {!decide && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Só o Comandante autoriza ou recusa. Aqui pode acompanhar os pedidos.')}</div>}
+      {!decide && <div className="alert alert-info py-2"><i className="fa fa-info-circle me-2" />{tx('Só o Comandante autoriza ou recusa. Quando autoriza, a nota fica logo alterada.')}</div>}
+      {gere && <div className="mb-3"><button type="button" className="btn btn-primary" onClick={() => setNova(true)}><i className="fa fa-pen me-1" />{tx('Alterar uma nota')}</button></div>}
       <Painel
         titulo={`${tx('Pedidos')}${lista ? ` (${lista.length})` : ''}`}
         corpo={false}
@@ -85,7 +88,7 @@ function AlteracoesNotas() {
                     <td className="fw-bold">{p.estudante?.nome}<div className="small text-muted fw-normal">{p.estudante?.numero}</div></td>
                     <td><b>{p.cadeira.codigo}</b> {p.cadeira.nome} · {nomeProva(p)}<div className="small text-muted">{p.cadeira.turma?.nome}</div></td>
                     <td className="text-center text-nowrap">{nota(p.notaAtual)}{p.notaNova !== null && <> → <b>{nota(p.notaNova)}</b></>}</td>
-                    <td>{p.motivo}<div className="small text-muted">{p.docente} · {dataHora(p.pedidoEm)}</div></td>
+                    <td>{p.motivo}<div className="small text-muted">{p.docente || tx('Administração Escolar')} · {dataHora(p.pedidoEm)}</div></td>
                     <td><span className={`badge ${ESTADOS[p.estado][0]}`}>{ESTADOS[p.estado][1]}</span>{p.decididoEm && <div className="small text-muted">{p.decididoPor} · {dataHora(p.decididoEm)}</div>}{p.fundamento && <div className="small">{p.fundamento}</div>}</td>
                   </tr>
                 ))}
@@ -94,8 +97,76 @@ function AlteracoesNotas() {
           </div>
         )}
       </Painel>
+      {nova && <JanelaAlterar ano={ano} decide={decide} onFechar={() => setNova(false)} onFeito={(r) => { setNova(false); setAviso({ texto: r.alterada ? tx('Nota alterada.') : tx('Pedido enviado ao Comandante. Quando ele autorizar, a nota fica alterada.') }); setEstado(r.alterada ? 'usado' : 'pendente'); carregar(); window.dispatchEvent(new Event('esg-pendentes')) }} />}
       <Aviso aviso={aviso} onFechar={() => setAviso(null)} />
     </>
+  )
+}
+
+/*
+  Alterar uma nota já publicada: a turma, a cadeira, a prova, o estudante, a nota nova e o motivo. Vai ao Comandante;
+  quando ele autoriza, a nota muda na pauta (pedida pelo próprio Comandante, muda logo).
+*/
+function JanelaAlterar({ ano, decide, onFechar, onFeito }) {
+  const [turmas, setTurmas] = useState(null)
+  const [turmaId, setTurmaId] = useState('')
+  const [cadeiras, setCadeiras] = useState([])
+  const [cadeiraId, setCadeiraId] = useState('')
+  const [pauta, setPauta] = useState(null)
+  const [prova, setProva] = useState('')
+  const [estudanteId, setEstudanteId] = useState('')
+  const [notaNova, setNotaNova] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [erro, setErro] = useState('')
+  const [aGravar, setAGravar] = useState(false)
+  useEffect(() => { api('/academico/turmas').then((l) => setTurmas(l.filter((t) => !ano || t.anoLetivo === ano))).catch((e) => setErro(e.message)) }, [ano])
+  const escolherTurma = (id) => {
+    setTurmaId(id); setCadeiraId(''); setCadeiras([]); setPauta(null); setProva(''); setEstudanteId('')
+    if (id) api(`/academico/turmas/${id}`).then((t) => setCadeiras(t.cadeiras ?? [])).catch((e) => setErro(e.message))
+  }
+  const escolherCadeira = (id) => {
+    setCadeiraId(id); setPauta(null); setProva(''); setEstudanteId('')
+    if (id) api(`/academico/cadeiras/${id}/pauta`).then(setPauta).catch((e) => setErro(e.message))
+  }
+  // as provas já publicadas (as outras corrigem-se na pauta, sem pedir)
+  const esg = pauta?.modo === 'esg'
+  const provas = !pauta ? [] : esg
+    ? pauta.avaliacoes.filter((a) => a.publicadaEm).map((a) => ({ chave: `a${a.id}`, nome: `${a.tipo} ${a.titulo}`, nota: (l) => l.notas?.[a.id]?.nota ?? null, corpo: { avaliacaoId: a.id } }))
+    : (pauta.publicadas ?? []).map((k) => ({ chave: `c${k}`, nome: NOMES_COMPONENTES[k] ?? k, nota: (l) => l[k] ?? null, corpo: { componente: k } }))
+  const p = provas.find((x) => x.chave === prova)
+  const linha = pauta?.linhas.find((l) => String(l.estudante.id) === String(estudanteId))
+  const valida = p && linha && notaNova !== '' && Number(notaNova) >= 0 && Number(notaNova) <= 20 && motivo.trim().length >= 10
+  const enviar = () => {
+    setAGravar(true); setErro('')
+    api('/academico/alteracoes-notas', { metodo: 'POST', corpo: { cadeiraId: Number(cadeiraId), ...p.corpo, estudanteId: linha.estudante.id, notaNova: Number(String(notaNova).replace(',', '.')), motivo: motivo.trim() } })
+      .then(onFeito).catch((e) => { setErro(e.message); setAGravar(false) })
+  }
+  return (
+    <Janela titulo={tx('Alterar uma nota')} onFechar={onFechar}
+      rodape={<><button type="button" className="btn btn-white" onClick={onFechar}>{tx('Cancelar')}</button><button type="button" className="btn btn-primary" disabled={!valida || aGravar} onClick={enviar}>{decide ? tx('Alterar a nota') : tx('Enviar ao Comandante')}</button></>}>
+      {erro && <div className="alert alert-danger py-2">{erro}</div>}
+      {turmas === null ? <Carregando compacta /> : (
+        <div className="row g-2">
+          <div className="col-12"><label className="form-label small mb-0">{tx('Turma')}</label>
+            <select className="form-select" value={turmaId} onChange={(e) => escolherTurma(e.target.value)}><option value="">—</option>{turmas.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}</select></div>
+          {turmaId && <div className="col-12"><label className="form-label small mb-0">{tx('Cadeira')}</label>
+            <select className="form-select" value={cadeiraId} onChange={(e) => escolherCadeira(e.target.value)}><option value="">—</option>{cadeiras.map((c) => <option key={c.id} value={c.id}>{c.codigo} {c.nome}</option>)}</select></div>}
+          {cadeiraId && !pauta && <Carregando compacta />}
+          {pauta && provas.length === 0 && <div className="col-12 text-muted small">{tx('Esta cadeira ainda não tem notas publicadas: corrigem-se na pauta, sem pedir.')}</div>}
+          {provas.length > 0 && <div className="col-sm-6"><label className="form-label small mb-0">{tx('Prova')}</label>
+            <select className="form-select" value={prova} onChange={(e) => setProva(e.target.value)}><option value="">—</option>{provas.map((x) => <option key={x.chave} value={x.chave}>{x.nome}</option>)}</select></div>}
+          {provas.length > 0 && <div className="col-sm-6"><label className="form-label small mb-0">{tx('Estudante')}</label>
+            <select className="form-select" value={estudanteId} onChange={(e) => setEstudanteId(e.target.value)}><option value="">—</option>{pauta.linhas.map((l) => <option key={l.estudante.id} value={l.estudante.id}>{l.estudante.nome}</option>)}</select></div>}
+          {p && linha && (
+            <>
+              <div className="col-sm-6"><label className="form-label small mb-0">{tx('Nota actual')}</label><div className="form-control-plaintext fw-bold">{nota(p.nota(linha))}</div></div>
+              <div className="col-sm-6"><label className="form-label small mb-0">{tx('Nota nova')}</label><input type="number" min={0} max={20} step="0.01" className="form-control" value={notaNova} onChange={(e) => setNotaNova(e.target.value)} autoFocus /></div>
+              <div className="col-12"><label className="form-label small mb-0">{tx('Motivo')}</label><textarea className="form-control" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={tx('Pelo menos 10 letras')} /></div>
+            </>
+          )}
+        </div>
+      )}
+    </Janela>
   )
 }
 

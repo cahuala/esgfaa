@@ -68,7 +68,9 @@ function Layout({ children }) {
   const { utilizador, pode, sair } = useSessao()
   const sistema = useSistema(utilizador?.sistema ?? '')
   // ao mudar o ano lectivo: o ecrã de processamento e, no fim, a página refeita (todos os dados do ano escolhido)
-  const { ano: anoTrabalho } = useAnoTrabalho()
+  const { ano: anoTrabalho, anos: anosLetivosLista } = useAnoTrabalho()
+  // num ano lectivo fechado (os anteriores ao actual): só se consultam os dados e se imprimem documentos
+  const anoFechado = anosLetivosLista.find((a) => a.id === anoTrabalho)?.fechado
   const [anoAMudar, setAnoAMudar] = useState(null)
   useEffect(() => {
     const ouvir = (e) => setAnoAMudar(e.detail)
@@ -340,7 +342,13 @@ function Layout({ children }) {
           </div>
         )}
         {/* a página refaz-se quando o ano lectivo muda: tudo o que se vê passa a ser desse ano */}
-        <div key={anoTrabalho || 'sem-ano'}>{children}</div>
+        {anoFechado && pode('academico.ver') && (
+          <div className="alert alert-secondary py-2 small d-flex align-items-center gap-2 esg-ano-fechado" role="status">
+            <i className="fa fa-lock" />
+            <span>{tx('O ano lectivo {0} está fechado: só se consultam os dados e se imprimem documentos (diplomas, certificados, pautas, listas). Para alterar, o Comandante tem de o reabrir.', { 0: anoTrabalho })}</span>
+          </div>
+        )}
+        <div key={anoTrabalho || 'sem-ano'} className={anoFechado ? 'esg-so-consulta' : undefined}>{children}</div>
       </div>
       {anoAMudar && (
         <div className="esg-a-processar" role="status" aria-live="polite">

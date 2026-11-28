@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
-import { Painel, Carregando } from '../../componentes/Ui'
+import { Painel, Carregando, Janela } from '../../componentes/Ui'
 import { confirmar } from '../../../portal/dialogos'
 import { t as tx } from '../../../i18n/linguas'
 
@@ -10,6 +10,7 @@ import { t as tx } from '../../../i18n/linguas'
   equivalência). A Administração Escolar inscreve e anula inscrições.
 */
 function Inscricoes({ c, gerir, avisar }) {
+  const [janela, setJanela] = useState(false)
   const [d, setD] = useState(null)
   const [q, setQ] = useState('')
   const [encontrados, setEncontrados] = useState([])
@@ -31,6 +32,7 @@ function Inscricoes({ c, gerir, avisar }) {
       setD(await api(`/academico/cadeiras/${c.id}/inscricoes`, { metodo: 'POST', corpo: { estudanteId: f.estudanteId, motivo: f.motivo, observacao: f.observacao } }))
       avisar({ texto: tx('{0} inscrito em {1}. O estudante foi avisado.', { 0: f.nome, 1: c.codigo }) })
       setF({ estudanteId: null, nome: '', motivo: 'atraso', observacao: '' })
+      setJanela(false)
       setQ('')
       setEncontrados([])
     } catch (falha) {
@@ -43,7 +45,8 @@ function Inscricoes({ c, gerir, avisar }) {
 
   return (
     <div className="row">
-      <div className="col-xl-7">
+      <div className="col-12">
+        {gerir && <div className="mb-3 text-end"><button type="button" className="btn btn-theme" onClick={() => setJanela(true)}><i className="fa fa-plus me-1" />{tx('Inscrever um estudante de outra turma')}</button></div>}
         <Painel titulo={tx('Estudantes da cadeira ({0})', { 0: d.daTurma.length + ativas.length })} corpo={false}>
           <div className="table-responsive">
             <table className="table table-striped align-middle mb-0">
@@ -67,41 +70,39 @@ function Inscricoes({ c, gerir, avisar }) {
           </div>
         </Painel>
       </div>
-      {gerir && (
-        <div className="col-xl-5">
-          <Painel titulo={tx('Inscrever um estudante de outra turma')}>
-            <form onSubmit={inscrever}>
-              <label className="form-label fw-bold" htmlFor="insc-q">{tx('Estudante')}</label>
-              {f.estudanteId ? (
-                <div className="d-flex align-items-center gap-2 mb-3">
-                  <span className="badge bg-theme fs-12px">{f.nome}</span>
-                  <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, estudanteId: null, nome: '' })}>{tx('Mudar')}</button>
-                </div>
-              ) : (
-                <div className="mb-3">
-                  <input id="insc-q" className="form-control" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('Nome, número ou e-mail')} autoComplete="off" />
-                  {q.trim().length >= 2 && (
-                    <div className="list-group mt-1">
-                      {encontrados.length === 0 && <div className="list-group-item small text-muted">{tx('Nenhum estudante encontrado.')}</div>}
-                      {encontrados.map((e) => (
-                        <button key={e.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => setF({ ...f, estudanteId: e.id, nome: e.nome })}>
-                          <b>{e.nome}</b> <span className="small text-muted">{e.numero}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <label className="form-label fw-bold" htmlFor="insc-motivo">{tx('Motivo')}</label>
-              <select id="insc-motivo" className="form-select mb-3" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })}>
-                {Object.entries(d.motivos).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-              <label className="form-label fw-bold" htmlFor="insc-obs">{tx('Observação (opcional)')}</label>
-              <input id="insc-obs" className="form-control mb-3" value={f.observacao} onChange={(e) => setF({ ...f, observacao: e.target.value })} maxLength={300} />
-              <button type="submit" className="btn btn-theme" disabled={!f.estudanteId}><i className="fa fa-user-plus me-1" />{tx('Inscrever na cadeira')}</button>
-            </form>
-          </Painel>
-        </div>
+      {gerir && janela && (
+        <Janela titulo={tx('Inscrever um estudante de outra turma')} onFechar={() => setJanela(false)}>
+          <form onSubmit={inscrever}>
+            <label className="form-label fw-bold" htmlFor="insc-q">{tx('Estudante')}</label>
+            {f.estudanteId ? (
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <span className="badge bg-theme fs-12px">{f.nome}</span>
+                <button type="button" className="btn btn-xs btn-white" onClick={() => setF({ ...f, estudanteId: null, nome: '' })}>{tx('Mudar')}</button>
+              </div>
+            ) : (
+              <div className="mb-3">
+                <input id="insc-q" className="form-control" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('Nome, número ou e-mail')} autoComplete="off" />
+                {q.trim().length >= 2 && (
+                  <div className="list-group mt-1">
+                    {encontrados.length === 0 && <div className="list-group-item small text-muted">{tx('Nenhum estudante encontrado.')}</div>}
+                    {encontrados.map((e) => (
+                      <button key={e.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => setF({ ...f, estudanteId: e.id, nome: e.nome })}>
+                        <b>{e.nome}</b> <span className="small text-muted">{e.numero}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <label className="form-label fw-bold" htmlFor="insc-motivo">{tx('Motivo')}</label>
+            <select id="insc-motivo" className="form-select mb-3" value={f.motivo} onChange={(e) => setF({ ...f, motivo: e.target.value })}>
+              {Object.entries(d.motivos).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <label className="form-label fw-bold" htmlFor="insc-obs">{tx('Observação (opcional)')}</label>
+            <input id="insc-obs" className="form-control mb-3" value={f.observacao} onChange={(e) => setF({ ...f, observacao: e.target.value })} maxLength={300} />
+            <button type="submit" className="btn btn-theme" disabled={!f.estudanteId}><i className="fa fa-user-plus me-1" />{tx('Inscrever na cadeira')}</button>
+          </form>
+        </Janela>
       )}
     </div>
   )

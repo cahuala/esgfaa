@@ -61,11 +61,22 @@ export class RepositorioContasPortal {
   // anoLetivo: quem está nesse ano (estudantes matriculados, docentes com cadeiras) e quem ainda não tem turma
   async listar({ tipo, q, anoLetivo } = {}) {
     const termo = q ? { contains: q.replace(/[\\%_]/g, (c) => `\\${c}`), mode: 'insensitive' } : undefined
+    // os sem ano conhecido (docentes sem cadeiras nem anos, estudantes sem turma) só no ano actual e nos seguintes:
+    // num ano que já passou não aparecem (esse ano mostra só quem lá esteve)
+    const atual = anoLetivo ? (await this.prisma.anoLetivo.findFirst({ where: { atual: true }, select: { id: true } }))?.id : null
+    const semAno = anoLetivo && (!atual || anoLetivo >= atual)
     const doAno = anoLetivo ? {
       OR: [
         { tipo: 'estudante', matriculas: { some: { turma: { anoLetivo } } } },
+        // o docente desse ano: tem cadeiras nesse ano ou está na lista do corpo docente desse ano (do Pessoal)
         { tipo: 'docente', docencias: { some: { cadeira: { turma: { anoLetivo } } } } },
-        { matriculas: { none: {} }, docencias: { none: {} } },
+        { tipo: 'docente', anosDocente: { has: anoLetivo } },
+        ...(semAno ? [
+          // o docente de quem ainda não se sabem os anos (o Pessoal antigo não os enviava) e sem cadeiras: não desaparece
+          { tipo: 'docente', anosDocente: { isEmpty: true }, docencias: { none: {} } },
+          // o estudante ainda sem turma (para o matricular)
+          { tipo: 'estudante', matriculas: { none: {} } },
+        ] : []),
       ],
     } : {}
     const linhas = await this.prisma.contaPortal.findMany({
@@ -75,6 +86,14 @@ export class RepositorioContasPortal {
     })
     // pela ordem hierárquica (o posto, do mais alto para o mais baixo; no mesmo posto, o nome), como nas relações
     return ordenarPorHierarquia(linhas.map(paraConta))
+  }
+
+  // os anos lectivos em que o docente leccionou (do Pessoal): junta-os aos que já tinha (nunca tira)
+  async guardarAnosDocente(id, anos) {
+    const c = await this.prisma.contaPortal.findUnique({ where: { id }, select: { anosDocente: true } })
+    if (!c) return
+    const todos = [...new Set([...(c.anosDocente ?? []), ...anos.filter((a) => /^\d{4}\/\d{4}$/.test(a))])].sort()
+    if (todos.length !== (c.anosDocente ?? []).length) await this.prisma.contaPortal.update({ where: { id }, data: { anosDocente: todos } })
   }
 
   // a conta pelo NIP (ou n.º de agente; sem o «I» e os zeros da frente), só se houver uma

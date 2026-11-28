@@ -172,6 +172,45 @@ export class ServicoControloAcademico {
 
   // ---------- alteração de notas (Comandante, no painel) ----------
 
+  /*
+    A Administração Escolar pede no painel a alteração de uma nota publicada já com a nota nova; o Comandante decide
+    e, se autoriza, a nota muda logo (sem voltar ao docente). Pedida pelo próprio Comandante, fica logo alterada.
+  */
+  async pedirNoPainel(ctx, { cadeiraId, avaliacaoId, componente, estudanteId, notaNova, motivo }) {
+    ctx.actor.exigir('academico.gerir')
+    const c = await this.academico.cadeira(Number(cadeiraId))
+    if (!c) throw new NaoEncontrado('Cadeira não encontrada.')
+    const alvo = await this.#alvo(c, { avaliacaoId, componente })
+    const m = texto(motivo, 'motivo', 'Motivo', { min: 10, max: 1000 })
+    const n = Number(notaNova)
+    if (!Number.isFinite(n) || n < 0 || n > 20) throw new ErroValidacao('A nota nova vai de 0 a 20.', { campo: 'notaNova' })
+    const id = Number(estudanteId)
+    if (!(await this.academico.estudantesDaPautaDaCadeira(c)).some((e) => e.id === id)) throw new ErroValidacao('O estudante não pertence à pauta desta cadeira.')
+    if (await this.controlo.pedidoAberto(c.id, alvo.chave, id)) throw new Conflito('Já há um pedido em aberto para este estudante nesta prova.')
+    const pedido = { cadeiraId: c.id, ...alvo.chave, estudanteId: id, notaAtual: alvo.atual(id), notaNova: Math.round(n * 100) / 100, motivo: m, pedidoPor: 0, pedidoEm: this.relogio.agora() }
+    await this.controlo.criarPedidos([pedido])
+    await this.auditoria.registar(ctx, { acao: 'pedir_alteracao_nota', colecao: 'pautas', alvoId: c.id, alvoTitulo: `${alvo.nome} — ${c.nome}`, detalhes: { estudantes: 1, notaNova: pedido.notaNova } })
+    if (ctx.actor.pode('academico.homologar')) {
+      const [p] = (await this.controlo.pedidos({ cadeiraId: c.id, estado: 'pendente' })).filter((x) => x.estudanteId === id && (x.avaliacaoId ?? null) === (alvo.chave.avaliacaoId ?? null) && (x.componente ?? null) === (alvo.chave.componente ?? null))
+      if (p) await this.decidir(ctx, { ids: [p.id], decisao: 'autorizar', fundamento: '' })
+      return { alterada: true }
+    }
+    return { alterada: false }
+  }
+
+  // a nota autorizada que já vinha no pedido (feito no painel): escreve-se na pauta e o pedido fica usado
+  async #aplicar(p) {
+    if (p.notaNova === null || p.notaNova === undefined) return false
+    if (p.avaliacaoId) {
+      const atual = ((await this.planos.notas([p.avaliacaoId]))[p.avaliacaoId] ?? {})[p.estudanteId] ?? {}
+      await this.planos.gravarNotas(p.avaliacaoId, [{ estudanteId: p.estudanteId, nota: p.notaNova, recuperacao: atual.recuperacao ?? null }])
+    } else if (p.componente) {
+      await this.academico.gravarPauta(p.cadeiraId, [{ estudanteId: p.estudanteId, [p.componente]: p.notaNova }])
+    } else return false
+    await this.controlo.atualizarPedido(p.id, { estado: 'usado', usadoEm: this.relogio.agora() })
+    return true
+  }
+
   pedidosParaDecidir(ctx, { estado } = {}) {
     ctx.actor.exigir('academico.ver')
     return this.controlo.pedidos({ estado: ['pendente', 'autorizado', 'recusado', 'usado'].includes(estado) ? estado : undefined })
@@ -189,11 +228,14 @@ export class ServicoControloAcademico {
       if (!p) throw new NaoEncontrado('Pedido não encontrado.')
       if (p.estado !== 'pendente') continue
       decididos.push(await this.controlo.atualizarPedido(p.id, { estado: decisao === 'autorizar' ? 'autorizado' : 'recusado', decididoPor: ctx.actor.nome ?? '', decididoEm: this.relogio.agora(), fundamento: f }))
+      // pedido do painel com a nota nova: autorizado, a nota muda já
+      if (decisao === 'autorizar') await this.#aplicar({ ...p, ...decididos.at(-1), notaNova: p.notaNova })
     }
     // um aviso por docente e cadeira
     const porDocente = new Map()
     for (const p of decididos) (porDocente.get(`${p.pedidoPor}-${p.cadeiraId}`) ?? porDocente.set(`${p.pedidoPor}-${p.cadeiraId}`, []).get(`${p.pedidoPor}-${p.cadeiraId}`)).push(p)
     for (const l of porDocente.values()) {
+      if (!l[0].pedidoPor) continue
       const c = await this.academico.cadeira(l[0].cadeiraId)
       await this.notificacoes?.notificar([l[0].pedidoPor], {
         tipo: 'notas',

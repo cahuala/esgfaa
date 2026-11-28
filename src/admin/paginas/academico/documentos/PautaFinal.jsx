@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from '../../../api'
 import { Carregando, Erro } from '../../../componentes/Ui'
 import Documento from './Documento'
+import { emblemaExcel, linhasAprovado } from './csv'
 
 /*
   Pauta final do curso, como as da Repartição de Administração Escolar: as unidades curriculares de cada bloco com
@@ -70,8 +71,20 @@ function PautaFinal() {
     const cab2 = [...fixas.map(() => null), ...d.blocos.flatMap((b, i) => [...b.ucs.map((u) => Cab(rotulo(u), corBloco(b, i))), ...(temMedia(b) ? [Cab('Média', corBloco(b, i))] : [])]), ...fim.map(() => null)]
     const so = comBlocos ? null : [[...fixas.map((t) => Cab(t, CINZA)), ...ucs.map((u) => Cab(rotulo(u), CORES_BLOCO[0])), ...fim.map(([t, cor]) => Cab(t, cor))]]
     const A = { fontFamily: 'Arial', fontSize: 12, fontWeight: 'bold' }
-    const topo = [[], [C('APROVADO', A)], [C((comandante.cargo || 'O Comandante da ESG').toUpperCase(), A)], [], [C((comandante.nome || '').toUpperCase(), { fontFamily: 'Arial', fontSize: 12 })], [C(comandante.posto ? `**${comandante.posto.toUpperCase()}**` : '', A)], [],
-      [C(`PAUTA ${d.turma.anoLetivo} — ${d.turma.curso}`.toUpperCase(), { ...A, fontSize: 11 })], [C(d.turma.nome)], []]
+    // como as pautas do arquivo: o emblema à esquerda, o título ao centro e o «APROVADO» do Comandante à direita
+    const larg = (so ? so[0] : cab1).length
+    const colAprov = Math.max(fixas.length + 2, larg - 4)
+    const direita = (cel) => [...Array.from({ length: colAprov }, () => C('')), { ...cel, align: 'center', columnSpan: larg - colAprov }, ...Array(Math.max(0, larg - colAprov - 1)).fill(null)]
+    const meioTitulo = (cel) => [C(''), C(''), { ...cel, align: 'center', columnSpan: Math.max(1, colAprov - 2) }, ...Array(Math.max(0, colAprov - 3)).fill(null)]
+    const [aprov, cargo, traco, nomeCmd, postoCmd] = linhasAprovado(comandante)
+    const topo = [
+      [...meioTitulo(C('ESCOLA SUPERIOR DE GUERRA', A)).slice(0, colAprov), ...direita(C(aprov, A)).slice(colAprov)],
+      [...meioTitulo(C('DIRECÇÃO DE ENSINO', A)).slice(0, colAprov), ...direita(C(cargo, A)).slice(colAprov)],
+      [...meioTitulo(C(`PAUTA ${d.turma.anoLetivo} — ${d.turma.curso}`.toUpperCase(), { ...A, fontSize: 11 })).slice(0, colAprov), ...direita(C(traco, A)).slice(colAprov)],
+      [...meioTitulo(C((d.turma.nome || '').toUpperCase(), { fontFamily: 'Arial', fontSize: 11 })).slice(0, colAprov), ...direita(C(nomeCmd, { fontFamily: 'Arial', fontSize: 12 })).slice(colAprov)],
+      direita(C(postoCmd, A)),
+      [],
+    ]
     const linha0 = topo.length + (comBlocos ? 3 : 1) // os estudantes começam a seguir aos cabeçalhos (1-based: linha0 + 1)
     const n = d.linhas.length
     const ult = linha0 + n
@@ -128,7 +141,8 @@ function PautaFinal() {
       par((dc.nome || '').toUpperCase(), (de.nome || '').toUpperCase()),
       par(dc.posto ? `***${dc.posto.toUpperCase()}***` : '', de.posto ? `*${de.posto.toUpperCase()}*` : '')]
     const larguras = [{ width: 5 }, { width: 11 }, { width: 15 }, { width: 36 }, ...Array.from({ length: total - fixas.length + 2 }, () => ({ width: 8 }))]
-    await escrever([...topo, ...(comBlocos ? [coefs, cab1, cab2] : so), ...linhas, ...mediaTurma, ...assinaturas, ...legenda], { sheet: 'Pauta', columns: larguras, orientation: 'landscape', stickyRowsCount: linha0 })
+    const imagem = await emblemaExcel({ altura: 90 })
+    await escrever([...topo, ...(comBlocos ? [coefs, cab1, cab2] : so), ...linhas, ...mediaTurma, ...assinaturas, ...legenda], { sheet: 'Pauta', columns: larguras, orientation: 'landscape', stickyRowsCount: linha0, images: imagem ? [imagem] : undefined })
       .toFile(`pauta-final-${d.turma.nome}-${d.turma.anoLetivo}.xlsx`.replace(/[^\w.-]+/g, '-'))
   }
 

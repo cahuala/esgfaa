@@ -251,6 +251,7 @@ export class ServicoRegistoPessoal {
           }
           await this.#fotoDoPessoal(conta.id, p.foto)
           if (t === 'estudante') await this.#matricularPelosAnos(conta.id, p.anos)
+          if (t === 'docente' && p.anosDocente?.length) await this.contas.guardarAnosDocente?.(conta.id, p.anosDocente)
           criadas++
           resultados.push({ ref: p.ref, ok: true, contaId: conta.id })
           continue
@@ -266,6 +267,7 @@ export class ServicoRegistoPessoal {
         await this.contas.guardar(existente)
         await this.#fotoDoPessoal(existente.id, p.foto)
         if (t === 'estudante') await this.#matricularPelosAnos(existente.id, p.anos)
+        if (t === 'docente' && p.anosDocente?.length) await this.contas.guardarAnosDocente?.(existente.id, p.anosDocente)
         atualizadas++
         resultados.push({ ref: p.ref, ok: true, contaId: existente.id })
       } catch (e) {

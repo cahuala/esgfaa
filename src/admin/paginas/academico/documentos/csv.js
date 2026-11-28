@@ -4,7 +4,24 @@
   os dados em Times New Roman com bordas finas. Uma linha marcada como cabecalho (cabecalho(['…'])) é cabeçalho mesmo
   sem começar por «Nº» (ex.: os dias do horário mensal). Uma linha { folha: 'Nome' } começa outra folha (ex.: uma por curso,
   como a relação nominal dos discentes). linhas: [[célula, …], …]; uma linha vazia é uma linha em branco.
+  Cada folha leva, como as pautas do arquivo, o emblema da ESG no canto superior esquerdo e, nos documentos que o
+  Comandante aprova (opcoes.aprovado), o «APROVADO / O COMANDANTE / nome / posto» no canto superior direito.
 */
+import EmblemaEsg from '../../../../assets/emblema-esg-excel.png'
+import { api } from '../../../api'
+
+// o emblema para as folhas (uma vez por sessão)
+let pedidoEmblema = null
+const conteudoEmblema = () => (pedidoEmblema ??= fetch(EmblemaEsg).then((r) => r.arrayBuffer()).catch(() => { pedidoEmblema = null; return null }))
+export async function emblemaExcel({ row = 1, column = 1, altura = 72 } = {}) {
+  const content = await conteudoEmblema()
+  return content ? { content, contentType: 'image/png', width: Math.round((altura * 180) / 148), height: altura, dpi: 96, anchor: { row, column }, offsetX: 4, offsetY: 4, title: 'Escola Superior de Guerra' } : null
+}
+// quem ocupa hoje o cargo de Comandante (vem do Sistema de Pessoal)
+let pedidoQuem = null
+export const comandanteDaEscola = () => (pedidoQuem ??= api('/academico/documentos-academicos').then((q) => q?.comandante ?? null).catch(() => { pedidoQuem = null; return null }))
+// as linhas do «APROVADO» (cargo, linha para assinar, nome, posto), em maiúsculas como no arquivo
+export const linhasAprovado = (c) => ['APROVADO', (c?.cargo || 'O Comandante da ESG').toUpperCase(), '______________________________', (c?.nome || '').toUpperCase(), c?.posto ? `***${c.posto.toUpperCase()}***` : '']
 // marca uma linha como cabeçalho da tabela
 export const cabecalho = (l) => Object.assign([...l], { cabecalho: true })
 export const decimal = (v) => (v === null || v === undefined || v === '' ? '' : String(v).replace('.', ','))
@@ -53,17 +70,40 @@ function estilizar(f) {
   return { dados, larguras }
 }
 
-export async function descarregarExcel(nome, linhas) {
+// as 5 linhas do topo de cada folha: o espaço do emblema e, à direita, o «APROVADO» do Comandante
+const TOPO = 5
+function topo(largura, aprovado) {
+  const linhas = Array.from({ length: TOPO }, () => [])
+  if (!aprovado) return linhas
+  const col = Math.max(3, largura - 3)
+  linhasAprovado(aprovado).forEach((t, i) => {
+    const celula = { value: t, fontFamily: 'Arial', fontSize: i === 0 ? 12 : 11, fontWeight: i === 3 ? undefined : 'bold', align: 'center', ...(largura - col > 1 ? { columnSpan: largura - col } : {}) }
+    linhas[i] = [...Array(col).fill(null), celula, ...Array(Math.max(0, largura - col - 1)).fill(null)]
+  })
+  return linhas
+}
+
+/*
+  opcoes.aprovado: true (o Comandante de hoje, do Sistema de Pessoal) ou { cargo, nome, posto } — os documentos que
+  ele aprova (a pauta final, a distribuição do serviço docente).
+*/
+export async function descarregarExcel(nome, linhas, opcoes = {}) {
   const { default: escrever } = await import('write-excel-file/browser')
-  const fs = folhas(linhas).map((f) => ({ ...f, ...estilizar(f) }))
+  const aprovado = opcoes.aprovado === true ? ((await comandanteDaEscola()) ?? {}) : opcoes.aprovado || null
+  const imagem = await emblemaExcel()
+  const fs = folhas(linhas).map((f) => {
+    const e = estilizar(f)
+    return { ...f, dados: [...topo(e.larguras.length, aprovado), ...e.dados], larguras: e.larguras }
+  })
   const ficheiro = `${String(nome).replace(/[\\/:*?"<>|]+/g, '-')}.xlsx`
-  if (fs.length === 1) return escrever(fs[0].dados, { sheet: fs[0].nome, columns: fs[0].larguras }).toFile(ficheiro)
-  return escrever(fs.map((f) => ({ data: f.dados, sheet: f.nome, columns: f.larguras }))).toFile(ficheiro)
+  const imagens = imagem ? [imagem] : undefined
+  if (fs.length === 1) return escrever(fs[0].dados, { sheet: fs[0].nome, columns: fs[0].larguras, images: imagens }).toFile(ficheiro)
+  return escrever(fs.map((f) => ({ data: f.dados, sheet: f.nome, columns: f.larguras, images: imagens }))).toFile(ficheiro)
 }
 
 // o nome antigo (as páginas chamam-no assim): agora sai um Excel verdadeiro, não um CSV
-export function descarregarCsv(nome, linhas) {
-  descarregarExcel(nome, linhas).catch((e) => window.alert(`Não foi possível criar o Excel: ${e.message}`))
+export function descarregarCsv(nome, linhas, opcoes) {
+  descarregarExcel(nome, linhas, opcoes).catch((e) => window.alert(`Não foi possível criar o Excel: ${e.message}`))
 }
 
 export const dataPt = (v) => (v ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v}T12:00:00` : v).toLocaleDateString('pt-PT') : '')

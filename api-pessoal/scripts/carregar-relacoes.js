@@ -6,12 +6,15 @@
      se apagam lugares);
   2. as fichas novas: militares, civis e domiciliares (por esta ordem; os domiciliares ligam-se ao oficial pelo NIP);
   3. os docentes e os estudantes (listas do corpo docente, dos discentes do ano lectivo e dos finalistas dos anos
-     anteriores), uma só vez por versão das listas (ver carregarAcademicos).
+     anteriores), uma só vez por versão das listas (ver carregarAcademicos);
+  4. quem assina os documentos (o Comandante, o Director de Ensino…), dos documentos assinados do arquivo: a pessoa
+     é nomeada para o cargo só se o cargo estiver vazio e ela ainda não tiver cargo (fica no histórico).
   Nunca apaga nem altera o que já está no sistema: quem já existe fica como está («já existia»). Pode correr-se
   em todas as actualizações. Escreve um relatório (o que entrou, o que já existia e as linhas com problema).
 */
 import fs from 'node:fs'
 import { pathToFileURL } from 'node:url'
+import { aplicarAlteracao } from '../src/aplicacao/alteracoes.js'
 
 const sem = (t) => String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.\s]+/g, ' ').trim()
 const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
@@ -45,6 +48,32 @@ export async function carregarRelacoes(contentor, dados, u = QUEM) {
   }
   // 3. docentes e estudantes
   if (dados.academicos?.pessoas?.length) linhas.push(...await carregarAcademicos(contentor, dados.academicos, u))
+  // 4. quem assina
+  if (dados.cargos?.length) linhas.push(...await carregarCargos(contentor, dados.cargos, u))
+  return linhas
+}
+
+/*
+  cargos: [{ nip, nome, cargo, unidade, fonte }] — quem ocupa o cargo (ex.: o Comandante que assina as pautas de
+  2025/2026). Só se nomeia quando a pessoa existe (pelo NIP e com o mesmo nome), ainda não tem cargo e o cargo está
+  vazio: o que já está no sistema fica como está.
+*/
+export async function carregarCargos(contentor, lista, u = QUEM) {
+  const { bd } = contentor
+  const linhas = ['', 'Quem assina os documentos:']
+  const cargos = await bd.cargo.findMany({ select: { id: true, nome: true, unidade: { select: { nome: true } } } })
+  for (const l of lista) {
+    const c = cargos.find((x) => sem(x.nome) === sem(l.cargo) && (!l.unidade || sem(x.unidade?.nome) === sem(l.unidade)))
+    const p = l.nip ? await bd.pessoa.findFirst({ where: { nip: String(l.nip) }, include: { cargo: true } }) : null
+    if (!c) { linhas.push(`   - ${l.cargo}: o cargo não existe na orgânica.`); continue }
+    if (!p || !parecidos(p.nome, l.nome)) { linhas.push(`   - ${l.nome} (${l.nip}): sem ficha com este NIP e este nome.`); continue }
+    const ocupante = await bd.pessoa.findFirst({ where: { cargoId: c.id, ativo: true }, select: { nome: true } })
+    if (p.cargoId === c.id) { linhas.push(`   · ${p.nome}: já é ${c.nome}.`); continue }
+    if (ocupante) { linhas.push(`   · ${c.nome}: já ocupado por ${ocupante.nome} (fica como está).`); continue }
+    if (p.cargoId) { linhas.push(`   · ${p.nome}: já tem o cargo ${p.cargo?.nome ?? ''} (fica como está).`); continue }
+    await bd.$transaction((tx) => aplicarAlteracao(tx, 'nomeacao', p, { cargoId: c.id }, null, { documento: l.fonte ?? '', entidade: '', criadoPor: u.email }))
+    linhas.push(`   + ${p.nome}: ${c.nome}.`)
+  }
   return linhas
 }
 
@@ -90,8 +119,8 @@ export async function carregarAcademicos(contentor, ac, u = QUEM) {
     if (!anos.length) return
     const r = await bd.anoAcademico.createMany({ data: anos.map((a) => ({ pessoaId: p.id, anoLetivo: a.anoLetivo, papel: a.papel, curso: a.curso ?? '', tipoDocente: a.tipoDocente ?? null, concluido: a.concluido ?? null })), skipDuplicates: true })
     n.anos += r.count
-    // um ano novo de estudante: a ficha volta a ir para a Gestão Escolar (que o matricula na turma desse curso)
-    if (r.count && anos.some((a) => a.papel === 'estudante')) await bd.sincronizacao.updateMany({ where: { pessoaId: p.id }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
+    // um ano novo (de estudante ou de docente): a ficha volta a ir para a Gestão Escolar (matricula-o, ou põe-no no ano)
+    if (r.count) await bd.sincronizacao.updateMany({ where: { pessoaId: p.id }, data: { estado: 'pendente', tentativas: 0, erro: '' } })
   }
   const juntarCursos = async (p, cursos = []) => {
     for (const c of cursos) {
