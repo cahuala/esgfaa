@@ -35,13 +35,15 @@ function ItemMenu({ para, icone, texto, fim, contador = 0 }) {
 // configurados; fica guardado na conta (vale em qualquer computador) e todas as páginas o seguem
 function SeletorAnoTrabalho() {
   const { ano, anos, actual, mudar } = useAnoTrabalho()
-  const [aMudar, setAMudar] = useState(false)
+  const [aMudar, setAMudarLocal] = useState(false)
+  // o ecrã «A carregar o ano lectivo…» cobre a página enquanto se muda (o Layout ouve este aviso)
+  const setAMudar = (v, novo) => { setAMudarLocal(v); window.dispatchEvent(new CustomEvent('esg-ano-a-mudar', { detail: v ? novo : null })) }
   if (!anos.length) return null
   return (
     <div className="menu-item px-3 pb-2 small text-white-50">
       <label htmlFor="ano-trabalho" className="d-block mb-1"><i className="fa fa-calendar-alt me-1" />{tx('Ano lectivo')}</label>
       <select id="ano-trabalho" className="form-select form-select-sm" value={ano} disabled={aMudar}
-        onChange={async (e) => { setAMudar(true); try { await mudar(e.target.value) } finally { setAMudar(false) } }}>
+        onChange={async (e) => { const novo = e.target.value; setAMudar(true, novo); try { await mudar(novo); await new Promise((r) => setTimeout(r, 350)) } finally { setAMudar(false) } }}>
         {[...anos].sort((a, b) => b.id.localeCompare(a.id)).map((a) => <option key={a.id} value={a.id}>{a.id}{a.id === actual ? ` (${tx('actual')})` : ''}{a.fechado ? ` — ${tx('fechado')}` : ''}</option>)}
       </select>
     </div>
@@ -55,6 +57,14 @@ const aceitarPrivacidade = () => api('/eu/privacidade', { metodo: 'POST' })
 function Layout({ children }) {
   const { utilizador, pode, sair } = useSessao()
   const sistema = useSistema(utilizador?.sistema ?? '')
+  // ao mudar o ano lectivo: o ecrã de processamento e, no fim, a página refeita (todos os dados do ano escolhido)
+  const { ano: anoTrabalho } = useAnoTrabalho()
+  const [anoAMudar, setAnoAMudar] = useState(null)
+  useEffect(() => {
+    const ouvir = (e) => setAnoAMudar(e.detail)
+    window.addEventListener('esg-ano-a-mudar', ouvir)
+    return () => window.removeEventListener('esg-ano-a-mudar', ouvir)
+  }, [])
   const { pathname } = useLocation()
   // os menus guardam o endereço em que foram abertos: ao mudar de página ficam fechados
   const [menuMovelEm, setMenuMovelEm] = useState(null)
@@ -318,8 +328,18 @@ function Layout({ children }) {
             <Link to="/perfil" className="btn btn-sm btn-warning ms-3">{tx('Mudar agora')}</Link>
           </div>
         )}
-        {children}
+        {/* a página refaz-se quando o ano lectivo muda: tudo o que se vê passa a ser desse ano */}
+        <div key={anoTrabalho || 'sem-ano'}>{children}</div>
       </div>
+      {anoAMudar && (
+        <div className="esg-a-processar" role="status" aria-live="polite">
+          <div className="esg-a-processar-caixa">
+            <i className="fa fa-spinner fa-spin fa-2x mb-2" />
+            <div className="fw-bold">{tx('A carregar o ano lectivo {0}…', { 0: anoAMudar })}</div>
+            <div className="small text-muted">{tx('as turmas, as matrículas, as pautas, os documentos e os números passam a ser deste ano')}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

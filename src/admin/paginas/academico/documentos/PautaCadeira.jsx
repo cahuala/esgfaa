@@ -29,15 +29,33 @@ function PautaCadeira() {
   const notas = p.linhas.map((l) => (l.situacao === 'recurso' ? null : l.final)).filter((v) => v !== null && v !== undefined && v !== '').map(Number)
   const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null
   const horas = Number(c.horasContacto || 0) + Number(c.horasNaoContacto || 0) || Number(c.horas || 0)
+  // o título como nas pautas do arquivo: «TAI-<DISCIPLINA>» (trabalho de aplicação individual) ou «NOTA DO TII»
+  const tituloArquivo = c.tii ? 'NOTA DO TII' : `TAI-${(c.nome || c.codigo).toUpperCase()}`
+  const linhaNota = (l) => (l.situacao === 'recurso' || l.final === null || l.final === undefined || l.final === '' ? null : Number(l.final))
+  // o Excel como o do arquivo: Nº, NIP, posto, nome completo, ramos, disciplina, notas; média, mais alta e mais baixa (fórmulas)
+  async function excelArquivo() {
+    const { default: escrever } = await import('write-excel-file/browser')
+    const C = (v, extra = {}) => ({ value: v, ...extra })
+    const B = (v) => C(v, { fontWeight: 'bold', align: 'center' })
+    const topo = [[C('DIRECÇÃO DOS ASSUNTOS ACADÉMICOS', { fontWeight: 'bold' })], [C('REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR', { fontWeight: 'bold' })], [C((c.turma?.nome || '').toUpperCase(), { fontWeight: 'bold' })], [C(tituloArquivo, { fontWeight: 'bold' })], [C(`ANO DE CURSO ${c.turma?.anoLetivo || ''}`)], []]
+    const i0 = topo.length + 2 // a primeira linha dos estudantes (1-based)
+    const n = p.linhas.length
+    const corpo = p.linhas.map((l, i) => [C(i + 1, { type: Number }), C(l.estudante.nip || ''), C(l.estudante.posto || ''), C(l.estudante.nome), C(RAMOS[l.estudante.ramo] ?? l.estudante.ramo ?? ''), C(c.codigo), linhaNota(l) === null ? C(null) : C(linhaNota(l), { type: Number, format: '0.00' })])
+    const g = `G${i0}:G${i0 + n - 1}`
+    const fim = n ? [[], [C(''), C(''), C(''), B('Média'), C(''), C(''), C(`=ROUND(AVERAGE(${g}),2)`, { type: 'Formula', format: '0.00', fontWeight: 'bold' })], [C(''), C(''), C(''), B('Nota mais Alta'), C(''), C(''), C(`=MAX(${g})`, { type: 'Formula', format: '0.00' })], [C(''), C(''), C(''), B('Nota mais Baixa'), C(''), C(''), C(`=MIN(${g})`, { type: 'Formula', format: '0.00' })]] : []
+    const data = new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })
+    await escrever([...topo, [B('Nº'), B('NIP'), B('POSTO'), B('NOME COMPLETO'), B('RAMOS'), B('DISCIPLINA'), B('NOTAS')], ...corpo, ...fim, [], [C(`Luanda, aos ${data}`)]], { sheet: c.codigo.slice(0, 30) || 'Pauta', columns: [{ width: 5 }, { width: 12 }, { width: 16 }, { width: 40 }, { width: 8 }, { width: 12 }, { width: 8 }] })
+      .toFile(`pauta-${c.codigo}-${c.turma?.nome || ''}.xlsx`.replace(/[^\w.-]+/g, '-'))
+  }
   const acoes = <>
     <button type="button" className="btn btn-white" onClick={() => setDetalhada(!detalhada)}><i className="fa fa-columns me-1" />{detalhada ? 'Modelo do arquivo' : 'Pauta detalhada (provas e exame)'}</button>
-    <button type="button" className="btn btn-white" onClick={() => exportarPautaExcel(c, p.linhas)}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
+    <button type="button" className="btn btn-white" onClick={() => (detalhada ? exportarPautaExcel(c, p.linhas) : excelArquivo().catch((e) => setErro(e.message)))}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
   </>
   if (!detalhada) {
     return (
       <Documento
         anoLetivo={c.turma?.anoLetivo}
-        titulo={`${c.nome}`} voltar={`/academico/cadeiras/${c.id}?separador=pauta`}
+        titulo={tituloArquivo} voltar={`/academico/cadeiras/${c.id}?separador=pauta`}
         subtitulo={<>{(c.turma?.nome || '').toUpperCase()}<br />Ano de curso {c.turma?.anoLetivo || ''} · {c.codigo}{horas ? ` · carga horária ${horas} h` : ''}{PERIODOS[c.periodo] ? ` · ${PERIODOS[c.periodo]}` : ''}</>}
         acoes={acoes}
         assinaturas={[`O Docente${regente ? ` — ${regente}` : ''}`, 'O Chefe da Repartição de Administração Escolar']}

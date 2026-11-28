@@ -95,7 +95,8 @@ export class ServicoDocumentos {
     const g = await this.esg?.pautaGeral(t)
     if (!g) throw new NaoEncontrado('Esta turma ainda não tem o plano de curso da ESG (Turma › Plano de curso).')
     const { plano } = g
-    const cadeiras = await this.academico.cadeirasDasTurmas([t.id])
+    // as cadeiras pela ordem em que entraram (a da pauta assinada, no arquivo; a do plano, nas outras)
+    const cadeiras = (await this.academico.cadeirasDasTurmas([t.id])).sort((a, b) => a.id - b.id)
     const blocos = (plano.blocos.length ? plano.blocos : [{ sigla: '', nome: 'Unidades curriculares', coeficiente: 1 }]).map((b) => ({
       sigla: b.sigla, nome: b.nome, coeficiente: b.coeficiente,
       ucs: cadeiras.filter((c) => (plano.blocos.length ? c.bloco === b.sigla : true)).map((c) => ({ id: c.id, codigo: c.codigo, nome: c.nome, creditos: c.creditos || 0, tii: Boolean(c.tii), horas: Number(c.horasContacto || 0) + Number(c.horasNaoContacto || 0) || Number(c.horas || 0) })),
@@ -107,8 +108,20 @@ export class ServicoDocumentos {
         estudante: { id: l.estudante.id, nome: l.estudante.nome, numero: l.estudante.numero, posto: d.posto || l.estudante.posto || '', nip: d.nip || '', ramo: d.origem === 'policia' ? 'PNA' : d.ramo || '' },
         ucs: Object.fromEntries((l.ucs ?? []).map((u) => [u.codigo, u.final ?? null])), blocos: Object.fromEntries((l.blocos ?? []).map((b) => [b.sigla, b.nota])),
         ajuste: l.ajuste ?? 0, final: l.final ?? null, mencao: l.distinto ? 'Distinto' : l.mencao ?? null, homologado: Boolean(l.homologado),
+        // como nas pautas assinadas: a média simples dos blocos (ao lado da ponderada) e a ordenação
+        mediaSimples: l.mediaSimples ?? null, ordem: l.ordem ?? null,
       }
     })
+    const comBlocos = blocos.filter((b) => b.sigla)
+    for (const l of linhas) {
+      const ms = comBlocos.map((b) => l.blocos[b.sigla])
+      if (l.mediaSimples === null && comBlocos.length > 1 && ms.every((m) => m !== null && m !== undefined)) l.mediaSimples = ms.reduce((a, b) => a + Number(b), 0) / ms.length
+    }
+    // a ordenação pela média final (iguais ficam no mesmo lugar), quando a pauta não a traz
+    if (linhas.every((l) => l.ordem === null)) {
+      const fs = linhas.map((l) => l.final).filter((x) => x !== null).map(Number)
+      for (const l of linhas) if (l.final !== null) l.ordem = 1 + fs.filter((x) => x > Number(l.final)).length
+    }
     const finais = linhas.map((l) => l.final).filter((x) => x !== null && x !== undefined).map(Number)
     return {
       turma: { id: t.id, nome: t.nome, anoLetivo: t.anoLetivo, cursoId: t.curso, curso: await this.#curso(t.curso) },

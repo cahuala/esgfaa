@@ -54,7 +54,8 @@ export class RepositorioAcademico {
   async listarTurmas() {
     const linhas = await this.prisma.turma.findMany({
       orderBy: [{ anoLetivo: 'desc' }, { nome: 'asc' }],
-      include: { _count: { select: { matriculas: { where: { estado: 'ativa' } }, cadeiras: true } } },
+      // os estudantes da turma: as matrículas activas e as já concluídas (as turmas de anos anteriores têm-nas concluídas)
+      include: { _count: { select: { matriculas: { where: { estado: { in: ['ativa', 'concluida', 'suspensa'] } } }, cadeiras: true } } },
     })
     return linhas.map((t) => ({ id: t.id, curso: t.curso, anoLetivo: t.anoLetivo, anoCurricular: t.anoCurricular, nome: t.nome, ativa: t.ativa, anoFinal: t.anoFinal, estudantes: t._count.matriculas, cadeiras: t._count.cadeiras }))
   }

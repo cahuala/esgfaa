@@ -137,7 +137,14 @@ export default function Academicos({ tipo }) {
   async function fichas() {
     setAImprimir(true)
     try {
-      const r = await api('/fichas-acesso', { metodo: 'POST', corpo: { ids: [...escolhidos] } })
+      // em grupos de 100 (uma turma grande ou «todos»), num só PDF
+      const todos = [...escolhidos].map(Number).filter((x) => x > 0)
+      const r = { fichas: [], erros: [] }
+      for (let i = 0; i < todos.length; i += 100) {
+        const parte = await api('/fichas-acesso', { metodo: 'POST', corpo: { ids: todos.slice(i, i + 100) } })
+        r.fichas.push(...parte.fichas)
+        r.erros.push(...parte.erros)
+      }
       if (r.fichas.length) await imprimirFichas(r.fichas, r.fichas[0].portal ? { portal: `${r.fichas[0].portal}/` } : undefined)
       if (r.erros.length) avisar(`${r.fichas.length} ficha(s) impressa(s). Sem ficha: ${r.erros.map((x) => `${x.nome} (${x.erro})`).join('; ')}`, 'erro')
       else avisar(`${r.fichas.length} ficha(s) de acesso impressa(s). As palavras-passe anteriores deixaram de valer.`)

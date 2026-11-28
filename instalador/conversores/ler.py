@@ -9,6 +9,8 @@ def linhas(f):
                 v=[]
                 for c in range(sh.ncols):
                     x=sh.cell(r,c)
+                    # as células com erro do Excel (#DIV/0!, #VALOR!…) ficam vazias: o xlrd dá o código (7 = #DIV/0!), que não é nota
+                    if x.ctype==xlrd.XL_CELL_ERROR: v.append(''); continue
                     if x.ctype==xlrd.XL_CELL_DATE:
                         try: v.append(xlrd.xldate_as_datetime(x.value,b.datemode).date().isoformat())
                         except Exception: v.append(x.value)
@@ -18,7 +20,8 @@ def linhas(f):
     else:
         b=openpyxl.load_workbook(f, data_only=True, read_only=True)
         for ws in b.worksheets:
-            rows=[[ (c.isoformat()[:10] if isinstance(c,(datetime.date,datetime.datetime)) else c) for c in r] for r in ws.iter_rows(values_only=True)]
+            # os erros do Excel («#DIV/0!») também ficam vazios
+            rows=[[ ('' if isinstance(c,str) and c.startswith('#') and c.endswith(('!','?','A')) else c.isoformat()[:10] if isinstance(c,(datetime.date,datetime.datetime)) else c) for c in r] for r in ws.iter_rows(values_only=True)]
             out.append((ws.title, rows))
     return out
 def limpa(v):

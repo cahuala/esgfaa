@@ -178,17 +178,19 @@ export class RepositorioControloAcademico {
   // anoLetivo: as turmas, os estudantes e os docentes desse ano (o de trabalho de quem vê); sem ele, os activos
   async resumoAcademico({ anoLetivo } = {}) {
     const p = this.prisma
-    const [turmas, estudantes, docentes, pedidosDocumentos, conselhos, revisoes] = await Promise.all([
+    const [turmas, estudantes, docentes, pedidosDocumentos, conselhos, revisoes, docentesRegistados] = await Promise.all([
       p.turma.count({ where: anoLetivo ? { anoLetivo } : { ativa: true } }),
       anoLetivo ? p.matricula.count({ where: { estado: { not: 'anulada' }, turma: { anoLetivo } } }) : p.matricula.count({ where: { estado: 'ativa', turma: { ativa: true } } }),
       anoLetivo ? p.contaPortal.count({ where: { tipo: 'docente', docencias: { some: { cadeira: { turma: { anoLetivo } } } } } }) : p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
       p.pedido.count({ where: { estado: { in: ['pendente', 'em_tratamento'] } } }),
       p.conselhoCurso.findMany({ where: { estado: { in: ['proposta', 'confirmada'] } }, select: { estado: true, turmaId: true } }),
       p.notaAvaliacaoUc.count({ where: { revisaoPedidaEm: { not: null }, revisaoDecididaEm: null } }),
+      // os docentes que vieram do Pessoal (activos), estejam ou não já nas cadeiras do ano
+      p.contaPortal.count({ where: { tipo: 'docente', ativo: true } }),
     ])
     const nomes = new Map((await p.turma.findMany({ where: { id: { in: conselhos.map((c) => c.turmaId) } }, select: { id: true, nome: true } })).map((t) => [t.id, t]))
     return {
-      turmas, estudantes, docentes, pedidosDocumentos, revisoes,
+      turmas, estudantes, docentes, docentesRegistados, pedidosDocumentos, revisoes,
       porConfirmar: conselhos.filter((c) => c.estado === 'proposta').map((c) => nomes.get(c.turmaId)).filter(Boolean),
       porHomologar: conselhos.filter((c) => c.estado === 'confirmada').map((c) => nomes.get(c.turmaId)).filter(Boolean),
     }

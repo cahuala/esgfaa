@@ -2,6 +2,7 @@ import { ContaPortal } from '../../dominio/academico/pessoas/conta.js'
 import { MAX_TENTATIVAS, MINUTOS_BLOQUEIO } from '../../dominio/identidade/utilizador.js'
 import { Conflito } from '../../dominio/comum/erros.js'
 import { eDuplicado } from '../bd/prisma.js'
+import { ordenarPorHierarquia } from '../../dominio/academico/pessoas/hierarquia.js'
 
 const iso = (d) => (d ? new Date(d).toISOString() : null)
 
@@ -72,7 +73,8 @@ export class RepositorioContasPortal {
       orderBy: { nome: 'asc' },
       take: 2000,
     })
-    return linhas.map(paraConta)
+    // pela ordem hierárquica (o posto, do mais alto para o mais baixo; no mesmo posto, o nome), como nas relações
+    return ordenarPorHierarquia(linhas.map(paraConta))
   }
 
   // a conta pelo NIP (ou n.º de agente; sem o «I» e os zeros da frente), só se houver uma

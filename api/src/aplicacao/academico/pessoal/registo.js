@@ -237,6 +237,8 @@ export class ServicoRegistoPessoal {
         resultados.push({ ref: p.ref, ok: false, erro: e.message })
       }
     }
+    // chegaram docentes: os do catálogo das listas ficam propostos nas cadeiras do ano (sem esperar)
+    if ((criadas || atualizadas) && pessoas.some((p) => p.tipo === 'docente')) Promise.resolve(this.aoReceberDocentes?.()).catch(() => {})
     if (criadas || atualizadas) await this.auditoria.registar(ctx, { acao: 'sincronizar_pessoal', colecao: 'contas_portal', alvoTitulo: 'Sistema de Gestão de Pessoal', detalhes: { criadas, atualizadas }, utilizador: null })
     return { resultados }
   }

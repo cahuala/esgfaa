@@ -33,7 +33,9 @@ export class ServicoAvaliacaoEsg {
   // resultado de uma UC para um estudante (o TII: a nota do trabalho)
   #resultado(cadeira, plano, avaliacoes, notas, tii) {
     if (cadeira.tii) {
-      const n = tii ?? null
+      // a nota do trabalho; nas turmas do arquivo, a da pauta assinada (a UC do TII não tem outras provas)
+      const doArquivo = Object.values(notas ?? {}).map((x) => x?.nota).find((v) => v !== null && v !== undefined)
+      const n = tii ?? (doArquivo === undefined ? null : Number(doArquivo))
       return { final: n, situacao: n === null ? 'em_curso' : n >= NOTA_MINIMA ? 'aprovado' : 'reprovado', mencao: n === null ? null : mencao(n), provas: [] }
     }
     return resultadoUc(avaliacoes, notas, { exigirTesteEscrito: plano?.exigirTesteEscrito !== false, recuperacaoAutomatica: plano?.recuperacaoAutomatica === true, agora: this.relogio.agora() })

@@ -92,9 +92,12 @@ for t in arq['turmas']:
             m = [q for q in no_curso.get((t['sigla'], t['edicao']), []) if len(tok(q['nome']) & tok(e['nome'])) >= min(3, len(tok(e['nome'])))]
             if len(m) == 1 and (m[0].get('nip') or m[0].get('numeroAgente')): e = dict(e, nip=m[0].get('nip') or m[0].get('numeroAgente'), nomeNaRelacao=m[0]['nome'])
         estudantes.append({'nip': e['nip'], 'nome': e.get('nomeNaRelacao') or e['nome'], 'posto': e['posto'], 'ramo': e['ramo'],
-                           'notas': {u['codigo']: e['notas'].get(u['rotulo']) for u in ucs}, 'final': e['final'], 'mencao': e['mencao']})
+                           'notas': {u['codigo']: e['notas'].get(u['rotulo']) for u in ucs}, 'final': e['final'], 'mencao': e['mencao'],
+                           'blocos': e.get('blocos') or {}, 'mediaSimples': e.get('mediaSimples'), 'ordem': e.get('ordem')})
     saida.append({'sigla': t['sigla'], 'edicao': t['edicao'], 'anoLetivo': t['anoLetivo'], 'curso': t['curso'], 'nome': t['curso'], 'ficheiro': f"{p['ficheiro']} «{p['folha']}»",
-                  'ucs': [{k: v for k, v in u.items() if k != 'rotulo'} for u in ucs], 'estudantes': estudantes})
+                  'ucs': [{k: v for k, v in u.items() if k != 'rotulo'} for u in ucs], 'estudantes': estudantes,
+                  # os blocos da pauta assinada, com os coeficientes (o TII é um bloco), e a fórmula da média final
+                  'blocos': p.get('blocos') or [], 'formula': p.get('formula') or ('blocos' if p.get('blocos') else 'media')})
 json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-27', 'turmas': saida, 'avisos': sorted(set(avisos))}, open(SAIDA, 'w'), ensure_ascii=False)
 for t in saida:
     print(f"{t['anoLetivo']} {t['edicao']}.º {t['sigla']}: {len(t['estudantes'])} discentes ({sum(1 for e in t['estudantes'] if e['nip'])} com NIP), {len(t['ucs'])} cadeiras: " + ', '.join(f"{u['codigo']}={u['nome'][:22]}" for u in t['ucs'][:6]) + '…')

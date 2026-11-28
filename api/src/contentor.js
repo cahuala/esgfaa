@@ -364,5 +364,14 @@ export function criarContentor(config, { relogio = relogioSistema, esquema = nul
   // o centro de cibersegurança e monitorização (todos os sistemas num ecrã)
   servicos.monitorizacao = new ServicoMonitorizacao({ config, prisma: prismaBase, seguranca: servicos.seguranca, replicacao, paginas: r.paginas, auditoria, relogio })
   const fechar = async () => { replicacao?.parar(); await servicos.seguranca.parar(); await prismaBase.$disconnect() }
+  // os docentes que chegam do Pessoal entram logo nas cadeiras do ano em que as listas os põem (propostos ao Comandante)
+  if (servicos.pessoal?.registo && servicos.administracaoEscolar?.arquivo) {
+    let aPropor = null
+    servicos.pessoal.registo.aoReceberDocentes = () => {
+      if (aPropor) return aPropor
+      aPropor = servicos.administracaoEscolar.arquivo.proporDocentesDoCatalogo({ actor: { id: null, nome: 'Sistema de Pessoal' }, ip: null, agente: 'integracao' }).finally(() => { aPropor = null })
+      return aPropor
+    }
+  }
   return { config, prisma, prismaBase, cifraDados, fechar, relogio, repositorios, servicos, cifra, tokens, tokensPortal, armazenamento, privados, correio, tempoReal, replicacao }
 }

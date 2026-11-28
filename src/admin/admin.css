@@ -922,3 +922,7 @@ fieldset:disabled .bloco-topo .btn-group {
   .of-acoes > .ms-auto { margin-left: 0 !important; }
   .of-acoes .form-select, .of-acoes .form-control, .of-acoes .btn { width: 100% !important; }
 }
+
+/* ecrã de processamento ao mudar o ano lectivo */
+.esg-a-processar { position: fixed; inset: 0; z-index: 2000; background: rgba(255, 255, 255, .78); display: flex; align-items: center; justify-content: center; }
+.esg-a-processar-caixa { background: #fff; border: 1px solid #e5e2d8; border-radius: 12px; padding: 26px 34px; text-align: center; box-shadow: 0 8px 30px rgba(0, 0, 0, .12); color: #861d0c; max-width: 90vw; }

@@ -310,7 +310,7 @@ export class ServicoSincronizacao {
     exigir(u, 'editar')
     const fichas = []
     const erros = []
-    for (const id of ids.slice(0, 100)) {
+    for (const id of ids.slice(0, 500)) {
       try {
         fichas.push(await this.fichaAcesso(u, id))
       } catch (e) {

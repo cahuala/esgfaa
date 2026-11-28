@@ -388,7 +388,7 @@ export function rotas({ servicos: s, config }) {
       })),
     })
   })
-  r.post('/fichas-acesso', validar({ body: z.object({ ids: z.array(z.number().int().positive()).min(1).max(100) }) }), async (req, res) => res.json(await s.sincronizacao.fichasAcesso(u(req), req.dados.body.ids)))
+  r.post('/fichas-acesso', validar({ body: z.object({ ids: z.array(z.coerce.number().int().positive()).min(1).max(500) }) }), async (req, res) => res.json(await s.sincronizacao.fichasAcesso(u(req), req.dados.body.ids)))
   // ficha de acesso ao portal (palavra-passe inicial nova, só para imprimir)
   r.post('/pessoas/:id/ficha-acesso', validar({ params: E.pId }), async (req, res) => res.json(await s.sincronizacao.fichaAcesso(u(req), req.dados.params.id)))
   r.post('/portal/enviar', async (req, res) => { exigir(u(req), 'administrar'); res.json(await s.sincronizacao.enviarPendentes()) })

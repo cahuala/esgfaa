@@ -74,6 +74,17 @@ describe('Arranque do ano lectivo (turmas, cadeiras, departamentos e docentes)',
     assert.equal(nova.departamento, 'Departamento de Investigação e Doutrina')
   })
 
+  it('o docente do catálogo que ainda não tinha conta chega do Pessoal: fica logo proposto na sua cadeira', async () => {
+    const corpo = JSON.stringify({ pessoas: [{ ref: 'pessoal-804', tipo: 'docente', nome: 'Major Docente Metodologia', email: 'docente.metodologia@esgfaa.gov.ao', ativo: true, dados: { nip: 'DOC002' } }] })
+    const data = String(Math.floor(Date.now() / 1000))
+    await amb.http().post('/api/integracao/pessoal/contas').set('Content-Type', 'application/json').set('X-Pessoal-Data', data).set('X-Pessoal-Assinatura', assinar(data, corpo)).send(corpo).expect(200)
+    const p = amb.contentor.prisma
+    const d = await p.contaPortal.findFirst({ where: { nome: 'Major Docente Metodologia' } })
+    let n = 0
+    for (let i = 0; i < 20 && !n; i++) { n = await p.docencia.count({ where: { docenteId: d.id, cadeira: { codigo: 'MIC', turma: { anoLetivo: '2026/2027' } } } }); if (!n) await new Promise((r) => setTimeout(r, 100)) }
+    assert.equal(n, 1)
+  })
+
   it('na instalação: a pasta CARREGAR entra sozinha (arranque e pautas do arquivo); repetir não duplica', async () => {
     const pasta = fs.mkdtempSync(path.join(os.tmpdir(), 'carregar-'))
     fs.writeFileSync(path.join(pasta, 'arranque-2026-2027.json'), JSON.stringify({ tipo: 'arranque-ano-lectivo', ...dados() }))

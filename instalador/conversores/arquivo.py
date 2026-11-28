@@ -109,7 +109,9 @@ def tabela(rows):
             break
     titulo = ' | '.join(' '.join(c for c in r if c) for r in rows[:h])
     rodape = [' '.join(c for c in r if c) for r in rows[d0 + len(dados):]]
-    return rotulos, dados, titulo, col_nip, rodape
+    # as linhas acima do cabeçalho (os nomes dos blocos e os coeficientes: «I. Adm … Coeficiente 3»)
+    acima = [r + [''] * (larg - len(r)) for r in rows[:h]]
+    return rotulos, dados, titulo, col_nip, rodape, acima
 
 
 def papel(rot):
@@ -173,6 +175,80 @@ def chave_pelos_nips(dados, col_nip):
     return melhor if melhor and len(nips & set(relacoes[melhor])) >= len(nips) * 0.6 else None
 
 
+def numero(v):
+    try: return float(str(v).replace(',', '.'))
+    except ValueError: return None
+
+
+def blocos_da_pauta(ucs, papeis, rotulos, acima, codigo_de):
+    """Os blocos da pauta final: as cadeiras entre duas colunas «Média»; o TII é um bloco (fica depois do último).
+    O nome vem do cabeçalho de cima ou da linha acima («I. Adm», «II. Tac»); o coeficiente da célula a seguir a
+    «Coeficiente» dentro do bloco (sem coeficiente: 1)."""
+    grupos, atual, ini = [], [], ucs[0]
+    for j in range(ucs[0], max(ucs) + 2):
+        p = papeis[j] if j < len(papeis) else ''
+        # a «Média» do bloco tem o mesmo cabeçalho de cima que as cadeiras (a «MÉDIA» geral, à parte, não é do TII)
+        do_bloco = p == 'bloco' and atual and (rotulos[j][:-1] == rotulos[atual[0]][:-1] or (len(rotulos[j]) > 1 and rotulos[j][0] == rotulos[atual[0]][0]))
+        if j in ucs: atual.append(j)
+        elif atual and (do_bloco or j > max(ucs)):
+            grupos.append({'colunas': atual, 'inicio': ini, 'fim': j if do_bloco else min(len(papeis) - 1, j + 1), 'media': j if do_bloco else None})
+            atual, ini = [], j + 1
+    # um grupo de uma só cadeira sem média do bloco, a seguir ao último bloco, é o TII
+    for b in grupos:
+        cods = [sem(codigo_de(j)) for j in b['colunas']]
+        b['tii'] = all(re.match(r'^(TII|TFC)\b', c) for c in cods)
+        # o nível mais próximo das cadeiras («Administração»), não o de cima («TAI - Trabalho de Aplicação Individual»)
+        cima = [x for j in b['colunas'] for x in (reversed(rotulos[j][:-1]) if len(rotulos[j]) > 1 else [])]
+        nome = next((x.strip() for x in cima if x.strip() and not re.match(r'^(MEDIA|TOT|DISCIP|TAI\b|TAG\b|TRABALHO)', sem(x))), '')
+        coef = None
+        for r in acima:
+            for j in range(b['inicio'], b['fim'] + 1):
+                t = str(r[j]).strip() if j < len(r) else ''
+                if not t: continue
+                if sem(t).startswith('COEF'):
+                    coef = coef or next((numero(r[k]) for k in range(j + 1, min(len(r), j + 3)) if numero(r[k])), None)
+                elif not nome and numero(t) is None and re.search('[A-Za-z]{2}', t) and j >= b['inicio'] and j <= b['fim']:
+                    nome = t
+        b['nome'] = nome or ('TII' if b['tii'] else f'Bloco {grupos.index(b) + 1}')
+        b['coeficiente'] = coef if coef and coef > 0 else 1
+    # só faz sentido falar em blocos se houver mais do que um (uma pauta só de cadeiras é «média»)
+    return grupos if len(grupos) > 1 else []
+
+
+def deduzir_coeficientes(pessoas, calculos, grupos, col):
+    import itertools
+    linhas_ = [([c['blocos'][b['nome']] for b in grupos], nota(r[col])) for r, c in zip(pessoas, calculos)]
+    linhas_ = [(ms, f) for ms, f in linhas_ if f is not None and all(m is not None for m in ms)]
+    if len(linhas_) < 3 or len(grupos) > 7: return None
+    melhor = None
+    for cs in itertools.product(range(1, 7), repeat=len(grupos)):
+        if max(cs) > 1 and min(cs) > 1 and all(c % 2 == 0 for c in cs): continue  # 2,4,… é o mesmo que 1,2,…
+        ok = sum(1 for ms, f in linhas_ if abs(sum(m * c for m, c in zip(ms, cs)) / sum(cs) - f) <= 0.015)
+        if not melhor or ok > melhor[0]: melhor = (ok, cs)
+    return list(melhor[1]) if melhor and melhor[0] >= 0.8 * len(linhas_) and len(set(melhor[1])) > 1 else None
+
+
+def calcular(r, grupos):
+    """As contas da pauta (como no Excel): a média de cada bloco sem os zeros; a média simples dos blocos; a ponderada
+    pelos coeficientes; e a média de todas as cadeiras."""
+    blocos = {}
+    todas = []
+    for b in grupos:
+        vs = [nota(r[j]) for j in b['colunas']]
+        vs = [v for v in vs if v not in (None, 0)]
+        todas += vs
+        do_excel = nota(r[b['media']]) if b['media'] is not None else None
+        blocos[b['nome']] = do_excel if do_excel not in (None, 0) else (round(sum(vs) / len(vs), 4) if vs else None)
+    ms = [(blocos[b['nome']], b['coeficiente']) for b in grupos]
+    ok = grupos and all(m is not None for m, _ in ms)
+    return {
+        'blocos': blocos,
+        'simples': round(sum(m for m, _ in ms) / len(ms), 4) if ok else None,
+        'ponderada': round(sum(m * c for m, c in ms) / sum(c for _, c in ms), 4) if ok else None,
+        'cadeiras': round(sum(todas) / len(todas), 4) if todas else None,
+    }
+
+
 def papeis_de(rotulos):
     ps = [papel(r) for r in rotulos]
     # a média final: a coluna «Média» do nível de cima mais à direita (as outras são médias de bloco)
@@ -182,7 +258,7 @@ def papeis_de(rotulos):
     return ['bloco' if p == 'media?' else p for p in ps]
 
 
-for rel, f, folha, (rotulos, dados, titulo, col_nip, rodape) in folhas:
+for rel, f, folha, (rotulos, dados, titulo, col_nip, rodape, acima) in folhas:
     sig, ed = identificar(titulo, folha, os.path.basename(f))
     if not sig and not ('NOMINAL' in sem(rel) or 'BASE DADOS' in sem(rel)):
         k = chave_pelos_nips(dados, col_nip)
@@ -233,18 +309,59 @@ for rel, f, folha, (rotulos, dados, titulo, col_nip, rodape) in folhas:
     if 'final' not in idx or len(ucs) < 3:
         avisos.append(f'{rel} «{folha}»: tabela sem média final ou com poucas cadeiras ({len(ucs)}) — ignorada.')
         continue
+    codigo_de = lambda j: re.sub(r'^\d+\.\s*', '', rotulos[j][-1].strip()).rstrip('.').strip()
+    grupos = blocos_da_pauta(ucs, papeis, rotulos, acima, codigo_de)
+    # as notas: 0 é «não fez» (no CSCD, ECOFIN e DIRMIL a 0 não entram na média do bloco)
+    notas_de = lambda r: {codigo_de(j): (None if nota(r[j]) == 0 else nota(r[j])) for j in ucs}
+    pessoas = [r for r in dados if nome_limpo(g(r, 'nome'))]
+    # sem blocos, as contas fazem-se com todas as cadeiras juntas
+    calculos = [calcular(r, grupos or [{'nome': '', 'colunas': ucs, 'media': None, 'coeficiente': 1}]) for r in pessoas]
+    if not grupos:
+        for c in calculos: c['blocos'] = {}
+    # as colunas da direita: qual é a média ponderada (a final), a média simples e a ordenação — confere-se com as contas
+    fechos = {b['media'] for b in grupos}
+    depois = [j for j in range(max(ucs) + 1, len(papeis)) if j not in fechos and papeis[j] not in ('mencao', 'nome', 'posto', 'nip', 'ramo', 'n', 'uc')
+              and any(nota(r[j]) is not None for r in pessoas)]
+    # a «MÉDIA» unida por várias colunas no Excel: fica a que tem os números
+    if 'final' in idx and all(nota(r[idx['final']]) is None for r in pessoas) and depois: idx['final'] = depois[0]
+    def bate(j, k):
+        pares = [(nota(r[j]), c[k]) for r, c in zip(pessoas, calculos) if c[k] is not None and nota(r[j]) is not None]
+        return len(pares) >= max(1, 0.7 * len(pessoas)) and sum(1 for a, b in pares if abs(a - b) <= 0.015) >= 0.7 * len(pares)
+    col_final = next((j for j in depois if bate(j, 'ponderada')), None)
+    if col_final is None and grupos and 'final' in idx:
+        # os coeficientes não estão escritos na folha: deduzem-se das médias do próprio Excel (inteiros de 1 a 6)
+        coef = deduzir_coeficientes(pessoas, calculos, grupos, idx['final'])
+        if coef:
+            for b, c in zip(grupos, coef): b['coeficiente'] = c
+            calculos = [calcular(r, grupos) for r in pessoas]
+            col_final = idx['final']
+            avisos.append(f'{rel} «{folha}»: os coeficientes dos blocos não estão na folha; pelas médias do Excel são ' + ', '.join(f"{b['nome']} {c}" for b, c in zip(grupos, coef)) + '.')
+    formula = 'blocos'
+    if col_final is None:
+        col_final = next((j for j in depois if bate(j, 'cadeiras')), None)
+        if col_final is not None and not bate(col_final, 'ponderada'): formula = 'media'
+    if col_final is None:
+        col_final = idx['final']
+        avisos.append(f'{rel} «{folha}»: a média final da pauta não bate com as contas dos blocos nem das cadeiras — fica a coluna «{" ".join(rotulos[col_final])}».')
+    if not grupos: formula = 'media'
+    col_simples = next((j for j in depois if j != col_final and bate(j, 'simples')), None)
+    col_ordem = next((j for j in depois if re.match(r'^(ORDENACAO|ORDEM|CLASSIFICACAO GERAL)$', sem(rotulos[j][-1] if rotulos[j] else '').strip())), None)
     cand = {
-        'ficheiro': rel, 'folha': folha,
-        'ucs': [{'codigo': re.sub(r'^\d+\.\s*', '', rotulos[j][-1].strip()).rstrip('.'), 'bloco': (rotulos[j][-2] if len(rotulos[j]) > 1 else '').strip()} for j in ucs],
+        'ficheiro': rel, 'folha': folha, 'formula': formula,
+        'ucs': [{'codigo': codigo_de(j), 'bloco': next((b['nome'] for b in grupos if j in b['colunas']), '')} for j in ucs],
+        'blocos': [{k: b[k] for k in ('nome', 'coeficiente', 'tii')} for b in grupos],
         'estudantes': [],
         'legenda': [x for x in rodape if re.match(r'^[A-Z][A-Za-z.]{1,8}\s*[-–—:]\s*\S', x)][:60],
     }
-    for r in dados:
-        nome = nome_limpo(g(r, 'nome'))
-        if not nome: continue
-        cand['estudantes'].append({'nip': nip_de(g(r, 'nip')), 'nome': nome, 'posto': g(r, 'posto'), 'ramo': g(r, 'ramo'),
-                                   'notas': {u['codigo']: nota(r[j]) for u, j in zip(cand['ucs'], ucs)},
-                                   'final': nota(g(r, 'final')), 'mencao': g(r, 'mencao').strip().capitalize()})
+    if all(nota(r[col_final]) is None for r in pessoas):
+        avisos.append(f'{rel} «{folha}»: pauta sem a média final (parcial ou com erros no Excel) — as médias ficam por calcular.')
+    for r, c in zip(pessoas, calculos):
+        o = str(r[col_ordem]).strip() if col_ordem is not None else ''
+        cand['estudantes'].append({'nip': nip_de(g(r, 'nip')), 'nome': nome_limpo(g(r, 'nome')), 'posto': g(r, 'posto'), 'ramo': g(r, 'ramo'),
+                                   'notas': notas_de(r), 'blocos': c['blocos'],
+                                   'final': nota(r[col_final]), 'mediaSimples': nota(r[col_simples]) if col_simples is not None else c['simples'],
+                                   'ordem': int(float(o)) if re.fullmatch(r'\d{1,3}(\.0)?', o) else None,
+                                   'mencao': g(r, 'mencao').strip().capitalize()})
     candidatas[chave].append(cand)
 
 

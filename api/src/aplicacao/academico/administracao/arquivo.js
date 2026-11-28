@@ -58,22 +58,31 @@ export class ServicoArquivoAcademico {
     const usadas = new Set()
     const blocos = []
     const ucs = []
+    // os blocos da pauta assinada, com o coeficiente de cada um (o TII é um bloco: «V. TII — Coeficiente 4»)
+    const doFicheiro = new Map((Array.isArray(t.blocos) ? t.blocos : []).map((b) => [txt(b?.nome, 80), b]))
     for (const u of t.ucs ?? []) {
       const codigo = txt(u?.codigo, 20).toUpperCase()
       if (!codigo || ucs.some((x) => x.codigo === codigo)) continue
-      const nomeBloco = txt(u?.bloco, 80)
+      const tii = /^TII\b|^TFC\b/.test(codigo)
+      const nomeBloco = txt(u?.bloco, 80) || (tii && [...doFicheiro.keys()].find((n) => /^(V\.\s*)?TII$/i.test(n))) || ''
       let b = nomeBloco ? blocos.find((x) => x.nome === nomeBloco) : null
-      if (nomeBloco && !b) blocos.push((b = { sigla: siglaBloco(nomeBloco, usadas), nome: nomeBloco, coeficiente: 1 }))
-      ucs.push({ codigo, nome: txt(u?.nome, 200) || codigo, bloco: b?.sigla ?? '', tii: /^TII\b|^TFC\b/.test(codigo) })
+      if (nomeBloco && !b) {
+        const f = doFicheiro.get(nomeBloco)
+        const coef = Number(String(f?.coeficiente ?? '').replace(',', '.'))
+        blocos.push((b = { sigla: /TII$/i.test(nomeBloco) ? 'TII' : siglaBloco(nomeBloco, usadas), nome: nomeBloco, coeficiente: Number.isFinite(coef) && coef > 0 ? coef : 1 }))
+      }
+      ucs.push({ codigo, nome: txt(u?.nome, 200) || codigo, bloco: b?.sigla ?? '', tii })
     }
     if (!ucs.length) throw new ErroValidacao(`${edicao}.º ${sigla} (${anoLetivo}): a pauta não tem cadeiras.`)
     const estudantes = (t.estudantes ?? []).map((e) => ({
       nip: txt(e?.nip, 20), nome: txt(e?.nome, 200), posto: txt(e?.posto, 60), ramo: txt(e?.ramo, 20),
       notas: Object.fromEntries(ucs.map((u) => [u.codigo, nota(e?.notas?.[u.codigo])])),
-      final: nota(e?.final), mencao: txt(e?.mencao, 30),
+      final: nota(e?.final), mencao: txt(e?.mencao, 30), mediaSimples: nota(e?.mediaSimples), blocos: e?.blocos && typeof e.blocos === 'object' ? Object.fromEntries(Object.entries(e.blocos).map(([k, v]) => [txt(k, 80), nota(v)])) : {}, ordem: Number.isInteger(Number(e?.ordem)) && Number(e?.ordem) > 0 ? Number(e.ordem) : null,
     })).filter((e) => e.nome)
     // o nome da turma por extenso (o do curso: «29.º Curso Superior de Comando e Direcção»); sem ele, vem do curso
-    return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, ficheiro: txt(t.ficheiro, 300) }
+    // a fórmula da pauta (o conversor confere-a com as médias do Excel): blocos ponderados pelos coeficientes, ou a média das cadeiras
+    const formula = t.formula === 'media' || !blocos.length ? 'media' : 'blocos'
+    return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, formula, ficheiro: txt(t.ficheiro, 300) }
   }
 
   async importar(ctx, { turmas, simular = true } = {}) {
@@ -148,8 +157,11 @@ export class ServicoArquivoAcademico {
     if (!plano) {
       plano = await tx.planoCurso.create({ data: {
         curso: curso.id, anoLetivo: t.anoLetivo, nome: `${curso.dados?.nome ?? curso.titulo ?? t.sigla} — ${t.anoLetivo} (arquivo)`,
-        formula: t.blocos.length ? 'blocos' : 'media', blocos: t.blocos, exigirTesteEscrito: false,
+        formula: t.formula, blocos: t.blocos, exigirTesteEscrito: false,
       } })
+    } else if (/\(arquivo\)$/.test(plano.nome)) {
+      // o plano que veio do arquivo acompanha a pauta assinada (os blocos, os coeficientes e o TII; antes ficavam a 1)
+      plano = await tx.planoCurso.update({ where: { id: plano.id }, data: { formula: t.formula, blocos: t.blocos } })
     }
     const planoDominio = { ...plano, blocos: plano.blocos ?? [], ajusteMaximo: Number(plano.ajusteMaximo ?? 0) }
     // as cadeiras (pelo código) e a prova com a nota final de cada uma
@@ -157,25 +169,35 @@ export class ServicoArquivoAcademico {
     for (const [i, u] of t.ucs.entries()) {
       let c = await tx.unidadeCurricular.findFirst({ where: { turmaId: turma.id, codigo: u.codigo } })
       if (!c) c = await tx.unidadeCurricular.create({ data: { turmaId: turma.id, codigo: u.codigo, nome: u.nome, periodo: 'anual', bloco: u.bloco, tii: u.tii } })
+      else if (c.bloco !== u.bloco || c.tii !== u.tii) c = await tx.unidadeCurricular.update({ where: { id: c.id }, data: { bloco: u.bloco, tii: u.tii } })
       let a = await tx.avaliacaoUc.findFirst({ where: { cadeiraId: c.id, titulo: TITULO_NOTA_ARQUIVO } })
       if (!a) a = await tx.avaliacaoUc.create({ data: { cadeiraId: c.id, tipo: 'TAI', forma: 'trabalho', titulo: TITULO_NOTA_ARQUIVO, ordem: i, publicadaEm: new Date() } })
       cadeiras.push({ ...c, codigoArquivo: u.codigo, avaliacaoId: a.id })
     }
+    const semFinais = linhas.every((l) => l.final === null)
     for (const l of linhas) {
       await tx.matricula.upsert({ where: { estudanteId_turmaId: { estudanteId: l.conta.id, turmaId: turma.id } }, create: { estudanteId: l.conta.id, turmaId: turma.id, estado: 'concluida' }, update: {} })
       const ucs = []
       for (const c of cadeiras) {
         const n = l.notas[c.codigoArquivo]
         if (n !== null) await tx.notaAvaliacaoUc.upsert({ where: { avaliacaoId_estudanteId: { avaliacaoId: c.avaliacaoId, estudanteId: l.conta.id } }, create: { avaliacaoId: c.avaliacaoId, estudanteId: l.conta.id, nota: n }, update: { nota: n } })
+        // sem nota no arquivo (0 = não fez a cadeira): sai a que uma carga anterior tenha posto
+        else await tx.notaAvaliacaoUc.deleteMany({ where: { avaliacaoId: c.avaliacaoId, estudanteId: l.conta.id } })
         ucs.push({ id: c.id, codigo: c.codigo, nome: c.nome, bloco: c.bloco, creditos: c.creditos ?? 0, tii: c.tii, final: n, situacao: n === null ? 'sem nota' : n >= NOTA_MINIMA ? 'aprovado' : 'reprovado', mencao: n === null ? null : mencao(n) })
       }
       // o resultado da pauta assinada (a média e a classificação do arquivo); as médias dos blocos calculam-se
       const calc = resultadoCurso(planoDominio, ucs)
-      const final = l.final ?? calc.final
+      // as médias dos blocos como estão no Excel (sem as cadeiras a 0, que não se fizeram)
+      for (const b of calc.blocos) {
+        const v = l.blocos?.[b.nome]
+        if (v !== null && v !== undefined) Object.assign(b, { nota: v, aprovado: v >= NOTA_MINIMA })
+      }
+      // pauta parcial (sem a média final no Excel): não se inventa a média
+      const final = semFinais ? null : l.final ?? calc.final
       const reprovado = /^reprov/i.test(l.mencao) || (final !== null && final < NOTA_MINIMA)
       const fixado = {
-        final, media: final, mencao: l.mencao ? l.mencao.replace(/^Muito bom$/i, 'Muito Bom') : calc.mencao, concluido: final !== null && !reprovado,
-        emFalta: calc.emFalta.filter((x) => !/^Bloco|Média final/.test(x)), blocos: calc.blocos, ajuste: 0, ucs, origem: ORIGEM,
+        final, media: final, mediaSimples: l.mediaSimples ?? null, ordem: l.ordem ?? null, mencao: l.mencao ? l.mencao.replace(/^Muito bom$/i, 'Muito Bom') : final !== null ? (reprovado ? 'Reprovado' : mencao(final)) : calc.mencao, concluido: final !== null && !reprovado,
+        emFalta: calc.emFalta.filter((x) => !/^Bloco|Média final/.test(x) && !ucs.some((u) => u.final === null && x.startsWith(`${u.codigo} `))), blocos: calc.blocos, ajuste: 0, ucs, origem: ORIGEM,
       }
       await tx.classificacaoCurso.upsert({ where: { turmaId_estudanteId: { turmaId: turma.id, estudanteId: l.conta.id } }, create: { turmaId: turma.id, estudanteId: l.conta.id, fixado }, update: { fixado } })
     }
@@ -292,6 +314,39 @@ export class ServicoArquivoAcademico {
     acesso nome.apelido@portal.esg.emfaa.gov.ao (a mesma regra do Pessoal) e uma palavra-passe que ninguém sabe — a
     Repartição entrega a ficha de acesso («Repor a palavra-passe»). Quando o Pessoal o enviar, reconhece-o pelo NIP.
   */
+  /*
+    Os docentes habituais de cada cadeira (o catálogo das listas do corpo docente, guardado no arranque do ano) que
+    ainda não estavam nas cadeiras porque não tinham conta: quando chegam do Sistema de Pessoal, ficam propostos nas
+    cadeiras do ano (para o Comandante aprovar). Repetir não duplica.
+  */
+  async proporDocentesDoCatalogo(ctx) {
+    const cat = this.paginas ? await this.paginas.ler(CHAVE_CATALOGO) : null
+    if (!cat?.cadeiras?.length || !cat.anoLetivo) return { propostos: 0 }
+    const ano = await this.prisma.anoLetivo.findUnique({ where: { id: cat.anoLetivo } })
+    if (ano?.fechado) return { propostos: 0 }
+    const contas = await this.prisma.contaPortal.findMany({ where: { tipo: 'docente' }, select: { id: true, nome: true, dados: true, ativo: true } })
+    const nomeChave = (n) => String(n ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ')
+    const conta = (nip, nome) => (nip && contas.find((c) => norm(c.dados?.nip) === norm(nip) || norm(c.dados?.numeroAgente) === norm(nip))) || (() => { const m = contas.filter((c) => nomeChave(c.nome) === nomeChave(nome)); return m.length === 1 ? m[0] : null })()
+    const ucs = await this.prisma.unidadeCurricular.findMany({ where: { turma: { anoLetivo: cat.anoLetivo } }, include: { docentes: true } })
+    let propostos = 0
+    for (const uc of ucs) {
+      const k = noCatalogo(uc.nome, cat.cadeiras)
+      if (!k?.docentes?.length) continue
+      const ja = new Set(uc.docentes.map((d) => d.docenteId))
+      let primeiro = ja.size === 0
+      for (const d of k.docentes) {
+        const cd = conta(d.nip, d.nome)
+        if (!cd || ja.has(cd.id)) continue
+        await this.prisma.docencia.create({ data: { cadeiraId: uc.id, docenteId: cd.id, papel: primeiro && d.tipo === 'efectivo' ? 'regente' : 'assistente', estado: this.aprovacaoComandante ? 'proposta' : 'aprovada' } })
+        if (d.tipo === 'efectivo') primeiro = false
+        ja.add(cd.id)
+        propostos++
+      }
+    }
+    if (propostos && this.auditoria) await this.auditoria.registar(ctx, { acao: 'docentes_do_catalogo', colecao: 'cadeiras', alvoTitulo: `${cat.anoLetivo}: ${propostos} docente(s) propostos nas cadeiras (chegaram do Pessoal)`, utilizador: null })
+    return { propostos }
+  }
+
   async #criarConta(e) {
     if (!this.contas || !this.cifra) return null
     if (!this.emails) this.emails = new Set((await this.prisma.contaPortal.findMany({ select: { email: true } })).map((c) => c.email.toLowerCase()))
