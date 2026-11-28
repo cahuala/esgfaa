@@ -12,6 +12,7 @@ e só vão para o pendrive. Aqui fica só o código.
 | `converter_academicos.py` | as listas de docentes (Excel), `cursos.json` e, se se der, o `arquivo.json` | `academicos.json` (carga do Pessoal) e `CONFERIR.xlsx` |
 | `arquivo.py` | as relações nominais, as pautas finais e as pautas por cadeira do arquivo | `arquivo.json` (o curso e o ano vêm da edição, não do nome da pasta) |
 | `comparar.py` | `arquivo.json` e as listas convertidas sem o arquivo | `CONFERENCIA.xlsx` (arquivo × listas: iguais, diferenças, só num lado) |
+| `certificados.py` | os certificados assinados (PDF) | os nomes oficiais das cadeiras de cada coluna da pauta e o período de cada ano |
 | `gestao.py` | `arquivo.json` e `academicos.json` | `gestao-pautas.json` (para o painel: Administração Escolar › Arquivo) |
 
 ## Como se corre (macOS)
@@ -27,7 +28,8 @@ $P -I $C/arquivo.py docs $T/arquivo.json
 $P -I $C/converter_academicos.py "docs/DOCENTES E DISCENTES" $T/cursos.json $T/sem-arquivo.json $T/c0.xlsx
 $P -I $C/converter_academicos.py "docs/DOCENTES E DISCENTES" $T/cursos.json $T/academicos.json $T/CONFERIR.xlsx $T/arquivo.json
 $P -I $C/comparar.py $T/arquivo.json $T/sem-arquivo.json $T/CONFERIR.xlsx $T/CONFERENCIA.xlsx
-$P -I $C/gestao.py $T/arquivo.json $T/academicos.json $T/gestao-pautas.json
+$P -I $C/certificados.py docs $T/arquivo.json $T/certificados.json   # os nomes oficiais e as datas, dos certificados (precisa do pdftotext)
+$P -I $C/gestao.py $T/arquivo.json $T/academicos.json $T/gestao-pautas.json $T/certificados.json
 ```
 
 - **Pessoal**: o pendrive leva `academicos.json` dentro da chave `academicos` do `relacoes.json`

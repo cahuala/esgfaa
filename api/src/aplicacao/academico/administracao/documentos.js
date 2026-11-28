@@ -73,7 +73,7 @@ export class ServicoDocumentos {
         const r = await Promise.resolve(this.esg?.resultadoDoEstudante(e.id, t)).catch(() => null)
         x.linhas.push({
           id: e.id, numero: e.numero, nome: e.nome, nip: d.nip || '', posto: d.posto || '', postoEquivalente: d.postoEquivalente || '', ramo: d.ramo || '', orgao: d.departamento || '',
-          origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
+          origem: d.origem || (d.ramo ? 'faa' : ''), pais: d.pais || '', turma: t.nome, funcao: d.funcaoActual || '', habilitacao: [d.habilitacao, d.areaFormacao].filter(Boolean).join(' — '), telefone: d.telefone || '', final: r?.final ?? null, mencao: r?.distinto ? 'Distinto' : r?.mencao ?? null,
         })
       }
     }

@@ -45,6 +45,8 @@ export async function carregarInicial(contentor, pasta) {
       const r = j.tipo === 'arranque-ano-lectivo'
         ? await arq.arrancar(ctx, { anoLetivo: j.anoLetivo, cadeiras: j.cadeiras ?? [], turmas: j.turmas ?? [], simular: false })
         : await arq.importar(ctx, { turmas: j.turmas ?? [], simular: false })
+      // as datas dos anos lectivos anteriores (dos documentos assinados)
+      if (j.anos) for (const x of await arq.datasDosAnos(ctx, j.anos)) linhas.push(`   datas do ano lectivo ${x}`)
       linhas.push(`${f}:`)
       for (const t of r.turmas) {
         linhas.push(`   ${t.turma}: ${t.estado}${t.motivo ? ` — ${t.motivo}` : ''}${t.discentes !== undefined ? ` · ${t.discentes} discente(s), ${t.comConta} com conta` : ''}${t.contasNovas?.length ? `, ${t.contasNovas.length} conta(s) criada(s)` : ''}`)

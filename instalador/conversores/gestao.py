@@ -1,11 +1,13 @@
 """
 As pautas do arquivo para a Gestão Escolar (Portal › Administração Escolar › Arquivo): uma turma por curso e ano,
 com as cadeiras (código e nome), os blocos e, de cada discente, o NIP, as notas, a média final e a classificação.
-Uso: python gestao.py <arquivo.json> <academicos.json (para os NIP)> <saida.json>
+Uso: python gestao.py <arquivo.json> <academicos.json (para os NIP)> <saida.json> [certificados.json]
 """
 import sys, re, json, unicodedata
 
 ARQ, ACAD, SAIDA = sys.argv[1:4]
+# os nomes oficiais das cadeiras, tirados dos certificados assinados (certificados.py); opcional
+CERTIFICADOS = json.load(open(sys.argv[4])) if len(sys.argv) > 4 else {}
 arq = json.load(open(ARQ))
 sem = lambda t: ''.join(c for c in unicodedata.normalize('NFD', str(t or '')) if unicodedata.category(c) != 'Mn').upper()
 chave = lambda t: re.sub(r'[^A-Z0-9]', '', sem(t))
@@ -84,6 +86,18 @@ for t in arq['turmas']:
                 avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): a cadeira «{rot}» não tem o nome por extenso em nenhum documento — corrija em Turma › Cadeiras.")
         nome = extenso(re.sub(r'^(TAI|TAG|TA)\s*[-–]+\s*', '', nome).strip())
         if re.search(r'm[ée]dia do curso', nome, re.I): nome = re.split(r'\s+m[ée]dia do curso', nome, flags=re.I)[0]
+        # o nome oficial pelos certificados assinados (cada coluna: o nome que os certificados lhe dão, pelas notas):
+        # sem abreviaturas, fica esse; abreviado, fica o nome por extenso (o da pauta dessa cadeira, se a coluna era outra)
+        oficial = CERTIFICADOS.get(f"{t['edicao']}.º {t['sigla']}", {}).get('nomes', {}).get(u['codigo'])
+        if oficial:
+            pal = lambda x: {w for w in re.split(r'[^A-Z]+', sem(x)) if len(w) >= 5}
+            abreviado = '.' in oficial or bool(re.search(r'\b[A-Z]{2,4}\b', oficial))
+            antes = nome
+            if not abreviado: nome = oficial
+            elif not (pal(oficial) & pal(nome)):
+                da_cadeira = max(((len(pal(cu.get('nome', '')) & pal(oficial)), cu.get('nome', '')) for cu in t['cadeiras'].values()), default=(0, ''))
+                nome = extenso(re.sub(r'^(TAI|TAG|TA)\s*[-–]+\s*', '', da_cadeira[1]).strip()) if da_cadeira[0] >= 2 else oficial
+            if sem(antes) != sem(nome): avisos.append(f"{t['edicao']}.º {t['sigla']} ({t['anoLetivo']}): a coluna «{rot}» é «{nome}» (pelos certificados assinados), não «{antes}».")
         ucs.append({'codigo': codigo, 'nome': nome, 'bloco': u['bloco'] if u['bloco'] and not re.match(r'^(M[EÉ]DIA|TOT|DISCIP)', sem(u['bloco'])) else '', 'rotulo': rot})
     estudantes = []
     for e in p['estudantes']:
@@ -171,7 +185,14 @@ SAIDA_DOC = re.sub(r'(\.json)?$', '', SAIDA).replace('gestao-pautas', 'gestao-do
 if 'gestao-docentes' not in SAIDA_DOC: SAIDA_DOC = SAIDA_DOC[:-5] + '-docentes.json'
 json.dump({'tipo': 'docentes-dos-anos', 'anos': [{'anoLetivo': k, 'cadeiras': list(v.values())} for k, v in sorted(docentes_ano.items())]}, open(SAIDA_DOC, 'w'), ensure_ascii=False)
 print('docentes por ano:', {k: sum(len(c['docentes']) for c in v.values()) for k, v in docentes_ano.items()}, '→', SAIDA_DOC)
-json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-27', 'turmas': saida, 'avisos': sorted(set(avisos))}, open(SAIDA, 'w'), ensure_ascii=False)
+# as datas de cada ano lectivo, como nos documentos assinados: as dos certificados (o período do curso) e, sem eles,
+# as das relações nominais («início 16 de Outubro de 2023 à 26 de Julho de 2024»)
+anos = {}
+for v in CERTIFICADOS.values():
+    if v.get('periodo') and v.get('anoLetivo'): anos.setdefault(v['anoLetivo'], {'inicio': v['periodo'][0], 'fim': v['periodo'][1], 'fonte': v['ficheiro']})
+for t in arq['turmas']:
+    if t.get('inicio') and t.get('fim') and t['anoLetivo'] not in anos: anos[t['anoLetivo']] = {'inicio': t['inicio'], 'fim': t['fim'], 'fonte': 'relação nominal'}
+json.dump({'tipo': 'arquivo-administracao-escolar', 'geradoEm': '2026-11-27', 'turmas': saida, 'anos': anos, 'avisos': sorted(set(avisos))}, open(SAIDA, 'w'), ensure_ascii=False)
 for t in saida:
     if t.get('semPauta'): print(f"{t['anoLetivo']} {t['curso'][:70]}: {len(t['estudantes'])} discentes (sem pauta)"); continue
     print(f"{t['anoLetivo']} {t['edicao']}.º {t['sigla']}: {len(t['estudantes'])} discentes ({sum(1 for e in t['estudantes'] if e['nip'])} com NIP), {len(t['ucs'])} cadeiras: " + ', '.join(f"{u['codigo']}={u['nome'][:22]}" for u in t['ucs'][:6]) + '…')

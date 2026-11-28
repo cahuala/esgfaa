@@ -14,12 +14,15 @@ import { DOCUMENTOS_ANO } from './tiposDocumentosAno'
 */
 
 // o órgão de origem em sigla, como nos quadros (MINDENVP, CSPR, EMG, EXE, FAN, MGA, PNA…)
+// como nos dados estatísticos do arquivo: a Casa Militar e as unidades presidenciais (UDP, USP, UGP) contam como CSPR;
+// o SISM (órgão do Estado-Maior General) conta no EMG
 const SIGLAS = {
-  'Ministério da Defesa Nacional e dos Veteranos da Pátria': 'MINDENVP', 'Casa de Segurança do Presidente da República': 'CSPR', 'Casa Militar do Presidente da República': 'CMPR',
+  'Ministério da Defesa Nacional e dos Veteranos da Pátria': 'MINDENVP', 'Casa de Segurança do Presidente da República': 'CSPR', 'Casa Militar do Presidente da República': 'CSPR',
   'Estado-Maior General das FAA': 'EMG', 'Exército': 'EXE', 'Força Aérea Nacional': 'FAN', 'Marinha de Guerra Angolana': 'MGA', 'Polícia Nacional': 'PNA',
-  'Unidade de Segurança Presidencial': 'USP', 'Unidade da Guarda Presidencial': 'UGP', 'Unidade de Defesa Presidencial': 'UDP', 'Serviço de Inteligência e Segurança Militar': 'SISM',
+  'Unidade de Segurança Presidencial': 'CSPR', 'Unidade da Guarda Presidencial': 'CSPR', 'Unidade de Defesa Presidencial': 'CSPR', 'Serviço de Inteligência e Segurança Militar': 'EMG',
 }
-const orgaoDe = (l) => (l.origem === 'estrangeiro' ? l.pais || 'Estrangeiros' : SIGLAS[l.orgao] || (l.orgao ? l.orgao : l.ramo || 'Outros'))
+// os estrangeiros pelo país (as forças armadas do Congo: «Rep. Congo»), como nos mapas do arquivo
+const orgaoDe = (l) => (l.origem === 'estrangeiro' || /forces arm[ée]es congolaises|congo/i.test(l.orgao || '') ? l.pais || (/congo/i.test(l.orgao || '') ? 'Rep. Congo' : 'Estrangeiros') : SIGLAS[l.orgao] || (l.orgao ? l.orgao : l.ramo || 'Outros'))
 const ramoDe = (l) => (l.origem === 'policia' ? 'PNA' : l.origem === 'estrangeiro' ? l.pais : l.ramo)
 // as colunas dos postos (pelo grau equivalente das FAA): generais, brigadeiros, coronéis, …
 const CATEGORIAS = [
@@ -83,7 +86,25 @@ function DocumentosAno() {
   // as linhas de cada documento: o que se vê e o que vai para o Excel
   let corpo = null
   let excel = []
-  if (tipo === 'estatistica') {
+  if (tipo === 'relacao') {
+    // como a relação nominal do arquivo: uma folha por curso, com a proveniência, a função, as habilitações e o telefone
+    const inicioTexto = d.inicio ? `Início de ${MESES[Number(d.inicio.slice(5, 7)) - 1]} de ${d.inicio.slice(0, 4)}` : ''
+    const COL = ['Nº', 'NIP', 'PATENTE', 'NOME COMPLETO', 'RAMO', 'PROVENIÊNCIA', 'FUNÇÃO', 'HABILITAÇÕES LITERÁRIAS', 'Nº TELEFONE']
+    corpo = cursos.map((c, m) => {
+      excel.push({ folha: c.sigla ? `${c.turmas[0]?.match(/^\d+\.º/)?.[0] ?? ''} ${c.sigla}`.trim() : c.nome }, ['ESCOLA SUPERIOR DE GUERRA'], ['DIRECÇÃO DE ENSINO'], ['RELAÇÃO NOMINAL DOS DISCENTES'], [c.turmas.join(' / ').toUpperCase()], [inicioTexto], [], COL,
+        ...c.linhas.map((l, i) => [String(i + 1).padStart(2, '0'), l.nip, l.posto, l.nome, ramoDe(l), l.orgao, l.funcao, l.habilitacao, l.telefone]))
+      return (
+        <section key={c.curso} className={m < cursos.length - 1 ? 'of-quebra mb-4' : 'mb-4'}>
+          <h2 className="h6 text-uppercase fw-bold text-center mb-0">{c.turmas.join(' / ')}</h2>
+          {inicioTexto && <div className="text-center small fw-bold mb-2">{inicioTexto}</div>}
+          <table>
+            <thead><tr>{COL.map((x) => <th key={x} className={x === 'Nº' ? 'of-num' : ''}>{x}</th>)}</tr></thead>
+            <tbody>{c.linhas.map((l, i) => <tr key={l.id}><td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.nip}</td><td>{l.posto}</td><td>{l.nome}</td><td className="of-centro">{ramoDe(l)}</td><td className="small">{l.orgao}</td><td className="small">{l.funcao}</td><td className="small">{l.habilitacao}</td><td className="small">{l.telefone}</td></tr>)}</tbody>
+          </table>
+        </section>
+      )
+    })
+  } else if (tipo === 'estatistica') {
     const colunas = CATEGORIAS.filter(([f]) => cursos.some((c) => c.linhas.some((l) => f(l.grau))))
     corpo = cursos.map((c) => {
       const orgaos = [...new Set(c.linhas.map(orgaoDe))]
@@ -111,6 +132,7 @@ function DocumentosAno() {
     corpo = mapas.map(([k, nome], m) => (
       <section key={k} className={m < mapas.length - 1 ? 'of-quebra mb-4' : 'mb-4'}>
         <h2 className="h6 text-uppercase fw-bold text-center mb-3">Mapa do grau de aproveitamento de oficiais discentes {nome}<br />do ano académico {ano}</h2>
+        {excel.push({ folha: nome.replace(/^d[oa]s? /, '').toUpperCase() }, [`MAPA DO GRAU DE APROVEITAMENTO DE OFICIAIS DISCENTES ${nome.toUpperCase()}`], [`DO ANO ACADÉMICO ${ano}`], []) && null}
         {cursos.filter((c) => c.linhas.some((l) => mapaDe(l) === k)).map((c) => {
           const ls = c.linhas.filter((l) => mapaDe(l) === k)
           excel.push([`${nome.toUpperCase()} — ${nomeCurso(c)}`], ['Nº', 'NIP', 'Patente', 'Nome completo', 'Início e término', 'Média', 'Classificação'], ...ls.map((l, i) => [String(i + 1).padStart(2, '0'), l.nip, l.posto, l.nome, i ? '-' : periodoCurto, decimal(l.final), classificacao(l)]), ['', '', '', '', '', 'TOTAL GERAL', String(ls.length).padStart(2, '0')], [])
@@ -221,7 +243,7 @@ function DocumentosAno() {
       titulo={titulo.toUpperCase()} voltar="/academico/turmas"
       subtitulo={`Ano lectivo ${ano} · ${cursos.length} curso(s) · ${cursos.reduce((s, c) => s + c.linhas.length, 0)} discente(s)`}
       assinaturas={['ramos', 'resumo', 'estatistica', 'finais'].includes(tipo) ? [director] : []}
-      paisagem={tipo === 'estatistica' || tipo === 'ramos'}
+      paisagem={tipo === 'estatistica' || tipo === 'ramos' || tipo === 'relacao'}
       acoes={(
         <>
           <select className="form-select" style={{ width: 'auto' }} value={tipo} onChange={(e) => navegar(`/academico/documentos/ano/${e.target.value}?ano=${encodeURIComponent(ano)}`)} aria-label="Documento">
@@ -231,7 +253,7 @@ function DocumentosAno() {
             {anos.map((a) => <option key={a.id} value={a.id}>{a.id}{a.atual ? ' (actual)' : ''}</option>)}
           </select>
           {tipo === 'entrega' && <label className="d-flex align-items-center gap-1 small">Por grupo <input type="number" min={1} max={100} className="form-control form-control-sm" style={{ width: 70 }} value={grupo} onChange={(e) => setGrupo(Math.max(1, Number(e.target.value) || 1))} /></label>}
-          <button type="button" className="btn btn-white" onClick={() => descarregarCsv(ficheiro, [[`${titulo} — ano lectivo ${ano}`], [], ...excel])}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
+          <button type="button" className="btn btn-white" onClick={() => descarregarCsv(ficheiro, excel.some((x) => x && !Array.isArray(x) && x.folha) ? excel : [['ESCOLA SUPERIOR DE GUERRA'], [`${titulo} — ano lectivo ${ano}`.toUpperCase()], [], ...excel])}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel</button>
         </>
       )}
     >

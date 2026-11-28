@@ -157,6 +157,7 @@ por_uc = collections.defaultdict(dict)     # (sigla, ed) → código → {nome, 
 avisos = []
 vistos = set()
 fins = {}  # (sigla, ed) → data do fim do curso (da relação)
+inicios = {}  # (sigla, ed) → data do início do curso (da relação)
 
 # todas as folhas com tabela (as relações primeiro: servem para reconhecer as pautas sem título)
 folhas = []
@@ -282,6 +283,8 @@ for rel, f, folha, (rotulos, dados, titulo, col_nip, rodape, acima) in folhas:
         if len(m) >= 2 and chave not in fins:
             d_, mes, a_ = m[-1]
             fins[chave] = f'{a_}-{MESES.index(mes) + 1:02d}-{int(d_):02d}'
+            d0, m0, a0 = m[0]
+            inicios[chave] = f'{a0}-{MESES.index(m0) + 1:02d}-{int(d0):02d}'
         for r in dados:
             nip = nip_de(g(r, 'nip')); nome = nome_limpo(g(r, 'nome'))
             if not nome: continue
@@ -403,9 +406,11 @@ for chave in sorted(set(relacoes) | set(candidatas) | set(por_uc), key=lambda k:
         if sem_nip: avisos.append(f'{ed}.º {sig}: {len(sem_nip)} discente(s) da pauta sem NIP nem correspondência na relação: {", ".join(sem_nip)}.')
     turmas.append({
         'sigla': sig, 'edicao': ed, 'anoLetivo': ano_letivo(sig, ed), 'curso': f'{ed}.º {CURSOS[sig][3]}',
-        'relacao': rel, 'fim': fins.get(chave), 'pauta': pauta, 'cadeiras': por_uc.get(chave, {}),
+        'relacao': rel, 'inicio': inicios.get(chave), 'fim': fins.get(chave), 'pauta': pauta, 'cadeiras': por_uc.get(chave, {}),
     })
 json.dump({'turmas': turmas, 'avisos': avisos}, open(SAIDA, 'w'), ensure_ascii=False, indent=1)
+# para conferir: todas as pautas finais encontradas (também as postas de lado)
+if os.environ.get('CANDIDATAS'): json.dump({f'{k[1]}.º {k[0]}': v for k, v in candidatas.items()}, open(os.environ['CANDIDATAS'], 'w'), ensure_ascii=False)
 for t in turmas:
     p = t['pauta']
     comp = sum(1 for e in p['estudantes'] if all(v is not None for v in e['notas'].values())) if p else 0

@@ -1,6 +1,7 @@
 import { ErroValidacao } from '../../../dominio/comum/erros.js'
 import { MODELOS_PLANO, mencao, NOTA_MINIMA, resultadoCurso, validarPlano } from '../../../dominio/academico/avaliacao/planoCurso.js'
 import { noCatalogo } from '../../../dominio/academico/cadeirasCatalogo.js'
+import { datasPadrao } from '../../../dominio/academico/anoLetivo.js'
 import { emailDeAcesso } from '../../../dominio/academico/pessoas/emailAcesso.js'
 import { numeroConta, senhaInicial } from '../../../dominio/academico/pessoas/contas.js'
 
@@ -111,6 +112,25 @@ export class ServicoArquivoAcademico {
     // a fórmula da pauta (o conversor confere-a com as médias do Excel): blocos ponderados pelos coeficientes, ou a média das cadeiras
     const formula = t.formula === 'media' || !blocos.length ? 'media' : 'blocos'
     return { sigla, edicao, anoLetivo, nome: txt(t.nome, 150), blocos, ucs, estudantes, formula, ficheiro: txt(t.ficheiro, 300), semPauta, outros, emCurso: t.emCurso === true, cursoNome: txt(t.cursoNome, 200) }
+  }
+
+  /*
+    As datas dos anos lectivos anteriores, como nos documentos assinados (o período dos certificados, o das relações
+    nominais): só nos anos que ainda têm as datas padrão (1 de Outubro a 31 de Julho) e não estão fechados.
+  */
+  async datasDosAnos(ctx, anos = {}) {
+    const feitas = []
+    for (const [id, d] of Object.entries(anos ?? {})) {
+      if (!ANO.test(id) || !/^\d{4}-\d{2}-\d{2}$/.test(String(d?.inicio)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(d?.fim)) || d.inicio >= d.fim) continue
+      const a = await this.prisma.anoLetivo.findUnique({ where: { id } })
+      const p = datasPadrao(id)
+      if (!a || a.fechado || a.inicio.toISOString().slice(0, 10) !== p.inicio || a.fim.toISOString().slice(0, 10) !== p.fim) continue
+      const dt = (x) => new Date(`${x}T00:00:00Z`)
+      await this.prisma.anoLetivo.update({ where: { id }, data: { inicio: dt(d.inicio), fim: dt(d.fim), semestre1Inicio: dt(d.inicio), semestre2Fim: dt(d.fim) } })
+      feitas.push(`${id}: ${d.inicio} a ${d.fim}`)
+    }
+    if (feitas.length && this.auditoria) await this.auditoria.registar(ctx, { acao: 'datas_dos_anos', colecao: 'anos_letivos', alvoTitulo: `Datas dos anos lectivos (documentos do arquivo): ${feitas.join('; ')}` })
+    return feitas
   }
 
   async importar(ctx, { turmas, simular = true } = {}) {

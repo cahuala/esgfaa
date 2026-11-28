@@ -4,7 +4,7 @@ import { api } from '../../../api'
 import { useSessao } from '../../../sessaoContexto'
 import { Carregando, Erro } from '../../../componentes/Ui'
 import Documento from './Documento'
-import { descarregarCsv } from './csv'
+import { cabecalho, descarregarCsv } from './csv'
 
 const DIAS = { 1: '2ª', 2: '3ª', 3: '4ª', 4: '5ª', 5: '6ª' }
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
@@ -45,11 +45,13 @@ function HorarioMensal() {
   const mudarMes = (k) => { const x = new Date(ano, m - 1 + k, 1); setParams({ mes: mesDe(x) }) }
   const usadas = d.cadeiras.filter((c) => d.celulas.some((x) => x.cadeiraId === c.id))
   function exportar() {
+    // como os horários do arquivo: a escola, o curso e o mês; os dias e os dias da semana; os tempos; a legenda
     descarregarCsv(`horario-${d.turma.nome}-${mes}`.replace(/\W+/g, '-'), [
-      [`${d.turma.nome} — horário do mês de ${MESES[m - 1]} de ${ano}`], [],
-      [nomeMes, ...d.dias.map((x) => x.data.slice(8))], ['', ...d.dias.map((x) => DIAS[x.diaSemana])],
+      { folha: nomeMes }, ['ESCOLA SUPERIOR DE GUERRA'], [d.turma.nome.toUpperCase()], [`HORÁRIO DO MÊS ${nomeMes}`], [],
+      cabecalho([nomeMes, ...d.dias.map((x) => String(Number(x.data.slice(8))))]), cabecalho(['', ...d.dias.map((x) => DIAS[x.diaSemana])]),
       ...d.blocos.map((b) => [tempo(b), ...d.dias.map((x) => textoDe(cel(x.data, b)))]),
-      [], ['Legenda'], ...usadas.map((c) => [c.codigo, c.nome, c.docentes.join(', ')]),
+      [], cabecalho(['Legenda', 'Cadeira']), ...usadas.map((c) => [c.codigo, c.nome]), [],
+      cabecalho(['N.º', 'Docente']), ...[...new Set(usadas.flatMap((c) => c.docentes))].map((n, i) => [String(i + 1), n]),
     ])
   }
 

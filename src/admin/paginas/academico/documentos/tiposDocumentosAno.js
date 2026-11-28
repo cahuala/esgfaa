@@ -1,5 +1,6 @@
 // os documentos do ano lectivo (Administração Escolar): o tipo e o título
 export const DOCUMENTOS_ANO = {
+  relacao: 'Relação nominal dos discentes',
   estatistica: 'Dados estatísticos',
   ramos: 'Dados por ramos',
   resumo: 'Resumo dos dados estatísticos',
