@@ -14,12 +14,16 @@ import { DOCUMENTOS_ANO } from './tiposDocumentosAno'
 */
 
 // o órgão de origem em sigla, como nos quadros (MINDENVP, CSPR, EMG, EXE, FAN, MGA, PNA…)
-// como nos dados estatísticos do arquivo: a Casa Militar e as unidades presidenciais (UDP, USP, UGP) contam como CSPR;
-// o SISM (órgão do Estado-Maior General) conta no EMG
+/*
+  O órgão onde o militar presta serviço (Lei 13/18, art. 83.º: o militar pertence a um Ramo e pode servir «fora do
+  Ramo» — no Estado-Maior General, nos órgãos e serviços auxiliares do Presidente da República, na Inteligência e
+  Segurança Militar, na Justiça Militar): a Casa Militar e as unidades presidenciais (UDP, USP, UGP) no CSPR, como nos
+  dados estatísticos do arquivo; o SISM à parte (não é do Estado-Maior General); quem serve no próprio Ramo, no Ramo.
+*/
 const SIGLAS = {
   'Ministério da Defesa Nacional e dos Veteranos da Pátria': 'MINDENVP', 'Casa de Segurança do Presidente da República': 'CSPR', 'Casa Militar do Presidente da República': 'CSPR',
   'Estado-Maior General das FAA': 'EMG', 'Exército': 'EXE', 'Força Aérea Nacional': 'FAN', 'Marinha de Guerra Angolana': 'MGA', 'Polícia Nacional': 'PNA',
-  'Unidade de Segurança Presidencial': 'CSPR', 'Unidade da Guarda Presidencial': 'CSPR', 'Unidade de Defesa Presidencial': 'CSPR', 'Serviço de Inteligência e Segurança Militar': 'EMG',
+  'Unidade de Segurança Presidencial': 'CSPR', 'Unidade da Guarda Presidencial': 'CSPR', 'Unidade de Defesa Presidencial': 'CSPR', 'Serviço de Inteligência e Segurança Militar': 'SISM',
 }
 // os estrangeiros pelo país (as forças armadas do Congo: «Rep. Congo»), como nos mapas do arquivo
 const orgaoDe = (l) => (l.origem === 'estrangeiro' || /forces arm[ée]es congolaises|congo/i.test(l.orgao || '') ? l.pais || (/congo/i.test(l.orgao || '') ? 'Rep. Congo' : 'Estrangeiros') : SIGLAS[l.orgao] || (l.orgao ? l.orgao : l.ramo || 'Outros'))
@@ -30,19 +34,42 @@ const CATEGORIAS = [
   [(g) => g === 14, 'Major / C.Corv.'], [(g) => g === 13, 'Capitão / T.Navio'], [(g) => g >= 10 && g <= 12, 'Subalternos'], [(g) => g >= 1 && g <= 9, 'Sargentos e praças'], [(g) => !g, 'Civis'],
 ]
 const MENCOES = ['Distinto', 'Muito Bom', 'Bom', 'Regular', 'Reprovado']
-// os mapas por ramo, pela ordem do arquivo; a Casa Militar vem da unidade de origem (os seus oficiais saem do ramo)
-const MAPAS_RAMOS = [['EXE', 'do Exército'], ['MGA', 'da MGA'], ['PNA', 'da PNA'], ['FAN', 'da FAN'], ['CASA MILITAR', 'da Casa Militar']]
-// a Casa Militar junta as unidades presidenciais (UDP, USP, UGP); a Polícia pela unidade ou pelo posto; os estrangeiros à parte
-const CASA_MILITAR = /casa militar|unidade de (defesa|seguran[çc]a|guarda) presidencial|\b(UDP|USP|UGP)\b/i
+/*
+  Os mapas do grau de aproveitamento, um por entidade a quem se enviam (como os de 2025/2026 e as notas de envio do
+  arquivo): o militar pertence a um Ramo (Lei 13/18) e vai no mapa do Ramo quando serve no Ramo ou no Estado-Maior
+  General; quando está fora do Ramo num órgão auxiliar do Presidente da República (a Casa Militar, com a UDP, a USP e a
+  UGP), no SISM ou no Ministério da Defesa, vai no mapa desse órgão (o ramo dele continua na linha). A Polícia Nacional
+  e os estrangeiros à parte. [chave, título do mapa, destinatário da nota de envio, como se diz no texto da nota]
+*/
+// pela ordem dos mapas do arquivo (Exército, MGA, PNA, FAN, Casa Militar, SISM, Ministério da Defesa)
+const MAPAS_RAMOS = [
+  ['EXE', 'do Exército', 'SUA EXCELÊNCIA COMANDANTE\nDO EXÉRCITO', 'do Exército'],
+  ['MGA', 'da Marinha de Guerra Angolana', 'SUA EXCELÊNCIA COMANDANTE\nDA MARINHA DE GUERRA ANGOLANA', 'da Marinha de Guerra Angolana (MGA)'],
+  ['PNA', 'da Polícia Nacional de Angola', 'GABINETE DE SUA EXCELÊNCIA\nCOMANDANTE DA POLÍCIA NACIONAL DE ANGOLA/PNA', 'da Polícia Nacional de Angola (PNA)'],
+  ['FAN', 'da Força Aérea Nacional', 'SUA EXCELÊNCIA COMANDANTE\nDA FORÇA AÉREA NACIONAL', 'da Força Aérea Nacional (FAN)'],
+  ['CMPR', 'da Casa Militar do Presidente da República', 'GABINETE DE SUA EXCELÊNCIA MINISTRO DE ESTADO E CHEFE DA CASA MILITAR DO PRESIDENTE DA REPÚBLICA', 'da Casa Militar do Presidente da República'],
+  ['SISM', 'do SISM', 'SUA EXCELÊNCIA CHEFE DO SERVIÇO DE INTELIGÊNCIA E SEGURANÇA MILITAR (SISM)', 'do Serviço de Inteligência e Segurança Militar (SISM)'],
+  ['MINDEN', 'do Ministério da Defesa Nacional, Antigos Combatentes e Veteranos da Pátria', 'GABINETE DE SUA EXCELÊNCIA MINISTRO DA DEFESA NACIONAL, ANTIGOS COMBATENTES E VETERANOS DA PÁTRIA', 'do Ministério da Defesa Nacional, Antigos Combatentes e Veteranos da Pátria (MDNACVP)'],
+]
+const CASA_MILITAR = /casa militar|casa de seguran[çc]a do presidente|unidade d[ae] (defesa|seguran[çc]a|guarda) presidencial|\b(UDP|USP|UGP|CSPR)\b/i
 const POLICIA = /pol[ií]cia nacional/i
 const POSTO_POLICIA = /comiss[áa]rio|superintendente|intendente|inspector|subinspector|agente/i
 const ESTRANGEIRO = /forces arm[ée]es|congo|mo[çc]ambique|cabo verde|guin[ée]|s[ãa]o tom[ée]|namíbia|zâmbia|brasil|portugal/i
-const mapaDe = (l) => {
-  if (l.origem === 'estrangeiro' || ESTRANGEIRO.test(l.orgao || '')) return `dos países amigos${l.pais ? ` (${l.pais})` : ''}`
-  if (CASA_MILITAR.test(l.orgao || '')) return 'CASA MILITAR'
-  if (l.origem === 'policia' || l.ramo === 'PNA' || POLICIA.test(l.orgao || '') || (!l.ramo && POSTO_POLICIA.test(l.posto || ''))) return 'PNA'
-  return l.ramo || 'de outra origem'
+const RAMO_DO_ORGAO = { 'Exército': 'EXE', 'Força Aérea Nacional': 'FAN', 'Marinha de Guerra Angolana': 'MGA' }
+// os mapas de cada militar: o do seu Ramo (sempre) e, se serve fora do Ramo, também o do órgão (Casa Militar, SISM,
+// Ministério da Defesa) — como nos mapas de 2025/2026 do arquivo; a Polícia Nacional e os estrangeiros só no seu
+const orgaoDoTexto = (t) => (CASA_MILITAR.test(t) ? 'CMPR' : /intelig[êe]ncia e seguran[çc]a militar|\bSISM\b/i.test(t) ? 'SISM' : /minist[ée]rio da defesa|\bMINDEN|\bMDN/i.test(t) ? 'MINDEN' : null)
+// pela unidade; se a unidade é o próprio Ramo, o EMG ou está em branco, pela função («Conselheiro do chefe do SISM»)
+const orgaoMapa = (l) => orgaoDoTexto(l.orgao || '') || (!l.orgao || RAMO_DO_ORGAO[l.orgao] || /estado.maior general/i.test(l.orgao) ? orgaoDoTexto(l.funcao || '') : null)
+const mapasDe = (l) => {
+  if (l.origem === 'estrangeiro' || ESTRANGEIRO.test(l.orgao || '')) return [`dos países amigos${l.pais ? ` (${l.pais})` : ''}`]
+  const orgao = orgaoMapa(l)
+  // a Polícia Nacional não é um Ramo das FAA: o seu mapa e, se serve num órgão (o SISM), também o desse órgão
+  if (l.origem === 'policia' || l.ramo === 'PNA' || POLICIA.test(l.orgao || '') || (!l.ramo && POSTO_POLICIA.test(l.posto || ''))) return orgao ? ['PNA', orgao] : ['PNA']
+  const ramo = l.ramo || RAMO_DO_ORGAO[l.orgao] || 'de outra origem'
+  return orgao ? [ramo, orgao] : [ramo]
 }
+const noMapa = (l, k) => mapasDe(l).includes(k)
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const mencaoDe = (n) => (n === null || n === undefined ? '' : n >= 18 ? 'Muito BOM' : n >= 14 ? 'BOM' : n >= 10 ? 'REGULAR' : 'REPROVADO')
 // a classificação como nos mapas do arquivo: «BOM», «Muito BOM», «BOM/C/Distinção»
@@ -126,22 +153,22 @@ function DocumentosAno() {
   } else if (tipo === 'ramos') {
     // como no arquivo: um mapa por ramo (Exército, MGA, PNA, FAN, Casa Militar…), cada um com os cursos, o total geral,
     // a data e a assinatura do Director de Ensino; a classificação em maiúsculas («BOM/C/Distinção» no Distinto)
-    const mapas = MAPAS_RAMOS.map(([k, titulo]) => [k, titulo]).concat([...new Set(cursos.flatMap((c) => c.linhas.map(mapaDe)))].filter((k) => !MAPAS_RAMOS.some(([x]) => x === k)).map((k) => [k, k]))
-      .filter(([k]) => cursos.some((c) => c.linhas.some((l) => mapaDe(l) === k)))
+    const mapas = MAPAS_RAMOS.map(([k, titulo]) => [k, titulo]).concat([...new Set(cursos.flatMap((c) => c.linhas.flatMap(mapasDe)))].filter((k) => !MAPAS_RAMOS.some(([x]) => x === k)).map((k) => [k, k]))
+      .filter(([k]) => cursos.some((c) => c.linhas.some((l) => noMapa(l, k))))
     const local = `Escola Superior de Guerra do EMGFAA, em Luanda, ___ de ${MESES[Number(String(d.fim ?? '').slice(5, 7)) - 1] ?? '__________'} de ${String(d.fim ?? '').slice(0, 4) || '____'}.`
     corpo = mapas.map(([k, nome], m) => (
       <section key={k} className={m < mapas.length - 1 ? 'of-quebra mb-4' : 'mb-4'}>
         <h2 className="h6 text-uppercase fw-bold text-center mb-3">Mapa do grau de aproveitamento de oficiais discentes {nome}<br />do ano académico {ano}</h2>
         {excel.push({ folha: nome.replace(/^d[oa]s? /, '').toUpperCase() }, [`MAPA DO GRAU DE APROVEITAMENTO DE OFICIAIS DISCENTES ${nome.toUpperCase()}`], [`DO ANO ACADÉMICO ${ano}`], []) && null}
-        {cursos.filter((c) => c.linhas.some((l) => mapaDe(l) === k)).map((c) => {
-          const ls = c.linhas.filter((l) => mapaDe(l) === k)
+        {cursos.filter((c) => c.linhas.some((l) => noMapa(l, k))).map((c) => {
+          const ls = c.linhas.filter((l) => noMapa(l, k))
           excel.push([`${nome.toUpperCase()} — ${nomeCurso(c)}`], ['Nº', 'NIP', 'Patente', 'Nome completo', 'Início e término', 'Média', 'Classificação'], ...ls.map((l, i) => [String(i + 1).padStart(2, '0'), l.nip, l.posto, l.nome, i ? '-' : periodoCurto, decimal(l.final), classificacao(l)]), ['', '', '', '', '', 'TOTAL GERAL', String(ls.length).padStart(2, '0')], [])
           return (
             <div key={c.curso} className="mb-3">
               <div className="fw-bold text-uppercase text-center">{nomeCurso(c)}</div>
               <table>
                 <thead><tr><th className="of-num">Nº</th><th>NIP</th><th>Patente</th><th>Nome completo</th><th className="of-centro">Início e término</th><th className="of-centro">Média</th><th className="of-centro">Classificação</th></tr></thead>
-                <tbody>{ls.map((l, i) => <tr key={l.id}><td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.nip}</td><td>{l.posto}</td><td>{l.nome}</td><td className="of-centro small">{i ? '-' : periodoCurto}</td><td className="of-centro">{fmt(l.final)}</td><td className="of-centro">{classificacao(l)}</td></tr>)}</tbody>
+                <tbody>{ls.map((l, i) => <tr key={l.id}><td className="of-num">{String(i + 1).padStart(2, '0')}</td><td>{l.nip}</td><td>{l.posto}</td><td>{l.nome}{['CMPR', 'SISM', 'MINDEN'].includes(k) && l.ramo ? ` (${l.ramo})` : ''}</td><td className="of-centro small">{i ? '-' : periodoCurto}</td><td className="of-centro">{fmt(l.final)}</td><td className="of-centro">{classificacao(l)}</td></tr>)}</tbody>
                 <tfoot><tr><th colSpan={6} className="text-end">TOTAL GERAL</th><th className="of-centro">{String(ls.length).padStart(2, '0')}</th></tr></tfoot>
               </table>
             </div>
@@ -157,6 +184,27 @@ function DocumentosAno() {
         )}
       </section>
     ))
+  } else if (tipo === 'envio') {
+    // as notas de envio dos mapas (como as do arquivo): uma por entidade que tem discentes neste ano
+    const comDiscentes = MAPAS_RAMOS.filter(([k]) => cursos.some((c) => c.linhas.some((l) => noMapa(l, k))))
+    const cmdt = quem.comandante
+    const mes = d.fim ? MESES[Number(d.fim.slice(5, 7)) - 1] : '__________'
+    corpo = comDiscentes.map(([k, , destino, texto], m) => {
+      excel.push({ folha: k }, ['FORÇAS ARMADAS ANGOLANAS'], ['ESTADO-MAIOR GENERAL'], ['ESCOLA SUPERIOR DE GUERRA'], [], ['À:'], ...destino.split('\n').map((x) => [x]), ['= L U A N D A ='], [], [`N/ NOTA DE REFª Nº _______GAB.CMDT.ESG/EMGFAA/${String(d.fim ?? '').slice(0, 4)}`], ['ASSUNTO: NOTA DE ENVIO'], ['Os Nossos Melhores Cumprimentos'],
+        [`O Comando da Escola Superior de Guerra (ESG), vem através desta proceder o envio do Mapa do Grau de Aproveitamento de Oficiais Discentes ${texto}, referente ao Ano Académico ${ano}.`], ['Sem mais assunto de momento.'], [], [`ESCOLA SUPERIOR DE GUERRA DO EMGFAA, em Luanda, ___ de ${mes} de ${String(d.fim ?? '').slice(0, 4)}`], ['O COMANDANTE DA ESG'], [(cmdt?.nome || '').toUpperCase()], [cmdt?.posto ? `**${cmdt.posto.toUpperCase()}**` : ''])
+      return (
+        <section key={k} className={m < comDiscentes.length - 1 ? 'of-quebra mb-5' : 'mb-5'}>
+          <div className="mb-3"><b>À:</b><br />{destino.split('\n').map((x) => <div key={x} className="fw-bold">{x}</div>)}<div className="ms-5">= L U A N D A =</div></div>
+          <div className="mb-2">N/ NOTA DE REFª Nº _______GAB.CMDT.ESG/EMGFAA/{String(d.fim ?? '').slice(0, 4)}</div>
+          <div className="mb-3"><b>ASSUNTO: NOTA DE ENVIO</b></div>
+          <p>Os Nossos Melhores Cumprimentos</p>
+          <p style={{ textIndent: '3em', textAlign: 'justify' }}>O Comando da Escola Superior de Guerra (ESG), vem através desta proceder o envio do Mapa do Grau de Aproveitamento de Oficiais Discentes {texto}, referente ao Ano Académico {ano}.</p>
+          <p>Sem mais assunto de momento.</p>
+          <p className="text-center mt-4">ESCOLA SUPERIOR DE GUERRA DO EMGFAA, em Luanda, ___ de {mes} de {String(d.fim ?? '').slice(0, 4)}</p>
+          <div className="text-center mt-4"><div className="fw-bold">O COMANDANTE DA ESG</div><div className="mt-4">{(cmdt?.nome || '').toUpperCase()}</div><div className="fw-bold">{cmdt?.posto ? `**${cmdt.posto.toUpperCase()}**` : ''}</div></div>
+        </section>
+      )
+    })
   } else if (tipo === 'finais') {
     // como no arquivo: matriculados, terminaram com aproveitamento, baixas, média, menções e % de aproveitamento
     const linhas = cursos.map((c) => {

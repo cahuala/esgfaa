@@ -2,7 +2,8 @@
 export const DOCUMENTOS_ANO = {
   relacao: 'Relação nominal dos discentes',
   estatistica: 'Dados estatísticos',
-  ramos: 'Dados por ramos',
+  ramos: 'Dados por ramos (mapas do grau de aproveitamento)',
+  envio: 'Notas de envio dos mapas',
   resumo: 'Resumo dos dados estatísticos',
   finais: 'Dados estatísticos finais dos cursos',
   entrega: 'Relação para a entrega dos diplomas e certificados',

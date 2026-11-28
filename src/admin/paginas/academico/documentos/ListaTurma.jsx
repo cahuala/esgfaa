@@ -13,19 +13,24 @@ import { descarregarCsv } from './csv'
   lista de actualização dos dados (para preencher à mão) e os dados de um só ramo. Os dados vêm do Sistema de Pessoal.
   Também as turmas do arquivo (matrículas concluídas).
 */
-const dataPt = (v) => (v ? new Date(`${String(v).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-PT') : '')
+// a data como nas listas do arquivo: 22.07.1962
+const dataPt = (v) => (v ? new Date(`${String(v).slice(0, 10)}T12:00:00`).toLocaleDateString('pt-PT').replace(/\//g, '.') : '')
+// o telefone pela operadora, como na lista telefónica do arquivo (Unitel 92/93/94, Africell 95, Movicel 91/99)
+const operadora = (t, o) => String(t || '').split(/[\s,;/]+/).map((x) => x.replace(/\D/g, '').replace(/^244/, '')).filter((x) => x.length === 9 && ({ unitel: /^9[234]/, africell: /^95/, movicel: /^9[19]/ })[o].test(x)).join(' / ')
 const d = (e, k) => e.dados?.[k] ?? ''
 const formacao = (e) => [d(e, 'habilitacao'), d(e, 'areaFormacao')].filter(Boolean).join(' — ')
 const LISTAS_TURMA = {
   // como a do arquivo (Direcção de Ensino): N/O, NIP, posto, nome completo e ramo
   relacao: { titulo: 'Relação nominal dos {p}', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome completo', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')]] },
-  contactos: { titulo: 'Lista telefónica e e-mail', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Contactos', (e) => d(e, 'telefone')], ['Correio electrónico', (e) => e.email ?? '']] },
+  contactos: { titulo: 'Lista telefónica e e-mail', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['B.I', (e) => d(e, 'bi') || d(e, 'numeroBi')], ['Unitel', (e) => operadora(d(e, 'telefone'), 'unitel')], ['Africell', (e) => operadora(d(e, 'telefone'), 'africell')], ['Movicel', (e) => operadora(d(e, 'telefone'), 'movicel')], ['Correio electrónico', (e) => e.email ?? '']] },
   constituicao: { titulo: 'Constituição da turma — lista final de dados para constar nos diplomas', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Obs.', () => '']] },
-  formacao: { titulo: 'Formação académica actual', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Formação académica', formacao]] },
-  militar: { titulo: 'Formação militar actual', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Curso militar / especialidade', (e) => d(e, 'especialidade')]] },
-  funcoes: { titulo: 'Funções que exercem', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Função', (e) => d(e, 'funcaoActual')]] },
+  formacao: { titulo: 'Formação académica actual', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Classe ou formação académica actual', formacao]] },
+  militar: { titulo: 'Formação militar actual', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Curso militar', (e) => d(e, 'especialidade')]] },
+  funcoes: { titulo: 'Funções que exercem', colunas: [['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Função actual', (e) => d(e, 'funcaoActual')]] },
   proveniencia: { titulo: 'Unidades de proveniência, ramos e datas de nascimento dos {p}', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Data de nascimento', (e) => dataPt(d(e, 'dataNascimento'))], ['Unidade de proveniência', (e) => d(e, 'departamento')]] },
-  actualizacao: { titulo: 'Lista de actualização dos dados', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['NIP (correcto)', () => ''], ['Posto (correcto)', () => ''], ['Nome (correcto)', () => '']] },
+  actualizacao: { titulo: 'Lista de actualização dos dados', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Nip', () => ''], ['Posto', () => ''], ['Nome', () => '']] },
+  // a minuta de controlo de presenças do arquivo: para assinar
+  presencas: { titulo: 'Lista de presenças', colunas: [['NIP', (e) => d(e, 'nip')], ['Posto', (e) => d(e, 'posto')], ['Nome', (e) => e.nome], ['Ramo', (e) => d(e, 'ramo')], ['Assinatura', () => '']] },
 }
 const RAMOS = { EXE: 'Exército', FAN: 'Força Aérea Nacional', MGA: 'Marinha de Guerra Angolana', PNA: 'Polícia Nacional' }
 
@@ -70,13 +75,13 @@ function ListaTurma() {
       assinaturas={['O Chefe da Repartição de Administração Escolar']}
     >
       <table>
-        <thead><tr><th className="of-num">{tipo === 'relacao' ? 'N/O' : 'N.º'}</th>{def.colunas.map(([c]) => <th key={c}>{c}</th>)}</tr></thead>
+        <thead><tr><th className="of-num">{tipo === 'relacao' ? 'N/O' : 'N.º'}</th>{def.colunas.map(([c], k) => <th key={k}>{c}</th>)}</tr></thead>
         <tbody>
           {linhas.length === 0 && <tr><td colSpan={def.colunas.length + 1} className="of-centro">Sem {pessoas.toLowerCase()} nesta lista.</td></tr>}
           {linhas.map((e, i) => (
             <tr key={e.id}>
               <td className="of-num">{String(i + 1).padStart(2, '0')}</td>
-              {def.colunas.map(([c, f]) => <td key={c} style={tipo === 'actualizacao' && !f(e) ? { minWidth: 110 } : undefined}>{f(e)}</td>)}
+              {def.colunas.map(([c, f], k) => <td key={k} style={['actualizacao', 'presencas'].includes(tipo) && !f(e) ? { minWidth: c === 'Assinatura' ? 220 : 110 } : undefined}>{f(e)}</td>)}
             </tr>
           ))}
         </tbody>
