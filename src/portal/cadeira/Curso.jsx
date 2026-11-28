@@ -12,6 +12,7 @@ import Conclusao from './Conclusao'
 import { confirmar, pedir } from '../dialogos'
 import { listarAtividades, tipoVisual } from './atividades'
 import { t as tx, localAtual } from '../../i18n/linguas'
+import { capitulosDoPrograma } from '../../../api/src/dominio/academico/atividades/programa.js'
 
 // tipos de dados do arrasto (atividade para outro capítulo, capítulo para outra posição)
 const MIME = { atividade: 'application/x-esg-atividade', capitulo: 'application/x-esg-capitulo' }
@@ -234,13 +235,15 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
     )
   }
 
-  const botaoNova = (secaoId) => edicao && (
+  const botaoNova = (secaoId) => eDocente && (
     <div className="list-group-item text-center py-2">
       <button type="button" className="btn btn-sm btn-white" onClick={() => setNova({ secaoId })}><i className="fa fa-plus me-1 text-theme" /> {tx('Adicionar actividade ou recurso')}</button>
     </div>
   )
 
   const capitulos = c.secoes
+  // os capítulos que o programa daria (o plano das sessões)
+  const capitulosPrograma = eDocente && !capitulos.length ? capitulosDoPrograma(c.programa) : []
   const contagem = (id) => {
     const l = doCapitulo(id).filter((a) => a.especie !== 'questionario' || a.publicado !== false)
     const feitas = l.filter((a) => feita(a)).length
@@ -324,7 +327,7 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
           <>
             {s.resumo && <div className="panel-body pb-0 text-muted">{s.resumo}</div>}
             <div className="list-group list-group-flush">
-              {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem actividades neste capítulo.')}{eDocente && <> {tx('Ligue o modo de edição para juntar materiais, trabalhos e provas.')}</>}</div>}
+              {lista.length === 0 && !edicao && <div className="list-group-item text-muted small py-3">{tx('Sem actividades neste capítulo.')}{eDocente && <> {tx('Use «Adicionar actividade ou recurso» para juntar a matéria, trabalhos e provas.')}</>}</div>}
               {lista.map(linhaAtividade)}
               {botaoNova(s.id)}
             </div>
@@ -442,7 +445,13 @@ function Curso({ c, eDocente, recarregar, avisar, progresso, setProgresso, irPar
         {!escolhido && (
           <>
             {painelGeral()}
-            {capitulos.length === 0 && !edicao && <Vazio>{eDocente ? tx('Ainda não há capítulos. Ligue o modo de edição para organizar a cadeira.') : tx('O docente ainda não organizou a matéria em capítulos.')}</Vazio>}
+            {capitulos.length === 0 && eDocente && capitulosPrograma.length > 0 && (
+              <div className="alert alert-info d-flex flex-wrap align-items-center gap-2">
+                <span className="flex-grow-1"><i className="fa fa-list-ol me-1" />{tx('O programa desta cadeira tem {0} sessão(ões) ou tema(s). Crie um capítulo para cada um e junte depois a matéria de cada capítulo.', { 0: capitulosPrograma.length })}</span>
+                <button type="button" className="btn btn-sm btn-theme" onClick={() => api(`/cadeiras/${c.id}/secoes/do-programa`, { metodo: 'POST' }).then((r) => { avisar({ texto: tx('{0} capítulo(s) criados a partir do programa.', { 0: r.criados }) }); recarregar() }).catch(falhou)}><i className="fa fa-magic me-1" />{tx('Criar os capítulos do programa')}</button>
+              </div>
+            )}
+            {capitulos.length === 0 && !edicao && <Vazio>{eDocente ? tx('Ainda não há capítulos: crie-os a partir do programa ou com «Novo capítulo» (no modo de edição).') : tx('O docente ainda não organizou a matéria em capítulos.')}</Vazio>}
             {edicao ? capitulos.map((s) => painelCapitulo(s)) : capitulos.length > 0 && cartoesCapitulos()}
             {edicao && <button type="button" className="btn btn-theme mb-4" onClick={novoCapitulo}><i className="fa fa-plus me-1" /> {tx('Novo capítulo')}</button>}
           </>

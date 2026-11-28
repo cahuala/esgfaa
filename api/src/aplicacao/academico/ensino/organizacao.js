@@ -1,7 +1,8 @@
-import { ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
+import { Conflito, ErroValidacao, NaoEncontrado, SemPermissao } from '../../../dominio/comum/erros.js'
 import { validarRestricoes } from '../../../dominio/academico/atividades/disponibilidade.js'
 import { texto } from '../../../dominio/academico/comum/validacao.js'
 import { quem } from '../partilhado/autor.js'
+import { capitulosDoPrograma } from '../../../dominio/academico/atividades/programa.js'
 
 // Organização da cadeira pelo docente: capítulos, restrições de acesso, mudar de capítulo, importar e participantes.
 export class ServicoOrganizacao {
@@ -47,6 +48,16 @@ export class ServicoOrganizacao {
     const mudanca = validarRestricoes(dados, new Set(lista.map((x) => x.chave)), `${tipo}-${a.id}`)
     await this.academico.restringirAtividade(tipo, a.id, mudanca)
     return { tipo, id: a.id, ...mudanca }
+  }
+
+  // os capítulos da cadeira a partir do plano das sessões do programa (só numa cadeira ainda sem capítulos)
+  async capitulosDoPrograma(ctx, cadeiraId) {
+    const cadeira = await this.apoio.cadeiraDoDocente(ctx.conta, cadeiraId)
+    if ((await this.academico.secoes(cadeira.id)).length) throw new Conflito('Esta cadeira já tem capítulos: junte-os à mão.')
+    const capitulos = capitulosDoPrograma(cadeira.programa)
+    if (!capitulos.length) throw new Conflito('O programa desta cadeira não tem o plano das sessões.')
+    for (const c of capitulos) await this.academico.criarSecao({ cadeiraId: cadeira.id, titulo: c.titulo, resumo: c.resumo })
+    return { criados: capitulos.length }
   }
 
   async criarSecao(ctx, cadeiraId, dados) {

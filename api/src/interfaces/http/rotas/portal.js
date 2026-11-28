@@ -190,6 +190,7 @@ export function rotasPortal({ servicos, config, privados }) {
 
   // ---------- capítulos e participantes ----------
   r.post('/cadeiras/:id/secoes', validar({ params: pId, body: E.secao }), async (req, res) => res.status(201).json(await e.organizacao.criarSecao(ctx(req), req.dados.params.id, req.dados.body)))
+  r.post('/cadeiras/:id/secoes/do-programa', validar({ params: pId }), async (req, res) => res.status(201).json(await e.organizacao.capitulosDoPrograma(ctx(req), req.dados.params.id)))
   r.put('/cadeiras/:id/secoes/ordem', validar({ params: pId, body: E.ordemSecoes }), async (req, res) => res.json(await e.organizacao.ordenarSecoes(ctx(req), req.dados.params.id, req.dados.body.ids)))
   r.put('/secoes/:id', validar({ params: pId, body: E.secao }), async (req, res) => res.json(await e.organizacao.atualizarSecao(ctx(req), req.dados.params.id, req.dados.body)))
   r.delete('/secoes/:id', validar({ params: pId }), async (req, res) => { await e.organizacao.apagarSecao(ctx(req), req.dados.params.id); res.status(204).end() })
