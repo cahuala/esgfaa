@@ -45,7 +45,10 @@ function DocumentosAno() {
   useEffect(() => { api('/academico/documentos-academicos').then(setQuem).catch(() => {}) }, [])
   useEffect(() => {
     if (!ano) return
-    api(`/academico/documentos-do-ano?anoLetivo=${encodeURIComponent(ano)}`).then((x) => { setErro(''); setR({ ano, d: x }) }).catch((e) => setErro(e.message))
+    // só vale a resposta do ano que está escolhido (uma resposta atrasada de outro ano deixava a página a carregar)
+    let vivo = true
+    api(`/academico/documentos-do-ano?anoLetivo=${encodeURIComponent(ano)}`).then((x) => { if (vivo) { setErro(''); setR({ ano, d: x }) } }).catch((e) => { if (vivo) setErro(e.message) })
+    return () => { vivo = false }
   }, [ano])
   if (!DOCUMENTOS_ANO[tipo]) return <Erro texto="Documento desconhecido." />
   if (erro) return <Erro texto={erro} />

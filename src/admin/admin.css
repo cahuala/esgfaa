@@ -926,3 +926,10 @@ fieldset:disabled .bloco-topo .btn-group {
 /* ecrã de processamento ao mudar o ano lectivo */
 .esg-a-processar { position: fixed; inset: 0; z-index: 2000; background: rgba(255, 255, 255, .78); display: flex; align-items: center; justify-content: center; }
 .esg-a-processar-caixa { background: #fff; border: 1px solid #e5e2d8; border-radius: 12px; padding: 26px 34px; text-align: center; box-shadow: 0 8px 30px rgba(0, 0, 0, .12); color: #861d0c; max-width: 90vw; }
+
+/* a pauta geral e a pauta da cadeira com o desenho dos Excel da Repartição (as cores saem também na impressão) */
+.of-pauta-geral { font-family: Calibri, Carlito, Arial, sans-serif; font-size: 9pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.of-pauta-geral th { vertical-align: middle; font-weight: bold; }
+.of-pauta-geral tfoot td { background: inherit; }
+.of-pauta-cadeira { font-family: 'Century Gothic', 'URW Gothic', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.of-pauta-cadeira thead th { background: #c0c0c0; text-align: center; font-weight: bold; border-width: 2px !important; }

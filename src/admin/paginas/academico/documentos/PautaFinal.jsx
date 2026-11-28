@@ -11,6 +11,10 @@ import Documento from './Documento'
   O Excel sai com as fórmulas (as médias dos blocos e a média final calculam-se lá, como nas pautas do arquivo).
 */
 const fmt = (v) => (v === null || v === undefined ? '' : Number(v).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+// as cores das pautas da Repartição: os blocos, o cinzento das colunas fixas e o dourado das médias
+const CORES_BLOCO = ['#99CCFF', '#00FF00', '#CC99FF', '#FF8080', '#FFCC99', '#CCFFCC']
+const CINZA = '#C0C0C0'
+const OURO = '#FFCC00'
 const coluna = (n) => { let s = ''; for (let k = n + 1; k > 0; k = Math.floor((k - 1) / 26)) s = String.fromCharCode(65 + ((k - 1) % 26)) + s; return s }
 
 function PautaFinal() {
@@ -44,67 +48,92 @@ function PautaFinal() {
   const notaBloco = (l, b) => (temMedia(b) || !comBlocos ? l.blocos[b.sigla] : l.ucs[b.ucs[0]?.codigo] ?? l.blocos[b.sigla])
   const mediaDe = (vs) => { const x = vs.filter((v) => v !== null && v !== undefined).map(Number); return x.length ? x.reduce((a, b) => a + b, 0) / x.length : null }
 
-  // o Excel como o da Repartição: as médias dos blocos (sem as cadeiras a 0), a média, a ponderada e a ordenação com fórmulas
+  // as cores dos blocos como nas pautas da Repartição (I azul, II verde, III lilás, IV salmão; o TII amarelo claro)
+  const corBloco = (b, i) => (b.ucs.length === 1 && b.ucs[0].tii ? '#FFFF99' : CORES_BLOCO[i % CORES_BLOCO.length])
+
+  // o Excel com o desenho e as contas da pauta da Repartição: as médias dos blocos (sem as cadeiras a 0), a média,
+  // a ponderada e a ordenação com fórmulas (só onde dão o mesmo que a pauta assinada)
   async function excel() {
     const { default: escrever } = await import('write-excel-file/browser')
-    const C = (v, extra = {}) => ({ value: v, ...extra })
-    const B = (v, extra = {}) => C(v, { fontWeight: 'bold', align: 'center', ...extra })
+    const base = { fontFamily: 'Calibri', fontSize: 10, alignVertical: 'center' }
+    // a biblioteca do Excel põe ela o «=» das fórmulas (com dois, o Excel não as reconhece)
+    const C = (v, extra = {}) => ({ value: extra.type === 'Formula' ? String(v).replace(/^=/, '') : v, ...base, ...extra })
+    const caixa = { borderStyle: 'thin', borderColor: '#000000' }
+    const Cab = (v, cor, extra = {}) => C(v, { ...caixa, fontWeight: 'bold', align: 'center', wrap: true, ...(cor ? { backgroundColor: cor } : {}), ...extra })
     const fixas = ['Nº Ord', 'NIP', 'Posto', 'NOME']
     const blocoCols = (b) => b.ucs.length + (temMedia(b) ? 1 : 0)
-    const fim = [...(ajuste ? ['Ajuste'] : []), ...(ponderada ? ['Média', 'Média Ponderada'] : ['Média final']), 'Ordenação', 'Classificação']
-    const span = (texto, n, extra) => [B(texto, { ...extra, ...(n > 1 ? { columnSpan: n } : {}) }), ...Array(Math.max(0, n - 1)).fill(null)]
-    const coefs = [...fixas.map(() => C('')), ...d.blocos.flatMap((b) => span(comBlocos ? `Coeficiente ${String(b.coeficiente).replace('.', ',')}` : '', blocoCols(b), { fontWeight: 'normal' })), ...fim.map(() => C(''))]
-    const cab1 = [...fixas.map(() => C('')), ...d.blocos.flatMap((b) => span(comBlocos ? b.nome : '', blocoCols(b))), ...fim.map(() => C(''))]
-    const cab2 = [...fixas.map((t) => B(t)), ...d.blocos.flatMap((b) => [...b.ucs.map((u) => B(rotulo(u))), ...(temMedia(b) ? [B('Média')] : [])]), ...fim.map((t) => B(t))]
-    const topo = [[C('APROVADO', { fontWeight: 'bold' })], [C(comandante.cargo?.toUpperCase() ?? 'O COMANDANTE DA ESG')], [C(comandante.nome?.toUpperCase() ?? '')], [C(comandante.posto?.toUpperCase() ?? '', { fontWeight: 'bold' })], [],
-      [C(`PAUTA ${d.turma.anoLetivo} — ${d.turma.curso}`.toUpperCase(), { fontWeight: 'bold', fontSize: 13 })], [C(d.turma.nome)], []]
+    const fim = [...(ajuste ? [['Ajuste', null]] : []), ...(ponderada ? [['Média', OURO], ['Média Ponderada', OURO]] : [['Média final', OURO]]), ['Ordenação', null], ['Classificação', null]]
+    const span = (cel, n) => [{ ...cel, ...(n > 1 ? { columnSpan: n } : {}) }, ...Array(Math.max(0, n - 1)).fill(null)]
+    const vazio = () => C('')
+    const coefs = [...fixas.map(vazio), ...d.blocos.flatMap((b, i) => span(Cab(`Coeficiente ${String(b.coeficiente).replace('.', ',')}`, corBloco(b, i), { fontSize: 8 }), blocoCols(b))), ...fim.map(vazio)]
+    const cab1 = [...fixas.map((t) => Cab(t, CINZA, { rowSpan: 2 })), ...d.blocos.flatMap((b, i) => span(Cab(b.nome, corBloco(b, i)), blocoCols(b))), ...fim.map(([t, cor]) => Cab(t, cor, { rowSpan: 2 }))]
+    const cab2 = [...fixas.map(() => null), ...d.blocos.flatMap((b, i) => [...b.ucs.map((u) => Cab(rotulo(u), corBloco(b, i))), ...(temMedia(b) ? [Cab('Média', corBloco(b, i))] : [])]), ...fim.map(() => null)]
+    const so = comBlocos ? null : [[...fixas.map((t) => Cab(t, CINZA)), ...ucs.map((u) => Cab(rotulo(u), CORES_BLOCO[0])), ...fim.map(([t, cor]) => Cab(t, cor))]]
+    const A = { fontFamily: 'Arial', fontSize: 12, fontWeight: 'bold' }
+    const topo = [[], [C('APROVADO', A)], [C((comandante.cargo || 'O Comandante da ESG').toUpperCase(), A)], [], [C((comandante.nome || '').toUpperCase(), { fontFamily: 'Arial', fontSize: 12 })], [C(comandante.posto ? `**${comandante.posto.toUpperCase()}**` : '', A)], [],
+      [C(`PAUTA ${d.turma.anoLetivo} — ${d.turma.curso}`.toUpperCase(), { ...A, fontSize: 11 })], [C(d.turma.nome)], []]
     const linha0 = topo.length + (comBlocos ? 3 : 1) // os estudantes começam a seguir aos cabeçalhos (1-based: linha0 + 1)
     const n = d.linhas.length
     const ult = linha0 + n
-    const num = (v) => (v === null || v === undefined ? C(null) : C(Number(v), { type: Number, format: '0.00' }))
+    const nota = (v, extra = {}) => (v === null || v === undefined ? C(null, { ...caixa, ...extra }) : C(Number(v), { type: Number, format: '0.00', align: 'center', ...caixa, ...extra }))
     const linhas = d.linhas.map((l, i) => {
       const r = linha0 + i + 1
       let col = fixas.length
-      const celulas = [C(i + 1, { type: Number }), C(l.estudante.nip), C(l.estudante.posto), C(l.estudante.nome)]
+      const p = { ...caixa, fontSize: 9 }
+      const celulas = [C(i + 1, { type: Number, align: 'center', ...caixa }), C(l.estudante.nip, p), C((l.estudante.posto || '').toUpperCase(), p), C((l.estudante.nome || '').toUpperCase(), p)]
       const medias = []
       for (const b of d.blocos) {
         const a = `${coluna(col)}${r}`
-        for (const u of b.ucs) { celulas.push(num(l.ucs[u.codigo])); col++ }
+        const tii = b.ucs.length === 1 && b.ucs[0].tii
+        for (const u of b.ucs) { celulas.push(nota(l.ucs[u.codigo], tii && comBlocos ? { backgroundColor: '#00FF00' } : {})); col++ }
         const z = `${coluna(col - 1)}${r}`
         // a fórmula só quando dá o mesmo que a pauta assinada (há pautas com pesos dentro do bloco que a folha não diz)
         const calc = mediaDe(b.ucs.map((u) => (Number(l.ucs[u.codigo]) > 0 ? l.ucs[u.codigo] : null)))
         const v = notaBloco(l, b)
         if (temMedia(b)) {
-          celulas.push(v === null || v === undefined || (calc !== null && Math.abs(calc - v) < 0.006) ? C(`=IFERROR(AVERAGEIF(${a}:${z},">0"),"")`, { type: 'Formula', format: '0.00', fontWeight: 'bold' }) : C(Number(v), { type: Number, format: '0.00', fontWeight: 'bold' }))
+          celulas.push(v === null || v === undefined || (calc !== null && Math.abs(calc - v) < 0.006) ? C(`=IFERROR(AVERAGEIF(${a}:${z},">0"),"")`, { type: 'Formula', format: '0.00', align: 'center', ...caixa }) : nota(v))
           medias.push({ ref: `${coluna(col)}${r}`, coef: b.coeficiente, v }); col++
         } else medias.push({ ref: a, coef: b.coeficiente, v })
       }
       let refAjuste = ''
-      if (ajuste) { celulas.push(C(Number(l.ajuste) || 0, { type: Number, format: '0.00' })); refAjuste = `+${coluna(col)}${r}`; col++ }
+      if (ajuste) { celulas.push(nota(Number(l.ajuste) || 0)); refAjuste = `+${coluna(col)}${r}`; col++ }
       const todas = `${coluna(fixas.length)}${r}:${coluna(col - 1 - (ajuste ? 1 : 0))}${r}`
       const simples = comBlocos ? `AVERAGE(${medias.map((x) => x.ref).join(',')})` : `AVERAGEIF(${todas},">0")`
-      if (ponderada) { celulas.push(C(`=IFERROR(${simples},"")`, { type: 'Formula', format: '0.00' })); col++ }
-      const base = ponderada ? `(${medias.map((x) => `${x.ref}*${x.coef}`).join('+')})/${somaCoef}` : simples
-      // a média final é a da pauta assinada (no arquivo) — a fórmula refaz a conta; se a pauta não a tem, fica em branco
-      const vs = comBlocos ? medias.map((x) => (x.v === null || x.v === undefined ? NaN : Number(x.v))) : []
-      const conta = comBlocos ? (ponderada ? vs.reduce((t, v, k) => t + v * medias[k].coef, 0) / somaCoef : vs.reduce((t, v) => t + v, 0) / vs.length) + (Number(l.ajuste) || 0)
+      const ouro = { backgroundColor: OURO }
+      if (ponderada) { celulas.push(l.mediaSimples === null ? nota(null, ouro) : C(`=IFERROR(${simples},"")`, { type: 'Formula', format: '0.00', align: 'center', ...caixa, ...ouro })); col++ }
+      const conta = comBlocos ? (ponderada ? medias.reduce((t, x) => t + Number(x.v) * x.coef, 0) / somaCoef : medias.reduce((t, x) => t + Number(x.v), 0) / medias.length) + (Number(l.ajuste) || 0)
         : mediaDe(ucs.map((u) => (Number(l.ucs[u.codigo]) > 0 ? l.ucs[u.codigo] : null)))
-      celulas.push(l.final === null ? C(null) : Math.abs(conta - l.final) < 0.006 ? C(`=ROUND(${base}${refAjuste},2)`, { type: 'Formula', format: '0.00', fontWeight: 'bold' }) : C(Number(l.final), { type: Number, format: '0.00', fontWeight: 'bold' }))
+      const formulaFinal = ponderada ? `(${medias.map((x) => `${x.ref}*${x.coef}`).join('+')})/${somaCoef}` : simples
+      celulas.push(l.final === null ? nota(null, ouro) : Math.abs(conta - l.final) < 0.006 ? C(`=ROUND(${formulaFinal}${refAjuste},2)`, { type: 'Formula', format: '0.00', align: 'center', fontWeight: 'bold', ...caixa, ...ouro }) : nota(l.final, { fontWeight: 'bold', ...ouro }))
       const rf = coluna(col)
-      celulas.push(l.final === null ? C(null) : C(`=RANK(${rf}${r},${rf}$${linha0 + 1}:${rf}$${ult})`, { type: 'Formula' }))
-      celulas.push(l.mencao === 'Distinto' ? C('Distinto') : l.final === null ? C(null) : C(`=IF(${rf}${r}>=18,"Muito Bom",IF(${rf}${r}>=14,"Bom",IF(${rf}${r}>=10,"Regular","Reprovado")))`, { type: 'Formula' }))
+      celulas.push(l.final === null ? C(null, caixa) : C(`=RANK(${rf}${r},${rf}$${linha0 + 1}:${rf}$${ult})`, { type: 'Formula', align: 'center', ...caixa }))
+      celulas.push(l.mencao === 'Distinto' ? C('Distinto', caixa) : l.final === null ? C(null, caixa) : C(`=IF(${rf}${r}>=18,"Muito Bom",IF(${rf}${r}>=14,"Bom",IF(${rf}${r}>=10,"Regular","Reprovado")))`, { type: 'Formula', ...caixa }))
       return celulas
     })
-    // a linha «Média» da turma, coluna a coluna
-    const total = cab2.length - 2
-    const mediaTurma = n ? [[C(''), C(''), C(''), B('Média'), ...Array.from({ length: total - fixas.length }, (_, k) => { const c = coluna(fixas.length + k); return C(`=IFERROR(AVERAGE(${c}${linha0 + 1}:${c}${ult}),"")`, { type: 'Formula', format: '0.00', fontWeight: 'bold' }) })]] : []
-    const legenda = [[], [C('Legenda', { fontWeight: 'bold' })], [B('Sigla'), B('Disciplina'), B('Carga horária')], ...ucs.map((u) => [C(u.codigo, { fontWeight: 'bold' }), C(u.nome), C(u.horas ? `${u.horas} h` : '')])]
-    const assinaturas = [[], [C(dirCurso.cargo?.toUpperCase?.() ?? 'O DIRECTOR DO CURSO'), C(''), C(''), C(''), C(''), C(dirEnsino.cargo?.toUpperCase?.() ?? 'O DIRECTOR DE ENSINO')], [], [C(dirCurso.nome?.toUpperCase?.() ?? ''), C(''), C(''), C(''), C(''), C(dirEnsino.nome?.toUpperCase?.() ?? '')], [C(dirCurso.posto?.toUpperCase?.() ?? ''), C(''), C(''), C(''), C(''), C(dirEnsino.posto?.toUpperCase?.() ?? '')]]
-    await escrever([...topo, ...(comBlocos ? [coefs, cab1] : []), cab2, ...linhas, ...mediaTurma, ...legenda, ...assinaturas], { sheet: 'Pauta', columns: [{ width: 6 }, { width: 12 }, { width: 16 }, { width: 38 }] }).toFile(`pauta-final-${d.turma.nome}-${d.turma.anoLetivo}.xlsx`.replace(/[^\w.-]+/g, '-'))
+    // a linha «Média» da turma, a amarelo, coluna a coluna
+    const total = (so ? so[0] : cab1).length - 2
+    const am = { ...caixa, fontWeight: 'bold', backgroundColor: '#FFFF00', align: 'center' }
+    const mediaTurma = n ? [[C(''), C(''), C(''), C('Média', { ...am, align: 'right' }), ...Array.from({ length: total - fixas.length }, (_, k) => { const c = coluna(fixas.length + k); return C(`=IFERROR(AVERAGE(${c}${linha0 + 1}:${c}${ult}),"")`, { type: 'Formula', format: '0.00', ...am }) })]] : []
+    const legenda = [[], [C('Legenda', { fontWeight: 'bold' })], [Cab('Sigla', CINZA), Cab('Disciplina', CINZA, { columnSpan: 3 }), null, null, Cab('Carga horária', CINZA, { columnSpan: 2 }), null], ...ucs.map((u) => [C(u.codigo, { ...caixa, fontWeight: 'bold' }), C(u.nome, { ...caixa, columnSpan: 3 }), null, null, C(u.horas ? `${u.horas} h` : '', { ...caixa, align: 'center', columnSpan: 2 }), null])]
+    const S = { fontFamily: 'Arial', fontSize: 11, fontWeight: 'bold', align: 'center' }
+    const meio = Math.max(fixas.length + 2, Math.floor(total / 2) + 2)
+    const par = (a, b) => { const r = Array.from({ length: meio + 1 }, () => C('')); r[3] = C(a, S); r[meio] = C(b, S); return r }
+    const pessoa = (x) => (typeof x === 'object' ? x : { cargo: x })
+    const dc = pessoa(dirCurso)
+    const de = pessoa(dirEnsino)
+    const data = new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()
+    const assinaturas = [[], [C(''), C(''), C(''), C(`LUANDA, AOS ${data}`, { fontFamily: 'Arial', fontSize: 11 })], [],
+      par((dc.cargo || 'O Director do Curso').toUpperCase(), (de.cargo || 'O Director de Ensino').toUpperCase()), [],
+      par('______________________________', '______________________________'),
+      par((dc.nome || '').toUpperCase(), (de.nome || '').toUpperCase()),
+      par(dc.posto ? `***${dc.posto.toUpperCase()}***` : '', de.posto ? `*${de.posto.toUpperCase()}*` : '')]
+    const larguras = [{ width: 5 }, { width: 11 }, { width: 15 }, { width: 36 }, ...Array.from({ length: total - fixas.length + 2 }, () => ({ width: 8 }))]
+    await escrever([...topo, ...(comBlocos ? [coefs, cab1, cab2] : so), ...linhas, ...mediaTurma, ...assinaturas, ...legenda], { sheet: 'Pauta', columns: larguras, orientation: 'landscape', stickyRowsCount: linha0 })
+      .toFile(`pauta-final-${d.turma.nome}-${d.turma.anoLetivo}.xlsx`.replace(/[^\w.-]+/g, '-'))
   }
 
   const dirEnsino = quem.directorEnsino ? { cargo: 'O Director de Ensino', nome: quem.directorEnsino.nome, posto: quem.directorEnsino.posto } : 'O Director de Ensino'
-  const dirCurso = director ? { cargo: 'O Director do Curso', nome: director.nome, posto: '' } : 'O Director do Curso'
+  const dirCurso = director ? { cargo: 'O Director do Curso', nome: director.nome, posto: director.posto || '' } : 'O Director do Curso'
   const comandante = quem.comandante ? { cargo: quem.comandante.cargo || 'O Comandante da ESG', nome: quem.comandante.nome, posto: quem.comandante.posto } : { cargo: 'O Comandante da ESG' }
   return (
     <Documento
@@ -114,42 +143,42 @@ function PautaFinal() {
       aprovado={comandante} assinaturas={[dirCurso, dirEnsino]}
       acoes={<button type="button" className="btn btn-white" onClick={() => excel().catch((e) => setErro(e.message))}><i className="fa fa-file-excel me-1 text-success" />Exportar Excel (com as fórmulas)</button>}
     >
-      <table className="of-horario">
+      <table className="of-horario of-pauta-geral">
         <thead>
           {comBlocos && (
             <tr className="of-coeficientes">
               <th colSpan={4} className="border-0" />
-              {d.blocos.map((b) => <th key={`c-${b.sigla}`} colSpan={b.ucs.length + (temMedia(b) ? 1 : 0)} className="of-centro fw-normal">Coeficiente {String(b.coeficiente).replace('.', ',')}</th>)}
+              {d.blocos.map((b, i) => <th key={`c-${b.sigla}`} colSpan={b.ucs.length + (temMedia(b) ? 1 : 0)} className="of-centro fw-normal" style={{ background: corBloco(b, i), fontSize: '0.85em' }}>Coeficiente {String(b.coeficiente).replace('.', ',')}</th>)}
               <th colSpan={(ajuste ? 1 : 0) + (ponderada ? 2 : 1) + 2} className="border-0" />
             </tr>
           )}
           <tr>
-            <th rowSpan={comBlocos ? 2 : 1} className="of-num">Nº Ord</th><th rowSpan={comBlocos ? 2 : 1}>NIP</th><th rowSpan={comBlocos ? 2 : 1}>Posto</th><th rowSpan={comBlocos ? 2 : 1}>Nome</th>
+            {['Nº Ord', 'NIP', 'Posto', 'Nome'].map((t) => <th key={t} rowSpan={comBlocos ? 2 : 1} className="of-centro" style={{ background: CINZA }}>{t}</th>)}
             {comBlocos
-              ? d.blocos.map((b) => <th key={b.sigla} colSpan={b.ucs.length + (temMedia(b) ? 1 : 0)} className="of-centro">{b.nome}</th>)
-              : ucs.map((u) => <th key={u.id} className="of-centro">{rotulo(u)}</th>)}
+              ? d.blocos.map((b, i) => <th key={b.sigla} colSpan={b.ucs.length + (temMedia(b) ? 1 : 0)} className="of-centro" style={{ background: corBloco(b, i) }}>{b.nome}</th>)
+              : ucs.map((u) => <th key={u.id} className="of-centro" style={{ background: CORES_BLOCO[0] }}>{rotulo(u)}</th>)}
             {ajuste && <th rowSpan={comBlocos ? 2 : 1} className="of-centro">Ajuste</th>}
-            {ponderada && <th rowSpan={2} className="of-centro">Média</th>}
-            <th rowSpan={comBlocos ? 2 : 1} className="of-centro">{ponderada ? 'Média Ponderada' : 'Média final'}</th>
+            {ponderada && <th rowSpan={2} className="of-centro" style={{ background: OURO }}>Média</th>}
+            <th rowSpan={comBlocos ? 2 : 1} className="of-centro" style={{ background: OURO }}>{ponderada ? 'Média Ponderada' : 'Média final'}</th>
             <th rowSpan={comBlocos ? 2 : 1} className="of-centro">Ordenação</th><th rowSpan={comBlocos ? 2 : 1}>Classificação</th>
           </tr>
-          {comBlocos && <tr>{d.blocos.map((b) => [...b.ucs.map((u) => <th key={u.id} className="of-centro">{rotulo(u)}</th>), ...(temMedia(b) ? [<th key={`m-${b.sigla}`} className="of-centro">Média</th>] : [])])}</tr>}
+          {comBlocos && <tr>{d.blocos.map((b, i) => [...b.ucs.map((u) => <th key={u.id} className="of-centro" style={{ background: corBloco(b, i) }}>{rotulo(u)}</th>), ...(temMedia(b) ? [<th key={`m-${b.sigla}`} className="of-centro" style={{ background: corBloco(b, i) }}>Média</th>] : [])])}</tr>}
         </thead>
         <tbody>
           {d.linhas.map((l, i) => (
             <tr key={l.estudante.id}>
-              <td className="of-num">{i + 1}</td><td>{l.estudante.nip}</td><td>{l.estudante.posto}</td><td>{l.estudante.nome}</td>
-              {d.blocos.map((b) => [...b.ucs.map((u) => <td key={u.id} className="of-centro">{fmt(l.ucs[u.codigo])}</td>), ...(temMedia(b) ? [<td key={`m-${b.sigla}`} className="of-centro fw-bold">{fmt(l.blocos[b.sigla])}</td>] : [])])}
+              <td className="of-centro">{i + 1}</td><td>{l.estudante.nip}</td><td>{(l.estudante.posto || '').toUpperCase()}</td><td>{(l.estudante.nome || '').toUpperCase()}</td>
+              {d.blocos.map((b) => [...b.ucs.map((u) => <td key={u.id} className="of-centro" style={comBlocos && b.ucs.length === 1 && u.tii ? { background: '#00FF00' } : undefined}>{fmt(l.ucs[u.codigo])}</td>), ...(temMedia(b) ? [<td key={`m-${b.sigla}`} className="of-centro">{fmt(l.blocos[b.sigla])}</td>] : [])])}
               {ajuste && <td className="of-centro">{l.ajuste ? fmt(l.ajuste) : ''}</td>}
-              {ponderada && <td className="of-centro">{fmt(l.mediaSimples)}</td>}
-              <td className="of-centro fw-bold">{fmt(l.final)}</td>
+              {ponderada && <td className="of-centro" style={{ background: OURO }}>{fmt(l.mediaSimples)}</td>}
+              <td className="of-centro fw-bold" style={{ background: OURO }}>{fmt(l.final)}</td>
               <td className="of-centro">{l.ordem ?? ''}</td><td>{l.mencao ?? ''}</td>
             </tr>
           ))}
         </tbody>
         {d.linhas.length > 0 && (
           <tfoot>
-            <tr className="fw-bold">
+            <tr className="fw-bold" style={{ background: '#FFFF00' }}>
               <td colSpan={4} className="text-end">Média</td>
               {d.blocos.map((b) => [...b.ucs.map((u) => <td key={u.id} className="of-centro">{fmt(mediaDe(d.linhas.map((l) => l.ucs[u.codigo])))}</td>), ...(temMedia(b) ? [<td key={`m-${b.sigla}`} className="of-centro">{fmt(mediaDe(d.linhas.map((l) => notaBloco(l, b))))}</td>] : [])])}
               {ajuste && <td />}

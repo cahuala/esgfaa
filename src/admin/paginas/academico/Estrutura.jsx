@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api'
 import { useSessao } from '../../sessaoContexto'
@@ -45,13 +45,18 @@ function Tabela({ cadeiras, gerir, nomes, mudar }) {
 function Estrutura() {
   const { pode } = useSessao()
   const gerir = pode('academico.gerir')
-  const { ano } = useAnoTrabalho()
+  const { ano, carregado } = useAnoTrabalho()
+  // ao abrir, o ano do menu ainda pode mudar (enquanto chegam os anos lectivos): só vale a resposta do ano actual
+  const anoPedido = useRef(ano)
+  useEffect(() => { anoPedido.current = ano }, [ano])
   const [r, setR] = useState({ ano: null, d: null })
   const d = r.ano === ano ? r.d : null
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState(null)
-  const carregar = useCallback(() => api(`/academico/estrutura${ano ? `?anoLetivo=${encodeURIComponent(ano)}` : ''}`).then((x) => { setErro(''); setR({ ano, d: x }) }).catch((e) => setErro(e.message)), [ano])
-  useEffect(() => { carregar() }, [carregar])
+  const carregar = useCallback(() => api(`/academico/estrutura${ano ? `?anoLetivo=${encodeURIComponent(ano)}` : ''}`)
+    .then((x) => { if (anoPedido.current === ano) { setErro(''); setR({ ano, d: x }) } })
+    .catch((e) => { if (anoPedido.current === ano) setErro(e.message) }), [ano])
+  useEffect(() => { if (carregado) carregar() }, [carregar, carregado])
   const mudar = (c, departamento) => api(`/academico/cadeiras/${c.id}/departamento`, { metodo: 'PUT', corpo: { departamento } })
     .then(() => { setAviso({ texto: tx('«{0}» passou para {1}.', { 0: c.nome, 1: departamento || tx('sem departamento') }) }); carregar() })
     .catch((e) => setAviso({ tipo: 'erro', texto: e.message }))

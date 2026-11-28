@@ -29,22 +29,30 @@ function PautaCadeira() {
   const notas = p.linhas.map((l) => (l.situacao === 'recurso' ? null : l.final)).filter((v) => v !== null && v !== undefined && v !== '').map(Number)
   const media = notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : null
   const horas = Number(c.horasContacto || 0) + Number(c.horasNaoContacto || 0) || Number(c.horas || 0)
-  // o título como nas pautas do arquivo: «TAI-<DISCIPLINA>» (trabalho de aplicação individual) ou «NOTA DO TII»
-  const tituloArquivo = c.tii ? 'NOTA DO TII' : `TAI-${(c.nome || c.codigo).toUpperCase()}`
+  // o título como nas pautas do arquivo: «TAI-<Disciplina por extenso>» (trabalho de aplicação individual) ou «NOTA DO TII»
+  const tituloArquivo = c.tii ? 'NOTA DO TII' : `TAI-${c.nome || c.codigo}`
   const linhaNota = (l) => (l.situacao === 'recurso' || l.final === null || l.final === undefined || l.final === '' ? null : Number(l.final))
-  // o Excel como o do arquivo: Nº, NIP, posto, nome completo, ramos, disciplina, notas; média, mais alta e mais baixa (fórmulas)
+  // o Excel com o desenho do arquivo (Century Gothic, o cabeçalho a cinzento, as bordas): Nº, NIP, posto, nome completo,
+  // ramos, disciplina, notas; a média, a mais alta e a mais baixa com fórmulas
   async function excelArquivo() {
     const { default: escrever } = await import('write-excel-file/browser')
-    const C = (v, extra = {}) => ({ value: v, ...extra })
-    const B = (v) => C(v, { fontWeight: 'bold', align: 'center' })
-    const topo = [[C('DIRECÇÃO DOS ASSUNTOS ACADÉMICOS', { fontWeight: 'bold' })], [C('REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR', { fontWeight: 'bold' })], [C((c.turma?.nome || '').toUpperCase(), { fontWeight: 'bold' })], [C(tituloArquivo, { fontWeight: 'bold' })], [C(`ANO DE CURSO ${c.turma?.anoLetivo || ''}`)], []]
+    const base = { fontFamily: 'Century Gothic', fontSize: 12, alignVertical: 'center' }
+    // a biblioteca do Excel põe ela o «=» das fórmulas (com dois, o Excel não as reconhece)
+    const C = (v, extra = {}) => ({ value: extra.type === 'Formula' ? String(v).replace(/^=/, '') : v, ...base, ...extra })
+    const caixa = { borderStyle: 'thin', borderColor: '#000000' }
+    const B = (v) => C(v, { fontWeight: 'bold', align: 'center', backgroundColor: '#C0C0C0', borderStyle: 'medium', borderColor: '#000000' })
+    const centro = (v, extra) => [C(v, { align: 'center', columnSpan: 7, ...extra }), null, null, null, null, null, null]
+    const topo = [[], centro('DIRECÇÃO DOS ASSUNTOS ACADÉMICOS'), centro('REPARTIÇÃO DE ADMINISTRAÇÃO ESCOLAR'), centro((c.turma?.nome || '').toUpperCase(), { fontSize: 14, fontWeight: 'bold' }), [], centro(tituloArquivo, { fontSize: 14, fontWeight: 'bold' }),
+      [C(''), C(''), C(''), C(''), C('ANO DE CURSO', { fontSize: 11, fontWeight: 'bold', align: 'center', borderStyle: 'medium', borderColor: '#000000', columnSpan: 2 }), null, C(c.turma?.anoLetivo || '', { fontSize: 11, fontWeight: 'bold', align: 'center', borderStyle: 'medium', borderColor: '#000000' })]]
     const i0 = topo.length + 2 // a primeira linha dos estudantes (1-based)
     const n = p.linhas.length
-    const corpo = p.linhas.map((l, i) => [C(i + 1, { type: Number }), C(l.estudante.nip || ''), C(l.estudante.posto || ''), C(l.estudante.nome), C(RAMOS[l.estudante.ramo] ?? l.estudante.ramo ?? ''), C(c.codigo), linhaNota(l) === null ? C(null) : C(linhaNota(l), { type: Number, format: '0.00' })])
+    const d = { ...caixa, fontSize: 14 }
+    const corpo = p.linhas.map((l, i) => [C(i + 1, { type: Number, align: 'center', ...d }), C(l.estudante.nip || '', { align: 'center', ...d }), C(l.estudante.posto || '', d), C(l.estudante.nome, d), C(RAMOS[l.estudante.ramo] ?? l.estudante.ramo ?? '', { align: 'center', ...d }), C(c.codigo, { align: 'center', ...d }), linhaNota(l) === null ? C(null, d) : C(linhaNota(l), { type: Number, format: '0.00', align: 'center', ...d })])
     const g = `G${i0}:G${i0 + n - 1}`
-    const fim = n ? [[], [C(''), C(''), C(''), B('Média'), C(''), C(''), C(`=ROUND(AVERAGE(${g}),2)`, { type: 'Formula', format: '0.00', fontWeight: 'bold' })], [C(''), C(''), C(''), B('Nota mais Alta'), C(''), C(''), C(`=MAX(${g})`, { type: 'Formula', format: '0.00' })], [C(''), C(''), C(''), B('Nota mais Baixa'), C(''), C(''), C(`=MIN(${g})`, { type: 'Formula', format: '0.00' })]] : []
     const data = new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })
-    await escrever([...topo, [B('Nº'), B('NIP'), B('POSTO'), B('NOME COMPLETO'), B('RAMOS'), B('DISCIPLINA'), B('NOTAS')], ...corpo, ...fim, [], [C(`Luanda, aos ${data}`)]], { sheet: c.codigo.slice(0, 30) || 'Pauta', columns: [{ width: 5 }, { width: 12 }, { width: 16 }, { width: 40 }, { width: 8 }, { width: 12 }, { width: 8 }] })
+    const r = (rot, f, extra = []) => [C(rot, { fontWeight: 'bold', fontSize: 14, columnSpan: 2 }), null, C(f, { type: 'Formula', format: '0.00', fontWeight: 'bold', fontSize: 14, align: 'left' }), ...extra]
+    const fim = n ? [[], r('Média:', `=AVERAGE(${g})`, [C(`Luanda, aos ${data}`, { fontSize: 14, columnSpan: 4, align: 'center' })]), r('Nota mais Alta:', `=MAX(${g})`), r('Nota mais Baixa:', `=MIN(${g})`)] : []
+    await escrever([...topo, [B('Nº'), B('NIP'), B('POSTO'), B('NOME  COMPLETO'), B('RAMOS'), B('DISCIPLINA'), B('NOTAS')], ...corpo, ...fim], { sheet: c.codigo.slice(0, 30) || 'Pauta', columns: [{ width: 6 }, { width: 14 }, { width: 18 }, { width: 50 }, { width: 11 }, { width: 14 }, { width: 10 }] })
       .toFile(`pauta-${c.codigo}-${c.turma?.nome || ''}.xlsx`.replace(/[^\w.-]+/g, '-'))
   }
   const acoes = <>
@@ -60,8 +68,8 @@ function PautaCadeira() {
         acoes={acoes}
         assinaturas={[`O Docente${regente ? ` — ${regente}` : ''}`, 'O Chefe da Repartição de Administração Escolar']}
       >
-        <table>
-          <thead><tr><th className="of-num">Nº</th><th>NIP</th><th>Posto</th><th>Nome completo</th><th className="of-centro">Ramo</th><th className="of-centro">Disciplina</th><th className="of-centro">Nota</th></tr></thead>
+        <table className="of-pauta-cadeira">
+          <thead><tr><th>Nº</th><th>NIP</th><th>POSTO</th><th>NOME COMPLETO</th><th>RAMOS</th><th>DISCIPLINA</th><th>NOTAS</th></tr></thead>
           <tbody>
             {p.linhas.map((l, i) => (
               <tr key={l.estudante.id}>

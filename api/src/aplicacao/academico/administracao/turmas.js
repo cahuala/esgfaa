@@ -100,7 +100,11 @@ export class ServicoTurmas {
     ctx.actor.exigir('academico.ver')
     const guardado = (await this.paginas.ler(CHAVE_DIRECTORES)) ?? {}
     const contas = await this.#contasDoEnsino()
-    const porId = new Map(contas.map((u) => [u.id, u]))
+    // o posto do Director (para a assinatura dos documentos): o da ficha do docente, vinda do Pessoal
+    const docentes = await this.contas.listar({ tipo: 'docente' }).catch(() => [])
+    const semAc = (v) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const postoDe = (u) => (docentes.find((d) => (u.pessoalRef && d.dados?.pessoalRef === u.pessoalRef)) ?? docentes.find((d) => semAc(d.nome) === semAc(u.nome)))?.dados?.posto ?? ''
+    const porId = new Map(contas.map((u) => [u.id, { ...u, posto: u.posto || postoDe(u) }]))
     const directores = {}
     const propostas = {}
     const recusas = {}
@@ -214,7 +218,7 @@ export class ServicoTurmas {
   }
 
   #resumoConta(u) {
-    return { utilizadorId: u.id, nome: u.nome, cargo: u.cargo ?? '', papel: u.papel, nomePapel: u.nomePapel }
+    return { utilizadorId: u.id, nome: u.nome, posto: u.posto ?? '', cargo: u.cargo ?? '', papel: u.papel, nomePapel: u.nomePapel }
   }
 
   async listaDoCurso(ctx, cursoId, anoLetivo) {
